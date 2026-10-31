@@ -31,7 +31,8 @@
     "spec-examples:pin": "node scripts/spec-examples.ts pin",
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "compat": "node compat/check.ts"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

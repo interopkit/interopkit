@@ -37,7 +37,8 @@ sequenceDiagram
 | `createJwksCache(options)`                    | Creates the cache of the platforms' key sets that `ltiLaunch` verifies signatures with        |
 
 The handlers take an `HttpRequest` and return an `HttpResponse`, plain objects that a host builds from any web framework. The
-host owns the routes, the sessions, the database and the keys.
+host owns the routes, the sessions, the database and the keys. The [example](../../examples/tool-integration/README.md) runs a tool
+and a platform against each other in one process.
 
 ## Sources
 

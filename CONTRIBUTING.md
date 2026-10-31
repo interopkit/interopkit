@@ -57,6 +57,7 @@ A change to a rule of a specification cites its section in the pull request and 
 | `pnpm build`, `pnpm check:packages`, `pnpm docs:api`                            | Always                                                                                                                         |
 | `pnpm check:rules`                                                              | A change to code that an entry of `scripts/check-rules.ts` names, or to a security rule                                        |
 | `pnpm test:browser`                                                             | A change to the pages of the client-side login, or to code that must run in a browser; it needs `pnpm exec playwright install` |
+| `pnpm compat`                                                                   | A change that could differ between runtimes: a use of Web Crypto, `fetch`, `URL` or `AbortSignal`; run `pnpm build` first      |
 | `pnpm check:licenses`, `pnpm check:audit`                                       | A change to a dependency                                                                                                       |
 | `pnpm corpus`, `pnpm schemas`, `pnpm spec-examples`, `pnpm test:spec`           | A change to what the downloaded files are read for                                                                             |
 

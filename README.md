@@ -42,24 +42,25 @@ interopkit imports nothing from assesskit or measurekit, and they import nothing
 
 Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pnpm install`.
 
-| Command                | Does                                                                                                                   |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `pnpm lint`            | Biome and cspell                                                                                                       |
-| `pnpm check:standards` | The rules of the engineering standards that a tool can check                                                           |
-| `pnpm check:rules`     | Removes each security rule from a copy of the code and fails when its test still passes                                |
-| `pnpm typecheck`       | Every package, and the tooling at the root                                                                             |
-| `pnpm test`            | Vitest, offline                                                                                                        |
-| `pnpm test:coverage`   | The tests with the coverage floor of each package                                                                      |
-| `pnpm test:browser`    | The tests of the client-side login in Chromium, Firefox and WebKit; run `pnpm exec playwright install` first           |
-| `pnpm knip`            | Unused files, exports and dependencies                                                                                 |
-| `pnpm build`           | The built packages                                                                                                     |
-| `pnpm check:packages`  | publint and Are the Types Wrong on the packed packages                                                                 |
-| `pnpm check:licenses`  | Every production dependency has an allowed license                                                                     |
-| `pnpm check:audit`     | `pnpm audit` for vulnerabilities of high severity or above                                                             |
-| `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                                                 |
-| `pnpm corpus`          | Downloads the pinned repositories that tests read                                                                      |
-| `pnpm schemas`         | Downloads the pinned specification files that tests read                                                               |
-| `pnpm spec-examples`   | Downloads the JSON examples of the LTI specifications at pinned hashes; `pnpm test:spec` runs the tests that read them |
+| Command                | Does                                                                                                                                                            |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`            | Biome and cspell                                                                                                                                                |
+| `pnpm check:standards` | The rules of the engineering standards that a tool can check                                                                                                    |
+| `pnpm check:rules`     | Removes each security rule from a copy of the code and fails when its test still passes                                                                         |
+| `pnpm typecheck`       | Every package, and the tooling at the root                                                                                                                      |
+| `pnpm test`            | Vitest, offline                                                                                                                                                 |
+| `pnpm test:coverage`   | The tests with the coverage floor of each package                                                                                                               |
+| `pnpm test:browser`    | The tests of the client-side login in Chromium, Firefox and WebKit; run `pnpm exec playwright install` first                                                    |
+| `pnpm knip`            | Unused files, exports and dependencies                                                                                                                          |
+| `pnpm build`           | The built packages                                                                                                                                              |
+| `pnpm check:packages`  | publint and Are the Types Wrong on the packed packages                                                                                                          |
+| `pnpm check:licenses`  | Every production dependency has an allowed license                                                                                                              |
+| `pnpm check:audit`     | `pnpm audit` for vulnerabilities of high severity or above                                                                                                      |
+| `pnpm compat`          | Runs the scenarios of the examples, built as the packages ship, on Node.js, Deno, Bun and workerd; it needs Deno and Bun installed ([compat](compat/README.md)) |
+| `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                                                                                          |
+| `pnpm corpus`          | Downloads the pinned repositories that tests read                                                                                                               |
+| `pnpm schemas`         | Downloads the pinned specification files that tests read                                                                                                        |
+| `pnpm spec-examples`   | Downloads the JSON examples of the LTI specifications at pinned hashes; `pnpm test:spec` runs the tests that read them                                          |
 
 [AGENTS.md](AGENTS.md) states the conventions, [CONTRIBUTING.md](CONTRIBUTING.md) the process and
 [SECURITY.md](SECURITY.md) how to report a vulnerability and how to deploy safely.

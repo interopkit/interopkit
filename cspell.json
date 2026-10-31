@@ -14,7 +14,8 @@
     "README.md",
     "AGENTS.md",
     "CONTRIBUTING.md",
-    "SECURITY.md"
+    "SECURITY.md",
+    "compat/*"
   ],
   "words": [
     "apos",
@@ -22,8 +23,10 @@
     "assesskit",
     "atomicjolt",
     "Bahasa",
+    "capnp",
     "cpus",
     "errormsg",
+    "esbuild",
     "Fariz",
     "gradebook",
     "HMAC",
@@ -45,6 +48,7 @@
     "SSSZ",
     "timeback",
     "venv",
-    "Wakan"
+    "Wakan",
+    "workerd"
   ]
 }

@@ -9,6 +9,10 @@
     },
     "packages/tool-integration": {
       "entry": ["src/index.ts", "src/tool/index.ts", "src/platform/index.ts"]
+    },
+    "compat": {
+      "entry": ["run.ts", "worker.ts"],
+      "ignoreDependencies": ["workerd"]
     }
   }
 }

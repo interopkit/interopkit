@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node"],
+    "paths": {
+      "@interopkit/core": ["../../packages/core/src/index.ts"],
+      "@interopkit/core/checks": ["../../packages/core/src/checks.ts"],
+      "@interopkit/tool-integration": ["../../packages/tool-integration/src/index.ts"],
+      "@interopkit/tool-integration/tool": ["../../packages/tool-integration/src/tool/index.ts"],
+      "@interopkit/tool-integration/platform": ["../../packages/tool-integration/src/platform/index.ts"]
+    }
+  },
+  "include": ["scenario.ts", "src", "test"]
+}

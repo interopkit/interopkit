@@ -1,0 +1,15 @@
+{
+  "name": "@interopkit/example-tool-integration",
+  "private": true,
+  "type": "module",
+  "description": "A platform that launches a tool, and the tool that validates the launch and publishes a score, in one process over an in-memory network.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node scenario.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@interopkit/core": "workspace:^",
+    "@interopkit/tool-integration": "workspace:^"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@interopkit/compat",
+  "private": true,
+  "type": "module",
+  "description": "Runs the scenarios of the examples, built as the packages ship, on Node.js, Deno, Bun and workerd, the runtime of Cloudflare Workers.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "check": "node check.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@interopkit/core": "workspace:^",
+    "esbuild": "0.28.2",
+    "workerd": "1.20261016.1"
+  }
+}

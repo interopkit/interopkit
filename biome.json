@@ -358,7 +358,7 @@
       }
     },
     {
-      "includes": ["scripts/**", "examples/**"],
+      "includes": ["scripts/**", "examples/**", "compat/**"],
       "linter": {
         "rules": {
           "suspicious": {

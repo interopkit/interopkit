@@ -63,6 +63,15 @@ export default defineConfig({
         // The examples are packages of their own, and a test of each runs its scenario against the sources.
         resolve: { alias: SOURCES },
         test: {
+          name: "example-tool-integration",
+          include: ["examples/tool-integration/test/**/*.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The same for the sensor.
+        resolve: { alias: SOURCES },
+        test: {
           name: "example-learning-analytics",
           include: ["examples/learning-analytics/test/**/*.test.ts"],
           testTimeout: HANG_LIMIT,
