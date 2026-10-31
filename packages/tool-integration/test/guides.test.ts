@@ -1,10 +1,15 @@
 import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import * as root from "../src/index.js";
+import * as platform from "../src/platform/index.js";
 import * as tool from "../src/tool/index.js";
 import { runGuideSamples } from "./guide-samples.js";
 
-const modules = { "@interopkit/tool-integration": root, "@interopkit/tool-integration/tool": tool };
+const modules = {
+  "@interopkit/tool-integration": root,
+  "@interopkit/tool-integration/platform": platform,
+  "@interopkit/tool-integration/tool": tool,
+};
 const GUIDES = new URL("../../../docs/tool-integration/", import.meta.url);
 const guides = readdirSync(GUIDES).filter(
   (name) => name.endsWith(".md") && !["supported.md", "architecture.md", "spec-gaps.md"].includes(name),

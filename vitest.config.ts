@@ -75,6 +75,8 @@ export default defineConfig({
         test: {
           name: "tool-integration-browser",
           include: ["packages/tool-integration/test/**/*.browser.test.ts"],
+          // Starts the servers that the posted form reaches.
+          globalSetup: ["packages/tool-integration/test/fixtures/servers-setup.ts"],
           browser: browser(),
         },
       },

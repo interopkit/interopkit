@@ -1,8 +1,7 @@
-import { DataError, readClock } from "@interopkit/core";
+import { readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
-import * as v from "valibot";
 import { LtiError } from "../errors.js";
-import { callOptionsOf, POSITIVE_NUMBER, randomToken } from "../protocol/internal.js";
+import { callOptionsOf, randomToken } from "../protocol/internal.js";
 import { endpointsOf, type PlatformConfig } from "./config.js";
 import { checkLoginOptions, type PlatformLoginOptions } from "./options.js";
 import { checkToolRegistration, type ToolRegistration } from "./registration.js";
@@ -50,9 +49,6 @@ async function prepare(launch: ToolLaunch, options: PlatformLoginOptions): Promi
   }
   checkToolRegistration(registration);
   refuseOwnOrigins([launch.target, registration.loginUrl, ...registration.redirectUris], config);
-  if (!v.is(POSITIVE_NUMBER, launch.scoreMaximum)) {
-    throw new DataError(`The highest score must be a number above 0, found ${describe(launch.scoreMaximum)}.`);
-  }
   options.signal?.throwIfAborted();
   const hint = await sealHint(
     {

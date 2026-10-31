@@ -39,14 +39,14 @@ export const ISSUER = "https://platform.example";
 export const PLATFORM_ORIGIN = "https://lti.platform.example";
 export const PLAYER_ORIGIN = "https://player.platform.example";
 export const ASSET_ORIGIN = "https://assets.platform.example";
-export const AGS = "https://purl.imsglobal.org/spec/lti-ags/scope/";
+const AGS = "https://purl.imsglobal.org/spec/lti-ags/scope/";
 export const LINEITEM_READONLY = `${AGS}lineitem.readonly`;
 export const LINEITEM = `${AGS}lineitem`;
 export const SCORE = `${AGS}score`;
 export const RESULT_READONLY = `${AGS}result.readonly`;
 export const OTHER_CLIENT_ID = "tool-client-2";
 export const OTHER_ORIGIN = "https://other.example.org";
-export const OTHER_LAUNCH_URL = `${OTHER_ORIGIN}/launch`;
+const OTHER_LAUNCH_URL = `${OTHER_ORIGIN}/launch`;
 export const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";
 export const SCORE_TYPE = "application/vnd.ims.lis.v1.score+json";
 
@@ -158,7 +158,7 @@ export function setup(overrides: { tools?: Map<string, ToolRegistration> } = {})
 }
 
 /** The key set of the platform, as a tool reads it. */
-export async function keySet(ctx: Setup): Promise<KeySet> {
+async function keySet(ctx: Setup): Promise<KeySet> {
   const response = await platformJwks(ctx.login);
   return JSON.parse(response.body);
 }

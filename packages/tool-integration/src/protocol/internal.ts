@@ -19,7 +19,6 @@ export {
   MESSAGE_TYPE,
   NUMBER,
   optional,
-  POSITIVE_INTEGER,
   POSITIVE_NUMBER,
   required,
   STRING,

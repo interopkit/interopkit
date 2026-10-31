@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: the entries quote source code, which holds template strings.
 import { spawnSync } from "node:child_process";
 import {
   cpSync,

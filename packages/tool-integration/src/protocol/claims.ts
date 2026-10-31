@@ -1,11 +1,4 @@
-import {
-  finiteSchema,
-  httpsUrlSchema,
-  issueText,
-  mapSchema,
-  positiveIntegerSchema,
-  positiveSchema,
-} from "@interopkit/core/checks";
+import { finiteSchema, httpsUrlSchema, issueText, mapSchema, positiveSchema } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { LtiError } from "../errors.js";
 
@@ -26,9 +19,6 @@ export const NUMBER = finiteSchema;
 
 /** A finite number above 0, such as a maximum score. */
 export const POSITIVE_NUMBER = positiveSchema;
-
-/** A safe integer of at least 1, such as a count. */
-export const POSITIVE_INTEGER = positiveIntegerSchema;
 
 /** A boolean. */
 export const BOOLEAN = v.boolean();

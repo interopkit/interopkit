@@ -96,6 +96,28 @@ platform's key, to the tool's client and deployment, and to one use.
   may drop an equal or earlier one. After a timeout the first attempt is in doubt, and the resend takes a later time.
 - Launch claims (the `sub`, roles and custom properties) pass through the package to the host; it stores nothing.
 
+## The platform role
+
+The platform launches tools through the browser of the user, so a tool's requests are untrusted until the handlers have checked
+them ([platform role](docs/tool-integration/platform.md)).
+
+- **Three kinds of origin.** The platform's handlers, the page that frames the tool and the reserved origins must differ, because
+  the tool's frame has `allow-same-origin`. A handler answers only at its own origin, and a launch refuses a tool on any of them.
+- **Hints bind the request to a launch.** `ltiPlatformAuthorize` is a navigation, often a cross-site POST in a frame where the
+  host's cookie may be withheld, so it relies on the signed `lti_message_hint` and not on a cookie: valid, unexpired, for this
+  tool, naming the principal of `login_hint`, passing `checkLaunch`, and single-use through `once`. The host's check runs
+  before the hint is spent.
+- **Sealed tokens.** Hints, line item identifiers and access tokens are compact JWS with HMAC-SHA-256. The `typ` header binds a
+  token to its use, only `HS256` verifies, the spelling must be canonical, and WebCrypto compares the MAC in constant time. They are
+  signed and not encrypted: the tool reads them, so they hold no secret.
+- **Client assertions.** RS256 only, the audience is the token endpoint, the lifetime is at most 3,600 seconds, and a `jti` is
+  accepted once. A `once` that rejects fails closed.
+- **Scores.** A tool reads and posts only to its own line item, only for the user of the launch, with the scopes the token holds.
+  The platform does not order scores: the receiver keeps a score unless a later one is kept (AGS 3.4.9).
+- `ToolLaunch.resource` is signed and not encrypted. It holds no secret and no personal data.
+- Keep the private key and the hint key in the host's key store. Rotating the hint key invalidates the hints, line item URLs and
+  access tokens that are outstanding.
+
 ## Default limits
 
 Every limit is a value that a caller can replace per call with the option named in its row; a limit left out keeps its
@@ -114,6 +136,13 @@ default. Each package adds its rows when it adds the control.
 | `tool-integration`   | Lifetime of a login                                                      | 600                      | seconds      | The time in which a launch must answer a login; not replaceable                            |
 | `tool-integration`   | Lifetime of a client assertion and of a Deep Linking response            | 300                      | seconds      | `exp` after `iat`; not replaceable                                                         |
 | `tool-integration`   | Leeway for clock skew                                                    | 60                       | seconds      | `exp` and `iat` of an `id_token`; not replaceable                                          |
+| `tool-integration`   | Lifetime of a hint and of an `id_token`                                  | 300                      | seconds      | `exp` after `iat`; not replaceable                                                         |
+| `tool-integration`   | Longest accepted lifetime of a client assertion                          | 3,600                    | seconds      | `exp` after `iat`; not replaceable                                                         |
+| `tool-integration`   | Lifetime of an access token                                              | 3,600                    | seconds      | Not replaceable                                                                            |
+| `tool-integration`   | Most characters of `ToolLaunch.resource`                                 | 1,024                    | characters   | The query of the login URL; not replaceable                                                |
+| `tool-integration`   | `toolFrame` of `platformStorage`                                         | `"lti-tool"`             |              | The frame that the storage page answers                                                    |
+| `tool-integration`   | `storageTarget` of the login                                             | `"lti-storage"`          |              | The frame that shows the storage page                                                      |
+| `tool-integration`   | Storage of a tool                                                        | 4,096 bytes and 500 keys |              | One origin, in the storage page; not replaceable                                           |
 
 ## Runtime dependencies
 

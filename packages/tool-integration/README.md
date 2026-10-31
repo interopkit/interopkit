@@ -1,8 +1,9 @@
 # @interopkit/tool-integration
 
-LTI 1.3 for learning platforms and tools. This version has the tool role: your application is launched by a learning
-platform, answers its login, validates the launch, answers a Deep Linking request, and publishes scores back to the platform's
-gradebook. A handler takes an `HttpRequest` and returns an `HttpResponse`: plain objects that any web framework can build.
+LTI 1.3 for learning platforms and tools, in both roles. In the tool role your application is launched by a learning
+platform: it answers its login, validates the launch, answers a Deep Linking request, and publishes scores back to the platform's
+gradebook. In the platform role your application launches tools: it starts their login, issues the `id_token`, publishes its key
+set, issues access tokens, and serves the line item and receives the scores of each launch. A handler takes an `HttpRequest` and returns an `HttpResponse`: plain objects that any web framework can build.
 You pass in the stores, the registrations, a `fetch` and a clock.
 
 ```mermaid
@@ -14,12 +15,15 @@ flowchart LR
   end
   subgraph pkg["@interopkit/tool-integration"]
     tool["/tool<br/>ltiLogin, ltiLaunch, deepLinkResponse,<br/>ltiAccessToken, publishAgsScore"]
+    platformRole["/platform<br/>ltiPlatformFrame, ltiPlatformAuthorize,<br/>platformJwks, platformToken, agsScores"]
     root["root<br/>LtiError, HttpRequest, HttpResponse,<br/>createJwksCache"]
   end
   platform <-->|"login, launch, tokens, scores"| routes
   routes --> tool
   tool --> ports
+  platformRole --> ports
   tool --> root
+  platformRole --> root
 ```
 
 It runs in Node.js, browsers, Deno, Bun and Cloudflare Workers: it uses web standards only, reads no environment variable,
@@ -35,10 +39,11 @@ npm install @interopkit/tool-integration
 
 ## API
 
-| Subpath                             | Exports                                                                                                                                                                                                                                                                                                                                                                                  |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/tool-integration`      | `LtiError`, with a `reason` and an HTTP `status`; `HttpRequest`, `HttpResponse`; `createJwksCache`, `JwksCache`, `JwksCacheOptions`                                                                                                                                                                                                                                                      |
-| `@interopkit/tool-integration/tool` | `ltiLogin`, `ltiLaunch`, `deepLinkResponse`, `ltiAccessToken`, `publishAgsScore`; `PlatformRegistration`, `LtiStore`, `LoginRecord`, `AgsScoreInput`, `AccessToken`, `DeepLinkItem`, `DeepLinkLineItem`; the launch types `LtiLaunch`, `ResourceLinkLaunch`, `DeepLinkingLaunch` and their parts; the options `ToolOptions`, `LtiLoginOptions`, `LtiLaunchOptions`, `AccessTokenOptions` |
+| Subpath                                 | Exports                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@interopkit/tool-integration`          | `LtiError`, with a `reason` and an HTTP `status`; `HttpRequest`, `HttpResponse`; `createJwksCache`, `JwksCache`, `JwksCacheOptions`                                                                                                                                                                                                                                                                                                                |
+| `@interopkit/tool-integration/platform` | `ltiPlatformLogin`, `ltiPlatformFrame`, `ltiPlatformAuthorize`, `platformEndpoints`, `platformJwks`, `platformToken`, `platformStorage`, `agsLineItem`, `agsScores`, `readAgsScore`; `ToolLaunch`, `ToolRegistration`, `PlatformConfig`, `PlatformEndpoints`, `PlatformFrame`, `AgsScore`; the options `PlatformOptions`, `PlatformLoginOptions`, `PlatformAuthorizeOptions`, `PlatformTokenOptions`, `AgsScoresOptions`, `PlatformStorageOptions` |
+| `@interopkit/tool-integration/tool`     | `ltiLogin`, `ltiLaunch`, `deepLinkResponse`, `ltiAccessToken`, `publishAgsScore`; `PlatformRegistration`, `LtiStore`, `LoginRecord`, `AgsScoreInput`, `AccessToken`, `DeepLinkItem`, `DeepLinkLineItem`; the launch types `LtiLaunch`, `ResourceLinkLaunch`, `DeepLinkingLaunch` and their parts; the options `ToolOptions`, `LtiLoginOptions`, `LtiLaunchOptions`, `AccessTokenOptions`                                                           |
 
 ```ts
 import { createJwksCache } from "@interopkit/tool-integration";
@@ -85,7 +90,7 @@ logins.size; // => 1
 
 A failure throws `LtiError` for a check of the specifications (with its `reason`), `DataError` for a malformed request or
 option, and `ServiceError` for a platform that does not answer. The [guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/tool.md)
-has the routes, the store, every check of a launch, Deep Linking, scores, the failure paths and the signals.
+has the routes, the store, every check of a launch, Deep Linking, scores, the failure paths and the signals; the [platform guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/platform.md) has the same for the platform role.
 
 ## License
 

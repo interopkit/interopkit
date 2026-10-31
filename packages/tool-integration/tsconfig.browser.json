@@ -9,5 +9,5 @@
       "@interopkit/core/checks": ["../core/src/checks.ts"]
     }
   },
-  "include": ["test/**/*.browser.test.ts", "test/wait.ts"]
+  "include": ["test/**/*.browser.test.ts", "test/wait.ts", "test/fixtures/provided.d.ts"]
 }

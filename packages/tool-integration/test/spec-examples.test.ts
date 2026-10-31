@@ -5,6 +5,7 @@ import { DataError } from "@interopkit/core";
 import { createLocalJWKSet, exportJWK } from "jose";
 import { describe, expect, it } from "vitest";
 import { readSpecExamples } from "../../../scripts/spec-examples.js";
+import { readAgsScore } from "../src/platform/index.js";
 import { verifyJwt } from "../src/protocol/internal.js";
 import {
   type DeepLinkingLaunch,
@@ -18,6 +19,7 @@ import { readLaunch } from "../src/tool/internal.js";
 import { FakeLms, LINE_ITEM_URL } from "./fake-lms.js";
 import { registrationOf } from "./fake-platform.js";
 import { generateKeyPair, readToken, signToken } from "./fixture.js";
+import { launch as platformLaunch, setup as platformSetup } from "./platform-setup.js";
 import { cookieLogin, setup, toolKey } from "./tool-setup.js";
 
 /**
@@ -157,5 +159,44 @@ describe("the scores of AGS section 3.4", () => {
   it("refuses the score of the example that carries an extension, which the tool role does not support", async () => {
     const extended = examples.scores.find((score) => Object.keys(score).length > 4) ?? {};
     await expect(publish(extended)).rejects.toBeInstanceOf(DataError);
+  });
+});
+
+describe("the platform role against the same examples", () => {
+  it("reads each score of AGS section 3.4 into the fields that it says", () => {
+    for (const example of examples.scores) {
+      expect(readAgsScore(example)).toMatchObject({
+        userId: example.userId,
+        timestamp: example.timestamp,
+        timestampMs: Date.parse(String(example.timestamp)),
+        activityProgress: example.activityProgress,
+        gradingProgress: example.gradingProgress,
+      });
+    }
+  });
+
+  it("issues an id_token with the required claims of LTI Core Appendix E, of the same kinds", async () => {
+    const issued = (await platformLaunch(platformSetup())).claims;
+    const required = [
+      "iss",
+      "sub",
+      "aud",
+      "exp",
+      "iat",
+      "nonce",
+      `${CLAIM}deployment_id`,
+      `${CLAIM}message_type`,
+      `${CLAIM}version`,
+      `${CLAIM}roles`,
+      `${CLAIM}resource_link`,
+      `${CLAIM}target_link_uri`,
+    ];
+    for (const name of required) {
+      expect(name in issued, name).toBe(true);
+      expect(typeof issued[name], name).toBe(typeof examples.launch[name === "aud" ? "iss" : name]);
+    }
+    expect(issued[`${CLAIM}message_type`]).toBe(examples.launch[`${CLAIM}message_type`]);
+    expect(issued[`${CLAIM}version`]).toBe(examples.launch[`${CLAIM}version`]);
+    expect(Object.keys(issued).every((name) => name in examples.launch || name.includes("lti-ags"))).toBe(true);
   });
 });
