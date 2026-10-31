@@ -1,0 +1,9 @@
+import { base64url } from "jose";
+
+// RFC 6749 section 10.10: the probability of guessing a credential must be at most 2^-128 and should be at most 2^-160.
+const RANDOM_BYTES = 20;
+
+/** Returns a random token of 160 bits in base64url, for a `state`, a `nonce` or a `jti`. */
+export function randomToken(): string {
+  return base64url.encode(crypto.getRandomValues(new Uint8Array(RANDOM_BYTES)));
+}

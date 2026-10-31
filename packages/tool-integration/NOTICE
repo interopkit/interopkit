@@ -1,0 +1,6 @@
+@interopkit/tool-integration
+Copyright Fariz Wakan
+
+LTI, Learning Tools Interoperability, LTI Advantage and 1EdTech are trademarks of 1EdTech Consortium, Inc. This package
+implements the LTI 1.3 specifications of 1EdTech: Core, the Security Framework, Deep Linking and Assignment and Grade
+Services. It is not certified by 1EdTech and includes no 1EdTech files.

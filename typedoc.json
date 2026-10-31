@@ -2,7 +2,7 @@
   "$schema": "https://typedoc.org/schema.json",
   "name": "interopkit",
   "entryPointStrategy": "packages",
-  "entryPoints": ["packages/core", "packages/learning-analytics"],
+  "entryPoints": ["packages/core", "packages/tool-integration", "packages/learning-analytics"],
   "readme": "README.md",
   "out": "docs/api",
   "plugin": ["typedoc-plugin-mermaid"],

@@ -25,13 +25,13 @@ flowchart LR
 | Package                                                                                                                   | What it is                                                                                                                                                                              |
 | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`@interopkit/core`](packages/core/README.md)                                                                             | The errors, the checks of arguments, the clock and the service call that the other packages share                                                                                       |
-| [`@interopkit/tool-integration`](https://github.com/interopkit/interopkit/tree/main/packages/tool-integration#readme)     | LTI 1.3 for both roles: a tool that a platform launches, and a platform that launches tools. Under development and not yet published; its README says what the current version contains |
+| [`@interopkit/tool-integration`](packages/tool-integration/README.md)     | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Under development and not yet published; its README says what the current version contains |
 | [`@interopkit/learning-analytics`](https://github.com/interopkit/interopkit/tree/main/packages/learning-analytics#readme) | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Under development and not yet published; its README says what the current version contains                    |
 
 To launch tools from your platform, or to be launched by one, use `tool-integration`. To report learning events, use
 `learning-analytics`. Neither needs the other.
 
-The scope of this version is today's LTI and Caliper features. [Supported](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/supported.md) lists what
+The scope of this version is today's LTI and Caliper features. [Supported](docs/tool-integration/supported.md) lists what
 `tool-integration` includes and what it does not, and the README of `learning-analytics` does the same for events. interopkit
 implements these specifications and is not certified by 1EdTech.
 

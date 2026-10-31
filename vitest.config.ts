@@ -52,6 +52,7 @@ export default defineConfig({
           testTimeout: HANG_LIMIT,
         },
       },
+      nodeProject("tool-integration"),
       {
         test: {
           name: "scripts",
@@ -66,6 +67,7 @@ export default defineConfig({
       thresholds: {
         "packages/core/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/learning-analytics/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
+        "packages/tool-integration/src/**": { statements: 98, branches: 95, functions: 100, lines: 99 },
       },
     },
   },

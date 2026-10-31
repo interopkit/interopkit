@@ -70,25 +70,57 @@ above apply.
 - Events hold times, IRIs and scores. A host that sends a response or an answer key builds that event itself and decides
   whether the endpoint may know it.
 - A `ServiceError` carries the endpoint's answer as `body`: log it as untrusted text.
+## The tool role
+
+A learning platform launches the tool through the browser of the user, so the launch is untrusted until `ltiLaunch` has
+checked it ([tool role](docs/tool-integration/tool.md)). The checks bind a launch to the browser that logged in, to the
+platform's key, to the tool's client and deployment, and to one use.
+
+- Serve the login URL and the launch URL over HTTPS, and limit the size of a request body: the handlers read what the host
+  gives them.
+- `LtiStore.delete` must be atomic, and expired logins deleted. A login completes once because only one caller's `delete`
+  returns `true`.
+- **Login CSRF** (Security Framework 1.1 section 7.4.1). A launch is tied to the browser that logged in: by the
+  `__Host-lti_state_<state>` cookie, or, without third-party cookies, by the platform's storage, and the tool accepts the second
+  post of that path only from the origin of its own launch URL. Pass the `origin` header of the request to `ltiLaunch`.
+- The two pages of the storage path carry a content security policy that allows their one script by hash, and encode every
+  value. A host that adds headers must not weaken them.
+- **Open redirect.** `targetLinkUri` is the signed claim of the launch, returned to the host. Check it against the host's own
+  routes before redirecting to it.
+- The platform's key set is fetched from the URL of a registration, over HTTPS, through `callService`. A token cannot choose the
+  URL, and only RS256 with an RSA key of 2,048 bits or more verifies. Past `ttlSeconds` a failed fetch fails the launch, and a
+  stale key is never used.
+- The tool's private key is the host's to keep. It signs client assertions and Deep Linking responses, which expire after five
+  minutes.
+- A score is not idempotent: AGS requires a strictly later `timestamp` for each update of a line item and user, and a platform
+  may drop an equal or earlier one. After a timeout the first attempt is in doubt, and the resend takes a later time.
+- Launch claims (the `sub`, roles and custom properties) pass through the package to the host; it stores nothing.
 
 ## Default limits
 
 Every limit is a value that a caller can replace per call with the option named in its row; a limit left out keeps its
 default. Each package adds its rows when it adds the control.
 
-| Package              | Limit                   | Default                  | Unit         | Applies to                                                                                 |
-| -------------------- | ----------------------- | ------------------------ | ------------ | ------------------------------------------------------------------------------------------ |
-| `core`               | `timeoutMs`             | 10,000                   | milliseconds | One call to a service: the request and its whole body (`DEFAULT_TIMEOUT_MS`)               |
-| `core`               | most bytes of an answer | 65,536                   | bytes        | The body of the answer of a service; not replaceable                                       |
-| `core`               | `redirect`              | `"manual"`               |              | Every call to a service; a 3xx answer is refused, and this is not replaceable              |
-| `learning-analytics` | `timeoutMs`             | 10,000                   | milliseconds | One call of `sendCaliper` (`DEFAULT_CALIPER_TIMEOUT_MS`)                                   |
-| `learning-analytics` | latest time             | 9999-12-31T23:59:59.999Z |              | The latest time that `caliperTime` writes, after 1970-01-01T00:00:00.000Z; not replaceable |
+| Package              | Limit                                                                    | Default                  | Unit         | Applies to                                                                                 |
+| -------------------- | ------------------------------------------------------------------------ | ------------------------ | ------------ | ------------------------------------------------------------------------------------------ |
+| `core`               | `timeoutMs`                                                              | 10,000                   | milliseconds | One call to a service: the request and its whole body (`DEFAULT_TIMEOUT_MS`)               |
+| `core`               | most bytes of an answer                                                  | 65,536                   | bytes        | The body of the answer of a service; not replaceable                                       |
+| `core`               | `redirect`                                                               | `"manual"`               |              | Every call to a service; a 3xx answer is refused, and this is not replaceable              |
+| `learning-analytics` | `timeoutMs`                                                              | 10,000                   | milliseconds | One call of `sendCaliper` (`DEFAULT_CALIPER_TIMEOUT_MS`)                                   |
+| `learning-analytics` | latest time                                                              | 9999-12-31T23:59:59.999Z |              | The latest time that `caliperTime` writes, after 1970-01-01T00:00:00.000Z; not replaceable |
+| `tool-integration`   | `ttlSeconds` of `createJwksCache`                                        | 3,600                    | seconds      | How long a key set stays cached                                                            |
+| `tool-integration`   | `refreshSeconds` of `createJwksCache`                                    | 60                       | seconds      | The least time between two fetches of a key set                                            |
+| `tool-integration`   | `timeoutMs` of `createJwksCache`, `ltiAccessToken` and `publishAgsScore` | 10,000                   | milliseconds | One call to the platform                                                                   |
+| `tool-integration`   | Lifetime of a login                                                      | 600                      | seconds      | The time in which a launch must answer a login; not replaceable                            |
+| `tool-integration`   | Lifetime of a client assertion and of a Deep Linking response            | 300                      | seconds      | `exp` after `iat`; not replaceable                                                         |
+| `tool-integration`   | Leeway for clock skew                                                    | 60                       | seconds      | `exp` and `iat` of an `id_token`; not replaceable                                          |
 
 ## Runtime dependencies
 
 The packages that the libraries load at run time are pinned to exact versions at least two weeks old:
 
-| Package   | Version | License | Used by                                                                                                                                                                          |
-| --------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `valibot` | 1.5.0   | MIT     | `core` and `learning-analytics`: the schemas that read untrusted JSON, and `parseWith`, which turns the first issue into a `DataError` that names its path. It has no dependency |
-| `uuid`    | 14.0.3  | MIT     | `learning-analytics`: the name-based UUID of version 5 (RFC 9562) of the identifiers of events. It has no dependency                                                             |
+| Package   | Version | License | Used by                                                                                                                                                                                              |
+| --------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jose`    | 6.2.12  | MIT     | `tool-integration`: signs and verifies the JWS and JWT of LTI messages, assertions and hints (algorithm allowlist, `crit`, `iss`, `aud`, `sub`, `exp`), and fetches key sets. Web Crypto only        |
+| `valibot` | 1.5.0   | MIT     | `core`, `learning-analytics` and `tool-integration`: the schemas that read untrusted JSON, and `parseWith`, which turns the first issue into a `DataError` that names its path. It has no dependency |
+| `uuid`    | 14.0.3  | MIT     | `learning-analytics`: the name-based UUID of version 5 (RFC 9562) of the identifiers of events. It has no dependency                                                                                 |

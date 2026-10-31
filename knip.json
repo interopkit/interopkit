@@ -6,6 +6,9 @@
     },
     "packages/learning-analytics": {
       "entry": ["src/index.ts"]
+    },
+    "packages/tool-integration": {
+      "entry": ["src/index.ts", "src/tool/index.ts"]
     }
   }
 }

@@ -180,11 +180,158 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-analytics/test/build.test.ts",
   },
   {
-    rule: "An event is built only from input that passes the schema, so a malformed identifier, entity or time never reaches an endpoint.",
-    file: "packages/learning-analytics/src/build/build-event.ts",
-    find: "= parseWith(",
-    replace: "= ((_schema: unknown, value: unknown, _label: string) => value as EventInput)(",
-    test: "packages/learning-analytics/test/build.test.ts",
+    rule: "A token is verified with RS256 only: none and the HMAC algorithms are refused.",
+    file: "packages/tool-integration/src/protocol/jwt.ts",
+    find: "algorithms: [ALGORITHM],",
+    replace: "",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A token names its key with a kid.",
+    file: "packages/tool-integration/src/protocol/jwt.ts",
+    find: 'if (typeof header.kid !== "string" || header.kid === "") {',
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "The audience of a token is the one party, and no other.",
+    file: "packages/tool-integration/src/protocol/jwt.ts",
+    find: "checkSoleAudience(claims, expected.audience);",
+    replace: "",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A token issued in the future is refused, beyond the leeway for clock skew.",
+    file: "packages/tool-integration/src/protocol/jwt.ts",
+    find: "checkIssuedAt(claims, nowMilliseconds / 1000);",
+    replace: "",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A token that expired is refused, beyond the leeway for clock skew.",
+    file: "packages/tool-integration/src/protocol/jwt.ts",
+    find: "clockTolerance: CLOCK_SKEW_SECONDS,",
+    replace: "clockTolerance: 31_536_000,",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A token part is the one canonical base64url of some bytes.",
+    file: "packages/tool-integration/src/protocol/jwt.ts",
+    find: "return parts.length === 3 && parts.every(isCanonicalBase64Url);",
+    replace: "return parts.length === 3;",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "An LTI 1.0 to 1.2 launch is refused.",
+    file: "packages/tool-integration/src/tool/launch.ts",
+    find: 'if (form.has("oauth_consumer_key")) {',
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A login that has expired is refused.",
+    file: "packages/tool-integration/src/tool/launch.ts",
+    find: "if (readClock(options.clock) >= record.expiresAt) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "The browser of a launch on the cookie path is the browser that logged in.",
+    file: "packages/tool-integration/src/tool/launch.ts",
+    find: "checkStateCookie(request, state);",
+    replace: "",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "The verification of the storage path is posted from the origin of the tool.",
+    file: "packages/tool-integration/src/tool/launch.ts",
+    find: "if (request.headers.origin !== origin) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "The state and nonce in the platform's storage are those of the login.",
+    file: "packages/tool-integration/src/tool/launch.ts",
+    find: "if (form.get(STORED_STATE) !== state || form.get(STORED_NONCE) !== record.nonce) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "The nonce of the token is the nonce of the login.",
+    file: "packages/tool-integration/src/tool/launch.ts",
+    find: "if (claims.nonce !== record.nonce) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A login completes once: only one caller's delete succeeds.",
+    file: "packages/tool-integration/src/tool/launch.ts",
+    find: "if (!(await options.store.delete(state, callOptionsOf(options)))) {",
+    replace: "await options.store.delete(state, callOptionsOf(options));\n  if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "An aborted launch leaves the login in the store.",
+    file: "packages/tool-integration/src/tool/launch.ts",
+    find: "  options.signal?.throwIfAborted();\n  if (!(await options.store.delete(state, callOptionsOf(options)))) {",
+    replace: "  if (!(await options.store.delete(state, callOptionsOf(options)))) {",
+    test: "packages/tool-integration/test/tool-signals.test.ts",
+  },
+  {
+    rule: "The authorized party of a token is the client of the tool.",
+    file: "packages/tool-integration/src/tool/id-token.ts",
+    find: "if (azp !== undefined && azp !== clientId) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "The deployment of a launch is one that the registration lists.",
+    file: "packages/tool-integration/src/tool/launch-claims.ts",
+    find: "if (!registration.deploymentIds.includes(deploymentId)) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A registration matches the issuer and the client of the message.",
+    file: "packages/tool-integration/src/tool/options.ts",
+    find: "if (registration.issuer !== issuer || (clientId !== undefined && registration.clientId !== clientId)) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "The state cookie is Secure, HttpOnly and SameSite=None.",
+    file: "packages/tool-integration/src/tool/login.ts",
+    find: "Path=/; Secure; HttpOnly; SameSite=None",
+    replace: "Path=/",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "The assertion for the token endpoint is for that endpoint.",
+    file: "packages/tool-integration/src/tool/access-token.ts",
+    find: ".setAudience(registration.accessTokenUrl)",
+    replace: ".setAudience(registration.issuer)",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A score is published only with the scope that the platform granted.",
+    file: "packages/tool-integration/src/tool/publish-ags-score.ts",
+    find: "const missing = needed.find((scope) => !token.scopes.includes(scope));",
+    replace: "const missing = undefined;",
+    test: "packages/tool-integration/test/tool-score.test.ts",
+  },
+  {
+    rule: "A score is published only when the launch offers the score scope.",
+    file: "packages/tool-integration/src/tool/publish-ags-score.ts",
+    find: "if (!scopes.includes(AGS_SCOPE.score)) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool-score.test.ts",
+  },
+  {
+    rule: "A score has a timestamp with a time zone.",
+    file: "packages/tool-integration/src/tool/publish-ags-score.ts",
+    find: "(text) => TIMESTAMP.test(text) && !Number.isNaN(Date.parse(text)),",
+    replace: "(text) => !Number.isNaN(Date.parse(text)),",
+    test: "packages/tool-integration/test/tool-score.test.ts",
   },
 ];
 
@@ -259,12 +406,14 @@ function runTest(
  *
  * @param root - The repository.
  * @param rule - The rule.
+ * @param passing - The test files that already passed on the unchanged code, which a run of many rules does not run again.
  */
-export function checkRule(root: string, rule: Rule): Verdict {
+export function checkRule(root: string, rule: Rule, passing: Set<string> = new Set()): Verdict {
   const scratch = mkdtempSync(join(tmpdir(), "interopkit-rule-"));
   try {
     copyRepository(root, scratch);
-    const baseline = runTest(root, scratch, rule.test);
+    const baseline = passing.has(rule.test) ? { failed: 0, report: "" } : runTest(root, scratch, rule.test);
+    if (baseline.failed === 0) passing.add(rule.test);
     if (baseline.failed !== 0)
       return {
         guarded: false,
@@ -297,8 +446,9 @@ function main(paths: readonly string[]): number {
   const root = resolve(dirname(import.meta.dirname));
   const rules = RULES.filter(({ file }) => paths.length === 0 || paths.some((path) => file.startsWith(path)));
   let unguarded = 0;
+  const passing = new Set<string>();
   for (const rule of rules) {
-    const { guarded, message } = checkRule(root, rule);
+    const { guarded, message } = checkRule(root, rule, passing);
     if (!guarded) unguarded += 1;
     console.log(`${guarded ? "guarded  " : "UNGUARDED"} ${rule.rule} ${message}`);
   }
