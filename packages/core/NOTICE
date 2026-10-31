@@ -1,0 +1,6 @@
+@interopkit/core
+Copyright Fariz Wakan
+
+LTI, Learning Tools Interoperability, LTI Advantage, Caliper Analytics, Sensor API and 1EdTech are trademarks of
+1EdTech Consortium, Inc. This package implements no specification of its own: it holds what the interopkit packages that
+implement LTI and Caliper share. It is not certified by 1EdTech and includes no 1EdTech files.

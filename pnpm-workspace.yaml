@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+  - examples/*
+
+# A version is installed only when it has been on the registry for 14 days (in minutes).
+minimumReleaseAge: 20160
+
+allowBuilds:
+  esbuild: false
+  lefthook: false

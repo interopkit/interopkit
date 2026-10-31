@@ -1,0 +1,57 @@
+{
+  "name": "@interopkit/core",
+  "version": "0.0.0",
+  "description": "The foundation that the interopkit packages share: their errors, the checks of their arguments, a clock, and the call to a service over HTTP with a deadline, a size limit and no redirects.",
+  "keywords": [
+    "interopkit",
+    "interoperability",
+    "learning-platform",
+    "http-client",
+    "abort-signal",
+    "argument-validation"
+  ],
+  "author": "Fariz Wakan",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/interopkit/interopkit.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/core#readme",
+  "bugs": "https://github.com/interopkit/interopkit/issues",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./checks": {
+      "types": "./dist/checks.d.ts",
+      "default": "./dist/checks.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "node --eval \"for (const path of ['dist', 'tsconfig.build.tsbuildinfo']) fs.rmSync(path, { recursive: true, force: true })\"",
+    "build": "pnpm clean && tsc -b tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:packages": "pnpm build && publint --pack pnpm --strict && attw --pack . --profile esm-only"
+  },
+  "devDependencies": {
+    "fast-check": "^4.10.2"
+  },
+  "dependencies": {
+    "valibot": "1.5.0"
+  }
+}

@@ -1,0 +1,3 @@
+`Math.random` as $random where {
+  register_diagnostic(span=$random, message="interopkit never uses Math.random: draw random bytes with crypto.getRandomValues, or take a random source from the caller.", severity="error")
+}

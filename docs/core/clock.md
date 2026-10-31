@@ -1,0 +1,46 @@
+# Clock
+
+A library never reads the time: a `Clock` is passed in, so that a host and a test control it. Tokens, logins and events carry
+the times it gives.
+
+```mermaid
+flowchart LR
+  host["Host"] -->|"passes"| clock["Clock<br/>now(): number"]
+  clock --> lib["Library function"]
+  lib -->|"readClock"| ms["whole milliseconds<br/>since 1970-01-01T00:00:00Z"]
+  system["SYSTEM_CLOCK"] -.->|"the usual choice"| clock
+  test["A fixed clock"] -.->|"in a test"| clock
+```
+
+## Quick start
+
+```ts
+import { readClock, SYSTEM_CLOCK } from "@interopkit/core";
+
+const clock = { now: () => 1_700_000_000_000 };
+readClock(clock); // => 1700000000000
+Number.isInteger(readClock(SYSTEM_CLOCK)); // => true
+```
+
+## API
+
+| Export              | Does                                                                                                              |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `Clock`             | The interface: `now()` answers whole milliseconds since 1970-01-01T00:00:00Z, as `Date.now()` does                |
+| `SYSTEM_CLOCK`      | A `Clock` over `Date.now()`. The only place in the packages that reads the system time                            |
+| `checkClock(value)` | Throws `DataError` unless the value is an object with a function `now`; for options a host passes from JavaScript |
+| `readClock(clock)`  | Returns the time, or throws `DataError` unless the clock answers a non-negative safe integer                      |
+
+## Errors
+
+| Error                                                               | When                                                                | What to do                                                       |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `DataError`, `The option clock must be an object`                   | The value is not an object                                          | Pass `{ now }` or `SYSTEM_CLOCK`                                 |
+| `DataError`, `The time of the clock must be a non-negative integer` | `now` answered a fraction, a negative number, `NaN` or another type | Answer whole milliseconds: `Date.now()`, not `performance.now()` |
+
+## Not included
+
+| What                   | Reason                                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| Timers, `sleep`        | A library waits on I/O with a deadline (see [service calls](service.md)), never on a timer of its own |
+| Time zones, formatting | A caller formats the time it needs, such as the ISO 8601 form of a Caliper event                      |

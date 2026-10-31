@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en-US",
+  "useGitignore": true,
+  "files": [
+    "packages/*/src/**",
+    "packages/*/test/*.ts",
+    "packages/*/README.md",
+    "examples/**/*.ts",
+    "docs/*/*.md",
+    "scripts/*",
+    "validation/**",
+    "README.md",
+    "AGENTS.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md"
+  ],
+  "words": ["assesskit", "Bahasa", "cpus", "Fariz", "gradebook", "interopkit", "measurekit", "picklist", "Wakan"]
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "interopkit",
+  "entryPointStrategy": "packages",
+  "entryPoints": ["packages/core"],
+  "readme": "README.md",
+  "out": "docs/api",
+  "plugin": ["typedoc-plugin-mermaid"],
+  "mermaidVersion": "11.17.2",
+  "treatWarningsAsErrors": true,
+  "highlightLanguages": ["bash", "console", "html", "javascript", "json", "jsonc", "typescript", "yaml"]
+}

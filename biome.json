@@ -1,0 +1,355 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "**",
+      "!pnpm-lock.yaml",
+      "!**/CHANGELOG.md",
+      "!docs/api",
+      "!**/test/fixtures",
+      "!scripts/corpus.lock.json",
+      "!scripts/schemas.lock.json"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "complexity": {
+        "noExcessiveCognitiveComplexity": "error"
+      },
+      "correctness": {
+        "noUndeclaredDependencies": "error",
+        "useImportExtensions": {
+          "level": "error",
+          "options": {
+            "extensionMappings": {
+              "ts": "js"
+            }
+          }
+        }
+      },
+      "style": {
+        "noDefaultExport": "error",
+        "noParameterProperties": "error",
+        "noNonNullAssertion": "error",
+        "useConsistentArrayType": {
+          "level": "error",
+          "options": {
+            "syntax": "shorthand"
+          }
+        },
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": {
+            "style": "interface"
+          }
+        },
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "filenameCases": ["kebab-case"],
+            "requireAscii": true
+          }
+        },
+        "useNamingConvention": {
+          "level": "error",
+          "options": {
+            "strictCase": true,
+            "requireAscii": true,
+            "conventions": [
+              {
+                "selector": {
+                  "kind": "typeParameter"
+                },
+                "match": "T(?:[A-Z][a-zA-Z]*)?",
+                "formats": ["PascalCase"]
+              },
+              {
+                "selector": {
+                  "kind": "objectLiteralProperty"
+                },
+                "formats": ["camelCase", "CONSTANT_CASE"]
+              }
+            ]
+          }
+        }
+      },
+      "suspicious": {
+        "noConsole": "error",
+        "noImportCycles": "error"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/*/src/**"],
+      "linter": {
+        "rules": {
+          "security": {
+            "noGlobalEval": "error"
+          },
+          "correctness": {
+            "noNodejsModules": "error"
+          },
+          "style": {
+            "noProcessEnv": "error",
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "fetch": "The libraries use no platform API: a host passes what they need, such as fetch, as an option.",
+                  "XMLHttpRequest": "The libraries use no platform API: a host passes what they need, such as fetch, as an option.",
+                  "WebSocket": "The libraries use no platform API: a host passes what they need, such as fetch, as an option.",
+                  "window": "The libraries use no platform API: a host passes what they need, such as fetch, as an option.",
+                  "document": "The libraries use no platform API: a host passes what they need, such as fetch, as an option.",
+                  "process": "The libraries use no platform API: a host passes what they need, such as fetch, as an option.",
+                  "setTimeout": "The libraries use no platform API: a host passes what they need, such as fetch, as an option.",
+                  "setInterval": "The libraries use no platform API: a host passes what they need, such as fetch, as an option."
+                }
+              }
+            }
+          }
+        }
+      },
+      "plugins": ["./biome/no-math-random.grit"]
+    },
+    {
+      "includes": ["packages/*/src/**", "!packages/core/src/clock.ts"],
+      "plugins": ["./biome/no-clock.grit"]
+    },
+    {
+      "includes": ["packages/core/src/errors.ts", "packages/core/src/call-options.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["./*", "./*/**"],
+                    "message": "errors.ts and call-options.ts depend on nothing."
+                  },
+                  {
+                    "group": ["@interopkit/**"],
+                    "message": "core is the lowest package of the family: it imports no other."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/core/src/checks.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["./*", "./*/**", "!./errors.js"],
+                    "message": "checks.ts depends only on errors.ts."
+                  },
+                  {
+                    "group": ["@interopkit/**"],
+                    "message": "core is the lowest package of the family: it imports no other."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/core/src/clock.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["./*", "./*/**", "!./errors.js", "!./checks.js"],
+                    "message": "clock.ts depends only on errors.ts and checks.ts."
+                  },
+                  {
+                    "group": ["@interopkit/**"],
+                    "message": "core is the lowest package of the family: it imports no other."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/core/src/service.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["./*", "./*/**", "!./errors.js", "!./checks.js", "!./call-options.js"],
+                    "message": "service.ts depends only on errors.ts, checks.ts and call-options.ts."
+                  },
+                  {
+                    "group": ["@interopkit/**"],
+                    "message": "core is the lowest package of the family: it imports no other."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/core/src/index.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@interopkit/**"],
+                    "message": "core is the lowest package of the family: it imports no other."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/tool-integration/src/protocol/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/tool", "**/tool/**", "**/platform", "**/platform/**"],
+                    "message": "protocol/ builds on errors.ts and @interopkit/core only: the tool and platform roles build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/tool-integration/src/tool/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/platform", "**/platform/**"],
+                    "message": "tool/ builds on errors.ts, protocol/ and @interopkit/core only: it never imports platform/."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/tool-integration/src/platform/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/tool", "**/tool/**"],
+                    "message": "platform/ builds on errors.ts, protocol/ and @interopkit/core only: it never imports tool/."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/**", "examples/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          },
+          "correctness": {
+            "useImportExtensions": {
+              "level": "error",
+              "options": {
+                "extensionMappings": {
+                  "ts": "ts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/test/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off"
+          },
+          "correctness": {
+            "noUndeclaredDependencies": "off"
+          }
+        }
+      }
+    }
+  ],
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}
