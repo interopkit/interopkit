@@ -37,9 +37,12 @@
     "NRPS",
     "passback",
     "picklist",
+    "PyJWT",
+    "pyjwt",
     "RSASSA",
     "SSSZ",
     "timeback",
+    "venv",
     "Wakan"
   ]
 }
