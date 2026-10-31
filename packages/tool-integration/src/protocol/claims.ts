@@ -1,4 +1,11 @@
-import { httpsUrlSchema, issueText, mapSchema } from "@interopkit/core/checks";
+import {
+  finiteSchema,
+  httpsUrlSchema,
+  issueText,
+  mapSchema,
+  positiveIntegerSchema,
+  positiveSchema,
+} from "@interopkit/core/checks";
 import * as v from "valibot";
 import { LtiError } from "../errors.js";
 
@@ -6,13 +13,22 @@ import { LtiError } from "../errors.js";
 export type Claims = Readonly<Record<string, unknown>>;
 
 /** The most characters of an identifier of a deployment, a resource link or a user (LTI 1.3 Core sections 5.3.3 and 5.3.5, section 5.3.6). */
-const MAX_IDENTIFIER_LENGTH = 255;
+export const MAX_IDENTIFIER_LENGTH = 255;
 
 /** A string. */
 export const STRING = v.string();
 
 /** A non-empty string of at most 255 characters, such as a `deployment_id` or a `sub`. */
 export const IDENTIFIER = v.pipe(v.string(), v.minLength(1), v.maxLength(MAX_IDENTIFIER_LENGTH));
+
+/** A finite number, such as `exp`. */
+export const NUMBER = finiteSchema;
+
+/** A finite number above 0, such as a maximum score. */
+export const POSITIVE_NUMBER = positiveSchema;
+
+/** A safe integer of at least 1, such as a count. */
+export const POSITIVE_INTEGER = positiveIntegerSchema;
 
 /** A boolean. */
 export const BOOLEAN = v.boolean();
@@ -89,6 +105,9 @@ export const AGS_SCOPE = {
   lineitemReadonly: "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly",
   score: "https://purl.imsglobal.org/spec/lti-ags/scope/score",
 } as const;
+
+/** The role of a user in a launch: a learner (LTI 1.3 Core Appendix A.2.3). */
+export const LEARNER_ROLE = "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner";
 
 /** The message types of a launch that the tool accepts. */
 export const MESSAGE_TYPE = {

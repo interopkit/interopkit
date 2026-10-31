@@ -1,6 +1,7 @@
 import { DataError, readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import {
+  callOptionsOf,
   checkHttpRequest,
   type HttpRequest,
   type HttpResponse,
@@ -8,7 +9,7 @@ import {
   readForm,
   readQuery,
 } from "../protocol/internal.js";
-import { callOptionsOf, checkLoginOptions, findRegistration, type LtiLoginOptions } from "./options.js";
+import { checkLoginOptions, findRegistration, type LtiLoginOptions } from "./options.js";
 import { putDataPage } from "./pages.js";
 import type { PlatformRegistration } from "./registration.js";
 import type { LoginRecord } from "./store.js";

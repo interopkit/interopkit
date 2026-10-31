@@ -1,7 +1,7 @@
 import { type CallOptions, type Clock, checkClock, type Fetch } from "@interopkit/core";
 import { checkAbortSignal, checkFunction, checkRecord, describe } from "@interopkit/core/checks";
 import { LtiError } from "../errors.js";
-import { checkJwksCache, type JwksCache } from "../protocol/internal.js";
+import { callOptionsOf, checkJwksCache, type JwksCache } from "../protocol/internal.js";
 import type { LtiDeployment } from "./launch-model.js";
 import { checkPlatformRegistration, type PlatformRegistration } from "./registration.js";
 import { checkLtiStore, type LtiStore } from "./store.js";
@@ -57,11 +57,6 @@ export function checkToolOptions(options: unknown): asserts options is ToolOptio
   checkFunction(options.registration, "The option registration must be a function");
   checkClock(options.clock);
   if (options.signal !== undefined) checkAbortSignal(options.signal, "The option signal");
-}
-
-/** The options that a port of the host receives: the signal of the call, and nothing else of the tool's. */
-export function callOptionsOf(options: CallOptions): CallOptions {
-  return { signal: options.signal };
 }
 
 /**

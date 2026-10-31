@@ -3,6 +3,9 @@
  *
  * @module
  */
+
+export { checkAllowList } from "./allow-list.js";
+export { callOptionsOf } from "./call-options.js";
 export {
   AGS_SCOPE,
   BOOLEAN,
@@ -10,9 +13,14 @@ export {
   type Claims,
   HTTPS_URL,
   IDENTIFIER,
+  LEARNER_ROLE,
   LTI_VERSION,
+  MAX_IDENTIFIER_LENGTH,
   MESSAGE_TYPE,
+  NUMBER,
   optional,
+  POSITIVE_INTEGER,
+  POSITIVE_NUMBER,
   required,
   STRING,
   STRING_ARRAY,
@@ -21,13 +29,15 @@ export {
 export { escapeHtml, pagePolicy } from "./html.js";
 export {
   checkHttpRequest,
+  errorBody,
   type HttpRequest,
   type HttpResponse,
+  jsonResponse,
   readCookie,
   readForm,
   readQuery,
 } from "./http.js";
 export { checkJwksCache, type JwksCache } from "./jwks.js";
-export { rs256Header, verifyJwt } from "./jwt.js";
+export { hasCanonicalParts, rs256Header, unverifiedClaims, verifyJwt } from "./jwt.js";
 export { isRsaKey } from "./keys.js";
 export { randomToken } from "./random.js";

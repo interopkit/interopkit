@@ -8,7 +8,7 @@
       "entry": ["src/index.ts"]
     },
     "packages/tool-integration": {
-      "entry": ["src/index.ts", "src/tool/index.ts"]
+      "entry": ["src/index.ts", "src/tool/index.ts", "src/platform/index.ts"]
     }
   }
 }

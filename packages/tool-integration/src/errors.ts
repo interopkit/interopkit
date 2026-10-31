@@ -2,7 +2,7 @@ import { InteropkitError } from "@interopkit/core";
 
 /**
  * The HTTP status of the reasons whose status is not 400. An `id_token` that fails validation is 401 (Security Framework
- * 1.1 section 5.1.3); a request that is not bound to a login or a launch of this system is 403.
+ * 1.1 section 5.1.3); a request that is not bound to a login or a launch of this system is 403, which includes a hint that this platform did not issue or has already seen.
  */
 const STATUS_OF_REASON: ReadonlyMap<string, number> = new Map([
   ["token-malformed", 401],
@@ -16,6 +16,14 @@ const STATUS_OF_REASON: ReadonlyMap<string, number> = new Map([
   ["token-expired", 401],
   ["issued-in-future", 401],
   ["nonce-mismatch", 401],
+  ["wrong-origin", 403],
+  ["hint-missing", 403],
+  ["hint-invalid", 403],
+  ["hint-expired", 403],
+  ["hint-used", 403],
+  ["client-mismatch", 403],
+  ["principal-mismatch", 403],
+  ["caller-mismatch", 403],
   ["state-unknown", 403],
   ["state-expired", 403],
   ["state-reused", 403],

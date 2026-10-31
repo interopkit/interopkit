@@ -41,7 +41,7 @@ function isCanonicalBase64Url(part: string): boolean {
  * more loosely, as `atob` does: it takes white space and bits that the encoding ignores, so that one signature has many
  * spellings.
  */
-function hasCanonicalParts(token: string): boolean {
+export function hasCanonicalParts(token: string): boolean {
   const parts = token.split(".");
   return parts.length === 3 && parts.every(isCanonicalBase64Url);
 }
@@ -53,7 +53,7 @@ function hasCanonicalParts(token: string): boolean {
  *
  * @throws `LtiError` (`token-malformed`) when the token does not have the shape.
  */
-function unverifiedClaims(token: string): Claims {
+export function unverifiedClaims(token: string): Claims {
   if (!hasCanonicalParts(token)) {
     throw new LtiError(
       "The token must have three parts separated by dots, each in base64url without padding (RFC 7515 sections 2 and 7.1).",

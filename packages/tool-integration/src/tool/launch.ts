@@ -1,12 +1,19 @@
 import { DataError, readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import { LtiError } from "../errors.js";
-import { checkHttpRequest, type HttpRequest, type HttpResponse, readCookie, readForm } from "../protocol/internal.js";
+import {
+  callOptionsOf,
+  checkHttpRequest,
+  type HttpRequest,
+  type HttpResponse,
+  readCookie,
+  readForm,
+} from "../protocol/internal.js";
 import { verifyIdToken } from "./id-token.js";
 import { readLaunch } from "./launch-claims.js";
 import type { LtiLaunch } from "./launch-model.js";
 import { stateCookieName } from "./login.js";
-import { callOptionsOf, checkLaunchOptions, findRegistration, type LtiLaunchOptions } from "./options.js";
+import { checkLaunchOptions, findRegistration, type LtiLaunchOptions } from "./options.js";
 import { getDataPage, STORED_NONCE, STORED_STATE } from "./pages.js";
 import type { PlatformRegistration } from "./registration.js";
 import { checkLoginRecord, type LoginRecord } from "./store.js";
