@@ -1,0 +1,8 @@
+@interopkit/learning-analytics
+Copyright Fariz Wakan
+
+Caliper Analytics, Sensor API, LTI and 1EdTech are trademarks of 1EdTech Consortium, Inc. This package implements Caliper
+Analytics 1.2 events and a sensor that sends them to an endpoint. It is not certified by 1EdTech and includes no 1EdTech
+files: the JSON-LD context that its tests read is downloaded at a pinned hash and never committed.
+
+The name-based UUIDs of its identifiers follow RFC 9562 and come from the uuid package (MIT).

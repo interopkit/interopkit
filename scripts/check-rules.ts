@@ -115,6 +115,77 @@ export const RULES: readonly Rule[] = [
     replace: 'return new URL(text).protocol !== "";',
     test: "packages/core/test/checks.test.ts",
   },
+  {
+    rule: "The endpoint of the sensor must be https, so that the bearer token never travels in the clear.",
+    file: "packages/learning-analytics/src/send/send-caliper.ts",
+    find: 'checkHttpsUrl(value.endpoint, "The option endpoint");',
+    replace: "",
+    test: "packages/learning-analytics/test/send.test.ts",
+  },
+  {
+    rule: "The bearer token must have the form of RFC 6750, so that it cannot carry a line break into a header.",
+    file: "packages/learning-analytics/src/send/send-caliper.ts",
+    find: "if (!BEARER_TOKEN.test(value.token)) {",
+    replace: "if (false) {",
+    test: "packages/learning-analytics/test/send.test.ts",
+  },
+  {
+    rule: "The sensor sends through callService, so that it follows no redirect and waits no longer than the deadline.",
+    file: "packages/learning-analytics/src/send/send-caliper.ts",
+    find: "await callService({ fetch, timeoutMs, signal },",
+    replace:
+      'await ((_service: unknown, _what: string, url: string, init: object) => fetch(url, { ...init, redirect: "follow" } as never).then(() => ""))({ fetch, timeoutMs, signal },',
+    test: "packages/learning-analytics/test/send.test.ts",
+  },
+  {
+    rule: "An envelope is never sent without an event.",
+    file: "packages/learning-analytics/src/send/send-caliper.ts",
+    find: "if (events.length === 0) throw",
+    replace: "if (false) throw",
+    test: "packages/learning-analytics/test/send.test.ts",
+  },
+  {
+    rule: "The envelope carries the time of this send, in the form of Caliper.",
+    file: "packages/learning-analytics/src/send/send-caliper.ts",
+    find: 'sendTime: caliperTime(sendTime, "The option sendTime"),',
+    replace: "sendTime: String(sendTime),",
+    test: "packages/learning-analytics/test/send.test.ts",
+  },
+  {
+    rule: "An event identifier names the JSON text of its parts, so that parts which a plain join confuses stay apart.",
+    file: "packages/learning-analytics/src/build/identifier.ts",
+    find: "v5(JSON.stringify(checked), CALIPER_NAMESPACE)",
+    replace: 'v5(checked.join("/"), CALIPER_NAMESPACE)',
+    test: "packages/learning-analytics/test/build.test.ts",
+  },
+  {
+    rule: "The namespace of the identifiers never changes.",
+    file: "packages/learning-analytics/src/build/identifier.ts",
+    find: 'CALIPER_NAMESPACE = "4bcd2e8b-df2f-56d9-b6c1-d17e5077c977"',
+    replace: 'CALIPER_NAMESPACE = "4bcd2e8b-df2f-56d9-b6c1-d17e5077c978"',
+    test: "packages/learning-analytics/test/build.test.ts",
+  },
+  {
+    rule: "A part of an identifier that is not finite is refused, because JSON writes it as null.",
+    file: "packages/learning-analytics/src/build/identifier.ts",
+    find: "v.union([v.string(), finiteSchema]",
+    replace: "v.union([v.string(), v.number()]",
+    test: "packages/learning-analytics/test/build.test.ts",
+  },
+  {
+    rule: "A time that Caliper cannot write is refused.",
+    file: "packages/learning-analytics/src/build/time.ts",
+    find: "at < 0 || at > LAST_TIME",
+    replace: "at < -1e300 || at > 1e300",
+    test: "packages/learning-analytics/test/build.test.ts",
+  },
+  {
+    rule: "An event is built only from input that passes the schema, so a malformed identifier, entity or time never reaches an endpoint.",
+    file: "packages/learning-analytics/src/build/build-event.ts",
+    find: "= parseWith(",
+    replace: "= ((_schema: unknown, value: unknown, _label: string) => value as EventInput)(",
+    test: "packages/learning-analytics/test/build.test.ts",
+  },
 ];
 
 /** The folders that a scratch copy leaves out: generated output and installed packages, which it links instead. */

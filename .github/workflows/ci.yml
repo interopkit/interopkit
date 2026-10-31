@@ -50,6 +50,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+      # The tests that read the files that pnpm schemas downloads at their pinned hashes.
+      - run: pnpm schemas
+      - run: pnpm test:corpus
       # The coverage floor of each package (vitest.config.ts) is checked once, on the oldest supported Node.js.
       - if: matrix.node == 22
         run: pnpm test:coverage

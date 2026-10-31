@@ -306,6 +306,46 @@
       }
     },
     {
+      "includes": ["packages/learning-analytics/src/model/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/build", "**/build/**", "**/send", "**/send/**"],
+                    "message": "model/ holds the terms and imports neither build/ nor send/: they build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-analytics/src/build/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/send", "**/send/**"],
+                    "message": "build/ builds on model/ and @interopkit/core only: send/ builds on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["scripts/**", "examples/**"],
       "linter": {
         "rules": {

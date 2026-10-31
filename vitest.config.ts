@@ -33,6 +33,25 @@ export default defineConfig({
   test: {
     projects: [
       nodeProject("core"),
+      nodeProject("learning-analytics"),
+      {
+        // The tests that read the files `pnpm schemas` downloads. `pnpm test` leaves them out and `pnpm test:corpus` runs them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "learning-analytics-corpus",
+          include: ["packages/learning-analytics/test/**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The examples are packages of their own, and a test of each runs its scenario against the sources.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "example-learning-analytics",
+          include: ["examples/learning-analytics/test/**/*.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
       {
         test: {
           name: "scripts",
@@ -46,6 +65,7 @@ export default defineConfig({
       // One floor per package: a gap in the tests of a package fails its own floor and no other.
       thresholds: {
         "packages/core/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
+        "packages/learning-analytics/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
       },
     },
   },

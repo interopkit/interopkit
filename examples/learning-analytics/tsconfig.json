@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node"],
+    "paths": {
+      "@interopkit/core": ["../../packages/core/src/index.ts"],
+      "@interopkit/core/checks": ["../../packages/core/src/checks.ts"],
+      "@interopkit/learning-analytics": ["../../packages/learning-analytics/src/index.ts"]
+    }
+  },
+  "include": ["scenario.ts", "src", "test"]
+}

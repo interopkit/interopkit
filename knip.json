@@ -3,6 +3,9 @@
   "workspaces": {
     "packages/core": {
       "entry": ["src/index.ts", "src/checks.ts"]
+    },
+    "packages/learning-analytics": {
+      "entry": ["src/index.ts"]
     }
   }
 }

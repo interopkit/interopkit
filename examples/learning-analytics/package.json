@@ -1,0 +1,15 @@
+{
+  "name": "@interopkit/example-learning-analytics",
+  "private": true,
+  "type": "module",
+  "description": "A sensor that reports an attempt at an assessment and its grade as Caliper events, and sends them again when the endpoint fails.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node scenario.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@interopkit/core": "workspace:^",
+    "@interopkit/learning-analytics": "workspace:^"
+  }
+}
