@@ -1,6 +1,7 @@
 import type { CallOptions } from "./call-options.js";
 import { checkAbortSignal, checkFunction, checkPositiveInteger, checkRecord } from "./checks.js";
 import { ServiceError } from "./errors.js";
+import { untilAborted } from "./until-aborted.js";
 
 /** The most bytes that the answer of a service may have: a key set or a token response is a few kilobytes. */
 const MAX_RESPONSE_BYTES = 65_536;
@@ -44,19 +45,6 @@ interface Answer {
 /** Ignores the outcome of work that nobody waits for any more. */
 function ignore(): void {}
 
-/**
- * Settles with a promise, or rejects with the reason of a signal as soon as it aborts. The promise runs on: whoever
- * made it must handle what it does afterwards.
- */
-function until<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const abort = (): void => reject(signal.reason);
-    signal.addEventListener("abort", abort, { once: true });
-    promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", abort));
-    if (signal.aborted) abort();
-  });
-}
-
 /** Frees the connection of an answer that arrives after the call stopped waiting for it. */
 function release(pending: Promise<Response> | undefined): void {
   pending?.then((late) => late.body?.cancel(), ignore).catch(ignore);
@@ -72,7 +60,7 @@ async function readText(response: Response, signal: AbortSignal): Promise<Answer
   let finished = false;
   try {
     for (;;) {
-      const { done, value } = await until(reader.read(), signal);
+      const { done, value } = await untilAborted(reader.read(), signal);
       if (done) {
         finished = true;
         return { text: text + decoder.decode(), complete: true };
@@ -138,7 +126,7 @@ export async function callService(
   let answer: Answer;
   try {
     pending = Promise.resolve(call(url, { ...init, redirect: "manual", signal }));
-    response = await until(pending, signal);
+    response = await untilAborted(pending, signal);
     answer = await readText(response, signal);
   } catch (error) {
     if (response === undefined) release(pending);

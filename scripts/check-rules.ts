@@ -62,14 +62,14 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait for the answer ends at the deadline, even when fetch ignores its signal.",
     file: "packages/core/src/service.ts",
-    find: "response = await until(pending, signal);",
+    find: "response = await untilAborted(pending, signal);",
     replace: "response = await pending;",
     test: "packages/core/test/service.test.ts",
   },
   {
     rule: "The wait for the body ends at the deadline, even when the body stalls.",
     file: "packages/core/src/service.ts",
-    find: "await until(reader.read(), signal);",
+    find: "await untilAborted(reader.read(), signal);",
     replace: "await reader.read();",
     test: "packages/core/test/service.test.ts",
   },
@@ -89,7 +89,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A signal that aborts before the wait begins still ends the wait.",
-    file: "packages/core/src/service.ts",
+    file: "packages/core/src/until-aborted.ts",
     find: "if (signal.aborted) abort();",
     replace: "",
     test: "packages/core/test/service.test.ts",

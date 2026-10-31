@@ -130,7 +130,11 @@
       "plugins": ["./biome/no-clock.grit"]
     },
     {
-      "includes": ["packages/core/src/errors.ts", "packages/core/src/call-options.ts"],
+      "includes": [
+        "packages/core/src/errors.ts",
+        "packages/core/src/call-options.ts",
+        "packages/core/src/until-aborted.ts"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -140,7 +144,7 @@
                 "patterns": [
                   {
                     "group": ["./*", "./*/**"],
-                    "message": "errors.ts and call-options.ts depend on nothing."
+                    "message": "errors.ts, call-options.ts and until-aborted.ts depend on nothing."
                   },
                   {
                     "group": ["@interopkit/**"],
@@ -211,8 +215,15 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["./*", "./*/**", "!./errors.js", "!./checks.js", "!./call-options.js"],
-                    "message": "service.ts depends only on errors.ts, checks.ts and call-options.ts."
+                    "group": [
+                      "./*",
+                      "./*/**",
+                      "!./errors.js",
+                      "!./checks.js",
+                      "!./call-options.js",
+                      "!./until-aborted.js"
+                    ],
+                    "message": "service.ts depends only on errors.ts, checks.ts, call-options.ts and until-aborted.ts."
                   },
                   {
                     "group": ["@interopkit/**"],

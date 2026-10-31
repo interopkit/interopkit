@@ -30,7 +30,7 @@ npm install @interopkit/core
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `@interopkit/core`        | `InteropkitError`, the base class; `DataError`, for invalid input; `ServiceError`, for a service that fails, with `status` and `body`                                                                                                      |
 |                           | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                                                                                                                                                         |
-|                           | `CallOptions`, the `signal` that ends a caller's wait; `Fetch`, `ServiceCall`, `callService`, `DEFAULT_TIMEOUT_MS`                                                                                                                         |
+|                           | `CallOptions`, the `signal` that ends a caller's wait, and `untilAborted`; `Fetch`, `ServiceCall`, `callService`, `DEFAULT_TIMEOUT_MS`                                                                                                     |
 | `@interopkit/core/checks` | Checks of one value: `describe`, `isRecord`, `checkRecord`, `checkArray`, `checkFunction`, `checkProperties`, `checkString`, `checkNonEmptyString`, `checkHttpsUrl`, `checkNonNegativeInteger`, `checkPositiveInteger`, `checkAbortSignal` |
 |                           | Schemas: `parseWith`, `issueText`, `guardSchema`, `looseRecord`, `mapSchema`, `methodsSchema`, `finiteSchema`, `httpsUrlSchema`, `nonEmptyStringSchema`, `nonNegativeIntegerSchema`, `positiveIntegerSchema`, `positiveSchema`             |
 
@@ -49,6 +49,7 @@ const body = await callService(
 
 A call that fails rejects with a `ServiceError` whose `status` is the HTTP status, or 0 when the service did not answer. The
 guides say more: [service calls](https://github.com/interopkit/interopkit/blob/main/docs/core/service.md),
+[signals](https://github.com/interopkit/interopkit/blob/main/docs/core/signals.md),
 [checks](https://github.com/interopkit/interopkit/blob/main/docs/core/checks.md),
 [errors](https://github.com/interopkit/interopkit/blob/main/docs/core/errors.md) and
 [clock](https://github.com/interopkit/interopkit/blob/main/docs/core/clock.md).

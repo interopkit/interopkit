@@ -14,6 +14,7 @@ describe("the public API", () => {
         "readClock",
         "ServiceError",
         "SYSTEM_CLOCK",
+        "untilAborted",
       ].sort(),
     );
   });

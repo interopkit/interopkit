@@ -8,3 +8,4 @@ export type { CallOptions } from "./call-options.js";
 export { type Clock, checkClock, readClock, SYSTEM_CLOCK } from "./clock.js";
 export { DataError, InteropkitError, ServiceError } from "./errors.js";
 export { callService, DEFAULT_TIMEOUT_MS, type Fetch, type ServiceCall } from "./service.js";
+export { untilAborted } from "./until-aborted.js";
