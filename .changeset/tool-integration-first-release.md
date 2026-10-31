@@ -1,5 +1,5 @@
 ---
-"@interopkit/tool-integration": major
+"@interopkit/tool-integration": minor
 ---
 
 LTI 1.3 for learning platforms and tools. The tool role is a tool that a platform launches: it answers the platform's login

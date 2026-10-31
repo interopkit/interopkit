@@ -1,5 +1,5 @@
 ---
-"@interopkit/core": major
+"@interopkit/core": minor
 ---
 
 The foundation of `@interopkit/tool-integration` and `@interopkit/learning-analytics`: `InteropkitError`, `DataError` and
