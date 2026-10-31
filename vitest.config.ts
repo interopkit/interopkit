@@ -23,7 +23,7 @@ const nodeProject = (name: string): TestProjectInlineConfiguration => ({
   test: {
     name,
     include: [`packages/${name}/test/**/*.test.ts`],
-    exclude: ["**/*.browser.test.ts", "**/*.corpus.test.ts"],
+    exclude: ["**/*.browser.test.ts", "**/*.corpus.test.ts", "**/spec-examples.test.ts"],
     testTimeout: HANG_LIMIT,
   },
 });
@@ -53,6 +53,15 @@ export default defineConfig({
         },
       },
       nodeProject("tool-integration"),
+      {
+        // The examples of the specifications: `pnpm spec-examples` downloads them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "tool-integration-spec",
+          include: ["packages/tool-integration/test/spec-examples.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
       {
         test: {
           name: "scripts",

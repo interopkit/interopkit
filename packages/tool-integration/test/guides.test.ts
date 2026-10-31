@@ -7,7 +7,7 @@ import { runGuideSamples } from "./guide-samples.js";
 const modules = { "@interopkit/tool-integration": root, "@interopkit/tool-integration/tool": tool };
 const GUIDES = new URL("../../../docs/tool-integration/", import.meta.url);
 const guides = readdirSync(GUIDES).filter(
-  (name) => name.endsWith(".md") && name !== "supported.md" && name !== "architecture.md",
+  (name) => name.endsWith(".md") && !["supported.md", "architecture.md", "spec-gaps.md"].includes(name),
 );
 
 describe("the samples of the documentation", () => {

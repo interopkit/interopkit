@@ -1,0 +1,17 @@
+[
+  {
+    "url": "https://www.imsglobal.org/spec/lti/v1p3",
+    "file": "lti-core-1p3.json",
+    "sha256": "5dbba14cd26c34e441a0b672ee90415f2707b76119844c1c493d35b2153b0484"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/lti-dl/v2p0",
+    "file": "lti-deep-linking-2p0.json",
+    "sha256": "209d7518008ad13343d2b8d7c2464f6975d443c7c1939c7d33d6afe6a1dab55f"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/lti-ags/v2p0",
+    "file": "lti-ags-2p0.json",
+    "sha256": "9ec5fa93be215303da13ea73cb24c040eeb25502c964a8947a0b695ecbaea18e"
+  }
+]

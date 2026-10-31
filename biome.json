@@ -14,7 +14,8 @@
       "!docs/api",
       "!**/test/fixtures",
       "!scripts/corpus.lock.json",
-      "!scripts/schemas.lock.json"
+      "!scripts/schemas.lock.json",
+      "!scripts/spec-examples.lock.json"
     ]
   },
   "formatter": {

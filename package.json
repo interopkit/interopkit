@@ -9,9 +9,10 @@
   "scripts": {
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json",
-    "test": "vitest run --project '!*-corpus*'",
+    "test": "vitest run --project '!*-corpus*' --project '!*-spec'",
     "test:corpus": "vitest run --project '*-corpus*'",
-    "test:coverage": "vitest run --coverage --project '!*-corpus*'",
+    "test:coverage": "vitest run --coverage --project '!*-corpus*' --project '!*-spec'",
+    "test:spec": "vitest run --project '*-spec'",
     "lint": "biome check . && cspell --no-progress",
     "check:standards": "node scripts/check-standards.ts",
     "check:rules": "node scripts/check-rules.ts",
@@ -25,6 +26,8 @@
     "corpus:pin": "node scripts/corpus.ts pin",
     "schemas": "node scripts/schemas.ts fetch",
     "schemas:pin": "node scripts/schemas.ts pin",
+    "spec-examples": "node scripts/spec-examples.ts fetch",
+    "spec-examples:pin": "node scripts/spec-examples.ts pin",
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
     "prepare": "lefthook install"

@@ -57,7 +57,7 @@ A change to a rule of a specification cites its section in the pull request and 
 | `pnpm build`, `pnpm check:packages`, `pnpm docs:api`                            | Always                                                                                  |
 | `pnpm check:rules`                                                              | A change to code that an entry of `scripts/check-rules.ts` names, or to a security rule |
 | `pnpm check:licenses`, `pnpm check:audit`                                       | A change to a dependency                                                                |
-| `pnpm corpus`, `pnpm schemas`                                                   | A change to what the downloaded files are read for                                      |
+| `pnpm corpus`, `pnpm schemas`, `pnpm spec-examples`, `pnpm test:spec`           | A change to what the downloaded files are read for                                      |
 
 - A change to a package goes into the pending release's changeset in `.changeset/`, or a new one made with `pnpm changeset`
   when none is pending ([AGENTS.md](AGENTS.md#releases)).

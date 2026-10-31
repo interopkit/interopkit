@@ -22,11 +22,11 @@ flowchart LR
   analytics -->|"events"| endpoint
 ```
 
-| Package                                                                                                                   | What it is                                                                                                                                                                              |
-| ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`@interopkit/core`](packages/core/README.md)                                                                             | The errors, the checks of arguments, the clock and the service call that the other packages share                                                                                       |
-| [`@interopkit/tool-integration`](packages/tool-integration/README.md)     | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Under development and not yet published; its README says what the current version contains |
-| [`@interopkit/learning-analytics`](https://github.com/interopkit/interopkit/tree/main/packages/learning-analytics#readme) | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Under development and not yet published; its README says what the current version contains                    |
+| Package                                                                                                                   | What it is                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`@interopkit/core`](packages/core/README.md)                                                                             | The errors, the checks of arguments, the clock and the service call that the other packages share                                                                        |
+| [`@interopkit/tool-integration`](packages/tool-integration/README.md)                                                     | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Under development and not yet published; its README says what the current version contains |
+| [`@interopkit/learning-analytics`](https://github.com/interopkit/interopkit/tree/main/packages/learning-analytics#readme) | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Under development and not yet published; its README says what the current version contains     |
 
 To launch tools from your platform, or to be launched by one, use `tool-integration`. To report learning events, use
 `learning-analytics`. Neither needs the other.
@@ -42,22 +42,23 @@ interopkit imports nothing from assesskit or measurekit, and they import nothing
 
 Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pnpm install`.
 
-| Command                | Does                                                                                    |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| `pnpm lint`            | Biome and cspell                                                                        |
-| `pnpm check:standards` | The rules of the engineering standards that a tool can check                            |
-| `pnpm check:rules`     | Removes each security rule from a copy of the code and fails when its test still passes |
-| `pnpm typecheck`       | Every package, and the tooling at the root                                              |
-| `pnpm test`            | Vitest, offline                                                                         |
-| `pnpm test:coverage`   | The tests with the coverage floor of each package                                       |
-| `pnpm knip`            | Unused files, exports and dependencies                                                  |
-| `pnpm build`           | The built packages                                                                      |
-| `pnpm check:packages`  | publint and Are the Types Wrong on the packed packages                                  |
-| `pnpm check:licenses`  | Every production dependency has an allowed license                                      |
-| `pnpm check:audit`     | `pnpm audit` for vulnerabilities of high severity or above                              |
-| `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                  |
-| `pnpm corpus`          | Downloads the pinned repositories that tests read                                       |
-| `pnpm schemas`         | Downloads the pinned specification files that tests read                                |
+| Command                | Does                                                                                                                   |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`            | Biome and cspell                                                                                                       |
+| `pnpm check:standards` | The rules of the engineering standards that a tool can check                                                           |
+| `pnpm check:rules`     | Removes each security rule from a copy of the code and fails when its test still passes                                |
+| `pnpm typecheck`       | Every package, and the tooling at the root                                                                             |
+| `pnpm test`            | Vitest, offline                                                                                                        |
+| `pnpm test:coverage`   | The tests with the coverage floor of each package                                                                      |
+| `pnpm knip`            | Unused files, exports and dependencies                                                                                 |
+| `pnpm build`           | The built packages                                                                                                     |
+| `pnpm check:packages`  | publint and Are the Types Wrong on the packed packages                                                                 |
+| `pnpm check:licenses`  | Every production dependency has an allowed license                                                                     |
+| `pnpm check:audit`     | `pnpm audit` for vulnerabilities of high severity or above                                                             |
+| `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                                                 |
+| `pnpm corpus`          | Downloads the pinned repositories that tests read                                                                      |
+| `pnpm schemas`         | Downloads the pinned specification files that tests read                                                               |
+| `pnpm spec-examples`   | Downloads the JSON examples of the LTI specifications at pinned hashes; `pnpm test:spec` runs the tests that read them |
 
 [AGENTS.md](AGENTS.md) states the conventions, [CONTRIBUTING.md](CONTRIBUTING.md) the process and
 [SECURITY.md](SECURITY.md) how to report a vulnerability and how to deploy safely.

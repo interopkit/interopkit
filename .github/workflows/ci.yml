@@ -69,3 +69,17 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:rules
+
+  # The tests that read the examples of the specifications, downloaded at the hashes that scripts/spec-examples.lock.json pins.
+  spec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm spec-examples
+      - run: pnpm test:spec
