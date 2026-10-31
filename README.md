@@ -50,6 +50,7 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `pnpm typecheck`       | Every package, and the tooling at the root                                                                             |
 | `pnpm test`            | Vitest, offline                                                                                                        |
 | `pnpm test:coverage`   | The tests with the coverage floor of each package                                                                      |
+| `pnpm test:browser`    | The tests of the client-side login in Chromium, Firefox and WebKit; run `pnpm exec playwright install` first           |
 | `pnpm knip`            | Unused files, exports and dependencies                                                                                 |
 | `pnpm build`           | The built packages                                                                                                     |
 | `pnpm check:packages`  | publint and Are the Types Wrong on the packed packages                                                                 |

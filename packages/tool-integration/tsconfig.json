@@ -10,5 +10,6 @@
       "@interopkit/core/checks": ["../core/src/checks.ts"]
     }
   },
-  "include": ["src", "test"]
+  "include": ["src", "test"],
+  "exclude": ["test/**/*.browser.test.ts"]
 }

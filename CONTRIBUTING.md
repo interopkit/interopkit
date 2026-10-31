@@ -51,13 +51,14 @@ A change to a rule of a specification cites its section in the pull request and 
 
 ## Before opening a pull request
 
-| Run                                                                             | When                                                                                    |
-| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `pnpm lint`, `pnpm check:standards`, `pnpm typecheck`, `pnpm test`, `pnpm knip` | Always                                                                                  |
-| `pnpm build`, `pnpm check:packages`, `pnpm docs:api`                            | Always                                                                                  |
-| `pnpm check:rules`                                                              | A change to code that an entry of `scripts/check-rules.ts` names, or to a security rule |
-| `pnpm check:licenses`, `pnpm check:audit`                                       | A change to a dependency                                                                |
-| `pnpm corpus`, `pnpm schemas`, `pnpm spec-examples`, `pnpm test:spec`           | A change to what the downloaded files are read for                                      |
+| Run                                                                             | When                                                                                                                           |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`, `pnpm check:standards`, `pnpm typecheck`, `pnpm test`, `pnpm knip` | Always                                                                                                                         |
+| `pnpm build`, `pnpm check:packages`, `pnpm docs:api`                            | Always                                                                                                                         |
+| `pnpm check:rules`                                                              | A change to code that an entry of `scripts/check-rules.ts` names, or to a security rule                                        |
+| `pnpm test:browser`                                                             | A change to the pages of the client-side login, or to code that must run in a browser; it needs `pnpm exec playwright install` |
+| `pnpm check:licenses`, `pnpm check:audit`                                       | A change to a dependency                                                                                                       |
+| `pnpm corpus`, `pnpm schemas`, `pnpm spec-examples`, `pnpm test:spec`           | A change to what the downloaded files are read for                                                                             |
 
 - A change to a package goes into the pending release's changeset in `.changeset/`, or a new one made with `pnpm changeset`
   when none is pending ([AGENTS.md](AGENTS.md#releases)).

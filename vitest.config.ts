@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { playwright } from "@vitest/browser-playwright";
 import { defineConfig, type TestProjectInlineConfiguration } from "vitest/config";
 
 /**
@@ -16,6 +17,21 @@ const SOURCES = [
  * judge speed: a host that runs many test runs at once takes tens of times as long as a quiet one.
  */
 const HANG_LIMIT = 60_000;
+
+/**
+ * The engines of the browser tests. Vitest names the instances, so each project has its own. Firefox runs one file at a
+ * time: the mouse of a page can reach another page of the same Firefox that runs at once.
+ */
+const browser = () => ({
+  enabled: true,
+  headless: true,
+  provider: playwright(),
+  instances: [
+    { browser: "chromium" as const },
+    { browser: "firefox" as const, fileParallelism: false },
+    { browser: "webkit" as const },
+  ],
+});
 
 /** The Node tests of a package, which run against the sources of the packages it depends on. */
 const nodeProject = (name: string): TestProjectInlineConfiguration => ({
@@ -53,6 +69,15 @@ export default defineConfig({
         },
       },
       nodeProject("tool-integration"),
+      {
+        // The pages of the client-side login, which run in the engines of the browsers.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "tool-integration-browser",
+          include: ["packages/tool-integration/test/**/*.browser.test.ts"],
+          browser: browser(),
+        },
+      },
       {
         // The examples of the specifications: `pnpm spec-examples` downloads them.
         resolve: { alias: SOURCES },
