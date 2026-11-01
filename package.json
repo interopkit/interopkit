@@ -31,7 +31,7 @@
     "spec-examples:pin": "node scripts/spec-examples.ts pin",
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
-    "prepare": "if git rev-parse --git-dir >/dev/null 2>&1; then lefthook install; fi",
+    "prepare": "node scripts/prepare.ts",
     "compat": "node compat/check.ts"
   },
   "devDependencies": {

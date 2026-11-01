@@ -22,7 +22,7 @@ flowchart LR
 
 ## Setup
 
-Node.js 22.18+ and pnpm 12 are required. One command sets the repository up, and it also installs the Lefthook git hooks:
+Node.js 22.18+ and pnpm 12 are required. One command sets the repository up, and in a git clone it also installs the Lefthook git hooks (`scripts/prepare.ts`, which runs the same on Windows and on POSIX):
 
 ```bash
 pnpm install
