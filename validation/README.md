@@ -10,9 +10,10 @@ flowchart LR
   test --> ci["CI runs the tests,<br/>never the scripts"]
 ```
 
-| Script          | Writes                                                                                                        | Needs                                                    |
-| --------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `lti_tokens.py` | Launch tokens that PyJWT signs: one that verifies, and twelve that the tool must refuse, each with the reason | `PyJWT` and `cryptography`, pinned in `requirements.txt` |
+| Script           | Writes                                                                                                                           | Needs                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `lti_tokens.py`  | Launch tokens that PyJWT signs: one that verifies, and twelve that the tool must refuse, each with the reason                    | `PyJWT` and `cryptography`, pinned in `requirements.txt` |
+| `caliper_ids.py` | The name-based UUIDs of version 5 that Python's `uuid` computes, which `mintUrn` must equal, with the worked example of RFC 9562 | The standard library of Python                           |
 
 Run it from the repository root in a virtual environment:
 
@@ -20,6 +21,7 @@ Run it from the repository root in a virtual environment:
 python3 -m venv validation/.venv
 validation/.venv/bin/pip install -r validation/requirements.txt
 validation/.venv/bin/python validation/lti_tokens.py
+validation/.venv/bin/python validation/caliper_ids.py
 ```
 
 The script generates the RSA key at each run, so the signatures differ between runs; the cases and the reasons do not. Commit

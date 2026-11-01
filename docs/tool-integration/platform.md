@@ -248,6 +248,21 @@ host that keeps scores keeps a score unless a later one is kept, and treats an e
 | `DataError`                | An argument, a request or an option has the wrong shape                    |
 | The error of a port        | The host's `registration`, `check`, `client`, `once` or `onScore` rejected |
 
+## Data flows
+
+| Data                                                       | Comes from                                 | Goes to                                                              | Kept by the package                          |
+| ---------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------- | -------------------------------------------- |
+| The `principal`, the `resource`, the `title`, the `custom` | The host's `ToolLaunch`                    | The tool, in the login URL and the `id_token`; signed, not encrypted | No                                           |
+| The single-use identifiers of hints and assertions         | The signed hints and the tool's assertions | The host's `once`                                                    | Only in the host's store, until their expiry |
+| The access token and the line item identifier              | Sealed with the hint key                   | The tool, which sends them back                                      | No                                           |
+| A score                                                    | The tool                                   | The host's `onScore`, with the resource and the checked score        | No                                           |
+
+## Differences from the references
+
+None of the references that were read has a platform role (see [architecture](architecture.md)), so the platform handlers are
+checked against the specifications and the tool role of this package. Where a specification disagrees with an example, see
+[spec-gaps](spec-gaps.md).
+
 ## Not included
 
 | What                                                                                             | Reason                                                                      |

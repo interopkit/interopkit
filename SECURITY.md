@@ -37,15 +37,16 @@ flowchart LR
 
 Every call to a service goes through `callService` ([service calls](docs/core/service.md)).
 
-| Threat                                                                                       | Control                                                                                                                                                |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A service redirects from HTTPS to another scheme, or to an address the caller did not choose | `redirect` is `"manual"`, and any 3xx answer or opaque redirect is a `ServiceError`; no redirect is followed                                           |
-| A service that never answers holds a caller                                                  | `timeoutMs` bounds the request and the whole body; every wait is raced against the deadline, so a `fetch` that ignores its signal cannot hold the call |
-| A service that sends a huge body exhausts memory                                             | The body is read in chunks and counted; more than 65,536 bytes is a `ServiceError` and the reader is cancelled                                         |
-| A late answer keeps a connection open                                                        | The body of an answer that arrives after the call gave up is cancelled                                                                                 |
-| A caller that leaves keeps a request running                                                 | `signal` ends the wait with its `reason`; the request in flight may have reached the service, and the docs say how to resend safely                    |
-| A URL that is not `https`                                                                    | `checkHttpsUrl` and `httpsUrlSchema` refuse it where the standards require `https`                                                                     |
-| A global `fetch` that breaks when called as a method                                         | `fetch` is called as a bare function                                                                                                                   |
+| Threat                                                                                         | Control                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A service redirects from HTTPS to another scheme, or to an address the caller did not choose   | `redirect` is `"manual"`, and any 3xx answer or opaque redirect is a `ServiceError`; no redirect is followed                                                                                                                                                   |
+| A service that never answers holds a caller                                                    | `timeoutMs` bounds the request and the whole body; every wait is raced against the deadline, so a `fetch` that ignores its signal cannot hold the call                                                                                                         |
+| A service that sends a huge body exhausts memory                                               | The body is read in chunks and counted; more than 65,536 bytes is a `ServiceError` and the reader is cancelled                                                                                                                                                 |
+| A late answer keeps a connection open                                                          | The body of an answer that arrives after the call gave up is cancelled                                                                                                                                                                                         |
+| A caller that leaves keeps a request running                                                   | `signal` ends the wait with its `reason`; the request in flight may have reached the service, and the docs say how to resend safely                                                                                                                            |
+| A registered platform or tool names an internal address as a URL (server-side request forgery) | Only `https`, no redirect and a size limit bound the reach; the packages cannot tell a private address from a public one. A multi-tenant host passes a `fetch` that refuses private and link-local addresses, and treats `ServiceError.body` as untrusted text |
+| A URL that is not `https`                                                                      | `checkHttpsUrl` and `httpsUrlSchema` refuse it where the standards require `https`                                                                                                                                                                             |
+| A global `fetch` that breaks when called as a method                                           | `fetch` is called as a bare function                                                                                                                                                                                                                           |
 
 ## Learning analytics
 
@@ -70,6 +71,7 @@ above apply.
 - Events hold times, IRIs and scores. A host that sends a response or an answer key builds that event itself and decides
   whether the endpoint may know it.
 - A `ServiceError` carries the endpoint's answer as `body`: log it as untrusted text.
+
 ## The tool role
 
 A learning platform launches the tool through the browser of the user, so the launch is untrusted until `ltiLaunch` has
@@ -90,6 +92,12 @@ platform's key, to the tool's client and deployment, and to one use.
 - The platform's key set is fetched from the URL of a registration, over HTTPS, through `callService`. A token cannot choose the
   URL, and only RS256 with an RSA key of 2,048 bits or more verifies. Past `ttlSeconds` a failed fetch fails the launch, and a
   stale key is never used.
+- **Server-side requests.** The key set, the token endpoint and the line item URL come from a registration or from a claim of a
+  registered platform. Each must be `https`, and a redirect is refused, yet an `https` URL may still name an internal host: in a
+  multi-tenant tool a platform administrator could point the tool's server, with a bearer token, at one. Pass a `fetch` that
+  refuses private and link-local addresses, and treat `ServiceError.body` as untrusted text, since it returns the answer.
+- **Login initiation is open.** `ltiLogin` answers before anything is proven and writes one record per request, which lives 600
+  seconds. Limit the rate of requests to the login URL and the size of the store.
 - The tool's private key is the host's to keep. It signs client assertions and Deep Linking responses, which expire after five
   minutes.
 - A score is not idempotent: AGS requires a strictly later `timestamp` for each update of a line item and user, and a platform
@@ -111,38 +119,42 @@ them ([platform role](docs/tool-integration/platform.md)).
   token to its use, only `HS256` verifies, the spelling must be canonical, and WebCrypto compares the MAC in constant time. They are
   signed and not encrypted: the tool reads them, so they hold no secret.
 - **Client assertions.** RS256 only, the audience is the token endpoint, the lifetime is at most 3,600 seconds, and a `jti` is
-  accepted once. A `once` that rejects fails closed.
+  accepted once and remembered through the clock-skew leeway after the assertion's expiry. A `once` that rejects fails closed.
 - **Scores.** A tool reads and posts only to its own line item, only for the user of the launch, with the scopes the token holds.
   The platform does not order scores: the receiver keeps a score unless a later one is kept (AGS 3.4.9).
-- `ToolLaunch.resource` is signed and not encrypted. It holds no secret and no personal data.
+- `ToolLaunch.resource`, `title` and `custom` are signed and not encrypted, and they travel in the login URL, so they are limited.
+  They hold no secret and no personal data.
 - Keep the private key and the hint key in the host's key store. Rotating the hint key invalidates the hints, line item URLs and
   access tokens that are outstanding.
 
 ## Default limits
 
-Every limit is a value that a caller can replace per call with the option named in its row; a limit left out keeps its
-default. Each package adds its rows when it adds the control.
+A limit that has an option in its row can be replaced per call with that option, and a limit left out keeps its default. A row
+that says "not replaceable" is fixed. Each package adds its rows when it adds the control.
 
-| Package              | Limit                                                                    | Default                  | Unit         | Applies to                                                                                 |
-| -------------------- | ------------------------------------------------------------------------ | ------------------------ | ------------ | ------------------------------------------------------------------------------------------ |
-| `core`               | `timeoutMs`                                                              | 10,000                   | milliseconds | One call to a service: the request and its whole body (`DEFAULT_TIMEOUT_MS`)               |
-| `core`               | most bytes of an answer                                                  | 65,536                   | bytes        | The body of the answer of a service; not replaceable                                       |
-| `core`               | `redirect`                                                               | `"manual"`               |              | Every call to a service; a 3xx answer is refused, and this is not replaceable              |
-| `learning-analytics` | `timeoutMs`                                                              | 10,000                   | milliseconds | One call of `sendCaliper` (`DEFAULT_CALIPER_TIMEOUT_MS`)                                   |
-| `learning-analytics` | latest time                                                              | 9999-12-31T23:59:59.999Z |              | The latest time that `caliperTime` writes, after 1970-01-01T00:00:00.000Z; not replaceable |
-| `tool-integration`   | `ttlSeconds` of `createJwksCache`                                        | 3,600                    | seconds      | How long a key set stays cached                                                            |
-| `tool-integration`   | `refreshSeconds` of `createJwksCache`                                    | 60                       | seconds      | The least time between two fetches of a key set                                            |
-| `tool-integration`   | `timeoutMs` of `createJwksCache`, `ltiAccessToken` and `publishAgsScore` | 10,000                   | milliseconds | One call to the platform                                                                   |
-| `tool-integration`   | Lifetime of a login                                                      | 600                      | seconds      | The time in which a launch must answer a login; not replaceable                            |
-| `tool-integration`   | Lifetime of a client assertion and of a Deep Linking response            | 300                      | seconds      | `exp` after `iat`; not replaceable                                                         |
-| `tool-integration`   | Leeway for clock skew                                                    | 60                       | seconds      | `exp` and `iat` of an `id_token`; not replaceable                                          |
-| `tool-integration`   | Lifetime of a hint and of an `id_token`                                  | 300                      | seconds      | `exp` after `iat`; not replaceable                                                         |
-| `tool-integration`   | Longest accepted lifetime of a client assertion                          | 3,600                    | seconds      | `exp` after `iat`; not replaceable                                                         |
-| `tool-integration`   | Lifetime of an access token                                              | 3,600                    | seconds      | Not replaceable                                                                            |
-| `tool-integration`   | Most characters of `ToolLaunch.resource`                                 | 1,024                    | characters   | The query of the login URL; not replaceable                                                |
-| `tool-integration`   | `toolFrame` of `platformStorage`                                         | `"lti-tool"`             |              | The frame that the storage page answers                                                    |
-| `tool-integration`   | `storageTarget` of the login                                             | `"lti-storage"`          |              | The frame that shows the storage page                                                      |
-| `tool-integration`   | Storage of a tool                                                        | 4,096 bytes and 500 keys |              | One origin, in the storage page; not replaceable                                           |
+| Package              | Limit                                                                    | Default                           | Unit         | Applies to                                                                                                               |
+| -------------------- | ------------------------------------------------------------------------ | --------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `core`               | `timeoutMs`                                                              | 10,000                            | milliseconds | One call to a service: the request and its whole body (`DEFAULT_TIMEOUT_MS`)                                             |
+| `core`               | most bytes of an answer                                                  | 65,536                            | bytes        | The body of the answer of a service; not replaceable                                                                     |
+| `core`               | `redirect`                                                               | `"manual"`                        |              | Every call to a service; a 3xx answer is refused, and this is not replaceable                                            |
+| `learning-analytics` | `timeoutMs`                                                              | 10,000                            | milliseconds | One call of `sendCaliper` (`DEFAULT_CALIPER_TIMEOUT_MS`)                                                                 |
+| `learning-analytics` | latest time                                                              | 9999-12-31T23:59:59.999Z          |              | The latest time that `caliperTime` writes, after 1970-01-01T00:00:00.000Z; not replaceable                               |
+| `tool-integration`   | `ttlSeconds` of `createJwksCache`                                        | 3,600                             | seconds      | How long a key set stays cached                                                                                          |
+| `tool-integration`   | `refreshSeconds` of `createJwksCache`                                    | 60                                | seconds      | The least time between two fetches of a key set that answers; a set that fails is fetched on every request that needs it |
+| `tool-integration`   | `timeoutMs` of `createJwksCache`, `ltiAccessToken` and `publishAgsScore` | 10,000                            | milliseconds | One call to the platform                                                                                                 |
+| `tool-integration`   | Lifetime of a login                                                      | 600                               | seconds      | The time in which a launch must answer a login; not replaceable                                                          |
+| `tool-integration`   | Lifetime of a client assertion and of a Deep Linking response            | 300                               | seconds      | `exp` after `iat`; not replaceable                                                                                       |
+| `tool-integration`   | Leeway for clock skew                                                    | 60                                | seconds      | `exp`, `nbf` and `iat` of an `id_token` and of a client assertion; not replaceable                                       |
+| `tool-integration`   | Lifetime of a hint and of an `id_token`                                  | 300                               | seconds      | `exp` after `iat`; not replaceable                                                                                       |
+| `tool-integration`   | Longest accepted lifetime of a client assertion                          | 3,600                             | seconds      | `exp` after `iat`; not replaceable                                                                                       |
+| `tool-integration`   | Lifetime of an access token                                              | 3,600                             | seconds      | Not replaceable                                                                                                          |
+| `tool-integration`   | Most characters of `ToolLaunch.resource`                                 | 1,024                             | characters   | The query of the login URL; not replaceable                                                                              |
+| `tool-integration`   | Most characters of `ToolLaunch.title`                                    | 255                               | characters   | The query of the login URL; not replaceable                                                                              |
+| `tool-integration`   | Most characters of the names and values of `ToolLaunch.custom`           | 2,048                             | characters   | The query of the login URL; not replaceable                                                                              |
+| `tool-integration`   | Smallest key                                                             | 2,048 bits (RSA), 256 bits (HMAC) |              | The keys of a platform, a tool and a registration; not replaceable                                                       |
+| `tool-integration`   | `toolFrame` of `platformStorage`                                         | `"lti-tool"`                      |              | The frame that the storage page answers                                                                                  |
+| `tool-integration`   | `storageTarget` of the login                                             | `"lti-storage"`                   |              | The frame that shows the storage page                                                                                    |
+| `tool-integration`   | Storage of a tool                                                        | 4,096 bytes and 500 keys          |              | One origin, in the storage page; not replaceable                                                                         |
 
 ## Runtime dependencies
 

@@ -50,14 +50,14 @@ In a host, `fetch` is the global one: `{ fetch: globalThis.fetch, timeoutMs: DEF
 
 ## Rules
 
-| Rule                                    | Value                                                                           |
-| --------------------------------------- | ------------------------------------------------------------------------------- |
-| Deadline                                | `timeoutMs`, for the request and the whole body together                        |
-| Most bytes of an answer                 | 65,536, then the reader is cancelled                                            |
-| Redirects                               | Never followed: `redirect` is `"manual"`, and any 3xx answer is an error        |
-| `fetch` is called                       | As a bare function, so that a global `fetch` works whatever its receiver rules  |
-| A `fetch` that ignores its signal       | Cannot hold the call past `timeoutMs`: every wait is raced against the deadline |
-| The body of an answer that arrives late | Cancelled, so the connection is freed                                           |
+| Rule                                    | Value                                                                                                                                 |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Deadline                                | `timeoutMs`, for the request and the whole body together                                                                              |
+| Most bytes of an answer                 | 65,536, then the reader is cancelled; `ServiceError.body` holds the bytes up to the limit, whatever the chunks                        |
+| Redirects                               | Never followed: `redirect` is `"manual"`, and any 3xx answer, or an answer that a `fetch` followed anyway (`redirected`), is an error |
+| `fetch` is called                       | As a bare function, so that a global `fetch` works whatever its receiver rules                                                        |
+| A `fetch` that ignores its signal       | Cannot hold the call past `timeoutMs`: every wait is raced against the deadline                                                       |
+| The body of an answer that arrives late | Cancelled, so the connection is freed                                                                                                 |
 
 ## Failure paths
 
@@ -92,6 +92,13 @@ In a host, `fetch` is the global one: `{ fetch: globalThis.fetch, timeoutMs: DEF
 | Size                              | Unbounded                                 | 65,536 bytes                                  |
 | A non-2xx answer                  | A `Response`                              | A `ServiceError` with the status and the body |
 | A `fetch` that ignores its signal | The caller waits                          | The call ends at the deadline                 |
+
+## Data flows
+
+| Data                           | Comes from  | Goes to                                                                 | Kept by the package |
+| ------------------------------ | ----------- | ----------------------------------------------------------------------- | ------------------- |
+| The URL, the headers, the body | The caller  | The `fetch` that the caller passes                                      | No                  |
+| The answer of the service      | The `fetch` | The caller, as the text of a successful body, or as `ServiceError.body` | No                  |
 
 ## Not included
 

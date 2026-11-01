@@ -215,7 +215,9 @@ A host answers with the `status` of an `LtiError`, which the table of errors bel
 
 ### The launch
 
-`ltiLaunch` returns an `LtiLaunch`, a union by `messageType`.
+`ltiLaunch` returns an `LtiLaunch` or an `HttpResponse`: the second post of the storage path is answered with the verification page, which the route sends to the browser as it is. Tell them apart with `"status" in result`, which is true for the `HttpResponse`; an `LtiLaunch` has a `messageType`. A launch that fails a check does not return: it throws an `LtiError` with a `reason` and a `status`, and the route answers with them.
+
+An `LtiLaunch` is a union by `messageType`.
 
 | Property                             | Meaning                                                                                                                  |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
@@ -320,16 +322,16 @@ token. `cache.keySet(url, options)` returns the function that resolves the publi
 `jwtVerify` of jose takes it. The `signal` of `options` ends the wait of the caller that holds the function; the fetch is shared
 work and runs on to its own timeout.
 
-| Option           | Meaning                                                     |
-| ---------------- | ----------------------------------------------------------- |
-| `fetch`          | The `fetch` that gets the key sets                          |
-| `ttlSeconds`     | How long a set stays cached. Default: `3600`.               |
-| `refreshSeconds` | The least time between two fetches of a set. Default: `60`. |
-| `timeoutMs`      | The most time one fetch may take. Default: `10000`.         |
+| Option           | Meaning                                                                  |
+| ---------------- | ------------------------------------------------------------------------ |
+| `fetch`          | The `fetch` that gets the key sets                                       |
+| `ttlSeconds`     | How long a set stays cached. Default: `3600`.                            |
+| `refreshSeconds` | The least time between two fetches of a set that answers. Default: `60`. |
+| `timeoutMs`      | The most time one fetch may take. Default: `10000`.                      |
 
 A set that is older than `ttlSeconds` is fetched again. A `kid` that the cached set lacks fetches it again only after
 `refreshSeconds` (Security Framework section 6.4: the platform adds a rotated key under a new `kid`), so a token with an invented
-`kid` cannot make the tool fetch on every request. Requests that wait for one fetch share it. The set resolves the key that
+`kid` cannot make the tool fetch on every request while the platform's key set answers. A key set that fails is not held back: each request that needs it fetches it again, so limit the rate of requests to the launch URL. Requests that wait for one fetch share it. The set resolves the key that
 has the `kid` and is meant for signing with RS256 (`use` is `sig` or absent, `alg` is `RS256` or absent, `key_ops` has
 `verify` when present); a `kid` that two keys share, and a set that is not a JWK Set (RFC 7517 section 5), are refused. A key of
 fewer than 2,048 bits does not verify (RFC 7518 section 3.3). The cache reads the time of the system, as jose does.
@@ -409,6 +411,28 @@ except that the key set cache of jose reads the time of the system.
 | `LtiError`, other reasons                                                                                                                                                                                             | The platform broke the protocol, or a scope or a line item is not available | 400                                            |
 | `DataError`                                                                                                                                                                                                           | An argument or a request has the wrong shape                                | 400                                            |
 | `ServiceError`                                                                                                                                                                                                        | The platform did not answer, or answered with an error                      | 502 or 504 for a host that proxies the failure |
+
+## Data flows
+
+| Data                                                        | Comes from                         | Goes to                                                            | Kept by the package                    |
+| ----------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------ | -------------------------------------- |
+| The claims of a launch: `sub`, roles, names, e-mail, custom | The platform's `id_token`          | The `LtiLaunch` that `ltiLaunch` returns to the host               | No                                     |
+| `state` and `nonce` of a login                              | `ltiLogin`                         | The host's `LtiStore`, and the browser (the cookie or the storage) | Only in the store, until used or 600 s |
+| The client assertion                                        | Signed with the tool's private key | The platform's token endpoint                                      | No                                     |
+| The access token                                            | The platform's token endpoint      | The score service and the line item, in the `Authorization` header | No: each call asks for its own         |
+| A score                                                     | The host                           | The platform's score service                                       | No                                     |
+| The answer of a service that failed                         | The platform                       | `ServiceError.body`, to the host: treat it as untrusted text       | No                                     |
+
+## Differences from the references
+
+The references were read for what they do where a specification leaves room; [spec-gaps](spec-gaps.md) lists where the text and
+an example disagree.
+
+| Reference                               | What it does                                                                            | What this package does                                                           |
+| --------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| PyLTI1p3                                | Does not read `expires_in` of a token response; names the audience with `auth_audience` | Reads `expires_in` when it is there; the registration has an optional `audience` |
+| PyLTI1p3                                | Appends `/scores` to the line item URL after handling a trailing slash                  | The same: one trailing slash is dropped first                                    |
+| A launch from Canvas, published in 2020 | Sends `null` for a title and a description, and a number in `custom`                    | Reads `null` as absent and a number or a boolean as its text                     |
 
 ## Not included
 

@@ -1,5 +1,7 @@
 # @interopkit/tool-integration
 
+Version 0.1 is not the whole of LTI Advantage: both roles have the launch, access tokens and the score service of Assignment and Grade Services, the tool role also has Deep Linking, and neither role has Names and Role Provisioning or Dynamic Registration ([what is supported](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/supported.md)).
+
 LTI 1.3 for learning platforms and tools, in both roles. In the tool role your application is launched by a learning
 platform: it answers its login, validates the launch, answers a Deep Linking request, and publishes scores back to the platform's
 gradebook. In the platform role your application launches tools: it starts their login, issues the `id_token`, publishes its key

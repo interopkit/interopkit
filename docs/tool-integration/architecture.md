@@ -8,12 +8,16 @@ flowchart BT
   core["@interopkit/core<br/>errors, checks, clock, service calls, signals"]
   proto["protocol/<br/>claims, jwt, key sets, http, pages"]
   tool["tool/<br/>login, launch, Deep Linking,<br/>access tokens, scores"]
+  platformRole["platform/<br/>login, authorization, tokens,<br/>line items, scores"]
   host["Your application"]
   proto --> core
   tool --> proto
+  platformRole --> proto
   host -->|"requests, ports"| tool
+  host -->|"requests, ports"| platformRole
   host -.->|"HttpRequest, HttpResponse,<br/>createJwksCache, LtiError"| proto
   tool <-->|"HTTP"| platform["A learning platform"]
+  platformRole <-->|"HTTP"| tools["A tool"]
 ```
 
 | Layer       | Holds                                                                                                                                                  | Imports                                      |
@@ -21,9 +25,10 @@ flowchart BT
 | `errors.ts` | `LtiError`, with a kebab-case `reason` and an HTTP `status`                                                                                            | `@interopkit/core`                           |
 | `protocol/` | What the roles share: the claims and their schemas, the JWT check, the key set cache, the request and answer types, the pages of the client-side login | `errors.ts`, `@interopkit/core`              |
 | `tool/`     | The tool role                                                                                                                                          | `errors.ts`, `protocol/`, `@interopkit/core` |
+| `platform/` | The platform role                                                                                                                                      | `errors.ts`, `protocol/`, `@interopkit/core` |
 
-`tool/` and the platform role never import each other, and `protocol/` imports neither. Biome enforces the rows. The platform
-role has its own subpath, `@interopkit/tool-integration/platform`.
+`tool/` and `platform/` never import each other, and `protocol/` imports neither. Biome enforces the rows. The tool role is the
+subpath `@interopkit/tool-integration/tool`, and the platform role is `@interopkit/tool-integration/platform`.
 
 ## Principles
 

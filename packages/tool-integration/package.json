@@ -1,13 +1,12 @@
 {
   "name": "@interopkit/tool-integration",
   "version": "0.0.0",
-  "description": "LTI 1.3 for learning platforms and tools, in both roles: launch, Deep Linking, access tokens and score publishing, over plain requests and answers, with ports for storage, registrations, fetch and time.",
+  "description": "LTI 1.3 for learning platforms and tools: launch, access tokens and score publishing in both roles, and Deep Linking in the tool role, over plain requests and answers, with ports for storage, registrations, fetch and time. Not the whole of LTI Advantage.",
   "keywords": [
     "interopkit",
     "interoperability",
     "learning-platform",
     "learning-tools-interoperability",
-    "lti-advantage",
     "deep-linking",
     "assignment-and-grade-services",
     "openid-connect",

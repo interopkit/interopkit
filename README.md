@@ -4,6 +4,8 @@ TypeScript packages for learning-platform interoperability: the launches, grades
 learning platform and a tool (LTI 1.3), and the learning analytics events that a system reports (Caliper Analytics 1.2).
 The packages know nothing of QTI or of any product. A host passes in its storage, its `fetch` and its clock.
 
+Version 0.1 is not the whole of LTI Advantage: both roles have the launch, access tokens and the score service of Assignment and Grade Services, the tool role also has Deep Linking, and neither role has Names and Role Provisioning or Dynamic Registration ([what is supported](docs/tool-integration/supported.md)).
+
 ```mermaid
 flowchart LR
   host["Your application<br/>routes, storage, accounts"]
@@ -22,16 +24,16 @@ flowchart LR
   analytics -->|"events"| endpoint
 ```
 
-| Package                                                                                                                   | What it is                                                                                                                                                               |
-| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`@interopkit/core`](packages/core/README.md)                                                                             | The errors, the checks of arguments, the clock and the service call that the other packages share                                                                        |
-| [`@interopkit/tool-integration`](packages/tool-integration/README.md)                                                     | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Under development and not yet published; its README says what the current version contains |
-| [`@interopkit/learning-analytics`](https://github.com/interopkit/interopkit/tree/main/packages/learning-analytics#readme) | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Under development and not yet published; its README says what the current version contains     |
+| Package                                                                                                                   | What it is                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [`@interopkit/core`](packages/core/README.md)                                                                             | The errors, the checks of arguments, the clock and the service call that the other packages share                           |
+| [`@interopkit/tool-integration`](packages/tool-integration/README.md)                                                     | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Version 0.1; its README says what it contains |
+| [`@interopkit/learning-analytics`](https://github.com/interopkit/interopkit/tree/main/packages/learning-analytics#readme) | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Version 0.1; its README says what it contains     |
 
 To launch tools from your platform, or to be launched by one, use `tool-integration`. To report learning events, use
 `learning-analytics`. Neither needs the other.
 
-The scope of this version is today's LTI and Caliper features. [Supported](docs/tool-integration/supported.md) lists what
+The scope of 0.1 is the LTI 1.3 launch, access tokens and score service in both roles, Deep Linking in the tool role, and Caliper 1.2 events that a sensor builds and sends. [Supported](docs/tool-integration/supported.md) lists what
 `tool-integration` includes and what it does not, and the README of `learning-analytics` does the same for events. interopkit
 implements these specifications and is not certified by 1EdTech.
 
