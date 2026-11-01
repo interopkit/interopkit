@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as client from "../src/client/index.js";
 import * as graph from "../src/graph/index.js";
 import * as root from "../src/index.js";
 import * as provider from "../src/provider/index.js";
@@ -23,6 +24,10 @@ describe("the public API", () => {
         "validatePackage",
       ].sort(),
     );
+  });
+
+  it("exports only what the client module documents", () => {
+    expect(Object.keys(client).sort()).toStrictEqual(["caseFilter", "createCaseClient", "readStatusInfo"].sort());
   });
 
   it("exports only what the graph module documents", () => {

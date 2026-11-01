@@ -571,3 +571,13 @@ describe("validateEntity", () => {
     expect(validateEntity("imsx_StatusInfo", { imsx_codeMajor: "success", imsx_severity: "status" })).toStrictEqual([]);
   });
 });
+
+describe("readEntity: the type of the result", () => {
+  it("is the class of the kind that was asked for", () => {
+    const item = readEntity("CFItem", fullEntities().CFItem);
+    expect(item.CFDocumentURI.identifier).toBe(fullEntities().CFDocument.identifier);
+    const set = readEntity("CFAssociationSet", fullEntities().CFAssociationSet);
+    expect(set.CFItem.identifier).toBe(item.identifier);
+    expect(readEntity("imsx_StatusInfo", fullEntities().imsx_StatusInfo).imsx_codeMajor).toBe("failure");
+  });
+});

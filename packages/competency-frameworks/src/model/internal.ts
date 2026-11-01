@@ -33,6 +33,9 @@ export const SERVICE_PATHS: Readonly<Record<CaseVersion, string>> = {
   "1.1": "/ims/case/v1p1",
 };
 
+/** The name of the discovery file of CASE 1.1, in the folder `discovery` below the path of the version (REST binding 2.5). */
+export const DISCOVERY_FILE = "imscasev1p1_openapi3_v1p0.json";
+
 /** A base that already ends with the path of a version, which `serviceRoot` would add a second time. */
 const ENDS_WITH_SERVICE_PATH = /\/ims\/case\/v1p[01]\/*$/u;
 

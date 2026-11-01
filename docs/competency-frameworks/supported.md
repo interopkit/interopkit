@@ -9,6 +9,7 @@ flowchart LR
   model --> read["Readers<br/>schemas, rules of a package"]
   model --> version["Conversion 1.1 to 1.0"]
   model --> graph["Tree, crosswalk, difference,<br/>staleness, adoption status"]
+  model --> client["Client<br/>twelve endpoints, paging,<br/>filter, errors"]
   model --> provider["Provider<br/>REST binding, query grammar,<br/>discovery"]
   version --> provider
   spec -.-> outside["Not included:<br/>Markdown and LaTeX rendering,<br/>JSON-LD form of 1.0"]
@@ -30,6 +31,11 @@ flowchart LR
 | Hierarchy, associations, crosswalks  | Implementation Guide 3.3, 4.7      | `frameworkTree`, `associationsOf`, `crosswalk`                                                                                                                                         |
 | Change management                    | Implementation Guide 4.2, 4.3      | `diffPackages` for items and `replacedBy`, `adoptionStatus` with `Adopted` and `Deprecated` read as their successors                                                                   |
 | Caching                              | Implementation Guide 4.1, 4.10     | `isNewer`, `caseEntityUri`                                                                                                                                                             |
+| Endpoints, as a consumer             | REST binding 2.1, 2.2              | The client: the twelve endpoints at `/ims/case/v1p1` and `/ims/case/v1p0`, with the set types of 2.4                                                                                   |
+| Paging, sorting, filtering, fields   | REST binding 3                     | The client: `limit` and `offset` with `X-Total-Count` and `Link`, `sort` and `orderBy`, the seven predicates with one `AND` or `OR`, dot paths, `fields`                               |
+| HTTP codes and status, as a consumer | REST binding 2.4                   | The client: 404 as an absent value, other statuses as `ServiceError`, `imsx_StatusInfo` and `Retry-After` through `readStatusInfo`                                                     |
+| Discovery, as a consumer             | REST binding 2.5                   | The client: the localized OpenAPI 3 file of a 1.1 provider                                                                                                                             |
+| Security, as a consumer              | REST binding 4                     | The client: TLS only, no redirect, and a credential from a function of the host                                                                                                        |
 | The twelve endpoints                 | REST binding 2.1, 2.2, 2.4         | The provider: `/CFDocuments` and eleven by identifier, under `/ims/case/v1p1` and `/ims/case/v1p0`, over a `FrameworkStore`                                                            |
 | Paging                               | REST binding 3.1                   | `limit` (100 by default, at most 1,000), `offset`, `X-Total-Count`, `Link`                                                                                                             |
 | Sorting                              | REST binding 3.2                   | `sort` and `orderBy` with the Unicode collation of a locale                                                                                                                            |

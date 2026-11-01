@@ -100,17 +100,32 @@ above apply.
 `readPackage`, `readEntity`, `validatePackage`, `validateEntity` and `toCaseVersion` take frameworks that a provider or a file gives
 ([model guide](docs/competency-frameworks/model.md)). The functions of `@interopkit/competency-frameworks/graph` work on packages
 that are already read ([graph guide](docs/competency-frameworks/graph.md)). They make no request, keep nothing and write nothing.
+The client and the provider have a section each below.
 
-| Threat                                                          | Control                                                                                                                                               |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A package with a property, a type or a form that CASE refuses   | Every property is read with a schema of its class and version; an unknown property is refused, and a finding names its path and rule                  |
-| A value in `extensions` that is not data, or nests without end  | The value must be JSON, is copied, and nests at most 64 levels; a member named `__proto__` stays a member and never changes the prototype of the copy |
-| Two entities with one identifier                                | `duplicate-identifier` is an error, so that a lookup by identifier is never ambiguous                                                                 |
-| A tree that loops, or a chain of any length                     | `child-of-cycle` is an error; the walk keeps its own stack and cannot overflow the stack of the host                                                  |
-| Markdown or LaTeX in `fullStatement`, `description` and `notes` | The package carries the text and never renders it. A consumer renders it through a sanitizing renderer and never inserts it into a page as HTML       |
-| A result that shares an object with its input                   | A reader returns a copy, and `toCaseVersion` returns a new value; an input is never changed                                                           |
-| A package that loops or gives an item several parents, to make a walk run on | `frameworkTree` places each item once and keeps its own queue, so the work is linear in the items and associations                      |
-| An identifier or a base that changes the path of an address     | `caseEntityUri` refuses `.` and `..`, percent-encodes the identifier, and refuses a base with credentials, a query or a fragment                      |
+| Threat                                                                       | Control                                                                                                                                               |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A package with a property, a type or a form that CASE refuses                | Every property is read with a schema of its class and version; an unknown property is refused, and a finding names its path and rule                  |
+| A value in `extensions` that is not data, or nests without end               | The value must be JSON, is copied, and nests at most 64 levels; a member named `__proto__` stays a member and never changes the prototype of the copy |
+| Two entities with one identifier                                             | `duplicate-identifier` is an error, so that a lookup by identifier is never ambiguous                                                                 |
+| A tree that loops, or a chain of any length                                  | `child-of-cycle` is an error; the walk keeps its own stack and cannot overflow the stack of the host                                                  |
+| Markdown or LaTeX in `fullStatement`, `description` and `notes`              | The package carries the text and never renders it. A consumer renders it through a sanitizing renderer and never inserts it into a page as HTML       |
+| A result that shares an object with its input                                | A reader returns a copy, and `toCaseVersion` returns a new value; an input is never changed                                                           |
+| A package that loops or gives an item several parents, to make a walk run on | `frameworkTree` places each item once and keeps its own queue, so the work is linear in the items and associations                                    |
+| An identifier or a base that changes the path of an address                  | `caseEntityUri` refuses `.` and `..`, percent-encodes the identifier, and refuses a base with credentials, a query or a fragment                      |
+
+### The client
+
+`createCaseClient` reads frameworks from a provider ([client guide](docs/competency-frameworks/client.md)). It makes GET requests
+through the `fetch` of the host and keeps nothing between calls. A framework carries no personal data.
+
+| Threat                                                      | Control                                                                                                                                              |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A provider reached over plain HTTP, or redirected elsewhere | `baseUrl` must be `https` without credentials, query or fragment; every request goes through `requestService`, which follows no redirect             |
+| A provider that answers without end, or with too much       | `timeoutMs` ends a request, `maxBytes` stops the read of the body, and the iteration of the documents ends when a page repeats or no page follows    |
+| A credential that leaks or splits a header                  | The host's `authorization` function returns the header value; one with a line break is refused, and the value is in no error and is never logged     |
+| An identifier or a filter that changes a request            | An identifier is percent-encoded into one path segment and `.` and `..` are refused; the filter, the sort and the fields are checked and encoded     |
+| An address in a `Link` header that leads elsewhere          | The client reads `rel="next"` as a signal and builds every request from `baseUrl`; it never requests an address that a provider gives                |
+| An answer that is not CASE, or that has a hostile shape     | Every answer is read with `readEntity` or `readPackage` and refused with a `DataError` that names the provider; a status body is read, never trusted |
 
 ### The provider
 
@@ -238,6 +253,10 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `competency-frameworks` | Characters of a `filter`                                                 | 2,048                             | characters   | The `filter` of a request for the list; a longer one is 400 `invalid_filter_field`; not replaceable                      |
 | `competency-frameworks` | Logical operators in a `filter`                                          | 1                                 | operators    | One `AND` or `OR`; a second is 400 `invalid_filter_field`; not replaceable                                               |
 | `competency-frameworks` | Levels that the discovery document nests                                 | 64                                | levels       | The OpenAPI document of `localizeOpenApi`; a deeper one is a `DataError`; not replaceable                                |
+| `competency-frameworks` | `timeoutMs` of the client                                                | 10,000                            | milliseconds | One request to a provider: the request and its whole body                                                                |
+| `competency-frameworks` | `maxBytes` of the client                                                 | 16,777,216                        | bytes        | One answer of a provider, a package included; a `ServiceError` above it                                                  |
+| `competency-frameworks` | `pageSize` of the client                                                 | 100                               | documents    | One request for the list of documents; the provider may cap it                                                           |
+| `competency-frameworks` | Logical operators in a filter that the client writes                     | 1                                 | operators    | One `AND` or `OR`; more is a `DataError` before any request                                                              |
 | `selective-disclosure`  | `maxBytes` of `addBaseProof`, `deriveProof` and `verify`                 | 1,048,576                         | bytes        | The document with its proof, as JSON; a `DataError` above it, and `false` from `verify`                                  |
 | `selective-disclosure`  | Levels that a document, a proof or a context nests                       | 64                                | levels       | Checked before any processing; a `DataError`, and `false` from `verify`; not replaceable                                 |
 | `selective-disclosure`  | RDF canonicalization work factor                                         | 1                                 |              | `maxWorkFactor` of the canonicalization; a `DataError`, and `false` from `verify`; not replaceable                       |

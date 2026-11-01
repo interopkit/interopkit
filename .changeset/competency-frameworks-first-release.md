@@ -12,6 +12,10 @@ nothing, an `isChildOf` tree that loops (`child-of-cycle`), and an item that no 
 cannot hold, and reports an identifier or a URI that 1.0 would refuse (`form-not-in-1.0`).
 `@interopkit/competency-frameworks/graph` answers what a consumer asks of a framework: `frameworkTree`, `associationsOf`,
 `crosswalk`, `diffPackages`, `isNewer`, `adoptionStatus` and `caseEntityUri`.
+`@interopkit/competency-frameworks/client` reads frameworks from a provider over the REST binding with the `fetch` of the host:
+a call for each of the twelve endpoints with its set type, the document list as an async iterable that follows the paging
+headers, the filter, sort and field selection of a request, the discovery file, and `readStatusInfo`, which reads the
+`imsx_StatusInfo` and the `Retry-After` of a refusal.
 `@interopkit/competency-frameworks/provider` serves a store of frameworks over the CASE REST binding: `handleCaseRequest`
 answers the twelve endpoints in 1.1 and in 1.0 with paging, sorting, filtering, field selection and the `imsx_StatusInfo` of a
 failure, and serves the discovery file that `localizeOpenApi` makes. `parseCaseQuery` reads the query grammar, and

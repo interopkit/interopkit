@@ -27,6 +27,13 @@ describe("ServiceError", () => {
     expect(error.body).toBe("busy");
   });
 
+  it("carries the headers of the response, and none when the call got no answer", () => {
+    expect(new ServiceError("Busy.", 429, "", { headers: { "retry-after": "30" } }).headers).toStrictEqual({
+      "retry-after": "30",
+    });
+    expect(new ServiceError("The key set did not answer.", 0, "").headers).toStrictEqual({});
+  });
+
   it("is not a DataError", () => {
     expect(new ServiceError("The key set did not answer.", 0, "")).not.toBeInstanceOf(DataError);
   });

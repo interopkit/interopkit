@@ -11,6 +11,7 @@ export {
   type CaseCondition,
   type CaseEntity,
   type CaseEntityKind,
+  type CaseEntityMap,
   type CaseFilter,
   type CaseIssue,
   type CasePackage,

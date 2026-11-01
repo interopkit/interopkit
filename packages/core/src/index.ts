@@ -7,7 +7,7 @@
  */
 export type { CallOptions } from "./call-options.js";
 export { type Clock, checkClock, readClock, SYSTEM_CLOCK } from "./clock.js";
-export { DataError, InteropkitError, ServiceError } from "./errors.js";
+export { DataError, InteropkitError, ServiceError, type ServiceErrorOptions } from "./errors.js";
 export { type Random, SYSTEM_RANDOM } from "./random.js";
 export {
   callService,

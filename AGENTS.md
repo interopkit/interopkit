@@ -7,7 +7,7 @@ enforced by `pnpm lint` (Biome and cspell), `pnpm check:standards`, `pnpm check:
 interopkit is a toolkit for learning-platform interoperability in JavaScript and TypeScript, in one repository:
 `@interopkit/core` is the shared foundation, `@interopkit/tool-integration` implements LTI 1.3 in both roles, and
 `@interopkit/learning-analytics` implements Caliper Analytics 1.2, `@interopkit/competency-frameworks` implements the
-CASE model, its readers, what a consumer asks of a framework and a provider of the REST binding, and
+CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding, and
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite.
 
 ```mermaid
@@ -17,7 +17,7 @@ flowchart BT
   tool["tool-integration: tool"]
   plat["tool-integration: platform"]
   la["learning-analytics"]
-  cf["competency-frameworks<br/>model, read, version, graph, provider"]
+  cf["competency-frameworks<br/>model, read, version, graph, client, provider"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
   proto --> core
   tool --> proto
@@ -73,7 +73,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                              |
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                             |
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
-| `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `provider/`                              |
+| `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`          |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
@@ -119,8 +119,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
 ## Boundaries
 
 - interopkit owns the messages between a platform and a tool, the gradebook protocol, the Caliper event model, sensor and
-  endpoint, and the CASE model with its readers, the questions a consumer asks of a framework and the handlers of a CASE
-  provider. It does not own what a launched tool shows, what a score means, which delivery event becomes which Caliper event,
+  endpoint, and the CASE model with its readers, the questions a consumer asks of a framework, the client of its REST binding
+  and the handlers of a CASE provider. It does not own what a launched tool shows, what a score means, which delivery event becomes which Caliper event,
   QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to assesskit and measurekit, to the
   adapter of each product and to the host.
 - `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
@@ -140,7 +140,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
 - A package imports only what its row in the diagram above allows. Biome enforces the rows for `core`, and for the folders
   of `tool-integration`: `protocol/` imports neither `tool/` nor `platform/`, and `tool/` and `platform/` never import each
   other. In `competency-frameworks`, `model/` imports no other module, and `read/`, `version/` and `graph/` never import
-  each other; `provider/` builds on `read/` and `version/` and none of them imports it. In `selective-disclosure`,
+  each other; `client/` builds on `read/`, `provider/` on `read/` and `version/`, and none of them imports either. In `selective-disclosure`,
   `proof-value/`, `keys/` and `document/` import none of the other folders, and `base/`, `derive/` and `verify/` import those
   three and never each other. Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
@@ -200,7 +200,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
   label is `The option <name>`. Inner functions trust their callers. JSON and objects that a host passes in are read with a
   valibot schema named `<name>Schema` and `parseWith`, which names the path of the first issue.
 - Expected outcomes that a caller must handle are values in the result. Invalid input and broken invariants throw `DataError`.
-  A failed call to a service is a `ServiceError` with its `status` and `body`.
+  A failed call to a service is a `ServiceError` with its `status`, `headers` and `body`.
 - Anything that waits on I/O is async and takes `signal` of `CallOptions`, which ends that caller's wait. Work that several
   callers share, such as a key set fetch, runs to its own timeout and takes no caller's signal. Every port receives the
   signal.

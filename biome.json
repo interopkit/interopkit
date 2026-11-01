@@ -489,6 +489,8 @@
                       "**/version/**",
                       "**/graph",
                       "**/graph/**",
+                      "**/client",
+                      "**/client/**",
                       "**/provider",
                       "**/provider/**"
                     ],
@@ -516,10 +518,12 @@
                       "**/version/**",
                       "**/graph",
                       "**/graph/**",
+                      "**/client",
+                      "**/client/**",
                       "**/provider",
                       "**/provider/**"
                     ],
-                    "message": "read/ builds on model/ and @interopkit/core only: version/ and graph/ are its siblings and provider/ builds on it."
+                    "message": "read/ builds on model/ and @interopkit/core only: version/, graph/ and client/ are its siblings and provider/ builds on it."
                   }
                 ]
               }
@@ -538,8 +542,17 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/read", "**/read/**", "**/graph", "**/graph/**", "**/provider", "**/provider/**"],
-                    "message": "version/ builds on model/ and @interopkit/core only: read/ and graph/ are its siblings and provider/ builds on it."
+                    "group": [
+                      "**/read",
+                      "**/read/**",
+                      "**/graph",
+                      "**/graph/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/provider",
+                      "**/provider/**"
+                    ],
+                    "message": "version/ builds on model/ and @interopkit/core only: read/, graph/ and client/ are its siblings and provider/ builds on it."
                   }
                 ]
               }
@@ -569,6 +582,33 @@
       }
     },
     {
+      "includes": ["packages/competency-frameworks/src/client/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/version",
+                      "**/version/**",
+                      "**/graph",
+                      "**/graph/**",
+                      "**/provider",
+                      "**/provider/**"
+                    ],
+                    "message": "client/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings and never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["packages/competency-frameworks/src/graph/**"],
       "linter": {
         "rules": {
@@ -578,7 +618,16 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/read", "**/read/**", "**/version", "**/version/**", "**/provider", "**/provider/**"],
+                    "group": [
+                      "**/read",
+                      "**/read/**",
+                      "**/version",
+                      "**/version/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/provider",
+                      "**/provider/**"
+                    ],
                     "message": "graph/ builds on model/ and @interopkit/core only: the other modules are its siblings and never a layer under it."
                   }
                 ]

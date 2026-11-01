@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import type { CaseEntity, CaseEntityKind, CaseIssue } from "../model/index.js";
+import type { CaseEntityKind, CaseEntityMap, CaseIssue } from "../model/index.js";
 import { errorsOf, inspectEntity, refusal } from "./inspect.js";
 import { type ReadOptions, readKind, readVersion } from "./options.js";
 
@@ -15,18 +15,23 @@ import { type ReadOptions, readKind, readVersion } from "./options.js";
  * @param kind - The class of the entity: a document, an item, an association, a definition, a set or a status.
  * @param value - The entity, such as the parsed text of a response.
  * @param options - Which version the value is in.
- * @returns The entity.
+ * @returns The entity, typed as the class of the kind.
  * @throws `DataError` that names the path of the first error and counts the others, when the value has an error, when the
  * kind is not one of `ENTITY_KINDS`, or when the options are not an object with a `version` of `"1.0"` or `"1.1"`.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1}
  */
-export function readEntity(kind: CaseEntityKind, value: unknown, options?: ReadOptions): CaseEntity {
+export function readEntity<TKind extends CaseEntityKind>(
+  kind: TKind,
+  value: unknown,
+  options?: ReadOptions,
+): CaseEntityMap[TKind] {
   const checkedKind = readKind(kind);
   const { value: entity, issues } = inspectEntity(checkedKind, value, readVersion(options));
   const errors = errorsOf(issues);
   if (entity === undefined || errors.length > 0)
     throw new DataError(refusal(`The ${checkedKind}`, errors, "validateEntity"));
-  return entity;
+  // The schema of the kind has just read the value, so it is the entity of that kind.
+  return entity as CaseEntityMap[TKind];
 }
 
 /**

@@ -49,20 +49,39 @@ export const ENTITY_KINDS = [
 /** The name of the class of an entity that CASE exchanges outside a package. */
 export type CaseEntityKind = (typeof ENTITY_KINDS)[number];
 
+/** The entity that each kind names. */
+export interface CaseEntityMap {
+  /** A document outside a package. */
+  readonly CFDocument: CFDocument;
+  /** An item outside a package. */
+  readonly CFItem: CFItem;
+  /** An association outside a package. */
+  readonly CFAssociation: CFAssociation;
+  /** An association grouping. */
+  readonly CFAssociationGrouping: CFAssociationGrouping;
+  /** A concept. */
+  readonly CFConcept: CFConcept;
+  /** A subject. */
+  readonly CFSubject: CFSubject;
+  /** A license. */
+  readonly CFLicense: CFLicense;
+  /** An item type. */
+  readonly CFItemType: CFItemType;
+  /** A rubric. */
+  readonly CFRubric: CFRubric;
+  /** The answer for a list of documents. */
+  readonly CFDocumentSet: CFDocumentSet;
+  /** The answer for the associations of an item. */
+  readonly CFAssociationSet: CFAssociationSet;
+  /** The answer for a concept. */
+  readonly CFConceptSet: CFConceptSet;
+  /** The answer for a subject. */
+  readonly CFSubjectSet: CFSubjectSet;
+  /** The answer for an item type. */
+  readonly CFItemTypeSet: CFItemTypeSet;
+  /** The status of an answer that is not a success. */
+  readonly imsx_StatusInfo: ImsxStatusInfo;
+}
+
 /** An entity that CASE exchanges outside a package. */
-export type CaseEntity =
-  | CFDocument
-  | CFItem
-  | CFAssociation
-  | CFAssociationGrouping
-  | CFConcept
-  | CFSubject
-  | CFLicense
-  | CFItemType
-  | CFRubric
-  | CFDocumentSet
-  | CFAssociationSet
-  | CFConceptSet
-  | CFSubjectSet
-  | CFItemTypeSet
-  | ImsxStatusInfo;
+export type CaseEntity = CaseEntityMap[CaseEntityKind];

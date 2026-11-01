@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["src/index.ts", "src/graph/index.ts", "src/provider/index.ts"],
+  "entryPoints": ["src/index.ts", "src/client/index.ts", "src/graph/index.ts", "src/provider/index.ts"],
   "tsconfig": "tsconfig.build.json",
   "sourceLinkTemplate": "https://github.com/interopkit/interopkit/blob/{gitRevision}/packages/competency-frameworks/{path}#L{line}",
   "validation": {

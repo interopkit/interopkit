@@ -12,6 +12,7 @@ classDiagram
   class ServiceError {
     +number status
     +string body
+    +headers headers
   }
   class LtiError {
     +string reason
@@ -30,15 +31,17 @@ const error = new ServiceError("The key set answered 503.", 503, "busy");
 error instanceof InteropkitError; // => true
 error instanceof DataError; // => false
 error.status; // => 503
+error.headers; // => {}
+new ServiceError("The key set answered 429.", 429, "", { headers: { "retry-after": "30" } }).headers["retry-after"]; // => "30"
 ```
 
 ## Classes
 
-| Class             | Thrown when                                                                                            | Properties                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `InteropkitError` | Never by itself: it is the base class                                                                  | `message`, `name`                                                                                               |
-| `DataError`       | An argument has the wrong type or is out of range, or data breaks the shape it must have               |                                                                                                                 |
-| `ServiceError`    | A call to an HTTP service fails: no answer, an error status, a redirect or an answer that is too large | `status`, the HTTP status, and 0 when the call got no answer; `body`, the text of the answer up to 65,536 bytes |
+| Class             | Thrown when                                                                                            | Properties                                                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `InteropkitError` | Never by itself: it is the base class                                                                  | `message`, `name`                                                                                                                                                                                 |
+| `DataError`       | An argument has the wrong type or is out of range, or data breaks the shape it must have               |                                                                                                                                                                                                   |
+| `ServiceError`    | A call to an HTTP service fails: no answer, an error status, a redirect or an answer that is too large | `status`, the HTTP status, and 0 when the call got no answer; `body`, the text of the answer up to 65,536 bytes; `headers`, those of the answer by name in lower case, and none without an answer |
 
 ## Expected outcomes are not errors
 

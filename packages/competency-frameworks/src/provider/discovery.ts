@@ -13,9 +13,6 @@ export interface LocalizeOpenApiOptions {
   readonly serverUrl: string;
 }
 
-/** The name of the discovery file of CASE 1.1 (REST binding 2.5). */
-export const DISCOVERY_FILE = "imscasev1p1_openapi3_v1p0.json";
-
 const optionsSchema = strictRecord({
   serverUrl: v.pipe(
     v.string(),

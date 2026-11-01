@@ -1,12 +1,14 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { guidesWithSamples, runGuideSamples, typecheckGuideSamples } from "../../../scripts/guide-samples.js";
+import * as client from "../src/client/index.js";
 import * as graph from "../src/graph/index.js";
 import * as root from "../src/index.js";
 import * as provider from "../src/provider/index.js";
 
 const modules = {
   "@interopkit/competency-frameworks": root,
+  "@interopkit/competency-frameworks/client": client,
   "@interopkit/competency-frameworks/graph": graph,
   "@interopkit/competency-frameworks/provider": provider,
 };
@@ -15,6 +17,7 @@ const PACKAGES = fileURLToPath(new URL("../../", import.meta.url));
 /** Where the packages that the samples and the sources import resolve to: the sources, so that no build is needed. */
 const PATHS = {
   "@interopkit/competency-frameworks": [`${PACKAGES}competency-frameworks/src/index.ts`],
+  "@interopkit/competency-frameworks/client": [`${PACKAGES}competency-frameworks/src/client/index.ts`],
   "@interopkit/competency-frameworks/graph": [`${PACKAGES}competency-frameworks/src/graph/index.ts`],
   "@interopkit/competency-frameworks/provider": [`${PACKAGES}competency-frameworks/src/provider/index.ts`],
   "@interopkit/core": [`${PACKAGES}core/src/index.ts`],

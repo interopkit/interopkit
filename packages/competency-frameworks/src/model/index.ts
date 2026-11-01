@@ -24,7 +24,14 @@ export type {
 } from "./entities.js";
 export type { CaseIssue } from "./issue.js";
 export type { Extensions } from "./json.js";
-export { type CaseEntity, type CaseEntityKind, ENTITY_KINDS, SERVED_KINDS, type ServedKind } from "./kinds.js";
+export {
+  type CaseEntity,
+  type CaseEntityKind,
+  type CaseEntityMap,
+  ENTITY_KINDS,
+  SERVED_KINDS,
+  type ServedKind,
+} from "./kinds.js";
 export type { LinkGenURI, LinkURI } from "./links.js";
 export type { OpenApiDocument } from "./open-api.js";
 export {

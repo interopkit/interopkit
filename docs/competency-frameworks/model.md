@@ -51,7 +51,7 @@ const item = {
 };
 const entity = readEntity("CFItem", item);
 entity === item; // => false
-"humanCodingScheme" in entity && entity.humanCodingScheme; // => "NF.1"
+entity.humanCodingScheme; // => "NF.1"
 
 const asOld = validateEntity("CFItem", item, { version: "1.0" });
 asOld.map((finding) => `${finding.path}: ${finding.rule}`); // => ["extensions: unknown-property"]
@@ -85,7 +85,8 @@ inserts it into a page as HTML.
 
 ## Reading and validating
 
-`readPackage(value, options)` reads a package and `readEntity(kind, value, options)` reads an entity of a kind. Both return a copy
+`readPackage(value, options)` reads a package and `readEntity(kind, value, options)` reads an entity of a kind, whose result has
+the class of that kind (`readEntity("CFItem", value)` is a `CFItem`). Both return a copy
 in the model, and throw a `DataError` when the value has an error. `validatePackage(value, options)` and
 `validateEntity(kind, value, options)` judge the same value and return every finding as data. The validators take what the readers
 take: parsed text, or a value that is already in the model.
@@ -222,7 +223,7 @@ exhaust the stack of the host.
 | Writing a package: building items, associations and identifiers | The host knows its own framework; the model types and `validatePackage` check what it builds |
 | The JSON-LD form of CASE 1.0 (`@context`, `type`)               | A document form of 1.0 that 1.1 does not have and the REST binding does not serve            |
 | Reading a package that is wrong, to recover what is right in it | A package with an error is not returned; `validatePackage` says where to look                |
-| Fetching a framework from a provider, and serving one           | Not part of the model                                                                        |
+| Serving a framework                                             | Not part of the model                                                                        |
 
 ## Differences from the references
 

@@ -372,6 +372,29 @@ describe("a service that answers with an error", () => {
     await cancelled;
   });
 
+  it("carries the headers of the answer, by name in lower case, in every error that has an answer", async () => {
+    const headers = { "Retry-After": "30", "X-Total-Count": "5" };
+    const expected = { "retry-after": "30", "x-total-count": "5" };
+    const answers = [
+      new Response("busy", { status: 429, headers }),
+      new Response("moved", { status: 302, headers: { ...headers, location: "http://elsewhere.example/" } }),
+      bodyOfBytes(LIMIT + 1, { status: 200, headers }).response,
+    ];
+    for (const answer of answers) {
+      const error = await failureOf(
+        callService({ fetch: answering(() => answer), timeoutMs: DEFAULT_TIMEOUT_MS }, WHAT, URL_OF_SERVICE, GET),
+      );
+      expect(error).toBeInstanceOf(ServiceError);
+      expect((error as ServiceError).headers).toMatchObject(expected);
+    }
+  });
+
+  it("carries no headers when the service did not answer", async () => {
+    const fetch: Fetch = () => Promise.reject(new TypeError("fetch failed"));
+    const error = await failureOf(callService({ fetch, timeoutMs: DEFAULT_TIMEOUT_MS }, WHAT, URL_OF_SERVICE, GET));
+    expect((error as ServiceError).headers).toStrictEqual({});
+  });
+
   it("reads the body of an error answer up to the same limit", async () => {
     const { response, cancelled } = bodyOfBytes(3 * LIMIT, { status: 500 });
     const error = await failureOf(

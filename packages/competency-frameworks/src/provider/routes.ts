@@ -1,7 +1,6 @@
 import type { CallOptions } from "@interopkit/core";
 import type { CaseEntity, CasePackage, CaseVersion } from "../model/index.js";
-import { SERVICE_PATHS } from "../model/internal.js";
-import { DISCOVERY_FILE } from "./discovery.js";
+import { DISCOVERY_FILE, SERVICE_PATHS } from "../model/internal.js";
 import type { ProviderSettings } from "./options.js";
 import type { FrameworkStore } from "./store.js";
 

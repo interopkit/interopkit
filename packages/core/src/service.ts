@@ -235,8 +235,9 @@ function checkRequestOptions(options: RequestOptions): void {
  * @remarks
  * A redirect is an error, because it could lead from HTTPS to another scheme. Every wait is raced against the deadline
  * and the signals of the caller, so a `fetch` that ignores its signal cannot hold the call past `timeoutMs`; the body of
- * an answer that arrives later is cancelled. A status outside `options.expect` is a `ServiceError` that carries the status
- * and the text of the body, so a caller can answer 404, 409 or 412 as a value by listing it.
+ * an answer that arrives later is cancelled. A status outside `options.expect` is a `ServiceError` that carries the status,
+ * the headers and the text of the body, so a caller can answer 404, 409 or 412 as a value by listing it, and read
+ * `Retry-After` from the error of a 429.
  *
  * @param service - The `fetch`, the time the call may take and the signal that ends the caller's wait.
  * @param what - Names the service in the error messages, such as `The key set at https://platform.example/jwks`.
@@ -277,19 +278,25 @@ export async function requestService(
     if (response === undefined) release(pending);
     throw failure(error, what, service, callers, deadline);
   }
+  const headers = headersOf(response.headers);
   if (isRedirect(response)) {
     throw new ServiceError(
       `${what} answered with a redirect (${response.status}), which the call does not follow: use the final address.`,
       response.status,
       errorText(answer),
+      { headers },
     );
   }
   const expected = options.expect === undefined ? response.ok : options.expect.includes(response.status);
-  if (!expected) throw new ServiceError(`${what} answered ${response.status}.`, response.status, errorText(answer));
-  if (!answer.complete) {
-    throw new ServiceError(`${what} answered with more than ${maxBytes} bytes.`, response.status, errorText(answer));
+  if (!expected) {
+    throw new ServiceError(`${what} answered ${response.status}.`, response.status, errorText(answer), { headers });
   }
-  return { status: response.status, headers: headersOf(response.headers), body: answer.bytes };
+  if (!answer.complete) {
+    throw new ServiceError(`${what} answered with more than ${maxBytes} bytes.`, response.status, errorText(answer), {
+      headers,
+    });
+  }
+  return { status: response.status, headers, body: answer.bytes };
 }
 
 /**
