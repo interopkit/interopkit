@@ -2205,6 +2205,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-records/test/json.test.ts",
   },
   {
+    rule: "The text of a request with more tokens than the limit is refused before it is parsed, so that its syntax tree has a bound.",
+    file: "packages/learning-records/src/read/read-statement-json.ts",
+    find: "if (hasMoreTokensThan(text, maxTokens)) {",
+    replace: "if (false) {",
+    test: "packages/learning-records/test/json.test.ts",
+  },
+  {
     rule: "An object of the text of a request that names a property twice is refused.",
     file: "packages/learning-records/src/read/read-statement-json.ts",
     find: "if (repeat !== undefined) {",

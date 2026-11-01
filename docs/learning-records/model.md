@@ -65,6 +65,7 @@ alone; the rules between properties are judged once it is right. A warning never
 | `role` of `readStatement`, `validateStatement` and `validateStatements` | `"lrs"`    | `"lrs"` applies what the standard says an LRS shall reject. `"provider"` adds what a Learning Record Provider shall and should do |
 | `maxBytes` of `readStatementJson`                                       | 10,485,760 | The most bytes of the text, counted as UTF-8                                                                                      |
 | `maxDepth` of `readStatementJson`                                       | 64         | The deepest nesting of arrays and objects; `[]` has depth 1                                                                       |
+| `maxTokens` of `readStatementJson`                                      | 1,000,000  | The most tokens of the text: each bracket, brace, colon and comma, each string, each number, and each `true`, `false` and `null` |
 
 ## The two roles
 
@@ -149,12 +150,25 @@ a response. An LRS does not validate patterns, so a problem is a warning.
 
 | Limit                                       | Value      | Applies to                                                                                        |
 | ------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------- |
-| `maxBytes` of `readStatementJson`           | 10,485,760 | The text of a request; the syntax tree takes 100 to 400 bytes for each value                      |
+| `maxBytes` of `readStatementJson`           | 10,485,760 | The text of a request, counted as UTF-8                                                           |
 | `maxDepth` of `readStatementJson`           | 64         | Arrays and objects nested in each other, checked before the text is parsed                        |
+| `maxTokens` of `readStatementJson`          | 1,000,000  | The memory of the parse, up to 250 bytes for each token; checked before the text is parsed        |
 | Levels that the value of an extension nests | 64         | `extensions` of an Activity Definition, a Result and a Context; a deeper value is `invalid-value` |
 
 `readStatement` and `validateStatement` take a value that is in memory already, so the host's limit on the request applies
 first. A batch has no limit here: the LRS sets the number of Statements.
+
+`maxTokens` bounds the memory of `readStatementJson`, because the syntax tree grows with the tokens and not with the bytes: the
+worst text, `[0,0,0,...]`, has one token for each byte. Peak memory above the process, measured on Node.js:
+
+| Text                                                          | Result                         | Peak memory |
+| ------------------------------------------------------------- | ------------------------------ | ----------- |
+| 10 MiB of `[0,0,0,...]`, 10,485,000 tokens                    | Refused before the parse       | 19 MB       |
+| 1,000,000 tokens of `{"":0,"":0,...}`, the most for the tree | Read, then refused as repeated | 229 MB      |
+| 1,000,000 tokens of `[{},{},...]` through `validateStatements` | 999,999 findings               | 360 MB      |
+
+A host with less memory passes a smaller `maxTokens`: the parse takes up to 250 bytes for each token, and
+`validateStatements` up to 400 more for each finding, of which a text can hold one for each token.
 
 ## Errors
 
@@ -166,6 +180,7 @@ first. A batch has no limit here: the LRS sets the number of Statements.
 | `The text has the property "id" twice in actor, at line 3 column 5. ...`                                | An object of the text names a property twice               | Refuse the request; an LRS shall reject a Statement that uses a property more than once |
 | `The text has N bytes or more, above the limit of M bytes.`                                             | The text is longer than `maxBytes`                         | Answer with 413 as the standard asks, or raise the limit                                |
 | `The text nests arrays and objects deeper than the limit of N levels.`                                  | The text is deeper than `maxDepth`                         | Refuse it, or raise the limit                                                           |
+| `The text has more than N tokens, above the limit of the option maxTokens.`                             | The text has more tokens than `maxTokens`                  | Answer with 413, or raise the limit if the host can hold the memory                     |
 | `The text nests deeper than the parser can read, and the limit of N levels is too high.`                | `maxDepth` is above what the stack of the runtime can hold | Lower `maxDepth`                                                                        |
 
 ## Not included

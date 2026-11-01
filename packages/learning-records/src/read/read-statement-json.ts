@@ -2,6 +2,7 @@ import { type AnyNode, evaluate, type ObjectNode, parse } from "@humanwhocodes/m
 import { DataError } from "@interopkit/core";
 import { checkString, nestsDeeperThan, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
+import { hasMoreTokensThan } from "./json-tokens.js";
 import { item, member } from "./path.js";
 
 /** The most bytes of text that `readStatementJson` reads unless the caller says otherwise: 10 MiB, the size of an LRS request. */
@@ -9,6 +10,13 @@ const DEFAULT_MAX_BYTES = 10_485_760;
 
 /** The deepest nesting of arrays and objects that `readStatementJson` reads unless the caller says otherwise. */
 const DEFAULT_MAX_DEPTH = 64;
+
+/**
+ * The most tokens that `readStatementJson` reads unless the caller says otherwise. The parse takes up to 250 bytes of memory for
+ * each token, measured on the worst text, so this keeps its peak near 280 MB; 1,000 Statements that use every property have
+ * 461,000 tokens.
+ */
+const DEFAULT_MAX_TOKENS = 1_000_000;
 
 /** The options of `readStatementJson`. */
 export interface ReadStatementJsonOptions {
@@ -24,11 +32,19 @@ export interface ReadStatementJsonOptions {
    * @defaultValue 64
    */
   readonly maxDepth?: number;
+  /**
+   * The most tokens of the text: each bracket, brace, colon and comma, each string, each number, and each of `true`, `false`
+   * and `null`. The memory of the syntax tree grows with the tokens and not with the bytes.
+   *
+   * @defaultValue 1,000,000
+   */
+  readonly maxTokens?: number;
 }
 
 const optionsSchema = strictRecord({
   maxBytes: v.optional(positiveIntegerSchema),
   maxDepth: v.optional(positiveIntegerSchema),
+  maxTokens: v.optional(positiveIntegerSchema),
 });
 
 /** The place in a text where a property occurs again, and its name. */
@@ -86,25 +102,26 @@ function repeatedProperty(text: string, maxDepth: number): Repeat | undefined {
  * @remarks
  * `JSON.parse` keeps the last of two properties with one name and says nothing, so an LRS that reads a request with it cannot
  * obey the rule that it shall reject a Statement that uses a property more than once (4.2.1). A name is the same when its
- * characters are, whatever the escapes that write them. The size and the depth are checked before the text is parsed, and a
- * property named `__proto__` is a property of the result and changes no prototype. The syntax tree that the parser builds is
- * larger than the text, by 50 to 400 bytes for each value: a host that reads text from many clients passes a smaller
- * `maxBytes`.
+ * characters are, whatever the escapes that write them. The size, the depth and the number of tokens are checked before the
+ * text is parsed, and a property named `__proto__` is a property of the result and changes no prototype. The syntax tree that
+ * the parser builds takes memory for each token and not for each byte, up to 250 bytes: `[0,0,0` and so on is a token for each
+ * byte, so a text of 10 MiB would take over 1 GB. `maxTokens` bounds the tree, and a host with less memory than 300 MB, such as
+ * a Cloudflare Worker, passes a smaller one.
  *
  * @param text - The text of a request or a file.
  * @param options - The limits.
  * @returns The parsed value, which `readStatement` or `validateStatements` reads.
- * @throws `DataError` when the text is longer or deeper than the limits, is not JSON, or has a property twice, or when the
- * options are not valid.
+ * @throws `DataError` when the text is longer, deeper or has more tokens than the limits, is not JSON, or has a property
+ * twice, or when the options are not valid.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
 export function readStatementJson(text: string, options?: ReadStatementJsonOptions): unknown {
   checkString(text, "The text");
-  const { maxBytes = DEFAULT_MAX_BYTES, maxDepth = DEFAULT_MAX_DEPTH } = parseWith(
-    optionsSchema,
-    options === undefined ? {} : options,
-    "The options object",
-  );
+  const {
+    maxBytes = DEFAULT_MAX_BYTES,
+    maxDepth = DEFAULT_MAX_DEPTH,
+    maxTokens = DEFAULT_MAX_TOKENS,
+  } = parseWith(optionsSchema, options === undefined ? {} : options, "The options object");
   // A string of more units than the limit has more bytes than it, so the longer ones need no encoding.
   const bytes = text.length > maxBytes ? text.length : new TextEncoder().encode(text).byteLength;
   if (bytes > maxBytes) {
@@ -112,6 +129,9 @@ export function readStatementJson(text: string, options?: ReadStatementJsonOptio
   }
   if (nestsDeeperThan(text, maxDepth)) {
     throw new DataError(`The text nests arrays and objects deeper than the limit of ${maxDepth} levels.`);
+  }
+  if (hasMoreTokensThan(text, maxTokens)) {
+    throw new DataError(`The text has more than ${maxTokens} tokens, above the limit of the option maxTokens.`);
   }
   let value: unknown;
   try {

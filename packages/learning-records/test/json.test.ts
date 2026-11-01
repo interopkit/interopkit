@@ -1,7 +1,9 @@
+import { tokenize } from "@humanwhocodes/momoa";
 import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { readStatement, readStatementJson, validateStatements } from "../src/index.js";
+import { hasMoreTokensThan } from "../src/read/internal.js";
 import { fullStatement, minimalStatement } from "./full-statement.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
@@ -193,6 +195,46 @@ describe("readStatementJson", () => {
       expect(() => readStatementJson("[".repeat(65) + "]".repeat(65))).toThrow("deeper than the limit of 64");
     });
 
+    it("counts the tokens of the text and refuses the text above the limit", () => {
+      expect(readStatementJson("[1,2,3]", { maxTokens: 7 })).toStrictEqual([1, 2, 3]);
+      expect(() => readStatementJson("[1,2,3]", { maxTokens: 6 })).toThrow(
+        "The text has more than 6 tokens, above the limit of the option maxTokens.",
+      );
+      expect(readStatementJson('{"a":[true,null,-1.5e+2,"x"]}', { maxTokens: 13 })).toStrictEqual({
+        a: [true, null, -150, "x"],
+      });
+      expect(() => readStatementJson('{"a":[true,null,-1.5e+2,"x"]}', { maxTokens: 12 })).toThrow(DataError);
+    });
+
+    it("reads the most tokens by default, 1,000,000, and refuses one more", () => {
+      const atTheLimit = `[${"0,".repeat(499_998)}[]]`;
+      expect(tokenize(atTheLimit, { mode: "json" })).toHaveLength(1_000_000);
+      expect(readStatementJson(atTheLimit)).toHaveLength(499_999);
+      const oneMore = `[${"0,".repeat(499_999)}0]`;
+      expect(tokenize(oneMore, { mode: "json" })).toHaveLength(1_000_001);
+      expect(() => readStatementJson(oneMore)).toThrow("The text has more than 1000000 tokens");
+    });
+
+    it("refuses the text of 10 MiB that has the most tokens, the worst for memory, before it builds the tree", async () => {
+      // Each byte is a token, and a syntax tree of the text takes over 1 GB.
+      const worst = `[${"0,".repeat(5_242_878)}0]`;
+      expect(worst.length).toBe(10_485_759);
+      vi.resetModules();
+      const parse = vi.fn(() => {
+        throw new Error("the syntax tree was built");
+      });
+      vi.doMock("@humanwhocodes/momoa", () => ({ parse }));
+      try {
+        const { readStatementJson: withSpy } = await import("../src/index.js");
+        // The module is imported again, so its DataError is not the class of this file: the message is the evidence.
+        expect(() => withSpy(worst)).toThrow("The text has more than 1000000 tokens");
+        expect(parse).not.toHaveBeenCalled();
+      } finally {
+        vi.doUnmock("@humanwhocodes/momoa");
+        vi.resetModules();
+      }
+    });
+
     it("refuses a hundred thousand opening brackets before it parses anything", () => {
       expect(() => readStatementJson("[".repeat(100_000))).toThrow("deeper than the limit of 64");
       expect(() => readStatementJson('{"a":'.repeat(50_000))).toThrow("deeper than the limit of 64");
@@ -212,6 +254,8 @@ describe("readStatementJson", () => {
       [{ maxBytes: "10" }, 'The options object is invalid at maxBytes: expected a number, found "10".'],
       [{ maxDepth: 1.5 }, "The options object is invalid at maxDepth: expected a safe integer, found 1.5."],
       [{ maxDepth: -1 }, "The options object is invalid at maxDepth: expected a value of at least 1, found -1."],
+      [{ maxTokens: 0 }, "The options object is invalid at maxTokens: expected a value of at least 1, found 0."],
+      [{ maxTokens: "10" }, 'The options object is invalid at maxTokens: expected a number, found "10".'],
       [{ limit: 1 }, 'The options object is invalid: unexpected property "limit".'],
     ])("refuses the options %j", (options, sentence) => {
       const given = JSON.parse(JSON.stringify(options));
@@ -233,5 +277,40 @@ describe("readStatementJson", () => {
       vi.doUnmock("@humanwhocodes/momoa");
       vi.resetModules();
     }
+  });
+});
+
+describe("the count of tokens", () => {
+  /** The number of tokens that the tokenizer of the syntax tree makes, which is the oracle of the count. */
+  const tokensOf = (text: string): number => tokenize(text, { mode: "json" }).length;
+
+  it("agrees with the tokenizer of the syntax tree for any JSON value, written in any way", () => {
+    fc.assert(
+      fc.property(fc.jsonValue(), fc.constantFrom(undefined, 1, "\t", "\n  "), (value, indent) => {
+        const text = JSON.stringify(value, null, indent);
+        const count = tokensOf(text);
+        expect(hasMoreTokensThan(text, count)).toBe(false);
+        expect(hasMoreTokensThan(text, count - 1)).toBe(true);
+      }),
+      RUNS,
+    );
+  });
+
+  it("does not count what is inside a string, escaped quotes included", () => {
+    const text = JSON.stringify(['[{"a":1,2}] "', 'a\\"', "\\", ",:"]);
+    expect(tokensOf(text)).toBe(9);
+    expect(hasMoreTokensThan(text, 9)).toBe(false);
+    expect(hasMoreTokensThan(text, 8)).toBe(true);
+  });
+
+  it("counts a number or a literal as one token, whatever its length", () => {
+    expect(hasMoreTokensThan("[-12345.678e+90,false]", 5)).toBe(false);
+    expect(hasMoreTokensThan("[-12345.678e+90,false]", 4)).toBe(true);
+  });
+
+  it("stops at the first token above the limit, so that a text without end costs little", () => {
+    expect(hasMoreTokensThan(`[${"0,".repeat(1_000_000)}`, 10)).toBe(true);
+    expect(hasMoreTokensThan("", 0)).toBe(false);
+    expect(hasMoreTokensThan("   \n\t ", 0)).toBe(false);
   });
 });

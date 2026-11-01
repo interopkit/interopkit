@@ -8,7 +8,7 @@ of the standard and the rules between them, and returns a copy; it throws a `Dat
 and counts the others. `validateStatement` and `validateStatements` return every finding, with its path, rule, sentence and
 severity, as data: identifiers, the voided verb, scores, the forms of IRIs, UUIDs, times, durations and language tags, the form of
 each interaction's response patterns, and for a provider UTC times and what the LRS sets. `readStatementJson` parses the text of
-a request within limits of size and depth, and refuses an object that names a property twice. `buildStatement` makes the
+a request within limits of size, depth and tokens, and refuses an object that names a property twice. `buildStatement` makes the
 Statement of an event with the time in UTC, and checks it against the rules of a provider; `voidingStatement` makes the one that
 voids another; `deriveStatementId` gives an event an id that a resend repeats; `formatDuration`, `parseDuration`,
 `formatTimestamp` and `mboxSha1sum` write and read the durations, times and hashes of the standard. `sameStatement` compares two
