@@ -10,7 +10,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 
 ```mermaid
 flowchart BT
-  core["@interopkit/core<br/>errors, checks, clock, service, http"]
+  core["@interopkit/core<br/>errors, checks, clock, service, http,<br/>signer, oauth"]
   proto["tool-integration: protocol<br/>claims, jwt, key sets, pages"]
   tool["tool-integration: tool"]
   plat["tool-integration: platform"]
@@ -53,6 +53,9 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/call-options.ts`  | `CallOptions`, the `signal` of every call that waits on I/O                               |
 | `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`             |
 | `packages/core/src/http/`            | The request and answer types and their helpers, which `@interopkit/core/http` exports     |
+| `packages/core/src/signer/`          | `Signer`, `signerFromCryptoKey`, `signCompactJws`                                         |
+| `packages/core/src/random.ts`        | `Random`, `SYSTEM_RANDOM`                                                                 |
+| `packages/core/src/oauth/`           | The OAuth 2.0 clients and the token cache, which `@interopkit/core/oauth` exports         |
 | `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                    |
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                   |
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                  |
@@ -122,7 +125,8 @@ current behavior only, and never how it came to be.
 - Runtime dependencies are listed in the `package.json` of the package that loads them, pinned to an exact version at least
   two weeks old, and recorded in `SECURITY.md` with their reason and license. `pnpm-workspace.yaml` sets
   `minimumReleaseAge` so that an install cannot pick a younger version.
-- Generic concerns use mature libraries: `jose` for JOSE, `valibot` for schemas, `uuid` for name-based UUIDs. Hand-written
+- Generic concerns use mature libraries: `jose` for JOSE, `valibot` for schemas, `uuid` for name-based UUIDs, `oauth4webapi` for
+  OAuth 2.0 clients. Hand-written
   code is for domain logic that no library does correctly, with the reason in the guide of the module.
 - Candidates that were compared and not adopted may be development dependencies, as counterparties in tests.
 
@@ -134,6 +138,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
 | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | The randomness of `state`, `nonce`, `jti` and hints is not injected                   | A source that a host or a test could replace could make secrets predictable; tests observe the values in the store instead |
 | `custom` is a `Map` in the tool role and a record in the platform role                | The tool role reads claim names from a token, `__proto__` among them, and the platform role writes what its host gave it   |
+| `tool-integration` signs with a `CryptoKey` through `jose`, not a `Signer`            | Its registrations hold `CryptoKey`s; a `Signer` replaces them when its token calls move onto `core/oauth`                  |
 | Some functions are named for what they serve, such as `platformJwks` and `agsScores`  | They are the handlers of an endpoint, and the specifications name the endpoint; a verb would not say which one             |
 | `ltiLaunch` throws an `LtiError` for a refused launch, and returns a page or a launch | A refusal needs a reason and an HTTP status for the route; tell the results apart with `"status" in result`                |
 | The strings of the three small pages are in English and not in a catalog              | A person sees them only when the login fails; a host that needs another language builds its own page from the same script  |
@@ -165,6 +170,11 @@ Where the code departs from `STANDARDS.md`, with the reason.
   signal.
 - Every call to a service goes through `requestService`, or `callService`, which decodes its text: `redirect` is `"manual"`,
   any 3xx is an error, an answer has at most `maxBytes`, 65,536 by default, and every wait is raced against the deadline.
+- A handler takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, checks the request with
+  `checkHttpRequest` at its entry, and reads the body with `readText`, `readJson` or `readForm`. No package defines its own
+  request or answer type.
+- Signing takes a `Signer` of `@interopkit/core`, never a key, so that a key in a KMS or an HSM works. A pick at random takes a
+  `Random`.
 - Never use `Math.random`, read a clock, or reach for `fetch`. Take a `Clock`, a random source or a `Fetch` from the caller.
   `pnpm lint` fails on `Math.random` and clock reads in `packages/*/src`; only `core/src/clock.ts` reads the system time.
 - A number with a meaning is a named constant with its unit and source.
@@ -222,8 +232,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
 
 - A construct of a specification: its test, and a line of the `supported.md` of the package when what is supported changes.
 - A module of a package: a folder in `src/` with `index.ts`, `internal.ts` where other modules or the tests need more, a
-  subpath in `package.json` `exports` and `typedoc.json` when the host imports it, a test file, a guide in `docs/`, import
-  rules in `biome.json`, and a row in the API table of the README of the package.
+  subpath in `package.json` `exports`, `typedoc.json` and `knip.json` when the host imports it, the same subpath in the
+  `paths` of the `tsconfig` of each package or example that imports it, a test file, a guide in `docs/`, import rules in
+  `biome.json`, and a row in the API table of the README of the package.
 - A check shared by packages: `packages/core/src/checks.ts`. Code that two packages need goes in `core`; code used once stays
   where it is used.
 - A place where the specifications contradict themselves or are silent: the resolution in the `spec-gaps.md` of the package,

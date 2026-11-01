@@ -4,8 +4,14 @@ import { runGuideSamples } from "../../../scripts/guide-samples.js";
 import * as checks from "../src/checks.js";
 import * as http from "../src/http/index.js";
 import * as root from "../src/index.js";
+import * as oauth from "../src/oauth/index.js";
 
-const modules = { "@interopkit/core": root, "@interopkit/core/checks": checks, "@interopkit/core/http": http };
+const modules = {
+  "@interopkit/core": root,
+  "@interopkit/core/checks": checks,
+  "@interopkit/core/http": http,
+  "@interopkit/core/oauth": oauth,
+};
 const GUIDES = new URL("../../../docs/core/", import.meta.url);
 const guides = readdirSync(GUIDES).filter((name) => name.endsWith(".md"));
 

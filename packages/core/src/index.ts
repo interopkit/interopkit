@@ -8,6 +8,7 @@
 export type { CallOptions } from "./call-options.js";
 export { type Clock, checkClock, readClock, SYSTEM_CLOCK } from "./clock.js";
 export { DataError, InteropkitError, ServiceError } from "./errors.js";
+export { type Random, SYSTEM_RANDOM } from "./random.js";
 export {
   callService,
   DEFAULT_MAX_BYTES,
@@ -20,4 +21,5 @@ export {
   type ServiceInit,
   type ServiceResponse,
 } from "./service.js";
+export { type CryptoKeySignerOptions, type Signer, signCompactJws, signerFromCryptoKey } from "./signer/index.js";
 export { untilAborted } from "./until-aborted.js";

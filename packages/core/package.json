@@ -33,6 +33,10 @@
     "./http": {
       "types": "./dist/http/index.d.ts",
       "default": "./dist/http/index.js"
+    },
+    "./oauth": {
+      "types": "./dist/oauth/index.d.ts",
+      "default": "./dist/oauth/index.js"
     }
   },
   "files": [
@@ -53,9 +57,12 @@
     "check:packages": "pnpm build && publint --pack pnpm --strict && attw --pack . --profile esm-only"
   },
   "devDependencies": {
-    "fast-check": "^4.10.2"
+    "fast-check": "^4.10.2",
+    "jose": "6.2.12",
+    "oidc-provider": "9.12.2"
   },
   "dependencies": {
+    "oauth4webapi": "3.8.8",
     "valibot": "1.5.0"
   }
 }

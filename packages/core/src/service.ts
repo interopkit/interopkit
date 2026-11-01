@@ -65,8 +65,8 @@ export interface ServiceResponse {
   readonly status: number;
   /** The headers, by name in lower case. A header that the answer repeats is joined with a comma and a space. */
   readonly headers: Readonly<Record<string, string>>;
-  /** The body, which is empty for `HEAD` and for a status that has none. */
-  readonly body: Uint8Array;
+  /** The body over an `ArrayBuffer`, which a web `Response` accepts; empty for `HEAD` and for a status that has none. */
+  readonly body: Uint8Array<ArrayBuffer>;
 }
 
 /** What one request may ask for beyond the `service` it is made through. */
@@ -87,7 +87,7 @@ export interface RequestOptions extends CallOptions {
 
 /** The bytes of an answer, and whether it ended within the limit. */
 interface Answer {
-  readonly bytes: Uint8Array;
+  readonly bytes: Uint8Array<ArrayBuffer>;
   readonly complete: boolean;
 }
 
@@ -100,7 +100,7 @@ function release(pending: Promise<Response> | undefined): void {
 }
 
 /** Joins the chunks of a body, which hold `size` bytes together. */
-function join(chunks: readonly Uint8Array[], size: number): Uint8Array {
+function join(chunks: readonly Uint8Array[], size: number): Uint8Array<ArrayBuffer> {
   const bytes = new Uint8Array(size);
   let offset = 0;
   for (const chunk of chunks) {
@@ -182,8 +182,12 @@ function failure(
   return new ServiceError(`${what} did not answer: ${reason}.`, 0, "");
 }
 
-/** Checks the `service` of a call. */
-function checkService(service: ServiceCall): void {
+/**
+ * Checks the `service` of a call, as a host passes it from JavaScript.
+ *
+ * @throws `DataError` when `fetch` is not a function, `timeoutMs` is not a positive integer, or `signal` is not an `AbortSignal`.
+ */
+export function checkServiceCall(service: unknown): asserts service is ServiceCall {
   checkRecord(service, "The options of a call to a service must be an object");
   checkFunction(service.fetch, "The option fetch must be a function");
   checkPositiveInteger(service.timeoutMs, "The option timeoutMs");
@@ -252,7 +256,7 @@ export async function requestService(
   init: ServiceInit,
   options: RequestOptions = {},
 ): Promise<ServiceResponse> {
-  checkService(service);
+  checkServiceCall(service);
   checkInit(init);
   checkRequestOptions(options);
   const callers = [service.signal, options.signal].filter((signal) => signal !== undefined);

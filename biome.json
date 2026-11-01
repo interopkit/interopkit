@@ -134,6 +134,7 @@
       "includes": [
         "packages/core/src/errors.ts",
         "packages/core/src/call-options.ts",
+        "packages/core/src/random.ts",
         "packages/core/src/until-aborted.ts"
       ],
       "linter": {
@@ -145,7 +146,7 @@
                 "patterns": [
                   {
                     "group": ["./*", "./*/**"],
-                    "message": "errors.ts, call-options.ts and until-aborted.ts depend on nothing."
+                    "message": "errors.ts, call-options.ts, random.ts and until-aborted.ts depend on nothing."
                   },
                   {
                     "group": ["@interopkit/**"],
@@ -246,6 +247,72 @@
               "level": "error",
               "options": {
                 "patterns": [
+                  {
+                    "group": ["@interopkit/**"],
+                    "message": "core is the lowest package of the family: it imports no other."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/core/src/signer/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "../*",
+                      "../*/**",
+                      "!../call-options.js",
+                      "!../checks.js",
+                      "!../errors.js",
+                      "!../until-aborted.js"
+                    ],
+                    "message": "signer/ depends only on call-options.ts, checks.ts, errors.ts and until-aborted.ts."
+                  },
+                  {
+                    "group": ["@interopkit/**"],
+                    "message": "core is the lowest package of the family: it imports no other."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/core/src/oauth/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "../*",
+                      "../*/**",
+                      "!../call-options.js",
+                      "!../checks.js",
+                      "!../clock.js",
+                      "!../errors.js",
+                      "!../service.js",
+                      "!../until-aborted.js",
+                      "!../signer/index.js",
+                      "!../signer/internal.js"
+                    ],
+                    "message": "oauth/ builds on the files of src/ and on the signer module, through its index.ts or internal.ts."
+                  },
                   {
                     "group": ["@interopkit/**"],
                     "message": "core is the lowest package of the family: it imports no other."

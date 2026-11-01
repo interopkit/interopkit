@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     "packages/core": {
-      "entry": ["src/index.ts", "src/checks.ts", "src/http/index.ts"]
+      "entry": ["src/index.ts", "src/checks.ts", "src/http/index.ts", "src/oauth/index.ts"]
     },
     "packages/learning-analytics": {
       "entry": ["src/index.ts"]
