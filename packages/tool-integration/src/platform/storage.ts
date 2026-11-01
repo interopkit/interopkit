@@ -1,6 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
 import { checkNonEmptyString } from "@interopkit/core/checks";
-import { escapeHtml, type HttpResponse, pagePolicy } from "../protocol/internal.js";
+import type { HttpResponse } from "@interopkit/core/http";
+import { escapeHtml, pagePolicy } from "../protocol/internal.js";
 import { checkPlatformOptions, type PlatformStorageOptions } from "./options.js";
 
 /** The name of the frame of the tool, when the host names none. */

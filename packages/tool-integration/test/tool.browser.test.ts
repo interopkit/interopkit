@@ -1,6 +1,8 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
+
+import type { HttpResponse } from "@interopkit/core/http";
 import { afterEach, describe, expect, it } from "vitest";
-import { createJwksCache, type HttpResponse } from "../src/index.js";
+import { createJwksCache } from "../src/index.js";
 import {
   type LoginRecord,
   type LtiLaunchOptions,
@@ -10,6 +12,7 @@ import {
   type PlatformRegistration,
 } from "../src/tool/index.js";
 import { hostileOrigin, requestsTo, seenBy } from "./hostile.js";
+import { textOf } from "./text-of.js";
 import { waitFor } from "./wait.js";
 
 /**
@@ -150,7 +153,7 @@ async function load(response: HttpResponse, name = ""): Promise<HTMLIFrameElemen
   const frame = document.createElement("iframe");
   frame.name = name;
   const meta = `<head>\n<meta http-equiv="Content-Security-Policy" content="${policy}">`;
-  frame.srcdoc = response.body
+  frame.srcdoc = textOf(response.body)
     .replace("<head>", meta)
     .replaceAll(`${PLATFORM}/auth?`, `${AUTHENTICATION_DOCUMENT}#`)
     .replaceAll(PLATFORM, origin);
@@ -215,7 +218,7 @@ async function login(
     ["lti_storage_target", storageTarget],
   ]);
   const page = await ltiLogin(
-    { method: "GET", url: `https://tool.example.com/lti/login?${initiation}`, headers: {}, body: "" },
+    { method: "GET", url: `https://tool.example.com/lti/login?${initiation}`, headers: {}, body: new Uint8Array() },
     ctx.options,
   );
   const [[state = "", record] = []] = [...ctx.store.records];
@@ -307,10 +310,12 @@ describe("the verification page", () => {
   /** Logs in and returns the verification page that the launch answers the platform's post with. */
   async function verification(target: string): Promise<{ page: HttpResponse; state: string; nonce: string }> {
     const { state, nonce, ctx } = await login(target);
-    const body = new URLSearchParams([
-      ["id_token", "header.payload.signature"],
-      ["state", state],
-    ]).toString();
+    const body = new TextEncoder().encode(
+      new URLSearchParams([
+        ["id_token", "header.payload.signature"],
+        ["state", state],
+      ]).toString(),
+    );
     const page = await ltiLaunch(
       {
         method: "POST",

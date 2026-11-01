@@ -1,6 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 responses are snake_case.
 
-import { createJwksCache, type HttpRequest, type HttpResponse } from "../src/index.js";
+import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
+import { createJwksCache } from "../src/index.js";
 import {
   type AccessTokenOptions,
   type DeepLinkingLaunch,

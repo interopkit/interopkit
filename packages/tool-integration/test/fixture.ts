@@ -1,7 +1,9 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
+
 import { createHash } from "node:crypto";
+import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import { vi } from "vitest";
-import type { HttpRequest, HttpResponse } from "../src/index.js";
+import { textOf } from "./text-of.js";
 
 /** The fixed time of the tests of LTI: 2023-11-14T22:13:20Z. */
 export const NOW = 1_700_000_000_000;
@@ -86,9 +88,12 @@ export async function verifyToken(token: string, key: KeyPair): Promise<boolean>
   );
 }
 
-/** Builds a request. */
-export function request(init: Partial<HttpRequest> & { readonly url: string }): HttpRequest {
-  return { method: "GET", headers: {}, body: "", ...init };
+/** Builds a request. A body given as text is encoded as UTF-8. */
+export function request(
+  init: Partial<Omit<HttpRequest, "body">> & { readonly url: string; readonly body?: string | Uint8Array },
+): HttpRequest {
+  const { body = "", ...rest } = init;
+  return { method: "GET", headers: {}, ...rest, body: typeof body === "string" ? encoder.encode(body) : body };
 }
 
 /** Decodes the text of an HTML attribute value. */
@@ -110,10 +115,10 @@ export function readPage(response: HttpResponse): {
   action: string | undefined;
   hash: string;
 } {
-  const config = /data-config="([^"]*)"/u.exec(response.body)?.[1] ?? "";
-  const script = /<script>([\s\S]*)<\/script>/u.exec(response.body)?.[1] ?? "";
+  const config = /data-config="([^"]*)"/u.exec(textOf(response.body))?.[1] ?? "";
+  const script = /<script>([\s\S]*)<\/script>/u.exec(textOf(response.body))?.[1] ?? "";
   const inputs = new Map<string, string>();
-  for (const [, name = "", value = ""] of response.body.matchAll(
+  for (const [, name = "", value = ""] of textOf(response.body).matchAll(
     /<input type="hidden" name="([^"]*)" value="([^"]*)">/gu,
   )) {
     inputs.set(name, unescapeHtml(value));
@@ -121,9 +126,9 @@ export function readPage(response: HttpResponse): {
   return {
     config: JSON.parse(unescapeHtml(config)),
     script,
-    scripts: response.body.split("<script").length - 1,
+    scripts: textOf(response.body).split("<script").length - 1,
     inputs,
-    action: /<form id="form" method="post" action="([^"]*)">/u.exec(response.body)?.[1],
+    action: /<form id="form" method="post" action="([^"]*)">/u.exec(textOf(response.body))?.[1],
     hash: createHash("sha256").update(script).digest("base64"),
   };
 }

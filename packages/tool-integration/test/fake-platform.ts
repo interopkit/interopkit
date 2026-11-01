@@ -1,10 +1,11 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 responses are snake_case.
 
 import type { Fetch } from "@interopkit/core";
+import type { HttpRequest } from "@interopkit/core/http";
 import { expect } from "vitest";
-import type { HttpRequest } from "../src/index.js";
 import type { LoginRecord, LtiStore, PlatformRegistration } from "../src/tool/index.js";
 import { type KeyPair, readToken, request, signToken, type TestClock, verifyToken } from "./fixture.js";
+import { textOf } from "./text-of.js";
 
 /**
  * A conformant LTI 1.3 platform for the tests of the tool role. It is written from the specifications, not from the code
@@ -228,7 +229,7 @@ export class FakePlatform {
     expect(init.method).toBe("POST");
     expect(init.headers["content-type"]).toBe("application/x-www-form-urlencoded");
     expect(init.headers.authorization).toBeUndefined();
-    const form = new URLSearchParams(init.body);
+    const form = new URLSearchParams(textOf(init.body));
     expect([...form.keys()].sort()).toEqual(["client_assertion", "client_assertion_type", "grant_type", "scope"]);
     expect(form.get("grant_type")).toBe("client_credentials");
     expect(form.get("client_assertion_type")).toBe("urn:ietf:params:oauth:client-assertion-type:jwt-bearer");

@@ -1,8 +1,9 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 requests are snake_case.
 
 import { createHash } from "node:crypto";
+import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import { expect } from "vitest";
-import { createJwksCache, type HttpRequest, type HttpResponse } from "../src/index.js";
+import { createJwksCache } from "../src/index.js";
 import {
   type AgsScore,
   agsScores,
@@ -33,6 +34,7 @@ import {
   toolRegistration,
 } from "./fake-tool.js";
 import { createClock, generateKeyPair, NOW, request, type TestClock } from "./fixture.js";
+import { textOf } from "./text-of.js";
 
 export const SECONDS = NOW / 1000;
 export const ISSUER = "https://platform.example";
@@ -160,7 +162,7 @@ export function setup(overrides: { tools?: Map<string, ToolRegistration> } = {})
 /** The key set of the platform, as a tool reads it. */
 async function keySet(ctx: Setup): Promise<KeySet> {
   const response = await platformJwks(ctx.login);
-  return JSON.parse(response.body);
+  return JSON.parse(textOf(response.body));
 }
 
 /** Decodes the text of an HTML attribute value. */
@@ -178,17 +180,17 @@ export function readPost(
   response: HttpResponse,
 ): Delivered & { scripts: number; hash: string; inputs: Map<string, string> } {
   const inputs = new Map<string, string>();
-  for (const [, name = "", value = ""] of response.body.matchAll(
+  for (const [, name = "", value = ""] of textOf(response.body).matchAll(
     /<input type="hidden" name="([^"]*)" value="([^"]*)">/gu,
   )) {
     inputs.set(name, decodeEntities(value));
   }
-  const script = /<script>([\s\S]*)<\/script>/u.exec(response.body)?.[1] ?? "";
+  const script = /<script>([\s\S]*)<\/script>/u.exec(textOf(response.body))?.[1] ?? "";
   return {
-    action: decodeEntities(/<form id="form" method="post" action="([^"]*)">/u.exec(response.body)?.[1] ?? ""),
+    action: decodeEntities(/<form id="form" method="post" action="([^"]*)">/u.exec(textOf(response.body))?.[1] ?? ""),
     idToken: inputs.get("id_token") ?? "",
     state: inputs.get("state") ?? "",
-    scripts: response.body.split("<script").length - 1,
+    scripts: textOf(response.body).split("<script").length - 1,
     hash: createHash("sha256").update(script).digest("base64"),
     inputs,
   };
@@ -240,8 +242,8 @@ export async function accessToken(ctx: Setup, scope: string, other = false): Pro
     ? await clientAssertion(otherToolKeys, endpoints.token, ctx.clock, { iss: OTHER_CLIENT_ID, sub: OTHER_CLIENT_ID })
     : await clientAssertion(toolKeys, endpoints.token, ctx.clock);
   const response = await platformToken(tokenRequest(endpoints.token, assertion, scope), ctx.token);
-  expect(response.status, response.body).toBe(200);
-  return JSON.parse(response.body).access_token;
+  expect(response.status, textOf(response.body)).toBe(200);
+  return JSON.parse(textOf(response.body)).access_token;
 }
 
 /** A request to a service of the platform with a bearer token. */
@@ -297,7 +299,7 @@ export async function postScore(
 
 /** Converts an answer of a handler to a `Response`, as a host would. */
 export function toResponse({ status, headers, body }: HttpResponse): Response {
-  return new Response(status === 204 ? null : body, { status, headers });
+  return new Response(status === 204 ? null : textOf(body), { status, headers });
 }
 
 /** Posts a score to a line item URL with a token. */

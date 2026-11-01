@@ -7,7 +7,8 @@
     "types": ["node"],
     "paths": {
       "@interopkit/core": ["../core/src/index.ts"],
-      "@interopkit/core/checks": ["../core/src/checks.ts"]
+      "@interopkit/core/checks": ["../core/src/checks.ts"],
+      "@interopkit/core/http": ["../core/src/http/index.ts"]
     }
   },
   "include": ["src", "test"],

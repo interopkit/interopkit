@@ -1,12 +1,9 @@
 import { DataError } from "@interopkit/core";
+import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse, readText } from "@interopkit/core/http";
 import {
   AGS_SCOPE,
   callOptionsOf,
-  checkHttpRequest,
   errorBody,
-  type HttpRequest,
-  type HttpResponse,
-  jsonResponse,
   LINE_ITEM_MEDIA_TYPE,
   SCORE_MEDIA_TYPE,
   SCORES_SUFFIX,
@@ -122,7 +119,7 @@ export async function agsScores(request: HttpRequest, options: AgsScoresOptions)
   }
   let body: unknown;
   try {
-    body = JSON.parse(request.body);
+    body = JSON.parse(readText(request));
   } catch {
     return badRequest("The body of a score must be JSON.");
   }

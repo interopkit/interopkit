@@ -5,8 +5,8 @@ registrations, `fetch`, the time) and receives plain results. The package has no
 
 ```mermaid
 flowchart BT
-  core["@interopkit/core<br/>errors, checks, clock, service calls, signals"]
-  proto["protocol/<br/>claims, jwt, key sets, http, pages"]
+  core["@interopkit/core<br/>errors, checks, clock, service calls, http, signals"]
+  proto["protocol/<br/>claims, jwt, key sets, pages"]
   tool["tool/<br/>login, launch, Deep Linking,<br/>access tokens, scores"]
   platformRole["platform/<br/>login, authorization, tokens,<br/>line items, scores"]
   host["Your application"]
@@ -15,7 +15,8 @@ flowchart BT
   platformRole --> proto
   host -->|"requests, ports"| tool
   host -->|"requests, ports"| platformRole
-  host -.->|"HttpRequest, HttpResponse,<br/>createJwksCache, LtiError"| proto
+  host -.->|"HttpRequest, HttpResponse"| core
+  host -.->|"createJwksCache, LtiError"| proto
   tool <-->|"HTTP"| platform["A learning platform"]
   platformRole <-->|"HTTP"| tools["A tool"]
 ```
@@ -23,7 +24,7 @@ flowchart BT
 | Layer       | Holds                                                                                                                                                  | Imports                                      |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
 | `errors.ts` | `LtiError`, with a kebab-case `reason` and an HTTP `status`                                                                                            | `@interopkit/core`                           |
-| `protocol/` | What the roles share: the claims and their schemas, the JWT check, the key set cache, the request and answer types, the pages of the client-side login | `errors.ts`, `@interopkit/core`              |
+| `protocol/` | What the roles share: the claims and their schemas, the JWT check, the key set cache, the pages of the client-side login | `errors.ts`, `@interopkit/core`              |
 | `tool/`     | The tool role                                                                                                                                          | `errors.ts`, `protocol/`, `@interopkit/core` |
 | `platform/` | The platform role                                                                                                                                      | `errors.ts`, `protocol/`, `@interopkit/core` |
 
@@ -34,7 +35,7 @@ subpath `@interopkit/tool-integration/tool`, and the platform role is `@interopk
 
 | Principle                    | Rule                                                                                                                                           |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plain data in and out        | A request is an `HttpRequest` and an answer an `HttpResponse`: a host builds them from any web framework                                       |
+| Plain data in and out        | A request is an `HttpRequest` and an answer an `HttpResponse` of `@interopkit/core/http`: a host builds them from any web framework                                       |
 | Ports for what the host owns | `LtiStore`, the registration lookup, `fetch`, `Clock`; each receives the `signal` of the call                                                  |
 | Fail closed                  | A launch that fails any check is refused; a key set that cannot be fetched past its time to live fails the launch and never serves a stale key |
 | One algorithm                | Tokens are signed and verified with RS256 only; `none` and the HMAC algorithms are refused                                                     |

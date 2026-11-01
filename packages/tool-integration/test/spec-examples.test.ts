@@ -20,6 +20,7 @@ import { FakeLms, LINE_ITEM_URL } from "./fake-lms.js";
 import { registrationOf } from "./fake-platform.js";
 import { generateKeyPair, readToken, signToken } from "./fixture.js";
 import { launch as platformLaunch, setup as platformSetup } from "./platform-setup.js";
+import { textOf } from "./text-of.js";
 import { cookieLogin, setup, toolKey } from "./tool-setup.js";
 
 /**
@@ -144,7 +145,7 @@ describe("the scores of AGS section 3.4", () => {
     const received: unknown[] = [];
     const fetch: typeof lms.fetch = async (url, init) => {
       if (url !== `${LINE_ITEM_URL}/scores`) return lms.fetch(url, init);
-      received.push(JSON.parse(init.body ?? ""));
+      received.push(JSON.parse(textOf(init.body ?? "")));
       return new Response(null, { status: 204 });
     };
     await publishAgsScore(input as never, launch, { ...ctx.options, fetch });

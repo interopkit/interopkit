@@ -57,7 +57,8 @@ describe("the published JSON-LD context of Caliper 1.2", () => {
   it("accepts the envelope that the sensor sends", async () => {
     const endpoint = fakeEndpoint({ status: 200 });
     await sendCaliper([eventAt(0), eventAt(1)], { ...SENDER, fetch: endpoint.fetch });
-    expect(envelopeProblems(JSON.parse(endpoint.requests[0]?.init.body ?? ""))).toStrictEqual([]);
+    const body = endpoint.requests[0]?.init.body;
+    expect(envelopeProblems(JSON.parse(typeof body === "string" ? body : ""))).toStrictEqual([]);
   });
 });
 

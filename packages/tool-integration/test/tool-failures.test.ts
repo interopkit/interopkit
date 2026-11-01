@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createJwksCache } from "../src/index.js";
 import { type LtiStore, ltiLaunch, ltiLogin } from "../src/tool/index.js";
 import { JWKS_URL } from "./fake-platform.js";
+import { textOf } from "./text-of.js";
+
 import { cookieLogin, type Setup, setup } from "./tool-setup.js";
 
 afterEach(() => vi.useRealTimers());
@@ -98,7 +100,7 @@ describe("the status of an LtiError", () => {
     const ctx = setup();
     const { request: post } = await cookieLogin(ctx, { claims: { nonce: "other" } });
     await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "nonce-mismatch", status: 401 });
-    const legacy = { ...post, body: `${post.body}&oauth_consumer_key=k` };
+    const legacy = { ...post, body: new TextEncoder().encode(`${textOf(post.body)}&oauth_consumer_key=k`) };
     await expect(ltiLaunch(legacy, ctx.options)).rejects.toMatchObject({ reason: "legacy-launch", status: 400 });
   });
 });

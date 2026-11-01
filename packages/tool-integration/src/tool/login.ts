@@ -1,15 +1,7 @@
 import { DataError, readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
-import {
-  callOptionsOf,
-  checkHttpRequest,
-  type HttpRequest,
-  type HttpResponse,
-  MILLISECONDS,
-  randomToken,
-  readForm,
-  readQuery,
-} from "../protocol/internal.js";
+import { checkHttpRequest, type HttpRequest, type HttpResponse, readForm, readQuery } from "@interopkit/core/http";
+import { callOptionsOf, MILLISECONDS, randomToken } from "../protocol/internal.js";
 import { checkLoginOptions, findRegistration, type LtiLoginOptions } from "./options.js";
 import { putDataPage } from "./pages.js";
 import type { PlatformRegistration } from "./registration.js";

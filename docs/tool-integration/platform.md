@@ -37,7 +37,7 @@ sequenceDiagram
 | `platformEndpoints(config)`              | Returns the URLs of the endpoints, which the tool's administrator registers with the tool                 |
 | `readAgsScore(body)`                     | Reads the body of a score into an `AgsScore`, or throws `DataError`                                       |
 
-Handlers take an `HttpRequest` and return an `HttpResponse`. The host owns the routes and the sessions: `check` confirms that
+Handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md). The host owns the routes and the sessions: `check` confirms that
 a launch is the caller's, `once` records single-use identifiers, and `onScore` receives the scores. The
 [example](../../examples/tool-integration/README.md) launches a tool from a platform built on these handlers.
 

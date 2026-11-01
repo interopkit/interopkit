@@ -9,8 +9,10 @@ import { eventAt, fakeEndpoint, fromJson, SENDER } from "./fixture.js";
 const sample = (): readonly CaliperEvent[] => [eventAt(0), eventAt(1)];
 
 /** The bytes of the first request that a fake endpoint recorded. */
-const bodyOf = (requests: readonly { readonly init: { readonly body?: string } }[], at = 0): string =>
-  requests[at]?.init.body ?? "";
+const bodyOf = (requests: readonly { readonly init: { readonly body?: string | Uint8Array } }[], at = 0): string => {
+  const body = requests[at]?.init.body;
+  return typeof body === "string" ? body : new TextDecoder().decode(body);
+};
 
 /** A `fetch` that never answers and ignores its signal, and a promise of the moment it was called. */
 function stalled(): { readonly fetch: Fetch; readonly called: Promise<void> } {

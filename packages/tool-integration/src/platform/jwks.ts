@@ -1,5 +1,5 @@
+import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
 import { exportJWK } from "jose";
-import { type HttpResponse, jsonResponse } from "../protocol/internal.js";
 import { platformKeyId } from "./config.js";
 import { checkPlatformOptions, type PlatformOptions } from "./options.js";
 

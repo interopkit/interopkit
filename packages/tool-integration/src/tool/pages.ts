@@ -1,4 +1,4 @@
-import type { HttpResponse } from "../protocol/internal.js";
+import type { HttpResponse } from "@interopkit/core/http";
 import { escapeHtml, pagePolicy } from "../protocol/internal.js";
 
 // How long a page waits for the platform to answer a storage message before it tells the user. A storage message is a

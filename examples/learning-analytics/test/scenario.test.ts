@@ -13,7 +13,7 @@ function sensorWith(...statuses: readonly number[]): {
 } {
   const bodies: string[] = [];
   const fetch: Fetch = async (_url, init) => {
-    bodies.push(init.body ?? "");
+    bodies.push(typeof init.body === "string" ? init.body : new TextDecoder().decode(init.body));
     return new Response(null, { status: statuses[Math.min(bodies.length, statuses.length) - 1] ?? 200 });
   };
   let now = 1_700_000_000_000;

@@ -1,6 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 requests are snake_case.
+
+import type { HttpRequest } from "@interopkit/core/http";
 import { expect } from "vitest";
-import type { HttpRequest } from "../src/index.js";
 import type { ToolRegistration } from "../src/platform/index.js";
 import { type KeyPair, readToken, request, signToken, type TestClock } from "./fixture.js";
 

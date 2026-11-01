@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as checks from "../src/checks.js";
+import * as http from "../src/http/index.js";
 import * as root from "../src/index.js";
 
 describe("the public API", () => {
@@ -9,9 +10,11 @@ describe("the public API", () => {
         "callService",
         "checkClock",
         "DataError",
+        "DEFAULT_MAX_BYTES",
         "DEFAULT_TIMEOUT_MS",
         "InteropkitError",
         "readClock",
+        "requestService",
         "ServiceError",
         "SYSTEM_CLOCK",
         "untilAborted",
@@ -47,6 +50,12 @@ describe("the public API", () => {
         "positiveIntegerSchema",
         "positiveSchema",
       ].sort(),
+    );
+  });
+
+  it("exports from the http subpath only what the package documents", () => {
+    expect(Object.keys(http).sort()).toStrictEqual(
+      ["checkHttpRequest", "jsonResponse", "negotiate", "readForm", "readJson", "readQuery", "readText"].sort(),
     );
   });
 });

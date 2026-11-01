@@ -1,6 +1,15 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { callService, DataError, DEFAULT_TIMEOUT_MS, type Fetch, ServiceError } from "../src/index.js";
+import {
+  callService,
+  DataError,
+  DEFAULT_MAX_BYTES,
+  DEFAULT_TIMEOUT_MS,
+  type Fetch,
+  requestService,
+  ServiceError,
+  type ServiceInit,
+} from "../src/index.js";
 
 const URL_OF_SERVICE = "https://platform.example/jwks";
 const WHAT = "The key set at https://platform.example/jwks";
@@ -557,5 +566,342 @@ describe("the options", () => {
 
   it("states the default deadline as 10,000 ms", () => {
     expect(DEFAULT_TIMEOUT_MS).toBe(10_000);
+  });
+});
+
+describe("requestService", () => {
+  const Service = { timeoutMs: DEFAULT_TIMEOUT_MS };
+  const request = (fetch: Fetch, init: ServiceInit = GET, options?: Parameters<typeof requestService>[4]) =>
+    requestService({ ...Service, fetch }, WHAT, URL_OF_SERVICE, init, options);
+  const everyByte = Uint8Array.from({ length: 256 }, (_unused, index) => index);
+
+  it("returns the status, the headers by name in lower case and the body as bytes", async () => {
+    const fetch = answering(
+      () =>
+        new Response(everyByte, {
+          status: 201,
+          headers: new Headers([
+            ["ETag", '"v1"'],
+            ["X-Total-Count", "42"],
+            ["Link", "<a>; rel=next"],
+          ]),
+        }),
+    );
+    const answer = await request(fetch);
+    expect(answer.status).toBe(201);
+    expect(answer.headers).toStrictEqual({ etag: '"v1"', link: "<a>; rel=next", "x-total-count": "42" });
+    expect(answer.body).toStrictEqual(everyByte);
+  });
+
+  it("keeps bytes that are not text exactly as they arrive, however the network splits them", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.uint8Array({ maxLength: 300 }), fc.integer({ min: 1, max: 50 }), async (bytes, size) => {
+        const chunks: Uint8Array[] = [];
+        for (let start = 0; start < bytes.length; start += size) chunks.push(bytes.slice(start, start + size));
+        const answer = await request(answering(() => answerWith(chunks)));
+        expect(answer.body).toStrictEqual(bytes);
+      }),
+      { seed: 20_261_101, numRuns: 100 },
+    );
+  });
+
+  it("joins a header that the answer repeats, and keeps a header named __proto__ as data", async () => {
+    const headers = new Headers([
+      ["x-seen", "a"],
+      ["x-seen", "b"],
+      ["__proto__", "polluted"],
+    ]);
+    const answer = await request(answering(() => new Response("", { headers })));
+    expect(answer.headers["x-seen"]).toBe("a, b");
+    expect(Object.hasOwn(answer.headers, "__proto__")).toBe(true);
+    expect(Object.getPrototypeOf(answer.headers)).toBe(Object.prototype);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  it("has an empty body for an answer with none", async () => {
+    const answer = await request(answering(() => new Response(null, { status: 204 })));
+    expect(answer).toStrictEqual({ status: 204, headers: {}, body: new Uint8Array() });
+  });
+
+  it.each(["PUT", "DELETE", "HEAD"] as const)("sends a %s request", async (method) => {
+    const seen: Parameters<Fetch>[1][] = [];
+    const fetch: Fetch = (_url, init) => {
+      seen.push(init);
+      return Promise.resolve(new Response(null, { status: 204 }));
+    };
+    await request(fetch, { method, headers: { "if-match": '"v1"' } });
+    expect(seen[0]).toMatchObject({ method, headers: { "if-match": '"v1"' }, redirect: "manual" });
+  });
+
+  it("sends the bytes of a body as they are, and text as text", async () => {
+    const bodies: unknown[] = [];
+    const fetch: Fetch = (_url, init) => {
+      bodies.push(init.body);
+      return Promise.resolve(new Response(null, { status: 204 }));
+    };
+    await request(fetch, { method: "PUT", headers: {}, body: everyByte });
+    await request(fetch, { method: "POST", headers: {}, body: "text" });
+    expect(bodies).toStrictEqual([everyByte, "text"]);
+    expect(bodies[0]).toBe(everyByte);
+  });
+
+  it("gives a HEAD answer no body even when the answer names one", async () => {
+    const fetch = answering(() => new Response(null, { status: 200, headers: { "content-length": "9000" } }));
+    const answer = await request(fetch, { method: "HEAD", headers: {} });
+    expect(answer.body).toStrictEqual(new Uint8Array());
+    expect(answer.headers["content-length"]).toBe("9000");
+  });
+
+  describe("the statuses it expects", () => {
+    it("returns an answer whose status is listed, and refuses one that is not", async () => {
+      const fetch = answering(() => new Response("gone", { status: 404 }));
+      const answer = await request(fetch, GET, { expect: [200, 404] });
+      expect(answer.status).toBe(404);
+      expect(new TextDecoder().decode(answer.body)).toBe("gone");
+      const error = await failureOf(request(fetch, GET, { expect: [200, 409] }));
+      expect(error).toBeInstanceOf(ServiceError);
+      expect(error).toMatchObject({ message: `${WHAT} answered 404.`, status: 404, body: "gone" });
+    });
+
+    it("answers a precondition failure as a value when it is listed", async () => {
+      const fetch = answering(() => new Response("", { status: 412, headers: { etag: '"v2"' } }));
+      const answer = await request(
+        fetch,
+        { method: "PUT", headers: { "if-match": '"v1"' }, body: "x" },
+        { expect: [204, 409, 412] },
+      );
+      expect(answer).toMatchObject({ status: 412, headers: { etag: '"v2"' } });
+    });
+
+    it("takes the list in place of the 2xx statuses", async () => {
+      const fetch = answering(() => new Response("ok", { status: 200 }));
+      const error = await failureOf(request(fetch, GET, { expect: [404] }));
+      expect(error).toMatchObject({ message: `${WHAT} answered 200.`, status: 200, body: "ok" });
+    });
+
+    it("returns every 2xx status when it lists none, and refuses the first status above them", async () => {
+      for (const status of [200, 201, 202, 204, 206, 299]) {
+        const fetch = answering(() => new Response(null, { status }));
+        await expect(request(fetch)).resolves.toMatchObject({ status });
+      }
+      const error = await failureOf(request(answering(() => new Response("", { status: 400 }))));
+      expect(error).toMatchObject({ message: `${WHAT} answered 400.`, status: 400 });
+    });
+
+    it.each([301, 302, 303, 307, 308])("refuses a %i answer, whatever statuses the call lists", async (status) => {
+      const fetch = answering(
+        () => new Response("moved", { status, headers: { location: "http://elsewhere.example/" } }),
+      );
+      const error = await failureOf(request(fetch, GET, { expect: [200, 404] }));
+      expect(error).toMatchObject({ status, body: "moved" });
+      expect((error as ServiceError).message).toContain("redirect");
+    });
+
+    it("refuses an answer that a fetch followed, even when its status is listed", async () => {
+      const followed = () =>
+        Object.defineProperty(new Response("here", { status: 200 }), "redirected", { value: true });
+      const error = await failureOf(request(answering(followed), GET, { expect: [200] }));
+      expect(error).toMatchObject({ status: 200, body: "here" });
+      expect((error as ServiceError).message).toContain("redirect");
+    });
+
+    it("refuses a status list that holds a redirect or something that is not a status", async () => {
+      const fetch = answering(() => new Response("ok"));
+      const cases: readonly [string, readonly number[]][] = [
+        ["The option expect cannot list the redirect 304: a call never follows a redirect.", [200, 304]],
+        ["The option expect must list HTTP statuses from 100 to 599, found 99.", [99]],
+        ["The option expect must list HTTP statuses from 100 to 599, found 600.", [600]],
+        ["The option expect must list HTTP statuses from 100 to 599, found 200.5.", [200.5]],
+        ['The option expect must list HTTP statuses from 100 to 599, found "200".', JSON.parse('["200"]')],
+        ["The option expect must be an array, found null.", JSON.parse("null")],
+      ];
+      for (const [message, expectation] of cases) {
+        const error = await failureOf(request(fetch, GET, { expect: expectation }));
+        expect(error, message).toStrictEqual(new DataError(message));
+      }
+    });
+  });
+
+  describe("the size limit", () => {
+    it("is 65,536 bytes unless the call says otherwise", async () => {
+      expect(DEFAULT_MAX_BYTES).toBe(LIMIT);
+      const { response } = bodyOfBytes(LIMIT + 1);
+      const error = await failureOf(request(answering(() => response)));
+      expect(error).toMatchObject({ message: `${WHAT} answered with more than 65536 bytes.` });
+    });
+
+    it("is the one that the call names, above the default or below it", async () => {
+      const large = await request(
+        answering(() => bodyOfBytes(3 * LIMIT).response),
+        GET,
+        { maxBytes: 3 * LIMIT },
+      );
+      expect(large.body).toHaveLength(3 * LIMIT);
+      const { response, cancelled } = bodyOfBytes(100_000);
+      const error = await failureOf(
+        request(
+          answering(() => response),
+          GET,
+          { maxBytes: 10 },
+        ),
+      );
+      expect(error).toMatchObject({
+        message: `${WHAT} answered with more than 10 bytes.`,
+        status: 200,
+        body: "a".repeat(10),
+      });
+      await cancelled;
+    });
+
+    it("accepts an answer of exactly the limit, whatever the limit is", async () => {
+      await expect(
+        request(
+          answering(() => bodyOfBytes(10).response),
+          GET,
+          { maxBytes: 10 },
+        ),
+      ).resolves.toMatchObject({
+        body: new Uint8Array(10).fill(97),
+      });
+    });
+
+    it("cuts the text of an error answer at the limit, and not in the middle of a character", async () => {
+      const error = await failureOf(
+        request(
+          answering(() => new Response(encoder.encode("ab\u20ac"), { status: 500 })),
+          GET,
+          { maxBytes: 3 },
+        ),
+      );
+      expect(error).toMatchObject({ status: 500, body: "ab" });
+    });
+
+    it("refuses a limit that is not a positive integer", async () => {
+      const fetch = answering(() => new Response("ok"));
+      for (const maxBytes of [0, -1, 1.5, JSON.parse('"10"'), JSON.parse("null")]) {
+        const error = await failureOf(request(fetch, GET, { maxBytes }));
+        expect(error).toBeInstanceOf(DataError);
+        expect((error as DataError).message).toMatch(/^The option maxBytes must be a positive integer, found /);
+      }
+    });
+  });
+
+  describe("a request that is not valid", () => {
+    it("refuses a method, headers or body of another type, and a body on a GET or a HEAD", async () => {
+      const fetch = answering(() => new Response("ok"));
+      const cases: readonly [string, ServiceInit][] = [
+        ["The request of a call to a service must be an object, found null.", JSON.parse("null")],
+        [
+          'The method of the request must be GET, POST, PUT, DELETE, HEAD, found "PATCH".',
+          JSON.parse('{"method":"PATCH","headers":{}}'),
+        ],
+        [
+          "The method of the request must be GET, POST, PUT, DELETE, HEAD, found undefined.",
+          JSON.parse('{"headers":{}}'),
+        ],
+        ["The headers of the request must be an object, found null.", { method: "GET", headers: JSON.parse("null") }],
+        [
+          "The body of the request must be a string or a Uint8Array, found an array.",
+          { method: "POST", headers: {}, body: JSON.parse("[1]") },
+        ],
+        [
+          "The body of the request must be a string or a Uint8Array, found 5.",
+          { method: "PUT", headers: {}, body: JSON.parse("5") },
+        ],
+        ["A GET request has no body.", { method: "GET", headers: {}, body: "x" }],
+        ["A HEAD request has no body.", { method: "HEAD", headers: {}, body: new Uint8Array() }],
+      ];
+      for (const [message, init] of cases) {
+        const calls: number[] = [];
+        const counting: Fetch = (url, fetchInit) => {
+          calls.push(1);
+          return fetch(url, fetchInit);
+        };
+        const error = await failureOf(request(counting, init));
+        expect(error, message).toStrictEqual(new DataError(message));
+        expect(calls).toHaveLength(0);
+      }
+    });
+
+    it("refuses options that are not an object", async () => {
+      const error = await failureOf(
+        request(
+          answering(() => new Response("ok")),
+          GET,
+          JSON.parse("null"),
+        ),
+      );
+      expect(error).toStrictEqual(new DataError("The options of a request must be an object, found null."));
+    });
+  });
+
+  describe("the signals of a request", () => {
+    it("ends the wait when the signal of the options aborts, with its reason", async () => {
+      const controller = new AbortController();
+      const call = request(ignoringFetch, GET, { signal: controller.signal });
+      const reason = new Error("The page was left.");
+      controller.abort(reason);
+      expect(await failureOf(call)).toBe(reason);
+    });
+
+    it("makes no request when the signal of the options is aborted before the call", async () => {
+      let calls = 0;
+      const fetch: Fetch = () => {
+        calls += 1;
+        return Promise.resolve(new Response("ok"));
+      };
+      const reason = new Error("Already over.");
+      expect(await failureOf(request(fetch, GET, { signal: AbortSignal.abort(reason) }))).toBe(reason);
+      expect(calls).toBe(0);
+    });
+
+    it("ends the wait when either signal aborts, and rejects with the reason of the one that did", async () => {
+      const first = new AbortController();
+      const second = new AbortController();
+      const call = requestService(
+        { fetch: ignoringFetch, timeoutMs: DEFAULT_TIMEOUT_MS, signal: first.signal },
+        WHAT,
+        URL_OF_SERVICE,
+        GET,
+        { signal: second.signal },
+      );
+      const reason = new Error("The second one ended it.");
+      second.abort(reason);
+      expect(await failureOf(call)).toBe(reason);
+      expect(first.signal.aborted).toBe(false);
+    });
+
+    it("refuses a signal in the options that is not an AbortSignal", async () => {
+      const options = JSON.parse('{"signal":{"aborted":false}}');
+      const error = await failureOf(
+        request(
+          answering(() => new Response("ok")),
+          GET,
+          options,
+        ),
+      );
+      expect(error).toStrictEqual(new DataError("The option signal must be an AbortSignal, found an object."));
+    });
+  });
+});
+
+describe("callService with the options of a request", () => {
+  it("takes the limit and the statuses of the request, and decodes the body as UTF-8", async () => {
+    const fetch = answering(() => new Response("caf\u00e9 missing", { status: 404 }));
+    const service = { fetch, timeoutMs: DEFAULT_TIMEOUT_MS };
+    await expect(callService(service, WHAT, URL_OF_SERVICE, GET, { expect: [404] })).resolves.toBe("caf\u00e9 missing");
+    await expect(callService(service, WHAT, URL_OF_SERVICE, GET)).rejects.toMatchObject({ status: 404 });
+    await expect(callService(service, WHAT, URL_OF_SERVICE, GET, { expect: [404], maxBytes: 5 })).rejects.toMatchObject(
+      {
+        message: `${WHAT} answered with more than 5 bytes.`,
+      },
+    );
+  });
+
+  it("replaces bytes that are not UTF-8 with the replacement character", async () => {
+    const fetch = answering(() => new Response(Uint8Array.of(0x61, 0xff, 0x62)));
+    await expect(callService({ fetch, timeoutMs: DEFAULT_TIMEOUT_MS }, WHAT, URL_OF_SERVICE, GET)).resolves.toBe(
+      "a\ufffdb",
+    );
   });
 });

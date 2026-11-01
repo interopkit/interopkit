@@ -1,4 +1,5 @@
-import { escapeHtml, type HttpResponse, pagePolicy } from "../protocol/internal.js";
+import type { HttpResponse } from "@interopkit/core/http";
+import { escapeHtml, pagePolicy } from "../protocol/internal.js";
 
 // The form submits itself; requestSubmit runs the form's validation and its submit event, which submit() does not.
 const SCRIPT = `document.getElementById("form").requestSubmit();`;

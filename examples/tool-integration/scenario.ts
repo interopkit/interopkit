@@ -3,7 +3,7 @@
 import type { Clock } from "@interopkit/core";
 import { LtiError } from "@interopkit/tool-integration";
 import { generateSigningKeys } from "./src/keys.ts";
-import { connect, plainRequest } from "./src/network.ts";
+import { connect, plainRequest, textOf } from "./src/network.ts";
 import { createPlatform } from "./src/platform.ts";
 import { createTool } from "./src/tool.ts";
 
@@ -95,21 +95,21 @@ export async function runScenario(): Promise<Outcome> {
   // The browser opens the frame. The platform asks for client-side login, so the tool answers with a page that keeps its
   // `state` and `nonce` in the platform's storage and then sends the browser to the platform to authenticate.
   const login = await tool.handle(plainRequest("GET", frame.url));
-  const stored = configOf(login.body);
+  const stored = configOf(textOf(login));
   const storage = new Map([
     [`state_${stored.state}`, stored.state ?? ""],
     [`nonce_${stored.nonce}`, stored.nonce ?? ""],
   ]);
   const authenticationRequest = stored.authenticationRequest ?? "";
   const authentication = await platform.handle(plainRequest("GET", authenticationRequest));
-  const form = formOf(authentication.body);
+  const form = formOf(textOf(authentication));
   const formType = { "content-type": "application/x-www-form-urlencoded" };
   const fields = { id_token: form.idToken, state: form.state };
   // The platform's post is answered with a page that fetches the stored values; the browser posts them back from the tool's origin.
   const verification = await tool.handle(
     plainRequest("POST", form.action, { ...formType, origin: platform.origin }, new URLSearchParams(fields).toString()),
   );
-  const fetched = configOf(verification.body);
+  const fetched = configOf(textOf(verification));
   const verified = new URLSearchParams({
     ...fields,
     stored_state: storage.get(`state_${fetched.state}`) ?? "",
@@ -141,7 +141,7 @@ export async function runScenario(): Promise<Outcome> {
 
   return {
     login: { toolHost: new URL(frame.url).host, storageUrl: frame.storageUrl },
-    launch: JSON.parse(launched.body),
+    launch: JSON.parse(textOf(launched)),
     scores: platform.scores.map(({ resource, score }) => ({
       resource,
       userId: score.userId,

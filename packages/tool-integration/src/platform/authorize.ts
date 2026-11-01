@@ -1,16 +1,8 @@
 import { DataError, readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
+import { checkHttpRequest, type HttpRequest, type HttpResponse, readForm, readQuery } from "@interopkit/core/http";
 import { LtiError } from "../errors.js";
-import {
-  callOptionsOf,
-  checkHttpRequest,
-  type HttpRequest,
-  type HttpResponse,
-  MILLISECONDS,
-  readForm,
-  readQuery,
-  toSeconds,
-} from "../protocol/internal.js";
+import { callOptionsOf, MILLISECONDS, toSeconds } from "../protocol/internal.js";
 import { issueIdToken } from "./id-token.js";
 import { checkAuthorizeOptions, checkRequestOrigin, findClient, type PlatformAuthorizeOptions } from "./options.js";
 import { autoPostPage } from "./page.js";

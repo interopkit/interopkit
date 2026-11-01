@@ -3,7 +3,8 @@
 `@interopkit/tool-integration/tool` lets a learning platform launch your application as an LTI 1.3 tool. It runs on a
 server or an edge runtime, with [jose](https://github.com/panva/jose) for the tokens and the key sets. LTI 1.0 to 1.2
 launches (OAuth 1.0a, retired on 2022-06-30) are refused. The root subpath, `@interopkit/tool-integration`, holds what both
-roles share: `LtiError`, `HttpRequest`, `HttpResponse` and `createJwksCache`.
+roles share: `LtiError` and `createJwksCache`. The request and answer types are in
+[`@interopkit/core/http`](../core/http.md).
 
 ```mermaid
 sequenceDiagram
@@ -36,7 +37,7 @@ sequenceDiagram
 | `publishAgsScore(score, launch, options)`     | Publishes a score to the line item of the launch                                              |
 | `createJwksCache(options)`                    | Creates the cache of the platforms' key sets that `ltiLaunch` verifies signatures with        |
 
-The handlers take an `HttpRequest` and return an `HttpResponse`, plain objects that a host builds from any web framework. The
+The handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md), plain objects that a host builds from any web framework. The
 host owns the routes, the sessions, the database and the keys. The [example](../../examples/tool-integration/README.md) runs a tool
 and a platform against each other in one process.
 
@@ -55,8 +56,8 @@ and a platform against each other in one process.
 
 A host builds the registration of each platform, the store of logins and the options. It generates its key in the sample; a real
 host keeps the key that the platform's administrator registered. The routes of the host turn the request of its web framework into
-an `HttpRequest` (with the header names in lower case, as `Object.fromEntries(request.headers)` gives them) and the
-`HttpResponse` back into a response.
+an `HttpRequest` (with the header names in lower case, as `Object.fromEntries(request.headers)` gives them, and the body as
+bytes, as `new Uint8Array(await request.arrayBuffer())` gives it) and the `HttpResponse` back into a response.
 
 ```ts
 import { createJwksCache } from "@interopkit/tool-integration";
@@ -103,7 +104,7 @@ login.search = new URLSearchParams({
   target_link_uri: "https://tool.example.com/lti/launch",
   client_id: registration.clientId,
 }).toString();
-const response = await ltiLogin({ method: "GET", url: login.href, headers: {}, body: "" }, options);
+const response = await ltiLogin({ method: "GET", url: login.href, headers: {}, body: new Uint8Array() }, options);
 response.status; // => 302
 const authentication = new URL(response.headers.location);
 authentication.origin + authentication.pathname; // => "https://lms.example.edu/auth"

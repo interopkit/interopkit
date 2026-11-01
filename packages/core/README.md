@@ -1,19 +1,19 @@
 # @interopkit/core
 
-The shared foundation of the interopkit packages: their errors, the checks of their arguments, a clock, and the call to a
-service over HTTP with a deadline, a size limit and no redirects. Most users install
+The shared foundation of the interopkit packages: their errors, the checks of their arguments, a clock, the call to a
+service over HTTP with a deadline, a size limit and no redirects, and requests and answers as plain data. Most users install
 [`@interopkit/tool-integration`](https://github.com/interopkit/interopkit/tree/main/packages/tool-integration#readme) or
 [`@interopkit/learning-analytics`](https://github.com/interopkit/interopkit/tree/main/packages/learning-analytics#readme),
 which depend on it.
 
 ```mermaid
 flowchart BT
-  core["@interopkit/core<br/>errors, checks, clock, service calls"]
+  core["@interopkit/core<br/>errors, checks, clock, service calls, http"]
   tool["@interopkit/tool-integration"] --> core
   analytics["@interopkit/learning-analytics"] --> core
   host["Your application"] --> tool
   host --> analytics
-  host -.->|"service calls, errors, Clock"| core
+  host -.->|"service calls, errors, Clock,<br/>HttpRequest, HttpResponse"| core
 ```
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
@@ -26,13 +26,14 @@ npm install @interopkit/core
 
 ## API
 
-| Subpath                   | Exports                                                                                                                                                                                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@interopkit/core`        | `InteropkitError`, the base class; `DataError`, for invalid input; `ServiceError`, for a service that fails, with `status` and `body`                                                                                                      |
-|                           | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                                                                                                                                                         |
-|                           | `CallOptions`, the `signal` that ends a caller's wait, and `untilAborted`; `Fetch`, `ServiceCall`, `callService`, `DEFAULT_TIMEOUT_MS`                                                                                                     |
-| `@interopkit/core/checks` | Checks of one value: `describe`, `isRecord`, `checkRecord`, `checkArray`, `checkFunction`, `checkProperties`, `checkString`, `checkNonEmptyString`, `checkHttpsUrl`, `checkNonNegativeInteger`, `checkPositiveInteger`, `checkAbortSignal` |
-|                           | Schemas: `parseWith`, `issueText`, `guardSchema`, `looseRecord`, `mapSchema`, `methodsSchema`, `finiteSchema`, `httpsUrlSchema`, `nonEmptyStringSchema`, `nonNegativeIntegerSchema`, `positiveIntegerSchema`, `positiveSchema`             |
+| Subpath                   | Exports                                                                                                                                                                                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@interopkit/core`        | `InteropkitError`, the base class; `DataError`, for invalid input; `ServiceError`, for a service that fails, with `status` and `body`                                                                                                           |
+|                           | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                                                                                                                                                              |
+|                           | `CallOptions`, the `signal` that ends a caller's wait, and `untilAborted`; `Fetch`, `ServiceCall`, `ServiceInit`, `ServiceResponse`, `RequestOptions`, `HttpMethod`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`, `DEFAULT_MAX_BYTES` |
+| `@interopkit/core/http`   | `HttpRequest`, `HttpResponse`, `checkHttpRequest`; `readText`, `readJson`, `readQuery`, `readForm`; `jsonResponse`; `negotiate`                                                                                                                 |
+| `@interopkit/core/checks` | Checks of one value: `describe`, `isRecord`, `checkRecord`, `checkArray`, `checkFunction`, `checkProperties`, `checkString`, `checkNonEmptyString`, `checkHttpsUrl`, `checkNonNegativeInteger`, `checkPositiveInteger`, `checkAbortSignal`      |
+|                           | Schemas: `parseWith`, `issueText`, `guardSchema`, `looseRecord`, `mapSchema`, `methodsSchema`, `finiteSchema`, `httpsUrlSchema`, `nonEmptyStringSchema`, `nonNegativeIntegerSchema`, `positiveIntegerSchema`, `positiveSchema`                  |
 
 ```ts
 import { callService, DEFAULT_TIMEOUT_MS } from "@interopkit/core";
@@ -49,6 +50,7 @@ const body = await callService(
 
 A call that fails rejects with a `ServiceError` whose `status` is the HTTP status, or 0 when the service did not answer. The
 guides say more: [service calls](https://github.com/interopkit/interopkit/blob/main/docs/core/service.md),
+[requests and answers](https://github.com/interopkit/interopkit/blob/main/docs/core/http.md),
 [signals](https://github.com/interopkit/interopkit/blob/main/docs/core/signals.md),
 [checks](https://github.com/interopkit/interopkit/blob/main/docs/core/checks.md),
 [errors](https://github.com/interopkit/interopkit/blob/main/docs/core/errors.md) and

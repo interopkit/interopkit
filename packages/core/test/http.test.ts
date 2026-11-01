@@ -1,0 +1,474 @@
+import fc from "fast-check";
+import { describe, expect, it } from "vitest";
+import {
+  checkHttpRequest,
+  type HttpRequest,
+  jsonResponse,
+  negotiate,
+  type ReadJsonOptions,
+  readForm,
+  readJson,
+  readQuery,
+  readText,
+} from "../src/http/index.js";
+import { DataError } from "../src/index.js";
+
+const encoder = new TextEncoder();
+const FORM = { "content-type": "application/x-www-form-urlencoded" };
+const FUZZ = { seed: 20_261_101, numRuns: 200 } as const;
+
+/** Builds a request. A body given as text is encoded as UTF-8. */
+function request(init: {
+  url?: string;
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string | Uint8Array;
+}) {
+  const { url = "https://tool.example/", method = "GET", headers = {}, body = "" } = init;
+  return { method, url, headers, body: typeof body === "string" ? encoder.encode(body) : body } satisfies HttpRequest;
+}
+
+/** Checks that a function returns, or throws a `DataError`, and nothing else. */
+function expectOutcome(run: () => unknown): void {
+  try {
+    run();
+  } catch (error) {
+    expect(error instanceof DataError, String(error instanceof Error ? error.stack : error)).toBe(true);
+  }
+}
+
+describe("checkHttpRequest", () => {
+  it("accepts a request with a method, an absolute URL, a body of bytes and lower-case headers", () => {
+    expect(() => checkHttpRequest(request({}))).not.toThrow();
+    expect(() => checkHttpRequest(request({ body: new Uint8Array([0xff, 0, 1]) }))).not.toThrow();
+  });
+
+  it("names what is wrong with a request that is not one", () => {
+    const bad: readonly [string, unknown][] = [
+      ["The request must be an object, found null.", JSON.parse("null")],
+      [
+        "The method of the request must be a string, found 5.",
+        { method: 5, url: "https://a.example/", headers: {}, body: new Uint8Array() },
+      ],
+      [
+        'The URL of the request must be an absolute URL, found "/login".',
+        { method: "GET", url: "/login", headers: {}, body: new Uint8Array() },
+      ],
+      [
+        "The body of the request must be a Uint8Array, found null: encode text with a TextEncoder.",
+        { method: "GET", url: "https://a.example/", headers: {}, body: JSON.parse("null") },
+      ],
+      [
+        "The body of the request must be a Uint8Array, found an array: encode text with a TextEncoder.",
+        { method: "GET", url: "https://a.example/", headers: {}, body: JSON.parse("[1]") },
+      ],
+      [
+        "The headers of the request must be an object, found an array.",
+        { method: "GET", url: "https://a.example/", headers: JSON.parse("[]"), body: new Uint8Array() },
+      ],
+      [
+        'The header "cookie" of the request must be a string, found 5.',
+        { method: "GET", url: "https://a.example/", headers: JSON.parse('{"cookie":5}'), body: new Uint8Array() },
+      ],
+      [
+        'The header names of the request must be in lower case, found "Cookie".',
+        { method: "GET", url: "https://a.example/", headers: JSON.parse('{"Cookie": "a=1"}'), body: new Uint8Array() },
+      ],
+    ];
+    for (const [message, value] of bad) expect(() => checkHttpRequest(value), message).toThrow(new DataError(message));
+  });
+
+  it("does not repeat a text body in its message, since a body may hold a token", () => {
+    const text = { method: "POST", url: "https://a.example/", headers: {}, body: JSON.parse('"id_token=secret"') };
+    expect(() => checkHttpRequest(text)).toThrow(
+      new DataError("The body of the request must be a Uint8Array, found a string: encode text with a TextEncoder."),
+    );
+  });
+
+  it("throws nothing but a DataError for any JSON", () => {
+    fc.assert(
+      fc.property(fc.jsonValue(), (json) => expectOutcome(() => checkHttpRequest(json))),
+      FUZZ,
+    );
+  });
+});
+
+describe("the parameters of a query and a form", () => {
+  it("reads the parameters of a query into a map, and refuses one that repeats", () => {
+    const read = (query: string) => readQuery(request({ url: `https://tool.example/login?${query}` }));
+    expect([...read("iss=a&login_hint=b")]).toStrictEqual([
+      ["iss", "a"],
+      ["login_hint", "b"],
+    ]);
+    expect(() => read("iss=a&iss=b")).toThrow(
+      new DataError('The query of the request has the parameter "iss" more than once.'),
+    );
+  });
+
+  it("reads a form of the right media type, with its parameters, and refuses another media type", () => {
+    const post = (type: string, body: string) => request({ method: "POST", headers: { "content-type": type }, body });
+    expect([...readForm(post("application/x-www-form-urlencoded; charset=UTF-8", "id_token=a&state=b"))]).toStrictEqual(
+      [
+        ["id_token", "a"],
+        ["state", "b"],
+      ],
+    );
+    expect(() => readForm(post("application/json", "{}"))).toThrow(
+      'The content type of the request must be application/x-www-form-urlencoded, found "application/json".',
+    );
+    expect(() => readForm(request({ method: "POST", body: "a=1" }))).toThrow(
+      "The content type of the request must be application/x-www-form-urlencoded, found undefined.",
+    );
+    expect(() => readForm(post("application/x-www-form-urlencoded", "a=1&a=2"))).toThrow(
+      'The form of the request has the parameter "a" more than once.',
+    );
+  });
+
+  it("decodes the percent-encoded UTF-8 of a form, and a plus as a space", () => {
+    const form = readForm(request({ method: "POST", headers: FORM, body: "name=caf%C3%A9+au+lait&mark=%E2%82%AC" }));
+    expect([...form]).toStrictEqual([
+      ["name", "café au lait"],
+      ["mark", "€"],
+    ]);
+  });
+
+  it("refuses a form whose bytes are not UTF-8", () => {
+    const body = new Uint8Array([0x61, 0x3d, 0xff]);
+    expect(() => readForm(request({ method: "POST", headers: FORM, body }))).toThrow(
+      new DataError("The body of the request must be UTF-8 text, and it holds bytes that are not UTF-8."),
+    );
+  });
+
+  it("never throws anything but a DataError for any query and any form", () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 120 }), fc.string({ maxLength: 40 }), (text, type) => {
+        expectOutcome(() => readQuery(request({ url: `https://tool.example/login?${text}` })));
+        expectOutcome(() => readForm(request({ method: "POST", headers: { "content-type": type }, body: text })));
+      }),
+      FUZZ,
+    );
+  });
+
+  it("never throws anything but a DataError for any bytes in a form", () => {
+    fc.assert(
+      fc.property(fc.uint8Array({ maxLength: 60 }), (body) => {
+        expectOutcome(() => readForm(request({ method: "POST", headers: FORM, body })));
+      }),
+      FUZZ,
+    );
+  });
+});
+
+describe("readText", () => {
+  it("decodes the UTF-8 of a body, and gives the empty string for an empty body", () => {
+    expect(readText(request({ body: "café \u{1F600}" }))).toBe("café \u{1F600}");
+    expect(readText(request({}))).toBe("");
+  });
+
+  it("drops a byte order mark at the start, and keeps one inside", () => {
+    expect(readText(request({ body: new Uint8Array([0xef, 0xbb, 0xbf, 0x61]) }))).toBe("a");
+    expect(readText(request({ body: new Uint8Array([0x61, 0xef, 0xbb, 0xbf]) }))).toBe("a﻿");
+  });
+
+  it.each([
+    ["a byte that UTF-8 never uses", [0x61, 0xff]],
+    ["a sequence that stops short", [0xe2, 0x82]],
+    ["an overlong form of a slash", [0xc0, 0xaf]],
+    ["a surrogate half", [0xed, 0xa0, 0x80]],
+  ])("refuses %s, and does not replace it", (_name, bytes) => {
+    expect(() => readText(request({ body: new Uint8Array(bytes) }))).toThrow(
+      new DataError("The body of the request must be UTF-8 text, and it holds bytes that are not UTF-8."),
+    );
+  });
+
+  it("returns the text that was encoded, for any text", () => {
+    fc.assert(
+      fc.property(fc.string({ unit: "grapheme" }), (text) => {
+        expect(readText(request({ body: text }))).toBe(text.replace(/^﻿/u, ""));
+      }),
+      FUZZ,
+    );
+  });
+
+  it("throws nothing but a DataError for any bytes", () => {
+    fc.assert(
+      fc.property(fc.uint8Array({ maxLength: 60 }), (body) => expectOutcome(() => readText(request({ body })))),
+      FUZZ,
+    );
+  });
+});
+
+describe("readJson", () => {
+  const json = (text: string, options?: Parameters<typeof readJson>[1]) => readJson(request({ body: text }), options);
+  const nested = (depth: number) => "[".repeat(depth) + "]".repeat(depth);
+
+  it("parses the JSON of a body", () => {
+    expect(json('{"a":[1,"b",null,true],"c":{"d":1.5}}')).toStrictEqual({ a: [1, "b", null, true], c: { d: 1.5 } });
+    expect(json(" 7 ")).toBe(7);
+    expect(json('"text"')).toBe("text");
+  });
+
+  it("refuses a body that is not JSON, and an empty body", () => {
+    const message = "The body of the request must be JSON, and it is not valid JSON.";
+    for (const text of ["", "{", "{'a':1}", "[1,]", "undefined", '{"a":1} x']) {
+      expect(() => json(text), text).toThrow(new DataError(message));
+    }
+  });
+
+  it("refuses a body whose bytes are not UTF-8", () => {
+    expect(() => readJson(request({ body: new Uint8Array([0x22, 0xff, 0x22]) }))).toThrow(
+      new DataError("The body of the request must be UTF-8 text, and it holds bytes that are not UTF-8."),
+    );
+  });
+
+  it("accepts a body of exactly the most bytes and refuses one byte more", () => {
+    const text = `"${"a".repeat(98)}"`;
+    expect(json(text, { maxBytes: 100 })).toBe("a".repeat(98));
+    expect(() => json(`${text} `, { maxBytes: 100 })).toThrow(
+      new DataError("The body of the request has 101 bytes, above the limit of 100 bytes."),
+    );
+  });
+
+  it("limits the bytes of a body to 1,048,576 unless told otherwise", () => {
+    const limit = 1_048_576;
+    expect(json(`"${"a".repeat(limit - 2)}"`)).toHaveLength(limit - 2);
+    expect(() => json(`"${"a".repeat(limit - 1)}"`)).toThrow(
+      new DataError(`The body of the request has ${limit + 1} bytes, above the limit of ${limit} bytes.`),
+    );
+  });
+
+  it("counts bytes and not characters", () => {
+    expect(() => json('"€€€"', { maxBytes: 10 })).toThrow("has 11 bytes");
+    expect(json('"€€"', { maxBytes: 10 })).toBe("€€");
+  });
+
+  it("accepts arrays and objects nested to exactly the deepest level and refuses one level more", () => {
+    expect(json(nested(3), { maxDepth: 3 })).toStrictEqual([[[]]]);
+    expect(() => json(nested(4), { maxDepth: 3 })).toThrow(
+      new DataError("The JSON of the request nests deeper than the limit of 3 levels."),
+    );
+    expect(() => json('{"a":{"b":{"c":{}}}}', { maxDepth: 3 })).toThrow("nests deeper than the limit of 3 levels");
+    expect(json('{"a":{"b":{}}}', { maxDepth: 3 })).toStrictEqual({ a: { b: {} } });
+  });
+
+  it("limits the depth to 64 levels unless told otherwise", () => {
+    expect(json(nested(64))).toHaveLength(1);
+    expect(() => json(nested(65))).toThrow(
+      new DataError("The JSON of the request nests deeper than the limit of 64 levels."),
+    );
+  });
+
+  it("refuses a body of a hundred thousand opening brackets without building anything", () => {
+    expect(() => json("[".repeat(100_000), { maxBytes: 200_000 })).toThrow("nests deeper than the limit of 64 levels");
+    expect(() => json('{"a":'.repeat(50_000), { maxBytes: 400_000 })).toThrow("nests deeper");
+  });
+
+  it("does not count brackets and braces inside strings, whatever the escapes before them", () => {
+    expect(json('["[[[[", "{{{{", "\\"[[[[", "\\\\", "]]]]"]', { maxDepth: 1 })).toStrictEqual([
+      "[[[[",
+      "{{{{",
+      '"[[[[',
+      "\\",
+      "]]]]",
+    ]);
+    // The quote after two backslashes ends the string, so the brackets that follow count.
+    expect(() => json('["\\\\"], [[[[', { maxDepth: 2 })).toThrow("nests deeper");
+  });
+
+  it("reads any string as a value at depth 1, whatever brackets, quotes and backslashes it holds", () => {
+    fc.assert(
+      fc.property(fc.string({ unit: fc.constantFrom("[", "]", "{", "}", '"', "\\", "a", "€") }), (text) => {
+        expect(json(JSON.stringify([text]), { maxDepth: 1 })).toStrictEqual([text]);
+        expect(json(JSON.stringify({ [text]: text }), { maxDepth: 1 })).toStrictEqual({ [text]: text });
+      }),
+      FUZZ,
+    );
+  });
+
+  it("accepts nesting up to the limit and refuses deeper, for any depth and limit", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 80 }), fc.integer({ min: 1, max: 80 }), (depth, maxDepth) => {
+        if (depth <= maxDepth) expect(json(nested(depth), { maxDepth })).toBeInstanceOf(Array);
+        else expect(() => json(nested(depth), { maxDepth })).toThrow(DataError);
+      }),
+      FUZZ,
+    );
+  });
+
+  it("returns what JSON.parse returns, for any JSON value within the limits", () => {
+    fc.assert(
+      fc.property(fc.jsonValue(), (value) => {
+        const text = JSON.stringify(value);
+        expect(json(text)).toStrictEqual(JSON.parse(text));
+      }),
+      FUZZ,
+    );
+  });
+
+  it("makes __proto__ an own property and leaves the prototype alone", () => {
+    const value = json('{"__proto__":{"admin":true}}') as Record<string, unknown>;
+    expect(Object.hasOwn(value, "__proto__")).toBe(true);
+    expect(Object.getPrototypeOf(value)).toBe(Object.prototype);
+    expect(({} as Record<string, unknown>).admin).toBeUndefined();
+  });
+
+  it("refuses options of other types", () => {
+    const body = request({ body: "{}" });
+    const cases: readonly [string, ReadJsonOptions][] = [
+      ["The options of readJson must be an object, found null.", JSON.parse("null")],
+      ["The option maxBytes must be a positive integer, found 0.", { maxBytes: 0 }],
+      ['The option maxBytes must be a positive integer, found "10".', JSON.parse('{"maxBytes":"10"}')],
+      ["The option maxDepth must be a positive integer, found 1.5.", { maxDepth: 1.5 }],
+      ["The option maxDepth must be a positive integer, found null.", JSON.parse('{"maxDepth":null}')],
+    ];
+    for (const [message, options] of cases) {
+      expect(() => readJson(body, options), message).toThrow(new DataError(message));
+    }
+  });
+
+  it("throws nothing but a DataError for any bytes", () => {
+    fc.assert(
+      fc.property(fc.uint8Array({ maxLength: 80 }), (body) => expectOutcome(() => readJson(request({ body })))),
+      FUZZ,
+    );
+    fc.assert(
+      fc.property(fc.string({ maxLength: 80 }), (text) => expectOutcome(() => json(text))),
+      FUZZ,
+    );
+  });
+});
+
+describe("jsonResponse", () => {
+  it("serializes the body and sets the media type", () => {
+    expect(jsonResponse(200, { keys: [] })).toStrictEqual({
+      status: 200,
+      headers: { "content-type": "application/json;charset=UTF-8" },
+      body: '{"keys":[]}',
+    });
+  });
+
+  it("takes more headers, which win over the media type, and another media type", () => {
+    expect(
+      jsonResponse(403, { error: "x" }, { "www-authenticate": "Bearer" }, "application/problem+json"),
+    ).toStrictEqual({
+      status: 403,
+      headers: { "content-type": "application/problem+json", "www-authenticate": "Bearer" },
+      body: '{"error":"x"}',
+    });
+    expect(jsonResponse(200, 1, { "content-type": "text/plain" }).headers).toStrictEqual({
+      "content-type": "text/plain",
+    });
+  });
+});
+
+describe("negotiate", () => {
+  const offered = ["application/json", "text/plain"];
+
+  it("chooses the first offered type when there is no Accept header, or it is empty", () => {
+    expect(negotiate(undefined, offered)).toBe("application/json");
+    expect(negotiate("", offered)).toBe("application/json");
+    expect(negotiate("  ", offered)).toBe("application/json");
+  });
+
+  it("chooses the type that the header names", () => {
+    expect(negotiate("text/plain", offered)).toBe("text/plain");
+    expect(negotiate("text/html, text/plain", offered)).toBe("text/plain");
+    expect(negotiate("application/json", offered)).toBe("application/json");
+  });
+
+  it("chooses by weight, and gives a tie to the first offered type", () => {
+    expect(negotiate("application/json;q=0.5, text/plain;q=0.8", offered)).toBe("text/plain");
+    expect(negotiate("application/json;q=0.8, text/plain;q=0.5", offered)).toBe("application/json");
+    expect(negotiate("text/plain, application/json", offered)).toBe("application/json");
+    expect(negotiate("text/plain, application/json", ["text/plain", "application/json"])).toBe("text/plain");
+  });
+
+  it("lets a more specific range decide the weight of a type, as RFC 9110 says", () => {
+    const ranges = "text/*;q=0.3, text/plain;q=0.7, */*;q=0.5";
+    expect(negotiate(ranges, ["text/html", "image/jpeg"])).toBe("image/jpeg");
+    expect(negotiate(ranges, ["text/html", "image/jpeg", "text/plain"])).toBe("text/plain");
+    expect(negotiate("*/*, text/plain;q=0", ["text/plain", "application/json"])).toBe("application/json");
+    expect(negotiate("text/*;q=0, text/plain", ["text/html", "text/plain"])).toBe("text/plain");
+  });
+
+  it("follows the worked examples of the Accept header in RFC 9110", () => {
+    const accept = "text/plain; q=0.5, text/html, text/x-dvi; q=0.8, text/x-c";
+    expect(negotiate(accept, ["text/plain", "text/x-dvi", "text/x-c", "text/html"])).toBe("text/x-c");
+    expect(negotiate(accept, ["text/plain", "text/x-dvi"])).toBe("text/x-dvi");
+    expect(negotiate(accept, ["text/plain"])).toBe("text/plain");
+    expect(negotiate("audio/*; q=0.2, audio/basic", ["audio/mpeg", "audio/basic"])).toBe("audio/basic");
+    expect(negotiate("audio/*; q=0.2, audio/basic;q=0.1", ["audio/basic", "audio/mpeg"])).toBe("audio/mpeg");
+  });
+
+  it("matches wildcards, ignores case and spaces, and returns the type as it was offered", () => {
+    expect(negotiate("*/*", ["Text/Plain"])).toBe("Text/Plain");
+    expect(negotiate("TEXT/*;Q=0.9", ["application/json", "Text/Plain"])).toBe("Text/Plain");
+    expect(negotiate("  text/plain  ;  q=0.9 ,  application/json  ;q=0.1", offered)).toBe("text/plain");
+  });
+
+  it("ignores parameters other than the weight, and the extensions after it", () => {
+    expect(negotiate("text/plain;charset=utf-8;q=0.9, application/json;q=0.5", offered)).toBe("text/plain");
+    expect(negotiate("text/plain;q=0.9;ext=1, application/json;q=0.95", offered)).toBe("application/json");
+  });
+
+  it("falls back to the first offered type when the header accepts none of them", () => {
+    expect(negotiate("image/png", offered)).toBe("application/json");
+    expect(negotiate("application/json;q=0, text/plain;q=0", offered)).toBe("application/json");
+    expect(negotiate("text/plain;q=0", ["text/plain", "text/html"])).toBe("text/plain");
+  });
+
+  it("lets an entry that is not a media range, or has an invalid weight, accept nothing", () => {
+    expect(negotiate("garbage, text/plain", offered)).toBe("text/plain");
+    expect(negotiate("text, /plain, a/b/c, */json, text/plain", offered)).toBe("text/plain");
+    expect(negotiate("text/plain;q=1.5, application/json;q=0.1", offered)).toBe("application/json");
+    expect(negotiate("text/plain;q=abc, application/json;q=0.1", offered)).toBe("application/json");
+    expect(negotiate("text/plain;q=0.1234, application/json;q=0.1", offered)).toBe("application/json");
+    expect(negotiate("text/plain;q=, application/json;q=0.1", offered)).toBe("application/json");
+  });
+
+  it("refuses arguments of other types", () => {
+    const cases: readonly [string, () => unknown][] = [
+      ["The Accept header must be a string, found 5.", () => negotiate(JSON.parse("5"), offered)],
+      ["The Accept header must be a string, found null.", () => negotiate(JSON.parse("null"), offered)],
+      ["The offered media types must be an array, found null.", () => negotiate("*/*", JSON.parse("null"))],
+      ["The offered media types must name at least one type, found none.", () => negotiate("*/*", [])],
+      [
+        'Each offered media type must be a type/subtype without parameters, found "text/plain;q=1".',
+        () => negotiate("*/*", ["text/plain;q=1"]),
+      ],
+      [
+        'Each offered media type must be a type/subtype without parameters, found "*/*".',
+        () => negotiate("*/*", ["*/*"]),
+      ],
+      [
+        "Each offered media type must be a type/subtype without parameters, found 5.",
+        () => negotiate("*/*", JSON.parse("[5]")),
+      ],
+    ];
+    for (const [message, call] of cases) expect(call, message).toThrow(new DataError(message));
+  });
+
+  it("returns one of the offered types for any header and any offered types", () => {
+    const type = fc.stringMatching(/^[a-z]{1,6}\/[a-z]{1,6}$/u);
+    fc.assert(
+      fc.property(fc.string({ maxLength: 120 }), fc.array(type, { minLength: 1, maxLength: 4 }), (accept, types) => {
+        expect(types).toContain(negotiate(accept, types));
+      }),
+      FUZZ,
+    );
+  });
+
+  it("chooses the first of the types with the highest weight, for any weights", () => {
+    const weights = fc.array(fc.integer({ min: 0, max: 1000 }), { minLength: 1, maxLength: 5 });
+    fc.assert(
+      fc.property(weights, (values) => {
+        const types = values.map((_value, index) => `text/t${index}`);
+        const accept = values.map((value, index) => `text/t${index};q=${(value / 1000).toFixed(3)}`).join(", ");
+        const best = Math.max(...values);
+        const expected = best === 0 ? "text/t0" : `text/t${values.indexOf(best)}`;
+        expect(negotiate(accept, types)).toBe(expected);
+      }),
+      FUZZ,
+    );
+  });
+});

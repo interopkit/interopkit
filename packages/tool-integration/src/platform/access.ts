@@ -1,5 +1,6 @@
 import { readClock } from "@interopkit/core";
-import { type HttpRequest, type HttpResponse, jsonResponse, toSeconds } from "../protocol/internal.js";
+import { type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { toSeconds } from "../protocol/internal.js";
 import type { PlatformOptions } from "./options.js";
 import { type Access, openAccess } from "./tokens.js";
 

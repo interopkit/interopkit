@@ -1,13 +1,18 @@
 import type { CallOptions } from "./call-options.js";
-import { checkAbortSignal, checkFunction, checkPositiveInteger, checkRecord } from "./checks.js";
-import { ServiceError } from "./errors.js";
+import { checkAbortSignal, checkArray, checkFunction, checkPositiveInteger, checkRecord, describe } from "./checks.js";
+import { DataError, ServiceError } from "./errors.js";
 import { untilAborted } from "./until-aborted.js";
 
-/** The most bytes that the answer of a service may have: a key set or a token response is a few kilobytes. */
-const MAX_RESPONSE_BYTES = 65_536;
+/** The most bytes that the answer of a service may have unless the caller says otherwise: a key set or a token response is a few kilobytes. */
+export const DEFAULT_MAX_BYTES = 65_536;
 
 /** The time that a call to a service may take when the host sets none, in milliseconds. */
 export const DEFAULT_TIMEOUT_MS = 10_000;
+
+/** A method of a request to a service. */
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
+
+const HTTP_METHODS: readonly HttpMethod[] = ["GET", "POST", "PUT", "DELETE", "HEAD"];
 
 /**
  * The part of the web standard `fetch` that the libraries call. A host passes `fetch`; a test passes a function that
@@ -24,9 +29,9 @@ export const DEFAULT_TIMEOUT_MS = 10_000;
 export type Fetch = (
   url: string,
   init: {
-    readonly method: "GET" | "POST";
+    readonly method: HttpMethod;
     readonly headers: Readonly<Record<string, string>>;
-    readonly body?: string;
+    readonly body?: string | Uint8Array<ArrayBuffer>;
     readonly redirect: "manual";
     readonly signal: AbortSignal;
   },
@@ -40,9 +45,49 @@ export interface ServiceCall extends CallOptions {
   readonly timeoutMs: number;
 }
 
-/** The text of an answer, and whether it ended within the limit. */
+/** The request of a call: its method, its headers and, for a method that has one, its body. */
+export interface ServiceInit {
+  /** The method. A `GET` or `HEAD` request has no body. */
+  readonly method: HttpMethod;
+  /** The headers, by name. */
+  readonly headers: Readonly<Record<string, string>>;
+  /**
+   * The body: text is sent as UTF-8. Bytes are a `Uint8Array` over an `ArrayBuffer`, which is what `fetch` accepts.
+   *
+   * @defaultValue none
+   */
+  readonly body?: string | Uint8Array<ArrayBuffer>;
+}
+
+/** The answer of a service that the call accepted. */
+export interface ServiceResponse {
+  /** The HTTP status code. */
+  readonly status: number;
+  /** The headers, by name in lower case. A header that the answer repeats is joined with a comma and a space. */
+  readonly headers: Readonly<Record<string, string>>;
+  /** The body, which is empty for `HEAD` and for a status that has none. */
+  readonly body: Uint8Array;
+}
+
+/** What one request may ask for beyond the `service` it is made through. */
+export interface RequestOptions extends CallOptions {
+  /**
+   * The most bytes of the answer.
+   *
+   * @defaultValue `DEFAULT_MAX_BYTES`, 65,536
+   */
+  readonly maxBytes?: number;
+  /**
+   * The statuses that the call returns as values: any other status is a `ServiceError`. A redirect cannot be listed.
+   *
+   * @defaultValue 200 to 299
+   */
+  readonly expect?: readonly number[];
+}
+
+/** The bytes of an answer, and whether it ended within the limit. */
 interface Answer {
-  readonly text: string;
+  readonly bytes: Uint8Array;
   readonly complete: boolean;
 }
 
@@ -54,36 +99,54 @@ function release(pending: Promise<Response> | undefined): void {
   pending?.then((late) => late.body?.cancel(), ignore).catch(ignore);
 }
 
+/** Joins the chunks of a body, which hold `size` bytes together. */
+function join(chunks: readonly Uint8Array[], size: number): Uint8Array {
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
 /**
- * Reads the body of an answer as text, up to the limit, and stops reading there. The chunk that crosses the limit is read as far
+ * Reads the body of an answer, up to the limit, and stops reading there. The chunk that crosses the limit is read as far
  * as the limit, so that what an error carries does not depend on how the network split the answer.
  */
-async function readText(response: Response, signal: AbortSignal): Promise<Answer> {
+async function readBytes(response: Response, maxBytes: number, signal: AbortSignal): Promise<Answer> {
   const reader = response.body?.getReader();
-  if (reader === undefined) return { text: "", complete: true };
-  const decoder = new TextDecoder();
-  let text = "";
-  let bytes = 0;
+  if (reader === undefined) return { bytes: new Uint8Array(0), complete: true };
+  const chunks: Uint8Array[] = [];
+  let size = 0;
   let finished = false;
   try {
     for (;;) {
       const { done, value } = await untilAborted(reader.read(), signal);
       if (done) {
         finished = true;
-        return { text: text + decoder.decode(), complete: true };
+        return { bytes: join(chunks, size), complete: true };
       }
-      const room = MAX_RESPONSE_BYTES - bytes;
-      bytes += value.byteLength;
-      if (bytes > MAX_RESPONSE_BYTES) {
-        // Not flushed: the bytes of a character that the limit cuts are not text.
-        return { text: text + decoder.decode(value.subarray(0, room), { stream: true }), complete: false };
+      const room = maxBytes - size;
+      size += value.byteLength;
+      if (size > maxBytes) {
+        chunks.push(value.subarray(0, room));
+        return { bytes: join(chunks, maxBytes), complete: false };
       }
-      text += decoder.decode(value, { stream: true });
+      chunks.push(value);
     }
   } finally {
     // Not awaited: the source of a body that has stalled may never finish cancelling, and the call must end.
     if (!finished) reader.cancel().catch(ignore);
   }
+}
+
+/**
+ * The text that an error carries. The bytes of a character that the limit cuts are not text, so an answer that stopped at
+ * the limit is not flushed.
+ */
+function errorText({ bytes, complete }: Answer): string {
+  return new TextDecoder().decode(bytes, { stream: !complete });
 }
 
 /**
@@ -94,45 +157,109 @@ function isRedirect(response: Response): boolean {
   return response.redirected || response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400);
 }
 
+/** Collects the headers of an answer by name in lower case, in a record with no prototype surprises for a name such as `__proto__`. */
+function headersOf(headers: Headers): Readonly<Record<string, string>> {
+  const collected = new Map<string, string>();
+  for (const [name, value] of headers) {
+    const earlier = collected.get(name);
+    collected.set(name, earlier === undefined ? value : `${earlier}, ${value}`);
+  }
+  return Object.fromEntries(collected);
+}
+
 /** What a call rejects with when its wait ended: the reason of the caller's abort, else a `ServiceError` of status 0. */
-function failure(error: unknown, what: string, service: ServiceCall, deadline: AbortSignal): unknown {
-  if (service.signal?.aborted) return service.signal.reason;
+function failure(
+  error: unknown,
+  what: string,
+  service: ServiceCall,
+  callers: readonly AbortSignal[],
+  deadline: AbortSignal,
+) {
+  const aborted = callers.find((signal) => signal.aborted);
+  if (aborted !== undefined) return aborted.reason;
   if (deadline.aborted) return new ServiceError(`${what} did not answer within ${service.timeoutMs} ms.`, 0, "");
   const reason = error instanceof Error ? error.message : String(error);
   return new ServiceError(`${what} did not answer: ${reason}.`, 0, "");
 }
 
+/** Checks the `service` of a call. */
+function checkService(service: ServiceCall): void {
+  checkRecord(service, "The options of a call to a service must be an object");
+  checkFunction(service.fetch, "The option fetch must be a function");
+  checkPositiveInteger(service.timeoutMs, "The option timeoutMs");
+  if (service.signal !== undefined) checkAbortSignal(service.signal, "The option signal");
+}
+
+/** Checks the request of a call. */
+function checkInit(init: ServiceInit): void {
+  checkRecord(init, "The request of a call to a service must be an object");
+  if (!HTTP_METHODS.includes(init.method)) {
+    throw new DataError(
+      `The method of the request must be ${HTTP_METHODS.join(", ")}, found ${describe(init.method)}.`,
+    );
+  }
+  checkRecord(init.headers, "The headers of the request must be an object");
+  const { body } = init;
+  if (body !== undefined && typeof body !== "string" && !(body instanceof Uint8Array)) {
+    throw new DataError(`The body of the request must be a string or a Uint8Array, found ${describe(body)}.`);
+  }
+  if (body !== undefined && (init.method === "GET" || init.method === "HEAD")) {
+    throw new DataError(`A ${init.method} request has no body.`);
+  }
+}
+
+/** Checks what a request asks for: the limit and the statuses it expects. */
+function checkRequestOptions(options: RequestOptions): void {
+  checkRecord(options, "The options of a request must be an object");
+  if (options.signal !== undefined) checkAbortSignal(options.signal, "The option signal");
+  if (options.maxBytes !== undefined) checkPositiveInteger(options.maxBytes, "The option maxBytes");
+  if (options.expect === undefined) return;
+  checkArray(options.expect, "The option expect must be an array");
+  for (const status of options.expect) {
+    if (typeof status !== "number" || !Number.isInteger(status) || status < 100 || status > 599) {
+      throw new DataError(`The option expect must list HTTP statuses from 100 to 599, found ${describe(status)}.`);
+    }
+    if (status >= 300 && status < 400) {
+      throw new DataError(`The option expect cannot list the redirect ${status}: a call never follows a redirect.`);
+    }
+  }
+}
+
 /**
- * Calls a service and returns the body of its successful answer.
+ * Makes one request to a service and returns its status, headers and body.
  *
  * @remarks
  * A redirect is an error, because it could lead from HTTPS to another scheme. Every wait is raced against the deadline
- * and the signal of the caller, so a `fetch` that ignores its signal cannot hold the call past `timeoutMs`; the body of
- * an answer that arrives later is cancelled. The answer has a size limit of 65,536 bytes.
+ * and the signals of the caller, so a `fetch` that ignores its signal cannot hold the call past `timeoutMs`; the body of
+ * an answer that arrives later is cancelled. A status outside `options.expect` is a `ServiceError` that carries the status
+ * and the text of the body, so a caller can answer 404, 409 or 412 as a value by listing it.
  *
  * @param service - The `fetch`, the time the call may take and the signal that ends the caller's wait.
  * @param what - Names the service in the error messages, such as `The key set at https://platform.example/jwks`.
  * @param url - The address of the request.
  * @param init - The method, the headers and the body of the request.
- * @returns The body of the answer, as text.
- * @throws `DataError` when `service` is not valid.
+ * @param options - The size limit, the statuses to return as values, and a signal that joins `service.signal`.
+ * @returns The status, the headers by name in lower case, and the body of the answer.
+ * @throws `DataError` when an argument is not valid.
  * @throws `ServiceError` with status `0` when the service did not answer, and with its status when it answered with a
- * redirect or an error, or with more than the limit.
- * @throws The `reason` of `service.signal` when it aborts, before or during the call.
+ * redirect or a status that `options.expect` does not list, or with more than `options.maxBytes`.
+ * @throws The `reason` of a signal when it aborts, before or during the call.
  */
-export async function callService(
+export async function requestService(
   service: ServiceCall,
   what: string,
   url: string,
-  init: { readonly method: "GET" | "POST"; readonly headers: Readonly<Record<string, string>>; readonly body?: string },
-): Promise<string> {
-  checkRecord(service, "The options of a call to a service must be an object");
-  checkFunction(service.fetch, "The option fetch must be a function");
-  checkPositiveInteger(service.timeoutMs, "The option timeoutMs");
-  if (service.signal !== undefined) checkAbortSignal(service.signal, "The option signal");
-  service.signal?.throwIfAborted();
+  init: ServiceInit,
+  options: RequestOptions = {},
+): Promise<ServiceResponse> {
+  checkService(service);
+  checkInit(init);
+  checkRequestOptions(options);
+  const callers = [service.signal, options.signal].filter((signal) => signal !== undefined);
+  for (const signal of callers) signal.throwIfAborted();
+  const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
   const deadline = AbortSignal.timeout(service.timeoutMs);
-  const signal = service.signal === undefined ? deadline : AbortSignal.any([service.signal, deadline]);
+  const signal = AbortSignal.any([...callers, deadline]);
   // A local binding: a bare global `fetch` throws when it is called as a method of another object.
   const call = service.fetch;
   let pending: Promise<Response> | undefined;
@@ -141,25 +268,50 @@ export async function callService(
   try {
     pending = Promise.resolve(call(url, { ...init, redirect: "manual", signal }));
     response = await untilAborted(pending, signal);
-    answer = await readText(response, signal);
+    answer = await readBytes(response, maxBytes, signal);
   } catch (error) {
     if (response === undefined) release(pending);
-    throw failure(error, what, service, deadline);
+    throw failure(error, what, service, callers, deadline);
   }
   if (isRedirect(response)) {
     throw new ServiceError(
       `${what} answered with a redirect (${response.status}), which the call does not follow: use the final address.`,
       response.status,
-      answer.text,
+      errorText(answer),
     );
   }
-  if (!response.ok) throw new ServiceError(`${what} answered ${response.status}.`, response.status, answer.text);
+  const expected = options.expect === undefined ? response.ok : options.expect.includes(response.status);
+  if (!expected) throw new ServiceError(`${what} answered ${response.status}.`, response.status, errorText(answer));
   if (!answer.complete) {
-    throw new ServiceError(
-      `${what} answered with more than ${MAX_RESPONSE_BYTES} bytes.`,
-      response.status,
-      answer.text,
-    );
+    throw new ServiceError(`${what} answered with more than ${maxBytes} bytes.`, response.status, errorText(answer));
   }
-  return answer.text;
+  return { status: response.status, headers: headersOf(response.headers), body: answer.bytes };
+}
+
+/**
+ * Calls a service and returns the body of its answer as text: `requestService` with UTF-8 decoding.
+ *
+ * @remarks
+ * Bytes that are not UTF-8 become U+FFFD. The answer is a 2xx unless `options.expect` lists other statuses. Everything
+ * else is as for `requestService`, with the same limit of 65,536 bytes unless `options.maxBytes` says otherwise.
+ *
+ * @param service - The `fetch`, the time the call may take and the signal that ends the caller's wait.
+ * @param what - Names the service in the error messages, such as `The key set at https://platform.example/jwks`.
+ * @param url - The address of the request.
+ * @param init - The method, the headers and the body of the request.
+ * @param options - The size limit, the statuses to return as values, and a signal that joins `service.signal`.
+ * @returns The body of the answer, as text.
+ * @throws `DataError` when an argument is not valid.
+ * @throws `ServiceError` as `requestService` does.
+ * @throws The `reason` of a signal when it aborts, before or during the call.
+ */
+export async function callService(
+  service: ServiceCall,
+  what: string,
+  url: string,
+  init: ServiceInit,
+  options?: RequestOptions,
+): Promise<string> {
+  const { body } = await requestService(service, what, url, init, options);
+  return new TextDecoder().decode(body);
 }

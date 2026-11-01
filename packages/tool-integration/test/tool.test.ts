@@ -2,10 +2,11 @@
 
 import { createHmac } from "node:crypto";
 import { DataError, ServiceError } from "@interopkit/core";
+import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
 import { jwtVerify } from "jose";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createJwksCache, type HttpRequest, type HttpResponse } from "../src/index.js";
+import { createJwksCache } from "../src/index.js";
 import { randomToken } from "../src/protocol/internal.js";
 import {
   type AccessTokenOptions,
@@ -48,6 +49,7 @@ import {
   verifyToken,
 } from "./fixture.js";
 import { fuzzJson } from "./fuzz.js";
+import { textOf } from "./text-of.js";
 import {
   attackerKey,
   cookieLogin,
@@ -1079,8 +1081,12 @@ describe("ltiLaunch", () => {
           () => ltiLaunch({ ...post, url: "/lti/launch" }, ctx.options),
         ],
         [
-          "The body of the request must be a string, found null.",
+          "The body of the request must be a Uint8Array, found null: encode text with a TextEncoder.",
           () => ltiLaunch({ ...post, body: JSON.parse("null") }, ctx.options),
+        ],
+        [
+          "The body of the request must be a Uint8Array, found a string: encode text with a TextEncoder.",
+          () => ltiLaunch({ ...post, body: JSON.parse('"id_token=a"') }, ctx.options),
         ],
         [
           "The headers of the request must be an object, found an array.",
@@ -1626,6 +1632,6 @@ describe("the verification page", () => {
     expect(page.body).toContain(`action="https://tool.example.com/l${encoded}"`);
     expect(page.body).toContain(`name="id_token" value="${encoded}"`);
     expect(page.body).not.toContain("<img");
-    expect(page.body.match(/<script>/gu)).toHaveLength(1);
+    expect(textOf(page.body).match(/<script>/gu)).toHaveLength(1);
   });
 });

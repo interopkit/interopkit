@@ -5,7 +5,7 @@ Version 0.1 is not the whole of LTI Advantage: both roles have the launch, acces
 LTI 1.3 for learning platforms and tools, in both roles. In the tool role your application is launched by a learning
 platform: it answers its login, validates the launch, answers a Deep Linking request, and publishes scores back to the platform's
 gradebook. In the platform role your application launches tools: it starts their login, issues the `id_token`, publishes its key
-set, issues access tokens, and serves the line item and receives the scores of each launch. A handler takes an `HttpRequest` and returns an `HttpResponse`: plain objects that any web framework can build.
+set, issues access tokens, and serves the line item and receives the scores of each launch. A handler takes an `HttpRequest` and returns an `HttpResponse` of [`@interopkit/core/http`](https://github.com/interopkit/interopkit/blob/main/docs/core/http.md): plain objects that any web framework can build.
 You pass in the stores, the registrations, a `fetch` and a clock.
 
 ```mermaid
@@ -18,10 +18,12 @@ flowchart LR
   subgraph pkg["@interopkit/tool-integration"]
     tool["/tool<br/>ltiLogin, ltiLaunch, deepLinkResponse,<br/>ltiAccessToken, publishAgsScore"]
     platformRole["/platform<br/>ltiPlatformFrame, ltiPlatformAuthorize,<br/>platformJwks, platformToken, agsScores"]
-    root["root<br/>LtiError, HttpRequest, HttpResponse,<br/>createJwksCache"]
+    root["root<br/>LtiError, createJwksCache"]
   end
+  http["@interopkit/core/http<br/>HttpRequest, HttpResponse"]
   platform <-->|"login, launch, tokens, scores"| routes
   routes --> tool
+  routes -.->|"HttpRequest, HttpResponse"| http
   tool --> ports
   platformRole --> ports
   tool --> root
@@ -43,7 +45,7 @@ npm install @interopkit/tool-integration
 
 | Subpath                                 | Exports                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/tool-integration`          | `LtiError`, with a `reason` and an HTTP `status`; `HttpRequest`, `HttpResponse`; `createJwksCache`, `JwksCache`, `JwksCacheOptions`                                                                                                                                                                                                                                                                                                                |
+| `@interopkit/tool-integration`          | `LtiError`, with a `reason` and an HTTP `status`; `createJwksCache`, `JwksCache`, `JwksCacheOptions`                                                                                                                                                                                                                                                                                                                |
 | `@interopkit/tool-integration/platform` | `ltiPlatformLogin`, `ltiPlatformFrame`, `ltiPlatformAuthorize`, `platformEndpoints`, `platformJwks`, `platformToken`, `platformStorage`, `agsLineItem`, `agsScores`, `readAgsScore`; `ToolLaunch`, `ToolRegistration`, `PlatformConfig`, `PlatformEndpoints`, `PlatformFrame`, `AgsScore`; the options `PlatformOptions`, `PlatformLoginOptions`, `PlatformAuthorizeOptions`, `PlatformTokenOptions`, `AgsScoresOptions`, `PlatformStorageOptions` |
 | `@interopkit/tool-integration/tool`     | `ltiLogin`, `ltiLaunch`, `deepLinkResponse`, `ltiAccessToken`, `publishAgsScore`; `PlatformRegistration`, `LtiStore`, `LoginRecord`, `AgsScoreInput`, `AccessToken`, `DeepLinkItem`, `DeepLinkLineItem`; the launch types `LtiLaunch`, `ResourceLinkLaunch`, `DeepLinkingLaunch` and their parts; the options `ToolOptions`, `LtiLoginOptions`, `LtiLaunchOptions`, `AccessTokenOptions`                                                           |
 
@@ -85,7 +87,7 @@ login.search = new URLSearchParams({
   login_hint: "user-1",
   target_link_uri: "https://tool.example.com/lti/launch",
 }).toString();
-const response = await ltiLogin({ method: "GET", url: login.href, headers: {}, body: "" }, options);
+const response = await ltiLogin({ method: "GET", url: login.href, headers: {}, body: new Uint8Array() }, options);
 response.status; // => 302
 logins.size; // => 1
 ```

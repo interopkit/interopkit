@@ -1,6 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
+
+import type { HttpResponse } from "@interopkit/core/http";
 import { afterEach, describe, expect, inject, it } from "vitest";
-import type { HttpResponse } from "../src/index.js";
 import {
   ltiPlatformAuthorize,
   ltiPlatformLogin,
@@ -12,6 +13,7 @@ import {
   type ToolLaunch,
 } from "../src/platform/index.js";
 import { hostileOrigin as hostile, requestsTo, seenBy } from "./hostile.js";
+import { textOf } from "./text-of.js";
 import { waitFor } from "./wait.js";
 
 /**
@@ -90,7 +92,12 @@ async function answer(path: string, state: string): Promise<HttpResponse> {
     ["lti_message_hint", initiation.searchParams.get("lti_message_hint") ?? ""],
   ]);
   return ltiPlatformAuthorize(
-    { method: "GET", url: `${platformEndpoints(config).authorization}?${parameters}`, headers: {}, body: "" },
+    {
+      method: "GET",
+      url: `${platformEndpoints(config).authorization}?${parameters}`,
+      headers: {},
+      body: new Uint8Array(),
+    },
     authorize,
   );
 }
@@ -109,7 +116,7 @@ function load(page: HttpResponse): HTMLIFrameElement {
     .replace(/; frame-ancestors [^;]*/u, "")
     .replaceAll(TOOL, other);
   const frame = document.createElement("iframe");
-  frame.srcdoc = page.body
+  frame.srcdoc = textOf(page.body)
     .replace("<head>", `<head>\n<meta http-equiv="Content-Security-Policy" content="${policy}">`)
     .replaceAll(TOOL, other);
   frames.push(frame);
@@ -128,7 +135,7 @@ describe("the page that posts the id_token", () => {
     const hostile = `"><img src="${stranger}/leak" onerror="alert(1)"><script>alert(2)</script><form action="${stranger}/x">`;
     const path = `/launch/${crypto.randomUUID()}`;
     const page = await answer(path, hostile);
-    const document2 = new DOMParser().parseFromString(page.body, "text/html");
+    const document2 = new DOMParser().parseFromString(textOf(page.body), "text/html");
     expect(document2.querySelectorAll("form")).toHaveLength(1);
     expect(document2.querySelectorAll("script")).toHaveLength(1);
     expect(document2.querySelectorAll("img")).toHaveLength(0);
@@ -142,7 +149,7 @@ describe("the page that posts the id_token", () => {
   it("writes a redirect URI with a query as text in the markup", async () => {
     const path = `/launch/${crypto.randomUUID()}?a=1&b="2"`;
     const page = await answer(path, "state-2");
-    const document2 = new DOMParser().parseFromString(page.body, "text/html");
+    const document2 = new DOMParser().parseFromString(textOf(page.body), "text/html");
     expect(document2.querySelector("form")?.getAttribute("action")).toBe(`${TOOL}${path}`);
   });
 });
@@ -173,7 +180,7 @@ window.addEventListener("message", function (event) {
     const policy = (page.headers["content-security-policy"] ?? "").replace(/; frame-ancestors [^;]*/u, "");
     await open(
       "lti-storage",
-      page.body.replace("<head>", `<head>\n<meta http-equiv="Content-Security-Policy" content="${policy}">`),
+      textOf(page.body).replace("<head>", `<head>\n<meta http-equiv="Content-Security-Policy" content="${policy}">`),
     );
     const tool = await open("lti-tool", TOOL_RELAY);
     let next = 0;

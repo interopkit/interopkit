@@ -1,7 +1,7 @@
 {
   "name": "@interopkit/core",
   "version": "0.0.0",
-  "description": "The foundation that the interopkit packages share: their errors, the checks of their arguments, a clock, and the call to a service over HTTP with a deadline, a size limit and no redirects.",
+  "description": "The foundation that the interopkit packages share: their errors, the checks of their arguments, a clock, the call to a service over HTTP with a deadline, a size limit and no redirects, and requests and answers as plain data.",
   "keywords": [
     "interopkit",
     "interoperability",
@@ -29,6 +29,10 @@
     "./checks": {
       "types": "./dist/checks.d.ts",
       "default": "./dist/checks.js"
+    },
+    "./http": {
+      "types": "./dist/http/index.d.ts",
+      "default": "./dist/http/index.js"
     }
   },
   "files": [

@@ -10,8 +10,8 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 
 ```mermaid
 flowchart BT
-  core["@interopkit/core<br/>errors, checks, clock, service"]
-  proto["tool-integration: protocol<br/>claims, jwt, key sets, http, pages"]
+  core["@interopkit/core<br/>errors, checks, clock, service, http"]
+  proto["tool-integration: protocol<br/>claims, jwt, key sets, pages"]
   tool["tool-integration: tool"]
   plat["tool-integration: platform"]
   la["learning-analytics"]
@@ -51,7 +51,8 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/checks.ts`        | Checks of one value and the valibot side, which `@interopkit/core/checks` exports         |
 | `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                        |
 | `packages/core/src/call-options.ts`  | `CallOptions`, the `signal` of every call that waits on I/O                               |
-| `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `callService`, `DEFAULT_TIMEOUT_MS`                               |
+| `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`             |
+| `packages/core/src/http/`            | The request and answer types and their helpers, which `@interopkit/core/http` exports     |
 | `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                    |
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                   |
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                  |
@@ -162,8 +163,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - Anything that waits on I/O is async and takes `signal` of `CallOptions`, which ends that caller's wait. Work that several
   callers share, such as a key set fetch, runs to its own timeout and takes no caller's signal. Every port receives the
   signal.
-- Every call to a service goes through `callService`: `redirect` is `"manual"`, any 3xx is an error, an answer has at most
-  65,536 bytes, and every wait is raced against the deadline.
+- Every call to a service goes through `requestService`, or `callService`, which decodes its text: `redirect` is `"manual"`,
+  any 3xx is an error, an answer has at most `maxBytes`, 65,536 by default, and every wait is raced against the deadline.
 - Never use `Math.random`, read a clock, or reach for `fetch`. Take a `Clock`, a random source or a `Fetch` from the caller.
   `pnpm lint` fails on `Math.random` and clock reads in `packages/*/src`; only `core/src/clock.ts` reads the system time.
 - A number with a meaning is a named constant with its unit and source.

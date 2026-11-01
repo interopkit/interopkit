@@ -32,7 +32,7 @@ export async function runScenario(): Promise<readonly Received[]> {
   const answers = [503, 200];
   const fetch: Fetch = async (_url, init) => {
     const status = answers[received.length] ?? 200;
-    received.push({ status, body: init.body ?? "" });
+    received.push({ status, body: typeof init.body === "string" ? init.body : new TextDecoder().decode(init.body) });
     return new Response(null, { status });
   };
   let now = FIRST_TIME + 3_600_000;

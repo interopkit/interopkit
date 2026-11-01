@@ -1,7 +1,8 @@
 import { type CallOptions, type Clock, checkClock } from "@interopkit/core";
 import { checkAbortSignal, checkFunction, checkNonEmptyString, checkRecord } from "@interopkit/core/checks";
+import type { HttpRequest } from "@interopkit/core/http";
 import { LtiError } from "../errors.js";
-import { callOptionsOf, checkJwksCache, type HttpRequest, type JwksCache } from "../protocol/internal.js";
+import { callOptionsOf, checkJwksCache, type JwksCache } from "../protocol/internal.js";
 import type { AgsScore } from "./ags-score.js";
 import { checkPlatformConfig, type PlatformConfig } from "./config.js";
 import { checkToolRegistration, type ToolRegistration } from "./registration.js";

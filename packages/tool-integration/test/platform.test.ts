@@ -2,9 +2,10 @@
 
 import { createHash } from "node:crypto";
 import { DataError, ServiceError } from "@interopkit/core";
+import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createJwksCache, type HttpRequest, type HttpResponse, LtiError } from "../src/index.js";
+import { createJwksCache, LtiError } from "../src/index.js";
 import {
   type AgsScore,
   agsLineItem,
@@ -41,7 +42,6 @@ import {
   toolRegistration,
 } from "./fake-tool.js";
 import { generateKeyPair, NOW, readPage, readToken, request } from "./fixture.js";
-
 import {
   ASSET_ORIGIN,
   accessToken,
@@ -81,6 +81,7 @@ import {
   toolKeys,
   toResponse,
 } from "./platform-setup.js";
+import { textOf } from "./text-of.js";
 
 afterEach(() => vi.useRealTimers());
 
@@ -266,7 +267,7 @@ describe("agsLineItem and agsScores", () => {
     const response = await agsLineItem(service(url, await accessToken(ctx, LINEITEM_READONLY)), ctx.token);
     expect(response.status).toBe(200);
     expect(response.headers["content-type"]).toBe("application/vnd.ims.lis.v2.lineitem+json");
-    expect(JSON.parse(response.body)).toEqual({
+    expect(JSON.parse(textOf(response.body))).toEqual({
       id: url,
       label: "Drawing tool",
       scoreMaximum: SCORE_MAXIMUM,
@@ -348,7 +349,7 @@ describe("agsLineItem and agsScores", () => {
     const url = await lineItemOf(ctx);
     const response = await agsLineItem(service(url, await accessToken(ctx, LINEITEM_READONLY, true)), ctx.token);
     expect(response.status).toBe(403);
-    expect(JSON.parse(response.body).error).toBe("forbidden");
+    expect(JSON.parse(textOf(response.body)).error).toBe("forbidden");
     const post = await postScoreWith(ctx, url, await accessToken(ctx, SCORE, true));
     expect(post.status).toBe(403);
     expect(ctx.scores).toEqual([]);
@@ -452,7 +453,7 @@ describe("agsLineItem and agsScores", () => {
     const ctx = setup();
     const response = await postScore(ctx, scoreBody({ userId: "someone-else" }));
     expect(response.status).toBe(403);
-    expect(JSON.parse(response.body)).toEqual({
+    expect(JSON.parse(textOf(response.body))).toEqual({
       error: "forbidden",
       error_description: "The score is not for the user of the launch.",
     });
@@ -491,7 +492,7 @@ describe("agsLineItem and agsScores", () => {
     for (const [name, body] of bad) {
       const response = await postScore(ctx, body);
       expect(response.status, name).toBe(400);
-      expect(JSON.parse(response.body).error).toBe("bad_request");
+      expect(JSON.parse(textOf(response.body)).error).toBe("bad_request");
     }
     expect(ctx.scores).toEqual([]);
   });
@@ -1139,7 +1140,7 @@ describe("platformJwks", () => {
     expect(response.status).toBe(200);
     expect(response.headers["content-type"]).toBe("application/json;charset=UTF-8");
     expect(response.headers["cache-control"]).toBe("public, max-age=3600");
-    expect(JSON.parse(response.body)).toEqual({
+    expect(JSON.parse(textOf(response.body))).toEqual({
       keys: [{ kty: "RSA", n: jwk.n, e: jwk.e, alg: "RS256", use: "sig", kid: await thumbprint(jwk) }],
     });
   });
@@ -1155,12 +1156,12 @@ describe("platformJwks", () => {
     ]);
     const ctx = setup();
     const response = await platformJwks({ ...ctx.login, config: { ...config, keys: { ...config.keys, publicKey } } });
-    expect(JSON.parse(response.body).keys[0].kid).toBe("NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs");
+    expect(JSON.parse(textOf(response.body)).keys[0].kid).toBe("NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs");
   });
 
   it("publishes nothing of the private key", async () => {
     const ctx = setup();
-    const [key] = JSON.parse((await platformJwks(ctx.login)).body).keys;
+    const [key] = JSON.parse(textOf((await platformJwks(ctx.login)).body)).keys;
     expect(Object.keys(key).sort()).toEqual(["alg", "e", "kid", "kty", "n", "use"]);
   });
 
@@ -1415,8 +1416,8 @@ describe("platformStorage", () => {
     expect(headers["cache-control"]).toBe("no-store");
     expect(headers["referrer-policy"]).toBe("no-referrer");
     expect(headers["x-content-type-options"]).toBe("nosniff");
-    const script = /<script>([\s\S]*)<\/script>/u.exec(body)?.[1] ?? "";
-    expect(body.split("<script").length - 1).toBe(1);
+    const script = /<script>([\s\S]*)<\/script>/u.exec(textOf(body))?.[1] ?? "";
+    expect(textOf(body).split("<script").length - 1).toBe(1);
     expect(headers["content-security-policy"]).toBe(
       `default-src 'none'; script-src 'sha256-${createHash("sha256").update(script).digest("base64")}'; base-uri 'none'; form-action 'none'; frame-ancestors ${PLAYER_ORIGIN}`,
     );
@@ -1424,7 +1425,7 @@ describe("platformStorage", () => {
 
   it("names the frame of the tool and the limits of LTI postMessage Storage 0.1: 4096 bytes and 500 keys for an origin", async () => {
     const { body } = await response();
-    const config = JSON.parse(decodeEntities(/data-config="([^"]*)"/u.exec(body)?.[1] ?? ""));
+    const config = JSON.parse(decodeEntities(/data-config="([^"]*)"/u.exec(textOf(body))?.[1] ?? ""));
     expect(config).toEqual({ tool: "lti-tool", maxBytes: 4096, maxKeys: 500 });
   });
 
@@ -1488,7 +1489,7 @@ describe("platformToken", () => {
       "cache-control": "no-store",
       pragma: "no-cache",
     });
-    expect(JSON.parse(response.body)).toEqual({
+    expect(JSON.parse(textOf(response.body))).toEqual({
       access_token: expect.any(String),
       token_type: "Bearer",
       expires_in: 3600,
@@ -1499,7 +1500,7 @@ describe("platformToken", () => {
   it("grants a token with one scope, for either scope that a launch offers", async () => {
     const ctx = setup();
     for (const scope of [SCORE, LINEITEM_READONLY]) {
-      expect(JSON.parse((await token(ctx, {}, {}, scope)).body).scope).toBe(scope);
+      expect(JSON.parse(textOf((await token(ctx, {}, {}, scope)).body)).scope).toBe(scope);
     }
   });
 
@@ -1533,10 +1534,10 @@ describe("platformToken", () => {
     expect((await post()).status).toBe(200);
     ctx.clock.advance(10 + 20);
     // The assertion expired 20 seconds ago and still verifies, so its jti must still be remembered.
-    expect(JSON.parse((await post()).body).error).toBe("invalid_client");
+    expect(JSON.parse(textOf((await post()).body)).error).toBe("invalid_client");
     ctx.clock.advance(41);
     // Past the leeway the signature check itself refuses it.
-    expect(JSON.parse((await post()).body).error).toBe("invalid_client");
+    expect(JSON.parse(textOf((await post()).body)).error).toBe("invalid_client");
   });
 
   it("remembers the jti of an assertion with a fractional expiry until the next whole second after it and the leeway", async () => {
@@ -1556,7 +1557,7 @@ describe("platformToken", () => {
     ctx.clock.advance(70.7);
     const replay = await post();
     expect(replay.status).toBe(400);
-    expect(JSON.parse(replay.body).error_description).toBe("The jti of the assertion has been used.");
+    expect(JSON.parse(textOf(replay.body)).error_description).toBe("The jti of the assertion has been used.");
     expect([...remembered.values()]).toEqual([(SECONDS + 11 + 60) * 1000]);
   });
 
@@ -1564,7 +1565,7 @@ describe("platformToken", () => {
     const ctx = setup();
     const response = await token(ctx, { jti: "" });
     expect(response.status).toBe(400);
-    expect(JSON.parse(response.body)).toMatchObject({ error: "invalid_client" });
+    expect(JSON.parse(textOf(response.body))).toMatchObject({ error: "invalid_client" });
     expect([...ctx.used]).toEqual([]);
   });
 
@@ -1588,9 +1589,9 @@ describe("platformToken", () => {
       sub: OTHER_CLIENT_ID,
       header: { kid: "tool-key-9" },
     });
-    expect(JSON.parse((await platformToken(tokenRequest(endpoints.token, unknown, SCORE), ctx.token)).body).error).toBe(
-      "invalid_client",
-    );
+    expect(
+      JSON.parse(textOf((await platformToken(tokenRequest(endpoints.token, unknown, SCORE), ctx.token)).body)).error,
+    ).toBe("invalid_client");
   });
 
   it("lets two tools use the same jti", async () => {
@@ -1612,7 +1613,7 @@ describe("platformToken", () => {
     expect((await platformToken(again, ctx.token)).status).toBe(200);
     const second = await platformToken(again, ctx.token);
     expect(second.status).toBe(400);
-    expect(JSON.parse(second.body).error).toBe("invalid_client");
+    expect(JSON.parse(textOf(second.body)).error).toBe("invalid_client");
   });
 
   it("lets only one of two requests with one assertion succeed", async () => {
@@ -1662,8 +1663,8 @@ describe("platformToken", () => {
     for (const [name, answer] of cases) {
       const response = await answer;
       expect(response.status, name).toBe(400);
-      expect(JSON.parse(response.body).error, name).toBe("invalid_request");
-      expect(typeof JSON.parse(response.body).error_description, name).toBe("string");
+      expect(JSON.parse(textOf(response.body)).error, name).toBe("invalid_request");
+      expect(typeof JSON.parse(textOf(response.body)).error_description, name).toBe("string");
     }
   });
 
@@ -1672,7 +1673,7 @@ describe("platformToken", () => {
     for (const grant of ["authorization_code", "password", undefined]) {
       const response = await token(ctx, {}, { grant_type: grant });
       expect(response.status).toBe(400);
-      expect(JSON.parse(response.body).error).toBe("unsupported_grant_type");
+      expect(JSON.parse(textOf(response.body)).error).toBe("unsupported_grant_type");
     }
   });
 
@@ -1681,9 +1682,9 @@ describe("platformToken", () => {
     for (const scope of ["", LINEITEM, RESULT_READONLY, `${SCORE} https://example.org/other`, "openid"]) {
       const response = await token(ctx, {}, {}, scope);
       expect(response.status, scope).toBe(400);
-      expect(JSON.parse(response.body).error, scope).toBe("invalid_scope");
+      expect(JSON.parse(textOf(response.body)).error, scope).toBe("invalid_scope");
     }
-    expect(JSON.parse((await token(ctx, {}, { scope: undefined })).body).error).toBe("invalid_scope");
+    expect(JSON.parse(textOf((await token(ctx, {}, { scope: undefined })).body)).error).toBe("invalid_scope");
   });
 
   it("refuses an assertion that the Security Framework does not allow, with invalid_client", async () => {
@@ -1719,7 +1720,7 @@ describe("platformToken", () => {
     for (const [name, answer] of cases) {
       const response = await answer;
       expect(response.status, name).toBe(400);
-      expect(JSON.parse(response.body).error, name).toBe("invalid_client");
+      expect(JSON.parse(textOf(response.body)).error, name).toBe("invalid_client");
     }
     expect(ctx.used.size).toBe(0);
   });
@@ -1791,7 +1792,7 @@ describe("the tool role and the platform role together", () => {
     };
     const fetchPlatform = async (
       url: string,
-      init: { method: string; headers: Readonly<Record<string, string>>; body?: string },
+      init: { method: string; headers: Readonly<Record<string, string>>; body?: string | Uint8Array },
     ): Promise<Response> => {
       if (url === endpoints.jwks) return toResponse(await platformJwks(ctx.login));
       if (url === endpoints.token) {
@@ -1850,7 +1851,11 @@ describe("the tool role and the platform role together", () => {
     const granted = await ltiAccessToken(launched, launched.ags?.scopes ?? [], tool);
     expect(granted.scopes).toEqual([LINEITEM_READONLY, SCORE]);
     const read = await agsLineItem(service(lineitem, granted.value), ctx.token);
-    expect(JSON.parse(read.body)).toMatchObject({ id: lineitem, label: "Drawing tool", scoreMaximum: SCORE_MAXIMUM });
+    expect(JSON.parse(textOf(read.body))).toMatchObject({
+      id: lineitem,
+      label: "Drawing tool",
+      scoreMaximum: SCORE_MAXIMUM,
+    });
     const body = scoreBody({ userId: launched.subject });
     const posted = await agsScores(
       service(`${lineitem}/scores`, granted.value, { method: "POST", headers: { "content-type": SCORE_TYPE }, body }),
@@ -1971,6 +1976,6 @@ describe("the page that posts the id_token", () => {
     expect(page.body).toContain(`action="https://tool.example/l${encoded}"`);
     expect(page.body).toContain(`name="id_token" value="${encoded}"`);
     expect(page.body).not.toContain("<img");
-    expect(page.body.match(/<script>/gu)).toHaveLength(1);
+    expect(textOf(page.body).match(/<script>/gu)).toHaveLength(1);
   });
 });

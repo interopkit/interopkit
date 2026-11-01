@@ -258,6 +258,30 @@
       }
     },
     {
+      "includes": ["packages/core/src/http/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["../*", "../*/**", "!../errors.js", "!../checks.js"],
+                    "message": "http/ depends only on errors.ts and checks.ts."
+                  },
+                  {
+                    "group": ["@interopkit/**"],
+                    "message": "core is the lowest package of the family: it imports no other."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["packages/tool-integration/src/protocol/**"],
       "linter": {
         "rules": {

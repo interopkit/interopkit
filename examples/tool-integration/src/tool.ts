@@ -1,5 +1,6 @@
 import type { Clock, Fetch } from "@interopkit/core";
-import { createJwksCache, type HttpRequest, type HttpResponse } from "@interopkit/tool-integration";
+import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
+import { createJwksCache } from "@interopkit/tool-integration";
 import {
   type AgsScoreInput,
   type LoginRecord,
