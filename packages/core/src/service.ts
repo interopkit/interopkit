@@ -50,7 +50,10 @@ function release(pending: Promise<Response> | undefined): void {
   pending?.then((late) => late.body?.cancel(), ignore).catch(ignore);
 }
 
-/** Reads the body of an answer as text, up to the limit, and stops reading there. */
+/**
+ * Reads the body of an answer as text, up to the limit, and stops reading there. The chunk that crosses the limit is read as far
+ * as the limit, so that what an error carries does not depend on how the network split the answer.
+ */
 async function readText(response: Response, signal: AbortSignal): Promise<Answer> {
   const reader = response.body?.getReader();
   if (reader === undefined) return { text: "", complete: true };
@@ -65,8 +68,12 @@ async function readText(response: Response, signal: AbortSignal): Promise<Answer
         finished = true;
         return { text: text + decoder.decode(), complete: true };
       }
+      const room = MAX_RESPONSE_BYTES - bytes;
       bytes += value.byteLength;
-      if (bytes > MAX_RESPONSE_BYTES) return { text, complete: false };
+      if (bytes > MAX_RESPONSE_BYTES) {
+        // Not flushed: the bytes of a character that the limit cuts are not text.
+        return { text: text + decoder.decode(value.subarray(0, room), { stream: true }), complete: false };
+      }
       text += decoder.decode(value, { stream: true });
     }
   } finally {
@@ -75,9 +82,12 @@ async function readText(response: Response, signal: AbortSignal): Promise<Answer
   }
 }
 
-/** Tells whether an answer is a redirect: a 3xx status, or the opaque answer that a browser gives for `"manual"`. */
+/**
+ * Tells whether an answer is a redirect: a 3xx status, the opaque answer that a browser gives for `"manual"`, or an answer
+ * that a `fetch` followed to another address although it was told not to.
+ */
 function isRedirect(response: Response): boolean {
-  return response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400);
+  return response.redirected || response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400);
 }
 
 /** What a call rejects with when its wait ended: the reason of the caller's abort, else a `ServiceError` of status 0. */

@@ -331,6 +331,19 @@ describe("a service that answers with an error", () => {
     });
   });
 
+  it("refuses an answer that a fetch followed to another address, whatever its status", async () => {
+    const followed = () =>
+      Object.defineProperty(new Response("moved here", { status: 200 }), "redirected", { value: true });
+    const error = await failureOf(
+      callService({ fetch: answering(followed), timeoutMs: DEFAULT_TIMEOUT_MS }, WHAT, URL_OF_SERVICE, GET),
+    );
+    expect(error).toMatchObject({
+      message: `${WHAT} answered with a redirect (200), which the call does not follow: use the final address.`,
+      status: 200,
+      body: "moved here",
+    });
+  });
+
   it("refuses an answer of one byte more than the most bytes", async () => {
     const { response } = bodyOfBytes(LIMIT + 1);
     const error = await failureOf(
@@ -358,6 +371,39 @@ describe("a service that answers with an error", () => {
     expect(error).toMatchObject({ message: `${WHAT} answered 500.`, status: 500 });
     expect((error as ServiceError).body).toHaveLength(LIMIT);
     await cancelled;
+  });
+});
+
+describe("the body of an answer that is too long", () => {
+  /** What a call to a service with this answer rejects with. */
+  const refusedAnswer = (response: Response) =>
+    failureOf(
+      callService({ fetch: answering(() => response), timeoutMs: DEFAULT_TIMEOUT_MS }, WHAT, URL_OF_SERVICE, GET),
+    );
+
+  it("keeps the bytes up to the limit of one chunk that holds more", async () => {
+    const error = await refusedAnswer(answerWith([new Uint8Array(70_000).fill(97)]));
+    expect((error as ServiceError).body).toBe("a".repeat(LIMIT));
+  });
+
+  it("keeps the same bytes whatever the network does with the answer", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.array(fc.integer({ min: 1, max: 40_000 }), { minLength: 3, maxLength: 8 }), async (sizes) => {
+        fc.pre(sizes.reduce((sum, size) => sum + size, 0) > LIMIT);
+        let next = 0;
+        const chunks = sizes.map((size) => new Uint8Array(size).fill(97 + (next++ % 26)));
+        const whole = Uint8Array.from(chunks.flatMap((chunk) => [...chunk])).subarray(0, LIMIT);
+        const error = await refusedAnswer(answerWith(chunks));
+        expect((error as ServiceError).body).toBe(new TextDecoder().decode(whole));
+      }),
+      { numRuns: 60 },
+    );
+  });
+
+  it("drops the character that the limit cuts, and does not replace it", async () => {
+    const answer = new Uint8Array([...new Uint8Array(LIMIT - 1).fill(97), ...encoder.encode("\u20ac")]);
+    const error = await refusedAnswer(answerWith([answer]));
+    expect((error as ServiceError).body).toBe("a".repeat(LIMIT - 1));
   });
 });
 

@@ -49,8 +49,22 @@ export const RULES: readonly Rule[] = [
   {
     rule: "An answer of more than 65,536 bytes is refused, and reading stops there.",
     file: "packages/core/src/service.ts",
-    find: "if (bytes > MAX_RESPONSE_BYTES) return",
-    replace: "if (false) return",
+    find: "if (bytes > MAX_RESPONSE_BYTES) {",
+    replace: "if (false) {",
+    test: "packages/core/test/service.test.ts",
+  },
+  {
+    rule: "The chunk that crosses the size limit is read up to the limit, so that the error body does not depend on the chunks.",
+    file: "packages/core/src/service.ts",
+    find: "value.subarray(0, room)",
+    replace: "value.subarray(0, 0)",
+    test: "packages/core/test/service.test.ts",
+  },
+  {
+    rule: "An answer that a fetch followed to another address is a redirect.",
+    file: "packages/core/src/service.ts",
+    find: "response.redirected || ",
+    replace: "",
     test: "packages/core/test/service.test.ts",
   },
   {
