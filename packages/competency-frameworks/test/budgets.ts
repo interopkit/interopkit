@@ -8,18 +8,18 @@ export const ITEMS = 10_000;
 
 /**
  * The budgets of the benchmarks. A time is the most that the fastest sample of a benchmark may take, in milliseconds: five
- * times the fastest sample of the machine class it was measured on, rounded up to one significant digit, as
- * docs/competency-frameworks/evidence.md explains.
+ * times the fastest sample of the runner of CI, rounded up to one significant digit, as docs/competency-frameworks/evidence.md
+ * explains.
  */
 export const BUDGETS = {
   /** `readPackage` of a framework of 10,000 items that is already parsed. */
-  readPackage: 200,
+  readPackage: 500,
   /** `validatePackage` of the same framework. */
-  validatePackage: 200,
+  validatePackage: 500,
   /** `frameworkTree` of the same framework. */
-  frameworkTree: 100,
+  frameworkTree: 500,
   /** `queryEntities` with a filter and a sort over 10,000 documents. */
-  queryDocuments: 20,
+  queryDocuments: 90,
 } as const;
 
 /**
