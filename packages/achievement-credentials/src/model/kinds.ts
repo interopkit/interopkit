@@ -68,16 +68,31 @@ export const ENTITY_KINDS = [
 /** The name of the class of an object that is not a credential. */
 export type EntityKind = (typeof ENTITY_KINDS)[number];
 
+/** The class of an object that is not a credential, by the name of its kind: what `readEntity` returns for each kind. */
+export interface EntityByKind {
+  /** The object of the kind `Achievement`. */
+  readonly Achievement: Achievement;
+  /** The object of the kind `Profile`. */
+  readonly Profile: Profile;
+  /** The object of the kind `GetOpenBadgeCredentialsResponse`. */
+  readonly GetOpenBadgeCredentialsResponse: GetOpenBadgeCredentialsResponse;
+  /** The object of the kind `GetClrCredentialsResponse`. */
+  readonly GetClrCredentialsResponse: GetClrCredentialsResponse;
+  /** The object of the kind `ClrCredentialJwtPayload`. */
+  readonly ClrCredentialJwtPayload: ClrCredentialJwtPayload;
+  /** The object of the kind `ClrSubjectJwtPayload`. */
+  readonly ClrSubjectJwtPayload: ClrSubjectJwtPayload;
+  /** The object of the kind `imsx_StatusInfo`. */
+  readonly imsx_StatusInfo: ImsxStatusInfo;
+  /** The object of the kind `ServiceDescriptionDocument`. */
+  readonly ServiceDescriptionDocument: ServiceDescriptionDocument;
+  /** The object of the kind `Multikey`. */
+  readonly Multikey: Multikey;
+  /** The object of the kind `JWK`. */
+  readonly JWK: JWK;
+  /** The object of the kind `JWKS`. */
+  readonly JWKS: JWKS;
+}
+
 /** An object that is not a credential, of one of the classes of `ENTITY_KINDS`. */
-export type Entity =
-  | Achievement
-  | Profile
-  | GetOpenBadgeCredentialsResponse
-  | GetClrCredentialsResponse
-  | ClrCredentialJwtPayload
-  | ClrSubjectJwtPayload
-  | ImsxStatusInfo
-  | ServiceDescriptionDocument
-  | Multikey
-  | JWK
-  | JWKS;
+export type Entity = EntityByKind[EntityKind];

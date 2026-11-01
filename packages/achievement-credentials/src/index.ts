@@ -6,6 +6,12 @@
  */
 
 export type { BakedCredential, BakedKind } from "./baking/index.js";
+export type {
+  CredentialsClient,
+  CredentialsClientConfig,
+  DiscoverOptions,
+  ServiceDescription,
+} from "./client/index.js";
 export { type CredentialSummary, credentialSummary, newerCredential, sameCredential } from "./compare/index.js";
 export {
   type AchievementCredentialInput,
@@ -48,7 +54,9 @@ export {
   type ClrSubjectV1p1,
   CONTEXTS,
   type ContextEntry,
+  CREDENTIAL_APIS,
   CREDENTIAL_KINDS,
+  type CredentialApi,
   type CredentialIssue,
   type CredentialKind,
   type CredentialSchema,
@@ -61,6 +69,7 @@ export {
   type EndorsementCredentialV1p1,
   type EndorsementSubject,
   type Entity,
+  type EntityByKind,
   type EntityKind,
   type Evidence,
   type ExtensionTerm,

@@ -4,16 +4,18 @@
  *
  * @module
  */
-export type {
-  GetOpenBadgeCredentialsResponse,
-  ImsxCodeMinor,
-  ImsxCodeMinorField,
-  ImsxStatusInfo,
-  OpenApiComponents,
-  OpenApiInfo,
-  OpenApiOAuth2SecurityScheme,
-  OpenApiSecuritySchemes,
-  ServiceDescriptionDocument,
+export {
+  CREDENTIAL_APIS,
+  type CredentialApi,
+  type GetOpenBadgeCredentialsResponse,
+  type ImsxCodeMinor,
+  type ImsxCodeMinorField,
+  type ImsxStatusInfo,
+  type OpenApiComponents,
+  type OpenApiInfo,
+  type OpenApiOAuth2SecurityScheme,
+  type OpenApiSecuritySchemes,
+  type ServiceDescriptionDocument,
 } from "./api.js";
 export type {
   Association,
@@ -71,6 +73,7 @@ export {
   type CredentialV1p1,
   ENTITY_KINDS,
   type Entity,
+  type EntityByKind,
   type EntityKind,
   type IssuableCredential,
 } from "./kinds.js";

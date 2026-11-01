@@ -11,6 +11,7 @@ describe("the exports", () => {
         "AUTHORIZATION_ERRORS",
         "ASSOCIATION_TYPES",
         "CONTEXTS",
+        "CREDENTIAL_APIS",
         "CREDENTIAL_KINDS",
         "ENTITY_KINDS",
         "IDENTIFIER_TYPES",

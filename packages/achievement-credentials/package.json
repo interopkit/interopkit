@@ -29,6 +29,10 @@
     "./baking": {
       "types": "./dist/baking/index.d.ts",
       "default": "./dist/baking/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "default": "./dist/client/index.js"
     }
   },
   "files": [
@@ -49,7 +53,9 @@
     "check:packages": "pnpm build && publint --pack pnpm --strict && attw --pack . --profile esm-only"
   },
   "devDependencies": {
-    "fast-check": "^4.10.2"
+    "fast-check": "^4.10.2",
+    "jose": "6.2.12",
+    "oidc-provider": "9.12.2"
   },
   "dependencies": {
     "@interopkit/core": "workspace:^",

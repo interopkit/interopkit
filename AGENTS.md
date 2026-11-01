@@ -10,7 +10,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
 `@interopkit/learning-records` implements the xAPI Statement and its readers, the message of its Attachments, its signature and a client of an LRS,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
-implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, and baking in images.
+implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, and the client of the Open Badges and CLR APIs.
 
 ```mermaid
 flowchart BT
@@ -22,7 +22,7 @@ flowchart BT
   cf["competency-frameworks<br/>model, read, version, graph, client, provider"]
   lr["learning-records<br/>model, read, build, compare, format,<br/>attachments, signing, client"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
-  ac["achievement-credentials<br/>model, read, issue, compare, baking"]
+  ac["achievement-credentials<br/>model, read, issue, compare, baking, client"]
   proto --> core
   tool --> proto
   plat --> proto
@@ -86,7 +86,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/learning-records/`         | xAPI 2.0: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
-| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`                     |
+| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`         |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -137,8 +137,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   the handlers of a CASE provider, and the xAPI Statement with its readers, the message of its Attachments, its signature and the client of an LRS. It does not own what a launched tool shows, what a
   score means, which delivery event becomes which Caliper or xAPI event, QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to
   assesskit and measurekit, to the adapter of each product and to the host.
-- `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders, the comparison of credentials and baking in PNG and SVG images. It does not own keys, proofs,
-  status lists, verification, the APIs or Open Badges 2.0 (those arrive in later modules), nor wallets, issuing
+- `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders, the comparison of credentials, baking in PNG and SVG images and the client of the Open Badges and CLR APIs. It does not own keys, proofs,
+  status lists, verification, the provider of the APIs, the OAuth 2.0 clients (those of `core/oauth`) or Open Badges 2.0 (those arrive in later modules), nor wallets, issuing
   platforms and storage.
 - `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
   canonicalization (the primitives of `@digitalbazaar/di-sd-primitives` do them), the resolution and binding of keys, the
@@ -160,7 +160,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   never import each other; `client/` builds on `read/`, `provider/` on `read/` and `version/`, and none of them imports
   either. In `selective-disclosure`, `proof-value/`, `keys/` and `document/` import none of the other folders, and
   `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`
-  imports no other module, `read/` builds on `model/` only, and `issue/`, `compare/` and `baking/` build on `model/` and `read/`
+  imports no other module, `read/` builds on `model/` only, and `issue/`, `compare/`, `baking/` and `client/` build on `model/` and `read/`
   and never import each other. In `learning-records`, `model/` imports no other module,
   `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
   `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
@@ -180,7 +180,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `ecdsa-sd-2023` suite with `@digitalbazaar/data-integrity`, `jsonld-signatures` and `@digitalbazaar/ecdsa-multikey`, which
   sign, derive and verify beside `selective-disclosure`, and `jsonld`, whose default loader the loader test makes fail.
   `@cfworker/json-schema` is a development dependency of the repository, for `scripts/schema-oracle.ts`: the validator that
-  tests run the published JSON schemas of a standard through.
+  tests run the published JSON schemas of a standard through. `oidc-provider` is a development dependency of `core` and of
+  `achievement-credentials`: the authorization server that their OAuth tests run against.
 
 ## Deviations from the standards
 

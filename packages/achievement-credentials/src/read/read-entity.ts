@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import type { CredentialIssue, Entity, EntityKind } from "../model/index.js";
+import type { CredentialIssue, Entity, EntityByKind, EntityKind } from "../model/index.js";
 import { errorsOf, inspectEntity, refusal } from "./inspect.js";
 import { readEntityKind } from "./options.js";
 
@@ -19,6 +19,7 @@ import { readEntityKind } from "./options.js";
  * kind is not one of `ENTITY_KINDS`.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/ | Open Badges 3.0}
  */
+export function readEntity<TKind extends EntityKind>(kind: TKind, value: unknown): EntityByKind[TKind];
 export function readEntity(kind: EntityKind, value: unknown): Entity {
   const checkedKind = readEntityKind(kind);
   const { value: entity, issues } = inspectEntity(checkedKind, value);

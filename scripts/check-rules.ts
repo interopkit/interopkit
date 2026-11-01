@@ -2646,6 +2646,48 @@ export const RULES: readonly Rule[] = [
     replace: "if (false) {",
     test: "packages/achievement-credentials/test/baking.test.ts",
   },
+  {
+    rule: "The access token of the host must be printable characters without a space, so that it cannot end the header.",
+    file: "packages/achievement-credentials/src/client/request.ts",
+    find: 'if (typeof token !== "string" || !TOKEN.test(token)) {',
+    replace: "if (false) {",
+    test: "packages/achievement-credentials/test/client.test.ts",
+  },
+  {
+    rule: "An answer that nests more levels of JSON than the readers take is refused before it is parsed.",
+    file: "packages/achievement-credentials/src/client/request.ts",
+    find: "if (nestsDeeperThan(text, MAX_JSON_DEPTH)) {",
+    replace: "if (false) {",
+    test: "packages/achievement-credentials/test/client.test.ts",
+  },
+  {
+    rule: "A page of more credentials than the request asked for is refused before the readers see any.",
+    file: "packages/achievement-credentials/src/client/client.ts",
+    find: "if (credentials.length + signed.length > settings.pageSize) {",
+    replace: "if (false) {",
+    test: "packages/achievement-credentials/test/client.test.ts",
+  },
+  {
+    rule: "A credential or a profile of more characters than the package reads is refused before the readers see it.",
+    file: "packages/achievement-credentials/src/client/client.ts",
+    find: "if (characters > MAX_CREDENTIAL_CHARACTERS) {",
+    replace: "if (false) {",
+    test: "packages/achievement-credentials/test/client.test.ts",
+  },
+  {
+    rule: "The iteration of the credentials ends at a page that holds only credentials already seen.",
+    file: "packages/achievement-credentials/src/client/client.ts",
+    find: "fresh.length === 0 ||",
+    replace: "",
+    test: "packages/achievement-credentials/test/client.test.ts",
+  },
+  {
+    rule: "A service description is read up to a limit of bytes.",
+    file: "packages/achievement-credentials/src/client/discovery.ts",
+    find: "{ maxBytes: DISCOVERY_MAX_BYTES, expect: [200] }",
+    replace: "{ maxBytes: 1_073_741_824, expect: [200] }",
+    test: "packages/achievement-credentials/test/client.test.ts",
+  },
 ];
 
 /** The folders that a scratch copy leaves out: generated output and installed packages, which it links instead. */

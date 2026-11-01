@@ -1,10 +1,10 @@
 import { DataError } from "@interopkit/core";
 import { copyJson, describe, isRecord, MAX_JSON_DEPTH, nestsDeeperThan } from "@interopkit/core/checks";
 import * as v from "valibot";
+import { MAX_CREDENTIAL_CHARACTERS } from "../model/internal.js";
 import { readCredential } from "../read/index.js";
 import { jws } from "../read/internal.js";
 import type { BakedKind } from "./formats.js";
-import { MAX_CREDENTIAL_CHARACTERS } from "./options.js";
 
 const UTF8 = new TextDecoder("utf-8", { fatal: true });
 
@@ -47,7 +47,8 @@ function typeNames(value: unknown): readonly unknown[] {
  * 8.2.4), or its `vc` claim under the Verifiable Credentials Data Model 1.1. Nothing else of the JWS is read or checked.
  */
 function kindOfJws(compact: string): BakedKind {
-  const payload = decodePayload(compact.split(".")[1] ?? "");
+  // A compact JWS has exactly two dots (the `jws` schema), so what lies between them is the payload.
+  const payload = decodePayload(compact.slice(compact.indexOf(".") + 1, compact.lastIndexOf(".")));
   if (nestsDeeperThan(payload, MAX_JSON_DEPTH)) {
     throw new DataError(`The payload of the compact JWS nests more than ${MAX_JSON_DEPTH} levels.`);
   }

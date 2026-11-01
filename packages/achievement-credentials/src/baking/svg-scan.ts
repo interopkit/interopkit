@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
 import { SaxesParser, type SaxesTagNS } from "saxes";
+import { MAX_CREDENTIAL_CHARACTERS } from "../model/internal.js";
 import { BAKED_KINDS, type BakedKind, CREDENTIAL_ELEMENT, FORMATS, VERIFY_ATTRIBUTE } from "./formats.js";
-import { MAX_CREDENTIAL_CHARACTERS } from "./options.js";
 
 /**
  * The most characters that go to the parser at once, so that a reader which finds the credential at the top of a large image

@@ -7,6 +7,12 @@
 import type { AchievementCredential } from "./credentials.js";
 import type { StatusCodeMajor, StatusCodeMinorValue, StatusSeverity } from "./vocabularies.js";
 
+/** The APIs that exchange credentials: the Open Badges API (`"badges"`) and the CLR Standard API (`"clr"`). */
+export const CREDENTIAL_APIS = ["badges", "clr"] as const;
+
+/** The name of an API that exchanges credentials. */
+export type CredentialApi = (typeof CREDENTIAL_APIS)[number];
+
 /** The answer to getCredentials of the Open Badges API (OB B.2.1). */
 export interface GetOpenBadgeCredentialsResponse {
   /** The credentials of the page. */

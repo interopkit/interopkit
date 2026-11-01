@@ -7,13 +7,6 @@ import { checkPositiveInteger, checkProperties, checkRecord, describe } from "@i
  */
 export const DEFAULT_MAX_BYTES = 10_485_760;
 
-/**
- * The most characters of the credential in an image. `JSON.parse` takes about forty times the text in memory when the text is
- * small objects, so a limit on the image alone would let 10 MiB cost hundreds of megabytes. A credential longer than this is
- * more than `verifyCredential` takes by default (its `maxInputBytes`, 1,048,576).
- */
-export const MAX_CREDENTIAL_CHARACTERS = 1_048_576;
-
 /** The options of `readPng` and `readSvg`. */
 export interface ReadImageOptions {
   /**

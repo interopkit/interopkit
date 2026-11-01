@@ -25,3 +25,12 @@ namespaces of Open Badges and CLR) from its type, refuse an image that holds a c
 every other chunk or character as it was. `readPng` and `readSvg` return the kind and the credential of the first chunk or
 element, or `undefined`, and refuse a damaged or compressed chunk, an SVG that nests more than 256 elements or has more than 256
 attributes in one, and a credential of more than 1,048,576 characters.
+
+`@interopkit/achievement-credentials/client` is the client of the Open Badges API and the CLR Standard API. `discoverService`
+reads the service description of a server into the endpoints of its authorization code flow, its scopes and its policies, for
+the OAuth clients of `@interopkit/core/oauth`. `createCredentialsClient` lists the credentials of a user page by page as objects
+and compact JWS (`listCredentials`, from `X-Total-Count`, `Link` or the size of a page, with `since`), adds or replaces one
+(`upsertCredential`, which says `"created"`, `"replaced"` or `"unchanged"`), and reads and replaces the profile. Its access tokens
+come from a function of the host, it follows no redirect, and it retries nothing: `readStatusInfo` gives the `imsx_StatusInfo`
+and the `Retry-After` of a refusal. A page of more credentials than the request asked for, and a credential or a profile of more
+than 1,048,576 characters, are refused before the readers see them. `readEntity` returns the class of its kind.
