@@ -53,8 +53,12 @@ option. Inner functions trust their callers.
 | Export                                              | Reads                                                                                                                                                       |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `parseWith(schema, input, label)`                   | Parses with any valibot schema and stops at the first issue: `<label> is invalid at items[0].id: expected a string, found 1.`                               |
+| `pathOf(issue.path)`                                | Where an issue is, as code writes it: `items[0].session.status`, and the empty string for the value as a whole                                            |
 | `issueText(issue)`                                  | The text of one issue with its path, for a message that wraps the issue of a nested parse                                                                   |
+| `findingsOf(issues)`                                | The issues of a parse as findings, `{ path, rule, message }`, for a reader or a validator that returns them as data (see Findings)                          |
 | `looseRecord(entries)`                              | An object with the given entries that keeps the properties it does not know, and refuses an array                                                           |
+| `strictRecord(entries)`                             | An object with the given entries that refuses a property it does not know, as `additionalProperties: false` does, and refuses an array                      |
+| `jsonObjectSchema`                                  | An object of JSON, copied, with no function, `undefined`, number that is not finite or object that is not plain, and at most `MAX_JSON_DEPTH` levels       |
 | `mapSchema(value)`                                  | An object whose property names are data, such as claim names, into a `Map`: a name such as `__proto__` stays data, which the `record` of valibot would skip |
 | `methodsSchema(...names)`                           | A host's object with the given functions, such as a store; the object passes on whole, so a class instance keeps its methods                                |
 | `guardSchema(guard, expected)`                      | A value that a type guard accepts, passed on whole                                                                                                          |
@@ -63,8 +67,51 @@ option. Inner functions trust their callers.
 | `nonNegativeIntegerSchema`, `positiveIntegerSchema` | A safe integer from 0, and from 1                                                                                                                           |
 | `nonEmptyStringSchema`                              | A string of at least one character                                                                                                                          |
 | `httpsUrlSchema`                                    | An absolute `https` URL                                                                                                                                     |
+| `uuidSchema`, `dateSchema`, `dateTimeSchema`        | A UUID as 8-4-4-4-12 digits, a date that exists, and a date and time of RFC 3339 with an offset (see Formats)                                               |
+| `absoluteUriSchema`                                 | A URI with a scheme, such as `https://example.org/x`                                                                                                        |
 
 The `Schema<TOutput>` type is a valibot schema of unknown input.
+
+## Findings
+
+A reader that returns what is wrong as data, and not as an exception, returns findings: `Finding` is `{ path, rule, message }`.
+`path` is where the fault is, as `pathOf` writes it. `message` is a sentence that reads after the path and does not repeat it.
+A package adds fields to its own finding, such as a `severity`, by extending `Finding`. `findingsOf(issues)` makes the findings of a
+parse and owns the rule names:
+
+| `rule`             | When                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------- |
+| `missing-property` | A property that the schema requires is absent                                                |
+| `unknown-property` | A strict object has a property that it does not know; valibot reports one for each object    |
+| `wrong-type`       | A value is of another JSON type, or is a number that is not an integer or not finite         |
+| `invalid-format`   | A string has the wrong form: a UUID, a date, a date and time or a URI that a check refuses   |
+| `invalid-value`    | A value is outside a vocabulary, or a guard or a transform refuses it                        |
+| `too-few-entries`  | A list is shorter than the least that the schema allows                                      |
+
+## Formats
+
+| Export                  | Reads                                                                                                                                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `isDate(text)`          | A date `YYYY-MM-DD` that exists: the days of each month and the leap years are known                                                                                                    |
+| `parseDateTime(text)`   | A date and time of RFC 3339 section 5.6 into epoch milliseconds, or `undefined`: `T` and `Z` of either case, an offset `Z` or `+hh:mm` to 23:59, a fraction that keeps three digits, and a leap second at 23:59 |
+| `isDateTime(text)`      | Whether `parseDateTime` reads it                                                                                                                                                       |
+| `isUuid(text)`          | A UUID as 8-4-4-4-12 hexadecimal digits of either case, which is the `uuid` of valibot                                                                                                 |
+| `isAbsoluteUri(text)`   | A URI that has a scheme and no white space, which `URL` parses                                                                                                                         |
+
+The `isoDate` and `isoTimestamp` of valibot are patterns, so that they accept `2023-02-31`; the date and the date and time are read
+by hand because valibot has no check that knows the calendar. A caller that needs a narrower form, such as the
+upper case of AGS or the milliseconds of Caliper, adds its own test to these.
+
+## JSON
+
+`copyJson(value, path)` copies a value that must be JSON and returns `{ value }`, or `{ problem }` with a sentence that says where
+the value is not JSON. `JsonValue` and `JsonObject` are the types.
+
+| Limit            | Value | Applies to                                                                                      |
+| ---------------- | ----- | ----------------------------------------------------------------------------------------------- |
+| `MAX_JSON_DEPTH` | 64    | The levels that arrays and objects nest in `copyJson`, and the default depth of `readJson`      |
+
+A member named `__proto__` stays a member of the copy and never changes its prototype.
 
 ## Errors
 

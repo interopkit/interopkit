@@ -42,7 +42,7 @@ const nodeProject = (name: string): TestProjectInlineConfiguration => ({
   test: {
     name,
     include: [`packages/${name}/test/**/*.test.ts`],
-    exclude: ["**/*.browser.test.ts", "**/*.corpus.test.ts", "**/spec-examples.test.ts"],
+    exclude: ["**/*.browser.test.ts", "**/*.corpus.test.ts", "**/spec-examples.test.ts", "**/*.spec.test.ts"],
     testTimeout: HANG_LIMIT,
   },
 });
@@ -52,6 +52,7 @@ export default defineConfig({
   test: {
     projects: [
       nodeProject("core"),
+      nodeProject("competency-frameworks"),
       nodeProject("learning-analytics"),
       {
         // The tests that read the files `pnpm schemas` downloads. `pnpm test` leaves them out and `pnpm test:corpus` runs them.
@@ -59,6 +60,15 @@ export default defineConfig({
         test: {
           name: "learning-analytics-corpus",
           include: ["packages/learning-analytics/test/**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The tests that read the schemas of CASE that `pnpm schemas` downloads, and compare the readers with them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "competency-frameworks-corpus",
+          include: ["packages/competency-frameworks/test/**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
         },
       },
@@ -93,6 +103,15 @@ export default defineConfig({
         },
       },
       {
+        // The examples of the CASE implementation guide: `pnpm spec-examples` downloads them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "competency-frameworks-spec",
+          include: ["packages/competency-frameworks/test/**/*.spec.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
         // The examples of the specifications: `pnpm spec-examples` downloads them.
         resolve: { alias: SOURCES },
         test: {
@@ -114,6 +133,7 @@ export default defineConfig({
       // One floor per package: a gap in the tests of a package fails its own floor and no other.
       thresholds: {
         "packages/core/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
+        "packages/competency-frameworks/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/learning-analytics/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/tool-integration/src/**": { statements: 98, branches: 95, functions: 100, lines: 99 },
       },

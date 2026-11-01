@@ -129,6 +129,21 @@ function find(
 }
 
 /**
+ * Reads the JSON blocks of one page, in the order of the page, from the directory that `fetchSpecExamples` wrote.
+ *
+ * @param root - The repository.
+ * @param file - The name of the file of the page in the lock.
+ * @throws `Error` when the examples are not downloaded.
+ */
+export function readSpecPage(root: string, file: string): unknown[] {
+  const directory = examplesDirectory(root);
+  if (!existsSync(directory)) {
+    throw new Error(`The specification examples are not downloaded to ${directory}: run pnpm spec-examples first.`);
+  }
+  return JSON.parse(readFileSync(join(directory, file), "utf8"));
+}
+
+/**
  * Reads the examples that tests use from the directory that `fetchSpecExamples` wrote.
  *
  * @throws `Error` when the examples are not downloaded, or a page no longer holds an example the tests need.

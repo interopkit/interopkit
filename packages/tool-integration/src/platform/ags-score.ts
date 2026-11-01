@@ -1,15 +1,13 @@
 import { DataError } from "@interopkit/core";
-import { checkRecord, describe } from "@interopkit/core/checks";
+import { checkRecord, describe, parseDateTime } from "@interopkit/core/checks";
 
 /** The values of `activityProgress` (LTI AGS 2.0 section 3.4.7). */
 const ACTIVITY_PROGRESS = ["Initialized", "Started", "InProgress", "Submitted", "Completed"] as const;
 /** The values of `gradingProgress` (LTI AGS 2.0 section 3.4.8). */
 const GRADING_PROGRESS = ["FullyGraded", "Pending", "PendingManual", "Failed", "NotReady"] as const;
-// LTI AGS 2.0 section 3.4.9: ISO 8601 with a time zone designator (`Z`, `+00:00` or `+00`) and, in the examples, a fraction of a second.
-const TIMESTAMP = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}(?::?\d{2})?)$/u;
-const MS_PER_MINUTE = 60_000;
-const MAX_ZONE_HOURS = 23;
-const MAX_ZONE_MINUTES = 59;
+// LTI AGS 2.0 section 3.4.9: ISO 8601 with a time zone designator (`Z`, `+00:00`, `+0000` or `+00`) and, in the examples, a
+// fraction of a second. RFC 3339, which `parseDateTime` reads, has only `Z` and `+00:00`.
+const ZONE_WITHOUT_COLON = /([+-]\d{2})(\d{2})?$/u;
 
 /** A score that a tool posted to a line item (LTI AGS 2.0 section 3.4). */
 export interface AgsScore {
@@ -31,29 +29,9 @@ export interface AgsScore {
 
 /** Reads a timestamp into milliseconds since 1970-01-01T00:00:00Z, or returns `undefined` when it is not valid. */
 function readTimestamp(text: string): number | undefined {
-  const match = TIMESTAMP.exec(text);
-  if (match === null) return undefined;
-  const [, year = "", month = "", day = "", hour = "", minute = "", second = "", fraction = "", zone = ""] = match;
-  const parts = [year, month, day, hour, minute, second].map(Number);
-  const [y = 0, mo = 0, d = 0, h = 0, mi = 0, s = 0] = parts;
-  const local = Date.UTC(y, mo - 1, d, h, mi, s, Number(fraction.padEnd(3, "0").slice(0, 3)));
-  const check = new Date(local);
-  const valid =
-    check.getUTCFullYear() === y &&
-    check.getUTCMonth() === mo - 1 &&
-    check.getUTCDate() === d &&
-    check.getUTCHours() === h &&
-    check.getUTCMinutes() === mi &&
-    check.getUTCSeconds() === s;
-  if (!valid) return undefined;
-  if (zone === "Z") return local;
-  const sign = zone.startsWith("-") ? -1 : 1;
-  const digits = zone.slice(1).replace(":", "");
-  const zoneHours = Number(digits.slice(0, 2));
-  const zoneMinutes = Number(digits.slice(2) || "0");
-  // A time zone is at most 23:59 from UTC; a larger offset would move the time by days.
-  if (zoneHours > MAX_ZONE_HOURS || zoneMinutes > MAX_ZONE_MINUTES) return undefined;
-  return local - sign * (zoneHours * 60 + zoneMinutes) * MS_PER_MINUTE;
+  // ISO 8601 writes `T` and `Z` in upper case, and RFC 3339 allows both cases: upper case is the form that AGS has.
+  if (text !== text.toUpperCase()) return undefined;
+  return parseDateTime(text.replace(ZONE_WITHOUT_COLON, (_, hours: string, minutes = "00") => `${hours}:${minutes}`));
 }
 
 /** Returns the value if it is one of the allowed strings. */

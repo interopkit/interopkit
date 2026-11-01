@@ -15,6 +15,7 @@ body:
         - "@interopkit/core"
         - "@interopkit/tool-integration"
         - "@interopkit/learning-analytics"
+        - "@interopkit/competency-frameworks"
     validations:
       required: true
   - type: input

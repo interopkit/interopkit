@@ -1,0 +1,53 @@
+{
+  "name": "@interopkit/competency-frameworks",
+  "version": "0.0.0",
+  "description": "CASE 1.1 competency frameworks: the model of a framework package and its entities, readers that check them against the 1EdTech schemas and the rules of a package, and the conversion to CASE 1.0.",
+  "keywords": [
+    "interopkit",
+    "competency-frameworks",
+    "case",
+    "learning-standards",
+    "competencies"
+  ],
+  "author": "Fariz Wakan",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/interopkit/interopkit.git",
+    "directory": "packages/competency-frameworks"
+  },
+  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/competency-frameworks#readme",
+  "bugs": "https://github.com/interopkit/interopkit/issues",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "node --eval \"for (const path of ['dist', 'tsconfig.build.tsbuildinfo']) fs.rmSync(path, { recursive: true, force: true })\"",
+    "build": "pnpm clean && tsc -b tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:packages": "pnpm build && publint --pack pnpm --strict && attw --pack . --profile esm-only"
+  },
+  "devDependencies": {
+    "fast-check": "^4.10.2"
+  },
+  "dependencies": {
+    "@interopkit/core": "workspace:^",
+    "valibot": "1.5.0"
+  }
+}

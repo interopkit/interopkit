@@ -13,5 +13,10 @@
     "url": "https://www.imsglobal.org/spec/lti-ags/v2p0",
     "file": "lti-ags-2p0.json",
     "sha256": "9ec5fa93be215303da13ea73cb24c040eeb25502c964a8947a0b695ecbaea18e"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/case/v1p1/impl/",
+    "file": "case-implementation-guide-1p1.json",
+    "sha256": "867b34fb8ad3439ed6883035888b8ef910481a42fb64216c0b60cb0c29e265dd"
   }
 ]

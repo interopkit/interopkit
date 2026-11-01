@@ -160,6 +160,30 @@
       }
     },
     {
+      "includes": ["packages/core/src/formats.ts", "packages/core/src/json.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["./*", "./*/**"],
+                    "message": "formats.ts and json.ts depend on nothing of the package."
+                  },
+                  {
+                    "group": ["@interopkit/**"],
+                    "message": "core is the lowest package of the family: it imports no other."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["packages/core/src/checks.ts"],
       "linter": {
         "rules": {
@@ -169,8 +193,8 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["./*", "./*/**", "!./errors.js"],
-                    "message": "checks.ts depends only on errors.ts."
+                    "group": ["./*", "./*/**", "!./errors.js", "!./formats.js", "!./json.js"],
+                    "message": "checks.ts depends only on errors.ts, formats.ts and json.ts."
                   },
                   {
                     "group": ["@interopkit/**"],
@@ -334,8 +358,8 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["../*", "../*/**", "!../errors.js", "!../checks.js"],
-                    "message": "http/ depends only on errors.ts and checks.ts."
+                    "group": ["../*", "../*/**", "!../errors.js", "!../checks.js", "!../json.js"],
+                    "message": "http/ depends only on errors.ts, checks.ts and json.ts."
                   },
                   {
                     "group": ["@interopkit/**"],
@@ -444,6 +468,90 @@
                 ]
               }
             }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/competency-frameworks/src/model/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/read", "**/read/**", "**/version", "**/version/**"],
+                    "message": "model/ holds the types and terms and imports neither read/ nor version/: they build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/competency-frameworks/src/read/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/version", "**/version/**"],
+                    "message": "read/ builds on model/ and @interopkit/core only: version/ is its sibling and never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/competency-frameworks/src/version/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/read", "**/read/**"],
+                    "message": "version/ builds on model/ and @interopkit/core only: read/ is its sibling and never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/competency-frameworks/src/model/**",
+        "packages/competency-frameworks/src/read/schemas.ts",
+        "packages/competency-frameworks/test/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNamingConvention": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/competency-frameworks/test/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
           }
         }
       }

@@ -172,6 +172,9 @@ importers:
       '@biomejs/biome':
         specifier: ^2.5.15
         version: 2.5.15
+      '@cfworker/json-schema':
+        specifier: 4.1.1
+        version: 4.1.1
       '@changesets/cli':
         specifier: ^3.0.3
         version: 3.0.3
@@ -187,6 +190,9 @@ importers:
       cspell:
         specifier: ^10.4.0
         version: 10.4.0
+      fast-check:
+        specifier: ^4.10.2
+        version: 4.10.2
       knip:
         specifier: ^6.41.0
         version: 6.41.0
@@ -241,6 +247,19 @@ importers:
       '@interopkit/tool-integration':
         specifier: workspace:^
         version: link:../../packages/tool-integration
+
+  packages/competency-frameworks:
+    dependencies:
+      '@interopkit/core':
+        specifier: workspace:^
+        version: link:../core
+      valibot:
+        specifier: 1.5.0
+        version: 1.5.0(typescript@6.0.3)
+    devDependencies:
+      fast-check:
+        specifier: ^4.10.2
+        version: 4.10.2
 
   packages/core:
     dependencies:
@@ -390,6 +409,9 @@ packages:
 
   '@braidai/lang@1.1.2':
     resolution: {integrity: sha512-qBcknbBufNHlui137Hft8xauQMTZDKdophmLFv05r2eNmdIv/MlPuP4TdUknHG68UdWLgVZwgxVe735HzJNIwA==}
+
+  '@cfworker/json-schema@4.1.1':
+    resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
 
   '@changesets/apply-release-plan@8.1.1':
     resolution: {integrity: sha512-nk2Hbq3M9NeHMdaIRBDvawKrQJzXB9sGyBUE5yWnIKtvdcNCPj75zBekJYr0gTT2ecJH3eFeTrc8eisPImcv0Q==}
@@ -2460,6 +2482,8 @@ snapshots:
   '@blazediff/core@1.10.0': {}
 
   '@braidai/lang@1.1.2': {}
+
+  '@cfworker/json-schema@4.1.1': {}
 
   '@changesets/apply-release-plan@8.1.1':
     dependencies:

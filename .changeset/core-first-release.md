@@ -2,7 +2,7 @@
 "@interopkit/core": minor
 ---
 
-The foundation of `@interopkit/tool-integration` and `@interopkit/learning-analytics`: `InteropkitError`, `DataError` and
+The foundation of `@interopkit/tool-integration`, `@interopkit/learning-analytics` and `@interopkit/competency-frameworks`: `InteropkitError`, `DataError` and
 `ServiceError`, the checks of arguments, a `Clock`, `requestService` and `callService`, the calls to a service over HTTP with
 a deadline, a size limit of 65,536 bytes unless the call says otherwise, no redirects, any of GET, POST, PUT, DELETE and HEAD,
 bodies as text or bytes, statuses that a call returns as values, and a `signal` that ends the caller's wait, and
@@ -14,3 +14,5 @@ compact JWS and refuses a signature of the wrong form. `Random` and `SYSTEM_RAND
 `@interopkit/core/oauth` has the OAuth 2.0 clients on `oauth4webapi`: client credentials, authorization code with PKCE,
 refresh, revocation and registration, authentication by secret, by a JWT that a `Signer` signs, or by none, and a token cache
 that shares one token among callers.
+`@interopkit/core/checks` also reads the formats that the standards share (a date, a date and time of RFC 3339, a UUID, a URI),
+copies JSON within a depth limit, and turns the issues of a parse into findings with a path, a rule and a sentence.

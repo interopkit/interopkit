@@ -1,12 +1,10 @@
 import { checkPositiveInteger, checkRecord } from "../checks.js";
 import { DataError } from "../errors.js";
+import { MAX_JSON_DEPTH } from "../json.js";
 import type { HttpRequest } from "./request.js";
 
 /** The most bytes of a JSON body that `readJson` reads unless the caller says otherwise. */
 const DEFAULT_MAX_JSON_BYTES = 1_048_576;
-
-/** The deepest nesting of arrays and objects that `readJson` reads unless the caller says otherwise. */
-const DEFAULT_MAX_JSON_DEPTH = 64;
 
 /** Throws on bytes that are not UTF-8, where the default decoder would replace them. */
 const DECODER = new TextDecoder("utf-8", { fatal: true });
@@ -99,7 +97,7 @@ export function readJson(request: HttpRequest, options: ReadJsonOptions = {}): u
   if (options.maxBytes !== undefined) checkPositiveInteger(options.maxBytes, "The option maxBytes");
   if (options.maxDepth !== undefined) checkPositiveInteger(options.maxDepth, "The option maxDepth");
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_JSON_BYTES;
-  const maxDepth = options.maxDepth ?? DEFAULT_MAX_JSON_DEPTH;
+  const maxDepth = options.maxDepth ?? MAX_JSON_DEPTH;
   if (request.body.byteLength > maxBytes) {
     throw new DataError(
       `The body of the request has ${request.body.byteLength} bytes, above the limit of ${maxBytes} bytes.`,

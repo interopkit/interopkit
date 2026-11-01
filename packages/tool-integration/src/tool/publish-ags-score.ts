@@ -6,6 +6,7 @@ import {
   checkProperties,
   checkRecord,
   describe,
+  isDateTime,
   isRecord,
   looseRecord,
   parseWith,
@@ -19,8 +20,6 @@ import type { LtiLaunch } from "./launch-model.js";
 import { type AccessTokenOptions, checkToolOptions } from "./options.js";
 
 const TRAILING_SLASH = /\/$/u;
-/** An ISO 8601 date and time with a time zone, as AGS 3.4.9 requires of the timestamp of a score: `2026-11-01T09:30:00.250Z`. */
-const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
 
 /** The score that a tool publishes to the line item of a launch (AGS 2.0 section 3.4). */
 export interface AgsScoreInput {
@@ -59,7 +58,8 @@ const scoreSchema = looseRecord({
   timestamp: v.pipe(
     v.string(),
     v.check(
-      (text) => TIMESTAMP.test(text) && !Number.isNaN(Date.parse(text)),
+      // Upper case is the form that AGS 3.4.9 has, and RFC 3339 also allows a lower-case `t` and `z`.
+      (text) => text === text.toUpperCase() && isDateTime(text),
       (issue) => `expected an ISO 8601 date and time with a time zone, found ${issue.received}`,
     ),
   ),

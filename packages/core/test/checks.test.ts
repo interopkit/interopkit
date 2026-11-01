@@ -12,20 +12,25 @@ import {
   checkProperties,
   checkRecord,
   checkString,
+  dateTimeSchema,
   describe as describeValue,
+  findingsOf,
   finiteSchema,
   guardSchema,
   httpsUrlSchema,
   isRecord,
   issueText,
+  jsonObjectSchema,
   looseRecord,
   mapSchema,
   methodsSchema,
   nonEmptyStringSchema,
   nonNegativeIntegerSchema,
   parseWith,
+  pathOf,
   positiveIntegerSchema,
   positiveSchema,
+  strictRecord,
 } from "../src/checks.js";
 import { DataError } from "../src/index.js";
 
@@ -260,6 +265,136 @@ describe("parseWith", () => {
       }),
       { seed: 20_261_101, numRuns: 300 },
     );
+  });
+});
+
+describe("pathOf", () => {
+  it("writes a path as code does: names after a dot, indexes in brackets, other names quoted", () => {
+    const schema = v.strictObject({ items: v.array(v.record(v.string(), v.string())) });
+    const [issue] = v.safeParse(schema, { items: [{ "a-b": 1 }] }).issues ?? [];
+    expect(pathOf(issue?.path)).toBe('items[0]["a-b"]');
+  });
+
+  it("gives the empty string for the value as a whole", () => {
+    expect(pathOf(undefined)).toBe("");
+  });
+});
+
+const findingsSchema = strictRecord({
+  name: v.string(),
+  count: v.optional(v.pipe(v.number(), v.integer())),
+  list: v.optional(v.pipe(v.array(v.string()), v.minLength(1))),
+  kind: v.optional(v.picklist(["a", "b"])),
+  when: v.optional(dateTimeSchema),
+  term: v.optional(guardSchema((value): value is "x" => value === "x", "x")),
+  inner: v.optional(strictRecord({ id: v.string() })),
+  items: v.optional(v.array(strictRecord({ name: v.string() }))),
+});
+
+/** The findings of a value that the schema above reads. */
+function findingsOfValue(value: unknown) {
+  return findingsOf(v.safeParse(findingsSchema, value).issues ?? []);
+}
+
+describe("findingsOf", () => {
+  it.each([
+    ["a value that is not an object", null, "", "wrong-type", "expected an object, found null."],
+    ["an array where an object is", [], "", "wrong-type", "expected an object, found an array."],
+    ["a missing property", {}, "name", "missing-property", 'missing the property "name".'],
+    ["an unknown property", { name: "n", other: 1 }, "other", "unknown-property", 'unexpected property "other".'],
+    ["a value of another type", { name: 5 }, "name", "wrong-type", "expected a string, found 5."],
+    [
+      "a number that is not an integer",
+      { name: "n", count: 1.5 },
+      "count",
+      "wrong-type",
+      "expected an integer, found 1.5.",
+    ],
+    [
+      "a value outside a vocabulary",
+      { name: "n", kind: "c" },
+      "kind",
+      "invalid-value",
+      'expected "a" or "b", found "c".',
+    ],
+    ["a value that a guard refuses", { name: "n", term: "y" }, "term", "invalid-value", 'expected x, found "y".'],
+    [
+      "a list that is too short",
+      { name: "n", list: [] },
+      "list",
+      "too-few-entries",
+      "expected a length of at least 1, found 0.",
+    ],
+    [
+      "a string of the wrong form",
+      { name: "n", when: "2024-06-13" },
+      "when",
+      "invalid-format",
+      'expected a date and time as RFC 3339, such as 2024-06-13T18:46:03+00:00, found "2024-06-13".',
+    ],
+    [
+      "a property of an object in an object",
+      { name: "n", inner: {} },
+      "inner.id",
+      "missing-property",
+      'missing the property "id".',
+    ],
+    [
+      "a property of an object in a list",
+      { name: "n", items: [{ name: "a" }, { name: 2 }] },
+      "items[1].name",
+      "wrong-type",
+      "expected a string, found 2.",
+    ],
+  ])("gives the path, the rule and a sentence for %s", (_name, value, path, rule, message) => {
+    expect(findingsOfValue(value)).toStrictEqual([{ path, rule, message }]);
+  });
+
+  it("gives one finding for each issue, in order, and none for a value that is read", () => {
+    expect(findingsOfValue({ name: "n" })).toStrictEqual([]);
+    expect(findingsOfValue({ count: 1.5, kind: "c" }).map(({ path }) => path)).toStrictEqual(["name", "count", "kind"]);
+  });
+
+  it("does not repeat the path in the sentence", () => {
+    for (const finding of findingsOfValue({ name: 5, inner: { id: 1 } })) {
+      expect(finding.message).not.toContain(finding.path);
+    }
+  });
+});
+
+describe("strictRecord", () => {
+  const schema = strictRecord({ id: v.string() });
+
+  it("reads an object with the entries and refuses a property that it does not know, and an array", () => {
+    expect(v.safeParse(schema, { id: "a" }).success).toBe(true);
+    expect(v.safeParse(schema, { id: "a", extra: 1 }).success).toBe(false);
+    expect(v.safeParse(strictRecord({ id: v.optional(v.string()) }), []).success).toBe(false);
+  });
+
+  it("reports one unknown property of an object", () => {
+    expect(
+      findingsOf(v.safeParse(schema, { id: "a", first: 1, second: 2 }).issues ?? []).map(({ path }) => path),
+    ).toStrictEqual(["first"]);
+  });
+});
+
+describe("jsonObjectSchema", () => {
+  it("reads an object of JSON into a copy", () => {
+    const input = { a: [1, { b: null }] };
+    const result = v.safeParse(jsonObjectSchema, input);
+    expect(result.output).toStrictEqual(input);
+    expect(result.output).not.toBe(input);
+  });
+
+  it.each([null, "x", [], 5])("refuses %j, which is not an object", (value) => {
+    expect(v.safeParse(jsonObjectSchema, value).success).toBe(false);
+  });
+
+  it("refuses an object that holds what JSON cannot, with a finding that says where", () => {
+    const issues = v.safeParse(jsonObjectSchema, { list: [{ at: () => 1 }] }).issues ?? [];
+    expect(findingsOf(issues)).toStrictEqual([
+      { path: "", rule: "invalid-value", message: "list[0].at is a function, which JSON cannot hold." },
+    ]);
   });
 });
 

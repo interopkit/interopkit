@@ -6,6 +6,27 @@
  */
 import * as v from "valibot";
 import { DataError } from "./errors.js";
+import { copyJson, type JsonObject } from "./json.js";
+
+export {
+  absoluteUriSchema,
+  dateSchema,
+  dateTimeSchema,
+  isAbsoluteUri,
+  isDate,
+  isDateTime,
+  isUuid,
+  parseDateTime,
+  uuidSchema,
+} from "./formats.js";
+export {
+  copyJson,
+  type JsonObject,
+  type JsonObjectCopy,
+  type JsonValue,
+  type JsonValueCopy,
+  MAX_JSON_DEPTH,
+} from "./json.js";
 
 /**
  * Describes a value in a message: strings quoted; arrays, functions and other objects as "an array", "a function" and
@@ -195,8 +216,13 @@ const COMPARISONS: ReadonlyMap<string, string> = new Map([
 /** The start of every message that valibot makes; a schema or an action given a message of its own has another start. */
 const DEFAULT_MESSAGE = "Invalid ";
 
-/** Returns the path of an issue as code writes it, such as `items[0].session.status`. */
-function pathOf(path: readonly v.IssuePathItem[] | undefined): string {
+/**
+ * Returns the path of an issue as code writes it, such as `items[0].session.status`.
+ *
+ * @param path - The `path` of a valibot issue.
+ * @returns The path, and the empty string for the value as a whole.
+ */
+export function pathOf(path: readonly v.IssuePathItem[] | undefined): string {
   let text = "";
   for (const { key } of path ?? []) {
     if (typeof key === "number") text += `[${key}]`;
@@ -299,11 +325,14 @@ export function guardSchema<TOutput>(guard: (value: unknown) => value is TOutput
   return v.custom<TOutput>(guard, (issue) => `expected ${expected}, found ${foundOf(issue)}`);
 }
 
+/** What the schema of a record expects, in the words of its message. */
+const OBJECT_EXPECTED = "an object";
+
 /**
  * The schema of a record. In front of an object schema whose entries are all optional it refuses an array, which valibot
  * reads as an object.
  */
-const recordSchema = guardSchema(isRecord, "an object");
+const recordSchema = guardSchema(isRecord, OBJECT_EXPECTED);
 
 /**
  * The schema of an object with the given entries, that keeps the properties it does not know. Unlike the object of
@@ -314,6 +343,32 @@ const recordSchema = guardSchema(isRecord, "an object");
 export function looseRecord<const TEntries extends v.ObjectEntries>(entries: TEntries) {
   return v.pipe(recordSchema, v.looseObject(entries));
 }
+
+/**
+ * The schema of an object with the given entries that refuses a property it does not know, as `additionalProperties: false`
+ * does. It refuses an array whatever the entries, and reports one unknown property for each object.
+ *
+ * @param entries - The schemas of the properties.
+ */
+export function strictRecord<const TEntries extends v.ObjectEntries>(entries: TEntries) {
+  return v.pipe(recordSchema, v.strictObject(entries));
+}
+
+/**
+ * The schema of an object that must be JSON, such as the proprietary data of an entity: the result is a copy, which
+ * `copyJson` makes, so that it shares nothing with the input.
+ */
+export const jsonObjectSchema: Schema<JsonObject> = v.pipe(
+  recordSchema,
+  v.rawTransform(({ dataset, addIssue, NEVER }) => {
+    const result = copyJson(dataset.value, "");
+    if ("problem" in result) {
+      addIssue({ message: result.problem });
+      return NEVER;
+    }
+    return result.value;
+  }),
+);
 
 /**
  * The schema of an object whose property names are data, such as claim names: every own property is read into a map,
@@ -384,3 +439,62 @@ export const positiveSchema = v.pipe(
     (issue) => `expected a positive number, found ${issue.received}`,
   ),
 );
+
+/** One finding of a reader or a validator: where the fault is, which rule it breaks, and what is wrong. */
+export interface Finding {
+  /** Where the fault is, as code writes it: `items[3].name`. The empty string is the value as a whole. */
+  readonly path: string;
+  /** The rule that the data breaks, as a kebab-case label that a caller can branch on. */
+  readonly rule: string;
+  /** What is wrong, as a sentence that reads after the path: `expected a string, found 5.` It does not hold the path. */
+  readonly message: string;
+}
+
+/** The `type` of the issues of a value that has the wrong JSON type, or is a number of the wrong kind. */
+const WRONG_TYPES: ReadonlySet<string> = new Set([
+  "string",
+  "number",
+  "boolean",
+  "object",
+  "strict_object",
+  "array",
+  "integer",
+  "finite",
+]);
+
+/** The `type` of the issues of a value that has the right JSON type and a value that the property does not allow. */
+const INVALID_VALUES: ReadonlySet<string> = new Set(["picklist", "literal", "custom", "raw_transform"]);
+
+/** Returns the rule that an issue of a schema breaks. */
+function ruleOf(issue: v.BaseIssue<unknown>): string {
+  const key = issue.path?.at(-1)?.key;
+  if (OBJECT_TYPES.has(issue.type) && issue.expected === "never") return "unknown-property";
+  if (OBJECT_TYPES.has(issue.type) && issue.received === "undefined" && issue.expected === JSON.stringify(key)) {
+    return "missing-property";
+  }
+  if (issue.type === "min_length") return "too-few-entries";
+  // The guard in front of every record, which exists because valibot reads an array as an object, tells itself by its message.
+  if (issue.type === "custom" && issue.message.startsWith(`expected ${OBJECT_EXPECTED},`)) return "wrong-type";
+  if (WRONG_TYPES.has(issue.type)) return "wrong-type";
+  if (INVALID_VALUES.has(issue.type)) return "invalid-value";
+  return "invalid-format";
+}
+
+/**
+ * Turns the issues of a parse into findings, each with its path, its rule and a sentence that does not repeat the path.
+ *
+ * @remarks
+ * The rule is one of `missing-property`, `unknown-property`, `wrong-type` (a value of another JSON type, or a number that is
+ * not an integer or not finite), `invalid-format` (a string of the wrong form: a check of a format), `invalid-value` (a value
+ * outside a vocabulary, or one that a schema refuses) and `too-few-entries` (a list that is shorter than the least).
+ *
+ * @param issues - The issues of `v.safeParse` with no `abortEarly`.
+ * @returns A finding for each issue, in their order.
+ */
+export function findingsOf(issues: readonly v.BaseIssue<unknown>[]): Finding[] {
+  return issues.map((issue) => ({
+    path: pathOf(issue.path),
+    rule: ruleOf(issue),
+    message: `${detailOf(issue).text}.`,
+  }));
+}

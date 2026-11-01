@@ -6,7 +6,8 @@ enforced by `pnpm lint` (Biome and cspell), `pnpm check:standards`, `pnpm check:
 
 interopkit is a toolkit for learning-platform interoperability in JavaScript and TypeScript, in one repository:
 `@interopkit/core` is the shared foundation, `@interopkit/tool-integration` implements LTI 1.3 in both roles, and
-`@interopkit/learning-analytics` implements Caliper Analytics 1.2.
+`@interopkit/learning-analytics` implements Caliper Analytics 1.2, and `@interopkit/competency-frameworks` implements the
+CASE model and its readers.
 
 ```mermaid
 flowchart BT
@@ -15,10 +16,12 @@ flowchart BT
   tool["tool-integration: tool"]
   plat["tool-integration: platform"]
   la["learning-analytics"]
+  cf["competency-frameworks<br/>model, read, version"]
   proto --> core
   tool --> proto
   plat --> proto
   la --> core
+  cf --> core
   gates["pnpm lint, check:standards, check:rules,<br/>typecheck, test, knip"] --> merge["Merge"]
 ```
 
@@ -41,31 +44,36 @@ Use these words with these meanings in code, comments and docs.
 | sensor       | The part of a system that builds events and sends them in an envelope to an endpoint                                            |
 | endpoint     | The service that receives the envelopes                                                                                         |
 | deadline     | The time a call to a service may take, `timeoutMs`                                                                              |
+| framework    | A CASE competency framework, held as a package: one document with its items, associations, definitions and rubrics              |
+| finding      | A `CaseIssue` of a reader: where, which rule, what is wrong, and whether it is an error or a warning                            |
 
 ## Layout
 
-| Path                                 | Holds                                                                                     |
-| ------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `packages/core/`                     | The shared foundation                                                                     |
-| `packages/core/src/errors.ts`        | `InteropkitError`, `DataError`, `ServiceError`                                            |
-| `packages/core/src/checks.ts`        | Checks of one value and the valibot side, which `@interopkit/core/checks` exports         |
-| `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                        |
-| `packages/core/src/call-options.ts`  | `CallOptions`, the `signal` of every call that waits on I/O                               |
-| `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`             |
-| `packages/core/src/http/`            | The request and answer types and their helpers, which `@interopkit/core/http` exports     |
-| `packages/core/src/signer/`          | `Signer`, `signerFromCryptoKey`, `signCompactJws`                                         |
-| `packages/core/src/random.ts`        | `Random`, `SYSTEM_RANDOM`                                                                 |
-| `packages/core/src/oauth/`           | The OAuth 2.0 clients and the token cache, which `@interopkit/core/oauth` exports         |
-| `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                    |
-| `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                   |
-| `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                  |
-| `packages/<name>/test/`              | `<module>.test.ts` for each source topic; `fixtures/` holds oracle output                 |
-| `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference |
-| `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it           |
-| `compat/`                            | The scenarios of the examples on each runtime                                             |
-| `scripts/`                           | The standards check, the mutation check, the downloads of pinned files and their locks    |
-| `validation/`                        | Python scripts that write fixtures                                                        |
-| `biome/`                             | Biome GritQL plugins                                                                      |
+| Path                                 | Holds                                                                                               |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `packages/core/`                     | The shared foundation                                                                               |
+| `packages/core/src/errors.ts`        | `InteropkitError`, `DataError`, `ServiceError`                                                      |
+| `packages/core/src/checks.ts`        | Checks of one value and the valibot side, which `@interopkit/core/checks` exports                   |
+| `packages/core/src/formats.ts`       | `isDate`, `parseDateTime`, `isUuid`, `isAbsoluteUri` and their schemas; `checks.ts` exports them    |
+| `packages/core/src/json.ts`          | `JsonValue`, `copyJson`, `MAX_JSON_DEPTH`; `checks.ts` exports them                                 |
+| `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                  |
+| `packages/core/src/call-options.ts`  | `CallOptions`, the `signal` of every call that waits on I/O                                         |
+| `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`                       |
+| `packages/core/src/http/`            | The request and answer types and their helpers, which `@interopkit/core/http` exports               |
+| `packages/core/src/signer/`          | `Signer`, `signerFromCryptoKey`, `signCompactJws`                                                   |
+| `packages/core/src/random.ts`        | `Random`, `SYSTEM_RANDOM`                                                                           |
+| `packages/core/src/oauth/`           | The OAuth 2.0 clients and the token cache, which `@interopkit/core/oauth` exports                   |
+| `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                              |
+| `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                             |
+| `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
+| `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`                                                     |
+| `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`          |
+| `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
+| `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
+| `compat/`                            | The scenarios of the examples on each runtime                                                       |
+| `scripts/`                           | The standards and mutation checks, pinned downloads, and the oracle and generators that tests share |
+| `validation/`                        | Python scripts that write fixtures                                                                  |
+| `biome/`                             | Biome GritQL plugins                                                                                |
 
 ## Commands
 
@@ -102,10 +110,10 @@ current behavior only, and never how it came to be.
 
 ## Boundaries
 
-- interopkit owns the messages between a platform and a tool, the gradebook protocol, and the Caliper event model, sensor and
-  endpoint. It does not own what a launched tool shows, what a score means, which delivery event becomes which Caliper event,
-  QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to assesskit and measurekit, to the
-  adapter of each product and to the host.
+- interopkit owns the messages between a platform and a tool, the gradebook protocol, the Caliper event model, sensor and
+  endpoint, and the CASE model with its readers. It does not own what a launched tool shows, what a score means, which
+  delivery event becomes which Caliper event, QTI content, or databases, servers, sessions and accounts. Those belong to the
+  tool, to assesskit and measurekit, to the adapter of each product and to the host.
 - Packages of different families never import each other. interopkit defines ports (a store, a lookup, a `Fetch`, a `Clock`)
   or speaks an open standard, and an adapter to another family lives in the examples of that family or in the host. Names of
   QTI (`ItemKey`, `LtiLink`) never appear in interopkit.
@@ -117,7 +125,8 @@ current behavior only, and never how it came to be.
 
 - A package imports only what its row in the diagram above allows. Biome enforces the rows for `core`, and for the folders
   of `tool-integration`: `protocol/` imports neither `tool/` nor `platform/`, and `tool/` and `platform/` never import each
-  other. Imports never form cycles.
+  other. In `competency-frameworks`, `model/` imports neither `read/` nor `version/`, and those two never import each other.
+  Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -129,30 +138,38 @@ current behavior only, and never how it came to be.
   OAuth 2.0 clients. Hand-written
   code is for domain logic that no library does correctly, with the reason in the guide of the module.
 - Candidates that were compared and not adopted may be development dependencies, as counterparties in tests.
+  `@cfworker/json-schema` is a development dependency of the repository, for `scripts/schema-oracle.ts`: the validator that tests
+  run the published JSON schemas of a standard through.
 
 ## Deviations from the standards
 
 Where the code departs from `STANDARDS.md`, with the reason.
 
-| Deviation                                                                             | Why                                                                                                                        |
-| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| The randomness of `state`, `nonce`, `jti` and hints is not injected                   | A source that a host or a test could replace could make secrets predictable; tests observe the values in the store instead |
-| `custom` is a `Map` in the tool role and a record in the platform role                | The tool role reads claim names from a token, `__proto__` among them, and the platform role writes what its host gave it   |
-| `tool-integration` signs with a `CryptoKey` through `jose`, not a `Signer`            | Its registrations hold `CryptoKey`s; a `Signer` replaces them when its token calls move onto `core/oauth`                  |
-| Some functions are named for what they serve, such as `platformJwks` and `agsScores`  | They are the handlers of an endpoint, and the specifications name the endpoint; a verb would not say which one             |
-| `ltiLaunch` throws an `LtiError` for a refused launch, and returns a page or a launch | A refusal needs a reason and an HTTP status for the route; tell the results apart with `"status" in result`                |
-| The strings of the three small pages are in English and not in a catalog              | A person sees them only when the login fails; a host that needs another language builds its own page from the same script  |
+| Deviation                                                                                  | Why                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The randomness of `state`, `nonce`, `jti` and hints is not injected                        | A source that a host or a test could replace could make secrets predictable; tests observe the values in the store instead                           |
+| `custom` is a `Map` in the tool role and a record in the platform role                     | The tool role reads claim names from a token, `__proto__` among them, and the platform role writes what its host gave it                             |
+| `tool-integration` signs with a `CryptoKey` through `jose`, not a `Signer`                 | Its registrations hold `CryptoKey`s; a `Signer` replaces them when its token calls move onto `core/oauth`                                            |
+| Some functions are named for what they serve, such as `platformJwks` and `agsScores`       | They are the handlers of an endpoint, and the specifications name the endpoint; a verb would not say which one                                       |
+| `ltiLaunch` throws an `LtiError` for a refused launch, and returns a page or a launch      | A refusal needs a reason and an HTTP status for the route; tell the results apart with `"status" in result`                                          |
+| `toCaseVersion` reads the structure that it converts and not every property that it copies | `readPackage` and `readEntity` check the properties; the conversion reports the forms that 1.0 refuses, and it cannot tell the kind of a lone entity |
+| The strings of the three small pages are in English and not in a catalog                   | A person sees them only when the login fails; a host that needs another language builds its own page from the same script                            |
 
 ## Naming
 
 - Files: kebab-case. One concept per file, named after it. Group files in folders by module. No `utils`, `helpers` or `misc`.
 - Values and functions: camelCase. Module-level constant data: SCREAMING_SNAKE. Types: PascalCase. Type parameters: `T` or `T`
   plus a name.
-- No package, folder or brand name holds a specification name: the packages are `tool-integration` and `learning-analytics`,
-  and `pnpm check:standards` fails on `lti` or `caliper` in one. Modules and functions use the names descriptively
+- No package, folder or brand name holds a specification name: the packages are `tool-integration`,
+  `learning-analytics` and `competency-frameworks`, and `pnpm check:standards` fails on `lti` or `caliper` in one. Modules and functions use the names descriptively
   (`ltiLaunch`, `CaliperEvent`).
 - Function options are `<Name>Options`. Labels are string unions in kebab-case (`"key-unknown"`).
 - An error has a kebab-case `reason` where a caller must branch on it, and a `status` where it maps to HTTP.
+- The names of the properties of a specification (`CFItems`, `imsx_codeMajor`) are kept as it writes them: the folders and
+  files that define them are listed in the `useNamingConvention` override of `biome.json`.
+- A vocabulary is a `const` tuple, its type is derived from it and its schema is `v.picklist` of it.
+- A finding is a `Finding` of `core` (`path`, `rule`, `message`), extended by a package for its own fields. The `message` reads
+  after the path and does not hold it; the rules are those that `findingsOf` names and those that a table of the guide lists.
 
 ## Code
 
@@ -193,7 +210,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - US English. Docs state facts in short sentences; prefer a table or list to prose. Code samples are complete: they show their
   imports and hold no TypeScript syntax, so that they run as they are. A guide gives the result of a sample as
   `// => result`, and `runGuideSamples` of `scripts/guide-samples.ts` runs the samples of the README and the guides in a test
-  of the package and fails on a result that differs. What a call throws goes into a table of errors, not into a sample. No
+  of the package and fails on a result that differs; `typecheckGuideSamples` compiles them under `strict`. What a call throws goes into a table of errors, not into a sample. No
   marketing language, emojis or filler.
 - Visualization comes first, then tables, then short prose. Every README, `CONTRIBUTING.md` and guide opens with a Mermaid
   diagram of the architecture, the flow or the states that it describes (`pnpm check:standards` fails without one). GitHub
@@ -210,6 +227,15 @@ Where the code departs from `STANDARDS.md`, with the reason.
   carries no identifier of a row, a unit or a clause.
 - Completeness comes from the specifications, not from a list that the repository keeps: tests derive what to cover from the
   published examples, schemas and tables, and fail when something is missing.
+- One verb, one meaning: `read<X>(value, options?)` takes untrusted data into the model and throws `DataError` on invalid input;
+  `validate<X>(value, options?)` judges a value and returns its findings, with their severity, as data; `check<X>` in `core`
+  asserts one value and throws. Nothing named `check*` returns findings.
+- A reader of data that has published JSON schemas is compared with them in a `*.corpus.test.ts` through
+  `scripts/schema-oracle.ts` and `scripts/schema-arbitrary.ts`: its classes and properties are derived from the schemas, and
+  generated values and values with one change get the verdict of the schemas. Each difference is in `spec-gaps.md` and pinned
+  by a test.
+- The examples that a specification prints are read in a `*.spec.test.ts` with `readSpecPage`; one that is not conformant is
+  pinned with its findings and recorded in `spec-gaps.md`.
 - Expected values come from an oracle, never from the code under test: the specification's own statements and worked
   examples, an independent implementation, or a script in `validation/`. Typed by hand only for edge cases small enough to
   derive exactly.
@@ -217,15 +243,15 @@ Where the code departs from `STANDARDS.md`, with the reason.
   and what it may call back.
 - A rule that keeps a request from being forged, replayed or redirected has an entry in `scripts/check-rules.ts`. Replacing
   `find` with `replace` in `file` must make its test fail; `pnpm check:rules` proves it on a scratch copy, and a test checks
-  that every entry still matches its file.
+  that every entry still matches its file. So does each behavior of a reader or a converter that refuses or changes a value.
 - Every public function has a test of input of other types, as JavaScript or JSON pass it: `null` options and arguments, a
   string for a number, an object for an array. Pass such input with `JSON.parse`, not a cast.
 - Properties that hold for any input are tested with fast-check, with a fixed seed and a bounded number of runs. Every parser
   and decoder is fuzzed.
 - Tests wait for events, never for time: a deadline test uses a short `timeoutMs` and waits for the rejection. No retries, no
   sleeps, no loosened assertions.
-- Each package has a coverage floor in `vitest.config.ts`; a file `*.browser.test.ts` runs in the browsers and a file
-  `*.corpus.test.ts` reads the downloaded repositories.
+- Each package has a coverage floor in `vitest.config.ts`; a file `*.browser.test.ts` runs in the browsers, a file
+  `*.corpus.test.ts` reads the downloaded schemas and repositories, and a file `*.spec.test.ts` the downloaded examples.
 - Fixtures are never typed by hand when an oracle can write them, and a downloaded specification file is never committed.
 
 ## Where things go
@@ -235,8 +261,10 @@ Where the code departs from `STANDARDS.md`, with the reason.
   subpath in `package.json` `exports`, `typedoc.json` and `knip.json` when the host imports it, the same subpath in the
   `paths` of the `tsconfig` of each package or example that imports it, a test file, a guide in `docs/`, import rules in
   `biome.json`, and a row in the API table of the README of the package.
-- A check shared by packages: `packages/core/src/checks.ts`. Code that two packages need goes in `core`; code used once stays
-  where it is used.
+- A check shared by packages: `packages/core/src/checks.ts`, or a file that it re-exports. Code that two packages need goes in
+  `core`; code used once stays where it is used.
 - A place where the specifications contradict themselves or are silent: the resolution in the `spec-gaps.md` of the package,
   a test, and a mention in the guide of the module.
+- A finding rule of a reader: a check in `read/`, a row of the rules table of the model guide, and a test; a rule that keeps a
+  value from being returned also has an entry in `scripts/check-rules.ts`.
 - A pinned file: an entry in `scripts/schemas.lock.json`, or in `scripts/corpus.lock.json` for a repository, with its hash.
