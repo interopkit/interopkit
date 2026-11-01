@@ -122,7 +122,7 @@ them ([platform role](docs/tool-integration/platform.md)).
   accepted once and remembered through the clock-skew leeway after the assertion's expiry. A `once` that rejects fails closed.
 - **Scores.** A tool reads and posts only to its own line item, only for the user of the launch, with the scopes the token holds.
   The platform does not order scores: the receiver keeps a score unless a later one is kept (AGS 3.4.9).
-- `ToolLaunch.resource`, `title` and `custom` are signed and not encrypted, and they travel in the login URL, so they are limited.
+- `ToolLaunch.resource`, `target`, `title` and `custom` are signed and not encrypted, and they travel in the login URL, so they are limited.
   They hold no secret and no personal data.
 - Keep the private key and the hint key in the host's key store. Rotating the hint key invalidates the hints, line item URLs and
   access tokens that are outstanding.
@@ -149,6 +149,7 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `tool-integration`   | Longest accepted lifetime of a client assertion                          | 3,600                             | seconds      | `exp` after `iat`; not replaceable                                                                                       |
 | `tool-integration`   | Lifetime of an access token                                              | 3,600                             | seconds      | Not replaceable                                                                                                          |
 | `tool-integration`   | Most characters of `ToolLaunch.resource`                                 | 1,024                             | characters   | The query of the login URL; not replaceable                                                                              |
+| `tool-integration`   | Most characters of `ToolLaunch.target`                                   | 2,048                             | characters   | The query of the login URL, twice; not replaceable                                                                       |
 | `tool-integration`   | Most characters of `ToolLaunch.title`                                    | 255                               | characters   | The query of the login URL; not replaceable                                                                              |
 | `tool-integration`   | Most characters of the names and values of `ToolLaunch.custom`           | 2,048                             | characters   | The query of the login URL; not replaceable                                                                              |
 | `tool-integration`   | Smallest key                                                             | 2,048 bits (RSA), 256 bits (HMAC) |              | The keys of a platform, a tool and a registration; not replaceable                                                       |

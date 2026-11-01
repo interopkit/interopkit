@@ -115,9 +115,11 @@ refuses a tool whose `target`, login URL or redirect URIs are on any of these or
 
 A `ToolLaunch` holds the `principal` (the `sub`, at most 255 characters), the `resource` (what the launch is for, at most 1,024
 characters, signed and not encrypted, so it holds no secret and no personal data; the same launch gives the same text), the
-`target` (the `target_link_uri`, an `https` URL on none of the platform's origins), the `title` (at most 255 characters), the
+`target` (the `target_link_uri`, an `https` URL on none of the platform's origins, at most 2,048 characters), the `title` (at most 255 characters), the
 `custom` properties (at most 2,048 characters in all their names and values) and the `scoreMaximum` of the line item (above 0).
-The resource, the title and the custom properties travel in the login URL, which is why they are limited.
+The resource, the target, the title and the custom properties travel in the login URL, which is why they are limited. With every field
+at its limit the login URL has about 10,500 characters, more than the 8 KiB that some servers accept in a request line: a tool behind
+such a server needs a launch with smaller fields.
 
 `ltiPlatformLogin` checks the launch, calls `options.check(launch)` (which must throw when the launch is not the caller's:
 nothing is signed otherwise), looks up the tool with `options.registration(launch)`, refuses the platform's own origins, and
@@ -213,13 +215,16 @@ host that keeps scores keeps a score unless a later one is kept, and treats an e
 | `toolFrame`                         | `"lti-tool"`                          | The frame of the tool that the storage page answers                                                                                                            |
 | `signal`                            | none                                  | Ends this caller's wait                                                                                                                                        |
 
-| Limit                                           | Value         |
-| ----------------------------------------------- | ------------- |
-| Lifetime of a hint and of an `id_token`         | 300 seconds   |
-| Longest accepted lifetime of a client assertion | 3,600 seconds |
-| Lifetime of an access token                     | 3,600 seconds |
-| Most characters of `ToolLaunch.resource`        | 1,024         |
-| Leeway for clock skew                           | 60 seconds    |
+| Limit                                                          | Value         |
+| -------------------------------------------------------------- | ------------- |
+| Lifetime of a hint and of an `id_token`                        | 300 seconds   |
+| Longest accepted lifetime of a client assertion                | 3,600 seconds |
+| Lifetime of an access token                                    | 3,600 seconds |
+| Most characters of `ToolLaunch.resource`                       | 1,024         |
+| Most characters of `ToolLaunch.target`                         | 2,048         |
+| Most characters of `ToolLaunch.title`                          | 255           |
+| Most characters of the names and values of `ToolLaunch.custom` | 2,048         |
+| Leeway for clock skew                                          | 60 seconds    |
 
 ## Failure paths
 

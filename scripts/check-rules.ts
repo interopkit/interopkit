@@ -554,6 +554,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/tool-integration/test/platform.test.ts",
   },
   {
+    rule: "The target of a launch has at most 2,048 characters, because it travels in the login URL twice.",
+    file: "packages/tool-integration/src/platform/tool-launch.ts",
+    find: "if (value.target.length > MAX_TARGET_LENGTH) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/platform.test.ts",
+  },
+  {
     rule: "The title of a launch has at most 255 characters, because it travels in the login URL.",
     file: "packages/tool-integration/src/platform/tool-launch.ts",
     find: "if (value.title.length > MAX_TITLE_LENGTH) {",

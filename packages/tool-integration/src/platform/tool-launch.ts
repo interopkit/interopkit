@@ -5,6 +5,8 @@ import { MAX_IDENTIFIER_LENGTH, POSITIVE_NUMBER } from "../protocol/internal.js"
 
 /** The most characters of `ToolLaunch.resource`, because it travels in the query of the login URL. */
 const MAX_RESOURCE_LENGTH = 1_024;
+/** The most characters of `ToolLaunch.target`, because it travels in the login URL twice: as a parameter and in the hint. */
+const MAX_TARGET_LENGTH = 2_048;
 /** The most characters of `ToolLaunch.title`, because it travels in the login URL. */
 const MAX_TITLE_LENGTH = 255;
 /** The most characters of the names and values of `ToolLaunch.custom` together, because they travel in the login URL. */
@@ -20,7 +22,10 @@ export interface ToolLaunch {
    * The same launch must give the same text: `resource_link.id` is its hash, and `onScore` hands it back.
    */
   readonly resource: string;
-  /** The `target_link_uri`: an `https` URL that is on none of the platform's origins. */
+  /**
+   * The `target_link_uri`: an `https` URL that is on none of the platform's origins, at most 2,048 characters, because it travels
+   * in the query of the login URL twice.
+   */
   readonly target: string;
   /** The title of the link, not empty, at most 255 characters, because it travels in the query of the login URL. */
   readonly title: string;
@@ -34,8 +39,8 @@ export interface ToolLaunch {
 }
 
 /**
- * Checks a launch that the host passes: the shape of the link, the lengths of the principal, the resource, the title and the
- * custom properties, and a `scoreMaximum` above 0.
+ * Checks a launch that the host passes: the shape of the link, the lengths of the principal, the resource, the target, the title
+ * and the custom properties, and a `scoreMaximum` above 0.
  *
  * @throws `DataError` when it is not a launch.
  */
@@ -54,6 +59,11 @@ export function checkToolLaunch(value: unknown): asserts value is ToolLaunch {
     );
   }
   checkHttpsUrl(value.target, "The target of the launch");
+  if (value.target.length > MAX_TARGET_LENGTH) {
+    throw new DataError(
+      `The target of the launch travels in the query of the login URL and must have at most ${MAX_TARGET_LENGTH} characters, found ${value.target.length}.`,
+    );
+  }
   checkNonEmptyString(value.title, "The title of the launch");
   if (value.title.length > MAX_TITLE_LENGTH) {
     throw new DataError(

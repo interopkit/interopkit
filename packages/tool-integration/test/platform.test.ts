@@ -1309,6 +1309,11 @@ describe("ltiPlatformLogin", () => {
       ],
       ["no title", { title: "" }, 'The title of the launch must be a non-empty string, found "".'],
       [
+        "a target of 2,049 characters",
+        { target: `https://tool.example/${"t".repeat(2_049 - "https://tool.example/".length)}` },
+        "The target of the launch travels in the query of the login URL and must have at most 2048 characters, found 2049",
+      ],
+      [
         "a title of 256 characters",
         { title: "t".repeat(256) },
         "The title of the launch travels in the query of the login URL and must have at most 255 characters, found 256",
@@ -1333,11 +1338,20 @@ describe("ltiPlatformLogin", () => {
     expect(ctx.checked).toStrictEqual([`${"r".repeat(1_024)}/candidate-7`]);
   });
 
-  it("accepts a title of 255 characters and custom properties of 2,048, so that the login URL stays short", async () => {
+  it("accepts every field at its limit, and the login URL then has about 10,500 characters", async () => {
     const ctx = setup();
-    const launch = { ...baseLaunch, title: "t".repeat(255), custom: { name: "v".repeat(2_044) } };
+    const target = `${TOOL_ORIGIN}/${"t".repeat(2_048 - `${TOOL_ORIGIN}/`.length)}`;
+    const launch = {
+      principal: "p".repeat(255),
+      resource: "r".repeat(1_024),
+      target,
+      title: "t".repeat(255),
+      custom: { name: "v".repeat(2_044) },
+      scoreMaximum: 10,
+    };
     const url = await ltiPlatformLogin(launch, ctx.login);
-    expect(url.length).toBeLessThan(8_192);
+    expect(url.length).toBeGreaterThan(10_000);
+    expect(url.length).toBeLessThan(11_000);
   });
 
   it("refuses a registration that is not one", async () => {
