@@ -8,7 +8,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 `@interopkit/core` is the shared foundation, `@interopkit/tool-integration` implements LTI 1.3 in both roles, and
 `@interopkit/learning-analytics` implements Caliper Analytics 1.2, `@interopkit/competency-frameworks` implements the
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
-`@interopkit/learning-records` implements the xAPI Statement and its readers,
+`@interopkit/learning-records` implements the xAPI Statement and its readers, the message of its Attachments and its signature,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
 implements the model and the readers of Open Badges 3.0 and CLR 2.0, and its builders and comparisons.
 
@@ -20,7 +20,7 @@ flowchart BT
   plat["tool-integration: platform"]
   la["learning-analytics"]
   cf["competency-frameworks<br/>model, read, version, graph, client, provider"]
-  lr["learning-records<br/>model, read, build,<br/>compare, format"]
+  lr["learning-records<br/>model, read, build, compare,<br/>format, attachments, signing"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
   ac["achievement-credentials<br/>model, read, issue, compare"]
   proto --> core
@@ -84,7 +84,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                             |
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
-| `packages/learning-records/`         | xAPI 2.0: `model/`, `read/`, `build/`, `compare/`, `format/`                                        |
+| `packages/learning-records/`         | xAPI 2.0: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`            |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
 | `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`                                |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
@@ -134,7 +134,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
 
 - interopkit owns the messages between a platform and a tool, the gradebook protocol, the Caliper event model, sensor and
   endpoint, the CASE model with its readers, the questions a consumer asks of a framework, the client of its REST binding,
-  the handlers of a CASE provider, and the xAPI Statement with its readers. It does not own what a launched tool shows, what a
+  the handlers of a CASE provider, and the xAPI Statement with its readers, the message of its Attachments and its signature. It does not own what a launched tool shows, what a
   score means, which delivery event becomes which Caliper or xAPI event, QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to
   assesskit and measurekit, to the adapter of each product and to the host.
 - `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders and the comparison of credentials. It does not own keys, proofs,
@@ -162,8 +162,9 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`
   imports no other module, `read/` builds on `model/` only, and `issue/` and `compare/` build on `model/` and `read/`
   and never import each other. In `learning-records`, `model/` imports no other module,
-  `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other.
-  Imports never form cycles.
+  `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
+  `attachments/` imports `model/` and `read/`, and `signing/` imports those, `compare/` and `attachments/`. Imports never form
+  cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -172,7 +173,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   two weeks old, and recorded in `SECURITY.md` with their reason and license. `pnpm-workspace.yaml` sets
   `minimumReleaseAge` so that an install cannot pick a younger version.
 - Generic concerns use mature libraries: `jose` for JOSE, `valibot` for schemas, `uuid` for name-based UUIDs, `@noble/hashes` for the hashes of an identity and of an address, `oauth4webapi` for
-  OAuth 2.0 clients, `momoa` for the syntax tree of JSON where a property given twice must be seen. Hand-written
+  OAuth 2.0 clients, `momoa` for the syntax tree of JSON where a property given twice must be seen,
+  `@remix-run/multipart-parser` for `multipart/mixed` messages. Hand-written
   code is for domain logic that no library does correctly, with the reason in the guide of the module.
 - Candidates that were compared and not adopted may be development dependencies, as counterparties in tests: Digital Bazaar's
   `ecdsa-sd-2023` suite with `@digitalbazaar/data-integrity`, `jsonld-signatures` and `@digitalbazaar/ecdsa-multikey`, which

@@ -15,7 +15,7 @@ import {
   uuidSchema,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
-import { INTERACTION_TYPES, type LanguageMap, type Statement } from "../model/index.js";
+import { type AttachmentData, INTERACTION_TYPES, type LanguageMap, type Statement } from "../model/index.js";
 import { isDuration, isMailtoIri, isMediaType, isSha1Hex, isSha2Hex } from "../model/internal.js";
 
 const text = v.string();
@@ -219,6 +219,13 @@ const attachment = strictRecord({
   length: v.pipe(v.number(), v.safeInteger(), v.minValue(0)),
   sha2,
   fileUrl: v.optional(iri),
+});
+
+/** Reads the data of an Attachment: the hash that names them, their media type and the bytes. */
+export const attachmentDataSchema: Schema<AttachmentData> = strictRecord({
+  sha2,
+  contentType: mediaType,
+  body: guardSchema((value): value is Uint8Array => value instanceof Uint8Array, "a Uint8Array"),
 });
 
 /** The options of an Object that a SubStatement may have, told apart by `objectType`. */

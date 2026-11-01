@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import * as attachments from "../src/attachments/index.js";
 import * as root from "../src/index.js";
+import * as signing from "../src/signing/index.js";
 
 describe("the public API", () => {
   it("exports only what the package documents", () => {
@@ -25,5 +27,14 @@ describe("the public API", () => {
         "voidingStatement",
       ].sort(),
     );
+  });
+
+  it("exports from the subpaths only what each documents", () => {
+    expect(Object.keys(attachments).sort()).toStrictEqual(["attachmentHash", "readMultipart", "writeMultipart"]);
+    expect(Object.keys(signing).sort()).toStrictEqual([
+      "SIGNATURE_USAGE_TYPE",
+      "signStatement",
+      "verifyStatementSignature",
+    ]);
   });
 });

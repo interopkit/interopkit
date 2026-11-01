@@ -66,3 +66,11 @@ export interface Statement extends StatementProperties<StatementObject> {
   /** The version of xAPI that the Statement follows, formatted by Semantic Versioning 1.0.0. */
   readonly version?: string;
 }
+
+/** The answer to a query of Statements: a page of them, and the address of the next page when there is one (4.1.6.1). */
+export interface StatementResult {
+  /** The Statements of the page. */
+  readonly statements: readonly Statement[];
+  /** A relative address that returns the next page. It is absent on the last page. */
+  readonly more?: string;
+}

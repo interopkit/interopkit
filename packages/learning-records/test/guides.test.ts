@@ -1,14 +1,24 @@
 import { fileURLToPath } from "node:url";
+import * as core from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { guidesWithSamples, runGuideSamples, typecheckGuideSamples } from "../../../scripts/guide-samples.js";
+import * as attachments from "../src/attachments/index.js";
 import * as root from "../src/index.js";
+import * as signing from "../src/signing/index.js";
 
-const modules = { "@interopkit/learning-records": root };
+const modules = {
+  "@interopkit/core": core,
+  "@interopkit/learning-records": root,
+  "@interopkit/learning-records/attachments": attachments,
+  "@interopkit/learning-records/signing": signing,
+};
 const GUIDES = new URL("../../../docs/learning-records/", import.meta.url);
 const PACKAGES = fileURLToPath(new URL("../../", import.meta.url));
 /** Where the packages that the samples and the sources import resolve to: the sources, so that no build is needed. */
 const PATHS = {
   "@interopkit/learning-records": [`${PACKAGES}learning-records/src/index.ts`],
+  "@interopkit/learning-records/attachments": [`${PACKAGES}learning-records/src/attachments/index.ts`],
+  "@interopkit/learning-records/signing": [`${PACKAGES}learning-records/src/signing/index.ts`],
   "@interopkit/core": [`${PACKAGES}core/src/index.ts`],
   "@interopkit/core/checks": [`${PACKAGES}core/src/checks.ts`],
 };

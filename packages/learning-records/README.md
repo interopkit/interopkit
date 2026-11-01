@@ -2,8 +2,8 @@
 
 xAPI [2.0](https://opensource.ieee.org/xapi/xapi-base-standard-documentation) (IEEE 9274.1.1-2023): the model of a Statement,
 readers that check it against the rules of an LRS and of a Learning Record Provider, validators that list every finding, a
-reader of the text of a request that refuses a property given twice, builders of Statements, and the comparison and the formats
-of Statements. It knows nothing of any product: the host says where a Statement comes from and what it is for.
+reader of the text of a request that refuses a property given twice, builders of Statements, the comparison and the formats
+of Statements, the message that carries Attachments, and the signature of a Statement. It knows nothing of any product: the host says where a Statement comes from and what it is for.
 
 ```mermaid
 flowchart LR
@@ -14,6 +14,8 @@ flowchart LR
     validate["validateStatement, validateStatements"]
     build["buildStatement, voidingStatement,<br/>deriveStatementId"]
     compare["sameStatement, formatStatement"]
+    attachments["/attachments<br/>writeMultipart, readMultipart"]
+    signing["/signing<br/>signStatement, verifyStatementSignature"]
   end
   model["Statement, Actor, Activity, Result, Context, ...<br/>the model of xAPI 2.0"]
   host -->|"text"| json
@@ -26,12 +28,17 @@ flowchart LR
   build --> model
   model --> compare
   compare -->|"same or not, in a format"| host
+  host -->|"Statements, data"| attachments
+  attachments -->|"a message, or Statements and data"| host
+  host -->|"a Statement, a Signer"| signing
+  signing -->|"a signed Statement, a verdict"| host
 ```
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
 environment variable, writes no log and makes no request. Its dependencies are `@interopkit/core`,
-[valibot](https://valibot.dev), [momoa](https://github.com/humanwhocodes/momoa), [uuid](https://github.com/uuidjs/uuid) and
-[@noble/hashes](https://github.com/paulmillr/noble-hashes).
+[valibot](https://valibot.dev), [momoa](https://github.com/humanwhocodes/momoa), [uuid](https://github.com/uuidjs/uuid),
+[@noble/hashes](https://github.com/paulmillr/noble-hashes), [jose](https://github.com/panva/jose) (`/signing`) and
+[@remix-run/multipart-parser](https://github.com/remix-run/remix/tree/main/packages/multipart-parser) (`/attachments`).
 
 ```bash
 npm install @interopkit/learning-records
@@ -39,17 +46,19 @@ npm install @interopkit/learning-records
 
 ## API
 
-| Subpath                        | Exports                                                                                                                                                                           |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/learning-records` | `readStatement`, `ReadOptions`: read a Statement into the model for the rules of an LRS or of a provider, and throw `DataError` on an error                                       |
-|                                | `validateStatement`, `validateStatements`, `StatementIssue`: judge a Statement or a batch and return every finding, errors and warnings, as data                                  |
-|                                | `readStatementJson`, `ReadStatementJsonOptions`: parse the text of a request, and refuse a property that occurs twice                                                             |
-|                                | `buildStatement`, `StatementInput`, `voidingStatement`: build the Statement of an event, or the one that voids another, checked against the rules of a provider                   |
-|                                | `deriveStatementId`, `mboxSha1sum`, `formatDuration`, `parseDuration`, `formatTimestamp`: the id of an event, the hash of an address, and the durations and times of the standard |
-|                                | `sameStatement`: whether two Statements are the same by the rules of immutability                                                                                                 |
-|                                | `formatStatement`, `FormatOptions`, `StatementFormat`: a Statement as `ids`, `exact` or `canonical`                                                                               |
-|                                | `Statement`, `SubStatement`, `StatementRef`, `Actor`, `Agent`, `Group`, `Activity`, `ActivityDefinition`, `Result`, `Context`, `Attachment` and the other types                   |
-|                                | `INTERACTION_TYPES`, `CONTEXT_ACTIVITY_TYPES`, `RULE_ROLES`, `VERB_VOIDED` and the types of the vocabularies                                                                      |
+| Subpath                                    | Exports                                                                                                                                                                                                           |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@interopkit/learning-records`             | `readStatement`, `ReadOptions`: read a Statement into the model for the rules of an LRS or of a provider, and throw `DataError` on an error                                                                       |
+|                                            | `validateStatement`, `validateStatements`, `StatementIssue`: judge a Statement or a batch and return every finding, errors and warnings, as data                                                                  |
+|                                            | `readStatementJson`, `ReadStatementJsonOptions`: parse the text of a request, and refuse a property that occurs twice                                                                                             |
+|                                            | `buildStatement`, `StatementInput`, `voidingStatement`: build the Statement of an event, or the one that voids another, checked against the rules of a provider                                                   |
+|                                            | `deriveStatementId`, `mboxSha1sum`, `formatDuration`, `parseDuration`, `formatTimestamp`: the id of an event, the hash of an address, and the durations and times of the standard                                 |
+|                                            | `sameStatement`: whether two Statements are the same by the rules of immutability                                                                                                                                 |
+|                                            | `formatStatement`, `FormatOptions`, `StatementFormat`: a Statement as `ids`, `exact` or `canonical`                                                                                                               |
+|                                            | `Statement`, `SubStatement`, `StatementRef`, `StatementResult`, `Actor`, `Agent`, `Group`, `Activity`, `ActivityDefinition`, `Result`, `Context`, `Attachment`, `AttachmentData` and the other types              |
+|                                            | `INTERACTION_TYPES`, `CONTEXT_ACTIVITY_TYPES`, `RULE_ROLES`, `VERB_VOIDED` and the types of the vocabularies                                                                                                      |
+| `@interopkit/learning-records/attachments` | `writeMultipart`, `readMultipart`, `attachmentHash`, `MultipartLimits`, `MultipartMessage`, `MultipartContent`: write and read the `multipart/mixed` message of Statements and Attachment data, and hash the data |
+| `@interopkit/learning-records/signing`     | `signStatement`, `verifyStatementSignature`, `SIGNATURE_USAGE_TYPE`, `SignedStatement`, `SignatureCheck`: sign a Statement over a `Signer` of `@interopkit/core`, and verify the signature                        |
 
 ```ts
 import { readStatement, readStatementJson, validateStatement } from "@interopkit/learning-records";
@@ -77,22 +86,26 @@ validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `
 
 ## What this version includes
 
-| Part of xAPI 2.0                | Included                                                                                                                                                        |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The Statement and what it holds | Every property of the tables of 4.2.2: Actors, Verbs, Objects with Activity Definitions and the ten interactions, Results, Contexts, SubStatements, Attachments |
-| Rules of an LRS                 | What an LRS shall reject (4.2.1, 4.2.4, 4.2.5, 4.2.7), the batch rule of 4.1.6.1, and what it shall not reject                                                  |
-| Rules of a provider             | What a Learning Record Provider shall and should do (5.2): UTC, the properties the LRS sets, precision, empty objects, lists of Activities                      |
-| Data types                      | IRIs, UUIDs, RFC 3339 times, ISO 8601 durations, language tags, extension keys, `mailto` IRIs, hashes and media types                                           |
-| Interaction patterns            | The form of every `correctResponsesPattern` by interaction type, and its characterstring parameters                                                             |
-| Building                        | A Statement from an event with the time in UTC, an id that a resend repeats, the Statement that voids another, durations and the hash of an address             |
-| Comparing and formats           | Whether two Statements are the same by the rules of immutability, and a Statement as `ids`, `exact` or `canonical`                                              |
-| Text of a request               | `readStatementJson`: RFC 8259 syntax, size and depth limits, and a property given twice refused                                                                 |
+| Part of xAPI 2.0                | Included                                                                                                                                                              |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The Statement and what it holds | Every property of the tables of 4.2.2: Actors, Verbs, Objects with Activity Definitions and the ten interactions, Results, Contexts, SubStatements, Attachments       |
+| Rules of an LRS                 | What an LRS shall reject (4.2.1, 4.2.4, 4.2.5, 4.2.7), the batch rule of 4.1.6.1, and what it shall not reject                                                        |
+| Rules of a provider             | What a Learning Record Provider shall and should do (5.2): UTC, the properties the LRS sets, precision, empty objects, lists of Activities                            |
+| Data types                      | IRIs, UUIDs, RFC 3339 times, ISO 8601 durations, language tags, extension keys, `mailto` IRIs, hashes and media types                                                 |
+| Interaction patterns            | The form of every `correctResponsesPattern` by interaction type, and its characterstring parameters                                                                   |
+| Building                        | A Statement from an event with the time in UTC, an id that a resend repeats, the Statement that voids another, durations and the hash of an address                   |
+| Comparing and formats           | Whether two Statements are the same by the rules of immutability, and a Statement as `ids`, `exact` or `canonical`                                                    |
+| Text of a request               | `readStatementJson`: RFC 8259 syntax, limits of size, depth and tokens, and a property given twice refused                                                            |
+| Attachments                     | The `multipart/mixed` message of Statements and Attachment data, matched by SHA-2 hash, within limits                                                                 |
+| Signed Statements               | A compact JWS in an Attachment with RS256, RS384 or RS512 and an `x5c` chain, signed over a `Signer` and verified against the leaf and the equivalence of the payload |
 
 [The model guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/model.md) has the options with their
 defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and why, and the
 differences from the references. The guides of [building](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/build.md),
-[comparing](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/compare.md) and
-[formats](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/format.md) do the same.
+[comparing](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/compare.md),
+[formats](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/format.md),
+[attachments](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/attachments.md) and
+[signing](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/signing.md) do the same.
 
 ## License
 

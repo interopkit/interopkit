@@ -735,7 +735,11 @@
                       "**/compare",
                       "**/compare/**",
                       "**/format",
-                      "**/format/**"
+                      "**/format/**",
+                      "**/attachments",
+                      "**/attachments/**",
+                      "**/signing",
+                      "**/signing/**"
                     ],
                     "message": "model/ holds the types, the terms and the data types and imports no module that builds on it."
                   }
@@ -756,8 +760,19 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/build", "**/build/**", "**/compare", "**/compare/**", "**/format", "**/format/**"],
-                    "message": "read/ builds on model/ and @interopkit/core only: build/, compare/ and format/ build on it."
+                    "group": [
+                      "**/build",
+                      "**/build/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/format",
+                      "**/format/**",
+                      "**/attachments",
+                      "**/attachments/**",
+                      "**/signing",
+                      "**/signing/**"
+                    ],
+                    "message": "read/ builds on model/ and @interopkit/core only: the other modules build on it."
                   }
                 ]
               }
@@ -776,8 +791,17 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/compare", "**/compare/**", "**/format", "**/format/**"],
-                    "message": "build/ builds on model/, read/ and @interopkit/core only: compare/ and format/ are its siblings and never a layer under it."
+                    "group": [
+                      "**/compare",
+                      "**/compare/**",
+                      "**/format",
+                      "**/format/**",
+                      "**/attachments",
+                      "**/attachments/**",
+                      "**/signing",
+                      "**/signing/**"
+                    ],
+                    "message": "build/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it."
                   }
                 ]
               }
@@ -796,8 +820,17 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/build", "**/build/**", "**/format", "**/format/**"],
-                    "message": "compare/ builds on model/, read/ and @interopkit/core only: build/ and format/ are its siblings and never a layer under it."
+                    "group": [
+                      "**/build",
+                      "**/build/**",
+                      "**/format",
+                      "**/format/**",
+                      "**/attachments",
+                      "**/attachments/**",
+                      "**/signing",
+                      "**/signing/**"
+                    ],
+                    "message": "compare/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it."
                   }
                 ]
               }
@@ -816,8 +849,66 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/build", "**/build/**", "**/compare", "**/compare/**"],
-                    "message": "format/ builds on model/, read/ and @interopkit/core only: build/ and compare/ are its siblings and never a layer under it."
+                    "group": [
+                      "**/build",
+                      "**/build/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/attachments",
+                      "**/attachments/**",
+                      "**/signing",
+                      "**/signing/**"
+                    ],
+                    "message": "format/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-records/src/attachments/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/build",
+                      "**/build/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/format",
+                      "**/format/**",
+                      "**/signing",
+                      "**/signing/**"
+                    ],
+                    "message": "attachments/ builds on model/, read/ and @interopkit/core only: signing/ builds on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-records/src/signing/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/build", "**/build/**", "**/format", "**/format/**"],
+                    "message": "signing/ builds on model/, read/, compare/, attachments/ and @interopkit/core only."
                   }
                 ]
               }

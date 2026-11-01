@@ -5,7 +5,7 @@
  */
 export type { Activity, ActivityDefinition, InteractionComponent } from "./activity.js";
 export type { Account, Actor, Agent, AgentObject, Group, InverseFunctionalIdentifiers } from "./actor.js";
-export type { Attachment } from "./attachment.js";
+export type { Attachment, AttachmentData } from "./attachment.js";
 export type { Context, ContextActivities, ContextAgent, ContextGroup } from "./context.js";
 export { type Duration, formatDuration, parseDuration } from "./duration.js";
 export type { StatementIssue } from "./issue.js";
@@ -17,6 +17,7 @@ export type {
   StatementObject,
   StatementProperties,
   StatementRef,
+  StatementResult,
   SubStatement,
   SubStatementObject,
   Verb,
