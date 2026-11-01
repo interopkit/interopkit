@@ -28,6 +28,8 @@ export interface Rule {
   readonly replace: string;
   /** The test file that guards the rule, relative to the repository root. */
   readonly test: string;
+  /** Whether the test runs in a browser: it then runs in Chromium alone, and the run needs the browser installed. */
+  readonly browser?: boolean;
 }
 
 /** The security-critical rules, each with the test that guards it. A package adds its own rules here. */
@@ -614,12 +616,78 @@ export const RULES: readonly Rule[] = [
     replace: "",
     test: "packages/tool-integration/test/platform-failures.test.ts",
   },
+  {
+    rule: "The page that stores the state counts a message only from the origin of the platform.",
+    file: "packages/tool-integration/src/tool/pages.ts",
+    find: 'if (event.origin !== config.origin || typeof data !== "object" || data === null) return;\n    if (data.subject !== "lti.put_data.response"',
+    replace: 'if (typeof data !== "object" || data === null) return;\n    if (data.subject !== "lti.put_data.response"',
+    test: "packages/tool-integration/test/tool.browser.test.ts",
+    browser: true,
+  },
+  {
+    rule: "The page that fetches the state counts a message only from the origin of the platform.",
+    file: "packages/tool-integration/src/tool/pages.ts",
+    find: 'if (event.origin !== config.origin || typeof data !== "object" || data === null) return;\n    if (data.subject !== "lti.get_data.response"',
+    replace: 'if (typeof data !== "object" || data === null) return;\n    if (data.subject !== "lti.get_data.response"',
+    test: "packages/tool-integration/test/tool.browser.test.ts",
+    browser: true,
+  },
+  {
+    rule: "The page that stores the state counts an answer only to a message of its own.",
+    file: "packages/tool-integration/src/tool/pages.ts",
+    find: 'if (data.subject !== "lti.put_data.response" || !pending.has(data.message_id)) return;',
+    replace: 'if (data.subject !== "lti.put_data.response") return;',
+    test: "packages/tool-integration/test/tool.browser.test.ts",
+    browser: true,
+  },
+  {
+    rule: "The page that fetches the state counts an answer only to a message of its own.",
+    file: "packages/tool-integration/src/tool/pages.ts",
+    find: 'if (data.subject !== "lti.get_data.response" || !pending.has(data.message_id)) return;',
+    replace: 'if (data.subject !== "lti.get_data.response") return;',
+    test: "packages/tool-integration/test/tool.browser.test.ts",
+    browser: true,
+  },
+  {
+    rule: "The page that stores the state posts it only to a window of the platform's origin.",
+    file: "packages/tool-integration/src/tool/pages.ts",
+    find: "key: entry[0], value: entry[1] }, config.origin);",
+    replace: 'key: entry[0], value: entry[1] }, "*");',
+    test: "packages/tool-integration/test/tool.browser.test.ts",
+    browser: true,
+  },
+  {
+    rule: "The page that fetches the state asks only a window of the platform's origin.",
+    file: "packages/tool-integration/src/tool/pages.ts",
+    find: "key: entry[0] }, config.origin);",
+    replace: 'key: entry[0] }, "*");',
+    test: "packages/tool-integration/test/tool.browser.test.ts",
+    browser: true,
+  },
+  {
+    rule: "The page that fetches the state takes only a string for a value.",
+    file: "packages/tool-integration/src/tool/pages.ts",
+    find: 'if (data.error || typeof data.value !== "string") {',
+    replace: "if (data.error) {",
+    test: "packages/tool-integration/test/tool.browser.test.ts",
+    browser: true,
+  },
+  {
+    rule: "The storage page keeps the values by the origin of the message.",
+    file: "packages/tool-integration/src/platform/storage.ts",
+    find: "return event.origin;",
+    replace: 'return "any";',
+    test: "packages/tool-integration/test/platform.browser.test.ts",
+    browser: true,
+  },
 ];
 
 /** The folders that a scratch copy leaves out: generated output and installed packages, which it links instead. */
 const SKIPPED = new Set(["node_modules", ".git", "dist", "coverage", ".cache", ".vitest"]);
 /** The longest a test of a mutated copy may take, in milliseconds: a removed deadline makes a test wait for ever. */
 const TEST_TIMEOUT_MS = 5_000;
+/** The same for a test in a browser, which starts a page, waits for messages between frames and keeps quiet to see none. */
+const BROWSER_TEST_TIMEOUT_MS = 30_000;
 
 /** What checking one rule found. */
 export interface Verdict {
@@ -670,12 +738,15 @@ function runTest(
   root: string,
   scratch: string,
   test: string,
+  browser: boolean,
 ): { readonly failed: number | undefined; readonly report: string } {
   const vitest = join(root, "node_modules/vitest/vitest.mjs");
-  const run = spawnSync(process.execPath, [vitest, "run", "--maxWorkers=2", `--testTimeout=${TEST_TIMEOUT_MS}`, test], {
+  const limit = `--testTimeout=${browser ? BROWSER_TEST_TIMEOUT_MS : TEST_TIMEOUT_MS}`;
+  const where = browser ? ["--project", "tool-integration-browser"] : [];
+  const run = spawnSync(process.execPath, [vitest, "run", "--maxWorkers=2", limit, ...where, test], {
     cwd: scratch,
     encoding: "utf8",
-    env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" },
+    env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0", BROWSERS: "chromium" },
     timeout: 300_000,
   });
   const report = `${run.stdout}${run.stderr}`;
@@ -693,7 +764,9 @@ export function checkRule(root: string, rule: Rule, passing: Set<string> = new S
   const scratch = mkdtempSync(join(tmpdir(), "interopkit-rule-"));
   try {
     copyRepository(root, scratch);
-    const baseline = passing.has(rule.test) ? { failed: 0, report: "" } : runTest(root, scratch, rule.test);
+    const baseline = passing.has(rule.test)
+      ? { failed: 0, report: "" }
+      : runTest(root, scratch, rule.test, rule.browser === true);
     if (baseline.failed === 0) passing.add(rule.test);
     if (baseline.failed !== 0)
       return {
@@ -702,7 +775,7 @@ export function checkRule(root: string, rule: Rule, passing: Set<string> = new S
       };
     const path = join(scratch, rule.file);
     writeFileSync(path, removeRule(readFileSync(path, "utf8"), rule));
-    const mutated = runTest(root, scratch, rule.test);
+    const mutated = runTest(root, scratch, rule.test, rule.browser === true);
     if (mutated.failed === undefined)
       return {
         guarded: false,

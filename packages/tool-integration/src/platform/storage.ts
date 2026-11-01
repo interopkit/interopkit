@@ -47,6 +47,9 @@ const SCRIPT = `(function () {
   function refuse(event, data, code, message) {
     answer(event, data, { error: { code: code, message: message } });
   }
+  function owner(event) {
+    return event.origin;
+  }
   function size(store) {
     var total = 0;
     store.forEach(function (value, key) {
@@ -55,7 +58,7 @@ const SCRIPT = `(function () {
     return total;
   }
   function put(event, data) {
-    var store = stores.get(event.origin) || new Map();
+    var store = stores.get(owner(event)) || new Map();
     var value = data.value === undefined || data.value === null ? "" : data.value;
     if (typeof value !== "string") return refuse(event, data, "bad_request", "The value must be a string.");
     if (value === "") {
@@ -68,11 +71,11 @@ const SCRIPT = `(function () {
       return refuse(event, data, "storage_exhaustion", "The storage for this origin is full.");
     }
     store.set(data.key, value);
-    stores.set(event.origin, store);
+    stores.set(owner(event), store);
     return answer(event, data, { key: data.key, value: value });
   }
   function get(event, data) {
-    var value = (stores.get(event.origin) || new Map()).get(data.key);
+    var value = (stores.get(owner(event)) || new Map()).get(data.key);
     if (value === undefined) return refuse(event, data, "key_not_found", "There is no value stored for this key.");
     return answer(event, data, { key: data.key, value: value });
   }

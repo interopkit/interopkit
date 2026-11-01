@@ -68,6 +68,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The rules of the pages that run in a browser are checked in Chromium.
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm check:rules
 
   # The tests that read the examples of the specifications, downloaded at the hashes that scripts/spec-examples.lock.json pins.

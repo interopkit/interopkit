@@ -18,6 +18,9 @@ const SOURCES = [
  */
 const HANG_LIMIT = 60_000;
 
+/** The engines that run, from `BROWSERS` as a comma-separated list: `check:rules` runs one, and CI runs all three. */
+const ENGINES = (process.env.BROWSERS ?? "chromium,firefox,webkit").split(",");
+
 /**
  * The engines of the browser tests. Vitest names the instances, so each project has its own. Firefox runs one file at a
  * time: the mouse of a page can reach another page of the same Firefox that runs at once.
@@ -30,7 +33,7 @@ const browser = () => ({
     { browser: "chromium" as const },
     { browser: "firefox" as const, fileParallelism: false },
     { browser: "webkit" as const },
-  ],
+  ].filter(({ browser: engine }) => ENGINES.includes(engine)),
 });
 
 /** The Node tests of a package, which run against the sources of the packages it depends on. */

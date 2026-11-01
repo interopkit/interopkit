@@ -1,5 +1,5 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, inject, it } from "vitest";
 import { createJwksCache, type HttpResponse } from "../src/index.js";
 import {
   type LoginRecord,
@@ -17,6 +17,7 @@ import { waitFor } from "./wait.js";
  */
 
 const origin = location.origin;
+const { hostile: hostileOrigin } = inject("fixtures");
 const PLATFORM = "https://lms.example.edu";
 const pair = await crypto.subtle.generateKey(
   { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
@@ -65,12 +66,16 @@ class PlatformStorage {
   private holding = true;
   private readonly fail: boolean;
   private readonly noise: boolean;
+  private readonly badValue: boolean;
+  /** The requests that the pages made, in order. */
+  readonly requests: { readonly subject: string; readonly message_id: string; readonly key: string }[] = [];
 
   private readonly stop: () => void;
 
-  constructor(listener: Window, options: { fail?: boolean; noise?: boolean } = {}) {
+  constructor(listener: Window, options: { fail?: boolean; noise?: boolean; badValue?: boolean } = {}) {
     this.fail = options.fail ?? false;
     this.noise = options.noise ?? false;
+    this.badValue = options.badValue ?? false;
     const handle = (event: MessageEvent): void => this.handle(event);
     listener.addEventListener("message", handle);
     this.stop = () => listener.removeEventListener("message", handle);
@@ -104,6 +109,7 @@ class PlatformStorage {
     const { subject, message_id: messageId } = data;
     const key = "key" in data && typeof data.key === "string" ? data.key : "";
     if (subject !== "lti.put_data" && subject !== "lti.get_data") return;
+    this.requests.push({ subject, message_id: String(messageId), key });
     if (subject === "lti.put_data" && "value" in data && typeof data.value === "string") this.put(key, data.value);
     const value = this.get(key);
     const response = this.fail
@@ -114,7 +120,7 @@ class PlatformStorage {
             message_id: messageId,
             error: { code: "key_not_found", message: "There is no value stored for this key" },
           }
-        : { subject: `${subject}.response`, message_id: messageId, key, value };
+        : { subject: `${subject}.response`, message_id: messageId, key, value: this.badValue ? 5 : value };
     const target = { targetOrigin: event.origin };
     const reply = (): void => {
       if (this.noise) event.source?.postMessage({ subject: `${subject}.response`, message_id: "not-sent" }, target);
@@ -167,6 +173,47 @@ async function storageFrame(name: string): Promise<Window> {
   if (!frame.contentWindow) throw new Error("The storage frame has no window.");
   return frame.contentWindow;
 }
+
+/** The paths that a fixture server was asked for. */
+async function requestsTo(server: string): Promise<string[]> {
+  return (await fetch(`${server}/__hits`, { cache: "no-store" })).json();
+}
+
+/** The messages that the probe of the hostile origin with an id received, as the origin and the data of each. */
+async function seenBy(id: string): Promise<{ origin: string; data: Record<string, unknown> }[]> {
+  return (await requestsTo(hostileOrigin))
+    .filter((path) => path.startsWith(`/seen?id=${id}&`))
+    .map((path) => JSON.parse(decodeURIComponent(path.slice(path.indexOf("&m=") + 3))));
+}
+
+/** Opens a frame of the hostile origin: it posts the messages to the frame, if it is given, and records what it receives. */
+async function probe(
+  name: string,
+  target?: HTMLIFrameElement,
+  messages: readonly unknown[] = [],
+): Promise<{ id: string }> {
+  const id = crypto.randomUUID();
+  const frame = document.createElement("iframe");
+  frame.name = name;
+  const index = target === undefined ? -1 : Array.from(document.querySelectorAll("iframe")).indexOf(target);
+  frame.src = `${hostileOrigin}/probe?id=${id}&to=${index}&send=${encodeURIComponent(JSON.stringify(messages))}`;
+  frames.push(frame);
+  document.body.append(frame);
+  await waitFor(async () => expect(await requestsTo(hostileOrigin)).toContain(`/ready?id=${id}`));
+  return { id };
+}
+
+/** A quiet time, in which a page that was going to act on a message it should have refused has done so. */
+const quiet = (): Promise<void> => new Promise((done) => setTimeout(done, 300));
+
+/** The answers that the platform would give to the requests of a page, with a value, from a frame that is not the platform. */
+const spoofed = (storage: PlatformStorage, value: string): unknown[] =>
+  storage.requests.map(({ subject, message_id: messageId, key }) => ({
+    subject: `${subject}.response`,
+    message_id: messageId,
+    key,
+    value,
+  }));
 
 /** Starts a login with a storage target and returns the page, with the `state` and `nonce` the tool made. */
 async function login(
@@ -233,6 +280,38 @@ describe("the page that stores state and nonce", () => {
     const { page } = await login("no-such-frame");
     const frame = await load(page);
     expect(frame.contentDocument?.getElementById("failure")?.hidden).toBe(false);
+  });
+
+  it("does not go on when a frame of another origin answers for the platform", async () => {
+    const storage = new PlatformStorage(window);
+    const { page } = await login("_parent");
+    const frame = await load(page);
+    await waitFor(() => expect(storage.requests).toHaveLength(2));
+    await probe("intruder", frame, spoofed(storage, ""));
+    await quiet();
+    expect(frame.contentWindow?.location.href).toBe("about:srcdoc");
+    storage.release();
+    await waitFor(() => expect(frame.contentWindow?.location.href).toContain(AUTHENTICATION_DOCUMENT));
+  });
+
+  it("does not take an error that answers no message of its own for a failure", async () => {
+    const storage = new PlatformStorage(window);
+    const { page } = await login("_parent");
+    const frame = await load(page);
+    const unrelated = { subject: "lti.put_data.response", message_id: "unrelated", error: { code: "x", message: "y" } };
+    frame.contentWindow?.postMessage(unrelated, "*");
+    await quiet();
+    expect(frame.contentDocument?.getElementById("failure")?.hidden).toBe(true);
+    storage.release();
+    await waitFor(() => expect(frame.contentWindow?.location.href).toContain(AUTHENTICATION_DOCUMENT));
+  });
+
+  it("posts the state and the nonce to no frame of another origin, though it has the name of the storage", async () => {
+    const { id } = await probe("stolen");
+    const { page } = await login("stolen");
+    await load(page);
+    await quiet();
+    expect(await seenBy(id)).toStrictEqual([]);
   });
 });
 
@@ -302,5 +381,56 @@ describe("the verification page", () => {
     const { submitted } = submission(frame);
     expect(frame.contentDocument?.getElementById("failure")?.hidden).toBe(false);
     expect(submitted()).toBeUndefined();
+  });
+
+  it("takes the values from the platform and not from a frame of another origin that answers first", async () => {
+    const storage = new PlatformStorage(window);
+    const { page, state, nonce } = await verification("_parent");
+    storage.put(`state_${state}`, state);
+    storage.put(`nonce_${nonce}`, nonce);
+    const frame = await load(page);
+    const { submitted } = submission(frame);
+    await waitFor(() => expect(storage.requests).toHaveLength(2));
+    await probe("intruder", frame, spoofed(storage, "spoofed"));
+    await quiet();
+    expect(submitted()).toBeUndefined();
+    storage.release();
+    await waitFor(() => expect(submitted()).toBeDefined());
+    expect(Object.fromEntries(submitted() ?? [])).toMatchObject({ stored_state: state, stored_nonce: nonce });
+  });
+
+  it("does not take an error that answers no message of its own for a failure", async () => {
+    const storage = new PlatformStorage(window);
+    const { page, state, nonce } = await verification("_parent");
+    storage.put(`state_${state}`, state);
+    storage.put(`nonce_${nonce}`, nonce);
+    const frame = await load(page);
+    const { submitted } = submission(frame);
+    const unrelated = { subject: "lti.get_data.response", message_id: "unrelated", error: { code: "x", message: "y" } };
+    frame.contentWindow?.postMessage(unrelated, "*");
+    await quiet();
+    expect(frame.contentDocument?.getElementById("failure")?.hidden).toBe(true);
+    storage.release();
+    await waitFor(() => expect(submitted()).toBeDefined());
+  });
+
+  it("posts nothing when the platform answers with a value that is not a string", async () => {
+    const storage = new PlatformStorage(window, { badValue: true });
+    const { page, state, nonce } = await verification("_parent");
+    storage.put(`state_${state}`, state);
+    storage.put(`nonce_${nonce}`, nonce);
+    const frame = await load(page);
+    const { submitted } = submission(frame);
+    storage.release();
+    await waitFor(() => expect(frame.contentDocument?.getElementById("failure")?.hidden).toBe(false));
+    expect(submitted()).toBeUndefined();
+  });
+
+  it("asks no frame of another origin for the values, though it has the name of the storage", async () => {
+    const { id } = await probe("stolen");
+    const { page } = await verification("stolen");
+    await load(page);
+    await quiet();
+    expect(await seenBy(id)).toStrictEqual([]);
   });
 });

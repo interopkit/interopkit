@@ -18,7 +18,7 @@ import { waitFor } from "./wait.js";
  * page reaches under its own policy, and which records the path that the form posts to.
  */
 
-const { other, stranger } = inject("fixtures");
+const { other, stranger, hostile } = inject("fixtures");
 const TOOL = "https://tool.example.com";
 const launch: ToolLaunch = {
   principal: "candidate-7",
@@ -230,6 +230,30 @@ window.addEventListener("message", function (event) {
     expect(await ask({ subject: "lti.put_data", key: "k500", value: "v" })).toMatchObject({
       error: { code: "storage_exhaustion" },
     });
+  });
+
+  it("keeps the values by the origin of the message: a frame of another origin does not read what the tool stored", async () => {
+    const { ask } = await pages();
+    await ask({ subject: "lti.put_data", key: "state_1", value: "secret" });
+    // The frame of the tool is replaced by one of the hostile origin that has its name, which the page then answers.
+    document.querySelector("iframe[name=lti-tool]")?.remove();
+    const storage = document.querySelector<HTMLIFrameElement>("iframe[name=lti-storage]");
+    const index = Array.from(document.querySelectorAll("iframe")).indexOf(storage as HTMLIFrameElement);
+    const id = crypto.randomUUID();
+    const request = [{ subject: "lti.get_data", message_id: "m-x", key: "state_1" }];
+    const intruder = document.createElement("iframe");
+    intruder.name = "lti-tool";
+    intruder.src = `${hostile}/probe?id=${id}&to=${index}&send=${encodeURIComponent(JSON.stringify(request))}`;
+    frames.push(intruder);
+    document.body.append(intruder);
+    await waitFor(async () => {
+      const paths = await requests(hostile);
+      expect(paths.some((path) => path.startsWith(`/seen?id=${id}&`))).toBe(true);
+    });
+    const [seen] = (await requests(hostile)).filter((path) => path.startsWith(`/seen?id=${id}&`));
+    const answer = JSON.parse(decodeURIComponent((seen ?? "").slice((seen ?? "").indexOf("&m=") + 3)));
+    expect(answer.data).toMatchObject({ subject: "lti.get_data.response", error: { code: "key_not_found" } });
+    expect(JSON.stringify(answer)).not.toContain("secret");
   });
 
   it("answers only the frame of the tool: a request from the page that frames it gets no answer", async () => {
