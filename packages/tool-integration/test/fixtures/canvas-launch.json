@@ -1,0 +1,59 @@
+{
+  "https://purl.imsglobal.org/spec/lti/claim/message_type": "LtiResourceLinkRequest",
+  "https://purl.imsglobal.org/spec/lti/claim/version": "1.3.0",
+  "https://purl.imsglobal.org/spec/lti/claim/resource_link": {
+    "id": "7f956bcc8f67cd076ae464862ce83596a1bb3293",
+    "description": null,
+    "title": null
+  },
+  "aud": "170000000000559",
+  "https://purl.imsglobal.org/spec/lti/claim/deployment_id": "189:7f956bcc8f67cd076ae464862ce83596a1bb3293",
+  "exp": 1600137147,
+  "iat": 1600133547,
+  "iss": "https://canvas.instructure.com",
+  "nonce": "098e0f5a-72fb-4c29-9cb5-e5a075047d5a",
+  "sub": "82c59950-9ec3-4ae9-ad32-208c158143e0",
+  "https://purl.imsglobal.org/spec/lti/claim/target_link_uri": "https://live-events-lti-iad-prod.inscloudgate.net/resource_link_request",
+  "picture": "https://school.instructure.com/images/thumbnails/170000000014079/example",
+  "email": "user@school.example",
+  "name": "Example User",
+  "given_name": "Example",
+  "family_name": "User",
+  "https://purl.imsglobal.org/spec/lti/claim/lis": {
+    "person_sourcedid": null,
+    "course_offering_sourcedid": "$CourseSection.sourcedId"
+  },
+  "https://purl.imsglobal.org/spec/lti/claim/context": {
+    "id": "7f956bcc8f67cd076ae464862ce83596a1bb3293",
+    "title": "Example Sandbox",
+    "type": [
+      "Account"
+    ]
+  },
+  "https://purl.imsglobal.org/spec/lti/claim/tool_platform": {
+    "guid": "LC6nuzxUST0u7aNHCm0yCjEww5wAtjO5GiSlrHMu:canvas-lms",
+    "name": "Example Sandbox",
+    "version": "cloud",
+    "product_family_code": "canvas"
+  },
+  "https://purl.imsglobal.org/spec/lti/claim/launch_presentation": {
+    "document_target": "iframe",
+    "height": 400,
+    "width": 800,
+    "return_url": "https://school.instructure.com/accounts/1/external_content/success/external_tool_redirect",
+    "locale": "en"
+  },
+  "locale": "en",
+  "https://purl.imsglobal.org/spec/lti/claim/roles": [
+    "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator",
+    "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor",
+    "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student",
+    "http://purl.imsglobal.org/vocab/lis/v2/system/person#SysAdmin",
+    "http://purl.imsglobal.org/vocab/lis/v2/system/person#User"
+  ],
+  "https://purl.imsglobal.org/spec/lti/claim/custom": {
+    "canvas_user_uuid": 170000004597788,
+    "canvas_api_domain": "school.instructure.com",
+    "canvas_account_uuid": "LC6nuzxUST0u7aNHCm0yCjEww5wAtjO5GiSlrHMu"
+  }
+}

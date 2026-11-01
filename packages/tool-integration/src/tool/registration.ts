@@ -16,6 +16,13 @@ export interface PlatformRegistration {
   readonly jwksUrl: string;
   /** The OAuth 2.0 token endpoint of the platform, where the tool requests access tokens for its services. */
   readonly accessTokenUrl: string;
+  /**
+   * The `aud` of the client assertion, for a platform that wants a value other than its token endpoint (LTI 1.3 Core section
+   * 6.2.1 has the audience be the authorization server's token URL, and some platforms name themselves instead).
+   *
+   * @defaultValue `accessTokenUrl`
+   */
+  readonly audience?: string | undefined;
   /** The tool's launch URL, which the platform knows as a redirect URI. The authorization response is posted to it. */
   readonly redirectUri: string;
   /** The `kid` that the tool's public key has in the key set that the platform fetches. */
@@ -37,6 +44,7 @@ const registrationSchema = looseRecord({
   authenticationUrl: httpsUrlSchema,
   jwksUrl: httpsUrlSchema,
   accessTokenUrl: httpsUrlSchema,
+  audience: v.optional(nonEmptyStringSchema),
   redirectUri: httpsUrlSchema,
   keyId: nonEmptyStringSchema,
   signingKey: guardSchema(

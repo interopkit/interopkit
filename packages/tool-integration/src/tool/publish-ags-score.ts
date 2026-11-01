@@ -21,6 +21,7 @@ import { type AccessTokenOptions, checkToolOptions } from "./options.js";
 const SCORE_TYPE = "application/vnd.ims.lis.v1.score+json";
 const LINE_ITEM_TYPE = "application/vnd.ims.lis.v2.lineitem+json";
 const SCORES_SUFFIX = "/scores";
+const TRAILING_SLASH = /\/$/u;
 /** An ISO 8601 date and time with a time zone, as AGS 3.4.9 requires of the timestamp of a score: `2026-11-01T09:30:00.250Z`. */
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
 
@@ -140,12 +141,12 @@ function checkGranted(token: AccessToken, needed: readonly string[]): void {
   }
 }
 
-/** Reads the `scoreMaximum` of the line item, which a score needs when it has none. */
-async function readLineItemMaximum(service: ServiceCall, lineItem: string, token: AccessToken): Promise<number> {
-  const body = await callService(service, `The line item ${lineItem}`, lineItem, {
-    method: "GET",
-    headers: { accept: LINE_ITEM_TYPE, authorization: `Bearer ${token.value}` },
-  });
+/**
+ * Reads the `scoreMaximum` of the body of a line item, which a score needs when it has none.
+ *
+ * @throws `DataError` when the body is not a line item with a `scoreMaximum` above 0.
+ */
+export function readScoreMaximum(body: string): number {
   let line: unknown;
   try {
     line = JSON.parse(body);
@@ -162,10 +163,19 @@ async function readLineItemMaximum(service: ServiceCall, lineItem: string, token
   return scoreMaximum;
 }
 
-/** Returns the URL of the scores of a line item: its path with `/scores` appended, and its query kept. */
+/** Asks the line item for its `scoreMaximum`. */
+async function readLineItemMaximum(service: ServiceCall, lineItem: string, token: AccessToken): Promise<number> {
+  const body = await callService(service, `The line item ${lineItem}`, lineItem, {
+    method: "GET",
+    headers: { accept: LINE_ITEM_TYPE, authorization: `Bearer ${token.value}` },
+  });
+  return readScoreMaximum(body);
+}
+
+/** Returns the URL of the scores of a line item: its path, without a trailing slash, with `/scores` appended, and its query kept. */
 function scoresUrl(lineItem: string): string {
   const url = new URL(lineItem);
-  url.pathname = `${url.pathname}${SCORES_SUFFIX}`;
+  url.pathname = `${url.pathname.replace(TRAILING_SLASH, "")}${SCORES_SUFFIX}`;
   return url.href;
 }
 

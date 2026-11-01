@@ -7,15 +7,16 @@ import {
   BOOLEAN,
   CLAIM,
   type Claims,
+  CUSTOM_RECORD,
   HTTPS_URL,
   IDENTIFIER,
   LTI_VERSION,
   MESSAGE_TYPE,
+  NULLABLE_STRING,
   optional,
   required,
   STRING,
   STRING_ARRAY,
-  STRING_RECORD,
 } from "../protocol/internal.js";
 import type { AgsEndpoint, DeepLinkingSettings, LaunchBase, LtiLaunch, ResourceLink } from "./launch-model.js";
 import type { PlatformRegistration } from "./registration.js";
@@ -28,7 +29,7 @@ function readResourceLink(claims: Claims): ResourceLink {
     claims,
     CLAIM.resourceLink,
     MESSAGE,
-    looseRecord({ id: IDENTIFIER, title: v.optional(STRING), description: v.optional(STRING) }),
+    looseRecord({ id: IDENTIFIER, title: NULLABLE_STRING, description: NULLABLE_STRING }),
   );
   return { id, title, description };
 }
@@ -99,7 +100,7 @@ function readBase(claims: Claims, registration: PlatformRegistration): LaunchBas
     targetLinkUri: required(claims, CLAIM.targetLinkUri, MESSAGE, HTTPS_URL),
     subject: optional(claims, "sub", MESSAGE, IDENTIFIER),
     roles: required(claims, CLAIM.roles, MESSAGE, STRING_ARRAY),
-    custom: optional(claims, CLAIM.custom, MESSAGE, STRING_RECORD) ?? new Map<string, string>(),
+    custom: optional(claims, CLAIM.custom, MESSAGE, CUSTOM_RECORD) ?? new Map<string, string>(),
   };
 }
 

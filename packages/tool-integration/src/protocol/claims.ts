@@ -39,8 +39,28 @@ export const HTTPS_URL = httpsUrlSchema;
 /** An array of strings. */
 export const STRING_ARRAY = v.array(v.string());
 
-/** An object whose values are strings, such as `custom` (LTI 1.3 Core section 5.4.6: a custom value is always a string). */
+/** An object whose values are strings. */
 export const STRING_RECORD = mapSchema(v.string());
+
+/**
+ * A string that a platform may send as `null`, which is read as absent: Canvas sends `"title": null` and `"description": null`
+ * for a resource link, though LTI 1.3 Core section 5.3.5 has them as strings.
+ */
+export const NULLABLE_STRING = v.pipe(
+  v.nullish(v.string()),
+  v.transform((text) => text ?? undefined),
+);
+
+/**
+ * The `custom` claim: an object of strings (LTI 1.3 Core section 5.4.6: a custom value is always a string). A platform that
+ * sends a number or a boolean, as Canvas does for `canvas_user_uuid`, has it read as its text.
+ */
+export const CUSTOM_RECORD = mapSchema(
+  v.pipe(
+    v.union([v.string(), v.number(), v.boolean()]),
+    v.transform((item) => String(item)),
+  ),
+);
 
 /** The failure of a claim: `claim-missing` when it is absent, else `claim-invalid`. */
 function invalid(owner: string, name: string, issue: v.BaseIssue<unknown>): LtiError {

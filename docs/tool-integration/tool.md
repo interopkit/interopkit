@@ -120,17 +120,18 @@ It returns a launch, or a response that the host sends.
 `undefined` unless the platform names it (`client_id`, LTI 1.3 Core section 4.1.3). The returned registration is checked on every
 call and must match the issuer and the client.
 
-| Property            | Meaning                                                                                    |
-| ------------------- | ------------------------------------------------------------------------------------------ |
-| `issuer`            | The `iss` of the platform: an `https` URL without query or fragment                        |
-| `clientId`          | The OAuth 2.0 client identifier that the platform gave the tool                            |
-| `deploymentIds`     | The deployments that the tool accepts; the `deployment_id` of a launch must be one of them |
-| `authenticationUrl` | The platform's OIDC authentication endpoint                                                |
-| `jwksUrl`           | The platform's key set                                                                     |
-| `accessTokenUrl`    | The platform's token endpoint, also the `aud` of the client assertion                      |
-| `redirectUri`       | The tool's launch URL. The route of `ltiLaunch` must answer it                             |
-| `keyId`             | The `kid` of the tool's public key in the key set that the platform fetches                |
-| `signingKey`        | The tool's private RSA key (`RSASSA-PKCS1-v1_5`, SHA-256, usage `sign`)                    |
+| Property            | Meaning                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `issuer`            | The `iss` of the platform: an `https` URL without query or fragment                                          |
+| `clientId`          | The OAuth 2.0 client identifier that the platform gave the tool                                              |
+| `deploymentIds`     | The deployments that the tool accepts; the `deployment_id` of a launch must be one of them                   |
+| `authenticationUrl` | The platform's OIDC authentication endpoint                                                                  |
+| `jwksUrl`           | The platform's key set                                                                                       |
+| `accessTokenUrl`    | The platform's token endpoint, also the `aud` of the client assertion unless `audience` is set               |
+| `audience`          | Optional: the `aud` of the client assertion, for a platform that wants a value other than its token endpoint |
+| `redirectUri`       | The tool's launch URL. The route of `ltiLaunch` must answer it                                               |
+| `keyId`             | The `kid` of the tool's public key in the key set that the platform fetches                                  |
+| `signingKey`        | The tool's private RSA key (`RSASSA-PKCS1-v1_5`, SHA-256, usage `sign`)                                      |
 
 Every URL is `https` (LTI 1.3 Core section 3.5). The platform needs the tool's public key under `keyId`: the host publishes it, and the sample does not.
 
@@ -255,12 +256,12 @@ RS256 and the registration's key, and its header has `keyId` as `kid`. `deepLink
 `ltiAccessToken(deployment, scopes, options)` posts a form to `accessTokenUrl` with `grant_type=client_credentials`,
 `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`, `client_assertion` and `scope`
 (space-separated), as Security Framework section 4.1.1 describes. The assertion has `iss` and `sub` equal to the client
-identifier, `aud` equal to the token endpoint, `iat`, `exp` (300 seconds later), a new `jti` and the deployment claim (LTI 1.3
-Core section 6.2.1). `deployment` is a launch or any object with `issuer`, `clientId` and `deploymentId`.
+identifier, `aud` equal to the token endpoint (or the `audience` of the registration), `iat`, `exp` (300 seconds later), a new
+`jti` and the deployment claim (LTI 1.3 Core section 6.2.1). `deployment` is a launch or any object with `issuer`, `clientId` and `deploymentId`.
 
-The result is an `AccessToken`: `value`, `expiresAt` (milliseconds) and `scopes`, which are those requested, or the subset the
-platform granted. A service request carries `Authorization: Bearer <value>`. The tool may keep the token until `expiresAt`; the
-function keeps none.
+The result is an `AccessToken`: `value`, `expiresAt` (milliseconds, absent when the platform sent no `expires_in`) and `scopes`,
+which are those requested, or the subset the platform granted. A service request carries `Authorization: Bearer <value>`. The
+tool may keep the token until `expiresAt`, or until a service refuses it when there is none; the function keeps none.
 
 ## Publishing a score
 

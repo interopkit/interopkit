@@ -10,8 +10,10 @@ import {
   publishAgsScore,
   type ResourceLinkLaunch,
 } from "../src/tool/index.js";
+import { readScoreMaximum } from "../src/tool/internal.js";
 import { FakeLms, LINE_ITEM_URL, SUBJECT } from "./fake-lms.js";
 import { ACCESS_TOKEN_URL } from "./fake-platform.js";
+import { fuzzJson } from "./fuzz.js";
 import { cookieLogin, type Setup, setup } from "./tool-setup.js";
 
 /**
@@ -62,6 +64,16 @@ describe("publishAgsScore", () => {
         gradingProgress: "FullyGraded",
       },
     ]);
+    expect(lms.calls).toStrictEqual([`POST ${LINE_ITEM_URL}/scores`]);
+  });
+
+  it("posts to the scores of a line item whose URL ends with a slash, without a second slash", async () => {
+    const { lms, launch, options } = await launched();
+    const slashed = {
+      ...launch,
+      ags: { ...launch.ags, scopes: launch.ags?.scopes ?? [], lineitem: `${LINE_ITEM_URL}/` },
+    };
+    await publishAgsScore(final, slashed, options);
     expect(lms.calls).toStrictEqual([`POST ${LINE_ITEM_URL}/scores`]);
   });
 
@@ -311,5 +323,14 @@ describe("publishAgsScore and a signal", () => {
       publishAgsScore(final, launch, { ...options, fetch: arrived, signal: controller.signal }),
     ).rejects.toBe(REASON);
     expect(lms.received).toHaveLength(1);
+  });
+});
+
+describe("readScoreMaximum", () => {
+  it("returns a number or throws a DataError for any line item, and for an example with any value replaced", () => {
+    fuzzJson(
+      (json) => readScoreMaximum(JSON.stringify(json)),
+      [{ id: LINE_ITEM_URL, label: "Quiz", scoreMaximum: 40 }],
+    );
   });
 });

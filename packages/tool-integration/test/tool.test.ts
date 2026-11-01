@@ -18,6 +18,7 @@ import {
   ltiLogin,
   type PlatformRegistration,
 } from "../src/tool/index.js";
+import { readTokenResponse } from "../src/tool/internal.js";
 import {
   ACCESS_TOKEN_URL,
   AGS_SCOPES,
@@ -46,6 +47,7 @@ import {
   signToken,
   verifyToken,
 } from "./fixture.js";
+import { fuzzJson } from "./fuzz.js";
 import {
   attackerKey,
   cookieLogin,
@@ -103,6 +105,41 @@ describe("ltiAccessToken", () => {
     });
   });
 
+  it("accepts a token response without expires_in, which RFC 6749 only recommends, and then has no expiry", async () => {
+    const { options, platform } = setup();
+    platform.tokenResponse = () => Response.json({ access_token: "t1", token_type: "Bearer" });
+    const token = await ltiAccessToken(deployment, scopes, options);
+    expect(token).toStrictEqual({ value: "t1", expiresAt: undefined, scopes });
+  });
+
+  it("gives the token its own list of scopes, not the array that the caller passed", async () => {
+    const { options, platform } = setup();
+    platform.tokenResponse = () => Response.json({ access_token: "t1", token_type: "Bearer", expires_in: 60 });
+    const asked = [...scopes];
+    const token = await ltiAccessToken(deployment, asked, options);
+    expect(token.scopes).not.toBe(asked);
+    asked.push("https://example.org/scope/later");
+    expect(token.scopes).toStrictEqual(scopes);
+  });
+
+  it("puts the audience of the registration in the assertion when it has one, and the token endpoint when it has none", async () => {
+    const named = setup({ audience: "https://lms.example.edu" });
+    named.platform.audience = "https://lms.example.edu";
+    await ltiAccessToken(deployment, scopes, named.options);
+    expect(named.platform.grants.at(-1)?.payload.aud).toBe("https://lms.example.edu");
+    const plain = setup();
+    await ltiAccessToken(deployment, scopes, plain.options);
+    expect(plain.platform.grants.at(-1)?.payload.aud).toBe(ACCESS_TOKEN_URL);
+  });
+
+  it("returns a token or throws a DataError for any token response, and for an example with any value replaced", () => {
+    const example = { access_token: "t", token_type: "Bearer", expires_in: 3600, scope: "a b" };
+    fuzzJson(
+      (json) => readTokenResponse(JSON.stringify(json), ["a"], 0),
+      [example, { access_token: "t", token_type: "bearer" }],
+    );
+  });
+
   it("sends the request to the token endpoint of the registration within the time limit", async () => {
     const { options } = setup();
     let seen: { url: string; signal: AbortSignal | undefined } | undefined;
@@ -158,10 +195,6 @@ describe("ltiAccessToken", () => {
       [
         'The token response is invalid at token_type: expected "Bearer", found "mac".',
         () => Response.json({ access_token: "t", token_type: "mac", expires_in: 60 }),
-      ],
-      [
-        'The token response is invalid: missing the property "expires_in".',
-        () => Response.json({ access_token: "t", token_type: "Bearer" }),
       ],
       [
         'The token response is invalid at expires_in: expected a number, found "3600".',
@@ -942,7 +975,7 @@ describe("ltiLaunch", () => {
         ["no resource link", { [`${claim}resource_link`]: undefined }, "claim-missing"],
         ["a resource link without an id", { [`${claim}resource_link`]: {} }, "claim-missing"],
         ["a long resource link id", { [`${claim}resource_link`]: { id: "r".repeat(256) } }, "claim-invalid"],
-        ["custom values that are not strings", { [`${claim}custom`]: { a: 1 } }, "claim-invalid"],
+        ["custom values that are not text, numbers or booleans", { [`${claim}custom`]: { a: null } }, "claim-invalid"],
         [
           "a grade services endpoint that is http",
           { "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint": { lineitem: "http://lms.example/l" } },

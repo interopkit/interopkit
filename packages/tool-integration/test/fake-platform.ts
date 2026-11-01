@@ -140,6 +140,8 @@ export class FakePlatform {
   keySetResponse: (() => Response | Promise<Response>) | undefined;
   /** Replaces the token response while set. */
   tokenResponse: (() => Response | Promise<Response>) | undefined;
+  /** The `aud` that the platform expects in a client assertion: its token endpoint, unless a test says otherwise. */
+  audience = ACCESS_TOKEN_URL;
   private readonly usedJti = new Set<string>();
   private readonly clock: TestClock;
 
@@ -238,7 +240,7 @@ export class FakePlatform {
     expect(header).toEqual({ alg: "RS256", typ: "JWT", kid: this.toolKey.kid });
     expect(payload.iss).toBe(CLIENT_ID);
     expect(payload.sub).toBe(CLIENT_ID);
-    expect(payload.aud).toBe(ACCESS_TOKEN_URL);
+    expect(payload.aud).toBe(this.audience);
     const nowSeconds = Math.floor(this.clock.now() / 1000);
     expect(payload.iat).toBe(nowSeconds);
     expect(payload.exp).toBe(nowSeconds + 300);
