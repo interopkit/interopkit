@@ -1,11 +1,11 @@
 # Architecture of learning-records
 
-`@interopkit/learning-records` has eight modules that share one model. `model` holds the types, the vocabularies and the data
+`@interopkit/learning-records` has nine modules that share one model. `model` holds the types, the vocabularies and the data
 types. `read` turns untrusted data into the model and judges it. `build`, `compare` and `format` make Statements, compare them and
 write them in a format, and each reads a Statement with `read` first. `attachments` writes and reads the message that carries
 Attachments, and `signing` signs a Statement and verifies its signature, with the Attachment of `attachments` and the equivalence
-of `compare`, and `client` speaks to an LRS with `read` and `attachments`. `model` imports nothing of the family, `read` imports only `model` and `@interopkit/core`, the three that build on
-`read` are siblings that never import each other, and `attachments`, `signing` and `client` are the layers above them.
+of `compare`, `client` speaks to an LRS with `read` and `attachments`, and `store` answers the requests of one with all of them but `build` and `client`. `model` imports nothing of the family, `read` imports only `model` and `@interopkit/core`, the three that build on
+`read` are siblings that never import each other, and `attachments`, `signing`, `client` and `store` are the layers above them.
 
 ```mermaid
 flowchart BT
@@ -18,6 +18,7 @@ flowchart BT
   attachments["attachments<br/>hash, multipart message"]
   signing["signing<br/>signStatement, verifyStatementSignature"]
   client["client<br/>createLrsClient"]
+  store["store<br/>handleLrsRequest, matchesStatementQuery"]
   root["index.ts<br/>the public API"]
   read --> model
   read --> core
@@ -37,6 +38,12 @@ flowchart BT
   client --> attachments
   client --> read
   client --> model
+  store --> signing
+  store --> attachments
+  store --> compare
+  store --> format
+  store --> read
+  store --> model
   root --> model
   root --> read
   root --> build
@@ -53,6 +60,7 @@ flowchart BT
 |               | `walk.ts`, `rules.ts`                                                                   | The walk over a Statement and the composition of the rules between properties                                                  |
 |               | `identifiers.ts`, `results.ts`, `relations.ts`, `interaction.ts`, `response-pattern.ts` | The rules, one concept to a file                                                                                               |
 |               | `provider.ts`                                                                           | What only a Learning Record Provider is held to                                                                                |
+|               | `identified.ts`, `statement-query.ts`                                                   | The Agents and Groups that a request may name, and the filters of a query                                                      |
 |               | `inspect.ts`, `read-statement.ts`, `options.ts`, `read-statement-json.ts`               | The parse, the readers and validators, the check of the options, and the text of a request                                     |
 | `build`       | `build-statement.ts`, `voiding-statement.ts`                                            | The Statement of an event and the Statement that voids another                                                                 |
 |               | `derive-statement-id.ts`, `mbox-sha1sum.ts`                                             | The id of an event, as a UUID of version 5, and the hash of an address                                                         |
@@ -62,8 +70,11 @@ flowchart BT
 | `attachments` | `attachment-hash.ts`, `limits.ts`                                                       | The SHA-256 of the data and the hash of any length, and the limits of a message                                                |
 |               | `read-multipart.ts`, `write-multipart.ts`                                               | The `multipart/mixed` message of Statements and Attachments, read and written                                                  |
 | `signing`     | `constants.ts`, `sign-statement.ts`, `verify-statement-signature.ts`                    | The usage type, the algorithms, the signature of a Statement and its verification                                              |
-| `client`      | `config.ts`, `request.ts`, `options.ts`, `identified.ts`                                | The checks of the configuration, the one place that makes a request, and the Agents that a request may name                    |
+| `client`      | `config.ts`, `request.ts`, `options.ts`                                                 | The checks of the configuration and the one place that makes a request                                                         |
 |               | `statements.ts`, `query.ts`, `documents.ts`, `resources.ts`, `client.ts`                | The Statement resource and its query, the three document resources, the Agents, Activities and About resources, and the client |
+| `store`       | `router.ts`, `options.ts`, `ports.ts`, `status.ts`, `verdict.ts`, `basic.ts`            | The checks every request goes through, the options and the ports, the refusals, and the Basic credentials                      |
+|               | `statements/`                                                                           | The Statements resource: its parameters, body, preparation, storing, and answers                                               |
+|               | `query.ts`                                                                              | The filters of a query, with the Statement References                                                                          |
 
 `@interopkit/core/checks` holds what other standards need as much: strict records, the formats of a time, a UUID, a URI and a
 language tag, the copy of JSON within a depth limit, the check of the depth of a text, the conversion of the issues of a parse to
@@ -102,9 +113,9 @@ a list where the input had one Activity.
 
 ## Boundaries
 
-| The package owns                                                                                                                                                                                          | The package does not own                                                         |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| The model of a Statement of xAPI 2.0, its readers and validators, the text of a request, builders, comparison and formats, the message of Attachments, the signature of a Statement, the client of an LRS | Storing Statements, serving requests, obtaining credentials, xAPI Profiles, cmi5 |
+| The package owns                                                                                                                                                                                                                       | The package does not own                                                     |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| The model of a Statement of xAPI 2.0, its readers and validators, the text of a request, builders, comparison and formats, the message of Attachments, the signature of a Statement, the client of an LRS, the handler of its requests | Storing Statements, a web server, obtaining credentials, xAPI Profiles, cmi5 |
 
-The package makes a request only through the `fetch` that the host passes to the client, keeps nothing between calls, reads no clock and no environment variable, and imports no other
+The package makes a request only through the `fetch` that the host passes to the client, answers one only through the ports that the host passes to the handler, keeps nothing between calls, reads no clock and no environment variable, and imports no other
 family of interopkit. It uses no API outside web standards, so it runs in Node.js, browsers, Deno, Bun and Cloudflare Workers.

@@ -1,8 +1,7 @@
 import { absoluteUriSchema, parseWith } from "@interopkit/core/checks";
 import type { About, Activity, Agent, Person } from "../model/index.js";
-import { aboutSchema, activitySchema, personSchema } from "../read/internal.js";
+import { aboutSchema, activitySchema, identifiedAgentSchema, personSchema } from "../read/internal.js";
 import type { Settings } from "./config.js";
-import { identifiedAgent } from "./identified.js";
 import { callOptionsSchema } from "./options.js";
 import { jsonOf, readAnswer, send, urlOf } from "./request.js";
 
@@ -30,7 +29,7 @@ export async function getActivity(settings: Settings, activityId: string, option
 
 /** Fetches what the LRS knows of an Agent from outside services. */
 export async function getPerson(settings: Settings, agent: Agent, options: unknown): Promise<Person> {
-  const checked = parseWith(identifiedAgent, agent, "The Agent");
+  const checked = parseWith(identifiedAgentSchema, agent, "The Agent");
   return await fetchJson(settings, "agents", new URLSearchParams({ agent: JSON.stringify(checked) }), options, (json) =>
     parseWith(personSchema, json, "The Person"),
   );

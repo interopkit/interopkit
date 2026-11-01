@@ -1,29 +1,6 @@
-import {
-  absoluteUriSchema,
-  dateTimeSchema,
-  nonNegativeIntegerSchema,
-  parseWith,
-  strictRecord,
-  uuidSchema,
-} from "@interopkit/core/checks";
-import * as v from "valibot";
-import { STATEMENT_FORMATS, type StatementQuery } from "../model/index.js";
-import { identifiedActor } from "./identified.js";
-
-const querySchema = strictRecord({
-  agent: v.optional(identifiedActor),
-  verb: v.optional(absoluteUriSchema),
-  activity: v.optional(absoluteUriSchema),
-  registration: v.optional(uuidSchema),
-  relatedActivities: v.optional(v.boolean()),
-  relatedAgents: v.optional(v.boolean()),
-  since: v.optional(dateTimeSchema),
-  until: v.optional(dateTimeSchema),
-  limit: v.optional(nonNegativeIntegerSchema),
-  format: v.optional(v.picklist(STATEMENT_FORMATS)),
-  attachments: v.optional(v.boolean()),
-  ascending: v.optional(v.boolean()),
-});
+import { parseWith } from "@interopkit/core/checks";
+import type { StatementQuery } from "../model/index.js";
+import { statementQuerySchema } from "../read/internal.js";
 
 /** A query after the checks, and the parameters that it makes. */
 export interface ReadQuery {
@@ -40,7 +17,7 @@ export interface ReadQuery {
  * @throws `DataError` that names the filter and what it must be.
  */
 export function readQuery(query: unknown): ReadQuery {
-  const checked: StatementQuery = parseWith(querySchema, query, "The query");
+  const checked: StatementQuery = parseWith(statementQuerySchema, query, "The query");
   const parameters = new URLSearchParams();
   const set = (name: string, value: string | number | boolean | undefined): void => {
     if (value !== undefined) parameters.set(name, String(value));

@@ -6,6 +6,7 @@ import * as attachments from "../src/attachments/index.js";
 import * as client from "../src/client/index.js";
 import * as root from "../src/index.js";
 import * as signing from "../src/signing/index.js";
+import * as store from "../src/store/index.js";
 
 const modules = {
   "@interopkit/core": core,
@@ -13,6 +14,7 @@ const modules = {
   "@interopkit/learning-records/attachments": attachments,
   "@interopkit/learning-records/client": client,
   "@interopkit/learning-records/signing": signing,
+  "@interopkit/learning-records/store": store,
 };
 const GUIDES = new URL("../../../docs/learning-records/", import.meta.url);
 const PACKAGES = fileURLToPath(new URL("../../", import.meta.url));
@@ -22,8 +24,10 @@ const PATHS = {
   "@interopkit/learning-records/attachments": [`${PACKAGES}learning-records/src/attachments/index.ts`],
   "@interopkit/learning-records/client": [`${PACKAGES}learning-records/src/client/index.ts`],
   "@interopkit/learning-records/signing": [`${PACKAGES}learning-records/src/signing/index.ts`],
+  "@interopkit/learning-records/store": [`${PACKAGES}learning-records/src/store/index.ts`],
   "@interopkit/core": [`${PACKAGES}core/src/index.ts`],
   "@interopkit/core/checks": [`${PACKAGES}core/src/checks.ts`],
+  "@interopkit/core/http": [`${PACKAGES}core/src/http/index.ts`],
 };
 const guides = guidesWithSamples(GUIDES);
 

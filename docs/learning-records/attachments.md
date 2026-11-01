@@ -75,14 +75,15 @@ in memory.
 | `maxParts`      | 100        | The most parts, the Statements included                                                       |
 | `maxPartBytes`  | 10,485,760 | The most bytes of the content of one part, the Statements included                            |
 | `maxTotalBytes` | 10,485,760 | The most bytes of the content of all parts together; the headers of the parts are not counted |
+| `maxDepth`      | 64         | The deepest nesting of arrays and objects in the JSON of the first part; `[]` has depth 1     |
 
 The headers of a part are at most 8,192 bytes, which the parser fixes. The first part is also read within the limits of
-`readStatementJson`: 10,485,760 bytes (`maxPartBytes` if less), 64 levels and 1,000,000 tokens.
+`readStatementJson`: 10,485,760 bytes (`maxPartBytes` if less), `maxDepth` levels and 1,000,000 tokens.
 
 ## Errors
 
-Every error is a `DataError`. A message over a limit and a malformed message are the same error, so a host that answers 413 for
-a limit checks the size of the body before it reads it.
+Every error is a `DataError`. A message over a limit is a `MultipartLimitError`, a `DataError` whose `limit` is `parts`,
+`part-bytes`, `total-bytes` or `header-bytes`, so that a host answers 413 for it and 400 for a malformed message.
 
 | Error                                                                                              | When                                                            | What to do                                                         |
 | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------ |

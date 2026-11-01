@@ -3,14 +3,14 @@
  *
  * @module
  */
+export { authoritySchema, identifiedAgentSchema } from "./identified.js";
 export { inspectStatement, issueSink } from "./inspect.js";
 export { singleActivityIssues } from "./provider.js";
 export { patternProblem } from "./response-pattern.js";
 export {
   aboutSchema,
   activitySchema,
-  actorSchema,
-  agentSchema,
   attachmentDataSchema,
   personSchema,
 } from "./schemas.js";
+export { statementQuerySchema } from "./statement-query.js";

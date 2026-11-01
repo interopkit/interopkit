@@ -14,7 +14,13 @@
       "entry": ["src/index.ts"]
     },
     "packages/learning-records": {
-      "entry": ["src/index.ts", "src/attachments/index.ts", "src/client/index.ts", "src/signing/index.ts"]
+      "entry": [
+        "src/index.ts",
+        "src/attachments/index.ts",
+        "src/client/index.ts",
+        "src/signing/index.ts",
+        "src/store/index.ts"
+      ]
     },
     "packages/selective-disclosure": {
       "entry": ["src/index.ts"]

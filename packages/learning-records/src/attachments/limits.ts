@@ -10,6 +10,9 @@ const DEFAULT_MAX_PART_BYTES = 10_485_760;
 /** The most bytes of all parts together that `readMultipart` reads unless the caller says otherwise: 10 MiB. */
 const DEFAULT_MAX_TOTAL_BYTES = 10_485_760;
 
+/** The deepest nesting of the JSON of the first part that `readMultipart` reads unless the caller says otherwise. */
+const DEFAULT_MAX_DEPTH = 64;
+
 /** The limits of `readMultipart`. */
 export interface MultipartLimits {
   /**
@@ -30,12 +33,19 @@ export interface MultipartLimits {
    * @defaultValue 10,485,760
    */
   readonly maxTotalBytes?: number;
+  /**
+   * The deepest nesting of arrays and objects in the JSON of the first part: `[]` has depth 1.
+   *
+   * @defaultValue 64
+   */
+  readonly maxDepth?: number;
 }
 
 const limitsSchema = strictRecord({
   maxParts: v.optional(positiveIntegerSchema),
   maxPartBytes: v.optional(positiveIntegerSchema),
   maxTotalBytes: v.optional(positiveIntegerSchema),
+  maxDepth: v.optional(positiveIntegerSchema),
 });
 
 /** Checks the limits of a read and returns each with its default. */
@@ -45,5 +55,6 @@ export function readLimits(options: unknown): Required<MultipartLimits> {
     maxParts: limits.maxParts ?? DEFAULT_MAX_PARTS,
     maxPartBytes: limits.maxPartBytes ?? DEFAULT_MAX_PART_BYTES,
     maxTotalBytes: limits.maxTotalBytes ?? DEFAULT_MAX_TOTAL_BYTES,
+    maxDepth: limits.maxDepth ?? DEFAULT_MAX_DEPTH,
   };
 }

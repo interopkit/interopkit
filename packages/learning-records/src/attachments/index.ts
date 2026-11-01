@@ -5,6 +5,7 @@
  * @module
  */
 export { attachmentHash } from "./attachment-hash.js";
+export { type MultipartLimit, MultipartLimitError } from "./errors.js";
 export type { MultipartLimits } from "./limits.js";
 export { type MultipartContent, readMultipart } from "./read-multipart.js";
 export { type MultipartMessage, type MultipartStatements, writeMultipart } from "./write-multipart.js";

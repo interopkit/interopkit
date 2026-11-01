@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { describe, expect, it, vi } from "vitest";
-import { attachmentHash, readMultipart, writeMultipart } from "../src/attachments/index.js";
+import { attachmentHash, MultipartLimitError, readMultipart, writeMultipart } from "../src/attachments/index.js";
 import type { Statement } from "../src/index.js";
 import { minimalStatement, subStatementStatement } from "./full-statement.js";
 import { dataOf, messageOf, sha2Of, statementWithAttachments } from "./multipart.js";
@@ -252,6 +252,7 @@ describe("readMultipart", () => {
       [{ maxParts: 0 }, "The options object is invalid at maxParts: expected a value of at least 1, found 0."],
       [{ maxPartBytes: "10" }, 'The options object is invalid at maxPartBytes: expected a number, found "10".'],
       [{ maxTotalBytes: 1.5 }, "The options object is invalid at maxTotalBytes: expected a safe integer, found 1.5."],
+      [{ maxDepth: 0 }, "The options object is invalid at maxDepth: expected a value of at least 1, found 0."],
       [{ limit: 1 }, 'The options object is invalid: unexpected property "limit".'],
     ])("refuses the limits %j", (limits, sentence) => {
       expect(() => readMultipart(CONTENT_TYPE, ok, JSON.parse(JSON.stringify(limits)))).toThrow(
@@ -299,6 +300,44 @@ describe("readMultipart", () => {
       expect(readMultipart(CONTENT_TYPE, message, { maxTotalBytes: total }).parts.size).toBe(2);
       expect(() => readMultipart(CONTENT_TYPE, message, { maxTotalBytes: total - 1 })).toThrow(
         `Multipart content size exceeds maximum allowed size of ${total - 1} bytes.`,
+      );
+    });
+
+    it("refuses a message over a limit with a MultipartLimitError that names the limit, and a malformed one with a DataError", () => {
+      const limitOf = (run: () => unknown): unknown => {
+        try {
+          run();
+        } catch (error) {
+          return error instanceof MultipartLimitError ? error.limit : error;
+        }
+        return undefined;
+      };
+      const message = messageOf(BOUNDARY, STATEMENTS, [part("a".repeat(60)), part("b".repeat(60))]);
+      expect(limitOf(() => readMultipart(CONTENT_TYPE, message, { maxParts: 2 }))).toBe("parts");
+      expect(limitOf(() => readMultipart(CONTENT_TYPE, message, { maxPartBytes: 200 }))).toBeUndefined();
+      expect(limitOf(() => readMultipart(CONTENT_TYPE, message, { maxPartBytes: 59 }))).toBe("part-bytes");
+      expect(limitOf(() => readMultipart(CONTENT_TYPE, message, { maxTotalBytes: 200 }))).toBe("total-bytes");
+      const wide = messageOf(BOUNDARY, STATEMENTS, [
+        { headers: [`X-Experience-API-Hash: ${"a".repeat(9000)}`], body: "x" },
+      ]);
+      expect(limitOf(() => readMultipart(CONTENT_TYPE, wide))).toBe("header-bytes");
+      const broken = limitOf(() => readMultipart(CONTENT_TYPE, message.slice(0, 30)));
+      expect(broken).toBeInstanceOf(DataError);
+      expect(broken).not.toBeInstanceOf(MultipartLimitError);
+      expect(new MultipartLimitError("x", "parts")).toBeInstanceOf(DataError);
+    });
+
+    it("refuses JSON nested deeper than maxDepth in the first part, 64 levels by default", () => {
+      const nested = (levels: number) => `${"[".repeat(levels)}${"]".repeat(levels)}`;
+      expect(readMultipart(CONTENT_TYPE, messageOf(BOUNDARY, nested(64), [])).statements).toBeInstanceOf(Array);
+      expect(() => readMultipart(CONTENT_TYPE, messageOf(BOUNDARY, nested(65), []))).toThrow(
+        "deeper than the limit of 64",
+      );
+      expect(
+        readMultipart(CONTENT_TYPE, messageOf(BOUNDARY, nested(5), []), { maxDepth: 5 }).statements,
+      ).toBeInstanceOf(Array);
+      expect(() => readMultipart(CONTENT_TYPE, messageOf(BOUNDARY, nested(5), []), { maxDepth: 4 })).toThrow(
+        "deeper than the limit of 4",
       );
     });
 

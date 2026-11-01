@@ -1,0 +1,133 @@
+import type { CallOptions } from "@interopkit/core";
+import type { Activity, Actor, AttachmentData, Statement, StatementQuery, XapiVersion } from "../model/index.js";
+
+/** The actions that a request may be granted. `access` lists the ones that the credentials of a request allow. */
+export const LRS_ACTIONS = [
+  "statements.read",
+  "statements.write",
+  "state.read",
+  "state.write",
+  "profiles.read",
+  "profiles.write",
+  "activities.read",
+  "agents.read",
+] as const;
+
+/** An action of a request: reading or writing Statements, State or profiles, or reading Activities or Agents. */
+export type LrsAction = (typeof LRS_ACTIONS)[number];
+
+/** The decision of `access` about a request: who it is from and what it may do, or why it is refused. */
+export type Access =
+  | {
+      /** The request may go on. */
+      readonly allowed: true;
+      /** The Agent or Group that the LRS gives as the `authority` of the Statements that the request stores. */
+      readonly authority: Actor;
+      /** What the credentials allow. A request for an action that is not listed is refused with 403. */
+      readonly actions: readonly LrsAction[];
+    }
+  | {
+      /** The request is refused. */
+      readonly allowed: false;
+      /** 401 when the request is not authenticated, 403 when it is not allowed, 429 when it came too often. */
+      readonly status: 401 | 403 | 429;
+      /** Says why, as a sentence. It is the message of the answer. */
+      readonly reason: string;
+      /**
+       * The `WWW-Authenticate` header of a 401, such as `Basic realm="xAPI"`.
+       *
+       * @defaultValue none
+       */
+      readonly challenge?: string;
+      /**
+       * The seconds that a 429 asks the client to wait, for `Retry-After`.
+       *
+       * @defaultValue none
+       */
+      readonly retryAfterSeconds?: number;
+    };
+
+/** What `insert` did: the Statements of the batch that the store held already. */
+export interface InsertResult {
+  /** The Statements with an id that the store held, as it held them. */
+  readonly existing: readonly StoredStatement[];
+}
+
+/** A Statement as the LRS keeps it, with what the LRS decided about it. */
+export interface StoredStatement {
+  /** The Statement with its `id`, `stored`, `timestamp`, `authority` and `version` set. */
+  readonly statement: Statement;
+  /** When the Statement was stored, as an ISO 8601 time in UTC: the `stored` of the Statement. */
+  readonly stored: string;
+  /** Whether a voiding Statement refers to it. */
+  readonly voided: boolean;
+  /** The version of xAPI of the route that stored it. */
+  readonly version: XapiVersion;
+}
+
+/** One page of a query: the Statements that match, and where the next page starts. */
+export interface StatementsPage {
+  /** The Statements of the page, at most `page.limit`, never one that was voided. */
+  readonly statements: readonly StoredStatement[];
+  /**
+   * An opaque cursor for the next page.
+   *
+   * @defaultValue none on the last page
+   */
+  readonly cursor?: string;
+}
+
+/**
+ * Where an LRS keeps its Statements and the data of their Attachments.
+ *
+ * @remarks
+ * A method may be called again and may be called from several requests at once. It rejects when it fails, and the LRS answers
+ * 500 and says nothing of the failure. It receives the `signal` of the options of the LRS and ends its work when it aborts. A
+ * statement id is a UUID in lower case.
+ */
+export interface StatementStore {
+  /**
+   * Stores the Statements and the data of their Attachments, and marks the Statements of `voids` voided, those of the batch
+   * included. An id that the store holds already is left unchanged and returned in `existing`.
+   *
+   * @remarks
+   * The batch is stored whole or not at all, and the call is atomic across processes: two requests with one id store one
+   * Statement, and the other gets it in `existing`.
+   */
+  insert(
+    batch: readonly StoredStatement[],
+    voids: readonly string[],
+    attachments: readonly AttachmentData[],
+    options?: CallOptions,
+  ): Promise<InsertResult>;
+  /** Returns the Statement with the id that is voided or not, as `options.voided` says, or `undefined`. */
+  get(id: string, options: { readonly voided: boolean } & CallOptions): Promise<StoredStatement | undefined>;
+  /**
+   * Returns a page of the Statements that match the query, newest first or oldest first as `query.ascending` says.
+   *
+   * @remarks
+   * A Statement matches when `matchesStatementQuery` says so, with a lookup that finds any Statement by its id, voided or not.
+   * A voided Statement is never returned. The answer is `undefined` for a cursor that the store does not know or that has
+   * expired, and the LRS answers 400.
+   */
+  query(
+    query: StatementQuery,
+    page: { readonly limit: number; readonly cursor?: string },
+    options?: CallOptions,
+  ): Promise<StatementsPage | undefined>;
+  /** Returns the time up to which every Statement that was stored is available, as an ISO 8601 time. */
+  consistentThrough(options?: CallOptions): Promise<string>;
+  /** Returns the data of the Attachments that the store holds, by their hash in lower case. */
+  attachments(hashes: readonly string[], options?: CallOptions): Promise<ReadonlyMap<string, AttachmentData>>;
+}
+
+/** Where an LRS keeps what it knows of the Activities that Statements mention. */
+export interface ActivityStore {
+  /** Returns the canonical description of an Activity, or `undefined` when the store holds none. */
+  get(activityId: string, options?: CallOptions): Promise<Activity | undefined>;
+  /**
+   * Sees every Activity of the Statements that were stored, with the `authority` that sent them. The host decides what
+   * becomes canonical. It is called again for a batch that is sent again, so it must be idempotent.
+   */
+  observe(activities: readonly Activity[], authority: Actor, options?: CallOptions): Promise<void>;
+}

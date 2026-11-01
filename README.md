@@ -45,7 +45,7 @@ flowchart LR
 | [`@interopkit/tool-integration`](packages/tool-integration/README.md)               | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Version 0.1; its README says what it contains                                               |
 | [`@interopkit/learning-analytics`](packages/learning-analytics/README.md)           | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Version 0.1; its README says what it contains                                                   |
 | [`@interopkit/competency-frameworks`](packages/competency-frameworks/README.md)     | CASE 1.1 and 1.0: the model of a framework package, its readers, its tree and changes, and the conversion to 1.0                                                          |
-| [`@interopkit/learning-records`](packages/learning-records/README.md)               | xAPI 2.0: the model of a Statement, readers that check it against the rules of an LRS and of a provider, the message and signature of Attachments, and a client of an LRS |
+| [`@interopkit/learning-records`](packages/learning-records/README.md)               | xAPI 2.0: the model of a Statement, readers that check it against the rules of an LRS and of a provider, the message and signature of Attachments, a client of an LRS, and the handler of its requests |
 | [`@interopkit/achievement-credentials`](packages/achievement-credentials/README.md) | Open Badges 3.0 and CLR 2.0: the model of an achievement credential and of the APIs, and readers that check them, builders, identity hashes, comparison, baking in images and a client of the Open Badges and CLR APIs |
 | [`@interopkit/selective-disclosure`](packages/selective-disclosure/README.md)       | The `ecdsa-sd-2023` cryptosuite: a base proof for the issuer, a derived proof for the holder and its verification                                                         |
 
@@ -63,27 +63,27 @@ interopkit imports nothing from assesskit or measurekit, and they import nothing
 
 Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pnpm install`.
 
-| Command                | Does                                                                                                                                                            |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm lint`            | Biome and cspell                                                                                                                                                |
-| `pnpm check:standards` | The rules of the engineering standards that a tool can check                                                                                                    |
-| `pnpm check:rules`     | Removes each security rule from a copy of the code and fails when its test still passes (a rule of a browser page runs in Chromium)                             |
-| `pnpm typecheck`       | Every package, and the tooling at the root                                                                                                                      |
-| `pnpm test`            | Vitest, offline                                                                                                                                                 |
-| `pnpm test:coverage`   | The tests with the coverage floor of each package                                                                                                               |
-| `pnpm test:browser`    | The tests of the client-side login in Chromium, Firefox and WebKit; run `pnpm exec playwright install` first                                                    |
-| `pnpm knip`            | Unused files, exports and dependencies                                                                                                                          |
-| `pnpm build`           | The built packages                                                                                                                                              |
-| `pnpm check:packages`  | publint and Are the Types Wrong on the packed packages                                                                                                          |
-| `pnpm check:licenses`  | Every production dependency has an allowed license                                                                                                              |
-| `pnpm check:audit`     | `pnpm audit` for vulnerabilities of high severity or above                                                                                                      |
+| Command                | Does                                                                                                                                                                  |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`            | Biome and cspell                                                                                                                                                      |
+| `pnpm check:standards` | The rules of the engineering standards that a tool can check                                                                                                          |
+| `pnpm check:rules`     | Removes each security rule from a copy of the code and fails when its test still passes (a rule of a browser page runs in Chromium)                                   |
+| `pnpm typecheck`       | Every package, and the tooling at the root                                                                                                                            |
+| `pnpm test`            | Vitest, offline                                                                                                                                                       |
+| `pnpm test:coverage`   | The tests with the coverage floor of each package                                                                                                                     |
+| `pnpm test:browser`    | The tests of the client-side login in Chromium, Firefox and WebKit; run `pnpm exec playwright install` first                                                          |
+| `pnpm knip`            | Unused files, exports and dependencies                                                                                                                                |
+| `pnpm build`           | The built packages                                                                                                                                                    |
+| `pnpm check:packages`  | publint and Are the Types Wrong on the packed packages                                                                                                                |
+| `pnpm check:licenses`  | Every production dependency has an allowed license                                                                                                                    |
+| `pnpm check:audit`     | `pnpm audit` for vulnerabilities of high severity or above                                                                                                            |
 | `pnpm compat`          | Runs the scenarios of the three examples, built as the packages ship, on Node.js, Deno, Bun and workerd; it needs Deno and Bun installed ([compat](compat/README.md)) |
-| `pnpm bench`           | Times reading, checking and walking a framework of 10,000 items against budgets ([evidence](docs/competency-frameworks/evidence.md))                           |
-| `pnpm opensalt`        | Starts OpenSALT in containers and runs the CASE client and provider of the example against it ([validation/opensalt](validation/opensalt/README.md))           |
-| `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                                                                                          |
-| `pnpm corpus`          | Downloads the pinned repositories that tests read                                                                                                               |
-| `pnpm schemas`         | Downloads the pinned specification files that tests read                                                                                                        |
-| `pnpm spec-examples`   | Downloads the JSON examples of the specifications at pinned hashes; `pnpm test:spec` runs the tests that read them                                              |
+| `pnpm bench`           | Times reading, checking and walking a framework of 10,000 items against budgets ([evidence](docs/competency-frameworks/evidence.md))                                  |
+| `pnpm opensalt`        | Starts OpenSALT in containers and runs the CASE client and provider of the example against it ([validation/opensalt](validation/opensalt/README.md))                  |
+| `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                                                                                                |
+| `pnpm corpus`          | Downloads the pinned repositories that tests read                                                                                                                     |
+| `pnpm schemas`         | Downloads the pinned specification files that tests read                                                                                                              |
+| `pnpm spec-examples`   | Downloads the JSON examples of the specifications at pinned hashes; `pnpm test:spec` runs the tests that read them                                                    |
 
 [AGENTS.md](AGENTS.md) states the conventions, [CONTRIBUTING.md](CONTRIBUTING.md) the process and
 [SECURITY.md](SECURITY.md) how to report a vulnerability and how to deploy safely.

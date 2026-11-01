@@ -2,6 +2,10 @@ import { DataError } from "@interopkit/core";
 import { checkString, describe } from "@interopkit/core/checks";
 import {
   getMultipartBoundary,
+  MaxFileSizeExceededError,
+  MaxHeaderSizeExceededError,
+  MaxPartsExceededError,
+  MaxTotalSizeExceededError,
   type MultipartHeaders,
   MultipartParseError,
   type MultipartPart,
@@ -11,6 +15,7 @@ import type { AttachmentData } from "../model/index.js";
 import { isMediaType, isSha2Hex, mediaTypeOf } from "../model/internal.js";
 import { readStatementJson } from "../read/index.js";
 import { checkBytes, hashesTo } from "./attachment-hash.js";
+import { type MultipartLimit, MultipartLimitError } from "./errors.js";
 import { type MultipartLimits, readLimits } from "./limits.js";
 
 const MULTIPART_MIXED = "multipart/mixed";
@@ -41,6 +46,14 @@ function boundaryOf(contentType: string): string {
   return boundary;
 }
 
+/** Names the limit that a parser error reports, or none when the message is malformed. */
+function limitOf(error: MultipartParseError): MultipartLimit | undefined {
+  if (error instanceof MaxPartsExceededError) return "parts";
+  if (error instanceof MaxFileSizeExceededError) return "part-bytes";
+  if (error instanceof MaxTotalSizeExceededError) return "total-bytes";
+  return error instanceof MaxHeaderSizeExceededError ? "header-bytes" : undefined;
+}
+
 /** Splits the message into its parts, within the limits. */
 function splitParts(body: Uint8Array, boundary: string, limits: Required<MultipartLimits>): MultipartPart[] {
   try {
@@ -53,9 +66,10 @@ function splitParts(body: Uint8Array, boundary: string, limits: Required<Multipa
       }),
     ];
   } catch (error) {
-    if (error instanceof MultipartParseError)
-      throw new DataError(`The multipart message is not valid: ${error.message}.`);
-    throw error;
+    if (!(error instanceof MultipartParseError)) throw error;
+    const message = `The multipart message is not valid: ${error.message}.`;
+    const limit = limitOf(error);
+    throw limit === undefined ? new DataError(message) : new MultipartLimitError(message, limit);
   }
 }
 
@@ -69,7 +83,7 @@ function headersOf(part: MultipartPart): MultipartHeaders {
 }
 
 /** Reads the first part, which holds the Statements as JSON. */
-function readStatementsPart(part: MultipartPart, maxBytes: number): unknown {
+function readStatementsPart(part: MultipartPart, limits: Required<MultipartLimits>): unknown {
   const contentType = headersOf(part)["content-type"];
   if (contentType !== undefined && mediaTypeOf(contentType) !== JSON_TYPE) {
     throw new DataError(`The first part must be ${JSON_TYPE}, found ${describe(contentType)}.`);
@@ -80,7 +94,7 @@ function readStatementsPart(part: MultipartPart, maxBytes: number): unknown {
   } catch {
     throw new DataError("The first part is not valid UTF-8 text, which JSON must be.");
   }
-  return readStatementJson(text, { maxBytes });
+  return readStatementJson(text, { maxBytes: limits.maxPartBytes, maxDepth: limits.maxDepth });
 }
 
 /** Reads a part after the first as the data of an Attachment, and checks them against the hash that the part declares. */
@@ -147,7 +161,7 @@ export function readMultipart(contentType: string, body: Uint8Array, options?: M
   if (first === undefined) {
     throw new DataError("The multipart message has no part, and its first part must hold the Statements.");
   }
-  const statements = readStatementsPart(first, limits.maxPartBytes);
+  const statements = readStatementsPart(first, limits);
   const parts = new Map<string, AttachmentData>();
   for (const part of others) {
     const data = readAttachmentPart(part);

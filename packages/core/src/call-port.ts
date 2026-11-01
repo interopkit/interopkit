@@ -1,7 +1,12 @@
 import { untilAborted } from "./until-aborted.js";
 
 /** What a call to a port gave: the value, or `undefined` when the port failed. */
-export type PortOutcome<T> = { readonly value: T } | undefined;
+export type PortOutcome<T> =
+  | {
+      /** The value that the port gave. */
+      readonly value: T;
+    }
+  | undefined;
 
 /**
  * Waits for a call to a port of the host and turns its failure into a value.

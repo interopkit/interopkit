@@ -20,8 +20,8 @@ import type {
   StateScope,
 } from "../model/index.js";
 import { isMediaType } from "../model/internal.js";
+import { identifiedAgentSchema } from "../read/internal.js";
 import type { Settings } from "./config.js";
-import { identifiedAgent } from "./identified.js";
 import { callOptionsSchema, signalEntry } from "./options.js";
 import { isHeaderValue, jsonOf, readAnswer, send, urlOf } from "./request.js";
 
@@ -82,11 +82,15 @@ const targetSchema = v.pipe(
       v.strictObject({
         resource: v.literal("state"),
         activityId: absoluteUriSchema,
-        agent: identifiedAgent,
+        agent: identifiedAgentSchema,
         stateId: nonEmptyStringSchema,
         registration: v.optional(uuidSchema),
       }),
-      v.strictObject({ resource: v.literal("agent-profile"), agent: identifiedAgent, profileId: nonEmptyStringSchema }),
+      v.strictObject({
+        resource: v.literal("agent-profile"),
+        agent: identifiedAgentSchema,
+        profileId: nonEmptyStringSchema,
+      }),
       v.strictObject({
         resource: v.literal("activity-profile"),
         activityId: absoluteUriSchema,
@@ -100,7 +104,7 @@ const targetSchema = v.pipe(
 const stateScope = v.strictObject({
   resource: v.literal("state"),
   activityId: absoluteUriSchema,
-  agent: identifiedAgent,
+  agent: identifiedAgentSchema,
   registration: v.optional(uuidSchema),
 });
 
@@ -110,7 +114,7 @@ const scopeSchema = v.pipe(
     "resource",
     [
       stateScope,
-      v.strictObject({ resource: v.literal("agent-profile"), agent: identifiedAgent }),
+      v.strictObject({ resource: v.literal("agent-profile"), agent: identifiedAgentSchema }),
       v.strictObject({ resource: v.literal("activity-profile"), activityId: absoluteUriSchema }),
     ],
     RESOURCES,

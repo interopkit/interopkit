@@ -792,7 +792,9 @@
                       "**/signing",
                       "**/signing/**",
                       "**/client",
-                      "**/client/**"
+                      "**/client/**",
+                      "**/store",
+                      "**/store/**"
                     ],
                     "message": "model/ holds the types, the terms and the data types and imports no module that builds on it."
                   }
@@ -825,7 +827,9 @@
                       "**/signing",
                       "**/signing/**",
                       "**/client",
-                      "**/client/**"
+                      "**/client/**",
+                      "**/store",
+                      "**/store/**"
                     ],
                     "message": "read/ builds on model/ and @interopkit/core only: the other modules build on it."
                   }
@@ -856,7 +860,9 @@
                       "**/signing",
                       "**/signing/**",
                       "**/client",
-                      "**/client/**"
+                      "**/client/**",
+                      "**/store",
+                      "**/store/**"
                     ],
                     "message": "build/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it."
                   }
@@ -887,7 +893,9 @@
                       "**/signing",
                       "**/signing/**",
                       "**/client",
-                      "**/client/**"
+                      "**/client/**",
+                      "**/store",
+                      "**/store/**"
                     ],
                     "message": "compare/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it."
                   }
@@ -918,7 +926,9 @@
                       "**/signing",
                       "**/signing/**",
                       "**/client",
-                      "**/client/**"
+                      "**/client/**",
+                      "**/store",
+                      "**/store/**"
                     ],
                     "message": "format/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it."
                   }
@@ -949,7 +959,9 @@
                       "**/signing",
                       "**/signing/**",
                       "**/client",
-                      "**/client/**"
+                      "**/client/**",
+                      "**/store",
+                      "**/store/**"
                     ],
                     "message": "attachments/ builds on model/, read/ and @interopkit/core only: signing/ builds on it."
                   }
@@ -970,7 +982,16 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/build", "**/build/**", "**/format", "**/format/**", "**/client", "**/client/**"],
+                    "group": [
+                      "**/build",
+                      "**/build/**",
+                      "**/format",
+                      "**/format/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/store",
+                      "**/store/**"
+                    ],
                     "message": "signing/ builds on model/, read/, compare/, attachments/ and @interopkit/core only."
                   }
                 ]
@@ -998,9 +1019,31 @@
                       "**/format",
                       "**/format/**",
                       "**/signing",
-                      "**/signing/**"
+                      "**/signing/**",
+                      "**/store",
+                      "**/store/**"
                     ],
                     "message": "client/ builds on model/, read/, attachments/ and @interopkit/core only."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-records/src/store/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/build", "**/build/**", "**/client", "**/client/**"],
+                    "message": "store/ builds on model/, read/, compare/, format/, attachments/, signing/ and @interopkit/core only."
                   }
                 ]
               }

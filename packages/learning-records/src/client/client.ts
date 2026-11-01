@@ -61,6 +61,7 @@ export interface LrsClient {
     id: string,
     options: GetStatementOptions & { readonly attachments: true },
   ): Promise<StatementWithAttachments | undefined>;
+  /** Fetches one Statement by its id, or resolves `undefined` when the LRS has none (404). */
   getStatement(
     id: string,
     options?: GetStatementOptions & { readonly attachments?: false },

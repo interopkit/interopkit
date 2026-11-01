@@ -19,7 +19,7 @@ type Canonical = null | boolean | number | string | readonly Canonical[] | { rea
  * Writes an IRI with the scheme and the host in lower case, which are the parts that RFC 3987 5.3.2 makes case-insensitive and
  * that xAPI leaves out of "case" (2.5 of the gaps page): the path, the query and the fragment keep theirs.
  */
-function iriKey(iri: string): string {
+export function iriKey(iri: string): string {
   const scheme = iri.slice(0, iri.indexOf(":") + 1).toLowerCase();
   const rest = iri.slice(scheme.length);
   if (!rest.startsWith("//")) return `${scheme}${rest}`;
@@ -39,6 +39,19 @@ function identifiersKey(actor: Actor): { readonly [key: string]: Canonical } {
     account:
       actor.account === undefined ? null : { homePage: iriKey(actor.account.homePage), name: actor.account.name },
   };
+}
+
+/**
+ * Writes the one identifier of an Agent or a Group as a text that is equal for two of them exactly when they are the same Agent
+ * or identified Group (4.1.6.1): an email address and a hash in lower case, the scheme and the host of an IRI folded. It is
+ * `undefined` for an anonymous Group, which has none.
+ */
+export function identityKey(actor: Actor): string | undefined {
+  const { mbox, mbox_sha1sum: mboxSha1sum, openid, account } = identifiersKey(actor);
+  if (typeof mbox === "string") return `mbox:${mbox}`;
+  if (typeof mboxSha1sum === "string") return `mbox_sha1sum:${mboxSha1sum}`;
+  if (typeof openid === "string") return `openid:${openid}`;
+  return account === null || account === undefined ? undefined : `account:${JSON.stringify(account)}`;
 }
 
 /** An Agent in the canonical form: whether the type was written or not makes no difference. */
