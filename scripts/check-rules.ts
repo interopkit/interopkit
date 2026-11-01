@@ -489,6 +489,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/tool-integration/test/tool-claims.test.ts",
   },
   {
+    rule: "The sensor of an envelope is an absolute IRI.",
+    file: "packages/learning-analytics/src/send/send-caliper.ts",
+    find: 'checkIri(value.sensor, "The option sensor");',
+    replace: 'checkNonEmptyString(value.sensor, "The option sensor");',
+    test: "packages/learning-analytics/test/send.test.ts",
+  },
+  {
     rule: "The scores of a line item are at its path without a trailing slash, then /scores.",
     file: "packages/tool-integration/src/tool/publish-ags-score.ts",
     find: 'url.pathname.replace(TRAILING_SLASH, "")',

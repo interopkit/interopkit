@@ -9,7 +9,7 @@ import {
   checkString,
   describe,
 } from "@interopkit/core/checks";
-import { caliperTime } from "../build/index.js";
+import { caliperTime, checkIri } from "../build/index.js";
 import { CALIPER_CONTEXT, type CaliperEvent } from "../model/index.js";
 
 /** The time that a call to the endpoint may take when the host sets none, in milliseconds. */
@@ -71,7 +71,7 @@ function checkOptions(value: unknown): asserts value is SendCaliperOptions {
       "The option token must be a bearer token of RFC 6750 section 2.1: letters, digits and -._~+/, then =.",
     );
   }
-  checkNonEmptyString(value.sensor, "The option sensor");
+  checkIri(value.sensor, "The option sensor");
 }
 
 /**

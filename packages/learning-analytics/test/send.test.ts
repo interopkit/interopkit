@@ -290,6 +290,7 @@ describe("sendCaliper: input of other types", () => {
       ["a fetch as text", events, { ...given, fetch: "fetch" }],
       ["an empty sensor", events, { ...given, sensor: "" }],
       ["a sensor as a number", events, { ...given, sensor: 5 }],
+      ["a sensor that is not an IRI", events, { ...given, sensor: "not an iri" }],
       ["a time limit of 0", events, { ...given, timeoutMs: 0 }],
       ["a time limit as text", events, { ...given, timeoutMs: "10" }],
       ["a time limit of null", events, { ...given, timeoutMs: fromJson("null") }],

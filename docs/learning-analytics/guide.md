@@ -154,7 +154,7 @@ milliseconds. A fraction of a millisecond is cut. `label` names the time in the 
 | `endpoint`  | The address of the endpoint, an `https` URL                                                                                                           | required                              |
 | `token`     | The bearer token that the endpoint validates: letters, digits and `-._~+/`, then `=` ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750#section-2.1)) | required                              |
 | `fetch`     | The `fetch` that makes the request: the global one, or a function with the signature of `Fetch` of `@interopkit/core`                                 | required                              |
-| `sensor`    | The IRI that identifies the sensor (section 5.2)                                                                                                      | required                              |
+| `sensor`    | The absolute IRI that identifies the sensor (section 5.2), which is checked                                                                           | required                              |
 | `sendTime`  | The time of sending in epoch milliseconds. A resend has the time of the resend                                                                        | required                              |
 | `timeoutMs` | The most time in milliseconds from the request to the last byte of the answer                                                                         | `DEFAULT_CALIPER_TIMEOUT_MS`, `10000` |
 | `signal`    | An `AbortSignal` that ends this caller's wait                                                                                                         | none                                  |
