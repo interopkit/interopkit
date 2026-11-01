@@ -12,7 +12,7 @@ import type {
   StatementQuery,
   StateScope,
 } from "../model/index.js";
-import { type LrsClientConfig, settingsOf } from "./config.js";
+import { type LrsClientConfig, type Settings, settingsOf } from "./config.js";
 import {
   type DeleteOptions,
   deleteDocument,
@@ -32,6 +32,7 @@ import {
   queryStatements,
   type SendOptions,
   type StatementPage,
+  type StatementWithAttachments,
   sendStatement,
   sendStatements,
 } from "./statements.js";
@@ -52,8 +53,18 @@ export interface LrsClient {
    * @throws `DataError` when a Statement breaks a rule of a provider or two have one id.
    */
   sendStatements(statements: readonly Statement[], options?: SendOptions): Promise<readonly string[]>;
-  /** Fetches one Statement by its id, or resolves `undefined` when the LRS has none (404). */
-  getStatement(id: string, options?: GetStatementOptions): Promise<Statement | undefined>;
+  /**
+   * Fetches one Statement by its id, or resolves `undefined` when the LRS has none (404). With `attachments: true` it resolves
+   * with the Statement and the data of its Attachments.
+   */
+  getStatement(
+    id: string,
+    options: GetStatementOptions & { readonly attachments: true },
+  ): Promise<StatementWithAttachments | undefined>;
+  getStatement(
+    id: string,
+    options?: GetStatementOptions & { readonly attachments?: false },
+  ): Promise<Statement | undefined>;
   /**
    * Queries Statements and iterates over the pages. A page is one request; the next is made when the iteration asks for it.
    * The client follows `more` on the origin of the LRS only, and stops at the first page without it.
@@ -83,6 +94,22 @@ export interface LrsClient {
   about(options?: CallOptions): Promise<About>;
 }
 
+/** Makes `getStatement`, whose answer has the data of the Attachments exactly when the options ask for them. */
+function statementGetter(settings: Settings): LrsClient["getStatement"] {
+  function get(
+    id: string,
+    options: GetStatementOptions & { readonly attachments: true },
+  ): Promise<StatementWithAttachments | undefined>;
+  function get(
+    id: string,
+    options?: GetStatementOptions & { readonly attachments?: false },
+  ): Promise<Statement | undefined>;
+  function get(id: string, options?: GetStatementOptions) {
+    return getStatement(settings, id, options);
+  }
+  return get;
+}
+
 /**
  * Creates the client of an LRS, with a call for each resource of the standard: Statements, State, Agent Profile, Activity
  * Profile, Agents, Activities and About.
@@ -106,7 +133,7 @@ export function createLrsClient(config: LrsClientConfig): LrsClient {
   return {
     sendStatement: (statement, options) => sendStatement(settings, statement, options),
     sendStatements: (statements, options) => sendStatements(settings, statements, options),
-    getStatement: (id, options) => getStatement(settings, id, options),
+    getStatement: statementGetter(settings),
     queryStatements: (query, options) => queryStatements(settings, query, options),
     getDocument: (target, options) => getDocument(settings, target, options),
     putDocument: (target, document, options) => putDocument(settings, target, document, options),

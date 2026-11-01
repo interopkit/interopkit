@@ -1,6 +1,6 @@
 import { DataError, ServiceError } from "@interopkit/core";
 import { describe, expect, it, vi } from "vitest";
-import { readMultipart } from "../src/attachments/index.js";
+import { readMultipart, writeMultipart } from "../src/attachments/index.js";
 import type { Statement, StatementQuery } from "../src/index.js";
 import { fakeLrs, type Reply } from "./fake-lrs.js";
 import { uuid } from "./full-statement.js";
@@ -197,6 +197,56 @@ describe("getStatement", () => {
     expect((await failureOf(clientOf(lrs).getStatement(uuid(1)))) as ServiceError).toBeInstanceOf(ServiceError);
   });
 
+  describe("with attachments", () => {
+    const data = dataOf("certificate");
+    const statement = { ...statementOf(1), attachments: statementWithAttachments([data]).attachments };
+
+    it("asks for a multipart answer, and resolves with the Statement and the data of its Attachments by their hash", async () => {
+      const message = writeMultipart(statement, [data]);
+      const lrs = fakeLrs(() => ({ headers: { "content-type": message.contentType }, body: message.body }));
+      const found = await clientOf(lrs).getStatement(uuid(1), { attachments: true, format: "exact" });
+      expect(found?.statement).toStrictEqual(statement);
+      expect(found?.attachments.get(data.sha2)).toStrictEqual(data);
+      expect(lrs.paths()).toStrictEqual([`/xapi/statements?statementId=${uuid(1)}&format=exact&attachments=true`]);
+      expect(lrs.requests[0]?.init.headers.accept).toBe("multipart/mixed, application/json");
+    });
+
+    it("asks for a voided Statement with its data", async () => {
+      const message = writeMultipart(statement, [data]);
+      const lrs = fakeLrs(() => ({ headers: { "content-type": message.contentType }, body: message.body }));
+      await clientOf(lrs).getStatement(uuid(1), { attachments: true, voided: true });
+      expect(lrs.paths()).toStrictEqual([`/xapi/statements?voidedStatementId=${uuid(1)}&attachments=true`]);
+    });
+
+    it("resolves with no data when the LRS answers with JSON, which it may when no Attachment has data", async () => {
+      const lrs = fakeLrs(() => ({ body: statementOf(1) }));
+      expect(await clientOf(lrs).getStatement(uuid(1), { attachments: true })).toStrictEqual({
+        statement: statementOf(1),
+        attachments: new Map(),
+      });
+    });
+
+    it("resolves with the Statement alone when attachments is false, and says so to the LRS", async () => {
+      const lrs = fakeLrs(() => ({ body: statementOf(1) }));
+      expect(await clientOf(lrs).getStatement(uuid(1), { attachments: false })).toStrictEqual(statementOf(1));
+      expect(lrs.paths()).toStrictEqual([`/xapi/statements?statementId=${uuid(1)}&attachments=false`]);
+      expect(lrs.requests[0]?.init.headers.accept).toBe("application/json");
+    });
+
+    it("resolves undefined for 404, and refuses a multipart answer that is malformed", async () => {
+      expect(
+        await clientOf(fakeLrs(() => ({ status: 404 }))).getStatement(uuid(1), { attachments: true }),
+      ).toBeUndefined();
+      const broken = fakeLrs(() => ({
+        headers: { "content-type": "multipart/mixed; boundary=b" },
+        body: "not a message",
+      }));
+      await expect(clientOf(broken).getStatement(uuid(1), { attachments: true })).rejects.toThrow(
+        "answered with data that is not valid xAPI: The multipart message is not valid",
+      );
+    });
+  });
+
   it.each([
     ["not json", "The text is not valid JSON"],
     ['{"actor":{"mbox":"mailto:a@example.org"},"actor":{}}', 'The text has the property "actor" twice'],
@@ -226,8 +276,11 @@ describe("getStatement", () => {
     await expect(client.getStatement(uuid(1), { format: "full" } as never)).rejects.toThrow(
       /^The options object is invalid at format/u,
     );
-    await expect(client.getStatement(uuid(1), { attachments: true } as never)).rejects.toThrow(
-      'The options object is invalid: unexpected property "attachments".',
+    await expect(client.getStatement(uuid(1), { attachments: "yes" } as never)).rejects.toThrow(
+      /^The options object is invalid at attachments/u,
+    );
+    await expect(client.getStatement(uuid(1), { data: true } as never)).rejects.toThrow(
+      'The options object is invalid: unexpected property "data".',
     );
     expect(lrs.requests).toHaveLength(0);
   });
@@ -385,7 +438,6 @@ describe("queryStatements", () => {
   it("reads a multipart answer, and returns the data of the Attachments by their hash", async () => {
     const data = dataOf("certificate");
     const statement = { ...statementOf(1), attachments: statementWithAttachments([data]).attachments };
-    const { writeMultipart } = await import("../src/attachments/index.js");
     const message = writeMultipart({ statements: [statement] }, [data]);
     const lrs = fakeLrs(() => ({
       headers: { "content-type": message.contentType, "x-experience-api-consistent-through": CONSISTENT_THROUGH },

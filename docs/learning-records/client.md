@@ -65,7 +65,7 @@ page.value?.statements.length; // => 1
 | ----------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------- |
 | `sendStatement(statement, options?)`      | `PUT statements?statementId=`                         | `"stored"` for 204; `"conflict"` for 409                                                  | Any other status is a `ServiceError`    |
 | `sendStatements(statements, options?)`    | `POST statements`                                     | The ids, in order: the list of a 200, or the ids of the batch for a 204                   | Any other status is a `ServiceError`    |
-| `getStatement(id, options?)`              | `GET statements?statementId=` or `voidedStatementId=` | The Statement                                                                             | `undefined` for 404                     |
+| `getStatement(id, options?)`              | `GET statements?statementId=` or `voidedStatementId=` | The Statement; with `attachments: true`, `{ statement, attachments }`                     | `undefined` for 404                     |
 | `queryStatements(query, options?)`        | `GET statements?` and then each `more`                | An iteration of `StatementPage`: Statements, Attachment data, `consistentThrough`, `more` | A page that fails rejects the iteration |
 | `getDocument(target, options?)`           | `GET` of the resource of the target                   | `LrsDocument`: type, bytes, `etag`, `updated`                                             | `undefined` for 404                     |
 | `putDocument(target, document, options?)` | `PUT`                                                 | `"written"` for 204; `"precondition-failed"` for 412; `"conflict"` for 409                | Any other status is a `ServiceError`    |
@@ -84,7 +84,8 @@ target without the id. Every `agent` has exactly one identifier. Every call take
 Statements are read with the rules of an LRS, and a property given twice in an answer is refused. A Statement to send is
 checked with the rules of a provider first. When `attachments` is passed to a send, even as an empty list, the request is a
 multipart message written by `writeMultipart`; otherwise it is JSON, and each Attachment needs a `fileUrl`. A query that asks for
-`attachments: true` is answered with a multipart message, and `StatementPage.attachments` holds the data by their hash.
+`attachments: true` is answered with a multipart message, and `StatementPage.attachments` holds the data by their hash. So does a
+`getStatement` with `attachments: true`, which resolves with the Statement and the data.
 
 ## Concurrency
 
@@ -119,6 +120,7 @@ A precondition that the version does not require is sent when the caller gives i
 | `attachments`   | `SendOptions`                   | none       | The data of the Attachments, which makes the request a multipart message                               |
 | `format`        | `GetStatementOptions`           | `"exact"`  | `ids`, `exact` or `canonical`                                                                          |
 | `voided`        | `GetStatementOptions`           | false      | Fetch by `voidedStatementId`                                                                           |
+| `attachments`   | `GetStatementOptions`           | false      | Fetch the data of the Attachments too: the answer is `{ statement, attachments }`                      |
 | `precondition`  | `WriteOptions`, `DeleteOptions` | none       | `{ ifMatch }` or `{ ifNoneMatch: "*" }`; for a removal only `{ ifMatch }`                              |
 | `since`         | `ListOptions`                   | none       | Only the ids stored or changed after this time, exclusive                                              |
 
@@ -154,16 +156,15 @@ The filters of `queryStatements` are the properties of `StatementQuery`: `agent`
 
 ## Not included
 
-| Not included                                 | Why                                                                                                        |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Retries and backoff                          | A retry of a write needs the host's idea of what is safe to resend; `Retry-After` is in the error          |
-| The rules of 1.0.3 for Statements            | `version: "1.0.3"` changes the header and the preconditions; Statements are checked with the rules of 2.0  |
-| The data of the Attachments of one Statement | A single GET returns the Statement; ask `queryStatements` with `attachments: true`, or fetch the `fileUrl` |
-| A language for `canonical` Statements        | `Accept-Language` is not sent; the LRS chooses                                                             |
-| `HEAD` requests                              | They return what GET does without a body, which a client has no use for                                    |
-| The alternate request syntax                 | Removed in 2.0; the client never sends it                                                                  |
-| Getting a credential                         | `authorization` is the host's: Basic, bearer or OAuth 2.0 through `@interopkit/core/oauth`                 |
-| Fetching the data at a `fileUrl`             | A fetch is the host's: it knows which addresses may be called                                              |
+| Not included                          | Why                                                                                                       |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Retries and backoff                   | A retry of a write needs the host's idea of what is safe to resend; `Retry-After` is in the error         |
+| The rules of 1.0.3 for Statements     | `version: "1.0.3"` changes the header and the preconditions; Statements are checked with the rules of 2.0 |
+| A language for `canonical` Statements | `Accept-Language` is not sent; the LRS chooses                                                            |
+| `HEAD` requests                       | They return what GET does without a body, which a client has no use for                                   |
+| The alternate request syntax          | Removed in 2.0; the client never sends it                                                                 |
+| Getting a credential                  | `authorization` is the host's: Basic, bearer or OAuth 2.0 through `@interopkit/core/oauth`                |
+| Fetching the data at a `fileUrl`      | A fetch is the host's: it knows which addresses may be called                                             |
 
 ## Differences from the references
 

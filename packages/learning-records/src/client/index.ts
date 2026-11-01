@@ -7,4 +7,4 @@
 export { createLrsClient, type LrsClient } from "./client.js";
 export type { LrsClientConfig } from "./config.js";
 export type { DeleteOptions, ListOptions, WriteOptions, WriteOutcome } from "./documents.js";
-export type { GetStatementOptions, SendOptions, StatementPage } from "./statements.js";
+export type { GetStatementOptions, SendOptions, StatementPage, StatementWithAttachments } from "./statements.js";

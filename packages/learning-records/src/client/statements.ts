@@ -47,6 +47,20 @@ export interface GetStatementOptions extends CallOptions {
    * @defaultValue false
    */
   readonly voided?: boolean;
+  /**
+   * Asks for the data of the Attachments too. The answer is then a `StatementWithAttachments`.
+   *
+   * @defaultValue false
+   */
+  readonly attachments?: boolean;
+}
+
+/** One Statement with the data of its Attachments, by their hash in lower case. */
+export interface StatementWithAttachments {
+  /** The Statement, as an LRS reads it. */
+  readonly statement: Statement;
+  /** The data of the Attachments that the LRS sent. */
+  readonly attachments: ReadonlyMap<string, AttachmentData>;
 }
 
 /** A page of the answer to a query of Statements. */
@@ -70,6 +84,7 @@ const sendOptionsSchema = strictRecord({ attachments: v.optional(v.array(attachm
 const getOptionsSchema = strictRecord({
   format: v.optional(v.picklist(STATEMENT_FORMATS)),
   voided: v.optional(v.boolean()),
+  attachments: v.optional(v.boolean()),
   ...signalEntry,
 });
 
@@ -155,9 +170,30 @@ export async function sendStatements(
   return readAnswer(url, () => storedIds(response, batch, settings));
 }
 
-/** Fetches one Statement by its id, or undefined when the LRS has none. */
-export async function getStatement(settings: Settings, id: string, options: unknown): Promise<Statement | undefined> {
-  const { format, voided, signal } = parseWith(
+/** The JSON of an answer and the data of the Attachments: a multipart message gives both, and JSON gives no data. */
+function readBody(
+  response: ServiceResponse,
+  settings: Settings,
+): { readonly json: unknown; readonly attachments: ReadonlyMap<string, AttachmentData> } {
+  const contentType = response.headers["content-type"];
+  if (contentType === undefined || mediaTypeOf(contentType) !== "multipart/mixed") {
+    return { json: jsonOf(response, settings), attachments: new Map() };
+  }
+  const message = readMultipart(contentType, response.body, {
+    maxParts: MAX_PAGE_PARTS,
+    maxPartBytes: settings.maxBytes,
+    maxTotalBytes: settings.maxBytes,
+  });
+  return { json: message.statements, attachments: message.parts };
+}
+
+/** Fetches one Statement by its id, or undefined when the LRS has none. With `attachments` it fetches their data too. */
+export async function getStatement(
+  settings: Settings,
+  id: string,
+  options: unknown,
+): Promise<Statement | StatementWithAttachments | undefined> {
+  const { format, voided, attachments, signal } = parseWith(
     getOptionsSchema,
     options === undefined ? {} : options,
     "The options object",
@@ -166,16 +202,16 @@ export async function getStatement(settings: Settings, id: string, options: unkn
     [voided === true ? "voidedStatementId" : "statementId"]: parseWith(uuidSchema, id, "The statement id"),
   });
   if (format !== undefined) parameters.set("format", format);
+  if (attachments !== undefined) parameters.set("attachments", String(attachments));
   const url = urlOf(settings, "statements", parameters);
-  const response = await send(
-    settings,
-    signal,
-    url,
-    { method: "GET", headers: { accept: "application/json" } },
-    [200, 404],
-  );
+  const accept = attachments === true ? "multipart/mixed, application/json" : "application/json";
+  const response = await send(settings, signal, url, { method: "GET", headers: { accept } }, [200, 404]);
   if (response.status === 404) return undefined;
-  return readAnswer(url, () => readStatement(jsonOf(response, settings)));
+  return readAnswer(url, () => {
+    const body = readBody(response, settings);
+    const statement = readStatement(body.json);
+    return attachments === true ? { statement, attachments: body.attachments } : statement;
+  });
 }
 
 /** Reads the Statements of a page from the JSON of its answer: a result whose Statements are as an LRS reads them. */
@@ -194,24 +230,11 @@ function readResult(json: unknown): { readonly statements: readonly Statement[];
 
 /** Reads one answer to a query as a page: JSON, or a multipart message with the data of the Attachments. */
 function readPage(response: ServiceResponse, settings: Settings): StatementPage {
-  const contentType = response.headers["content-type"];
   const consistentThrough = response.headers[CONSISTENT_THROUGH];
   if (consistentThrough === undefined || consistentThrough === "") {
     throw new DataError("The answer has no X-Experience-API-Consistent-Through header, which the standard requires.");
   }
-  let json: unknown;
-  let attachments: ReadonlyMap<string, AttachmentData> = new Map();
-  if (contentType !== undefined && mediaTypeOf(contentType) === "multipart/mixed") {
-    const message = readMultipart(contentType, response.body, {
-      maxParts: MAX_PAGE_PARTS,
-      maxPartBytes: settings.maxBytes,
-      maxTotalBytes: settings.maxBytes,
-    });
-    json = message.statements;
-    attachments = message.parts;
-  } else {
-    json = jsonOf(response, settings);
-  }
+  const { json, attachments } = readBody(response, settings);
   const { statements, more } = readResult(json);
   return { statements, attachments, consistentThrough, ...(more === "" ? {} : { more }) };
 }
