@@ -647,7 +647,16 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/read", "**/read/**", "**/issue", "**/issue/**", "**/compare", "**/compare/**"],
+                    "group": [
+                      "**/read",
+                      "**/read/**",
+                      "**/issue",
+                      "**/issue/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/baking",
+                      "**/baking/**"
+                    ],
                     "message": "model/ holds the types and terms and imports no other module: they build on it."
                   }
                 ]
@@ -667,8 +676,8 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/issue", "**/issue/**", "**/compare", "**/compare/**"],
-                    "message": "read/ builds on model/ and @interopkit/core only: issue/ and compare/ build on it."
+                    "group": ["**/issue", "**/issue/**", "**/compare", "**/compare/**", "**/baking", "**/baking/**"],
+                    "message": "read/ builds on model/ and @interopkit/core only: issue/, compare/ and baking/ build on it."
                   }
                 ]
               }
@@ -687,8 +696,8 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/compare", "**/compare/**"],
-                    "message": "issue/ builds on model/, read/ and @interopkit/core only: compare/ is its sibling and never a layer under it."
+                    "group": ["**/compare", "**/compare/**", "**/baking", "**/baking/**"],
+                    "message": "issue/ builds on model/, read/ and @interopkit/core only: compare/ and baking/ are its siblings and never a layer under it."
                   }
                 ]
               }
@@ -707,8 +716,28 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/issue", "**/issue/**"],
-                    "message": "compare/ builds on model/, read/ and @interopkit/core only: issue/ is its sibling and never a layer under it."
+                    "group": ["**/issue", "**/issue/**", "**/baking", "**/baking/**"],
+                    "message": "compare/ builds on model/, read/ and @interopkit/core only: issue/ and baking/ are its siblings and never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/achievement-credentials/src/baking/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/issue", "**/issue/**", "**/compare", "**/compare/**"],
+                    "message": "baking/ builds on model/, read/ and @interopkit/core only: issue/ and compare/ are its siblings and never a layer under it."
                   }
                 ]
               }

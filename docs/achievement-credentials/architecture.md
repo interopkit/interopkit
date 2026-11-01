@@ -1,9 +1,10 @@
 # Architecture of achievement-credentials
 
-`@interopkit/achievement-credentials` has four modules that share one model. `model` holds the types, the vocabularies and the
-findings. `read` turns untrusted JSON into the model. `issue` writes credentials from their parts, and `compare` looks at
-credentials. `read` imports only `model` and `@interopkit/core`, `issue` and `compare` import those and `read` and never each
-other, and `model` imports nothing of the family.
+`@interopkit/achievement-credentials` has five modules that share one model. `model` holds the types, the vocabularies and the
+findings. `read` turns untrusted JSON into the model. `issue` writes credentials from their parts, `compare` looks at
+credentials, and `baking` writes a credential into an image and reads it out. `read` imports only `model` and
+`@interopkit/core`, `issue`, `compare` and `baking` import those and `read` and never each other, and `model` imports nothing
+of the family.
 
 ```mermaid
 flowchart BT
@@ -12,6 +13,7 @@ flowchart BT
   read["read<br/>schemas, findings, rules of the subject"]
   issue["issue<br/>builders, identity hash, CASE alignment"]
   compare["compare<br/>equality, newer, summary"]
+  baking["baking<br/>PNG chunks, SVG elements"]
   root["index.ts<br/>the public API"]
   read --> model
   read --> core
@@ -19,6 +21,8 @@ flowchart BT
   issue --> core
   compare --> read
   compare --> core
+  baking --> read
+  baking --> core
   root --> model
   root --> read
   root --> issue
@@ -38,12 +42,16 @@ flowchart BT
 |           | `case-alignment.ts`, `identity.ts`                                                               | The alignment to a CASE item, and the hash and the matching of an identity                                                     |
 | `compare` | `same-credential.ts`, `newer-credential.ts`, `comparable.ts`                                     | Equality and replacement of credentials as Open Badges 10                                                                      |
 |           | `credential-summary.ts`                                                                          | What a wallet shows of a credential                                                                                            |
+| `baking`  | `bake-png.ts`, `read-png.ts`, `png-chunks.ts`, `png-text.ts`, `crc32.ts`                         | The PNG functions: the walk over the chunks and their framing, the credential chunk, the CRC-32                                |
+|           | `bake-svg.ts`, `read-svg.ts`, `svg-scan.ts`                                                      | The SVG functions and the scan with `saxes` that finds the root and the credential elements under the limits                   |
+|           | `credential-text.ts`, `formats.ts`, `options.ts`, `baked-credential.ts`                          | What an image holds of a credential, the keywords and namespaces of the kinds, the options and limits, the result type         |
 
 `@interopkit/core/checks` holds what other standards need as much: records that refuse or keep unknown properties, the formats
 of a date and a date and time, the copy of JSON within a depth limit, and the conversion of the issues of a parse to findings
 that own their rule names.
 
-Each module has an `index.ts`, its public API, and `read` has an `internal.ts` for what the other modules and the tests share
+Each module has an `index.ts`, its public API, and `baking` is a subpath of the package, `@interopkit/achievement-credentials/baking`,
+because an application that needs no images should not load an XML parser. `read` has an `internal.ts` for what the other modules and the tests share
 and the package does not export: the schemas, which the tests compare with the schemas of 1EdTech and the builders write
 with. `pnpm check:standards` and Biome keep modules from
 importing by a deep path or against the layers.
@@ -87,5 +95,5 @@ or a property differs.
 
 | The package owns                                                                    | The package does not own                                                                      |
 | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| The model of Open Badges 3.0 and CLR 2.0, the readers, the builders, the comparison | Proofs and keys, status lists, verification, baking, the APIs, Open Badges 2.0: later modules |
+| The model of Open Badges 3.0 and CLR 2.0, the readers, the builders, the comparison, baking | Proofs and keys, status lists, verification, the APIs, Open Badges 2.0: later modules |
 | The classes under both Verifiable Credentials data models                           | Wallets, issuer platforms, storage                                                            |

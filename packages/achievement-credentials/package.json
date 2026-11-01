@@ -25,6 +25,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./baking": {
+      "types": "./dist/baking/index.d.ts",
+      "default": "./dist/baking/index.js"
     }
   },
   "files": [
@@ -50,6 +54,7 @@
   "dependencies": {
     "@interopkit/core": "workspace:^",
     "@noble/hashes": "2.4.0",
+    "saxes": "6.0.0",
     "valibot": "1.5.0"
   }
 }

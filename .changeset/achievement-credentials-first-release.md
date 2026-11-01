@@ -18,3 +18,10 @@ JWS. `caseAlignment` aligns an achievement to a CASE item. `hashIdentifier` writ
 identity and `matchesIdentifier` matches an `IdentityObject` of 3.0 or of a 2.0 assertion with a known identity, in `sha256$`
 and `md5$`. `sameCredential` and `newerCredential` compare credentials as Open Badges 10 asks, and `credentialSummary` gives what
 a wallet shows of a badge, a CLR or an endorsement under either data model.
+
+`@interopkit/achievement-credentials/baking` writes a credential into a PNG or an SVG image and reads it out. `bakePng` and
+`bakeSvg` take a compact JWS or a credential with an embedded proof, choose `openbadgecredential` or `clrcredential` (and the
+namespaces of Open Badges and CLR) from its type, refuse an image that holds a credential unless `replace` is set, and leave
+every other chunk or character as it was. `readPng` and `readSvg` return the kind and the credential of the first chunk or
+element, or `undefined`, and refuse a damaged or compressed chunk, an SVG that nests more than 256 elements or has more than 256
+attributes in one, and a credential of more than 1,048,576 characters.

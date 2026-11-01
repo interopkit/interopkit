@@ -10,7 +10,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
 `@interopkit/learning-records` implements the xAPI Statement and its readers, the message of its Attachments, its signature and a client of an LRS,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
-implements the model and the readers of Open Badges 3.0 and CLR 2.0, and its builders and comparisons.
+implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, and baking in images.
 
 ```mermaid
 flowchart BT
@@ -22,7 +22,7 @@ flowchart BT
   cf["competency-frameworks<br/>model, read, version, graph, client, provider"]
   lr["learning-records<br/>model, read, build, compare, format,<br/>attachments, signing, client"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
-  ac["achievement-credentials<br/>model, read, issue, compare"]
+  ac["achievement-credentials<br/>model, read, issue, compare, baking"]
   proto --> core
   tool --> proto
   plat --> proto
@@ -86,7 +86,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/learning-records/`         | xAPI 2.0: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
-| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`                                |
+| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`                     |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -137,8 +137,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   the handlers of a CASE provider, and the xAPI Statement with its readers, the message of its Attachments, its signature and the client of an LRS. It does not own what a launched tool shows, what a
   score means, which delivery event becomes which Caliper or xAPI event, QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to
   assesskit and measurekit, to the adapter of each product and to the host.
-- `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders and the comparison of credentials. It does not own keys, proofs,
-  status lists, verification, baking, the APIs or Open Badges 2.0 (those arrive in later modules), nor wallets, issuing
+- `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders, the comparison of credentials and baking in PNG and SVG images. It does not own keys, proofs,
+  status lists, verification, the APIs or Open Badges 2.0 (those arrive in later modules), nor wallets, issuing
   platforms and storage.
 - `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
   canonicalization (the primitives of `@digitalbazaar/di-sd-primitives` do them), the resolution and binding of keys, the
@@ -160,7 +160,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   never import each other; `client/` builds on `read/`, `provider/` on `read/` and `version/`, and none of them imports
   either. In `selective-disclosure`, `proof-value/`, `keys/` and `document/` import none of the other folders, and
   `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`
-  imports no other module, `read/` builds on `model/` only, and `issue/` and `compare/` build on `model/` and `read/`
+  imports no other module, `read/` builds on `model/` only, and `issue/`, `compare/` and `baking/` build on `model/` and `read/`
   and never import each other. In `learning-records`, `model/` imports no other module,
   `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
   `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
@@ -174,7 +174,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `minimumReleaseAge` so that an install cannot pick a younger version.
 - Generic concerns use mature libraries: `jose` for JOSE, `valibot` for schemas, `uuid` for name-based UUIDs, `@noble/hashes` for the hashes of an identity and of an address, `oauth4webapi` for
   OAuth 2.0 clients, `momoa` for the syntax tree of JSON where a property given twice must be seen,
-  `@remix-run/multipart-parser` for `multipart/mixed` messages. Hand-written
+  `@remix-run/multipart-parser` for `multipart/mixed` messages, `saxes` for the XML of an SVG. Hand-written
   code is for domain logic that no library does correctly, with the reason in the guide of the module.
 - Candidates that were compared and not adopted may be development dependencies, as counterparties in tests: Digital Bazaar's
   `ecdsa-sd-2023` suite with `@digitalbazaar/data-integrity`, `jsonld-signatures` and `@digitalbazaar/ecdsa-multikey`, which
@@ -320,6 +320,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   and never by `pnpm test`. Its flows are a `*.corpus.test.ts` in a project named `*-<name>`, which the test scripts leave out;
   the secrets of a run are random, the containers bind to loopback and with at most 2 CPUs, and `docker compose down
   --volumes` always runs. What it does differently from the references is pinned by the flows.
+- Baked images are written by `validation/baked_images.py` (`struct` and `zlib` for the PNG chunks, string edits for the SVG, ElementTree to
+  parse every SVG), and `test/baking.test.ts` compares the bytes and the text with the fixture. A reader of images has a test of the
+  worst input of each limit.
 - A benchmark is a `*.bench.ts` in a project named `*-bench` (`pnpm bench`); its budgets are in `test/budgets.ts`: five times the
   fastest sample, rounded up to one significant digit, and a ratio to a reference in the same run where one exists.
 

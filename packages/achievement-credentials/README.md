@@ -4,7 +4,8 @@ Open Badges [3.0](https://www.imsglobal.org/spec/ob/v3p0/main/) and the Comprehe
 [2.0](https://www.imsglobal.org/spec/clr/v2p0/main/): the model of an achievement credential, of a CLR and of the APIs that
 exchange them, under both versions of the Verifiable Credentials Data Model, and readers that check them against the JSON
 schemas of 1EdTech and the rules of the specifications. Validators list every finding. Builders write the credentials that an
-issuer awards, and functions hash the identity of a recipient, compare two credentials and summarize one for display. It knows
+issuer awards, and functions hash the identity of a recipient, compare two credentials and summarize one for display. A credential
+can be baked into a PNG or an SVG image and read out of one. It knows
 nothing of any product: the host says where a credential comes from and what it is for.
 
 ```mermaid
@@ -15,6 +16,7 @@ flowchart LR
     validate["validateCredential, validateEntity"]
     build["buildAchievementCredential, buildEndorsementCredential,<br/>buildClrCredential, caseAlignment"]
     compare["sameCredential, newerCredential,<br/>credentialSummary, hashIdentifier"]
+    baking["baking: bakePng, readPng,<br/>bakeSvg, readSvg"]
   end
   model["AchievementCredential, ClrCredential, Profile, ...<br/>the model of Open Badges 3.0 and CLR 2.0"]
   host -->|"JSON as parsed"| read
@@ -25,11 +27,14 @@ flowchart LR
   build --> model
   model --> compare
   compare -->|"equal, newer, what to show"| host
+  host -->|"image, credential"| baking
+  baking -->|"image with the credential,<br/>or the credential in an image"| host
 ```
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
 environment variable, writes no log and makes no request. Its dependencies are `@interopkit/core`,
-[valibot](https://valibot.dev) and [@noble/hashes](https://github.com/paulmillr/noble-hashes).
+[valibot](https://valibot.dev), [@noble/hashes](https://github.com/paulmillr/noble-hashes) and
+[saxes](https://github.com/lddubeau/saxes), which `/baking` loads.
 
 ```bash
 npm install @interopkit/achievement-credentials
@@ -50,6 +55,8 @@ npm install @interopkit/achievement-credentials
 |                                       | `GetOpenBadgeCredentialsResponse`, `GetClrCredentialsResponse`, `ImsxStatusInfo`, `ServiceDescriptionDocument`, `Multikey`, `JWK`, `JWKS`: the models of the APIs and of keys                                      |
 |                                       | `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CONTEXTS`, `ACHIEVEMENT_TYPES`, `ALIGNMENT_TARGET_TYPES`, `IDENTIFIER_TYPES`, `RESULT_TYPES`, `AUTHORIZATION_ERRORS` and the other vocabularies                               |
 |                                       | `IssuableCredential`, `CredentialV1p1`, `AnyCredential`, `Entity`, `CredentialKind`, `EntityKind`, `ExtensionTerm` and the types of the vocabularies                                                               |
+|                                       | `BakedCredential`, `BakedKind`: a credential read from an image, and its kind                                                                                                                                      |
+| `@interopkit/achievement-credentials/baking` | `bakePng`, `readPng`, `bakeSvg`, `readSvg`, `BakeImageOptions`, `ReadImageOptions`: write a credential into a PNG or an SVG image and read it out, for Open Badges 3.0 and CLR 2.0                           |
 
 ```ts
 import { readCredential, validateCredential } from "@interopkit/achievement-credentials";
@@ -99,9 +106,11 @@ that the compacted form of JSON-LD writes as its only member is a list in it.
 | Rules of the specifications           | A subject that something identifies, an identity hash in a form that the specification names                                                           |
 | Builders                              | An AchievementCredential, an EndorsementCredential and a ClrCredential, or the payload of a CLR in a JWT, with the contexts, types and official schema |
 | Recipients and comparison             | `sha256$` hashes, `sha256$` and `md5$` matching, credential equality and the newer credential, a summary for display                                   |
+| Baking                                | A compact JWS or a credential with an embedded proof in an `iTXt` chunk of a PNG or an element of an SVG, for both kinds                                |
 
 [The model guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/model.md) and
-[the builders guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/issue.md) have the options with
+[the builders guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/issue.md) and
+[the baking guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/baking.md) have the options with
 their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
 why, and the differences from the references.
 

@@ -5,6 +5,7 @@
  * @module @interopkit/achievement-credentials
  */
 
+export type { BakedCredential, BakedKind } from "./baking/index.js";
 export { type CredentialSummary, credentialSummary, newerCredential, sameCredential } from "./compare/index.js";
 export {
   type AchievementCredentialInput,

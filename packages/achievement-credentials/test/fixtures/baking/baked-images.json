@@ -1,0 +1,451 @@
+{
+  "credentials": {
+    "badge": {
+      "@context": [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+      ],
+      "id": "https://example.edu/credentials/1",
+      "type": [
+        "VerifiableCredential",
+        "OpenBadgeCredential"
+      ],
+      "issuer": {
+        "id": "https://example.edu/issuers/1",
+        "type": [
+          "Profile"
+        ]
+      },
+      "validFrom": "2024-06-13T10:00:00Z",
+      "credentialSubject": {
+        "id": "did:example:learner",
+        "type": [
+          "AchievementSubject"
+        ],
+        "achievement": {
+          "id": "https://example.edu/achievements/1",
+          "type": [
+            "Achievement"
+          ],
+          "criteria": {
+            "narrative": "Pass the course ]]> <b> & \"quotes\" é世😀."
+          },
+          "description": "Passed the course.",
+          "name": "Course"
+        }
+      }
+    },
+    "clr": {
+      "@context": [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+      ],
+      "id": "https://example.edu/clrs/1",
+      "type": [
+        "VerifiableCredential",
+        "ClrCredential"
+      ],
+      "name": "Transcript",
+      "issuer": {
+        "id": "https://example.edu/issuers/1",
+        "type": [
+          "Profile"
+        ]
+      },
+      "validFrom": "2024-06-13T10:00:00Z",
+      "credentialSubject": {
+        "id": "did:example:learner",
+        "type": [
+          "ClrSubject"
+        ],
+        "verifiableCredential": [
+          {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2",
+              "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+            ],
+            "id": "https://example.edu/credentials/1",
+            "type": [
+              "VerifiableCredential",
+              "OpenBadgeCredential"
+            ],
+            "issuer": {
+              "id": "https://example.edu/issuers/1",
+              "type": [
+                "Profile"
+              ]
+            },
+            "validFrom": "2024-06-13T10:00:00Z",
+            "credentialSubject": {
+              "id": "did:example:learner",
+              "type": [
+                "AchievementSubject"
+              ],
+              "achievement": {
+                "id": "https://example.edu/achievements/1",
+                "type": [
+                  "Achievement"
+                ],
+                "criteria": {
+                  "narrative": "Pass the course ]]> <b> & \"quotes\" é世😀."
+                },
+                "description": "Passed the course.",
+                "name": "Course"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "png": {
+    "base": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAADUlEQVR4nGMQUDD4DwACBAFgjby7cQAAAAt0RVh0VGl0bGUAQmFkZ2UFLy5UAAAAAElFTkSuQmCC",
+    "cases": {
+      "badge-json": {
+        "kind": "badge",
+        "credential": {
+          "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+          ],
+          "id": "https://example.edu/credentials/1",
+          "type": [
+            "VerifiableCredential",
+            "OpenBadgeCredential"
+          ],
+          "issuer": {
+            "id": "https://example.edu/issuers/1",
+            "type": [
+              "Profile"
+            ]
+          },
+          "validFrom": "2024-06-13T10:00:00Z",
+          "credentialSubject": {
+            "id": "did:example:learner",
+            "type": [
+              "AchievementSubject"
+            ],
+            "achievement": {
+              "id": "https://example.edu/achievements/1",
+              "type": [
+                "Achievement"
+              ],
+              "criteria": {
+                "narrative": "Pass the course ]]> <b> & \"quotes\" é世😀."
+              },
+              "description": "Passed the course.",
+              "name": "Course"
+            }
+          }
+        },
+        "baked": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAACbWlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAAB7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzEiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkFjaGlldmVtZW50U3ViamVjdCJdLCJhY2hpZXZlbWVudCI6eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvYWNoaWV2ZW1lbnRzLzEiLCJ0eXBlIjpbIkFjaGlldmVtZW50Il0sImNyaXRlcmlhIjp7Im5hcnJhdGl2ZSI6IlBhc3MgdGhlIGNvdXJzZSBdXT4gPGI+ICYgXCJxdW90ZXNcIiDDqeS4lvCfmIAuIn0sImRlc2NyaXB0aW9uIjoiUGFzc2VkIHRoZSBjb3Vyc2UuIiwibmFtZSI6IkNvdXJzZSJ9fX1eNGPRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAADUlEQVR4nGMQUDD4DwACBAFgjby7cQAAAAt0RVh0VGl0bGUAQmFkZ2UFLy5UAAAAAElFTkSuQmCC"
+      },
+      "badge-jws": {
+        "kind": "badge",
+        "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0-IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19.bm90IGEgc2lnbmF0dXJl",
+        "baked": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAADomlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAABleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SW1oMGRIQnpPaTh2WlhoaGJYQnNaUzVsWkhVdmEyVjVjeU5yWlhrdE1TSXNJblI1Y0NJNklrcFhWQ0o5LmV5SkFZMjl1ZEdWNGRDSTZXeUpvZEhSd2N6b3ZMM2QzZHk1M015NXZjbWN2Ym5NdlkzSmxaR1Z1ZEdsaGJITXZkaklpTENKb2RIUndjem92TDNCMWNtd3VhVzF6WjJ4dlltRnNMbTl5Wnk5emNHVmpMMjlpTDNZemNEQXZZMjl1ZEdWNGRDMHpMakF1TXk1cWMyOXVJbDBzSW1sa0lqb2lhSFIwY0hNNkx5OWxlR0Z0Y0d4bExtVmtkUzlqY21Wa1pXNTBhV0ZzY3k4eElpd2lkSGx3WlNJNld5SldaWEpwWm1saFlteGxRM0psWkdWdWRHbGhiQ0lzSWs5d1pXNUNZV1JuWlVOeVpXUmxiblJwWVd3aVhTd2lhWE56ZFdWeUlqcDdJbWxrSWpvaWFIUjBjSE02THk5bGVHRnRjR3hsTG1Wa2RTOXBjM04xWlhKekx6RWlMQ0owZVhCbElqcGJJbEJ5YjJacGJHVWlYWDBzSW5aaGJHbGtSbkp2YlNJNklqSXdNalF0TURZdE1UTlVNVEE2TURBNk1EQmFJaXdpWTNKbFpHVnVkR2xoYkZOMVltcGxZM1FpT25zaWFXUWlPaUprYVdRNlpYaGhiWEJzWlRwc1pXRnlibVZ5SWl3aWRIbHdaU0k2V3lKQlkyaHBaWFpsYldWdWRGTjFZbXBsWTNRaVhTd2lZV05vYVdWMlpXMWxiblFpT25zaWFXUWlPaUpvZEhSd2N6b3ZMMlY0WVcxd2JHVXVaV1IxTDJGamFHbGxkbVZ0Wlc1MGN5OHhJaXdpZEhsd1pTSTZXeUpCWTJocFpYWmxiV1Z1ZENKZExDSmpjbWwwWlhKcFlTSTZleUp1WVhKeVlYUnBkbVVpT2lKUVlYTnpJSFJvWlNCamIzVnljMlVnWFYwLUlEeGlQaUFtSUZ3aWNYVnZkR1Z6WENJZ3c2bmt1SmJ3bjVpQUxpSjlMQ0prWlhOamNtbHdkR2x2YmlJNklsQmhjM05sWkNCMGFHVWdZMjkxY25ObExpSXNJbTVoYldVaU9pSkRiM1Z5YzJVaWZYMTkuYm05MElHRWdjMmxuYm1GMGRYSmwNIEBlAAAACXBIWXMAAAsTAAALEwEAmpwYAAAADUlEQVR4nGMQUDD4DwACBAFgjby7cQAAAAt0RVh0VGl0bGUAQmFkZ2UFLy5UAAAAAElFTkSuQmCC"
+      },
+      "clr-json": {
+        "kind": "clr",
+        "credential": {
+          "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            "https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json",
+            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+          ],
+          "id": "https://example.edu/clrs/1",
+          "type": [
+            "VerifiableCredential",
+            "ClrCredential"
+          ],
+          "name": "Transcript",
+          "issuer": {
+            "id": "https://example.edu/issuers/1",
+            "type": [
+              "Profile"
+            ]
+          },
+          "validFrom": "2024-06-13T10:00:00Z",
+          "credentialSubject": {
+            "id": "did:example:learner",
+            "type": [
+              "ClrSubject"
+            ],
+            "verifiableCredential": [
+              {
+                "@context": [
+                  "https://www.w3.org/ns/credentials/v2",
+                  "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+                ],
+                "id": "https://example.edu/credentials/1",
+                "type": [
+                  "VerifiableCredential",
+                  "OpenBadgeCredential"
+                ],
+                "issuer": {
+                  "id": "https://example.edu/issuers/1",
+                  "type": [
+                    "Profile"
+                  ]
+                },
+                "validFrom": "2024-06-13T10:00:00Z",
+                "credentialSubject": {
+                  "id": "did:example:learner",
+                  "type": [
+                    "AchievementSubject"
+                  ],
+                  "achievement": {
+                    "id": "https://example.edu/achievements/1",
+                    "type": [
+                      "Achievement"
+                    ],
+                    "criteria": {
+                      "narrative": "Pass the course ]]> <b> & \"quotes\" é世😀."
+                    },
+                    "description": "Passed the course.",
+                    "name": "Course"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "baked": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAERGlUWHRjbHJjcmVkZW50aWFsAAAAAAB7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvY2xyL3YycDAvY29udGV4dC0yLjAuMS5qc29uIiwiaHR0cHM6Ly9wdXJsLmltc2dsb2JhbC5vcmcvc3BlYy9vYi92M3AwL2NvbnRleHQtMy4wLjMuanNvbiJdLCJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvY2xycy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIkNsckNyZWRlbnRpYWwiXSwibmFtZSI6IlRyYW5zY3JpcHQiLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkNsclN1YmplY3QiXSwidmVyaWZpYWJsZUNyZWRlbnRpYWwiOlt7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzEiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkFjaGlldmVtZW50U3ViamVjdCJdLCJhY2hpZXZlbWVudCI6eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvYWNoaWV2ZW1lbnRzLzEiLCJ0eXBlIjpbIkFjaGlldmVtZW50Il0sImNyaXRlcmlhIjp7Im5hcnJhdGl2ZSI6IlBhc3MgdGhlIGNvdXJzZSBdXT4gPGI+ICYgXCJxdW90ZXNcIiDDqeS4lvCfmIAuIn0sImRlc2NyaXB0aW9uIjoiUGFzc2VkIHRoZSBjb3Vyc2UuIiwibmFtZSI6IkNvdXJzZSJ9fX1dfX0hKJcMAAAACXBIWXMAAAsTAAALEwEAmpwYAAAADUlEQVR4nGMQUDD4DwACBAFgjby7cQAAAAt0RVh0VGl0bGUAQmFkZ2UFLy5UAAAAAElFTkSuQmCC"
+      },
+      "clr-jws": {
+        "kind": "clr",
+        "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL2Nsci92MnAwL2NvbnRleHQtMi4wLjEuanNvbiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NscnMvMSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJDbHJDcmVkZW50aWFsIl0sIm5hbWUiOiJUcmFuc2NyaXB0IiwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJDbHJTdWJqZWN0Il0sInZlcmlmaWFibGVDcmVkZW50aWFsIjpbeyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0-IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19XX19.bm90IGEgc2lnbmF0dXJl",
+        "baked": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAGGGlUWHRjbHJjcmVkZW50aWFsAAAAAABleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SW1oMGRIQnpPaTh2WlhoaGJYQnNaUzVsWkhVdmEyVjVjeU5yWlhrdE1TSXNJblI1Y0NJNklrcFhWQ0o5LmV5SkFZMjl1ZEdWNGRDSTZXeUpvZEhSd2N6b3ZMM2QzZHk1M015NXZjbWN2Ym5NdlkzSmxaR1Z1ZEdsaGJITXZkaklpTENKb2RIUndjem92TDNCMWNtd3VhVzF6WjJ4dlltRnNMbTl5Wnk5emNHVmpMMk5zY2k5Mk1uQXdMMk52Ym5SbGVIUXRNaTR3TGpFdWFuTnZiaUlzSW1oMGRIQnpPaTh2Y0hWeWJDNXBiWE5uYkc5aVlXd3ViM0puTDNOd1pXTXZiMkl2ZGpOd01DOWpiMjUwWlhoMExUTXVNQzR6TG1wemIyNGlYU3dpYVdRaU9pSm9kSFJ3Y3pvdkwyVjRZVzF3YkdVdVpXUjFMMk5zY25Ndk1TSXNJblI1Y0dVaU9sc2lWbVZ5YVdacFlXSnNaVU55WldSbGJuUnBZV3dpTENKRGJISkRjbVZrWlc1MGFXRnNJbDBzSW01aGJXVWlPaUpVY21GdWMyTnlhWEIwSWl3aWFYTnpkV1Z5SWpwN0ltbGtJam9pYUhSMGNITTZMeTlsZUdGdGNHeGxMbVZrZFM5cGMzTjFaWEp6THpFaUxDSjBlWEJsSWpwYklsQnliMlpwYkdVaVhYMHNJblpoYkdsa1JuSnZiU0k2SWpJd01qUXRNRFl0TVROVU1UQTZNREE2TURCYUlpd2lZM0psWkdWdWRHbGhiRk4xWW1wbFkzUWlPbnNpYVdRaU9pSmthV1E2WlhoaGJYQnNaVHBzWldGeWJtVnlJaXdpZEhsd1pTSTZXeUpEYkhKVGRXSnFaV04wSWwwc0luWmxjbWxtYVdGaWJHVkRjbVZrWlc1MGFXRnNJanBiZXlKQVkyOXVkR1Y0ZENJNld5Sm9kSFJ3Y3pvdkwzZDNkeTUzTXk1dmNtY3Zibk12WTNKbFpHVnVkR2xoYkhNdmRqSWlMQ0pvZEhSd2N6b3ZMM0IxY213dWFXMXpaMnh2WW1Gc0xtOXlaeTl6Y0dWakwyOWlMM1l6Y0RBdlkyOXVkR1Y0ZEMwekxqQXVNeTVxYzI5dUlsMHNJbWxrSWpvaWFIUjBjSE02THk5bGVHRnRjR3hsTG1Wa2RTOWpjbVZrWlc1MGFXRnNjeTh4SWl3aWRIbHdaU0k2V3lKV1pYSnBabWxoWW14bFEzSmxaR1Z1ZEdsaGJDSXNJazl3Wlc1Q1lXUm5aVU55WldSbGJuUnBZV3dpWFN3aWFYTnpkV1Z5SWpwN0ltbGtJam9pYUhSMGNITTZMeTlsZUdGdGNHeGxMbVZrZFM5cGMzTjFaWEp6THpFaUxDSjBlWEJsSWpwYklsQnliMlpwYkdVaVhYMHNJblpoYkdsa1JuSnZiU0k2SWpJd01qUXRNRFl0TVROVU1UQTZNREE2TURCYUlpd2lZM0psWkdWdWRHbGhiRk4xWW1wbFkzUWlPbnNpYVdRaU9pSmthV1E2WlhoaGJYQnNaVHBzWldGeWJtVnlJaXdpZEhsd1pTSTZXeUpCWTJocFpYWmxiV1Z1ZEZOMVltcGxZM1FpWFN3aVlXTm9hV1YyWlcxbGJuUWlPbnNpYVdRaU9pSm9kSFJ3Y3pvdkwyVjRZVzF3YkdVdVpXUjFMMkZqYUdsbGRtVnRaVzUwY3k4eElpd2lkSGx3WlNJNld5SkJZMmhwWlhabGJXVnVkQ0pkTENKamNtbDBaWEpwWVNJNmV5SnVZWEp5WVhScGRtVWlPaUpRWVhOeklIUm9aU0JqYjNWeWMyVWdYVjAtSUR4aVBpQW1JRndpY1hWdmRHVnpYQ0lndzZua3VKYnduNWlBTGlKOUxDSmtaWE5qY21sd2RHbHZiaUk2SWxCaGMzTmxaQ0IwYUdVZ1kyOTFjbk5sTGlJc0ltNWhiV1VpT2lKRGIzVnljMlVpZlgxOVhYMTkuYm05MElHRWdjMmxuYm1GMGRYSmzXIQBLAAAACXBIWXMAAAsTAAALEwEAmpwYAAAADUlEQVR4nGMQUDD4DwACBAFgjby7cQAAAAt0RVh0VGl0bGUAQmFkZ2UFLy5UAAAAAElFTkSuQmCC"
+      },
+      "badge-jws-vc-claim": {
+        "kind": "badge",
+        "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInZjIjp7InR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJPcGVuQmFkZ2VDcmVkZW50aWFsIl19fQ.bm90IGEgc2lnbmF0dXJl",
+        "baked": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAABDGlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAABleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SW1oMGRIQnpPaTh2WlhoaGJYQnNaUzVsWkhVdmEyVjVjeU5yWlhrdE1TSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKb2RIUndjem92TDJWNFlXMXdiR1V1WldSMUwybHpjM1ZsY25Ndk1TSXNJblpqSWpwN0luUjVjR1VpT2xzaVZtVnlhV1pwWVdKc1pVTnlaV1JsYm5ScFlXd2lMQ0pQY0dWdVFtRmtaMlZEY21Wa1pXNTBhV0ZzSWwxOWZRLmJtOTBJR0VnYzJsbmJtRjBkWEpskkBQmgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAA1JREFUeJxjEFAw+A8AAgQBYI28u3EAAAALdEVYdFRpdGxlAEJhZGdlBS8uVAAAAABJRU5ErkJggg=="
+      },
+      "clr-jws-vc-claim": {
+        "kind": "clr",
+        "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInZjIjp7InR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJDbHJDcmVkZW50aWFsIl19fQ.bm90IGEgc2lnbmF0dXJl",
+        "baked": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAA/mlUWHRjbHJjcmVkZW50aWFsAAAAAABleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SW1oMGRIQnpPaTh2WlhoaGJYQnNaUzVsWkhVdmEyVjVjeU5yWlhrdE1TSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKb2RIUndjem92TDJWNFlXMXdiR1V1WldSMUwybHpjM1ZsY25Ndk1TSXNJblpqSWpwN0luUjVjR1VpT2xzaVZtVnlhV1pwWVdKc1pVTnlaV1JsYm5ScFlXd2lMQ0pEYkhKRGNtVmtaVzUwYVdGc0lsMTlmUS5ibTkwSUdFZ2MybG5ibUYwZFhKbBCHZNsAAAAJcEhZcwAACxMAAAsTAQCanBgAAAANSURBVHicYxBQMPgPAAIEAWCNvLtxAAAAC3RFWHRUaXRsZQBCYWRnZQUvLlQAAAAASUVORK5CYII="
+      }
+    },
+    "replaced": {
+      "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAERGlUWHRjbHJjcmVkZW50aWFsAAAAAAB7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvY2xyL3YycDAvY29udGV4dC0yLjAuMS5qc29uIiwiaHR0cHM6Ly9wdXJsLmltc2dsb2JhbC5vcmcvc3BlYy9vYi92M3AwL2NvbnRleHQtMy4wLjMuanNvbiJdLCJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvY2xycy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIkNsckNyZWRlbnRpYWwiXSwibmFtZSI6IlRyYW5zY3JpcHQiLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkNsclN1YmplY3QiXSwidmVyaWZpYWJsZUNyZWRlbnRpYWwiOlt7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzEiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkFjaGlldmVtZW50U3ViamVjdCJdLCJhY2hpZXZlbWVudCI6eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvYWNoaWV2ZW1lbnRzLzEiLCJ0eXBlIjpbIkFjaGlldmVtZW50Il0sImNyaXRlcmlhIjp7Im5hcnJhdGl2ZSI6IlBhc3MgdGhlIGNvdXJzZSBdXT4gPGI+ICYgXCJxdW90ZXNcIiDDqeS4lvCfmIAuIn0sImRlc2NyaXB0aW9uIjoiUGFzc2VkIHRoZSBjb3Vyc2UuIiwibmFtZSI6IkNvdXJzZSJ9fX1dfX0hKJcMAAAADUlEQVR4nGMQUDD4DwACBAFgjby7cQAAAm1pVFh0b3BlbmJhZGdlY3JlZGVudGlhbAAAAAAAeyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0+IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19XjRj0QAAAABJRU5ErkJggg==",
+      "baked": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAACbWlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAAB7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzEiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkFjaGlldmVtZW50U3ViamVjdCJdLCJhY2hpZXZlbWVudCI6eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvYWNoaWV2ZW1lbnRzLzEiLCJ0eXBlIjpbIkFjaGlldmVtZW50Il0sImNyaXRlcmlhIjp7Im5hcnJhdGl2ZSI6IlBhc3MgdGhlIGNvdXJzZSBdXT4gPGI+ICYgXCJxdW90ZXNcIiDDqeS4lvCfmIAuIn0sImRlc2NyaXB0aW9uIjoiUGFzc2VkIHRoZSBjb3Vyc2UuIiwibmFtZSI6IkNvdXJzZSJ9fX1eNGPRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAADUlEQVR4nGMQUDD4DwACBAFgjby7cQAAAABJRU5ErkJggg=="
+    },
+    "refused": {
+      "bad crc": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAACbWlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAAB7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzEiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkFjaGlldmVtZW50U3ViamVjdCJdLCJhY2hpZXZlbWVudCI6eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvYWNoaWV2ZW1lbnRzLzEiLCJ0eXBlIjpbIkFjaGlldmVtZW50Il0sImNyaXRlcmlhIjp7Im5hcnJhdGl2ZSI6IlBhc3MgdGhlIGNvdXJzZSBdXT4gPGI+ICYgXCJxdW90ZXNcIiDDqeS4lvCfmIAuIn0sImRlc2NyaXB0aW9uIjoiUGFzc2VkIHRoZSBjb3Vyc2UuIiwibmFtZSI6IkNvdXJzZSJ9fX1eNGMuAAAAAElFTkSuQmCC",
+      "compressed": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAABcmlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAEAAAB4nH2RMU7DMBSGrxJ5YGrttEEMEaqASqxUAjFAMzjxa+vKsY3tJEVVJE6B2Ji5ATtX6QE4Ak5b0nQAydPz/3//r/fW6CJT0sHKofgRLZzTNiakqipcRViZOZGWZAYYSMepsKQcol4r04URmOd2LlRKxVZuNWREpaSMdEj25H6EQxzhpVUSJT3EGYpbBKxorgVgYMVRzsDHuGcNTat7MHzGaSpg3Cr8940GeUXZvDtt8NYWYFC8/jtoJzkOmRg14wJQUvdQSQVn10bl3j8Mh6f98Kw/iO4GYRw278HbDl1vi3QJmWsDGWfxPiwWQI30ZQ4xl9mCQwm59/4afWd6mP5bvKM7bt/BNrzMcOeXRhuYpMZQx0uvQxNqbeAWEGSqMBaCJBkF5+koOAmm6KlQDuwUBV8fm8/X7/e3F4z8LhhYT9OO++PtAMA6COxLSJo38PF2gOq6/gG05c3oUs339QAAAABJRU5ErkJggg==",
+      "compression method": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAACbWlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAABAAB7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzEiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkFjaGlldmVtZW50U3ViamVjdCJdLCJhY2hpZXZlbWVudCI6eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvYWNoaWV2ZW1lbnRzLzEiLCJ0eXBlIjpbIkFjaGlldmVtZW50Il0sImNyaXRlcmlhIjp7Im5hcnJhdGl2ZSI6IlBhc3MgdGhlIGNvdXJzZSBdXT4gPGI+ICYgXCJxdW90ZXNcIiDDqeS4lvCfmIAuIn0sImRlc2NyaXB0aW9uIjoiUGFzc2VkIHRoZSBjb3Vyc2UuIiwibmFtZSI6IkNvdXJzZSJ9fX1rWUNOAAAAAElFTkSuQmCC",
+      "no language tag": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAFmlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAF1NIqQAAAABJRU5ErkJggg==",
+      "text that is not UTF-8": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAGmlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAAD//rTK/NIAAAAASUVORK5CYII=",
+      "text that is neither JSON nor a JWS": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAKGlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAABub3QgYSBjcmVkZW50aWFsdccfzAAAAABJRU5ErkJggg==",
+      "json that is not valid": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAHWlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAAB7ImEiOrK7kxEAAAAASUVORK5CYII=",
+      "empty text": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAGGlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAABGG8uuAAAAAElFTkSuQmCC",
+      "no IEND": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGMQUDD4DwACBAFgjby7cQ==",
+      "truncated chunk": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGMQUDD4DwACBAE=",
+      "frame cut short": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAElF",
+      "chunk longer than the image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAD6ElEQVQAAAAAAAAAAAAA",
+      "chunk longer than a chunk may be": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJgAAAAElEQVQAAAAAAAAAAAAA",
+      "first chunk is not IHDR": "iVBORw0KGgoAAAANSURBVHicYxBQMPgPAAIEAWCNvLtxAAAAAElFTkSuQmCC",
+      "not a PNG": "R0lGODlh"
+    },
+    "withoutCredential": {
+      "other keyword": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEWlUWHRDb21tZW50AAAAAABoZWxsb8br9CgAAAANSURBVHicYxBQMPgPAAIEAWCNvLtxAAAAAElFTkSuQmCC",
+      "keyword with other case": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAACbWlUWHRPcGVuQmFkZ2VDcmVkZW50aWFsAAAAAAB7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzEiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkFjaGlldmVtZW50U3ViamVjdCJdLCJhY2hpZXZlbWVudCI6eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvYWNoaWV2ZW1lbnRzLzEiLCJ0eXBlIjpbIkFjaGlldmVtZW50Il0sImNyaXRlcmlhIjp7Im5hcnJhdGl2ZSI6IlBhc3MgdGhlIGNvdXJzZSBdXT4gPGI+ICYgXCJxdW90ZXNcIiDDqeS4lvCfmIAuIn0sImRlc2NyaXB0aW9uIjoiUGFzc2VkIHRoZSBjb3Vyc2UuIiwibmFtZSI6IkNvdXJzZSJ9fX2tiBeFAAAAAElFTkSuQmCC",
+      "tEXt chunk": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAACaXRFWHRvcGVuYmFkZ2VjcmVkZW50aWFsAHsiQGNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnL25zL2NyZWRlbnRpYWxzL3YyIiwiaHR0cHM6Ly9wdXJsLmltc2dsb2JhbC5vcmcvc3BlYy9vYi92M3AwL2NvbnRleHQtMy4wLjMuanNvbiJdLCJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvY3JlZGVudGlhbHMvMSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJPcGVuQmFkZ2VDcmVkZW50aWFsIl0sImlzc3VlciI6eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvaXNzdWVycy8xIiwidHlwZSI6WyJQcm9maWxlIl19LCJ2YWxpZEZyb20iOiIyMDI0LTA2LTEzVDEwOjAwOjAwWiIsImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImlkIjoiZGlkOmV4YW1wbGU6bGVhcm5lciIsInR5cGUiOlsiQWNoaWV2ZW1lbnRTdWJqZWN0Il0sImFjaGlldmVtZW50Ijp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9hY2hpZXZlbWVudHMvMSIsInR5cGUiOlsiQWNoaWV2ZW1lbnQiXSwiY3JpdGVyaWEiOnsibmFycmF0aXZlIjoiUGFzcyB0aGUgY291cnNlIF1dPiA8Yj4gJiBcInF1b3Rlc1wiIMOp5LiW8J+YgC4ifSwiZGVzY3JpcHRpb24iOiJQYXNzZWQgdGhlIGNvdXJzZS4iLCJuYW1lIjoiQ291cnNlIn19fVJvPFIAAAAASUVORK5CYII="
+    },
+    "firstWins": {
+      "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAACbWlUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAAB7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzEiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkFjaGlldmVtZW50U3ViamVjdCJdLCJhY2hpZXZlbWVudCI6eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvYWNoaWV2ZW1lbnRzLzEiLCJ0eXBlIjpbIkFjaGlldmVtZW50Il0sImNyaXRlcmlhIjp7Im5hcnJhdGl2ZSI6IlBhc3MgdGhlIGNvdXJzZSBdXT4gPGI+ICYgXCJxdW90ZXNcIiDDqeS4lvCfmIAuIn0sImRlc2NyaXB0aW9uIjoiUGFzc2VkIHRoZSBjb3Vyc2UuIiwibmFtZSI6IkNvdXJzZSJ9fX1eNGPRAAAERGlUWHRjbHJjcmVkZW50aWFsAAAAAAB7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvY2xyL3YycDAvY29udGV4dC0yLjAuMS5qc29uIiwiaHR0cHM6Ly9wdXJsLmltc2dsb2JhbC5vcmcvc3BlYy9vYi92M3AwL2NvbnRleHQtMy4wLjMuanNvbiJdLCJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvY2xycy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIkNsckNyZWRlbnRpYWwiXSwibmFtZSI6IlRyYW5zY3JpcHQiLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkNsclN1YmplY3QiXSwidmVyaWZpYWJsZUNyZWRlbnRpYWwiOlt7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy92MiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzEiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInR5cGUiOlsiUHJvZmlsZSJdfSwidmFsaWRGcm9tIjoiMjAyNC0wNi0xM1QxMDowMDowMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmxlYXJuZXIiLCJ0eXBlIjpbIkFjaGlldmVtZW50U3ViamVjdCJdLCJhY2hpZXZlbWVudCI6eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUvYWNoaWV2ZW1lbnRzLzEiLCJ0eXBlIjpbIkFjaGlldmVtZW50Il0sImNyaXRlcmlhIjp7Im5hcnJhdGl2ZSI6IlBhc3MgdGhlIGNvdXJzZSBdXT4gPGI+ICYgXCJxdW90ZXNcIiDDqeS4lvCfmIAuIn0sImRlc2NyaXB0aW9uIjoiUGFzc2VkIHRoZSBjb3Vyc2UuIiwibmFtZSI6IkNvdXJzZSJ9fX1dfX0hKJcMAAAAAElFTkSuQmCC",
+      "kind": "badge",
+      "credential": {
+        "@context": [
+          "https://www.w3.org/ns/credentials/v2",
+          "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+        ],
+        "id": "https://example.edu/credentials/1",
+        "type": [
+          "VerifiableCredential",
+          "OpenBadgeCredential"
+        ],
+        "issuer": {
+          "id": "https://example.edu/issuers/1",
+          "type": [
+            "Profile"
+          ]
+        },
+        "validFrom": "2024-06-13T10:00:00Z",
+        "credentialSubject": {
+          "id": "did:example:learner",
+          "type": [
+            "AchievementSubject"
+          ],
+          "achievement": {
+            "id": "https://example.edu/achievements/1",
+            "type": [
+              "Achievement"
+            ],
+            "criteria": {
+              "narrative": "Pass the course ]]> <b> & \"quotes\" é世😀."
+            },
+            "description": "Passed the course.",
+            "name": "Course"
+          }
+        }
+      }
+    },
+    "afterData": {
+      "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGMQUDD4DwACBAFgjby7cQAAA5xpVFh0Y2xyY3JlZGVudGlhbAAAAAAAZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltaDBkSEJ6T2k4dlpYaGhiWEJzWlM1bFpIVXZhMlY1Y3lOclpYa3RNU0lzSW5SNWNDSTZJa3BYVkNKOS5leUpBWTI5dWRHVjRkQ0k2V3lKb2RIUndjem92TDNkM2R5NTNNeTV2Y21jdmJuTXZZM0psWkdWdWRHbGhiSE12ZGpJaUxDSm9kSFJ3Y3pvdkwzQjFjbXd1YVcxeloyeHZZbUZzTG05eVp5OXpjR1ZqTDI5aUwzWXpjREF2WTI5dWRHVjRkQzB6TGpBdU15NXFjMjl1SWwwc0ltbGtJam9pYUhSMGNITTZMeTlsZUdGdGNHeGxMbVZrZFM5amNtVmtaVzUwYVdGc2N5OHhJaXdpZEhsd1pTSTZXeUpXWlhKcFptbGhZbXhsUTNKbFpHVnVkR2xoYkNJc0lrOXdaVzVDWVdSblpVTnlaV1JsYm5ScFlXd2lYU3dpYVhOemRXVnlJanA3SW1sa0lqb2lhSFIwY0hNNkx5OWxlR0Z0Y0d4bExtVmtkUzlwYzNOMVpYSnpMekVpTENKMGVYQmxJanBiSWxCeWIyWnBiR1VpWFgwc0luWmhiR2xrUm5KdmJTSTZJakl3TWpRdE1EWXRNVE5VTVRBNk1EQTZNREJhSWl3aVkzSmxaR1Z1ZEdsaGJGTjFZbXBsWTNRaU9uc2lhV1FpT2lKa2FXUTZaWGhoYlhCc1pUcHNaV0Z5Ym1WeUlpd2lkSGx3WlNJNld5SkJZMmhwWlhabGJXVnVkRk4xWW1wbFkzUWlYU3dpWVdOb2FXVjJaVzFsYm5RaU9uc2lhV1FpT2lKb2RIUndjem92TDJWNFlXMXdiR1V1WldSMUwyRmphR2xsZG1WdFpXNTBjeTh4SWl3aWRIbHdaU0k2V3lKQlkyaHBaWFpsYldWdWRDSmRMQ0pqY21sMFpYSnBZU0k2ZXlKdVlYSnlZWFJwZG1VaU9pSlFZWE56SUhSb1pTQmpiM1Z5YzJVZ1hWMC1JRHhpUGlBbUlGd2ljWFZ2ZEdWelhDSWd3Nm5rdUpid241aUFMaUo5TENKa1pYTmpjbWx3ZEdsdmJpSTZJbEJoYzNObFpDQjBhR1VnWTI5MWNuTmxMaUlzSW01aGJXVWlPaUpEYjNWeWMyVWlmWDE5LmJtOTBJR0VnYzJsbmJtRjBkWEpsggXCaQAAAABJRU5ErkJggg==",
+      "kind": "clr",
+      "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0-IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19.bm90IGEgc2lnbmF0dXJl"
+    }
+  },
+  "svg": {
+    "base": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\">\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n",
+    "cases": {
+      "badge-json": {
+        "kind": "badge",
+        "credential": {
+          "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+          ],
+          "id": "https://example.edu/credentials/1",
+          "type": [
+            "VerifiableCredential",
+            "OpenBadgeCredential"
+          ],
+          "issuer": {
+            "id": "https://example.edu/issuers/1",
+            "type": [
+              "Profile"
+            ]
+          },
+          "validFrom": "2024-06-13T10:00:00Z",
+          "credentialSubject": {
+            "id": "did:example:learner",
+            "type": [
+              "AchievementSubject"
+            ],
+            "achievement": {
+              "id": "https://example.edu/achievements/1",
+              "type": [
+                "Achievement"
+              ],
+              "criteria": {
+                "narrative": "Pass the course ]]> <b> & \"quotes\" é世😀."
+              },
+              "description": "Passed the course.",
+              "name": "Course"
+            }
+          }
+        },
+        "baked": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:openbadges=\"https://purl.imsglobal.org/ob/v3p0\"><openbadges:credential><![CDATA[{\"@context\":[\"https://www.w3.org/ns/credentials/v2\",\"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"],\"id\":\"https://example.edu/credentials/1\",\"type\":[\"VerifiableCredential\",\"OpenBadgeCredential\"],\"issuer\":{\"id\":\"https://example.edu/issuers/1\",\"type\":[\"Profile\"]},\"validFrom\":\"2024-06-13T10:00:00Z\",\"credentialSubject\":{\"id\":\"did:example:learner\",\"type\":[\"AchievementSubject\"],\"achievement\":{\"id\":\"https://example.edu/achievements/1\",\"type\":[\"Achievement\"],\"criteria\":{\"narrative\":\"Pass the course ]]]]><![CDATA[> <b> & \\\"quotes\\\" é世😀.\"},\"description\":\"Passed the course.\",\"name\":\"Course\"}}}]]></openbadges:credential>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n"
+      },
+      "badge-jws": {
+        "kind": "badge",
+        "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0-IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19.bm90IGEgc2lnbmF0dXJl",
+        "baked": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:openbadges=\"https://purl.imsglobal.org/ob/v3p0\"><openbadges:credential verify=\"eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0-IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19.bm90IGEgc2lnbmF0dXJl\"></openbadges:credential>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n"
+      },
+      "clr-json": {
+        "kind": "clr",
+        "credential": {
+          "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            "https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json",
+            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+          ],
+          "id": "https://example.edu/clrs/1",
+          "type": [
+            "VerifiableCredential",
+            "ClrCredential"
+          ],
+          "name": "Transcript",
+          "issuer": {
+            "id": "https://example.edu/issuers/1",
+            "type": [
+              "Profile"
+            ]
+          },
+          "validFrom": "2024-06-13T10:00:00Z",
+          "credentialSubject": {
+            "id": "did:example:learner",
+            "type": [
+              "ClrSubject"
+            ],
+            "verifiableCredential": [
+              {
+                "@context": [
+                  "https://www.w3.org/ns/credentials/v2",
+                  "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+                ],
+                "id": "https://example.edu/credentials/1",
+                "type": [
+                  "VerifiableCredential",
+                  "OpenBadgeCredential"
+                ],
+                "issuer": {
+                  "id": "https://example.edu/issuers/1",
+                  "type": [
+                    "Profile"
+                  ]
+                },
+                "validFrom": "2024-06-13T10:00:00Z",
+                "credentialSubject": {
+                  "id": "did:example:learner",
+                  "type": [
+                    "AchievementSubject"
+                  ],
+                  "achievement": {
+                    "id": "https://example.edu/achievements/1",
+                    "type": [
+                      "Achievement"
+                    ],
+                    "criteria": {
+                      "narrative": "Pass the course ]]> <b> & \"quotes\" é世😀."
+                    },
+                    "description": "Passed the course.",
+                    "name": "Course"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "baked": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:clr=\"https://purl.imsglobal.org/clr/v2p0\"><clr:credential><![CDATA[{\"@context\":[\"https://www.w3.org/ns/credentials/v2\",\"https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json\",\"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"],\"id\":\"https://example.edu/clrs/1\",\"type\":[\"VerifiableCredential\",\"ClrCredential\"],\"name\":\"Transcript\",\"issuer\":{\"id\":\"https://example.edu/issuers/1\",\"type\":[\"Profile\"]},\"validFrom\":\"2024-06-13T10:00:00Z\",\"credentialSubject\":{\"id\":\"did:example:learner\",\"type\":[\"ClrSubject\"],\"verifiableCredential\":[{\"@context\":[\"https://www.w3.org/ns/credentials/v2\",\"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"],\"id\":\"https://example.edu/credentials/1\",\"type\":[\"VerifiableCredential\",\"OpenBadgeCredential\"],\"issuer\":{\"id\":\"https://example.edu/issuers/1\",\"type\":[\"Profile\"]},\"validFrom\":\"2024-06-13T10:00:00Z\",\"credentialSubject\":{\"id\":\"did:example:learner\",\"type\":[\"AchievementSubject\"],\"achievement\":{\"id\":\"https://example.edu/achievements/1\",\"type\":[\"Achievement\"],\"criteria\":{\"narrative\":\"Pass the course ]]]]><![CDATA[> <b> & \\\"quotes\\\" é世😀.\"},\"description\":\"Passed the course.\",\"name\":\"Course\"}}}]}}]]></clr:credential>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n"
+      },
+      "clr-jws": {
+        "kind": "clr",
+        "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL2Nsci92MnAwL2NvbnRleHQtMi4wLjEuanNvbiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NscnMvMSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJDbHJDcmVkZW50aWFsIl0sIm5hbWUiOiJUcmFuc2NyaXB0IiwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJDbHJTdWJqZWN0Il0sInZlcmlmaWFibGVDcmVkZW50aWFsIjpbeyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0-IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19XX19.bm90IGEgc2lnbmF0dXJl",
+        "baked": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:clr=\"https://purl.imsglobal.org/clr/v2p0\"><clr:credential verify=\"eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL2Nsci92MnAwL2NvbnRleHQtMi4wLjEuanNvbiIsImh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvb2IvdjNwMC9jb250ZXh0LTMuMC4zLmpzb24iXSwiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2NscnMvMSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJDbHJDcmVkZW50aWFsIl0sIm5hbWUiOiJUcmFuc2NyaXB0IiwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJDbHJTdWJqZWN0Il0sInZlcmlmaWFibGVDcmVkZW50aWFsIjpbeyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0-IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19XX19.bm90IGEgc2lnbmF0dXJl\"></clr:credential>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n"
+      },
+      "badge-jws-vc-claim": {
+        "kind": "badge",
+        "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInZjIjp7InR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJPcGVuQmFkZ2VDcmVkZW50aWFsIl19fQ.bm90IGEgc2lnbmF0dXJl",
+        "baked": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:openbadges=\"https://purl.imsglobal.org/ob/v3p0\"><openbadges:credential verify=\"eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInZjIjp7InR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJPcGVuQmFkZ2VDcmVkZW50aWFsIl19fQ.bm90IGEgc2lnbmF0dXJl\"></openbadges:credential>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n"
+      },
+      "clr-jws-vc-claim": {
+        "kind": "clr",
+        "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInZjIjp7InR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJDbHJDcmVkZW50aWFsIl19fQ.bm90IGEgc2lnbmF0dXJl",
+        "baked": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:clr=\"https://purl.imsglobal.org/clr/v2p0\"><clr:credential verify=\"eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2V4YW1wbGUuZWR1L2lzc3VlcnMvMSIsInZjIjp7InR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJDbHJDcmVkZW50aWFsIl19fQ.bm90IGEgc2lnbmF0dXJl\"></clr:credential>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n"
+      }
+    },
+    "rebound": {
+      "image": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:openbadges=\"http://openbadges.org\" viewBox=\"0 0 1 1\"><openbadges:assertion verify=\"https://example.edu/assertions/1\"></openbadges:assertion></svg>",
+      "baked": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:openbadges=\"http://openbadges.org\" viewBox=\"0 0 1 1\"><openbadges:credential xmlns:openbadges=\"https://purl.imsglobal.org/ob/v3p0\"><![CDATA[{\"@context\":[\"https://www.w3.org/ns/credentials/v2\",\"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"],\"id\":\"https://example.edu/credentials/1\",\"type\":[\"VerifiableCredential\",\"OpenBadgeCredential\"],\"issuer\":{\"id\":\"https://example.edu/issuers/1\",\"type\":[\"Profile\"]},\"validFrom\":\"2024-06-13T10:00:00Z\",\"credentialSubject\":{\"id\":\"did:example:learner\",\"type\":[\"AchievementSubject\"],\"achievement\":{\"id\":\"https://example.edu/achievements/1\",\"type\":[\"Achievement\"],\"criteria\":{\"narrative\":\"Pass the course ]]]]><![CDATA[> <b> & \\\"quotes\\\" é世😀.\"},\"description\":\"Passed the course.\",\"name\":\"Course\"}}}]]></openbadges:credential><openbadges:assertion verify=\"https://example.edu/assertions/1\"></openbadges:assertion></svg>"
+    },
+    "emptyRoot": {
+      "image": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\"/>",
+      "baked": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\" xmlns:openbadges=\"https://purl.imsglobal.org/ob/v3p0\"><openbadges:credential><![CDATA[{\"@context\":[\"https://www.w3.org/ns/credentials/v2\",\"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"],\"id\":\"https://example.edu/credentials/1\",\"type\":[\"VerifiableCredential\",\"OpenBadgeCredential\"],\"issuer\":{\"id\":\"https://example.edu/issuers/1\",\"type\":[\"Profile\"]},\"validFrom\":\"2024-06-13T10:00:00Z\",\"credentialSubject\":{\"id\":\"did:example:learner\",\"type\":[\"AchievementSubject\"],\"achievement\":{\"id\":\"https://example.edu/achievements/1\",\"type\":[\"Achievement\"],\"criteria\":{\"narrative\":\"Pass the course ]]]]><![CDATA[> <b> & \\\"quotes\\\" é世😀.\"},\"description\":\"Passed the course.\",\"name\":\"Course\"}}}]]></openbadges:credential></svg>"
+    },
+    "replaced": {
+      "image": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:clr=\"https://purl.imsglobal.org/clr/v2p0\"><clr:credential><![CDATA[{\"@context\":[\"https://www.w3.org/ns/credentials/v2\",\"https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json\",\"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"],\"id\":\"https://example.edu/clrs/1\",\"type\":[\"VerifiableCredential\",\"ClrCredential\"],\"name\":\"Transcript\",\"issuer\":{\"id\":\"https://example.edu/issuers/1\",\"type\":[\"Profile\"]},\"validFrom\":\"2024-06-13T10:00:00Z\",\"credentialSubject\":{\"id\":\"did:example:learner\",\"type\":[\"ClrSubject\"],\"verifiableCredential\":[{\"@context\":[\"https://www.w3.org/ns/credentials/v2\",\"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"],\"id\":\"https://example.edu/credentials/1\",\"type\":[\"VerifiableCredential\",\"OpenBadgeCredential\"],\"issuer\":{\"id\":\"https://example.edu/issuers/1\",\"type\":[\"Profile\"]},\"validFrom\":\"2024-06-13T10:00:00Z\",\"credentialSubject\":{\"id\":\"did:example:learner\",\"type\":[\"AchievementSubject\"],\"achievement\":{\"id\":\"https://example.edu/achievements/1\",\"type\":[\"Achievement\"],\"criteria\":{\"narrative\":\"Pass the course ]]]]><![CDATA[> <b> & \\\"quotes\\\" é世😀.\"},\"description\":\"Passed the course.\",\"name\":\"Course\"}}}]}}]]></clr:credential>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n",
+      "baked": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:clr=\"https://purl.imsglobal.org/clr/v2p0\" xmlns:openbadges=\"https://purl.imsglobal.org/ob/v3p0\"><openbadges:credential><![CDATA[{\"@context\":[\"https://www.w3.org/ns/credentials/v2\",\"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"],\"id\":\"https://example.edu/credentials/1\",\"type\":[\"VerifiableCredential\",\"OpenBadgeCredential\"],\"issuer\":{\"id\":\"https://example.edu/issuers/1\",\"type\":[\"Profile\"]},\"validFrom\":\"2024-06-13T10:00:00Z\",\"credentialSubject\":{\"id\":\"did:example:learner\",\"type\":[\"AchievementSubject\"],\"achievement\":{\"id\":\"https://example.edu/achievements/1\",\"type\":[\"Achievement\"],\"criteria\":{\"narrative\":\"Pass the course ]]]]><![CDATA[> <b> & \\\"quotes\\\" é世😀.\"},\"description\":\"Passed the course.\",\"name\":\"Course\"}}}]]></openbadges:credential>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n"
+    },
+    "otherPrefix": {
+      "image": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:b=\"https://purl.imsglobal.org/ob/v3p0\"><b:credential verify=\"eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0-IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19.bm90IGEgc2lnbmF0dXJl\"/>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n",
+      "kind": "badge",
+      "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0-IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19.bm90IGEgc2lnbmF0dXJl"
+    }
+  }
+}

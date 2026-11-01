@@ -1,14 +1,16 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { guidesWithSamples, runGuideSamples, typecheckGuideSamples } from "../../../scripts/guide-samples.js";
+import * as baking from "../src/baking/index.js";
 import * as root from "../src/index.js";
 
-const modules = { "@interopkit/achievement-credentials": root };
+const modules = { "@interopkit/achievement-credentials": root, "@interopkit/achievement-credentials/baking": baking };
 const GUIDES = new URL("../../../docs/achievement-credentials/", import.meta.url);
 const PACKAGES = fileURLToPath(new URL("../../", import.meta.url));
 /** Where the packages that the samples and the sources import resolve to: the sources, so that no build is needed. */
 const PATHS = {
   "@interopkit/achievement-credentials": [`${PACKAGES}achievement-credentials/src/index.ts`],
+  "@interopkit/achievement-credentials/baking": [`${PACKAGES}achievement-credentials/src/baking/index.ts`],
   "@interopkit/core": [`${PACKAGES}core/src/index.ts`],
   "@interopkit/core/checks": [`${PACKAGES}core/src/checks.ts`],
 };

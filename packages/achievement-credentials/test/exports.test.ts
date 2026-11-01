@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as baking from "../src/baking/index.js";
 import * as api from "../src/index.js";
 
 describe("the exports", () => {
@@ -35,5 +36,9 @@ describe("the exports", () => {
         "validateEntity",
       ].sort(),
     );
+  });
+
+  it("of baking are its four functions", () => {
+    expect(Object.keys(baking).sort()).toStrictEqual(["bakePng", "bakeSvg", "readPng", "readSvg"]);
   });
 });
