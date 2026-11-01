@@ -648,16 +648,20 @@
                 "patterns": [
                   {
                     "group": [
-                      "**/read",
-                      "**/read/**",
-                      "**/issue",
-                      "**/issue/**",
-                      "**/compare",
-                      "**/compare/**",
                       "**/baking",
                       "**/baking/**",
                       "**/client",
-                      "**/client/**"
+                      "**/client/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/issue",
+                      "**/issue/**",
+                      "**/jwt",
+                      "**/jwt/**",
+                      "**/keys",
+                      "**/keys/**",
+                      "**/read",
+                      "**/read/**"
                     ],
                     "message": "model/ holds the types and terms and imports no other module: they build on it."
                   }
@@ -678,8 +682,21 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/issue", "**/issue/**", "**/compare", "**/compare/**", "**/baking", "**/baking/**"],
-                    "message": "read/ builds on model/ and @interopkit/core only: issue/, compare/ and baking/ build on it."
+                    "group": [
+                      "**/baking",
+                      "**/baking/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/issue",
+                      "**/issue/**",
+                      "**/jwt",
+                      "**/jwt/**",
+                      "**/keys",
+                      "**/keys/**"
+                    ],
+                    "message": "read/ builds on model/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
                 ]
               }
@@ -698,8 +715,81 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/compare", "**/compare/**", "**/baking", "**/baking/**", "**/client", "**/client/**"],
-                    "message": "issue/ builds on model/, read/ and @interopkit/core only: compare/, baking/ and client/ are its siblings and never a layer under it."
+                    "group": [
+                      "**/baking",
+                      "**/baking/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/jwt",
+                      "**/jwt/**",
+                      "**/keys",
+                      "**/keys/**"
+                    ],
+                    "message": "issue/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/achievement-credentials/src/keys/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/baking",
+                      "**/baking/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/issue",
+                      "**/issue/**",
+                      "**/jwt",
+                      "**/jwt/**",
+                      "**/read",
+                      "**/read/**"
+                    ],
+                    "message": "keys/ builds on model/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/achievement-credentials/src/jwt/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/baking",
+                      "**/baking/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/issue",
+                      "**/issue/**"
+                    ],
+                    "message": "jwt/ builds on model/, read/, keys/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
                 ]
               }
@@ -718,8 +808,19 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/issue", "**/issue/**", "**/baking", "**/baking/**", "**/client", "**/client/**"],
-                    "message": "compare/ builds on model/, read/ and @interopkit/core only: issue/, baking/ and client/ are its siblings and never a layer under it."
+                    "group": [
+                      "**/baking",
+                      "**/baking/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/issue",
+                      "**/issue/**",
+                      "**/jwt",
+                      "**/jwt/**",
+                      "**/keys",
+                      "**/keys/**"
+                    ],
+                    "message": "compare/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
                 ]
               }
@@ -738,8 +839,19 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/issue", "**/issue/**", "**/compare", "**/compare/**", "**/client", "**/client/**"],
-                    "message": "baking/ builds on model/, read/ and @interopkit/core only: issue/, compare/ and client/ are its siblings and never a layer under it."
+                    "group": [
+                      "**/client",
+                      "**/client/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/issue",
+                      "**/issue/**",
+                      "**/jwt",
+                      "**/jwt/**",
+                      "**/keys",
+                      "**/keys/**"
+                    ],
+                    "message": "baking/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
                 ]
               }
@@ -758,8 +870,19 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/issue", "**/issue/**", "**/compare", "**/compare/**", "**/baking", "**/baking/**"],
-                    "message": "client/ builds on model/, read/ and @interopkit/core only: issue/, compare/ and baking/ are its siblings and never a layer under it."
+                    "group": [
+                      "**/baking",
+                      "**/baking/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/issue",
+                      "**/issue/**",
+                      "**/jwt",
+                      "**/jwt/**",
+                      "**/keys",
+                      "**/keys/**"
+                    ],
+                    "message": "client/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
                 ]
               }

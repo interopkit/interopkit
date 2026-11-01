@@ -1,16 +1,22 @@
 import { fileURLToPath } from "node:url";
+import * as core from "@interopkit/core";
 import * as oauth from "@interopkit/core/oauth";
 import { describe, expect, it } from "vitest";
 import { guidesWithSamples, runGuideSamples, typecheckGuideSamples } from "../../../scripts/guide-samples.js";
 import * as baking from "../src/baking/index.js";
 import * as client from "../src/client/index.js";
 import * as root from "../src/index.js";
+import * as jwt from "../src/jwt/index.js";
+import * as keys from "../src/keys/index.js";
 
 const modules = {
   "@interopkit/achievement-credentials": root,
   "@interopkit/achievement-credentials/baking": baking,
   "@interopkit/achievement-credentials/client": client,
   "@interopkit/core/oauth": oauth,
+  "@interopkit/achievement-credentials/jwt": jwt,
+  "@interopkit/achievement-credentials/keys": keys,
+  "@interopkit/core": core,
 };
 const GUIDES = new URL("../../../docs/achievement-credentials/", import.meta.url);
 const PACKAGES = fileURLToPath(new URL("../../", import.meta.url));
@@ -18,6 +24,8 @@ const PACKAGES = fileURLToPath(new URL("../../", import.meta.url));
 const PATHS = {
   "@interopkit/achievement-credentials": [`${PACKAGES}achievement-credentials/src/index.ts`],
   "@interopkit/achievement-credentials/baking": [`${PACKAGES}achievement-credentials/src/baking/index.ts`],
+  "@interopkit/achievement-credentials/jwt": [`${PACKAGES}achievement-credentials/src/jwt/index.ts`],
+  "@interopkit/achievement-credentials/keys": [`${PACKAGES}achievement-credentials/src/keys/index.ts`],
   "@interopkit/core": [`${PACKAGES}core/src/index.ts`],
   "@interopkit/achievement-credentials/client": [`${PACKAGES}achievement-credentials/src/client/index.ts`],
   "@interopkit/core/checks": [`${PACKAGES}core/src/checks.ts`],

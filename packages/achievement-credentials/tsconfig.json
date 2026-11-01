@@ -8,7 +8,9 @@
     "paths": {
       "@interopkit/core": ["../core/src/index.ts"],
       "@interopkit/core/checks": ["../core/src/checks.ts"],
-      "@interopkit/core/oauth": ["../core/src/oauth/index.ts"]
+      "@interopkit/core/oauth": ["../core/src/oauth/index.ts"],
+      "@interopkit/achievement-credentials/keys": ["./src/keys/index.ts"],
+      "@interopkit/achievement-credentials/jwt": ["./src/jwt/index.ts"]
     }
   },
   "include": ["src", "test"]

@@ -1,10 +1,12 @@
 # Architecture of achievement-credentials
 
-`@interopkit/achievement-credentials` has six modules that share one model. `model` holds the types, the vocabularies and the
-findings. `read` turns untrusted JSON into the model. `issue` writes credentials from their parts, `compare` looks at
-credentials, `baking` writes a credential into an image and reads it out, and `client` calls the APIs of a server. `read`
-imports only `model` and `@interopkit/core`, `issue`, `compare`, `baking` and `client` import those and `read` and never each
-other, and `model` imports nothing of the family.
+`@interopkit/achievement-credentials` has eight modules that share one model. `model` holds the types, the vocabularies, the
+findings and the terms of verification. `read` turns untrusted JSON into the model. `issue` writes credentials from their parts,
+`compare` looks at credentials, `baking` writes a credential into an image and reads it out, and `client` calls the APIs of a
+server. `keys` resolves the keys that verify a proof and checks that a key belongs to an issuer, and `jwt` signs and reads a
+credential as a JSON Web Token. `read` imports only `model` and `@interopkit/core`, `issue`, `compare`, `baking` and `client`
+import those and `read` and never each other, `keys` imports `model` and `core`, `jwt` imports those and `read` and `keys`, and
+`model` imports nothing of the family.
 
 ```mermaid
 flowchart BT
@@ -15,6 +17,8 @@ flowchart BT
   compare["compare<br/>equality, newer, summary"]
   baking["baking<br/>PNG chunks, SVG elements"]
   client["client<br/>discovery, credentials, profile"]
+  keys["keys<br/>resolver, issuer binding"]
+  jwt["jwt<br/>sign and read a JWS"]
   root["index.ts<br/>the public API"]
   read --> model
   read --> core
@@ -26,6 +30,11 @@ flowchart BT
   baking --> core
   client --> read
   client --> core
+  keys --> model
+  keys --> core
+  jwt --> read
+  jwt --> keys
+  jwt --> core
   root --> model
   root --> read
   root --> issue
@@ -50,15 +59,20 @@ flowchart BT
 |           | `credential-text.ts`, `formats.ts`, `options.ts`, `baked-credential.ts`                          | What an image holds of a credential, the keywords and namespaces of the kinds, the options and limits, the result type         |
 | `client`  | `client.ts`, `config.ts`, `request.ts`                                                           | The four calls and the iteration of the credentials, the checks of the configuration, the one request with its token and limits |
 |           | `discovery.ts`, `paging.ts`, `status.ts`                                                         | The service description, the readers of `X-Total-Count` and `Link`, the status that a server answers an error with             |
+| `keys`    | `create-key-resolver.ts`, `verify-issuer-key.ts`                                                 | The resolver of keys and the binding of a key to an issuer                              |
+|           | `documents.ts`, `did.ts`, `did-jwk.ts`, `jwk.ts`, `multibase.ts`                                 | The fetch of a document and the keys it holds, the DID methods, the public JWK           |
+| `jwt`     | `sign-credential-jwt.ts`, `read-credential-jwt.ts`                                               | Signing a credential as Open Badges 8.2, and reading a compact JWS                      |
+|           | `claims.ts`, `options.ts`                                                                        | The claims that repeat a credential, and the options of both                            |
 
 `@interopkit/core/checks` holds what other standards need as much: records that refuse or keep unknown properties, the formats
 of a date and a date and time, the copy of JSON within a depth limit, and the conversion of the issues of a parse to findings
 that own their rule names.
 
 Each module has an `index.ts`, its public API. `baking` and `client` are entry points of the package, because an application that
-needs no images should not load an XML parser, and one that calls no server should not load a client. `read` has an `internal.ts` for what the other modules and the tests share
-and the package does not export: the schemas, which the tests compare with the schemas of 1EdTech and the builders write
-with. `pnpm check:standards` and Biome keep modules from
+needs no images should not load an XML parser, and one that calls no server should not load a client. `read` and `keys` have an
+`internal.ts` for what the other modules and the tests share and the package does not export: the schemas of `read`, which the
+tests compare with the schemas of 1EdTech and the builders write with, and the public JWK and thumbprint of `keys`. Two files
+directly in `src/` serve several modules: the cache of documents and the check of a flag. `pnpm check:standards` and Biome keep modules from
 importing by a deep path or against the layers.
 
 ## Reading

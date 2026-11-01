@@ -10,6 +10,16 @@ export const ALLOWED_LICENSES: ReadonlySet<string> = new Set([
   "ISC",
 ]);
 
+/**
+ * The packages whose license is not on the list and that the owner approved on 2026-11-01, by name and the expression the
+ * report gives. `did-context` carries JSON-LD data files under the W3C Software and Document License, and `lru-cache` is under
+ * BlueOak-1.0.0; AGENTS.md records each with its reason.
+ */
+export const APPROVED_EXCEPTIONS: ReadonlyMap<string, string> = new Map([
+  ["did-context", "BSD"],
+  ["lru-cache", "BlueOak-1.0.0"],
+]);
+
 /** One package of the report of `pnpm licenses list --json`. */
 interface Entry {
   readonly name: string;
@@ -27,12 +37,14 @@ export function isAllowed(expression: string): boolean {
     .some((alternative) => alternative.split(/\s+AND\s+/).every((license) => ALLOWED_LICENSES.has(license.trim())));
 }
 
-/** Returns the packages whose license is not allowed, as `name@version (license)`. */
+/** Returns the packages whose license is not allowed and not approved, as `name@version (license)`. */
 export function disallowed(report: Report): string[] {
   return Object.entries(report)
     .filter(([expression]) => !isAllowed(expression))
     .flatMap(([expression, entries]) =>
-      entries.flatMap((entry) => entry.versions.map((version) => `${entry.name}@${version} (${expression})`)),
+      entries
+        .filter((entry) => APPROVED_EXCEPTIONS.get(entry.name) !== expression)
+        .flatMap((entry) => entry.versions.map((version) => `${entry.name}@${version} (${expression})`)),
     );
 }
 

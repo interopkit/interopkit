@@ -1,21 +1,25 @@
 import {
   copyJson,
   createFindingSink,
+  DEFAULT_MAX_FINDINGS,
   type FindingSink,
   findingsOf,
   isRecord,
+  refusalOf,
   type Schema,
   safeParseBounded,
 } from "@interopkit/core/checks";
 import type * as v from "valibot";
 import {
   type AnyCredential,
+  type ClrCredentialJwtPayload,
   CONTEXTS,
   type CredentialIssue,
   type CredentialKind,
   type Entity,
   type EntityKind,
 } from "../model/index.js";
+import { clrCredentialJwtPayloadSchema } from "./clr-schemas.js";
 import { CREDENTIAL_SCHEMAS, ENTITY_SCHEMAS } from "./registry.js";
 import { subjectIssues } from "./rules.js";
 
@@ -100,6 +104,38 @@ export function inspectEntity(
   const entity = parseJson(ENTITY_SCHEMAS[kind], value, sink);
   if (entity !== undefined) sink.add(ruleIssues(entity));
   return entity;
+}
+
+/**
+ * Reads the payload of a CLR that is signed as a JWT, and judges it when its shape is right. Its nested credentials are
+ * compact JWS, which CLR 7.2.4.1 asks for.
+ */
+function inspectClrPayload(value: unknown, sink: FindingSink<CredentialIssue>): ClrCredentialJwtPayload | undefined {
+  const payload = parseJson(clrCredentialJwtPayloadSchema, value, sink);
+  if (payload !== undefined) sink.add(ruleIssues(payload));
+  return payload;
+}
+
+/**
+ * Reads a value as a credential of the Data Model 2.0 or 1.1, or as the payload of a CLR in a JWT, for a function that signs or
+ * verifies it, and says in a sentence what is wrong when it is not one.
+ *
+ * @param value - The value.
+ * @param label - Names the value in the sentence, such as `The credential`.
+ * @param payload - Whether the value is the payload of a CLR whose credentials are compact JWS.
+ * @returns The credential, or the sentence that names the path of the first error and counts the others.
+ */
+export function credentialOrReason(
+  value: unknown,
+  label: string,
+  payload = false,
+): { readonly value: AnyCredential } | { readonly reason: string } {
+  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const credential = payload ? inspectClrPayload(value, sink) : inspectCredential(value, undefined, sink);
+  const errors = sink.list();
+  return credential === undefined || errors.length > 0
+    ? { reason: refusalOf(label, errors, "validateCredential") }
+    : { value: credential };
 }
 
 /** Judges the subject of a credential, or the subject of a CLR in a JWT, that the specification wants identified. */

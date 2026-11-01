@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { disallowed, isAllowed } from "../check-licenses.ts";
+import { APPROVED_EXCEPTIONS, disallowed, isAllowed } from "../check-licenses.ts";
 
 describe("isAllowed", () => {
   it("accepts MIT, Apache-2.0, BSD and ISC", () => {
@@ -36,5 +36,16 @@ describe("disallowed", () => {
 
   it("returns nothing for a report of allowed licenses", () => {
     expect(disallowed({ ISC: [{ name: "a", versions: ["1.0.0"] }] })).toStrictEqual([]);
+  });
+
+  it("lets an approved package through only under the license that was approved", () => {
+    expect(APPROVED_EXCEPTIONS.get("lru-cache")).toBe("BlueOak-1.0.0");
+    expect(disallowed({ "BlueOak-1.0.0": [{ name: "lru-cache", versions: ["11.5.3"] }] })).toStrictEqual([]);
+    expect(disallowed({ "GPL-3.0-only": [{ name: "lru-cache", versions: ["11.5.3"] }] })).toStrictEqual([
+      "lru-cache@11.5.3 (GPL-3.0-only)",
+    ]);
+    expect(disallowed({ "BlueOak-1.0.0": [{ name: "other", versions: ["1.0.0"] }] })).toStrictEqual([
+      "other@1.0.0 (BlueOak-1.0.0)",
+    ]);
   });
 });

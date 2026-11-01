@@ -1,6 +1,12 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["src/index.ts", "src/baking/index.ts", "src/client/index.ts"],
+  "entryPoints": [
+    "src/index.ts",
+    "src/baking/index.ts",
+    "src/client/index.ts",
+    "src/keys/index.ts",
+    "src/jwt/index.ts"
+  ],
   "tsconfig": "tsconfig.build.json",
   "sourceLinkTemplate": "https://github.com/interopkit/interopkit/blob/{gitRevision}/packages/achievement-credentials/{path}#L{line}",
   "validation": {

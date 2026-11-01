@@ -34,3 +34,12 @@ and compact JWS (`listCredentials`, from `X-Total-Count`, `Link` or the size of 
 come from a function of the host, it follows no redirect, and it retries nothing: `readStatusInfo` gives the `imsx_StatusInfo`
 and the `Retry-After` of a refusal. A page of more credentials than the request asked for, and a credential or a profile of more
 than 1,048,576 characters, are refused before the readers see them. `readEntity` returns the class of its kind.
+
+`createKeyResolver` resolves the key of a `kid` or a verification method from a `did:key`, a `did:web` or an HTTPS address (a
+JWK, a Multikey, a key set, a DID or controller document), caches the documents with a shared load, and reads what an issuer
+publishes: its document, the key set at `/.well-known/jwks.json` and a `did:jwk`. `verifyIssuerKey` checks that a key belongs to
+the issuer that a credential names, by thumbprint, `controller` and `iss`, and returns the `issuer` check. `signCredentialJwt`
+signs a credential over a `Signer` as Open Badges 8.2 asks, with a CLR's nested credentials as compact JWS, and
+`readCredentialJwt` verifies a compact JWS of the Open Badges form, the VC-JOSE-COSE form or the `vc` claim form of VC-JWT 1.1,
+checks its claims against the credential, and refuses a key that the issuer does not publish unless `allowUnboundKeys` is set.
+The package needs Node.js 24 or later.

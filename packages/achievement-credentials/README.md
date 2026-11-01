@@ -5,8 +5,9 @@ Open Badges [3.0](https://www.imsglobal.org/spec/ob/v3p0/main/) and the Comprehe
 exchange them, under both versions of the Verifiable Credentials Data Model, and readers that check them against the JSON
 schemas of 1EdTech and the rules of the specifications. Validators list every finding. Builders write the credentials that an
 issuer awards, and functions hash the identity of a recipient, compare two credentials and summarize one for display. A credential
-can be baked into a PNG or an SVG image and read out of one, and a client talks to the Open Badges and CLR APIs of a server. It knows
-nothing of any product: the host says where a credential comes from and what it is for.
+can be baked into a PNG or an SVG image and read out of one, and a client talks to the Open Badges and CLR APIs of a server. Keys
+resolve from DIDs and HTTPS documents, a key is bound to the issuer that publishes it, and a credential is signed and read as a
+JSON Web Token. It knows nothing of any product: the host says where a credential comes from and what it is for.
 
 ```mermaid
 flowchart LR
@@ -18,6 +19,8 @@ flowchart LR
     compare["sameCredential, newerCredential,<br/>credentialSummary, hashIdentifier"]
     baking["baking: bakePng, readPng,<br/>bakeSvg, readSvg"]
     client["client: discoverService,<br/>createCredentialsClient"]
+    jwt["signCredentialJwt, readCredentialJwt"]
+    keys["createKeyResolver, verifyIssuerKey"]
   end
   model["AchievementCredential, ClrCredential, Profile, ...<br/>the model of Open Badges 3.0 and CLR 2.0"]
   host -->|"JSON as parsed"| read
@@ -32,12 +35,17 @@ flowchart LR
   baking -->|"image with the credential,<br/>or the credential in an image"| host
   host <-->|"credentials, profile, fetch, token"| client
   client <-->|"HTTPS"| server[("Resource server")]
+  host -->|"a credential, a signer"| jwt
+  jwt -->|"a compact JWS, or a credential with its key"| host
+  jwt --> keys
+  keys -->|"your fetch"| docs["Key documents:<br/>DID, JWK, key set"]
 ```
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
-environment variable, writes no log and makes no request. Its dependencies are `@interopkit/core`,
-[valibot](https://valibot.dev), [@noble/hashes](https://github.com/paulmillr/noble-hashes) and
-[saxes](https://github.com/lddubeau/saxes), which `/baking` loads.
+environment variable and writes no log. It reaches the network only through a `fetch` that you pass. Its dependencies are
+`@interopkit/core`, [valibot](https://valibot.dev), [@noble/hashes](https://github.com/paulmillr/noble-hashes),
+[saxes](https://github.com/lddubeau/saxes), which `/baking` loads, [jose](https://github.com/panva/jose) and the key libraries of the
+[Interop Alliance](https://github.com/interop-alliance); it needs Node.js 24 or later.
 
 ```bash
 npm install @interopkit/achievement-credentials
@@ -56,12 +64,17 @@ npm install @interopkit/achievement-credentials
 |                                       | `AchievementCredential`, `EndorsementCredential`, `ClrCredential`, `VerifiableCredential`, `Achievement`, `Profile` and the other classes of Open Badges and CLR: the model                                        |
 |                                       | `AchievementCredentialV1p1`, `EndorsementCredentialV1p1`, `ClrCredentialV1p1`, `VerifiableCredentialV1p1`: the credentials under the Verifiable Credentials Data Model 1.1                                         |
 |                                       | `GetOpenBadgeCredentialsResponse`, `GetClrCredentialsResponse`, `ImsxStatusInfo`, `ServiceDescriptionDocument`, `Multikey`, `JWK`, `JWKS`: the models of the APIs and of keys                                      |
+|                                       | `KeyResolver`, `VerificationKey`, `VerificationCheck`, `ProofResult`, `KEY_RELATIONSHIPS`, `VERIFICATION_CHECKS`, `CHECK_OUTCOMES`: the terms of verification |
 |                                       | `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CONTEXTS`, `ACHIEVEMENT_TYPES`, `ALIGNMENT_TARGET_TYPES`, `IDENTIFIER_TYPES`, `RESULT_TYPES`, `AUTHORIZATION_ERRORS` and the other vocabularies                               |
 |                                       | `IssuableCredential`, `CredentialV1p1`, `AnyCredential`, `Entity`, `CredentialKind`, `EntityKind`, `ExtensionTerm` and the types of the vocabularies                                                               |
 |                                       | `BakedCredential`, `BakedKind`: a credential read from an image, and its kind                                                                                                                                      |
 |                                       | `CredentialApi`, `CREDENTIAL_APIS`, `CredentialsClient`, `CredentialsClientConfig`, `ServiceDescription`, `DiscoverOptions`: the types of the client                                                               |
 | `@interopkit/achievement-credentials/client` | `discoverService`, `createCredentialsClient`, `readStatusInfo`: find the OAuth endpoints of an Open Badges or CLR server, list, add and replace its credentials, and read and replace the profile |
 | `@interopkit/achievement-credentials/baking` | `bakePng`, `readPng`, `bakeSvg`, `readSvg`, `BakeImageOptions`, `ReadImageOptions`: write a credential into a PNG or an SVG image and read it out, for Open Badges 3.0 and CLR 2.0                           |
+| `@interopkit/achievement-credentials/keys` | `createKeyResolver`, `KeyResolverOptions`: resolve the key of a `kid` or a verification method (`did:key`, `did:web`, an HTTPS address) and read what an issuer publishes |
+|                                       | `verifyIssuerKey`: check that a key belongs to an issuer, as an `issuer` check                                                                                                                                      |
+| `@interopkit/achievement-credentials/jwt` | `signCredentialJwt`, `JwtSignOptions`: sign a credential as a JWT over a `Signer`, as Open Badges 8.2 asks                                                                                                         |
+|                                       | `readCredentialJwt`, `JwtReadOptions`: verify a compact JWS and read its credential, with the key bound to the issuer                                                                                              |
 
 ```ts
 import { readCredential, validateCredential } from "@interopkit/achievement-credentials";

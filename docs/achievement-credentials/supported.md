@@ -10,7 +10,8 @@ flowchart LR
   model --> issue["Builders, identities,<br/>comparison, summary"]
   model --> baking["Baking in PNG and SVG,<br/>both kinds"]
   model --> client["Client of the APIs:<br/>discovery, credentials, profile"]
-  spec -.-> outside["Not included here:<br/>proofs, status, verification,<br/>the provider of the APIs, Open Badges 2.0"]
+  model --> keys["Keys, issuer binding,<br/>JWT proofs"]
+  spec -.-> outside["Not included here:<br/>Data Integrity proofs, status, refresh,<br/>verification, the provider of the APIs, Open Badges 2.0"]
 ```
 
 | Area                    | Specification              | Included                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -33,12 +34,15 @@ flowchart LR
 | Rules of the subject    | OB B.1.3, B.7, CLR B.1.2   | An `AchievementSubject` and a `ClrSubject` with an `id` or an `identifier`; an identity hash in a form the specification names                                                                                                                                                                                                                                                                                                                                  |
 | JSON schemas            | The schemas of 1EdTech     | Every class, compared in the tests with the published files at pinned hashes, and with the schemas that the pages print for the classes that lack a file                                                                                                                                                                                                                                                                                                        |
 | Examples                | OB D, CLR 2                | Every credential that the pages print is read without a finding                                                                                                                                                                                                                                                                                                                                                                                                 |
+| VC-JWT proof            | OB 8.2, VC-JOSE-COSE       | `signCredentialJwt` over a `Signer`: the claims `iss`, `jti`, `nbf`, `sub`, `exp`, `kid` or `jwk`, `typ`; a CLR with its nested credentials as compact JWS. `readCredentialJwt` reads that form, the VC-JOSE-COSE form and the `vc` claim form of VC-JWT 1.1 |
+| Keys                    | OB 8.5, B.6                | `createKeyResolver`: a `kid` or verification method at an HTTPS address (a JWK, a Multikey, a key set, a controller document), `did:key` and `did:web`; other DID methods through a port |
+| Issuer binding          | Guide 3.1.12               | `verifyIssuerKey`: a key counts when the issuer publishes it under `assertionMethod` in its document or in the key set at `/.well-known/jwks.json`, with `controller` and `iss` kept apart |
 
 ## Not included
 
 | Not included                                                         | Why                                                                                                         |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Proofs, keys, status lists, refresh, verification                    | They need keys, a clock and requests; the readers only check shape and the rules of the subject            |
+| Data Integrity proofs, status lists, refresh, verification           | They need contexts, a clock and requests; the readers only check shape and the rules of the subject         |
 | The provider side of the APIs of Open Badges and CLR                 | A server over requests, with the host's storage and authorization                                            |
 | Open Badges 2.0                                                      | A model of its own                                                                                          |
 | JSON-LD processing, a map of languages for a text, a single context | The compacted form is read as JSON; the contexts give no language container and a credential needs both contexts |

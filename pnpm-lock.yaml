@@ -259,12 +259,27 @@ importers:
 
   packages/achievement-credentials:
     dependencies:
+      '@interop/did-method-key':
+        specifier: 7.5.1
+        version: 7.5.1
+      '@interop/did-web-resolver':
+        specifier: 6.5.0
+        version: 6.5.0
+      '@interop/ecdsa-multikey':
+        specifier: 2.4.2
+        version: 2.4.2
+      '@interop/ed25519-verification-key':
+        specifier: 8.2.2
+        version: 8.2.2
       '@interopkit/core':
         specifier: workspace:^
         version: link:../core
       '@noble/hashes':
         specifier: 2.4.0
         version: 2.4.0
+      jose:
+        specifier: 6.2.12
+        version: 6.2.12
       saxes:
         specifier: 6.0.0
         version: 6.0.0
@@ -275,9 +290,6 @@ importers:
       fast-check:
         specifier: ^4.10.2
         version: 4.10.2
-      jose:
-        specifier: 6.2.12
-        version: 6.2.12
       oidc-provider:
         specifier: 9.12.2
         version: 9.12.2(supports-color@7.2.0)
@@ -1044,6 +1056,56 @@ packages:
     resolution: {integrity: sha512-AbKq3EW41+HY6pNMJgAOrz68iyiTTf0Nr1JRHHfuG5zwniJ9Dw8J3U7oa1I2ptpqYwmEf1sXKOGK6lbdZ9eqmg==}
     engines: {node: '>=18'}
 
+  '@interop/bnid@6.0.2':
+    resolution: {integrity: sha512-yQ5Xkj5ccFMdQc+pIGvbg9tpIgxM8oLvjxImqKplg2twosi9/L5Q4q0ZiCOy3jUo3LgV5H9M99nOutOE70DJjg==}
+    engines: {node: '>=24.0'}
+    peerDependencies:
+      react-native-get-random-values: '>=1.8.0'
+    peerDependenciesMeta:
+      react-native-get-random-values:
+        optional: true
+
+  '@interop/data-integrity-core@8.9.0':
+    resolution: {integrity: sha512-FGj+D6VLb3q+UxAA5PRB0caoj5/cdpDLRW7Hu5cMI7xnpsEABnEi5leOL/BonTtSM6T/OdE/cuTOcrba0TGPdQ==}
+    engines: {node: '>=24.0'}
+
+  '@interop/did-io@4.2.2':
+    resolution: {integrity: sha512-Q/tko2ZQWP61R9nLHoEQaB4eaQn2XwYhaRmZHjv8/C4OT/dQSjvFjR8VeJfA6vTLEl8Urh2eRzUik2lVFuAUJw==}
+    engines: {node: '>=24.0'}
+
+  '@interop/did-method-key@7.5.1':
+    resolution: {integrity: sha512-lqBgjHzSaZCz1GHiiZJkwT0wWXF4nETnm/wIanDVSk+KkP4ziujnG+uSlcpmQEhbk/YoK9I/vQR1xarWE84jYg==}
+    engines: {node: '>=24.0'}
+
+  '@interop/did-web-resolver@6.5.0':
+    resolution: {integrity: sha512-rK7Y4XBabua8/FeNOos1/mX6nkKLsR95iLPzTldbKoqqXgYj/3xZqy09qbFiX2T1JzcZTb3pm3991+g4xxGjhQ==}
+    engines: {node: '>=24.0'}
+
+  '@interop/ecdsa-multikey@2.4.2':
+    resolution: {integrity: sha512-qTNEf251RIz1KkW1TKxH1oty6i8JlOK2+Lw6rAxaeUoAYY+vgRswv6aWn39aDMPyf+eHhzQzQEZlqX/ZSbOCXg==}
+    engines: {node: '>=24.0'}
+
+  '@interop/ed25519-verification-key@8.2.2':
+    resolution: {integrity: sha512-6ML8T30+Oe7sHh0gR8BURz7F0vxSJ3XJmKqeDEWJjHnzYi1GlsnO7HAHQxlHLeP06V5+hZirjISKUERTH3Tztg==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react-native-get-random-values: '>=1.8.0'
+    peerDependenciesMeta:
+      react-native-get-random-values:
+        optional: true
+
+  '@interop/http-client@1.0.5':
+    resolution: {integrity: sha512-t/zL0+mQOjNkzj6usOv6MCOvG/HVOH1GG8Dbp03ympkf4NVOaJavBBJZuE05Xi1Sp4izmjHydDwnJLlzkZpzXQ==}
+    engines: {node: '>=22.12'}
+
+  '@interop/lru-memoize@4.0.3':
+    resolution: {integrity: sha512-6c8dnoQNIiL25Q4YovC1a44mREO1lzW3F/lmvdwbAMMbhtGGRoQeqo1H4diwNhBzaxRrUMXrAIwbM26POmI/Yg==}
+    engines: {node: '>=24.0'}
+
+  '@interop/x25519-key-agreement-key@5.4.3':
+    resolution: {integrity: sha512-B9/nkteXhceT1Psy+0Lwg4R4JzW6TUYDe8AgPIc3nsQKOCdIQ4MjjUPy9/kQ7eTnzW+GR0FcTSKDy6/GQqlwdQ==}
+    engines: {node: '>=24.0'}
+
   '@jridgewell/resolve-uri@3.1.2':
     resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
     engines: {node: '>=6.0.0'}
@@ -1079,6 +1141,9 @@ packages:
   '@noble/curves@2.4.0':
     resolution: {integrity: sha512-P4/62zrgfH33CneE3Dn4WhJVA22YUU0eR51wKIan4NVRvwsA0YnPTwWGpNbpuacSujmSFLvyzpyuR30+fbq2Ew==}
     engines: {node: '>= 20.19.0'}
+
+  '@noble/ed25519@3.2.0':
+    resolution: {integrity: sha512-criDgRlnUA09hchYrTy/JUWPIEap5rZxQe6wDWzRx51oWWpDRcUpuNzlgPxDJaOK6AsW9c0wKcj3rKRv6t+bPQ==}
 
   '@noble/hashes@2.4.0':
     resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
@@ -1747,6 +1812,9 @@ packages:
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  did-context@3.1.1:
+    resolution: {integrity: sha512-iFpszgSxc7d1kNBJWC+PAzNTpe5LPalzsIunTMIpbG3O37Q7Zi7u4iIaedaM7UhziBhT+Agr9DyvAiXSUyfepQ==}
 
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
@@ -2445,6 +2513,10 @@ packages:
   undici@6.29.1:
     resolution: {integrity: sha512-EvRlUt/QqAEvXdQeRMYUfwOQsfzpDztykrG2owGEE/rBOBoYv9uF39ZzsNDh4lTFHhTr2XOZjKkYgueD12ZmGA==}
     engines: {node: '>=18.17'}
+
+  undici@7.30.1:
+    resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
+    engines: {node: '>=20.18.1'}
 
   unicode-emoji-modifier-base@1.0.0:
     resolution: {integrity: sha512-yLSH4py7oFH3oG/9K+XWrz1pSi3dfUrWEnInbxMfArOfc1+33BlGPQtLsOYwvdMy11AwUBetYuaRxSPqgkq+8g==}
@@ -3195,6 +3267,65 @@ snapshots:
 
   '@humanwhocodes/momoa@3.3.13': {}
 
+  '@interop/bnid@6.0.2':
+    dependencies:
+      '@scure/base': 2.4.0
+
+  '@interop/data-integrity-core@8.9.0':
+    dependencies:
+      '@scure/base': 2.4.0
+
+  '@interop/did-io@4.2.2':
+    dependencies:
+      '@interop/data-integrity-core': 8.9.0
+      '@interop/lru-memoize': 4.0.3
+
+  '@interop/did-method-key@7.5.1':
+    dependencies:
+      '@interop/data-integrity-core': 8.9.0
+      '@interop/did-io': 4.2.2
+      '@interop/ed25519-verification-key': 8.2.2
+      '@interop/x25519-key-agreement-key': 5.4.3
+    transitivePeerDependencies:
+      - react-native-get-random-values
+
+  '@interop/did-web-resolver@6.5.0':
+    dependencies:
+      '@interop/bnid': 6.0.2
+      '@interop/data-integrity-core': 8.9.0
+      '@interop/did-io': 4.2.2
+      '@interop/http-client': 1.0.5
+      did-context: 3.1.1
+    transitivePeerDependencies:
+      - react-native-get-random-values
+
+  '@interop/ecdsa-multikey@2.4.2':
+    dependencies:
+      '@interop/data-integrity-core': 8.9.0
+      '@scure/base': 2.4.0
+
+  '@interop/ed25519-verification-key@8.2.2':
+    dependencies:
+      '@interop/data-integrity-core': 8.9.0
+      '@noble/ed25519': 3.2.0
+      '@noble/hashes': 2.4.0
+      '@scure/base': 2.4.0
+
+  '@interop/http-client@1.0.5':
+    dependencies:
+      ky: 1.14.3
+      undici: 7.30.1
+
+  '@interop/lru-memoize@4.0.3':
+    dependencies:
+      lru-cache: 11.5.3
+
+  '@interop/x25519-key-agreement-key@5.4.3':
+    dependencies:
+      '@interop/data-integrity-core': 8.9.0
+      '@noble/curves': 2.4.0
+      '@scure/base': 2.4.0
+
   '@jridgewell/resolve-uri@3.1.2': {}
 
   '@jridgewell/sourcemap-codec@1.6.0': {}
@@ -3233,6 +3364,8 @@ snapshots:
   '@noble/curves@2.4.0':
     dependencies:
       '@noble/hashes': 2.4.0
+
+  '@noble/ed25519@3.2.0': {}
 
   '@noble/hashes@2.4.0': {}
 
@@ -3776,6 +3909,8 @@ snapshots:
   destroy@1.2.0: {}
 
   detect-libc@2.1.2: {}
+
+  did-context@3.1.1: {}
 
   ee-first@1.1.1: {}
 
@@ -4447,6 +4582,8 @@ snapshots:
   undici-types@6.21.0: {}
 
   undici@6.29.1: {}
+
+  undici@7.30.1: {}
 
   unicode-emoji-modifier-base@1.0.0: {}
 

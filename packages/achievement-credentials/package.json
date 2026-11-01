@@ -1,7 +1,7 @@
 {
   "name": "@interopkit/achievement-credentials",
   "version": "0.0.0",
-  "description": "Open Badges 3.0 and CLR 2.0 credentials: the model of an achievement credential and of the API, readers that check them against the 1EdTech schemas, builders, identity hashes and comparison.",
+  "description": "Open Badges 3.0 and CLR 2.0 credentials: the model of an achievement credential and of the API, readers that check them against the 1EdTech schemas, builders, identity hashes and comparison, the keys that verify them and their JSON Web Token form.",
   "keywords": [
     "interopkit",
     "achievement-credentials",
@@ -33,6 +33,14 @@
     "./client": {
       "types": "./dist/client/index.d.ts",
       "default": "./dist/client/index.js"
+    },
+    "./keys": {
+      "types": "./dist/keys/index.d.ts",
+      "default": "./dist/keys/index.js"
+    },
+    "./jwt": {
+      "types": "./dist/jwt/index.d.ts",
+      "default": "./dist/jwt/index.js"
     }
   },
   "files": [
@@ -41,7 +49,7 @@
     "NOTICE"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "publishConfig": {
     "access": "public"
@@ -58,8 +66,13 @@
     "oidc-provider": "9.12.2"
   },
   "dependencies": {
+    "@interop/did-method-key": "7.5.1",
+    "@interop/did-web-resolver": "6.5.0",
+    "@interop/ecdsa-multikey": "2.4.2",
+    "@interop/ed25519-verification-key": "8.2.2",
     "@interopkit/core": "workspace:^",
     "@noble/hashes": "2.4.0",
+    "jose": "6.2.12",
     "saxes": "6.0.0",
     "valibot": "1.5.0"
   }

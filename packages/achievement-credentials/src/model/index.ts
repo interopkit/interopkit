@@ -78,6 +78,18 @@ export {
   type IssuableCredential,
 } from "./kinds.js";
 export {
+  CHECK_OUTCOMES,
+  type CheckOutcome,
+  KEY_RELATIONSHIPS,
+  type KeyRelationship,
+  type KeyResolver,
+  type ProofResult,
+  VERIFICATION_CHECKS,
+  type VerificationCheck,
+  type VerificationCheckName,
+  type VerificationKey,
+} from "./verification.js";
+export {
   ACHIEVEMENT_TYPES,
   type AchievementType,
   ALIGNMENT_TARGET_TYPES,
