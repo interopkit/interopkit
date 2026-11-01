@@ -124,6 +124,10 @@ a `message` and its `severity`. A warning does not keep a value from being read.
 with their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
 why, and the differences from the references.
 
+[The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/evidence.md) shows what the
+package was checked against: the official schemas, real frameworks of public providers, an example provider and consumer,
+OpenSALT, the speed of reading and four runtimes.
+
 ## License
 
 [Apache-2.0](LICENSE). Copyright Fariz Wakan. CASE and 1EdTech are trademarks of 1EdTech Consortium, Inc.; see

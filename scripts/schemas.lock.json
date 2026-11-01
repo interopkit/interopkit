@@ -238,5 +238,35 @@
     "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_servicedescriptiondocument_schema.json",
     "file": "clr_v2p0_servicedescriptiondocument_schema.json",
     "sha256": "7da1090a1dfa05be9337dc2663b22223596b17a7d50673cc2575ab38d6b1e162"
+  },
+  {
+    "url": "https://standards.ed.sc.gov/ims/case/v1p0/CFPackages/fb7db201-fcf7-4187-b42b-8272e3d01270",
+    "file": "fb7db201-fcf7-4187-b42b-8272e3d01270",
+    "sha256": "fbfdbd9893ebb7ce096ed9eb2e622277adacd7d9a62bc2a9a26c08d353e207d8"
+  },
+  {
+    "url": "https://standards.ed.sc.gov/ims/case/v1p0/CFPackages/4f146ce5-efd0-4d73-b920-9aac07fb0db0",
+    "file": "4f146ce5-efd0-4d73-b920-9aac07fb0db0",
+    "sha256": "4db24145ee0903ffd7f5334c7639789446ffc556f97f68ef4bb3b2fc086c5492"
+  },
+  {
+    "url": "https://opensalt.net/ims/case/v1p0/CFPackages/c608881b-d7cb-11e8-824f-0242ac160002",
+    "file": "c608881b-d7cb-11e8-824f-0242ac160002",
+    "sha256": "420ad6b926046f10ac4697e99c2bfdf3f11c11c23dee12d8a955edb3e9622930"
+  },
+  {
+    "url": "https://opensalt.net/ims/case/v1p0/CFPackages/4f37094a-cf04-11e7-b9f8-2ff5c05be24b",
+    "file": "4f37094a-cf04-11e7-b9f8-2ff5c05be24b",
+    "sha256": "77bf1c4fc4dfe36520c7a7b38c487fc1aa8e567b7bb6539125cc5c4f302a6955"
+  },
+  {
+    "url": "https://opensalt.net/ims/case/v1p0/CFPackages/c5fb3436-d7cb-11e8-824f-0242ac160002",
+    "file": "c5fb3436-d7cb-11e8-824f-0242ac160002",
+    "sha256": "8e7f7b01995ef08838bc090c068e842cd886596b23a673156b0f1bf2f37bcda9"
+  },
+  {
+    "url": "https://opensalt.net/ims/case/v1p0/CFPackages/0ef60b38-9109-11e9-9ab3-ef46d22b49d8",
+    "file": "0ef60b38-9109-11e9-9ab3-ef46d22b49d8",
+    "sha256": "df90dc6a59b925c49e24a15402c8c1a5bc4e62d3d2d963db9f5a69323132c390"
   }
 ]

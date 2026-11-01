@@ -112,6 +112,35 @@ export default defineConfig({
         },
       },
       {
+        // The benchmarks and budgets of the package: `pnpm bench` runs them with `vitest bench`, which gives the project the
+        // suffix "(bench)". They time the build that ships, which `pnpm bench` makes first, because Vite's rewrite of the imports
+        // of a source file makes it slower.
+        resolve: {
+          alias: [
+            {
+              find: /^@interopkit\/competency-frameworks$/,
+              replacement: resolve(import.meta.dirname, "packages/competency-frameworks/dist/index.js"),
+            },
+            {
+              find: /^@interopkit\/competency-frameworks\/(.+)$/,
+              replacement: resolve(import.meta.dirname, "packages/competency-frameworks/dist/$1/index.js"),
+            },
+          ],
+        },
+        test: {
+          name: "competency-frameworks-bench",
+          include: [],
+          server: { deps: { external: [/\/packages\/competency-frameworks\/dist\//] } },
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
+          benchmark: {
+            include: ["packages/competency-frameworks/test/**/*.bench.ts"],
+            // Vitest counts the export getters that a benchmark reads, which slows the benchmarks of the package down.
+            suppressExportGetterWarnings: true,
+          },
+        },
+      },
+      {
         // The examples are packages of their own, and a test of each runs its scenario against the sources.
         resolve: { alias: SOURCES },
         test: {
@@ -127,6 +156,35 @@ export default defineConfig({
           name: "example-learning-analytics",
           include: ["examples/learning-analytics/test/**/*.test.ts"],
           testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The ministry and the school platform: the scenario and the tests of the example run against the sources.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "example-competency-frameworks",
+          include: ["examples/competency-frameworks/test/**/*.test.ts"],
+          exclude: ["**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The answers of the example provider against the schemas and the OpenAPI document of CASE: `pnpm schemas` downloads them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "example-competency-frameworks-corpus",
+          include: ["examples/competency-frameworks/test/conformance.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The flows of the example against OpenSALT in containers: `pnpm opensalt` starts it and runs them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "example-competency-frameworks-opensalt",
+          include: ["examples/competency-frameworks/test/opensalt.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       nodeProject("tool-integration"),

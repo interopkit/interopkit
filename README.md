@@ -77,7 +77,9 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `pnpm check:packages`  | publint and Are the Types Wrong on the packed packages                                                                                                          |
 | `pnpm check:licenses`  | Every production dependency has an allowed license                                                                                                              |
 | `pnpm check:audit`     | `pnpm audit` for vulnerabilities of high severity or above                                                                                                      |
-| `pnpm compat`          | Runs the scenarios of the examples, built as the packages ship, on Node.js, Deno, Bun and workerd; it needs Deno and Bun installed ([compat](compat/README.md)) |
+| `pnpm compat`          | Runs the scenarios of the three examples, built as the packages ship, on Node.js, Deno, Bun and workerd; it needs Deno and Bun installed ([compat](compat/README.md)) |
+| `pnpm bench`           | Times reading, checking and walking a framework of 10,000 items against budgets ([evidence](docs/competency-frameworks/evidence.md))                           |
+| `pnpm opensalt`        | Starts OpenSALT in containers and runs the CASE client and provider of the example against it ([validation/opensalt](validation/opensalt/README.md))           |
 | `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                                                                                          |
 | `pnpm corpus`          | Downloads the pinned repositories that tests read                                                                                                               |
 | `pnpm schemas`         | Downloads the pinned specification files that tests read                                                                                                        |
@@ -102,7 +104,7 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `examples/`                                                                                                                                                      | Runnable examples, each a package of its own, run by a test                                      |
 | `compat/`                                                                                                                                                        | The scenarios of the examples on each runtime                                                    |
 | `scripts/`                                                                                                                                                       | The standards check, the mutation check of the security rules, and the downloads of pinned files |
-| `validation/`                                                                                                                                                    | Python scripts that write fixtures                                                               |
+| `validation/`                                                                                                                                                    | Python scripts that write fixtures, and the containers of OpenSALT                               |
 | `biome/`                                                                                                                                                         | GritQL lint rules                                                                                |
 
 ## License

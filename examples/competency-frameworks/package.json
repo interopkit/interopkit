@@ -1,0 +1,15 @@
+{
+  "name": "@interopkit/example-competency-frameworks",
+  "private": true,
+  "type": "module",
+  "description": "A ministry that publishes frameworks over the CASE REST binding, and a school platform that keeps copies of them, finds what changed and aligns its own framework with them.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node scenario.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@interopkit/competency-frameworks": "workspace:^",
+    "@interopkit/core": "workspace:^"
+  }
+}

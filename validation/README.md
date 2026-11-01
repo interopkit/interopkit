@@ -1,7 +1,9 @@
 # validation
 
-Python scripts that write the reference fixtures in `packages/*/test/fixtures/`. They sign with libraries that share no code
-with the packages, so that a test compares the packages with an independent implementation.
+Python scripts that write the reference fixtures in `packages/*/test/fixtures/`, and the containers of counterparties. The
+scripts sign with libraries that share no code with the packages, so that a test compares the packages with an independent
+implementation. A counterparty is an application that runs beside the packages: [opensalt](opensalt/README.md) is a CASE server
+and editor, which `pnpm opensalt` starts in containers and runs the client and provider of the example against.
 
 ```mermaid
 flowchart LR

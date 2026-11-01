@@ -60,6 +60,8 @@ A change to a rule of a specification cites its section in the pull request and 
 | `pnpm compat`                                                                   | A change that could differ between runtimes: a use of Web Crypto, `fetch`, `URL` or `AbortSignal`; run `pnpm build` first      |
 | `pnpm check:licenses`, `pnpm check:audit`                                       | A change to a dependency                                                                                                       |
 | `pnpm corpus`, `pnpm schemas`, `pnpm spec-examples`, `pnpm test:spec`           | A change to what the downloaded files are read for                                                                             |
+| `pnpm bench`                                                                    | A change to code that reads, checks or walks a framework, or to a budget                                                       |
+| `pnpm opensalt`                                                                 | A change to the CASE client or provider, or to the example that they run in; it needs Docker                                   |
 
 - A change to a package goes into the pending release's changeset in `.changeset/`, or a new one made with `pnpm changeset`
   when none is pending ([AGENTS.md](AGENTS.md#releases)).

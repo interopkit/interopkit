@@ -119,3 +119,30 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm compat
+
+  # The time to read, check and walk a framework of 10,000 items, against the budgets of
+  # packages/competency-frameworks/test/budgets.ts (docs/competency-frameworks/evidence.md). It builds first.
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm bench
+
+  # OpenSALT in containers as a counterparty of the CASE client and provider (validation/opensalt/README.md).
+  opensalt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm opensalt

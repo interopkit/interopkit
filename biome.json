@@ -834,6 +834,7 @@
         "packages/competency-frameworks/src/read/schemas.ts",
         "packages/competency-frameworks/src/graph/package-view.ts",
         "packages/competency-frameworks/test/**",
+        "examples/competency-frameworks/**",
         "packages/selective-disclosure/src/document/primitives.ts",
         "packages/selective-disclosure/test/**",
         "packages/achievement-credentials/src/model/**",
@@ -1021,7 +1022,7 @@
       }
     },
     {
-      "includes": ["scripts/**", "examples/**", "compat/**"],
+      "includes": ["scripts/**", "examples/**", "compat/**", "validation/**"],
       "linter": {
         "rules": {
           "suspicious": {

@@ -87,12 +87,12 @@ Use these words with these meanings in code, comments and docs.
 | `packages/learning-records/`         | xAPI 2.0: `model/`, `read/`, `build/`, `compare/`, `format/`                                        |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
 | `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`                                |
-| `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`          |
+| `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
 | `compat/`                            | The scenarios of the examples on each runtime                                                       |
 | `scripts/`                           | The standards and mutation checks, pinned downloads, and the oracle and generators that tests share |
-| `validation/`                        | Python scripts that write fixtures                                                                  |
+| `validation/`                        | Python scripts that write fixtures, and the containers of counterparties (`validation/opensalt/`)   |
 | `biome/`                             | Biome GritQL plugins                                                                                |
 
 ## Commands
@@ -106,6 +106,8 @@ Use these words with these meanings in code, comments and docs.
 | `pnpm typecheck`                                    | `tsc` over every package and the tooling                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `pnpm test`                                         | Vitest, offline; `pnpm test:coverage` adds the coverage floor of each package                                                                                                                                                                                                                                                                                                                                                                |
 | `pnpm test:browser`                                 | The browser tests in Chromium, Firefox and WebKit; run `pnpm exec playwright install` first. The Firefox of Playwright does not start on some macOS versions (it did not on macOS 27): run the suite in the container `mcr.microsoft.com/playwright` of the pinned Playwright release, with `--cpus=2` and `--ipc=host`, from a copy of the repository (`pnpm install` installs the git hooks only in a git clone, and skips them in a copy) |
+| `pnpm bench`                                        | Builds, then times the hot paths of `competency-frameworks` with `vitest bench` against the budgets of `test/budgets.ts`; fails above a budget                                                                                                                                                                                                                                                                                              |
+| `pnpm opensalt`                                     | Starts OpenSALT in containers (Docker with Compose; the images are linux/amd64, so an arm64 host emulates them), runs the flows of `examples/competency-frameworks` against it, and removes the containers and their data whatever happens                                                                                                                                                                                                  |
 | `pnpm knip`                                         | Unused files, exports and dependencies                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `pnpm build`                                        | `tsc -b` after deleting `dist/`, so that no stale output ships                                                                                                                                                                                                                                                                                                                                                                               |
 | `pnpm check:packages`                               | Builds, then publint and Are the Types Wrong on the packed packages                                                                                                                                                                                                                                                                                                                                                                          |
@@ -309,6 +311,15 @@ Where the code departs from `STANDARDS.md`, with the reason.
   `*.spec.test.ts` (`pnpm check:standards` fails on any other). The fuzz of `fc.anything` is in `pnpm test`; the fuzz of the
   values of a schema is a `*.fuzz.corpus.test.ts` that shares its properties with an offline one.
 - Fixtures are never typed by hand when an oracle can write them, and a downloaded specification file is never committed.
+- Frameworks that public providers publish are pinned by hash in `scripts/schemas.lock.json` and read by a `*.corpus.test.ts`
+  that compares the reader with the official schema; a difference of a provider is pinned by the test and listed in the evidence
+  guide.
+- A counterparty application runs in containers from images pinned by digest (`validation/<name>/`), started by its own command
+  and never by `pnpm test`. Its flows are a `*.corpus.test.ts` in a project named `*-<name>`, which the test scripts leave out;
+  the secrets of a run are random, the containers bind to loopback and with at most 2 CPUs, and `docker compose down
+  --volumes` always runs. What it does differently from the references is pinned by the flows.
+- A benchmark is a `*.bench.ts` in a project named `*-bench` (`pnpm bench`); its budgets are in `test/budgets.ts`: five times the
+  fastest sample, rounded up to one significant digit, and a ratio to a reference in the same run where one exists.
 
 ## Where things go
 

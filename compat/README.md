@@ -1,7 +1,7 @@
 # Runtimes
 
 The packages claim to run in any JavaScript runtime that has the web standards. `pnpm compat` shows it: it bundles the
-scenarios of the two examples and a set of calls to a real server, once, and runs that one file on Node.js, Deno, Bun and
+scenarios of the three examples and a set of calls to a real server, once, and runs that one file on Node.js, Deno, Bun and
 workerd, the runtime of Cloudflare Workers. The bundle holds the packages as they ship, built with `pnpm build`, and the examples
 that use them.
 
@@ -35,6 +35,7 @@ flowchart LR
 | Check                                 | Proves                                                                                                                                                                                                                        |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The sensor example                    | Events, identifiers (name-based UUIDs) and the envelope are the same on each runtime, and a resend after a 503 works                                                                                                          |
+| The CASE example                      | A ministry's provider and a school platform's client give the same documents, copies, outlines, alignments, refusals and changes on each runtime, and a consumer of CASE 1.0 gets the same 12 of 14 associations |
 | The tool-integration example          | Web Crypto signs and verifies RS256 and HMAC the same on each runtime: the login, the launch, the token and the score, and a second use of a hint is refused                                                                  |
 | `callService` with the global `fetch` | `redirect: "manual"` is accepted and a 302 is an error; a 503 is an error with its body; an answer over 65,536 bytes is refused; a server that never answers ends at the deadline, and a signal ends the wait with its reason |
 | The same results                      | Each runtime gives the results that Node.js gives, and Node.js gives what the packages promise                                                                                                                                |

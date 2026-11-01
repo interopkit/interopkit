@@ -230,6 +230,15 @@ importers:
         specifier: 1.20261016.1
         version: 1.20261016.1
 
+  examples/competency-frameworks:
+    devDependencies:
+      '@interopkit/competency-frameworks':
+        specifier: workspace:^
+        version: link:../../packages/competency-frameworks
+      '@interopkit/core':
+        specifier: workspace:^
+        version: link:../../packages/core
+
   examples/learning-analytics:
     devDependencies:
       '@interopkit/core':

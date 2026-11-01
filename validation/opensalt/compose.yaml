@@ -1,0 +1,42 @@
+# OpenSALT (MIT) as a CASE counterparty: the web application and its database, from the images the project publishes, pinned
+# by digest. The images exist for linux/amd64 only; on an arm64 host the container runtime emulates it. Every secret comes from
+# the environment that run.ts sets for one run, and nothing here is reachable from outside the host.
+name: interopkit-opensalt
+
+services:
+  db:
+    image: opensalt/opensalt:db-4.x@sha256:3a483fbf93f3dc6b37b85f7ff5ec03bf54745bba3b90f4be5311a89a7e423b8a
+    platform: linux/amd64
+    cpus: 2
+    environment:
+      MYSQL_ROOT_PASSWORD: ${OPENSALT_DB_ROOT_PASSWORD:?run.ts sets the database passwords}
+      MYSQL_DATABASE: opensalt
+      MYSQL_USER: opensalt
+      MYSQL_PASSWORD: ${OPENSALT_DB_PASSWORD:?run.ts sets the database passwords}
+
+  web:
+    image: opensalt/opensalt:web-4.x@sha256:79f1b2efa04768ddb716d857b1b18d7cfe290d3e8b1604ef44b5aa64dcc19c35
+    platform: linux/amd64
+    cpus: 2
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${OPENSALT_PORT:?run.ts sets the port}:80"
+    environment:
+      APP_ENV: prod
+      APP_SECRET: ${OPENSALT_APP_SECRET:?run.ts sets the application secret}
+      SERVER_NAME: ":80"
+      DEFAULT_URI: http://localhost:${OPENSALT_PORT}
+      MYSQL_HOST: db
+      MYSQL_DATABASE: opensalt
+      MYSQL_USER: opensalt
+      MYSQL_PASSWORD: ${OPENSALT_DB_PASSWORD}
+      TRUSTED_PROXIES: ""
+      # The hub that the application publishes updates to after an import is part of the web container, and it starts only with
+      # its keys.
+      MERCURE_URL: http://web/.well-known/mercure
+      MERCURE_PUBLIC_URL: http://localhost:${OPENSALT_PORT}/.well-known/mercure
+      MERCURE_JWT_SECRET: ${OPENSALT_APP_SECRET}
+      MERCURE_PUBLISHER_JWT_KEY: ${OPENSALT_APP_SECRET}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${OPENSALT_APP_SECRET}

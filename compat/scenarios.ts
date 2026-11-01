@@ -1,4 +1,5 @@
 import { callService, type Fetch, ServiceError } from "@interopkit/core";
+import { runScenario as runFrameworks } from "../examples/competency-frameworks/scenario.ts";
 import { runScenario as runAnalytics } from "../examples/learning-analytics/scenario.ts";
 import { runScenario as runTool } from "../examples/tool-integration/scenario.ts";
 
@@ -8,6 +9,8 @@ export interface Results {
   readonly analytics: readonly { readonly status: number; readonly events: readonly string[] }[];
   /** The platform and the tool of the tool-integration example, as the example reports them. */
   readonly tool: Awaited<ReturnType<typeof runTool>>;
+  /** The ministry and the school platform of the CASE example, as the example reports them. */
+  readonly frameworks: Awaited<ReturnType<typeof runFrameworks>>;
   /** What `callService` does with the global `fetch` of the runtime, against the server of the check. */
   readonly service: Readonly<Record<string, unknown>>;
 }
@@ -54,7 +57,7 @@ async function serviceChecks(base: string): Promise<Record<string, unknown>> {
 }
 
 /**
- * Runs the scenarios of the two examples and the checks of the service call.
+ * Runs the scenarios of the three examples and the checks of the service call.
  *
  * @param base - The address of the server of the check.
  */
@@ -66,6 +69,7 @@ export async function runAll(base: string): Promise<Results> {
       events: (JSON.parse(body).data as readonly { readonly id: string }[]).map((event) => event.id),
     })),
     tool: await runTool(),
+    frameworks: await runFrameworks(),
     service: await serviceChecks(base),
   };
 }

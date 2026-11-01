@@ -7,5 +7,5 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["scripts", "vitest.config.ts"]
+  "include": ["scripts", "validation/opensalt", "vitest.config.ts"]
 }
