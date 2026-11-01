@@ -48,7 +48,7 @@ function toIssues(issues: readonly v.BaseIssue<unknown>[]): CredentialIssue[] {
  * Copies a value that must be JSON, which also limits how deep it nests, and parses the copy with a schema. The depth limit
  * is what keeps a hostile chain of `parentOrg` or `endorsement` from exhausting the stack.
  */
-function parseJson<TOutput>(schema: Schema<TOutput>, value: unknown): Inspection<TOutput> {
+export function parseJson<TOutput>(schema: Schema<TOutput>, value: unknown): Inspection<TOutput> {
   const copy = copyJson(value, "");
   if ("problem" in copy)
     return { issues: [{ path: "", rule: "invalid-value", message: `${copy.problem}.`, severity: "error" }] };
@@ -62,31 +62,24 @@ export function inspectCredential(value: unknown, kind?: CredentialKind): Inspec
   const schema: Schema<AnyCredential> = isV1p1(value) ? schemas.v1p1 : schemas.v2;
   const { value: credential, issues } = parseJson(schema, value);
   if (credential === undefined) return { issues };
-  return { value: credential, issues: [...issues, ...credentialIssues(credential)] };
+  return { value: credential, issues: [...issues, ...ruleIssues(credential)] };
 }
 
 /** Reads an object of a class, and judges it when its shape is right. */
 export function inspectEntity(kind: EntityKind, value: unknown): Inspection<Entity> {
   const { value: entity, issues } = parseJson(ENTITY_SCHEMAS[kind], value);
   if (entity === undefined) return { issues };
-  return { value: entity, issues: [...issues, ...entityIssues(entity)] };
+  return { value: entity, issues: [...issues, ...ruleIssues(entity)] };
 }
 
-/** Judges the subject of a credential that has one the specification wants identified. */
-function credentialIssues(credential: AnyCredential): CredentialIssue[] {
-  const subject = credential.credentialSubject;
+/** Judges the subject of a credential, or the subject of a CLR in a JWT, that the specification wants identified. */
+export function ruleIssues(value: AnyCredential | Entity): CredentialIssue[] {
+  if ("verifiableCredential" in value) return subjectIssues(value, "");
+  if (!("credentialSubject" in value)) return [];
+  const subject = value.credentialSubject;
   return "achievement" in subject || "verifiableCredential" in subject
     ? subjectIssues(subject, "credentialSubject")
     : [];
-}
-
-/** Judges the objects that hold a subject. */
-function entityIssues(entity: Entity): CredentialIssue[] {
-  if ("verifiableCredential" in entity) return subjectIssues(entity, "");
-  if ("credentialSubject" in entity) {
-    return subjectIssues(entity.credentialSubject, "credentialSubject");
-  }
-  return [];
 }
 
 /** Returns the findings that are errors. */

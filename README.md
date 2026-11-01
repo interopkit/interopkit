@@ -18,7 +18,7 @@ flowchart LR
     analytics["@interopkit/learning-analytics<br/>events, sensor"]
     frameworks["@interopkit/competency-frameworks<br/>CASE model, readers, graph, provider"]
     disclosure["@interopkit/selective-disclosure<br/>ecdsa-sd-2023"]
-    credentials["@interopkit/achievement-credentials<br/>Open Badges and CLR model, readers"]
+    credentials["@interopkit/achievement-credentials<br/>Open Badges and CLR model, readers, builders"]
     tool --> core
     analytics --> core
     frameworks --> core
@@ -36,14 +36,14 @@ flowchart LR
   analytics -->|"events"| endpoint
 ```
 
-| Package                                                                             | What it is                                                                                                                  |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| [`@interopkit/core`](packages/core/README.md)                                       | The errors, the checks of arguments, the clock and the service call that the other packages share                           |
-| [`@interopkit/tool-integration`](packages/tool-integration/README.md)               | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Version 0.1; its README says what it contains |
-| [`@interopkit/learning-analytics`](packages/learning-analytics/README.md)           | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Version 0.1; its README says what it contains     |
-| [`@interopkit/competency-frameworks`](packages/competency-frameworks/README.md)     | CASE 1.1 and 1.0: the model of a framework package, its readers, its tree and changes, and the conversion to 1.0            |
-| [`@interopkit/achievement-credentials`](packages/achievement-credentials/README.md) | Open Badges 3.0 and CLR 2.0: the model of an achievement credential and of the APIs, and readers that check them            |
-| [`@interopkit/selective-disclosure`](packages/selective-disclosure/README.md)       | The `ecdsa-sd-2023` cryptosuite: a base proof for the issuer, a derived proof for the holder and its verification           |
+| Package                                                                             | What it is                                                                                                                                                 |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`@interopkit/core`](packages/core/README.md)                                       | The errors, the checks of arguments, the clock and the service call that the other packages share                                                          |
+| [`@interopkit/tool-integration`](packages/tool-integration/README.md)               | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Version 0.1; its README says what it contains                                |
+| [`@interopkit/learning-analytics`](packages/learning-analytics/README.md)           | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Version 0.1; its README says what it contains                                    |
+| [`@interopkit/competency-frameworks`](packages/competency-frameworks/README.md)     | CASE 1.1 and 1.0: the model of a framework package, its readers, its tree and changes, and the conversion to 1.0                                           |
+| [`@interopkit/achievement-credentials`](packages/achievement-credentials/README.md) | Open Badges 3.0 and CLR 2.0: the model of an achievement credential and of the APIs, and readers that check them, builders, identity hashes and comparison |
+| [`@interopkit/selective-disclosure`](packages/selective-disclosure/README.md)       | The `ecdsa-sd-2023` cryptosuite: a base proof for the issuer, a derived proof for the holder and its verification                                          |
 
 To launch tools from your platform, or to be launched by one, use `tool-integration`. To report learning events, use
 `learning-analytics`. Neither needs the other.

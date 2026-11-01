@@ -1,7 +1,18 @@
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { readSpecPage } from "../../../scripts/spec-examples.js";
-import { readCredential, readEntity, validateCredential, validateEntity } from "../src/index.js";
+import {
+  buildAchievementCredential,
+  buildClrCredential,
+  CONTEXTS,
+  type IssuableCredential,
+  newerCredential,
+  readCredential,
+  readEntity,
+  sameCredential,
+  validateCredential,
+  validateEntity,
+} from "../src/index.js";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
 
@@ -62,6 +73,162 @@ describe("the examples of CLR 2.0", () => {
   it("are read as the kind that their type names", () => {
     for (const example of credentials) {
       expect(readCredential(example)).toStrictEqual(readCredential(example, { kind: "ClrCredential" }));
+    }
+  });
+});
+
+describe("the equality and comparison examples of Open Badges 3.0", () => {
+  const [a, b, c, d] = examplesOf("open-badges-3p0.json").filter((example) => example.name === "Teamwork Badge");
+  /** Reads an example into a credential under the Verifiable Credentials Data Model 2.0, which the comparisons take. */
+  const credential = (example: Example | undefined): IssuableCredential => {
+    const read = readCredential(example ?? {});
+    if ("issuanceDate" in read) throw new Error("The example is under the Verifiable Credentials Data Model 1.1.");
+    return read;
+  };
+
+  it("holds the four credentials A, B, C and D of section 10.1", () => {
+    expect([a, b, c, d].every((example) => example !== undefined && isCredential(example))).toBe(true);
+  });
+
+  it("calls A and B equal, since they have the same id and the same issuer id, and C and D equal for the same reason", () => {
+    expect(sameCredential(credential(a), credential(b))).toBe(true);
+    expect(sameCredential(credential(c), credential(d))).toBe(true);
+    expect(sameCredential(credential(a), credential(c))).toBe(true);
+  });
+
+  it("calls both up-to-date when the validFrom is the same, and C the up-to-date one of C and D, which has the more recent validFrom", () => {
+    const [first, second, third, fourth] = [credential(a), credential(b), credential(c), credential(d)];
+    expect(newerCredential(first, second)).toBe(first);
+    expect(newerCredential(second, first)).toBe(second);
+    expect(newerCredential(third, fourth)).toBe(third);
+    expect(newerCredential(fourth, third)).toBe(third);
+  });
+});
+
+describe("the builders against the credentials that the specifications print", () => {
+  /** The properties of an AchievementCredential that `buildAchievementCredential` takes by the same name. */
+  const SAME = [
+    "id",
+    "issuer",
+    "validFrom",
+    "validUntil",
+    "name",
+    "description",
+    "image",
+    "awardedDate",
+    "evidence",
+    "endorsement",
+    "endorsementJwt",
+    "credentialStatus",
+    "refreshService",
+    "termsOfUse",
+  ];
+  /** The properties of the subject that the input takes by the same name. */
+  const SUBJECT = [
+    "id",
+    "identifier",
+    "result",
+    "activityStartDate",
+    "activityEndDate",
+    "creditsEarned",
+    "role",
+    "term",
+  ];
+
+  const OFFICIAL_SCHEMA =
+    "https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_achievementcredential_schema.json";
+
+  /** The AchievementCredentials of the page that a builder can write: the contexts and the one schema are the builder's own. */
+  const buildable = examplesOf("open-badges-3p0.json").filter((example) => {
+    const subject = example.credentialSubject as Example;
+    const schemas = example.credentialSchema as Example[] | undefined;
+    return (
+      Array.isArray(example.type) &&
+      example.type.includes("OpenBadgeCredential") &&
+      Object.keys(example).every((key) =>
+        [...SAME, "@context", "type", "credentialSubject", "credentialSchema"].includes(key),
+      ) &&
+      Object.keys(subject).every((key) => [...SUBJECT, "type", "achievement"].includes(key)) &&
+      schemas?.length === 1 &&
+      schemas[0]?.id === OFFICIAL_SCHEMA &&
+      example.name !== undefined
+    );
+  });
+
+  it("holds the credentials that the tests rebuild", () => {
+    expect(buildable.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("write the credential of the page from its parts: the contexts, the types and the schema are the builder's", () => {
+    for (const example of buildable) {
+      const subject = example.credentialSubject as Example;
+      const { type, achievement, ...rest } = subject;
+      const input = {
+        ...Object.fromEntries(SAME.filter((key) => key in example).map((key) => [key, example[key]])),
+        subject: rest,
+        achievement,
+      };
+      const built = buildAchievementCredential(input as never);
+      expect(built).toStrictEqual({ ...example, "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges] });
+      expect(type).toStrictEqual(["AchievementSubject"]);
+    }
+  });
+
+  it("write the ClrCredentials of CLR 2.0 from their parts: the contexts and the schema of the CLR are the builder's", () => {
+    const KEYS = [
+      "@context",
+      "id",
+      "type",
+      "name",
+      "issuer",
+      "validFrom",
+      "validUntil",
+      "credentialSubject",
+      "partial",
+      "credentialStatus",
+      "refreshService",
+      "credentialSchema",
+    ];
+    const SUBJECT_KEYS = ["id", "identifier", "type", "verifiableCredential", "achievement", "association"];
+    const listed = examplesOf("clr-2p0.json").filter(
+      (example) =>
+        Object.keys(example).every((key) => KEYS.includes(key)) &&
+        Object.keys(example.credentialSubject as Example).every((key) => SUBJECT_KEYS.includes(key)),
+    );
+    expect(listed.length).toBeGreaterThanOrEqual(2);
+    for (const example of listed) {
+      const { type, verifiableCredential, achievement, association, ...rest } = example.credentialSubject as Example;
+      const { credentialSubject, credentialSchema, "@context": contexts, type: types, ...top } = example;
+      const built = buildClrCredential({
+        ...top,
+        subject: rest,
+        credentials: verifiableCredential,
+        ...(achievement === undefined ? {} : { achievements: achievement }),
+        ...(association === undefined ? {} : { associations: association }),
+      } as never);
+      // The pages print the schema of an AchievementCredential in a ClrCredential; the CLR's own is what 7.2 asks for.
+      expect(built).toMatchObject({
+        "@context": [CONTEXTS.credentialsV2, CONTEXTS.clr, CONTEXTS.openBadges],
+        id: example.id,
+        type: example.type,
+        name: example.name,
+        validFrom: example.validFrom,
+        credentialSubject: { type: ["ClrSubject"], ...rest },
+        credentialSchema: [
+          {
+            id: "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_clrcredential_schema.json",
+            type: "1EdTechJsonSchemaValidator2019",
+          },
+        ],
+      });
+      expect(built.credentialSubject.verifiableCredential.map(({ id }) => id)).toStrictEqual(
+        (verifiableCredential as Example[]).map(({ id }) => id),
+      );
+      expect(built.credentialSubject.association).toStrictEqual(association);
+      expect(built.credentialSubject.achievement).toStrictEqual(achievement);
+      expect(type).toStrictEqual(["ClrSubject"]);
+      expect(credentialSchema).toHaveLength(1);
+      expect([contexts, types].every(Array.isArray)).toBe(true);
     }
   });
 });

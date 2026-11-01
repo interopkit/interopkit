@@ -4,6 +4,22 @@
  *
  * @module @interopkit/achievement-credentials
  */
+
+export { type CredentialSummary, credentialSummary, newerCredential, sameCredential } from "./compare/index.js";
+export {
+  type AchievementCredentialInput,
+  buildAchievementCredential,
+  buildClrCredential,
+  buildEndorsementCredential,
+  type CaseItem,
+  type ClrCredentialInput,
+  caseAlignment,
+  type EndorsementCredentialInput,
+  hashIdentifier,
+  type IdentityObjectV2,
+  type KnownIdentity,
+  matchesIdentifier,
+} from "./issue/index.js";
 export {
   ACHIEVEMENT_TYPES,
   type Achievement,

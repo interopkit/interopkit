@@ -9,7 +9,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 `@interopkit/learning-analytics` implements Caliper Analytics 1.2, `@interopkit/competency-frameworks` implements the
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
-implements the model and the readers of Open Badges 3.0 and CLR 2.0.
+implements the model and the readers of Open Badges 3.0 and CLR 2.0, and its builders and comparisons.
 
 ```mermaid
 flowchart BT
@@ -20,7 +20,7 @@ flowchart BT
   la["learning-analytics"]
   cf["competency-frameworks<br/>model, read, version, graph, client, provider"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
-  ac["achievement-credentials<br/>model, read"]
+  ac["achievement-credentials<br/>model, read, issue, compare"]
   proto --> core
   tool --> proto
   plat --> proto
@@ -79,7 +79,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
-| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`                                                      |
+| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`                                |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`          |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -128,7 +128,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   and the handlers of a CASE provider. It does not own what a launched tool shows, what a score means, which delivery event
   becomes which Caliper event, QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to
   assesskit and measurekit, to the adapter of each product and to the host.
-- `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers. It does not own keys, proofs,
+- `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders and the comparison of credentials. It does not own keys, proofs,
   status lists, verification, baking, the APIs or Open Badges 2.0 (those arrive in later modules), nor wallets, issuing
   platforms and storage.
 - `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
@@ -151,7 +151,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   never import each other; `client/` builds on `read/`, `provider/` on `read/` and `version/`, and none of them imports
   either. In `selective-disclosure`, `proof-value/`, `keys/` and `document/` import none of the other folders, and
   `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`
-  imports no other module, `read/` builds on `model/` only. Imports never form cycles.
+  imports no other module, `read/` builds on `model/` only, and `issue/` and `compare/` build on `model/` and `read/`
+  and never import each other. Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -159,7 +160,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
 - Runtime dependencies are listed in the `package.json` of the package that loads them, pinned to an exact version at least
   two weeks old, and recorded in `SECURITY.md` with their reason and license. `pnpm-workspace.yaml` sets
   `minimumReleaseAge` so that an install cannot pick a younger version.
-- Generic concerns use mature libraries: `jose` for JOSE, `valibot` for schemas, `uuid` for name-based UUIDs, `oauth4webapi` for
+- Generic concerns use mature libraries: `jose` for JOSE, `valibot` for schemas, `uuid` for name-based UUIDs, `@noble/hashes` for the hashes of an identity, `oauth4webapi` for
   OAuth 2.0 clients. Hand-written
   code is for domain logic that no library does correctly, with the reason in the guide of the module.
 - Candidates that were compared and not adopted may be development dependencies, as counterparties in tests: Digital Bazaar's

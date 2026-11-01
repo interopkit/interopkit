@@ -2,6 +2,8 @@
  * The smallest values that the schemas of 1EdTech accept, derived from the required properties of each class. They are the
  * starting points of the tests that change one thing; nothing else is typed by hand.
  */
+import type { Achievement, Profile } from "../src/index.js";
+
 export type Value = Record<string, unknown>;
 
 const VC_V2 = "https://www.w3.org/ns/credentials/v2";
@@ -9,9 +11,9 @@ const VC_V1 = "https://www.w3.org/2018/credentials/v1";
 const OB = "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json";
 const CLR = "https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json";
 
-export const PROFILE: Value = { id: "https://example.edu/issuers/1", type: ["Profile"] };
+export const PROFILE: Profile = { id: "https://example.edu/issuers/1", type: ["Profile"] };
 
-export const ACHIEVEMENT: Value = {
+export const ACHIEVEMENT: Achievement = {
   id: "https://example.edu/achievements/1",
   type: ["Achievement"],
   criteria: { narrative: "Pass the course." },

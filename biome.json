@@ -678,6 +678,46 @@
       }
     },
     {
+      "includes": ["packages/achievement-credentials/src/issue/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/compare", "**/compare/**"],
+                    "message": "issue/ builds on model/, read/ and @interopkit/core only: compare/ is its sibling and never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/achievement-credentials/src/compare/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/issue", "**/issue/**"],
+                    "message": "compare/ builds on model/, read/ and @interopkit/core only: issue/ is its sibling and never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": [
         "packages/competency-frameworks/src/model/**",
         "packages/competency-frameworks/src/provider/handle-request.ts",
