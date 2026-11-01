@@ -52,12 +52,26 @@ export const NULLABLE_STRING = v.pipe(
 );
 
 /**
+ * A number of the `custom` claim that has a text of its own: a finite number, and a whole number only when it is a safe integer.
+ * JSON parsing has already rounded a larger number (`9007199254740993` reads as `9007199254740992`) and turns `1e400` into
+ * `Infinity`, so their text would not be the value that the platform sent.
+ */
+const CUSTOM_NUMBER = v.pipe(
+  v.number(),
+  v.check(
+    (item) => Number.isFinite(item) && (!Number.isInteger(item) || Number.isSafeInteger(item)),
+    (issue) => `expected a finite number, and a whole number of at most 2^53 - 1, found ${issue.received}`,
+  ),
+);
+
+/**
  * The `custom` claim: an object of strings (LTI 1.3 Core section 5.4.6: a custom value is always a string). A platform that
- * sends a number or a boolean, as Canvas does for `canvas_user_uuid`, has it read as its text.
+ * sends a number or a boolean, as Canvas does for `canvas_user_uuid`, has it read as its text, when the number is one that
+ * keeps its value as text.
  */
 export const CUSTOM_RECORD = mapSchema(
   v.pipe(
-    v.union([v.string(), v.number(), v.boolean()]),
+    v.union([v.string(), CUSTOM_NUMBER, v.boolean()]),
     v.transform((item) => String(item)),
   ),
 );

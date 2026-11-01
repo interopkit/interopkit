@@ -493,7 +493,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A number or a boolean in the custom properties is read as its text, as Canvas sends it.",
     file: "packages/tool-integration/src/protocol/claims.ts",
-    find: "v.union([v.string(), v.number(), v.boolean()]),",
+    find: "v.union([v.string(), CUSTOM_NUMBER, v.boolean()]),",
     replace: "v.string(),",
     test: "packages/tool-integration/test/tool-claims.test.ts",
   },
@@ -531,6 +531,13 @@ export const RULES: readonly Rule[] = [
     find: "scope === undefined ? [...requested] :",
     replace: "scope === undefined ? requested :",
     test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A number of the custom properties is read only when its text is its value.",
+    file: "packages/tool-integration/src/protocol/claims.ts",
+    find: "(item) => Number.isFinite(item) && (!Number.isInteger(item) || Number.isSafeInteger(item)),",
+    replace: "() => true,",
+    test: "packages/tool-integration/test/tool-claims.test.ts",
   },
   {
     rule: "A key for RS256 has at least 2,048 bits.",

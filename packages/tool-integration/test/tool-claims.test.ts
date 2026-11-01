@@ -96,6 +96,24 @@ describe("readLaunch", () => {
     }
   });
 
+  it("reads a number of the custom properties only when its text is its value", () => {
+    const base = resourceLinkClaims("nonce-1", SECONDS);
+    const custom = (json: string) => readLaunch({ ...base, [CUSTOM]: JSON.parse(json) }, registration).custom;
+    expect(custom('{"a":9007199254740991,"b":-9007199254740991,"c":1.5,"d":0,"e":-3}')).toStrictEqual(
+      new Map([
+        ["a", "9007199254740991"],
+        ["b", "-9007199254740991"],
+        ["c", "1.5"],
+        ["d", "0"],
+        ["e", "-3"],
+      ]),
+    );
+    // JSON parsing has already changed these: 2^53 + 1 reads as 2^53, and 1e400 as Infinity.
+    for (const json of ["9007199254740993", "9007199254740992", "-9007199254740993", "1e400", "-1e400", "1e300"]) {
+      expect(() => custom(`{"a":${json}}`), json).toThrow(expect.objectContaining({ reason: "claim-invalid" }));
+    }
+  });
+
   it("reads a blank or null line item of the grade services as absent", () => {
     const endpoint = "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint";
     for (const lineitem of [null, ""]) {
