@@ -8,6 +8,8 @@ const GRADING_PROGRESS = ["FullyGraded", "Pending", "PendingManual", "Failed", "
 // LTI AGS 2.0 section 3.4.9: ISO 8601 with a time zone designator (`Z`, `+00:00` or `+00`) and, in the examples, a fraction of a second.
 const TIMESTAMP = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}(?::?\d{2})?)$/u;
 const MS_PER_MINUTE = 60_000;
+const MAX_ZONE_HOURS = 23;
+const MAX_ZONE_MINUTES = 59;
 
 /** A score that a tool posted to a line item (LTI AGS 2.0 section 3.4). */
 export interface AgsScore {
@@ -47,8 +49,11 @@ function readTimestamp(text: string): number | undefined {
   if (zone === "Z") return local;
   const sign = zone.startsWith("-") ? -1 : 1;
   const digits = zone.slice(1).replace(":", "");
-  const offset = Number(digits.slice(0, 2)) * 60 + Number(digits.slice(2) || "0");
-  return local - sign * offset * MS_PER_MINUTE;
+  const zoneHours = Number(digits.slice(0, 2));
+  const zoneMinutes = Number(digits.slice(2) || "0");
+  // A time zone is at most 23:59 from UTC; a larger offset would move the time by days.
+  if (zoneHours > MAX_ZONE_HOURS || zoneMinutes > MAX_ZONE_MINUTES) return undefined;
+  return local - sign * (zoneHours * 60 + zoneMinutes) * MS_PER_MINUTE;
 }
 
 /** Returns the value if it is one of the allowed strings. */

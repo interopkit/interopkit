@@ -1,4 +1,11 @@
-import { finiteSchema, httpsUrlSchema, issueText, mapSchema, positiveSchema } from "@interopkit/core/checks";
+import {
+  finiteSchema,
+  httpsUrlSchema,
+  issueText,
+  mapSchema,
+  nonEmptyStringSchema,
+  positiveSchema,
+} from "@interopkit/core/checks";
 import * as v from "valibot";
 import { LtiError } from "../errors.js";
 
@@ -10,6 +17,9 @@ export const MAX_IDENTIFIER_LENGTH = 255;
 
 /** A string. */
 export const STRING = v.string();
+
+/** A non-empty string, such as a `jti`. */
+export const NON_EMPTY_STRING = nonEmptyStringSchema;
 
 /** A non-empty string of at most 255 characters, such as a `deployment_id` or a `sub`. */
 export const IDENTIFIER = v.pipe(v.string(), v.minLength(1), v.maxLength(MAX_IDENTIFIER_LENGTH));

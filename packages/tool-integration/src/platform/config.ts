@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
 import { checkArray, checkHttpsUrl, checkRecord, describe, isRecord } from "@interopkit/core/checks";
 import { calculateJwkThumbprint } from "jose";
-import { isRsaKey } from "../protocol/internal.js";
+import { isRsaKey, MIN_RSA_MODULUS_BITS } from "../protocol/internal.js";
 
 const AUTHORIZATION_PATH = "/authorize";
 const JWKS_PATH = "/jwks";
@@ -38,13 +38,18 @@ export interface PlatformEndpoints {
   readonly storage: string;
 }
 
-/** Returns whether a value is an HMAC key with SHA-256 that signs and verifies. */
+/** The smallest HMAC key in bits: the size of the output of SHA-256 (RFC 2104 section 3). */
+const MIN_HMAC_KEY_BITS = 256;
+
+/** Returns whether a value is an HMAC key with SHA-256 of at least 256 bits that signs and verifies. */
 function isHmacKey(key: unknown): boolean {
   if (!isRecord(key)) return false;
   const { algorithm, usages } = key;
   return (
     isRecord(algorithm) &&
     algorithm.name === "HMAC" &&
+    typeof algorithm.length === "number" &&
+    algorithm.length >= MIN_HMAC_KEY_BITS &&
     isRecord(algorithm.hash) &&
     algorithm.hash.name === "SHA-256" &&
     Array.isArray(usages) &&
@@ -67,8 +72,8 @@ function checkOrigin(value: unknown, label: string): asserts value is string {
  * Checks a platform configuration, as a host passes it from JavaScript.
  *
  * @throws `DataError` when it is not one: the issuer is not an `https` URL without query or fragment, an origin is not an
- * `https` origin, two of the three origins coincide, a key is not what its property says, or the public key cannot be
- * exported.
+ * `https` origin, two of the three origins coincide, a key is not what its property says or is too small (RSA under 2,048
+ * bits, HMAC under 256 bits), or the public key cannot be exported.
  */
 export function checkPlatformConfig(value: unknown): asserts value is PlatformConfig {
   checkRecord(value, "The platform configuration must be an object");
@@ -92,16 +97,20 @@ export function checkPlatformConfig(value: unknown): asserts value is PlatformCo
   }
   checkRecord(value.keys, "The keys of the platform must be an object");
   if (!isRsaKey(value.keys.privateKey, "sign")) {
-    throw new DataError("The private key of the platform must be an RSASSA-PKCS1-v1_5 key with SHA-256 for signing.");
+    throw new DataError(
+      `The private key of the platform must be an RSASSA-PKCS1-v1_5 key with SHA-256 of at least ${MIN_RSA_MODULUS_BITS} bits for signing.`,
+    );
   }
   const publicKey = value.keys.publicKey;
   if (!isRsaKey(publicKey, "verify") || !isRecord(publicKey) || publicKey.extractable !== true) {
     throw new DataError(
-      "The public key of the platform must be an extractable RSASSA-PKCS1-v1_5 key with SHA-256 for verifying.",
+      `The public key of the platform must be an extractable RSASSA-PKCS1-v1_5 key with SHA-256 of at least ${MIN_RSA_MODULUS_BITS} bits for verifying.`,
     );
   }
   if (!isHmacKey(value.hintKey)) {
-    throw new DataError("The hint key of the platform must be an HMAC key with SHA-256 for signing and verifying.");
+    throw new DataError(
+      `The hint key of the platform must be an HMAC key with SHA-256 of at least ${MIN_HMAC_KEY_BITS} bits for signing and verifying.`,
+    );
   }
 }
 

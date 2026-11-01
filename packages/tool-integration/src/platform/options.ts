@@ -56,7 +56,11 @@ export interface PlatformTokenOptions extends PlatformOptions, CallOptions {
   readonly client: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
   /** The cache of the key sets of tools, from `createJwksCache`. */
   readonly jwks: JwksCache;
-  /** Records that an identifier is used until a time (milliseconds since 1970-01-01T00:00:00Z), and returns `false` when it was used already. */
+  /**
+   * Records that an identifier is used until a time (milliseconds since 1970-01-01T00:00:00Z), and returns `false` when it
+   * was used already. The time of an assertion is its expiry plus the clock-skew leeway of 60 seconds, because the assertion
+   * verifies until then: a store that forgets an identifier at `expiresAt` forgets it only when it can no more be used.
+   */
   readonly once: (id: string, expiresAt: number, options?: CallOptions) => Promise<boolean>;
 }
 

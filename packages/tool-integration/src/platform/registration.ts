@@ -57,7 +57,7 @@ export function checkToolRegistration(value: unknown): asserts value is ToolRegi
     const keys = value.keys;
     if (!(keys instanceof Map) || ![...keys].every(([id, key]) => typeof id === "string" && isRsaKey(key, "verify"))) {
       throw new DataError(
-        `The keys of a tool must be a Map of public RSASSA-PKCS1-v1_5 keys with SHA-256 by kid, found ${describe(keys)}.`,
+        `The keys of a tool must be a Map of public RSASSA-PKCS1-v1_5 keys with SHA-256 of at least 2048 bits by kid, found ${describe(keys)}.`,
       );
     }
   }

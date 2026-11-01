@@ -1484,7 +1484,7 @@ describe("ltiLogin", () => {
     const ctx = setup();
     const { registration } = ctx;
     const key =
-      "The registration is invalid at signingKey: expected a private RSASSA-PKCS1-v1_5 key with SHA-256 for signing";
+      "The registration is invalid at signingKey: expected a private RSASSA-PKCS1-v1_5 key with SHA-256 of at least 2048 bits for signing";
     const bad: readonly [string, PlatformRegistration][] = [
       ["The registration is invalid: expected an object, found null.", JSON.parse("null")],
       [
@@ -1524,6 +1524,7 @@ describe("ltiLogin", () => {
         { ...registration, keyId: JSON.parse("null") },
       ],
       [`${key}, found CryptoKey.`, { ...registration, signingKey: toolKey.publicKey }],
+      [`${key}, found CryptoKey.`, { ...registration, signingKey: (await generateKeyPair("weak", 1024)).privateKey }],
       [`${key}, found "key".`, { ...registration, signingKey: JSON.parse('"key"') }],
     ];
     for (const [message, found] of bad) {

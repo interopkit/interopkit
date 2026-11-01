@@ -99,8 +99,8 @@ refuses a tool whose `target`, login URL or redirect URIs are on any of these or
 | `origin`          | The origin that serves the handlers                                                                                        |
 | `frameOrigin`     | The origin of the page that frames the tool and the storage page                                                           |
 | `reservedOrigins` | Other origins of the host from which a tool must never launch, such as the origin of its assets. An empty list is a choice |
-| `keys`            | The RSA key pair (RS256) that signs the `id_token`s; the public key is extractable                                         |
-| `hintKey`         | The HMAC key (SHA-256, usages `sign` and `verify`) that signs hints, line item identifiers and access tokens               |
+| `keys`            | The RSA key pair (RS256, at least 2,048 bits) that signs the `id_token`s; the public key is extractable                    |
+| `hintKey`         | The HMAC key (SHA-256, at least 256 bits, usages `sign` and `verify`) that signs hints, line item identifiers and tokens   |
 
 | Endpoint              | Path under `origin`              | Handler                |
 | --------------------- | -------------------------------- | ---------------------- |
@@ -115,8 +115,9 @@ refuses a tool whose `target`, login URL or redirect URIs are on any of these or
 
 A `ToolLaunch` holds the `principal` (the `sub`, at most 255 characters), the `resource` (what the launch is for, at most 1,024
 characters, signed and not encrypted, so it holds no secret and no personal data; the same launch gives the same text), the
-`target` (the `target_link_uri`, an `https` URL on none of the platform's origins), the `title`, the `custom` properties and
-the `scoreMaximum` of the line item (above 0).
+`target` (the `target_link_uri`, an `https` URL on none of the platform's origins), the `title` (at most 255 characters), the
+`custom` properties (at most 2,048 characters in all their names and values) and the `scoreMaximum` of the line item (above 0).
+The resource, the title and the custom properties travel in the login URL, which is why they are limited.
 
 `ltiPlatformLogin` checks the launch, calls `options.check(launch)` (which must throw when the launch is not the caller's:
 nothing is signed otherwise), looks up the tool with `options.registration(launch)`, refuses the platform's own origins, and
@@ -169,8 +170,9 @@ only `frameOrigin` may frame it.
 ## The token endpoint
 
 `platformToken` accepts the client-credentials grant with a JWT assertion (Security Framework 4.1.1). The assertion has `iss`
-and `sub` equal to the client, `aud` equal to the token endpoint, and a `jti`. It is verified against the tool's key set (RS256
-only) or its keys, must expire within 3,600 seconds, and its `jti` is remembered through `once` until its expiry. The scopes
+and `sub` equal to the client, `aud` equal to the token endpoint, and a non-empty `jti`. It is verified against the tool's key
+set (RS256 only) or its keys, and must expire within 3,600 seconds. Its `jti` is remembered through `once` until its expiry
+plus the clock-skew leeway of 60 seconds, because the assertion still verifies until then. The scopes
 asked must be among `lineitem.readonly` and `score`. The token is a sealed `access` token that lasts one hour. A refusal is an
 OAuth error (`invalid_request`, `unsupported_grant_type`, `invalid_scope`, `invalid_client`) with status 400.
 
@@ -191,24 +193,24 @@ the user, the title and the maximum. `agsLineItem` answers a GET with `id`, `lab
 | 415    | The media type is not the score type                                                                                                             |
 
 `readAgsScore` reads `userId`, `timestamp` (ISO 8601 with a zone), `activityProgress`, `gradingProgress`, and `scoreGiven` (from
-0, with a `scoreMaximum` above 0). `timestampMs` is the instant in milliseconds. **Ordering is the receiver's** (AGS 3.4.9): a
+0, with a `scoreMaximum` above 0). `timestampMs` is the instant in milliseconds; a time zone is at most 23:59 from UTC. **Ordering is the receiver's** (AGS 3.4.9): a
 host that keeps scores keeps a score unless a later one is kept, and treats an equal time as a retry.
 
 ## Options
 
-| Option                              | Default                               | Meaning                                                        |
-| ----------------------------------- | ------------------------------------- | -------------------------------------------------------------- |
-| `config`, `clock`                   | required                              | The platform and the time                                      |
-| `registration(launch, options)`     | required for the login                | Looks up the tool of a launch                                  |
-| `check(launch, options)`            | required for the login                | Confirms that the launch is the caller's, and throws otherwise |
-| `storageTarget`                     | `"lti-storage"`                       | The frame that shows the storage page                          |
-| `client(clientId, options)`         | required for authorization and tokens | Looks up a tool by its client                                  |
-| `once(id, expiresAt, options)`      | required for authorization and tokens | Records an identifier until a time; atomic across processes    |
-| `checkLaunch(launch, options)`      | none                                  | An extra check of the principal and the resource of a hint     |
-| `jwks`                              | required for tokens                   | The cache of the tools' key sets                               |
-| `onScore(resource, score, options)` | required for scores                   | Receives a score                                               |
-| `toolFrame`                         | `"lti-tool"`                          | The frame of the tool that the storage page answers            |
-| `signal`                            | none                                  | Ends this caller's wait                                        |
+| Option                              | Default                               | Meaning                                                                                                                         |
+| ----------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `config`, `clock`                   | required                              | The platform and the time                                                                                                       |
+| `registration(launch, options)`     | required for the login                | Looks up the tool of a launch                                                                                                   |
+| `check(launch, options)`            | required for the login                | Confirms that the launch is the caller's, and throws otherwise                                                                  |
+| `storageTarget`                     | `"lti-storage"`                       | The frame that shows the storage page                                                                                           |
+| `client(clientId, options)`         | required for authorization and tokens | Looks up a tool by its client                                                                                                   |
+| `once(id, expiresAt, options)`      | required for authorization and tokens | Records an identifier until a time, which for an assertion is its expiry plus the 60 seconds of leeway; atomic across processes |
+| `checkLaunch(launch, options)`      | none                                  | An extra check of the principal and the resource of a hint                                                                      |
+| `jwks`                              | required for tokens                   | The cache of the tools' key sets                                                                                                |
+| `onScore(resource, score, options)` | required for scores                   | Receives a score                                                                                                                |
+| `toolFrame`                         | `"lti-tool"`                          | The frame of the tool that the storage page answers                                                                             |
+| `signal`                            | none                                  | Ends this caller's wait                                                                                                         |
 
 | Limit                                           | Value         |
 | ----------------------------------------------- | ------------- |

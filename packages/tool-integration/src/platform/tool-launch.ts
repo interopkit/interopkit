@@ -5,6 +5,10 @@ import { MAX_IDENTIFIER_LENGTH, POSITIVE_NUMBER } from "../protocol/internal.js"
 
 /** The most characters of `ToolLaunch.resource`, because it travels in the query of the login URL. */
 const MAX_RESOURCE_LENGTH = 1_024;
+/** The most characters of `ToolLaunch.title`, because it travels in the login URL. */
+const MAX_TITLE_LENGTH = 255;
+/** The most characters of the names and values of `ToolLaunch.custom` together, because they travel in the login URL. */
+const MAX_CUSTOM_LENGTH = 2_048;
 
 /** What the platform launches a tool for: the user, the resource in the host's terms, and the link. */
 export interface ToolLaunch {
@@ -18,17 +22,20 @@ export interface ToolLaunch {
   readonly resource: string;
   /** The `target_link_uri`: an `https` URL that is on none of the platform's origins. */
   readonly target: string;
-  /** The title of the link, not empty. */
+  /** The title of the link, not empty, at most 255 characters, because it travels in the query of the login URL. */
   readonly title: string;
-  /** The custom properties that the platform sends with the launch, by name. */
+  /**
+   * The custom properties that the platform sends with the launch, by name. The names and the values have at most 2,048
+   * characters together, because they travel in the query of the login URL.
+   */
   readonly custom: Readonly<Record<string, string>>;
   /** The `scoreMaximum` of the line item, above 0. */
   readonly scoreMaximum: number;
 }
 
 /**
- * Checks a launch that the host passes: the shape of the link, the lengths of the principal and the resource, and a
- * `scoreMaximum` above 0.
+ * Checks a launch that the host passes: the shape of the link, the lengths of the principal, the resource, the title and the
+ * custom properties, and a `scoreMaximum` above 0.
  *
  * @throws `DataError` when it is not a launch.
  */
@@ -48,9 +55,20 @@ export function checkToolLaunch(value: unknown): asserts value is ToolLaunch {
   }
   checkHttpsUrl(value.target, "The target of the launch");
   checkNonEmptyString(value.title, "The title of the launch");
+  if (value.title.length > MAX_TITLE_LENGTH) {
+    throw new DataError(
+      `The title of the launch travels in the query of the login URL and must have at most ${MAX_TITLE_LENGTH} characters, found ${value.title.length}.`,
+    );
+  }
   const { custom } = value;
   if (!(isRecord(custom) && Object.values(custom).every((item) => typeof item === "string"))) {
     throw new DataError(`The custom properties of the launch must be an object of strings, found ${describe(custom)}.`);
+  }
+  const customLength = Object.entries(custom).reduce((sum, [name, item]) => sum + name.length + String(item).length, 0);
+  if (customLength > MAX_CUSTOM_LENGTH) {
+    throw new DataError(
+      `The custom properties of the launch travel in the query of the login URL and must have at most ${MAX_CUSTOM_LENGTH} characters in their names and values, found ${customLength}.`,
+    );
   }
   if (!v.is(POSITIVE_NUMBER, value.scoreMaximum)) {
     throw new DataError(

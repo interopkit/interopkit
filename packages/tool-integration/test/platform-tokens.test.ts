@@ -13,6 +13,7 @@ import {
   sealToken,
 } from "../src/platform/internal.js";
 import { toolRegistration } from "./fake-tool.js";
+import { generateKeyPair } from "./fixture.js";
 import { baseLaunch, config, hintKey, setup } from "./platform-setup.js";
 
 const hint = {
@@ -64,6 +65,9 @@ describe("a registration that is not valid", () => {
     );
     const keys = { ...toolRegistration(), jwksUrl: undefined, keys: { kid: "not a map" } };
     await expect(login(keys)).rejects.toThrow("The keys of a tool must be a Map of public RSASSA-PKCS1-v1_5 keys");
+    const weak = await generateKeyPair("weak", 1024);
+    const small = { ...toolRegistration(), jwksUrl: undefined, keys: new Map([[weak.kid, weak.publicKey]]) };
+    await expect(login(small)).rejects.toThrow("with SHA-256 of at least 2048 bits by kid");
   });
 });
 

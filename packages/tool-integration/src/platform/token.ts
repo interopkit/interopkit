@@ -2,12 +2,14 @@ import { readClock } from "@interopkit/core";
 import { LtiError } from "../errors.js";
 import {
   AGS_SCOPE,
+  CLOCK_SKEW_SECONDS,
   callOptionsOf,
   checkHttpRequest,
   errorBody,
   type HttpRequest,
   type HttpResponse,
   jsonResponse,
+  NON_EMPTY_STRING,
   NUMBER,
   readForm,
   required,
@@ -25,7 +27,7 @@ const ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
 // Security Framework sections 4.1.1 and 7.1.1: the recommended lifetime of an access token is one hour.
 const ACCESS_TOKEN_TTL_SECONDS = 3600;
 // RFC 7523 section 3 lets the authorization server refuse an assertion whose expiry is unreasonably far; the platform remembers a
-// `jti` until then. Security Framework section 4.1.1 has the assertion expire "typically five minutes" after `iat`.
+// `jti` until then, and the leeway after it. Security Framework section 4.1.1 has the assertion expire "typically five minutes" after `iat`.
 const MAX_ASSERTION_LIFETIME_SECONDS = 3600;
 /** The scopes that a launch offers, and so the only ones a token can have (LTI AGS 2.0 section 3.1). */
 const OFFERED_SCOPES: readonly string[] = [AGS_SCOPE.lineitemReadonly, AGS_SCOPE.score];
@@ -73,7 +75,8 @@ function readRequest(request: HttpRequest): { readonly assertion: string; readon
 /**
  * Verifies the client assertion (Security Framework section 4.1.1, LTI 1.3 Core section 6.2, RFC 7523 section 3): the tool named by `iss` signed
  * it with RS256 and a key of its registration; `iss` and `sub` are its client identifier; `aud` is the token URL; it has
- * not expired and does not expire in too long; it has a `jti` that `options.once` has not seen.
+ * not expired and does not expire in too long; it has a non-empty `jti` that `options.once` has not seen. The `jti` is remembered
+ * until the expiry plus the clock-skew leeway of 60 seconds, as long as the assertion verifies.
  */
 async function verifyAssertion(assertion: string, options: PlatformTokenOptions): Promise<string> {
   const iss = required(unverifiedClaims(assertion), "iss", OWNER, STRING);
@@ -93,10 +96,13 @@ async function verifyAssertion(assertion: string, options: PlatformTokenOptions)
       "assertion-lifetime",
     );
   }
-  const jti = required(claims, "jti", OWNER, STRING);
+  const jti = required(claims, "jti", OWNER, NON_EMPTY_STRING);
+  // The assertion still verifies until `exp` plus the leeway, so the `jti` is remembered that long: a host's `once` forgets it
+  // at `expiresAt`, and a captured assertion could otherwise be used again in the leeway.
+  const expiresAt = (exp + CLOCK_SKEW_SECONDS) * 1000;
   // An abort before `once` leaves the assertion unspent. Once it is spent, a later abort fails closed: the tool asks again.
   options.signal?.throwIfAborted();
-  if (!(await options.once(`assertion:${clientId}:${jti}`, exp * 1000, callOptionsOf(options)))) {
+  if (!(await options.once(`assertion:${clientId}:${jti}`, expiresAt, callOptionsOf(options)))) {
     throw new LtiError("The jti of the assertion has been used.", "assertion-replayed");
   }
   options.signal?.throwIfAborted();

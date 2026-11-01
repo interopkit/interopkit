@@ -17,6 +17,7 @@ export {
   LTI_VERSION,
   MAX_IDENTIFIER_LENGTH,
   MESSAGE_TYPE,
+  NON_EMPTY_STRING,
   NUMBER,
   optional,
   POSITIVE_NUMBER,
@@ -25,6 +26,7 @@ export {
   STRING_ARRAY,
   STRING_RECORD,
 } from "./claims.js";
+export { CLOCK_SKEW_SECONDS } from "./clock-skew.js";
 export { escapeHtml, pagePolicy } from "./html.js";
 export {
   checkHttpRequest,
@@ -38,5 +40,5 @@ export {
 } from "./http.js";
 export { checkJwksCache, type JwksCache } from "./jwks.js";
 export { hasCanonicalParts, rs256Header, unverifiedClaims, verifyJwt } from "./jwt.js";
-export { isRsaKey } from "./keys.js";
+export { isRsaKey, MIN_RSA_MODULUS_BITS } from "./keys.js";
 export { randomToken } from "./random.js";

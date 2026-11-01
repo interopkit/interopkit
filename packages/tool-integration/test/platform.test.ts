@@ -40,7 +40,7 @@ import {
   tokenRequest,
   toolRegistration,
 } from "./fake-tool.js";
-import { NOW, readPage, readToken, request } from "./fixture.js";
+import { generateKeyPair, NOW, readPage, readToken, request } from "./fixture.js";
 
 import {
   ASSET_ORIGIN,
@@ -146,6 +146,12 @@ describe("readAgsScore", () => {
     expect(readAgsScore({ ...complete, timestamp: "2017-04-16T18:54:36.736999Z" }).timestampMs).toBe(utc);
   });
 
+  it("reads the largest time zone offset that exists, and no larger one", () => {
+    const utc = Date.UTC(2017, 3, 16, 18, 54, 36);
+    expect(readAgsScore({ ...complete, timestamp: "2017-04-17T18:53:36+23:59" }).timestampMs).toBe(utc);
+    expect(readAgsScore({ ...complete, timestamp: "2017-04-15T18:55:36-23:59" }).timestampMs).toBe(utc);
+  });
+
   it("orders the scores of a user by their timestamps in milliseconds, across time zones", () => {
     const earlier = readAgsScore({ ...complete, timestamp: "2017-04-16T18:54:36.736Z" });
     const later = readAgsScore({ ...complete, timestamp: "2017-04-16T13:54:36.737-05:00" });
@@ -187,6 +193,21 @@ describe("readAgsScore", () => {
         "an hour of 24",
         { ...complete, timestamp: "2017-04-16T24:00:00Z" },
         'The timestamp of a score must be ISO 8601 with a time zone, found "2017-04-16T24:00:00Z".',
+      ],
+      [
+        "a time zone of more than 23 hours",
+        { ...complete, timestamp: "2017-04-16T18:54:36Z".replace("Z", "+24:00") },
+        'The timestamp of a score must be ISO 8601 with a time zone, found "2017-04-16T18:54:36+24:00".',
+      ],
+      [
+        "a time zone of +99:99",
+        { ...complete, timestamp: "2017-04-16T18:54:36+99:99" },
+        'The timestamp of a score must be ISO 8601 with a time zone, found "2017-04-16T18:54:36+99:99".',
+      ],
+      [
+        "a time zone of 60 minutes",
+        { ...complete, timestamp: "2017-04-16T18:54:36-05:60" },
+        'The timestamp of a score must be ISO 8601 with a time zone, found "2017-04-16T18:54:36-05:60".',
       ],
       [
         "an epoch number",
@@ -1039,10 +1060,17 @@ describe("platformEndpoints and the configuration", () => {
     ]);
     const encryption = await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-1" }, false, ["sign", "verify"]);
     const signOnly = await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    const privateMessage = "The private key of the platform must be an RSASSA-PKCS1-v1_5 key with SHA-256 for signing.";
+    const shortMac = await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256", length: 8 }, false, [
+      "sign",
+      "verify",
+    ]);
+    const weakRsa = await generateKeyPair("weak", 1024);
+    const privateMessage =
+      "The private key of the platform must be an RSASSA-PKCS1-v1_5 key with SHA-256 of at least 2048 bits for signing.";
     const publicMessage =
-      "The public key of the platform must be an extractable RSASSA-PKCS1-v1_5 key with SHA-256 for verifying.";
-    const hintMessage = "The hint key of the platform must be an HMAC key with SHA-256 for signing and verifying.";
+      "The public key of the platform must be an extractable RSASSA-PKCS1-v1_5 key with SHA-256 of at least 2048 bits for verifying.";
+    const hintMessage =
+      "The hint key of the platform must be an HMAC key with SHA-256 of at least 256 bits for signing and verifying.";
     const cases: readonly [string, Partial<PlatformConfig>, string][] = [
       [
         "a public key as the private key",
@@ -1057,6 +1085,17 @@ describe("platformEndpoints and the configuration", () => {
       [
         "a public key that cannot be exported",
         { keys: { privateKey: platformKeys.privateKey, publicKey: hidden } },
+        publicMessage,
+      ],
+      ["an HMAC key of 8 bits", { hintKey: shortMac }, hintMessage],
+      [
+        "an RSA private key of 1,024 bits",
+        { keys: { privateKey: weakRsa.privateKey, publicKey: platformKeys.publicKey } },
+        privateMessage,
+      ],
+      [
+        "an RSA public key of 1,024 bits",
+        { keys: { privateKey: platformKeys.privateKey, publicKey: weakRsa.publicKey } },
         publicMessage,
       ],
       ["an HMAC key with SHA-1", { hintKey: encryption }, hintMessage],
@@ -1270,6 +1309,16 @@ describe("ltiPlatformLogin", () => {
       ],
       ["no title", { title: "" }, 'The title of the launch must be a non-empty string, found "".'],
       [
+        "a title of 256 characters",
+        { title: "t".repeat(256) },
+        "The title of the launch travels in the query of the login URL and must have at most 255 characters, found 256",
+      ],
+      [
+        "custom properties of 2,049 characters",
+        { custom: { name: "v".repeat(2_045) } },
+        "The custom properties of the launch travel in the query of the login URL and must have at most 2048 characters in their names and values, found 2049",
+      ],
+      [
         "custom properties that are not strings",
         { custom: { exam: 5 } },
         "The custom properties of the launch must be an object of strings, found an object.",
@@ -1282,6 +1331,13 @@ describe("ltiPlatformLogin", () => {
       else await expect(call, name).rejects.toThrow(message);
     }
     expect(ctx.checked).toStrictEqual([`${"r".repeat(1_024)}/candidate-7`]);
+  });
+
+  it("accepts a title of 255 characters and custom properties of 2,048, so that the login URL stays short", async () => {
+    const ctx = setup();
+    const launch = { ...baseLaunch, title: "t".repeat(255), custom: { name: "v".repeat(2_044) } };
+    const url = await ltiPlatformLogin(launch, ctx.login);
+    expect(url.length).toBeLessThan(8_192);
   });
 
   it("refuses a registration that is not one", async () => {
@@ -1437,10 +1493,39 @@ describe("platformToken", () => {
     expect((await token(ctx, { iat: undefined })).status).toBe(200);
   });
 
-  it("remembers the jti of an assertion until its expiry", async () => {
+  it("remembers the jti of an assertion until its expiry and the leeway after it, as long as the assertion verifies", async () => {
     const ctx = setup();
     await token(ctx, { jti: "jti-1", exp: SECONDS + 100 });
-    expect([...ctx.used]).toEqual([[`assertion:${TOOL_CLIENT_ID}:jti-1`, (SECONDS + 100) * 1000]]);
+    expect([...ctx.used]).toEqual([[`assertion:${TOOL_CLIENT_ID}:jti-1`, (SECONDS + 100 + 60) * 1000]]);
+  });
+
+  it("refuses to take a captured assertion twice, however its single-use store forgets: not in the leeway after its expiry", async () => {
+    const ctx = setup();
+    // A store that honors the time it is given, as the contract of `once` says: it forgets an identifier then.
+    const remembered = new Map<string, number>();
+    const forgetting = async (id: string, expiresAt: number): Promise<boolean> => {
+      if ((remembered.get(id) ?? 0) > ctx.clock.now()) return false;
+      remembered.set(id, expiresAt);
+      return true;
+    };
+    const options = { ...ctx.token, once: forgetting };
+    const assertion = await clientAssertion(toolKeys, endpoints.token, ctx.clock, { exp: SECONDS + 10 });
+    const post = () => platformToken(tokenRequest(endpoints.token, assertion, SCORE), options);
+    expect((await post()).status).toBe(200);
+    ctx.clock.advance(10 + 20);
+    // The assertion expired 20 seconds ago and still verifies, so its jti must still be remembered.
+    expect(JSON.parse((await post()).body).error).toBe("invalid_client");
+    ctx.clock.advance(41);
+    // Past the leeway the signature check itself refuses it.
+    expect(JSON.parse((await post()).body).error).toBe("invalid_client");
+  });
+
+  it("refuses an assertion with an empty jti", async () => {
+    const ctx = setup();
+    const response = await token(ctx, { jti: "" });
+    expect(response.status).toBe(400);
+    expect(JSON.parse(response.body)).toMatchObject({ error: "invalid_client" });
+    expect([...ctx.used]).toEqual([]);
   });
 
   it("verifies the assertion against the key set of the tool, fetched once and cached", async () => {

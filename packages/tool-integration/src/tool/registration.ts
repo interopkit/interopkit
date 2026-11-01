@@ -41,7 +41,7 @@ const registrationSchema = looseRecord({
   keyId: nonEmptyStringSchema,
   signingKey: guardSchema(
     (key): key is CryptoKey => isRsaKey(key, "sign"),
-    "a private RSASSA-PKCS1-v1_5 key with SHA-256 for signing",
+    "a private RSASSA-PKCS1-v1_5 key with SHA-256 of at least 2048 bits for signing",
   ),
 });
 
@@ -49,7 +49,7 @@ const registrationSchema = looseRecord({
  * Checks a registration that the host's lookup returned.
  *
  * @throws `DataError` when it is not a registration: a field is missing or of the wrong type, a URL is not `https`, the
- * issuer has a query or a fragment, or the signing key is not a private RSA key for RS256.
+ * issuer has a query or a fragment, or the signing key is not a private RSA key of at least 2,048 bits for RS256.
  */
 export function checkPlatformRegistration(value: unknown): asserts value is PlatformRegistration {
   parseWith(registrationSchema, value, "The registration");
