@@ -1,9 +1,10 @@
 import type { Clock } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
-import type { Activity, AttachmentData } from "../src/index.js";
+import type { Activity, AttachmentData, DocumentScope, DocumentTarget, LrsDocument } from "../src/index.js";
 import {
   type Access,
   type ActivityStore,
+  type DocumentStore,
   type LrsOptions,
   matchesStatementQuery,
   type StatementStore,
@@ -26,8 +27,22 @@ export interface Memory {
   readonly observed: { activities: readonly Activity[]; authority: unknown }[];
   readonly definitions: Map<string, Activity>;
   readonly calls: string[];
+  /** The documents by the JSON of their key, with the key. */
+  readonly documents: Map<string, { readonly key: DocumentTarget; readonly document: LrsDocument }>;
+  /** Runs inside a write or a delete of the documents, before the store compares, as another writer would. */
+  interfere: (() => void) | undefined;
   statements: StatementStore;
   activities: ActivityStore;
+  documentStore: DocumentStore;
+}
+
+/** Tells whether the key of a document is in a scope: every property of the scope is the key's. */
+function inScope(key: DocumentTarget, scope: DocumentScope): boolean {
+  const properties: Readonly<Record<string, unknown>> = key;
+  return (
+    key.resource === scope.resource &&
+    Object.entries(scope).every(([name, value]) => JSON.stringify(properties[name]) === JSON.stringify(value))
+  );
 }
 
 /** A store of Statements and Activities in memory that follows the contract of the ports. */
@@ -37,6 +52,8 @@ export function memory(): Memory {
   const observed: Memory["observed"] = [];
   const definitions = new Map<string, Activity>();
   const calls: string[] = [];
+  const documents: Memory["documents"] = new Map();
+  const state: { interfere: (() => void) | undefined } = { interfere: undefined };
   const statements: StatementStore = {
     async insert(batch, voids, attachments) {
       calls.push("insert");
@@ -93,7 +110,61 @@ export function memory(): Memory {
       observed.push({ activities: seen, authority });
     },
   };
-  return { held, data, observed, definitions, calls, statements, activities };
+  const documentStore: DocumentStore = {
+    async get(key) {
+      calls.push("documents.get");
+      return documents.get(JSON.stringify(key))?.document;
+    },
+    async write(key, document, condition) {
+      calls.push("documents.write");
+      state.interfere?.();
+      const id = JSON.stringify(key);
+      const current = documents.get(id)?.document;
+      if ("ifMatch" in condition && current?.etag !== condition.ifMatch) return "precondition-failed";
+      if ("ifNoneMatch" in condition && current !== undefined) return "precondition-failed";
+      if ("none" in condition && current !== undefined) return "exists";
+      documents.set(id, { key, document });
+      return "written";
+    },
+    async delete(key, condition) {
+      calls.push("documents.delete");
+      state.interfere?.();
+      const id = JSON.stringify(key);
+      const current = documents.get(id)?.document;
+      if (current === undefined) return "absent";
+      if (current.etag !== condition.ifMatch) return "precondition-failed";
+      documents.delete(id);
+      return "deleted";
+    },
+    async list(scope, since) {
+      calls.push("documents.list");
+      const after = since === undefined ? Number.NEGATIVE_INFINITY : Date.parse(since);
+      return [...documents.values()]
+        .filter(({ key, document }) => inScope(key, scope) && Date.parse(document.updated) > after)
+        .map(({ key }) => ("stateId" in key ? key.stateId : key.profileId));
+    },
+    async deleteAll(scope) {
+      calls.push("documents.deleteAll");
+      for (const [id, { key }] of documents) if (inScope(key, scope)) documents.delete(id);
+    },
+  };
+  return {
+    held,
+    data,
+    observed,
+    definitions,
+    calls,
+    documents,
+    get interfere() {
+      return state.interfere;
+    },
+    set interfere(change: (() => void) | undefined) {
+      state.interfere = change;
+    },
+    statements,
+    activities,
+    documentStore,
+  };
 }
 
 /** The clock of the tests. */
@@ -120,6 +191,7 @@ export function optionsOf(store: Memory, changes: Partial<LrsOptions> = {}): Lrs
   let counter = 0;
   return {
     statements: store.statements,
+    documents: store.documentStore,
     activities: store.activities,
     access: async () => ALLOW_ALL,
     clock: CLOCK,

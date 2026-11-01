@@ -1,0 +1,37 @@
+import { DataError } from "@interopkit/core";
+import { isRecord, nestsDeeperThan } from "@interopkit/core/checks";
+import type { Extensions } from "../../model/index.js";
+
+/** Throws on bytes that are not UTF-8, where the default decoder would replace them. */
+const DECODER = new TextDecoder("utf-8", { fatal: true });
+
+/**
+ * Reads bytes as a JSON object, within a depth.
+ *
+ * @param what - Names the bytes in a sentence, such as `The body`.
+ * @throws `DataError` when they are not UTF-8 or JSON, nest too deep, or hold something other than an object.
+ */
+export function readObject(bytes: Uint8Array, what: string, maxDepth: number): Extensions {
+  let text: string;
+  try {
+    text = DECODER.decode(bytes);
+  } catch {
+    throw new DataError(`${what} must be a JSON object, and it holds bytes that are not UTF-8.`);
+  }
+  if (nestsDeeperThan(text, maxDepth)) {
+    throw new DataError(`${what} must be a JSON object, and it nests deeper than the limit of ${maxDepth} levels.`);
+  }
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new DataError(`${what} must be a JSON object, and it is not valid JSON.`);
+  }
+  if (!isRecord(value)) throw new DataError(`${what} must be a JSON object, and it is not an object.`);
+  return value as Extensions;
+}
+
+/** Merges the top-level properties of a JSON object into another: the properties of the second replace those of the first. */
+export function merge(existing: Extensions, posted: Extensions): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify({ ...existing, ...posted }));
+}

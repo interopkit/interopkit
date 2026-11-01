@@ -2,8 +2,8 @@
 
 `@interopkit/learning-records/store` answers the requests that a Learning Record Provider and a consumer make to a Learning
 Record Store. `handleLrsRequest` takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, over the ports
-of the host: the stores of Statements and Activities, the decision about who may do what, and a clock. It keeps no state, makes
-no request, and knows no database, server or account.
+of the host: the stores of Statements, documents and Activities, the decision about who may do what, and a clock. It keeps no
+state, makes no request, and knows no database, server or account.
 
 ```mermaid
 flowchart TD
@@ -11,7 +11,7 @@ flowchart TD
   route -->|"no"| r404["404"]
   route -->|"yes"| method{"Method allowed?"}
   method -->|"no"| r405["405 with Allow"]
-  method -->|"yes"| version{"X-Experience-API-Version<br/>2.0 or 2.0.x?"}
+  method -->|"yes"| version{"X-Experience-API-Version<br/>2.0 or 2.0.x?<br/>(not asked of About)"}
   version -->|"no"| r400["400"]
   version -->|"yes"| access["access(request)"]
   access -->|"refuses"| rA["401, 403 or 429"]
@@ -20,7 +20,7 @@ flowchart TD
   action -->|"yes"| size{"Body within<br/>maxBodyBytes?"}
   size -->|"no"| r413["413"]
   size -->|"yes"| resource["The resource:<br/>parameters, body, rules"]
-  resource --> ports["StatementStore, ActivityStore"]
+  resource --> ports["StatementStore, DocumentStore,<br/>ActivityStore, AgentStore"]
   resource --> answer["HttpResponse<br/>X-Experience-API-Version: 2.0.0"]
 ```
 
@@ -30,64 +30,129 @@ flowchart TD
 import { handleLrsRequest } from "@interopkit/learning-records/store";
 
 const held = new Map();
+const kept = new Map();
+const headers = { "x-experience-api-version": "2.0.0", "content-type": "application/json" };
 const statement = {
   id: "6690e6c9-3ef0-4ed3-8b37-7f3964730bee",
   actor: { name: "Example Learner", mbox: "mailto:learner@example.org" },
   verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
   object: { id: "https://example.org/activities/course-1" },
 };
-const stored = await handleLrsRequest(
+const bookmark = `https://lrs.example.org/xapi/activities/state?${new URLSearchParams({
+  activityId: "https://example.org/activities/course-1",
+  agent: JSON.stringify({ mbox: "mailto:learner@example.org" }),
+  stateId: "bookmark",
+})}`;
+const requests = [
   {
     method: "POST",
     url: "https://lrs.example.org/xapi/statements",
-    headers: { "x-experience-api-version": "2.0.0", "content-type": "application/json" },
+    headers,
     body: new TextEncoder().encode(JSON.stringify(statement)),
   },
   {
-    statements: {
-      async insert(batch) {
-        const existing = batch.filter((entry) => held.has(entry.statement.id));
-        for (const entry of batch) if (!held.has(entry.statement.id)) held.set(entry.statement.id, entry);
-        return { existing };
-      },
-      async get(id, options) {
-        const entry = held.get(id);
-        return entry?.voided === options.voided ? entry : undefined;
-      },
-      async query(query, page) {
-        return { statements: [...held.values()].slice(0, page.limit) };
-      },
-      async consistentThrough() {
-        return "2026-01-15T10:30:00.000Z";
-      },
-      async attachments() {
-        return new Map();
-      },
-    },
-    activities: {
-      async get() {
-        return undefined;
-      },
-      async observe() {},
-    },
-    access: async () => ({
-      allowed: true,
-      authority: { account: { homePage: "https://lrs.example.org", name: "client" } },
-      actions: ["statements.read", "statements.write"],
-    }),
-    clock: { now: () => Date.parse("2026-01-15T10:30:00.000Z") },
+    method: "PUT",
+    url: bookmark,
+    headers: { ...headers, "if-none-match": "*" },
+    body: new TextEncoder().encode('{"page":3}'),
   },
-);
-stored.status; // => 200
-stored.body; // => '["6690e6c9-3ef0-4ed3-8b37-7f3964730bee"]'
+  { method: "GET", url: bookmark, headers, body: new Uint8Array() },
+];
+const answers = [];
+for (const request of requests)
+  answers.push(
+    await handleLrsRequest(request, {
+      statements: {
+        async insert(batch) {
+          const existing = batch.filter((entry) => held.has(entry.statement.id));
+          for (const entry of batch) if (!held.has(entry.statement.id)) held.set(entry.statement.id, entry);
+          return { existing };
+        },
+        async get(id, options) {
+          const entry = held.get(id);
+          return entry?.voided === options.voided ? entry : undefined;
+        },
+        async query(query, page) {
+          return { statements: [...held.values()].slice(0, page.limit) };
+        },
+        async consistentThrough() {
+          return "2026-01-15T10:30:00.000Z";
+        },
+        async attachments() {
+          return new Map();
+        },
+      },
+      documents: {
+        async get(key) {
+          return kept.get(JSON.stringify(key))?.document;
+        },
+        async write(key, document, condition) {
+          const id = JSON.stringify(key);
+          const current = kept.get(id)?.document;
+          if ("ifMatch" in condition ? current?.etag !== condition.ifMatch : current !== undefined) {
+            return "none" in condition ? "exists" : "precondition-failed";
+          }
+          kept.set(id, { key, document });
+          return "written";
+        },
+        async delete(key, condition) {
+          const id = JSON.stringify(key);
+          const current = kept.get(id)?.document;
+          if (current === undefined) return "absent";
+          if (current.etag !== condition.ifMatch) return "precondition-failed";
+          kept.delete(id);
+          return "deleted";
+        },
+        // A key is in a scope when the scope laid over it leaves it as it is.
+        async list(scope, since) {
+          return [...kept.values()]
+            .filter(
+              ({ key, document }) =>
+                JSON.stringify({ ...key, ...scope }) === JSON.stringify(key) &&
+                (since === undefined || document.updated > since),
+            )
+            .map(({ key }) => ("stateId" in key ? key.stateId : key.profileId));
+        },
+        async deleteAll(scope) {
+          for (const [id, { key }] of kept) if (JSON.stringify({ ...key, ...scope }) === JSON.stringify(key)) kept.delete(id);
+        },
+      },
+      activities: {
+        async get() {
+          return undefined;
+        },
+        async observe() {},
+      },
+      access: async () => ({
+        allowed: true,
+        authority: { account: { homePage: "https://lrs.example.org", name: "client" } },
+        actions: ["statements.read", "statements.write", "state.read", "state.write"],
+      }),
+      clock: { now: () => Date.parse("2026-01-15T10:30:00.000Z") },
+    }),
+  );
+answers.map((answer) => answer.status); // => [200, 204, 200]
 held.get(statement.id).statement.authority.account.name; // => "client"
-held.get(statement.id).stored; // => "2026-01-15T10:30:00.000Z"
+answers[2].headers["content-type"]; // => "application/json"
+answers[2].headers.etag === answers[1].headers.etag; // => true
 ```
 
 A host builds the `HttpRequest` from the request of its web framework, with header names in lower case and the body as bytes,
 and sends the `HttpResponse`. The header `X-Experience-API-Version` is on every answer.
 
-## The Statements resource
+## The resources
+
+| Path below `basePath` | Resource         | Methods                      | Actions                               | Section                          |
+| --------------------- | ---------------- | ---------------------------- | ------------------------------------- | -------------------------------- |
+| `statements`          | Statements       | GET, HEAD, PUT, POST         | `statements.read`, `statements.write` | [Statements](#statements)        |
+| `activities/state`    | State            | GET, HEAD, PUT, POST, DELETE | `state.read`, `state.write`           | [Documents](#documents)          |
+| `agents/profile`      | Agent Profile    | GET, HEAD, PUT, POST, DELETE | `profiles.read`, `profiles.write`     | [Documents](#documents)          |
+| `activities/profile`  | Activity Profile | GET, HEAD, PUT, POST, DELETE | `profiles.read`, `profiles.write`     | [Documents](#documents)          |
+| `agents`              | Agents           | GET, HEAD                    | `agents.read`                         | [Agents](#agents-and-activities) |
+| `activities`          | Activities       | GET, HEAD                    | `activities.read`                     | [Agents](#agents-and-activities) |
+| `about`               | About            | GET, HEAD                    | none                                  | [About](#about)                  |
+
+## Statements
 
 | Request                                               | Does                                                                                          | Answers                                                         |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
@@ -123,49 +188,120 @@ part for each hash. A Statement is stored with the data that come in a multipart
 whose payload is the same Statement, and when its header has an `x5c` it must verify against the leaf; `trustCertificate` is
 asked about the chain and its answer does not refuse a request.
 
+## Documents
+
+The State, Agent Profile and Activity Profile resources hold documents: any content with its Internet media type, named by an
+id and by the context they belong to.
+
+```mermaid
+flowchart TD
+  write["PUT or POST"] --> read["DocumentStore.get"]
+  read --> judge{"Preconditions<br/>against the document"}
+  judge -->|"If-Match not met,<br/>If-None-Match: * and it exists"| r412["412"]
+  judge -->|"no header and it exists"| r409["409"]
+  judge -->|"met"| make["Make the document:<br/>PUT keeps the body, POST merges JSON"]
+  make --> cas["DocumentStore.write<br/>compare-and-set"]
+  cas -->|"written"| r204["204 with ETag"]
+  cas -->|"lost a race"| again{"Tries left,<br/>mergeRetries?"}
+  again -->|"yes"| read
+  again -->|"no"| r409b["409"]
+```
+
+| Request                                    | Does                                                                                 | Answers                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| `GET` with the id (`stateId`, `profileId`) | Returns the document with its `Content-Type`, `ETag` and `Last-Modified`             | 200; 404 when there is none                                   |
+| `GET` without the id                       | Returns the ids of the documents of the context, each once, as a JSON array          | 200; `since` lists only the documents updated after that time |
+| `PUT` with the id                          | Stores the body as it came, with the `Content-Type` of the request, which it needs   | 204 with the new `ETag`                                       |
+| `POST` with the id                         | Merges the body into the document, or stores it where there is none                  | 204 with the new `ETag`; 400 when it cannot merge             |
+| `DELETE` with the id                       | Removes the document                                                                 | 204; 404 when there is none                                   |
+| `DELETE` of State without `stateId`        | Removes every State of the Activity and Agent, of the registration when one is named | 204; no precondition, since the documents share no tag        |
+| `HEAD`                                     | As GET, with no body                                                                 | The status and headers of GET                                 |
+
+The parameters are `activityId`, `agent` and `registration` (optional) with `stateId` for State; `agent` with `profileId` for
+Agent Profile; `activityId` with `profileId` for Activity Profile; and `since` on a GET without the id. The `agent` is the JSON
+of an Agent with one identifier, and the LRS keys on the identifier alone, so that a request that adds a `name` finds the same
+documents. A `registration` is a UUID, kept in lower case. A parameter of another name, or one that goes with another method,
+refuses the request with 400.
+
+The ETag of a document is the SHA-1 of its body in hex, in quotes, so equal content has equal tags. The preconditions follow
+RFC 9110 and the standard (4.1.4):
+
+| Header on PUT or POST   | The document exists                                      | There is none |
+| ----------------------- | -------------------------------------------------------- | ------------- |
+| `If-Match: "tag"`       | Written if the tag is its tag; else 412                  | 412           |
+| `If-Match: *` or a list | Written if `*` or a tag of the list is its tag; else 412 | 412           |
+| `If-None-Match: *`      | 412                                                      | Written       |
+| none                    | 409                                                      | Written       |
+
+A `DELETE` needs `If-Match` and removes the document under the same rules; without it the answer is 409 where the document
+exists. A weak tag (`W/"..."`) never matches. An `If-None-Match` with a tag, a header that is not quoted, and both headers
+together refuse the request with 400.
+
+A POST merges when the document exists (4.1.6.2): both the body and the document must be `application/json` and a JSON object,
+and the top-level properties of the body replace those of the document. Where no document exists, the body is stored as it came;
+a body typed `application/json` must be a JSON object even then. A document over `limits.maxDocumentBytes`, a merged one
+included, is refused with 413; the body of a PUT is checked before the store is called.
+
+A write that loses a race to another writer, so that the store does not find the document as it was read, is made again on the
+document that won, judged against the same headers: it goes through where they still hold, is refused with 412 or 409 where
+they do not, and with 409 after `limits.mergeRetries` tries.
+
+## Agents and Activities
+
+`GET agents?agent=` returns the Person that the Agent is (4.1.6.3): a JSON object with each identifier as a list. Without an
+`agents` store it holds the identifiers of the asked Agent only. `GET activities?activityId=` returns the Activity that
+`ActivityStore.get` holds, with `objectType`, or an Activity with only its id where the store holds none (4.1.6.4). Both take
+exactly one parameter; a Group, an Agent without an identifier, and an `activityId` that is not an IRI are refused with 400.
+
+## About
+
+`GET about` answers `{ "version": ["2.0.0"] }` with the `aboutExtensions` of the options as `extensions` (4.1.6.7). It is
+answered whatever version header the request has, so that a client can find the versions the LRS speaks. It asks `access` like
+every request and needs no action: a host that lets anyone ask About answers `{ allowed: true, actions: [] }` with an
+`authority` of its choice.
+
 ## Who may do what
 
 `access` is asked about every request that names a resource and a method. It answers `{ allowed: false, status, reason }` with
 401, 403 or 429, or `{ allowed: true, authority, actions }`. A 401 carries `challenge` as `WWW-Authenticate`, and a 429
-carries `retryAfterSeconds` as `Retry-After`. A request for an action that `actions` does not list is 403.
-
-| Request                  | Action             |
-| ------------------------ | ------------------ |
-| `GET`, `HEAD` statements | `statements.read`  |
-| `PUT`, `POST` statements | `statements.write` |
-
-The other actions of `LrsAction` are for the resources of documents, Agents and Activities.
+carries `retryAfterSeconds` as `Retry-After`. A request for an action that `actions` does not list is 403; the action of each
+method is in the table of [the resources](#the-resources).
 
 ## Options
 
-| Option                   | Of           | Default             | Meaning                                                                                                        |
-| ------------------------ | ------------ | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `statements`             | `LrsOptions` | required            | The `StatementStore`                                                                                           |
-| `activities`             | `LrsOptions` | required            | The `ActivityStore`                                                                                            |
-| `access`                 | `LrsOptions` | required            | Decides who asks and what they may do                                                                          |
-| `clock`                  | `LrsOptions` | required            | The time of the LRS; `stored` is its `now`                                                                     |
-| `basePath`               | `LrsOptions` | `"/xapi"`           | The path the LRS is mounted at: `""`, or a path that starts with `/` and does not end with one                 |
-| `newId`                  | `LrsOptions` | `crypto.randomUUID` | Makes the id of a Statement that has none                                                                      |
-| `accept`                 | `LrsOptions` | none                | A check after the standard's, for the rules of a profile; an error among its findings refuses with 400         |
-| `trustCertificate`       | `LrsOptions` | none                | Whether the chain of a signed Statement is trusted; the signature is checked against the leaf whatever it says |
-| `keepSubmittedAuthority` | `LrsOptions` | false               | Keeps the `authority` a Statement brings, which the standard allows only with a strong trust relationship      |
-| `limits`                 | `LrsOptions` | the limits below    | `LrsLimits`                                                                                                    |
-| `signal`                 | `LrsOptions` | none                | Ends every wait of the handler and reaches every port                                                          |
+| Option                   | Of           | Default                               | Meaning                                                                                                        |
+| ------------------------ | ------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `statements`             | `LrsOptions` | required                              | The `StatementStore`                                                                                           |
+| `documents`              | `LrsOptions` | required                              | The `DocumentStore`                                                                                            |
+| `activities`             | `LrsOptions` | required                              | The `ActivityStore`                                                                                            |
+| `agents`                 | `LrsOptions` | a Person with the Agent's identifiers | The `AgentStore`                                                                                               |
+| `access`                 | `LrsOptions` | required                              | Decides who asks and what they may do                                                                          |
+| `clock`                  | `LrsOptions` | required                              | The time of the LRS; `stored` of a Statement and `updated` of a document are its `now`                         |
+| `basePath`               | `LrsOptions` | `"/xapi"`                             | The path the LRS is mounted at: `""`, or a path that starts with `/` and does not end with one                 |
+| `newId`                  | `LrsOptions` | `crypto.randomUUID`                   | Makes the id of a Statement that has none                                                                      |
+| `accept`                 | `LrsOptions` | none                                  | A check after the standard's, for the rules of a profile; an error among its findings refuses with 400         |
+| `trustCertificate`       | `LrsOptions` | none                                  | Whether the chain of a signed Statement is trusted; the signature is checked against the leaf whatever it says |
+| `keepSubmittedAuthority` | `LrsOptions` | false                                 | Keeps the `authority` a Statement brings, which the standard allows only with a strong trust relationship      |
+| `aboutExtensions`        | `LrsOptions` | none                                  | A JSON object that About gives as `extensions`                                                                 |
+| `limits`                 | `LrsOptions` | the limits below                      | `LrsLimits`                                                                                                    |
+| `signal`                 | `LrsOptions` | none                                  | Ends every wait of the handler and reaches every port                                                          |
 
 ## Limits
 
-| Limit          | Default    | Refused with | Applies to                                                    |
-| -------------- | ---------- | ------------ | ------------------------------------------------------------- |
-| `maxBodyBytes` | 10,485,760 | 413          | The body of a request, before the store is called             |
-| `maxBatch`     | 1,000      | 413          | The Statements of one request                                 |
-| `maxParts`     | 100        | 413          | The parts of a multipart request, the Statements included     |
-| `maxPartBytes` | 10,485,760 | 413          | One part of a multipart request                               |
-| `maxDepth`     | 64         | 400          | The nesting of the JSON of a request                          |
-| `pageSize`     | 100        | Capped       | The Statements of a page when the request has no `limit`      |
-| `maxPageSize`  | 1,000      | Capped       | The largest page: a `limit` of 0 or above it is lowered to it |
+| Limit              | Default    | Refused with | Applies to                                                      |
+| ------------------ | ---------- | ------------ | --------------------------------------------------------------- |
+| `maxBodyBytes`     | 10,485,760 | 413          | The body of a request, before the store is called               |
+| `maxBatch`         | 1,000      | 413          | The Statements of one request                                   |
+| `maxParts`         | 100        | 413          | The parts of a multipart request, the Statements included       |
+| `maxPartBytes`     | 10,485,760 | 413          | One part of a multipart request                                 |
+| `maxDocumentBytes` | 1,048,576  | 413          | A State or profile document, and the result of a merge          |
+| `maxDepth`         | 64         | 400          | The nesting of the JSON of a request, a document included       |
+| `mergeRetries`     | 3          | 409          | The tries of a write or removal of a document that loses a race |
+| `pageSize`         | 100        | Capped       | The Statements of a page when the request has no `limit`        |
+| `maxPageSize`      | 1,000      | Capped       | The largest page: a `limit` of 0 or above it is lowered to it   |
 
-The JSON of a request is also read within the 1,000,000 tokens of `readStatementJson`, and a message over it is 400. The
-headers of a part of a multipart request are at most 8,192 bytes, which is 413.
+The JSON of a request for Statements is also read within the 1,000,000 tokens of `readStatementJson`, and a message over it is
+400. The headers of a part of a multipart request are at most 8,192 bytes, which is 413.
 
 ## The ports
 
@@ -176,35 +312,47 @@ headers of a part of a multipart request are at most 8,192 bytes, which is 413.
 |                  | `query`             | Returns a page of the Statements that `matchesStatementQuery` accepts, never a voided one, and `undefined` for a cursor it does not know |
 |                  | `consistentThrough` | Returns the time up to which every stored Statement is available                                                                         |
 |                  | `attachments`       | Returns the data it holds for the hashes                                                                                                 |
+| `DocumentStore`  | `get`               | Returns the document of a `DocumentTarget`, or `undefined`                                                                               |
+|                  | `write`             | Stores a document if the `WriteCondition` holds against the one that exists, atomically: `written`, `precondition-failed` or `exists`    |
+|                  | `delete`            | Removes the document if its tag is the one given, atomically: `deleted`, `precondition-failed` or `absent`                               |
+|                  | `list`              | Returns the ids of the documents of a scope updated after `since`; no registration in the scope means every registration                 |
+|                  | `deleteAll`         | Removes every document of a State scope                                                                                                  |
 | `ActivityStore`  | `get`               | Returns the canonical description of an Activity                                                                                         |
 |                  | `observe`           | Sees the Activities of the Statements that were stored; it is called again for a batch that is sent again                                |
+| `AgentStore`     | `person`            | Returns the Person that an Agent is, with every identifier the host knows                                                                |
+
+The `agent` of a `DocumentTarget` holds only `objectType` and its one identifier in a fixed order, and a `registration` is in
+lower case, so the JSON of a target can be its key. A `WriteCondition` is `{ ifMatch }`, `{ ifNoneMatch: "*" }` or
+`{ none: true }`, which writes only where no document exists.
 
 `matchesStatementQuery(statement, query, target)` says whether a Statement meets the filters of a query, with the rules of the
 Statement References of 4.1.6.1; a store that holds Statements in a database can mirror it in its own query and test the
 mirror against it. `target` finds any Statement by its id in lower case, a voided one too.
 
-| Port fails or is called again       | The handler does                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------ |
-| A port rejects                      | Answers 500 with a message that says nothing of the cause; what `insert` stored stays stored     |
-| `insert` returns an id that it held | Answers 204 when the Statement is the same by `sameStatement`, 409 when it is another            |
-| `observe` rejects                   | Answers 500 while the Statements stay stored; a resend answers 204 and observes again            |
-| A port does not answer              | Waits for the `signal` of the options and rejects with its reason                                |
-| A port breaks its contract          | Throws a `DataError`: more Statements than the limit, a voided Statement, a time that is no text |
+| Port fails or is called again                            | The handler does                                                                                                                                                       |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A port rejects                                           | Answers 500 with a message that says nothing of the cause; what `insert` stored stays stored                                                                           |
+| `insert` returns an id that it held                      | Answers 204 when the Statement is the same by `sameStatement`, 409 when it is another                                                                                  |
+| `observe` rejects                                        | Answers 500 while the Statements stay stored; a resend answers 204 and observes again                                                                                  |
+| `write` or `delete` does not do what the condition asked | Reads the document again, judges again, and tries again, up to `limits.mergeRetries` tries                                                                             |
+| A port does not answer                                   | Waits for the `signal` of the options and rejects with its reason                                                                                                      |
+| A port breaks its contract                               | Throws a `DataError`: more Statements than the limit, a voided Statement, a document without an ETag, an answer outside the set of outcomes, an Activity of another id |
 
 ## Errors
 
-| Answer or error                                                                      | When                                                             | What to do                                                       |
-| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
-| 400 with a message                                                                   | A parameter, the body, a Statement or a signature is wrong       | Show the message to the sender: it names the path                |
-| 401, 403, 429                                                                        | `access` refused the request, or the credentials lack the action | Send the credentials the host asks for                           |
-| 404                                                                                  | The path names no resource, or the LRS holds no such Statement   |                                                                  |
-| 405 with `Allow`                                                                     | The resource has no such method                                  | Use a method of `Allow`                                          |
-| 409                                                                                  | The LRS holds another Statement with the id                      | Send a new id: a Statement is not changed                        |
-| 413                                                                                  | A body, a batch, a part or a number of parts is over its limit   | Send less, or raise the limit                                    |
-| 500                                                                                  | A port rejected                                                  | Look at the host's own log; the answer says nothing of the cause |
-| `DataError`: `The configuration of the LRS is invalid at <option>: <sentence>.`      | An option has the wrong type                                     | Pass the option as the table says                                |
-| `DataError`: `The decision of access is invalid at <path>: <sentence>.`              | `access` answered with something that is no decision             | Answer `{ allowed, ... }` as `Access` says                       |
-| `DataError`: `The answer of StatementStore.query must have at most N Statements ...` | A store broke its contract                                       | Fix the store                                                    |
+| Answer or error                                                                  | When                                                                                                                                                | What to do                                                        |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 400 with a message                                                               | A parameter, a header, the body, a Statement or a signature is wrong                                                                                | Show the message to the sender: it names the path                 |
+| 401, 403, 429                                                                    | `access` refused the request, or the credentials lack the action                                                                                    | Send the credentials the host asks for                            |
+| 404                                                                              | The path names no resource, or the LRS holds no such Statement or document                                                                          | Check the id                                                      |
+| 405 with `Allow`                                                                 | The resource has no such method                                                                                                                     | Use a method of `Allow`                                           |
+| 409                                                                              | The LRS holds another Statement with the id; a document exists and the write has no precondition; a removal has no `If-Match`; writers kept winning | Send a new id or the precondition, or read the document and retry |
+| 412                                                                              | `If-Match` or `If-None-Match` is not met                                                                                                            | Read the document again                                           |
+| 413                                                                              | A body, a batch, a part, a number of parts or a document is over its limit                                                                          | Send less, or raise the limit                                     |
+| 500                                                                              | A port rejected                                                                                                                                     | Look at the host's own log; the answer says nothing of the cause  |
+| `DataError`: `The configuration of the LRS is invalid: <sentence>.`              | An option has the wrong type                                                                                                                        | Pass the option as the table says                                 |
+| `DataError`: `The decision of access is invalid at <path>: <sentence>.`          | `access` answered with something that is no decision                                                                                                | Answer `{ allowed, ... }` as `Access` says                        |
+| `DataError`: `The answer of DocumentStore.get is invalid at <path>: <sentence>.` | A store broke its contract                                                                                                                          | Fix the store                                                     |
 
 A refusal is written as JSON `{ "message": "..." }`, plain text or HTML, as `Accept` prefers, and as JSON when it prefers none.
 
@@ -212,8 +360,8 @@ A refusal is written as JSON `{ "message": "..." }`, plain text or HTML, as `Acc
 
 | Not included                                          | Why                                                                   |
 | ----------------------------------------------------- | --------------------------------------------------------------------- |
-| The documents, Agents, Activities and About resources | Other parts of this module                                            |
 | The version 1.0.3                                     | Its own rules and routes; a request that names it is refused with 400 |
+| A conditional GET (`If-None-Match` answered with 304) | The standard asks only for the ETag on a GET                          |
 | A database, an index, an account, a rate limit        | The host's: the ports and `access` are where they plug in             |
 | Deleting a Statement                                  | The standard asks that Statements are not deleted; voiding is the way |
 | A time later than the clock                           | The standard says an LRS shall not reject it                          |
@@ -225,3 +373,5 @@ A refusal is written as JSON `{ "message": "..." }`, plain text or HTML, as `Acc
 | The standard | A Statement that arrives after the Statement that voids it is not voided, since the LRS looks for the target when the voiding Statement arrives                               |
 | The standard | `X-Experience-API-Consistent-Through` is on the successful answers of the Statements resource, and not on a refusal                                                           |
 | The standard | A batch with a Statement that the LRS holds with other content is answered 409 after the new Statements were stored: the ports do not let the handler check all the ids first |
+| The standard | A POST of a document with no precondition over one that exists is 409 like a PUT, and a DELETE without `If-Match` is 409                                                      |
+| RFC 9110     | `If-None-Match` takes `*` only, and a DELETE of a document that does not exist is 404 whatever the headers                                                                    |

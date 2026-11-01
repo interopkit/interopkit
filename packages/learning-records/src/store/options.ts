@@ -1,9 +1,16 @@
 import type { CallOptions, Clock } from "@interopkit/core";
-import { guardSchema, methodsSchema, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
+import {
+  guardSchema,
+  jsonObjectSchema,
+  methodsSchema,
+  parseWith,
+  positiveIntegerSchema,
+  strictRecord,
+} from "@interopkit/core/checks";
 import type { HttpRequest } from "@interopkit/core/http";
 import * as v from "valibot";
-import type { Statement, StatementIssue } from "../model/index.js";
-import type { Access, ActivityStore, StatementStore } from "./ports.js";
+import type { About, Statement, StatementIssue } from "../model/index.js";
+import type { Access, ActivityStore, AgentStore, DocumentStore, StatementStore } from "./ports.js";
 
 /** The limits of an LRS. */
 export interface LrsLimits {
@@ -49,14 +56,35 @@ export interface LrsLimits {
    * @defaultValue 64
    */
   readonly maxDepth?: number;
+  /**
+   * The most bytes of a State or profile document, merged ones included; a request over it is refused with 413.
+   *
+   * @defaultValue 1,048,576
+   */
+  readonly maxDocumentBytes?: number;
+  /**
+   * The most tries of a write of a document that loses a race against another writer. The write is made again on the
+   * document that won, and the request is refused with 409 after the last try.
+   *
+   * @defaultValue 3
+   */
+  readonly mergeRetries?: number;
 }
 
 /** The options of `handleLrsRequest`. */
 export interface LrsOptions extends CallOptions {
   /** Where the Statements and the data of their Attachments are kept. */
   readonly statements: StatementStore;
+  /** Where the State and profile documents are kept. */
+  readonly documents: DocumentStore;
   /** Where the Activities that Statements mention are kept. */
   readonly activities: ActivityStore;
+  /**
+   * Where what the LRS knows of a person is kept.
+   *
+   * @defaultValue a Person with the identifiers of the asked Agent only
+   */
+  readonly agents?: AgentStore;
   /**
    * Decides who asks and what they may do, from the headers of the request: the credentials are the host's, and `Basic` is
    * read by `readBasicAuthorization`. It is asked for every request, and may refuse with 401, 403 or 429.
@@ -103,6 +131,12 @@ export interface LrsOptions extends CallOptions {
    */
   readonly keepSubmittedAuthority?: boolean;
   /**
+   * The properties that About adds to the versions it lists.
+   *
+   * @defaultValue none
+   */
+  readonly aboutExtensions?: About["extensions"];
+  /**
    * The limits of the LRS.
    *
    * @defaultValue the defaults of `LrsLimits`
@@ -116,7 +150,9 @@ export type LrsSettingsLimits = Required<LrsLimits>;
 /** The options of an LRS with their defaults. */
 export interface LrsSettings {
   readonly statements: StatementStore;
+  readonly documents: DocumentStore;
   readonly activities: ActivityStore;
+  readonly agents: AgentStore | undefined;
   readonly access: LrsOptions["access"];
   readonly clock: Clock;
   readonly basePath: string;
@@ -124,6 +160,7 @@ export interface LrsSettings {
   readonly accept: LrsOptions["accept"];
   readonly trustCertificate: LrsOptions["trustCertificate"];
   readonly keepSubmittedAuthority: boolean;
+  readonly aboutExtensions: About["extensions"];
   readonly limits: LrsSettingsLimits;
   readonly signal: AbortSignal | undefined;
 }
@@ -136,13 +173,17 @@ const DEFAULT_LIMITS: LrsSettingsLimits = {
   maxParts: 100,
   maxPartBytes: 10_485_760,
   maxDepth: 64,
+  maxDocumentBytes: 1_048_576,
+  mergeRetries: 3,
 };
 
 const isFunction = <T>(value: unknown): value is T => typeof value === "function";
 
 const optionsSchema = strictRecord({
   statements: methodsSchema<StatementStore>("insert", "get", "query", "consistentThrough", "attachments"),
+  documents: methodsSchema<DocumentStore>("get", "write", "delete", "list", "deleteAll"),
   activities: methodsSchema<ActivityStore>("get", "observe"),
+  agents: v.optional(methodsSchema<AgentStore>("person")),
   access: guardSchema(isFunction<LrsOptions["access"]>, "a function"),
   clock: methodsSchema<Clock>("now"),
   basePath: v.optional(
@@ -158,6 +199,7 @@ const optionsSchema = strictRecord({
   accept: v.optional(guardSchema(isFunction<NonNullable<LrsOptions["accept"]>>, "a function")),
   trustCertificate: v.optional(guardSchema(isFunction<NonNullable<LrsOptions["trustCertificate"]>>, "a function")),
   keepSubmittedAuthority: v.optional(v.boolean()),
+  aboutExtensions: v.optional(jsonObjectSchema),
   limits: v.optional(
     strictRecord({
       maxBodyBytes: v.optional(positiveIntegerSchema),
@@ -167,6 +209,8 @@ const optionsSchema = strictRecord({
       maxParts: v.optional(positiveIntegerSchema),
       maxPartBytes: v.optional(positiveIntegerSchema),
       maxDepth: v.optional(positiveIntegerSchema),
+      maxDocumentBytes: v.optional(positiveIntegerSchema),
+      mergeRetries: v.optional(positiveIntegerSchema),
     }),
   ),
   signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
@@ -182,7 +226,9 @@ export function readLrsOptions(options: unknown): LrsSettings {
   const limits = { ...DEFAULT_LIMITS, ...read.limits };
   return {
     statements: read.statements,
+    documents: read.documents,
     activities: read.activities,
+    agents: read.agents,
     access: read.access,
     clock: read.clock,
     basePath: read.basePath ?? "/xapi",
@@ -190,6 +236,7 @@ export function readLrsOptions(options: unknown): LrsSettings {
     accept: read.accept,
     trustCertificate: read.trustCertificate,
     keepSubmittedAuthority: read.keepSubmittedAuthority ?? false,
+    aboutExtensions: read.aboutExtensions,
     limits,
     signal: read.signal,
   };

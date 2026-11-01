@@ -3,14 +3,16 @@ import { parseWith } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 import * as v from "valibot";
 import { authoritySchema } from "../read/internal.js";
+import { handleAbout } from "./about.js";
+import { handleActivities } from "./activities.js";
+import { handleAgents } from "./agents.js";
+import { handleActivityProfile, handleAgentProfile, handleState } from "./documents/handle.js";
 import { type LrsOptions, readLrsOptions } from "./options.js";
 import { type Access, LRS_ACTIONS, type LrsAction } from "./ports.js";
 import { handleStatements } from "./statements/handle.js";
 import { FAILED, type Refuse, refusalWriter } from "./status.js";
 import type { Context } from "./verdict.js";
-
-/** The version of xAPI that the LRS speaks, which every answer names (4.1.7). */
-const VERSION = "2.0.0";
+import { VERSION } from "./version.js";
 
 /** The versions that a request may name: 2.0 is 2.0.0, and a later patch of 2.0 is accepted too (4.1.7). */
 const ACCEPTED = /^2\.0(?:\.\d+)?$/u;
@@ -18,16 +20,51 @@ const ACCEPTED = /^2\.0(?:\.\d+)?$/u;
 /** A resource of the LRS: its path, the action each method needs, and the function that answers it. */
 interface Resource {
   readonly path: string;
-  readonly actions: Readonly<Record<string, LrsAction>>;
+  /** The methods the resource has, each with the action it needs, or `null` when it needs none. */
+  readonly actions: Readonly<Record<string, LrsAction | null>>;
+  /** Whether a request must name a version of xAPI that the LRS speaks. About is the one that need not (4.1.7). */
+  readonly versioned: boolean;
   readonly handle: (context: Context) => Promise<HttpResponse>;
+}
+
+/** The methods of a resource that holds documents. */
+function documentActions(read: LrsAction, write: LrsAction): Resource["actions"] {
+  return { GET: read, HEAD: read, PUT: write, POST: write, DELETE: write };
 }
 
 const RESOURCES: readonly Resource[] = [
   {
     path: "statements",
     actions: { GET: "statements.read", HEAD: "statements.read", PUT: "statements.write", POST: "statements.write" },
+    versioned: true,
     handle: handleStatements,
   },
+  {
+    path: "activities/state",
+    actions: documentActions("state.read", "state.write"),
+    versioned: true,
+    handle: handleState,
+  },
+  {
+    path: "agents/profile",
+    actions: documentActions("profiles.read", "profiles.write"),
+    versioned: true,
+    handle: handleAgentProfile,
+  },
+  {
+    path: "activities/profile",
+    actions: documentActions("profiles.read", "profiles.write"),
+    versioned: true,
+    handle: handleActivityProfile,
+  },
+  { path: "agents", actions: { GET: "agents.read", HEAD: "agents.read" }, versioned: true, handle: handleAgents },
+  {
+    path: "activities",
+    actions: { GET: "activities.read", HEAD: "activities.read" },
+    versioned: true,
+    handle: handleActivities,
+  },
+  { path: "about", actions: { GET: null, HEAD: null }, versioned: false, handle: handleAbout },
 ];
 
 const accessSchema = v.variant("allowed", [
@@ -63,13 +100,13 @@ async function serve(request: HttpRequest, options: unknown, refuse: Refuse): Pr
   const settings = readLrsOptions(options);
   const resource = resourceOf(new URL(request.url).pathname, settings.basePath);
   if (resource === undefined) return refuse(404, "The LRS has no such resource.");
-  const action = resource.actions[request.method];
+  const action = Object.hasOwn(resource.actions, request.method) ? resource.actions[request.method] : undefined;
   if (action === undefined) {
     const allow = Object.keys(resource.actions).join(", ");
     return refuse(405, `The method ${request.method} is not allowed here: use ${allow}.`, { allow });
   }
   const version = request.headers["x-experience-api-version"];
-  if (version === undefined || !ACCEPTED.test(version)) {
+  if (resource.versioned && (version === undefined || !ACCEPTED.test(version))) {
     return refuse(
       400,
       `The header X-Experience-API-Version must be 2.0.0 or 2.0, found ${version === undefined ? "none" : JSON.stringify(version)}.`,
@@ -80,7 +117,9 @@ async function serve(request: HttpRequest, options: unknown, refuse: Refuse): Pr
   if (asked === undefined) return refuse(500, FAILED);
   const decision = parseWith(accessSchema, asked.value, "The decision of access");
   if (!decision.allowed) return denial(decision, refuse);
-  if (!decision.actions.includes(action)) return refuse(403, `The credentials do not allow ${action}.`);
+  if (action !== null && !decision.actions.includes(action)) {
+    return refuse(403, `The credentials do not allow ${action}.`);
+  }
   if (request.body.byteLength > settings.limits.maxBodyBytes) {
     return refuse(
       413,

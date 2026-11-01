@@ -4,6 +4,7 @@ import { type HttpRequest, readQuery } from "@interopkit/core/http";
 import type { StatementFormat, StatementQuery } from "../../model/index.js";
 import { readStatementJson } from "../../read/index.js";
 import { statementQuerySchema } from "../../read/internal.js";
+import { checkNames } from "../parameters.js";
 import { attempt, type Verdict } from "../verdict.js";
 
 /** What a GET on the Statements resource asks for. */
@@ -75,17 +76,6 @@ function readFilters(parameters: ReadonlyMap<string, string>): StatementQuery {
     else raw[property] = name === "agent" ? readStatementJson(text) : text;
   }
   return parseWith(statementQuerySchema, raw, "The query");
-}
-
-/** Checks that a request has no parameter that the resource does not have (4.1.5): a name in another case is unknown too. */
-function checkNames(parameters: ReadonlyMap<string, string>, known: ReadonlySet<string>): void {
-  for (const name of parameters.keys()) {
-    if (!known.has(name)) {
-      throw new DataError(
-        `The parameter ${describe(name)} is not a parameter of this resource: the names are case-sensitive.`,
-      );
-    }
-  }
 }
 
 /** Reads a GET on the Statements resource: one Statement, or a page of them. */

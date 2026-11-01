@@ -39,7 +39,7 @@ flowchart LR
   client <-->|"HTTPS, your fetch"| lrs[("LRS")]
   host -->|"an HttpRequest"| store
   store -->|"an HttpResponse"| host
-  store <-->|"your stores"| ports[("Statements, Activities")]
+  store <-->|"your stores"| ports[("Statements, documents, Activities")]
 ```
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
@@ -67,7 +67,7 @@ npm install @interopkit/learning-records
 |                                            | `INTERACTION_TYPES`, `CONTEXT_ACTIVITY_TYPES`, `RULE_ROLES`, `VERB_VOIDED` and the types of the vocabularies                                                                                                                                                                                                                             |
 | `@interopkit/learning-records/attachments` | `writeMultipart`, `readMultipart`, `attachmentHash`, `MultipartLimits`, `MultipartMessage`, `MultipartContent`: write and read the `multipart/mixed` message of Statements and Attachment data, and hash the data                                                                                                                        |
 | `@interopkit/learning-records/client`      | `createLrsClient`, `LrsClient`, `LrsClientConfig`, `StatementPage`, `StatementWithAttachments`, `WriteOutcome`, `SendOptions`, `GetStatementOptions`, `WriteOptions`, `DeleteOptions`, `ListOptions`: send and query Statements, read and write the three kinds of document, and ask for Activities, Agents and About, over your `fetch` |
-| `@interopkit/learning-records/store`       | `handleLrsRequest`, `LrsOptions`, `LrsLimits`, `StatementStore`, `ActivityStore`, `Access`, `LrsAction`, `matchesStatementQuery`, `readBasicAuthorization`: answer the Statements resource of an LRS over your stores                                                                                                                    |
+| `@interopkit/learning-records/store`       | `handleLrsRequest`, `LrsOptions`, `LrsLimits`, `StatementStore`, `DocumentStore`, `ActivityStore`, `AgentStore`, `Access`, `LrsAction`, `matchesStatementQuery`, `readBasicAuthorization`: answer the seven resources of an LRS over your stores                                                                                         |
 | `@interopkit/learning-records/signing`     | `signStatement`, `verifyStatementSignature`, `SIGNATURE_USAGE_TYPE`, `SignedStatement`, `SignatureCheck`: sign a Statement over a `Signer` of `@interopkit/core`, and verify the signature                                                                                                                                               |
 
 ```ts
@@ -96,20 +96,20 @@ validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `
 
 ## What this version includes
 
-| Part of xAPI 2.0                | Included                                                                                                                                                                                     |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The Statement and what it holds | Every property of the tables of 4.2.2: Actors, Verbs, Objects with Activity Definitions and the ten interactions, Results, Contexts, SubStatements, Attachments                              |
-| Rules of an LRS                 | What an LRS shall reject (4.2.1, 4.2.4, 4.2.5, 4.2.7), the batch rule of 4.1.6.1, and what it shall not reject                                                                               |
-| Rules of a provider             | What a Learning Record Provider shall and should do (5.2): UTC, the properties the LRS sets, precision, empty objects, lists of Activities                                                   |
-| Data types                      | IRIs, UUIDs, RFC 3339 times, ISO 8601 durations, language tags, extension keys, `mailto` IRIs, hashes and media types                                                                        |
-| Interaction patterns            | The form of every `correctResponsesPattern` by interaction type, and its characterstring parameters                                                                                          |
-| Building                        | A Statement from an event with the time in UTC, an id that a resend repeats, the Statement that voids another, durations and the hash of an address                                          |
-| Comparing and formats           | Whether two Statements are the same by the rules of immutability, and a Statement as `ids`, `exact` or `canonical`                                                                           |
-| Text of a request               | `readStatementJson`: RFC 8259 syntax, limits of size, depth and tokens, and a property given twice refused                                                                                   |
-| Attachments                     | The `multipart/mixed` message of Statements and Attachment data, matched by SHA-2 hash, within limits                                                                                        |
-| Signed Statements               | A compact JWS in an Attachment with RS256, RS384 or RS512 and an `x5c` chain, signed over a `Signer` and verified against the leaf and the equivalence of the payload                        |
-| Client                          | The seven resources over `fetch`: Statements and their twelve filters with pages, State and the two profiles under ETags with the preconditions of the version, Agents, Activities and About |
-| LRS handler                     | The Statements resource over plain requests and the ports of your stores: versions, errors, limits, access, voiding, filters and pages, Attachments and signatures                           |
+| Part of xAPI 2.0                | Included                                                                                                                                                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The Statement and what it holds | Every property of the tables of 4.2.2: Actors, Verbs, Objects with Activity Definitions and the ten interactions, Results, Contexts, SubStatements, Attachments                                                                |
+| Rules of an LRS                 | What an LRS shall reject (4.2.1, 4.2.4, 4.2.5, 4.2.7), the batch rule of 4.1.6.1, and what it shall not reject                                                                                                                 |
+| Rules of a provider             | What a Learning Record Provider shall and should do (5.2): UTC, the properties the LRS sets, precision, empty objects, lists of Activities                                                                                     |
+| Data types                      | IRIs, UUIDs, RFC 3339 times, ISO 8601 durations, language tags, extension keys, `mailto` IRIs, hashes and media types                                                                                                          |
+| Interaction patterns            | The form of every `correctResponsesPattern` by interaction type, and its characterstring parameters                                                                                                                            |
+| Building                        | A Statement from an event with the time in UTC, an id that a resend repeats, the Statement that voids another, durations and the hash of an address                                                                            |
+| Comparing and formats           | Whether two Statements are the same by the rules of immutability, and a Statement as `ids`, `exact` or `canonical`                                                                                                             |
+| Text of a request               | `readStatementJson`: RFC 8259 syntax, limits of size, depth and tokens, and a property given twice refused                                                                                                                     |
+| Attachments                     | The `multipart/mixed` message of Statements and Attachment data, matched by SHA-2 hash, within limits                                                                                                                          |
+| Signed Statements               | A compact JWS in an Attachment with RS256, RS384 or RS512 and an `x5c` chain, signed over a `Signer` and verified against the leaf and the equivalence of the payload                                                          |
+| Client                          | The seven resources over `fetch`: Statements and their twelve filters with pages, State and the two profiles under ETags with the preconditions of the version, Agents, Activities and About                                   |
+| LRS handler                     | All seven resources over plain requests and the ports of your stores: versions, errors, limits, access, voiding, filters and pages, Attachments and signatures, documents under ETags with merge, Agents, Activities and About |
 
 [The model guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/model.md) has the options with their
 defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and why, and the

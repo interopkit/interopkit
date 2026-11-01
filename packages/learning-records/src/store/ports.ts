@@ -1,5 +1,19 @@
 import type { CallOptions } from "@interopkit/core";
-import type { Activity, Actor, AttachmentData, Statement, StatementQuery, XapiVersion } from "../model/index.js";
+import type {
+  Activity,
+  Actor,
+  Agent,
+  AttachmentData,
+  DocumentScope,
+  DocumentTarget,
+  LrsDocument,
+  Person,
+  Precondition,
+  Statement,
+  StatementQuery,
+  StateScope,
+  XapiVersion,
+} from "../model/index.js";
 
 /** The actions that a request may be granted. `access` lists the ones that the credentials of a request allow. */
 export const LRS_ACTIONS = [
@@ -130,4 +144,61 @@ export interface ActivityStore {
    * becomes canonical. It is called again for a batch that is sent again, so it must be idempotent.
    */
   observe(activities: readonly Activity[], authority: Actor, options?: CallOptions): Promise<void>;
+}
+
+/**
+ * What a write of a document checks in the store, atomically, against the document that exists: the tag it must have, that
+ * none exists and `If-None-Match: *` was sent, or that none exists and no precondition was sent.
+ */
+export type WriteCondition =
+  | Precondition
+  | {
+      /** The request had no precondition: the write goes only where no document exists. */
+      readonly none: true;
+    };
+
+/**
+ * Where an LRS keeps the State and profile documents.
+ *
+ * @remarks
+ * A document is named by its `DocumentTarget`: the `agent` of a target holds only `objectType` and the one identifier, in a
+ * fixed order, and a `registration` is in lower case, so that the JSON of a target can be its key. A method may be called
+ * again and from several requests at once, rejects when it fails, and receives the `signal` of the options of the LRS.
+ */
+export interface DocumentStore {
+  /** Returns the document, or `undefined` when there is none. */
+  get(key: DocumentTarget, options?: CallOptions): Promise<LrsDocument | undefined>;
+  /**
+   * Stores the document under the key if `condition` holds, atomically across processes, and says what it did: `written`,
+   * `precondition-failed` when `ifMatch` names another tag than the document's or no document, or `ifNoneMatch` finds one,
+   * and `exists` when `none` finds one.
+   */
+  write(
+    key: DocumentTarget,
+    document: LrsDocument,
+    condition: WriteCondition,
+    options?: CallOptions,
+  ): Promise<"written" | "precondition-failed" | "exists">;
+  /**
+   * Removes the document if its tag is the one the condition names, atomically across processes, and says what it did:
+   * `deleted`, `precondition-failed` when it has another tag, and `absent` when there is none.
+   */
+  delete(
+    key: DocumentTarget,
+    condition: Extract<Precondition, { readonly ifMatch: string }>,
+    options?: CallOptions,
+  ): Promise<"deleted" | "precondition-failed" | "absent">;
+  /**
+   * Returns the ids of the documents of the scope, each once, whose `updated` is after `since` when it is given. A scope
+   * without a `registration` holds the documents of every registration and those without one.
+   */
+  list(scope: DocumentScope, since: string | undefined, options?: CallOptions): Promise<readonly string[]>;
+  /** Removes every document of the State scope. */
+  deleteAll(scope: StateScope, options?: CallOptions): Promise<void>;
+}
+
+/** Where an LRS gets what it knows of a person from outside services. */
+export interface AgentStore {
+  /** Returns the Person that the Agent is: every identifier the host knows for them, each as a list. */
+  person(agent: Agent, options?: CallOptions): Promise<Person>;
 }

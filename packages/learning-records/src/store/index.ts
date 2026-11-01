@@ -10,12 +10,15 @@ export type { LrsLimits, LrsOptions } from "./options.js";
 export {
   type Access,
   type ActivityStore,
+  type AgentStore,
+  type DocumentStore,
   type InsertResult,
   LRS_ACTIONS,
   type LrsAction,
   type StatementStore,
   type StatementsPage,
   type StoredStatement,
+  type WriteCondition,
 } from "./ports.js";
 export { matchesStatementQuery } from "./query.js";
 export { handleLrsRequest } from "./router.js";

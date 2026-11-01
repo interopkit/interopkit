@@ -1,15 +1,5 @@
 import { type CallOptions, DataError, type ServiceResponse } from "@interopkit/core";
-import {
-  absoluteUriSchema,
-  dateTimeSchema,
-  guardSchema,
-  isRecord,
-  jsonObjectSchema,
-  nonEmptyStringSchema,
-  parseWith,
-  strictRecord,
-  uuidSchema,
-} from "@interopkit/core/checks";
+import { dateTimeSchema, guardSchema, jsonObjectSchema, parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type {
   DocumentScope,
@@ -20,7 +10,7 @@ import type {
   StateScope,
 } from "../model/index.js";
 import { isMediaType } from "../model/internal.js";
-import { identifiedAgentSchema } from "../read/internal.js";
+import { scopeSchema, stateScopeSchema, targetSchema } from "../read/internal.js";
 import type { Settings } from "./config.js";
 import { callOptionsSchema, signalEntry } from "./options.js";
 import { isHeaderValue, jsonOf, readAnswer, send, urlOf } from "./request.js";
@@ -69,57 +59,6 @@ const PATHS = {
   "agent-profile": "agents/profile",
   "activity-profile": "activities/profile",
 } as const;
-
-const objectGuard = guardSchema(isRecord, "an object");
-const RESOURCES = (issue: { readonly received: string }): string =>
-  `expected "state", "agent-profile" or "activity-profile", found ${issue.received}`;
-
-const targetSchema = v.pipe(
-  objectGuard,
-  v.variant(
-    "resource",
-    [
-      v.strictObject({
-        resource: v.literal("state"),
-        activityId: absoluteUriSchema,
-        agent: identifiedAgentSchema,
-        stateId: nonEmptyStringSchema,
-        registration: v.optional(uuidSchema),
-      }),
-      v.strictObject({
-        resource: v.literal("agent-profile"),
-        agent: identifiedAgentSchema,
-        profileId: nonEmptyStringSchema,
-      }),
-      v.strictObject({
-        resource: v.literal("activity-profile"),
-        activityId: absoluteUriSchema,
-        profileId: nonEmptyStringSchema,
-      }),
-    ],
-    RESOURCES,
-  ),
-);
-
-const stateScope = v.strictObject({
-  resource: v.literal("state"),
-  activityId: absoluteUriSchema,
-  agent: identifiedAgentSchema,
-  registration: v.optional(uuidSchema),
-});
-
-const scopeSchema = v.pipe(
-  objectGuard,
-  v.variant(
-    "resource",
-    [
-      stateScope,
-      v.strictObject({ resource: v.literal("agent-profile"), agent: identifiedAgentSchema }),
-      v.strictObject({ resource: v.literal("activity-profile"), activityId: absoluteUriSchema }),
-    ],
-    RESOURCES,
-  ),
-);
 
 const entityTag = v.pipe(
   v.string(),
@@ -312,7 +251,7 @@ export async function listDocumentIds(
 /** Removes every state of an Agent in an Activity. */
 export async function deleteStates(settings: Settings, scope: StateScope, options: unknown): Promise<void> {
   const { signal } = parseWith(callOptionsSchema, options === undefined ? {} : options, "The options object");
-  const checked = parseWith(stateScope, scope, "The scope");
+  const checked = parseWith(stateScopeSchema, scope, "The scope");
   const url = urlOf(settings, PATHS.state, parametersOf(checked));
   await send(settings, signal, url, { method: "DELETE" }, [204]);
 }

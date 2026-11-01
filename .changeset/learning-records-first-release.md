@@ -22,6 +22,7 @@ the equivalence of the payload.
 Agent Profile and Activity Profile documents under the preconditions that `version` requires, and asks for Activities, Agents and
 About. Statements are checked before they are sent and every answer is read into the model.
 `@interopkit/learning-records/store` is the handler of an LRS over plain requests and the ports of the host's stores:
-`handleLrsRequest` answers the Statements resource, with PUT, POST, GET and HEAD, the version header, errors by `Accept`,
+`handleLrsRequest` answers the seven resources, HEAD included: Statements, with the version header, errors by `Accept`,
 `access`, the limits, voiding, the filters with the Statement References that `matchesStatementQuery` judges, pages with
-`more`, the formats, Attachments and signatures; `readBasicAuthorization` reads HTTP Basic.
+`more`, the formats, Attachments and signatures; State and both profiles, under ETags with `If-Match`, `If-None-Match`, JSON
+merge and the retry of lost races; Agents, Activities and About. `readBasicAuthorization` reads HTTP Basic.
