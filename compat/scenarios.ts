@@ -24,7 +24,9 @@ async function failureOf(call: Promise<unknown>): Promise<unknown> {
     await call;
     return "no failure";
   } catch (error) {
-    return error instanceof ServiceError ? { status: error.status, body: error.body.slice(0, 16) } : String(error);
+    return error instanceof ServiceError
+      ? { status: error.status, body: error.body.slice(0, 16), bytes: error.body.length }
+      : String(error);
   }
 }
 

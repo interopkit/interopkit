@@ -44,3 +44,11 @@ export { checkJwksCache, type JwksCache } from "./jwks.js";
 export { hasCanonicalParts, rs256Header, unverifiedClaims, verifyJwt } from "./jwt.js";
 export { isRsaKey, MIN_RSA_MODULUS_BITS } from "./keys.js";
 export { randomToken } from "./random.js";
+export { MILLISECONDS, toSeconds } from "./time.js";
+export {
+  CLIENT_CREDENTIALS_GRANT,
+  JWT_BEARER_ASSERTION_TYPE,
+  LINE_ITEM_MEDIA_TYPE,
+  SCORE_MEDIA_TYPE,
+  SCORES_SUFFIX,
+} from "./wire.js";

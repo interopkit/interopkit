@@ -7,6 +7,9 @@ import {
   type HttpRequest,
   type HttpResponse,
   jsonResponse,
+  LINE_ITEM_MEDIA_TYPE,
+  SCORE_MEDIA_TYPE,
+  SCORES_SUFFIX,
 } from "../protocol/internal.js";
 import { readAccess } from "./access.js";
 import { readAgsScore } from "./ags-score.js";
@@ -20,10 +23,6 @@ import {
 } from "./options.js";
 import { resourceLinkId } from "./resource-link.js";
 import { type LineItem, openLineItem } from "./tokens.js";
-
-const LINE_ITEM_TYPE = "application/vnd.ims.lis.v2.lineitem+json";
-const SCORE_TYPE = "application/vnd.ims.lis.v1.score+json";
-const SCORES_SUFFIX = "/scores";
 
 /** A line item that a request names, with its URL. */
 interface Found {
@@ -87,7 +86,7 @@ export async function agsLineItem(request: HttpRequest, options: PlatformOptions
     scoreMaximum: lineItem.scoreMaximum,
     resourceLinkId: await resourceLinkId(lineItem.resource),
   };
-  return jsonResponse(200, body, {}, LINE_ITEM_TYPE);
+  return jsonResponse(200, body, {}, LINE_ITEM_MEDIA_TYPE);
 }
 
 /**
@@ -118,8 +117,8 @@ export async function agsScores(request: HttpRequest, options: AgsScoresOptions)
   if ("status" in access) return access;
   const { lineItem } = found;
   if (lineItem.client !== access.client) return forbidden("The line item is not the line item of this tool.");
-  if (mediaType(request) !== SCORE_TYPE) {
-    return jsonResponse(415, { error: "unsupported_media_type" }, { accept: SCORE_TYPE });
+  if (mediaType(request) !== SCORE_MEDIA_TYPE) {
+    return jsonResponse(415, { error: "unsupported_media_type" }, { accept: SCORE_MEDIA_TYPE });
   }
   let body: unknown;
   try {

@@ -1,5 +1,5 @@
 import { readClock } from "@interopkit/core";
-import { type HttpRequest, type HttpResponse, jsonResponse } from "../protocol/internal.js";
+import { type HttpRequest, type HttpResponse, jsonResponse, toSeconds } from "../protocol/internal.js";
 import type { PlatformOptions } from "./options.js";
 import { type Access, openAccess } from "./tokens.js";
 
@@ -26,7 +26,7 @@ export async function readAccess(
   if (header === undefined) return refusal(401, "Bearer", "invalid_token");
   const token = BEARER.exec(header)?.[1];
   const access = token === undefined ? undefined : await openAccess(token, options.config.hintKey);
-  if (access === undefined || Math.floor(readClock(options.clock) / 1000) >= access.exp) {
+  if (access === undefined || toSeconds(readClock(options.clock)) >= access.exp) {
     return refusal(401, 'Bearer error="invalid_token"', "invalid_token");
   }
   if (!access.scopes.some((scope) => needed.includes(scope))) {

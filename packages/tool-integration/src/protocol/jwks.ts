@@ -1,10 +1,10 @@
 import { type CallOptions, callService, DEFAULT_TIMEOUT_MS, type Fetch, untilAborted } from "@interopkit/core";
 import { checkFunction, checkHttpsUrl, checkPositiveInteger, checkRecord } from "@interopkit/core/checks";
 import { createRemoteJWKSet, customFetch, type JWTVerifyGetKey } from "jose";
+import { MILLISECONDS } from "./time.js";
 
 const DEFAULT_TTL_SECONDS = 3600;
 const DEFAULT_REFRESH_SECONDS = 60;
-const MILLISECONDS = 1000;
 
 /** The options of `createJwksCache`. */
 export interface JwksCacheOptions {

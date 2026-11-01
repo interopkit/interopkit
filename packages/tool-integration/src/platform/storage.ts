@@ -1,6 +1,5 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
-import { DataError } from "@interopkit/core";
-import { describe } from "@interopkit/core/checks";
+import { checkNonEmptyString } from "@interopkit/core/checks";
 import { escapeHtml, type HttpResponse, pagePolicy } from "../protocol/internal.js";
 import { checkPlatformOptions, type PlatformStorageOptions } from "./options.js";
 
@@ -141,8 +140,6 @@ async function storagePage(frameOrigin: string, toolFrame: string): Promise<Http
 export function platformStorage(options: PlatformStorageOptions): Promise<HttpResponse> {
   checkPlatformOptions(options);
   const { toolFrame = DEFAULT_TOOL_FRAME } = options;
-  if (typeof toolFrame !== "string" || toolFrame === "") {
-    throw new DataError(`The option toolFrame must be a non-empty string, found ${describe(toolFrame)}.`);
-  }
+  checkNonEmptyString(toolFrame, "The option toolFrame");
   return storagePage(options.config.frameOrigin, toolFrame);
 }

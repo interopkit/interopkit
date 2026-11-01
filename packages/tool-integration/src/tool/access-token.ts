@@ -15,14 +15,20 @@ import {
 } from "@interopkit/core/checks";
 import { SignJWT } from "jose";
 import * as v from "valibot";
-import { CLAIM, randomToken, rs256Header } from "../protocol/internal.js";
+import {
+  CLAIM,
+  CLIENT_CREDENTIALS_GRANT,
+  JWT_BEARER_ASSERTION_TYPE,
+  MILLISECONDS,
+  randomToken,
+  rs256Header,
+  toSeconds,
+} from "../protocol/internal.js";
 import type { LtiDeployment } from "./launch-model.js";
 import { type AccessTokenOptions, checkToolOptions, findDeployment } from "./options.js";
 
 // Security Framework section 4.1.1: the assertion expires "typically five minutes after the iat timestamp".
 const ASSERTION_TTL_SECONDS = 300;
-const GRANT_TYPE = "client_credentials";
-const ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
 
 /** An access token for the services of a platform. */
 export interface AccessToken {
@@ -70,7 +76,7 @@ export function readTokenResponse(body: string, requested: readonly string[], no
   } = parseWith(tokenResponseSchema, payload, "The token response");
   return {
     value,
-    expiresAt: expiresIn === undefined ? undefined : now + expiresIn * 1000,
+    expiresAt: expiresIn === undefined ? undefined : now + expiresIn * MILLISECONDS,
     scopes: scope === undefined ? [...requested] : scope.split(" "),
   };
 }
@@ -122,7 +128,7 @@ export async function ltiAccessToken(
   checkFunction(fetch, "The option fetch must be a function");
   checkPositiveInteger(timeoutMs, "The option timeoutMs");
   const registration = await findDeployment(options, deployment);
-  const iat = Math.floor(readClock(options.clock) / 1000);
+  const iat = toSeconds(readClock(options.clock));
   const assertion = await new SignJWT({ [CLAIM.deploymentId]: deployment.deploymentId })
     .setProtectedHeader(rs256Header(registration.keyId))
     .setIssuer(registration.clientId)
@@ -140,8 +146,8 @@ export async function ltiAccessToken(
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
       body: new URLSearchParams([
-        ["grant_type", GRANT_TYPE],
-        ["client_assertion_type", ASSERTION_TYPE],
+        ["grant_type", CLIENT_CREDENTIALS_GRANT],
+        ["client_assertion_type", JWT_BEARER_ASSERTION_TYPE],
         ["client_assertion", assertion],
         ["scope", scopes.join(" ")],
       ]).toString(),

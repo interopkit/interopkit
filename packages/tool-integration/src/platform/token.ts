@@ -2,18 +2,22 @@ import { readClock } from "@interopkit/core";
 import { LtiError } from "../errors.js";
 import {
   AGS_SCOPE,
+  CLIENT_CREDENTIALS_GRANT,
   CLOCK_SKEW_SECONDS,
   callOptionsOf,
   checkHttpRequest,
   errorBody,
   type HttpRequest,
   type HttpResponse,
+  JWT_BEARER_ASSERTION_TYPE,
   jsonResponse,
+  MILLISECONDS,
   NON_EMPTY_STRING,
   NUMBER,
   readForm,
   required,
   STRING,
+  toSeconds,
   unverifiedClaims,
   verifyJwt,
 } from "../protocol/internal.js";
@@ -22,8 +26,6 @@ import { checkRequestOrigin, checkTokenOptions, findClient, type PlatformTokenOp
 import { toolKeySet } from "./registration.js";
 import { sealAccess } from "./tokens.js";
 
-const GRANT_TYPE = "client_credentials";
-const ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
 // Security Framework sections 4.1.1 and 7.1.1: the recommended lifetime of an access token is one hour.
 const ACCESS_TOKEN_TTL_SECONDS = 3600;
 // RFC 7523 section 3 lets the authorization server refuse an assertion whose expiry is unreasonably far; the platform remembers a
@@ -54,11 +56,11 @@ function readRequest(request: HttpRequest): { readonly assertion: string; readon
   } catch (error) {
     throw new LtiError(error instanceof Error ? error.message : String(error), "request-invalid");
   }
-  if (form.get("grant_type") !== GRANT_TYPE) {
-    throw new LtiError(`The grant_type must be ${GRANT_TYPE}.`, "unsupported-grant-type");
+  if (form.get("grant_type") !== CLIENT_CREDENTIALS_GRANT) {
+    throw new LtiError(`The grant_type must be ${CLIENT_CREDENTIALS_GRANT}.`, "unsupported-grant-type");
   }
-  if (form.get("client_assertion_type") !== ASSERTION_TYPE) {
-    throw new LtiError(`The client_assertion_type must be ${ASSERTION_TYPE}.`, "request-invalid");
+  if (form.get("client_assertion_type") !== JWT_BEARER_ASSERTION_TYPE) {
+    throw new LtiError(`The client_assertion_type must be ${JWT_BEARER_ASSERTION_TYPE}.`, "request-invalid");
   }
   const assertion = form.get("client_assertion");
   if (assertion === undefined || assertion === "") {
@@ -90,7 +92,7 @@ async function verifyAssertion(assertion: string, options: PlatformTokenOptions)
     nowMilliseconds,
   );
   const exp = required(claims, "exp", OWNER, NUMBER);
-  if (exp - nowMilliseconds / 1000 > MAX_ASSERTION_LIFETIME_SECONDS) {
+  if (exp - nowMilliseconds / MILLISECONDS > MAX_ASSERTION_LIFETIME_SECONDS) {
     throw new LtiError(
       `The assertion must expire within ${MAX_ASSERTION_LIFETIME_SECONDS} seconds.`,
       "assertion-lifetime",
@@ -99,7 +101,7 @@ async function verifyAssertion(assertion: string, options: PlatformTokenOptions)
   const jti = required(claims, "jti", OWNER, NON_EMPTY_STRING);
   // The assertion still verifies until `exp` plus the leeway, so the `jti` is remembered that long: a host's `once` forgets it
   // at `expiresAt`, and a captured assertion could otherwise be used again in the leeway.
-  const expiresAt = (exp + CLOCK_SKEW_SECONDS) * 1000;
+  const expiresAt = (exp + CLOCK_SKEW_SECONDS) * MILLISECONDS;
   // An abort before `once` leaves the assertion unspent. Once it is spent, a later abort fails closed: the tool asks again.
   options.signal?.throwIfAborted();
   if (!(await options.once(`assertion:${clientId}:${jti}`, expiresAt, callOptionsOf(options)))) {
@@ -134,7 +136,7 @@ export async function platformToken(request: HttpRequest, options: PlatformToken
   try {
     const { assertion, scopes } = readRequest(request);
     const client = await verifyAssertion(assertion, options);
-    const exp = Math.floor(readClock(options.clock) / 1000) + ACCESS_TOKEN_TTL_SECONDS;
+    const exp = toSeconds(readClock(options.clock)) + ACCESS_TOKEN_TTL_SECONDS;
     const token = await sealAccess({ client, scopes, exp }, options.config.hintKey);
     const body = Object.fromEntries([
       ["access_token", token],

@@ -1,8 +1,8 @@
 import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { runGuideSamples } from "../../../scripts/guide-samples.js";
 import * as checks from "../src/checks.js";
 import * as root from "../src/index.js";
-import { runGuideSamples } from "./guide-samples.js";
 
 const modules = { "@interopkit/core": root, "@interopkit/core/checks": checks };
 const GUIDES = new URL("../../../docs/core/", import.meta.url);

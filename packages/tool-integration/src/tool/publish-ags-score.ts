@@ -13,14 +13,11 @@ import {
 } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { LtiError } from "../errors.js";
-import { AGS_SCOPE } from "../protocol/internal.js";
+import { AGS_SCOPE, LINE_ITEM_MEDIA_TYPE, SCORE_MEDIA_TYPE, SCORES_SUFFIX } from "../protocol/internal.js";
 import { type AccessToken, ltiAccessToken } from "./access-token.js";
 import type { LtiLaunch } from "./launch-model.js";
 import { type AccessTokenOptions, checkToolOptions } from "./options.js";
 
-const SCORE_TYPE = "application/vnd.ims.lis.v1.score+json";
-const LINE_ITEM_TYPE = "application/vnd.ims.lis.v2.lineitem+json";
-const SCORES_SUFFIX = "/scores";
 const TRAILING_SLASH = /\/$/u;
 /** An ISO 8601 date and time with a time zone, as AGS 3.4.9 requires of the timestamp of a score: `2026-11-01T09:30:00.250Z`. */
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
@@ -167,7 +164,7 @@ export function readScoreMaximum(body: string): number {
 async function readLineItemMaximum(service: ServiceCall, lineItem: string, token: AccessToken): Promise<number> {
   const body = await callService(service, `The line item ${lineItem}`, lineItem, {
     method: "GET",
-    headers: { accept: LINE_ITEM_TYPE, authorization: `Bearer ${token.value}` },
+    headers: { accept: LINE_ITEM_MEDIA_TYPE, authorization: `Bearer ${token.value}` },
   });
   return readScoreMaximum(body);
 }
@@ -231,7 +228,7 @@ export async function publishAgsScore(
   const scoreMaximum = needsMaximum ? await readLineItemMaximum(service, lineItem, token) : score.scoreMaximum;
   await callService(service, `The score service of ${lineItem}`, scoresUrl(lineItem), {
     method: "POST",
-    headers: { "content-type": SCORE_TYPE, authorization: `Bearer ${token.value}` },
+    headers: { "content-type": SCORE_MEDIA_TYPE, authorization: `Bearer ${token.value}` },
     body: JSON.stringify(scoreBody(score, userId, scoreMaximum)),
   });
 }

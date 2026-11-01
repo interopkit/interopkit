@@ -1,7 +1,7 @@
 import { readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import { LtiError } from "../errors.js";
-import { callOptionsOf, randomToken } from "../protocol/internal.js";
+import { callOptionsOf, randomToken, toSeconds } from "../protocol/internal.js";
 import { endpointsOf, type PlatformConfig } from "./config.js";
 import { checkLoginOptions, type PlatformLoginOptions } from "./options.js";
 import { checkToolRegistration, type ToolRegistration } from "./registration.js";
@@ -60,7 +60,7 @@ async function prepare(launch: ToolLaunch, options: PlatformLoginOptions): Promi
       title: launch.title,
       scoreMaximum: launch.scoreMaximum,
       jti: randomToken(),
-      exp: Math.floor(readClock(options.clock) / 1000) + LTI_HINT_TTL_SECONDS,
+      exp: toSeconds(readClock(options.clock)) + LTI_HINT_TTL_SECONDS,
     },
     config.hintKey,
   );

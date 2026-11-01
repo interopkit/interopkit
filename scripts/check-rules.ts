@@ -409,7 +409,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A hint expires.",
     file: "packages/tool-integration/src/platform/authorize.ts",
-    find: "if (Math.floor(readClock(options.clock) / 1000) >= hint.exp) {",
+    find: "if (toSeconds(readClock(options.clock)) >= hint.exp) {",
     replace: "if (false) {",
     test: "packages/tool-integration/test/platform.test.ts",
   },
@@ -430,8 +430,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A hint is single-use.",
     file: "packages/tool-integration/src/platform/authorize.ts",
-    find: "if (!(await options.once(`hint:${hint.jti}`, hint.exp * 1000, callOptionsOf(options)))) {",
-    replace: "await options.once(`hint:${hint.jti}`, hint.exp * 1000, callOptionsOf(options));\n  if (false) {",
+    find: "if (!(await options.once(`hint:${hint.jti}`, hint.exp * MILLISECONDS, callOptionsOf(options)))) {",
+    replace: "await options.once(`hint:${hint.jti}`, hint.exp * MILLISECONDS, callOptionsOf(options));\n  if (false) {",
     test: "packages/tool-integration/test/platform.test.ts",
   },
   {
@@ -451,7 +451,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "An assertion expires within an hour.",
     file: "packages/tool-integration/src/platform/token.ts",
-    find: "if (exp - nowMilliseconds / 1000 > MAX_ASSERTION_LIFETIME_SECONDS) {",
+    find: "if (exp - nowMilliseconds / MILLISECONDS > MAX_ASSERTION_LIFETIME_SECONDS) {",
     replace: "if (false) {",
     test: "packages/tool-integration/test/platform.test.ts",
   },
@@ -465,8 +465,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The jti of an assertion is remembered through the clock-skew leeway, as long as the assertion verifies.",
     file: "packages/tool-integration/src/platform/token.ts",
-    find: "const expiresAt = (exp + CLOCK_SKEW_SECONDS) * 1000;",
-    replace: "const expiresAt = exp * 1000;",
+    find: "const expiresAt = (exp + CLOCK_SKEW_SECONDS) * MILLISECONDS;",
+    replace: "const expiresAt = exp * MILLISECONDS;",
     test: "packages/tool-integration/test/platform.test.ts",
   },
   {
@@ -570,7 +570,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "An access token expires.",
     file: "packages/tool-integration/src/platform/access.ts",
-    find: "if (access === undefined || Math.floor(readClock(options.clock) / 1000) >= access.exp) {",
+    find: "if (access === undefined || toSeconds(readClock(options.clock)) >= access.exp) {",
     replace: "if (access === undefined) {",
     test: "packages/tool-integration/test/platform.test.ts",
   },

@@ -5,6 +5,7 @@ import {
   checkHttpRequest,
   type HttpRequest,
   type HttpResponse,
+  MILLISECONDS,
   randomToken,
   readForm,
   readQuery,
@@ -121,7 +122,7 @@ export async function ltiLogin(request: HttpRequest, options: LtiLoginOptions): 
     issuer: registration.issuer,
     clientId: registration.clientId,
     storageTarget: initiation.storageTarget,
-    expiresAt: readClock(options.clock) + LOGIN_TTL_SECONDS * 1000,
+    expiresAt: readClock(options.clock) + LOGIN_TTL_SECONDS * MILLISECONDS,
   };
   // Nothing is saved yet, so an abort here leaves nothing behind; once `put` has run, an orphan record expires.
   options.signal?.throwIfAborted();

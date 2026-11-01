@@ -21,8 +21,7 @@ import {
   type ToolLaunch,
   type ToolRegistration,
 } from "../src/platform/index.js";
-import { LTI_HINT_TTL_SECONDS } from "../src/platform/internal.js";
-import { autoPostPage } from "../src/platform/page.js";
+import { autoPostPage, LTI_HINT_TTL_SECONDS } from "../src/platform/internal.js";
 import { ltiAccessToken, ltiLaunch, ltiLogin, type PlatformRegistration } from "../src/tool/index.js";
 import { MemoryStore } from "./fake-platform.js";
 import {

@@ -1,6 +1,14 @@
 import { readClock } from "@interopkit/core";
 import { SignJWT } from "jose";
-import { AGS_SCOPE, CLAIM, LEARNER_ROLE, LTI_VERSION, MESSAGE_TYPE, rs256Header } from "../protocol/internal.js";
+import {
+  AGS_SCOPE,
+  CLAIM,
+  LEARNER_ROLE,
+  LTI_VERSION,
+  MESSAGE_TYPE,
+  rs256Header,
+  toSeconds,
+} from "../protocol/internal.js";
 import { LINE_ITEM_PATH, platformKeyId } from "./config.js";
 import type { PlatformOptions } from "./options.js";
 import type { ToolRegistration } from "./registration.js";
@@ -37,7 +45,7 @@ export async function issueIdToken(
   options: PlatformOptions,
 ): Promise<string> {
   const { config, clock } = options;
-  const iat = Math.floor(readClock(clock) / 1000);
+  const iat = toSeconds(readClock(clock));
   return new SignJWT({
     nonce,
     [CLAIM.messageType]: MESSAGE_TYPE.resourceLink,

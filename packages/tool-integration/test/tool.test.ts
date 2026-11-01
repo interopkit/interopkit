@@ -18,8 +18,7 @@ import {
   ltiLogin,
   type PlatformRegistration,
 } from "../src/tool/index.js";
-import { readTokenResponse } from "../src/tool/internal.js";
-import { getDataPage } from "../src/tool/pages.js";
+import { getDataPage, readTokenResponse } from "../src/tool/internal.js";
 import {
   ACCESS_TOKEN_URL,
   AGS_SCOPES,

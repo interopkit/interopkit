@@ -6,8 +6,10 @@ import {
   checkHttpRequest,
   type HttpRequest,
   type HttpResponse,
+  MILLISECONDS,
   readForm,
   readQuery,
+  toSeconds,
 } from "../protocol/internal.js";
 import { issueIdToken } from "./id-token.js";
 import { checkAuthorizeOptions, checkRequestOrigin, findClient, type PlatformAuthorizeOptions } from "./options.js";
@@ -62,7 +64,7 @@ async function bindHint(
     throw new LtiError("The authentication request must carry the lti_message_hint of the login.", "hint-missing");
   }
   const hint = await openHint(token, options.config.hintKey);
-  if (Math.floor(readClock(options.clock) / 1000) >= hint.exp) {
+  if (toSeconds(readClock(options.clock)) >= hint.exp) {
     throw new LtiError("The lti_message_hint has expired.", "hint-expired");
   }
   if (hint.client !== clientId) {
@@ -121,7 +123,7 @@ export async function ltiPlatformAuthorize(
   const hint = await bindHint(parameters, clientId, options);
   // An abort before `once` leaves the hint unspent. Once it is spent, a later abort fails closed: the tool starts again.
   options.signal?.throwIfAborted();
-  if (!(await options.once(`hint:${hint.jti}`, hint.exp * 1000, callOptionsOf(options)))) {
+  if (!(await options.once(`hint:${hint.jti}`, hint.exp * MILLISECONDS, callOptionsOf(options)))) {
     throw new LtiError("The lti_message_hint has been used.", "hint-used");
   }
   options.signal?.throwIfAborted();

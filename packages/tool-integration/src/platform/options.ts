@@ -1,5 +1,5 @@
-import { type CallOptions, type Clock, checkClock, DataError } from "@interopkit/core";
-import { checkAbortSignal, checkFunction, checkRecord, describe } from "@interopkit/core/checks";
+import { type CallOptions, type Clock, checkClock } from "@interopkit/core";
+import { checkAbortSignal, checkFunction, checkNonEmptyString, checkRecord } from "@interopkit/core/checks";
 import { LtiError } from "../errors.js";
 import { callOptionsOf, checkJwksCache, type HttpRequest, type JwksCache } from "../protocol/internal.js";
 import type { AgsScore } from "./ags-score.js";
@@ -109,15 +109,8 @@ export function checkLoginOptions(options: unknown): asserts options is Platform
   checkRecord(options, "The options must be an object");
   checkFunction(options.registration, "The option registration must be a function");
   checkFunction(options.check, "The option check must be a function");
-  if (options.storageTarget !== undefined) checkNonEmptyName(options.storageTarget, "The option storageTarget");
+  if (options.storageTarget !== undefined) checkNonEmptyString(options.storageTarget, "The option storageTarget");
   checkSignal(options);
-}
-
-/** Checks the name of a frame. */
-function checkNonEmptyName(value: unknown, label: string): void {
-  if (typeof value !== "string" || value === "") {
-    throw new DataError(`${label} must be a non-empty string, found ${describe(value)}.`);
-  }
 }
 
 /**

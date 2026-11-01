@@ -16,10 +16,11 @@ const LISTEN_TRY_MS = 50;
 /** What the global `fetch` of every runtime must make of the server of the check, through `callService`. */
 const EXPECTED_SERVICE = {
   ok: "ok",
-  redirect: { status: 302, body: "moved" },
-  error: { status: 503, body: "busy" },
-  large: { status: 200, body: "aaaaaaaaaaaaaaaa" },
-  hang: { status: 0, body: "" },
+  redirect: { status: 302, body: "moved", bytes: 5 },
+  error: { status: 503, body: "busy", bytes: 4 },
+  // The whole limit, though the server sends more in one piece and the network may split it anywhere.
+  large: { status: 200, body: "aaaaaaaaaaaaaaaa", bytes: 65_536 },
+  hang: { status: 0, body: "", bytes: 0 },
   aborted: "TimeoutError",
 } as const;
 /** More bytes than the 65,536 that a service call reads. */

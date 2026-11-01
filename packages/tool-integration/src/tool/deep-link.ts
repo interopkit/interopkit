@@ -9,7 +9,7 @@ import {
   describe,
 } from "@interopkit/core/checks";
 import { SignJWT } from "jose";
-import { CLAIM, LTI_VERSION, MESSAGE_TYPE, randomToken, rs256Header } from "../protocol/internal.js";
+import { CLAIM, LTI_VERSION, MESSAGE_TYPE, randomToken, rs256Header, toSeconds } from "../protocol/internal.js";
 import type { DeepLinkingLaunch } from "./launch-model.js";
 import { checkToolOptions, findDeployment, type ToolOptions } from "./options.js";
 
@@ -145,7 +145,7 @@ export async function deepLinkResponse(
   for (const item of items) checkItem(item);
   checkAccepted(launch, items);
   const registration = await findDeployment(options, launch);
-  const iat = Math.floor(readClock(options.clock) / 1000);
+  const iat = toSeconds(readClock(options.clock));
   return new SignJWT({
     nonce: randomToken(),
     [CLAIM.messageType]: MESSAGE_TYPE.deepLinkingResponse,
