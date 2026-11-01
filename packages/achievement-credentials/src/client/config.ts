@@ -3,6 +3,7 @@ import {
   checkHttpsUrl,
   describe,
   guardSchema,
+  MAX_JSON_TOKENS,
   parseWith,
   positiveIntegerSchema,
   strictRecord,
@@ -43,6 +44,14 @@ export interface CredentialsClientConfig extends CallOptions {
    */
   readonly maxBytes?: number;
   /**
+   * The most tokens of JSON in one answer: each bracket, brace, colon and comma, each string, each number, and each of `true`,
+   * `false` and `null`. The memory of a parse grows with the tokens and not with the bytes, so an answer over the limit is
+   * refused before it is parsed.
+   *
+   * @defaultValue 1,000,000
+   */
+  readonly maxTokens?: number;
+  /**
    * The number of credentials that `listCredentials` asks for in one request.
    *
    * @defaultValue 100
@@ -58,6 +67,7 @@ export interface Settings {
   readonly token: CredentialsClientConfig["token"];
   readonly timeoutMs: number;
   readonly maxBytes: number;
+  readonly maxTokens: number;
   readonly pageSize: number;
   readonly signal: AbortSignal | undefined;
 }
@@ -97,6 +107,7 @@ const configSchema = strictRecord({
   token: functionSchema((value): value is CredentialsClientConfig["token"] => typeof value === "function"),
   timeoutMs: v.optional(positiveIntegerSchema),
   maxBytes: v.optional(positiveIntegerSchema),
+  maxTokens: v.optional(positiveIntegerSchema),
   pageSize: v.optional(positiveIntegerSchema),
   signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
 });
@@ -115,6 +126,7 @@ export function settingsOf(config: unknown): Settings {
     token: checked.token,
     timeoutMs: checked.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     maxBytes: checked.maxBytes ?? DEFAULT_MAX_BYTES,
+    maxTokens: checked.maxTokens ?? MAX_JSON_TOKENS,
     pageSize: checked.pageSize ?? DEFAULT_PAGE_SIZE,
     signal: checked.signal,
   };

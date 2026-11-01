@@ -219,6 +219,10 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - A vocabulary is a `const` tuple, its type is derived from it and its schema is `v.picklist` of it.
 - A finding is a `Finding` of `core` (`path`, `rule`, `message`), extended by a package for its own fields. The `message` reads
   after the path and does not hold it; the rules are those that `findingsOf` names and those that a table of the guide lists.
+- A reader and a validator that list findings take `maxFindings` (default 1,000, `DEFAULT_MAX_FINDINGS`): they parse with
+  `safeParseBounded`, never `v.safeParse`, and fill a `createFindingSink` of `core/checks`, whose last finding says that the list
+  stopped; a reader counts errors alone. A text of JSON is counted with `hasMoreTokensThan` before `JSON.parse`, and a client
+  has a `maxTokens` option beside `maxBytes`.
 
 ## Code
 

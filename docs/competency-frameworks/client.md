@@ -80,6 +80,7 @@ refuses loopback, private and link-local addresses.
 | `authorization` | `(options) => Promise<string \| undefined>`: the value of the `Authorization` header, such as `Bearer abc`, or `undefined` for none. It is called before every request | none       |
 | `timeoutMs`     | The most time in milliseconds that one request may take, from the request to the last byte of the answer                                                               | 10,000     |
 | `maxBytes`      | The most bytes of one answer                                                                                                                                           | 16,777,216 |
+| `maxTokens`     | The most tokens of JSON in one answer: each bracket, brace, colon and comma, each string, each number and each `true`, `false` and `null`. Counted before the answer is parsed, because the memory of a parse grows with the tokens | 2,000,000  |
 | `pageSize`      | The number of documents that `documents` asks for in one request                                                                                                       | 100        |
 | `signal`        | An `AbortSignal` that ends the wait of every call                                                                                                                      | none       |
 
@@ -194,6 +195,7 @@ stamps; // => ["2024-06-13T18:46:03+00:00"]
 | Another status: 400, 401, 403, 429, 500 or any other                                              | `ServiceError` with `status`, `headers` and `body`; read it with `readStatusInfo`                                            |
 | The provider did not answer within `timeoutMs`, or `fetch` rejected                               | `ServiceError` with status 0                                                                                                 |
 | The answer is larger than `maxBytes`                                                              | `ServiceError` with the status of the answer, naming the limit; the body is cancelled. Raise `maxBytes` for a larger package |
+| The answer has more tokens of JSON than `maxTokens`                                               | `DataError`: `The CASE provider at <url> answered with a body of more than N tokens of JSON, above the limit of the option maxTokens.` Raise `maxTokens` for a larger package; a framework of 10,000 items has 990,000 |
 | The answer is a redirect                                                                          | `ServiceError`: the client follows none. Use the address that the provider redirects to as `baseUrl`                         |
 | The answer is not JSON, or is JSON that is not valid CASE                                         | `DataError`: `The CASE provider at <url> answered with data that is not valid CASE: <the first fault>`                       |
 | The client is configured for 1.0 and `discovery` is called                                        | `DataError`: 1.0 defines no discovery file                                                                                   |
@@ -220,6 +222,7 @@ not. `retryAfterSeconds` is `Retry-After` when it is a number of seconds. The fo
 | ----------------------------- | ---------- | ------------------------ |
 | `timeoutMs`                   | 10,000 ms  | `ServiceError`, status 0 |
 | `maxBytes`                    | 16,777,216 | `ServiceError`           |
+| `maxTokens`                   | 2,000,000  | `DataError`              |
 | `pageSize`                    | 100        | The provider caps it     |
 | Logical operators in a filter | 1          | `DataError`              |
 | Redirects                     | 0          | `ServiceError`           |

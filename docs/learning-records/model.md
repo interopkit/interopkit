@@ -52,8 +52,8 @@ validateStatement({ ...statement, result: { score: { scaled: 2 } } }).map((findi
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | `readStatementJson(text, options?)`   | Parses the text as JSON and refuses an object that has a property twice. Returns the value, which `readStatement` or `validateStatements` then reads | `DataError` for the text, the limits or a repeat |
 | `readStatement(value, options?)`      | Reads a value into a `Statement`: a copy that shares nothing with the input. A single Activity in `contextActivities` is returned as a list of one   | `DataError` when the value has an error          |
-| `validateStatement(value, options?)`  | Lists every finding of a value, errors and warnings, in the order of the properties                                                                  | `DataError` for the options only                 |
-| `validateStatements(value, options?)` | Judges each Statement of an array, and the batch: two Statements with one id are an error. The path of a finding starts with the index: `[1].actor`  | `DataError` for the options only                 |
+| `validateStatement(value, options?)`  | Lists the findings of a value, errors and warnings, in the order of the properties, at most `maxFindings` of them                                    | `DataError` for the options only                 |
+| `validateStatements(value, options?)` | Judges each Statement of an array, and the batch: two Statements with one id are an error. The path of a finding starts with the index: `[1].actor`. `maxFindings` holds for the whole batch | `DataError` for the options only                 |
 
 A value that is not a Statement gives findings and does not throw. While the shape is wrong, the findings are about the shape
 alone; the rules between properties are judged once it is right. A warning never keeps `readStatement` from returning.
@@ -63,6 +63,7 @@ alone; the rules between properties are judged once it is right. A warning never
 | Option                                                                  | Default    | Meaning                                                                                                                           |
 | ----------------------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `role` of `readStatement`, `validateStatement` and `validateStatements` | `"lrs"`    | `"lrs"` applies what the standard says an LRS shall reject. `"provider"` adds what a Learning Record Provider shall and should do |
+| `maxFindings` of `readStatement`, `validateStatement` and `validateStatements` | 1,000 | The most findings listed. The check stops at the first one beyond it and ends the list with a finding of the rule `findings-stopped`; `readStatement` counts errors alone |
 | `maxBytes` of `readStatementJson`                                       | 10,485,760 | The most bytes of the text, counted as UTF-8                                                                                      |
 | `maxDepth` of `readStatementJson`                                       | 64         | The deepest nesting of arrays and objects; `[]` has depth 1                                                                       |
 | `maxTokens` of `readStatementJson`                                      | 1,000,000  | The most tokens of the text: each bracket, brace, colon and comma, each string, each number, and each `true`, `false` and `null` |
@@ -153,6 +154,7 @@ a response. An LRS does not validate patterns, so a problem is a warning.
 | `maxBytes` of `readStatementJson`           | 10,485,760 | The text of a request, counted as UTF-8                                                           |
 | `maxDepth` of `readStatementJson`           | 64         | Arrays and objects nested in each other, checked before the text is parsed                        |
 | `maxTokens` of `readStatementJson`          | 1,000,000  | The memory of the parse, up to 250 bytes for each token; checked before the text is parsed        |
+| `maxFindings`                               | 1,000      | The findings of a call, which cost about a kilobyte each; the check stops looking at the first one beyond it |
 | Levels that the value of an extension nests | 64         | `extensions` of an Activity Definition, a Result and a Context; a deeper value is `invalid-value` |
 
 `readStatement` and `validateStatement` take a value that is in memory already, so the host's limit on the request applies
@@ -165,16 +167,18 @@ worst text, `[0,0,0,...]`, has one token for each byte. Peak memory above the pr
 | ------------------------------------------------------------- | ------------------------------ | ----------- |
 | 10 MiB of `[0,0,0,...]`, 10,485,000 tokens                    | Refused before the parse       | 19 MB       |
 | 1,000,000 tokens of `{"":0,"":0,...}`, the most for the tree | Read, then refused as repeated | 229 MB      |
-| 1,000,000 tokens of `[{},{},...]` through `validateStatements` | 999,999 findings               | 360 MB      |
+| 1,000,000 tokens of `[{},{},...]` through `validateStatements` | 1,001 findings                 | 141 MB      |
 
-A host with less memory passes a smaller `maxTokens`: the parse takes up to 250 bytes for each token, and
-`validateStatements` up to 400 more for each finding, of which a text can hold one for each token.
+A host with less memory passes a smaller `maxTokens`: the parse takes up to 250 bytes for each token. The findings add no more
+than `maxFindings` of about a kilobyte, whatever the size of the value: a Statement with a million wrong entries in a list gives
+1,001 findings in 38 MB.
 
 ## Errors
 
 | Error                                                                                                   | When                                                       | What to do                                                                              |
 | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `The statement is invalid at <path>: <sentence>. 2 more errors: validateStatement lists every finding.` | `readStatement` found an error                             | Call `validateStatement` for the whole list, and answer the sender with the paths       |
+| `The statement is invalid at <path>: <sentence>. At least 2 more errors: the check stopped at its limit, ...` | `readStatement` counted `maxFindings` errors and stopped   | Call `validateStatement` with a higher `maxFindings`, or refuse the Statement as it is   |
 | `The options object is invalid at role: expected "lrs" or "provider", found "x".`                       | The options are not an object with a known `role`          | Pass `{ role: "lrs" }` or `{ role: "provider" }`                                        |
 | `The text is not valid JSON: <the parser's message>.`                                                   | `readStatementJson` could not parse the text               | Answer the sender that the body is malformed                                            |
 | `The text has the property "id" twice in actor, at line 3 column 5. ...`                                | An object of the text names a property twice               | Refuse the request; an LRS shall reject a Statement that uses a property more than once |

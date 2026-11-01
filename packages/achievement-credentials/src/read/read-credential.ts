@@ -1,7 +1,8 @@
 import { DataError } from "@interopkit/core";
+import { refusalOf } from "@interopkit/core/checks";
 import type { AnyCredential, CredentialIssue } from "../model/index.js";
-import { errorsOf, inspectCredential, refusal } from "./inspect.js";
-import { type ReadOptions, readKind } from "./options.js";
+import { inspectCredential, issueSink } from "./inspect.js";
+import { type ReadOptions, readSettings } from "./options.js";
 
 /**
  * Reads a credential of Open Badges 3.0 or CLR 2.0, under either Verifiable Credentials data model, into the model: checks
@@ -11,22 +12,25 @@ import { type ReadOptions, readKind } from "./options.js";
  * The result is the data model and not the text that was read. A list that the compacted form of JSON-LD writes as its only
  * member (`evidence`, `proof`, `type`) is a list in the result, so a credential that is read and written again has the same
  * meaning and may differ in bytes: read the original text, not the result, to check a signature. The result shares nothing
- * with the input. A value with an error is not returned, and warnings are not reported: `validateCredential` lists every
- * finding. The value is JSON that nests at most 64 levels. The first context says which data model it is under.
+ * with the input. A value with an error is not returned, and warnings are not reported: `validateCredential` lists the
+ * findings. The value is JSON that nests at most 64 levels. The first context says which data model it is under. The check
+ * stops after `maxFindings` errors, and the error says that there may be more.
  *
  * @param value - The credential, such as the parsed text of a response.
- * @param options - Which kind of credential the value must be.
+ * @param options - Which kind of credential the value must be, and the most errors to count.
  * @returns The credential.
  * @throws `DataError` that names the path of the first error and counts the others, when the value has an error, or when the
- * options are not an object with a `kind` of `CREDENTIAL_KINDS`.
+ * options are not an object with a `kind` of `CREDENTIAL_KINDS` and a `maxFindings` that is a positive integer.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/ | Open Badges 3.0}
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/ | CLR 2.0}
  */
 export function readCredential(value: unknown, options?: ReadOptions): AnyCredential {
-  const { value: credential, issues } = inspectCredential(value, readKind(options));
-  const errors = errorsOf(issues);
+  const { kind, maxFindings } = readSettings(options);
+  const sink = issueSink(maxFindings, true);
+  const credential = inspectCredential(value, kind, sink);
+  const errors = sink.list();
   if (credential === undefined || errors.length > 0) {
-    throw new DataError(refusal("The credential", errors, "validateCredential"));
+    throw new DataError(refusalOf("The credential", errors, "validateCredential"));
   }
   return credential;
 }
@@ -48,5 +52,8 @@ export function readCredential(value: unknown, options?: ReadOptions): AnyCreden
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/ | CLR 2.0}
  */
 export function validateCredential(value: unknown, options?: ReadOptions): readonly CredentialIssue[] {
-  return inspectCredential(value, readKind(options)).issues;
+  const { kind, maxFindings } = readSettings(options);
+  const sink = issueSink(maxFindings, false);
+  inspectCredential(value, kind, sink);
+  return sink.list();
 }

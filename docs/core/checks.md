@@ -91,8 +91,32 @@ parse and owns the rule names:
 | `too-few-entries`  | A list is shorter than the least that the schema allows                                                                        |
 
 A reader that throws writes the sentence of its `DataError` with `refusalOf(label, errors, validator)`: the first error with its
-path, how many errors follow, and the function that lists every finding, such as `The statement is invalid at actor: needs exactly
-one of mbox, mbox_sha1sum, openid and account, found none. 1 more error: validateStatement lists every finding.`
+path, how many errors follow, and the function that lists them, such as `The statement is invalid at actor: needs exactly one of
+mbox, mbox_sha1sum, openid and account, found none. 1 more error: validateStatement lists every finding.` When the list stopped at
+its limit, the sentence says that there may be more.
+
+## Bounding the findings
+
+A value that is wrong in a million places must not cost the memory of a million findings: valibot keeps about a kilobyte for each
+issue. The readers and validators of the packages stop at `maxFindings` (`DEFAULT_MAX_FINDINGS`, 1,000).
+
+```mermaid
+flowchart LR
+  value["Untrusted value"] --> parse["safeParseBounded(schema, value, room)<br/>stops at the first issue beyond the room"]
+  parse --> sink["createFindingSink(maxFindings, stop, keep?)"]
+  rules["Rules between the properties"] --> sink
+  sink --> list["sink.list(): the findings,<br/>and findings-stopped last when it stopped"]
+```
+
+| Export | Does |
+| ------ | ---- |
+| `DEFAULT_MAX_FINDINGS` | 1,000: the limit of a list of findings unless the caller says another |
+| `createFindingSink(maxFindings, stop, keep?)` | A list that takes findings up to the limit. The first one beyond it is dropped and `stopped` turns true, so that the check stops looking. `stop` makes the last finding in the type of the package, with the rule `findings-stopped`; `keep` leaves findings out of the count, such as the warnings that a reader does not report. `within(place)` gives a view that changes the findings it is given, such as the path of one entry of a batch, and shares the limit |
+| `safeParseBounded(schema, value, limit)` | `v.safeParse` that stops at the first issue beyond `limit`; the issues are those of `v.safeParse`, in the same order. A schema that makes issues and throws them away, such as a union, is parsed again with no limit when the parse stopped on them |
+| `hasMoreTokensThan(text, maxTokens)` | Whether a text of JSON has more tokens than a limit, counted without building anything; `MAX_JSON_TOKENS` is 1,000,000 |
+
+A reader or a client that parses a text counts its tokens before `JSON.parse`, because the memory of a parse grows with the
+tokens and not with the bytes: a text of 16 MiB written `[{},{},...]` takes 700 MB to parse.
 
 ## Formats
 

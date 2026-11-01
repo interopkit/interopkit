@@ -1,6 +1,6 @@
 import { checkPositiveInteger, checkRecord } from "../checks.js";
 import { DataError } from "../errors.js";
-import { MAX_JSON_DEPTH, nestsDeeperThan } from "../json.js";
+import { hasMoreTokensThan, MAX_JSON_DEPTH, MAX_JSON_TOKENS, nestsDeeperThan } from "../json.js";
 import type { HttpRequest } from "./request.js";
 
 /** The most bytes of a JSON body that `readJson` reads unless the caller says otherwise. */
@@ -23,6 +23,13 @@ export interface ReadJsonOptions {
    * @defaultValue 64
    */
   readonly maxDepth?: number;
+  /**
+   * The most tokens of the body: each bracket, brace, colon and comma, each string, each number, and each of `true`, `false`
+   * and `null`. The memory of a parse grows with the tokens and not with the bytes.
+   *
+   * @defaultValue 1,000,000
+   */
+  readonly maxTokens?: number;
 }
 
 /**
@@ -45,14 +52,15 @@ export function readText(request: HttpRequest): string {
 }
 
 /**
- * Reads the body of a request as JSON, within limits on its size and its depth.
+ * Reads the body of a request as JSON, within limits on its size, its depth and its tokens.
  *
  * @remarks
- * The depth is checked before the text is parsed, so a body of ten thousand opening brackets is refused without building
- * anything. A key that is `__proto__` becomes an own property of the result and changes no prototype.
+ * The depth and the tokens are checked before the text is parsed, so a body of ten thousand opening brackets, or of a million
+ * empty arrays, is refused without building anything. A key that is `__proto__` becomes an own property of the result and
+ * changes no prototype.
  *
  * @param request - The request, which `checkHttpRequest` has accepted.
- * @param options - The limits. Default: 1,048,576 bytes and depth 64.
+ * @param options - The limits. Default: 1,048,576 bytes, depth 64 and 1,000,000 tokens.
  * @returns The parsed value.
  * @throws `DataError` when the options are not valid, or the body is larger or deeper than the limits, is not UTF-8, or is
  * not JSON.
@@ -61,8 +69,10 @@ export function readJson(request: HttpRequest, options: ReadJsonOptions = {}): u
   checkRecord(options, "The options of readJson must be an object");
   if (options.maxBytes !== undefined) checkPositiveInteger(options.maxBytes, "The option maxBytes");
   if (options.maxDepth !== undefined) checkPositiveInteger(options.maxDepth, "The option maxDepth");
+  if (options.maxTokens !== undefined) checkPositiveInteger(options.maxTokens, "The option maxTokens");
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_JSON_BYTES;
   const maxDepth = options.maxDepth ?? MAX_JSON_DEPTH;
+  const maxTokens = options.maxTokens ?? MAX_JSON_TOKENS;
   if (request.body.byteLength > maxBytes) {
     throw new DataError(
       `The body of the request has ${request.body.byteLength} bytes, above the limit of ${maxBytes} bytes.`,
@@ -71,6 +81,11 @@ export function readJson(request: HttpRequest, options: ReadJsonOptions = {}): u
   const text = readText(request);
   if (nestsDeeperThan(text, maxDepth)) {
     throw new DataError(`The JSON of the request nests deeper than the limit of ${maxDepth} levels.`);
+  }
+  if (hasMoreTokensThan(text, maxTokens)) {
+    throw new DataError(
+      `The JSON of the request has more than ${maxTokens} tokens, above the limit of the option maxTokens.`,
+    );
   }
   try {
     return JSON.parse(text);

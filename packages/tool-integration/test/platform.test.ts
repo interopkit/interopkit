@@ -480,6 +480,7 @@ describe("agsLineItem and agsScores", () => {
     const bad: readonly [string, string][] = [
       ["not JSON", "<score/>"],
       ["a JSON array", "[]"],
+      ["a million empty arrays, which are not parsed", `[${"[],".repeat(400_000)}[]]`],
       ["a negative scoreGiven", scoreBody({ scoreGiven: -1 })],
       ["a scoreGiven without a scoreMaximum", scoreBody({ scoreMaximum: undefined })],
       ["a zero scoreMaximum", scoreBody({ scoreMaximum: 0 })],

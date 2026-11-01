@@ -1,5 +1,13 @@
-import { copyJson, findingsOf, isRecord, type Schema } from "@interopkit/core/checks";
-import * as v from "valibot";
+import {
+  copyJson,
+  createFindingSink,
+  type FindingSink,
+  findingsOf,
+  isRecord,
+  type Schema,
+  safeParseBounded,
+} from "@interopkit/core/checks";
+import type * as v from "valibot";
 import {
   type AnyCredential,
   CONTEXTS,
@@ -11,12 +19,16 @@ import {
 import { CREDENTIAL_SCHEMAS, ENTITY_SCHEMAS } from "./registry.js";
 import { subjectIssues } from "./rules.js";
 
-/** What reading a value found: the value as the model has it when its shape is right, and every finding. */
-export interface Inspection<TValue> {
-  /** The value, a copy that shares nothing with the input. It is there when the shape is right, whatever else is found. */
-  readonly value?: TValue;
-  /** Every finding, errors and warnings. */
-  readonly issues: readonly CredentialIssue[];
+/**
+ * Makes the list of findings of a call that stops at a limit. A reader keeps the errors alone, because it does not report
+ * warnings, and a warning does not count toward the limit.
+ */
+export function issueSink(maxFindings: number, errorsOnly: boolean): FindingSink<CredentialIssue> {
+  return createFindingSink(
+    maxFindings,
+    (finding) => ({ ...finding, severity: "error" }),
+    errorsOnly ? ({ severity }) => severity === "error" : undefined,
+  );
 }
 
 /** The classes whose name in `type` says what kind of credential a value is, strongest first. */
@@ -45,31 +57,49 @@ function toIssues(issues: readonly v.BaseIssue<unknown>[]): CredentialIssue[] {
 }
 
 /**
- * Copies a value that must be JSON, which also limits how deep it nests, and parses the copy with a schema. The depth limit
- * is what keeps a hostile chain of `parentOrg` or `endorsement` from exhausting the stack.
+ * Copies a value that must be JSON, which also limits how deep it nests, and parses the copy with a schema into a sink of
+ * findings. The depth limit is what keeps a hostile chain of `parentOrg` or `endorsement` from exhausting the stack.
+ *
+ * @returns The value as the schema reads it when its shape is right.
  */
-export function parseJson<TOutput>(schema: Schema<TOutput>, value: unknown): Inspection<TOutput> {
+export function parseJson<TOutput>(
+  schema: Schema<TOutput>,
+  value: unknown,
+  sink: FindingSink<CredentialIssue>,
+): TOutput | undefined {
   const copy = copyJson(value, "");
-  if ("problem" in copy)
-    return { issues: [{ path: "", rule: "invalid-value", message: `${copy.problem}.`, severity: "error" }] };
-  const result = v.safeParse(schema, copy.value);
-  return result.success ? { value: result.output, issues: [] } : { issues: toIssues(result.issues) };
+  if ("problem" in copy) {
+    sink.add([{ path: "", rule: "invalid-value", message: `${copy.problem}.`, severity: "error" }]);
+    return undefined;
+  }
+  const result = safeParseBounded(schema, copy.value, sink.room);
+  if (result.success) return result.output;
+  sink.add(toIssues(result.issues));
+  return undefined;
 }
 
 /** Reads a credential of a kind, or of the kind that its `type` names, and judges its subject when its shape is right. */
-export function inspectCredential(value: unknown, kind?: CredentialKind): Inspection<AnyCredential> {
+export function inspectCredential(
+  value: unknown,
+  kind: CredentialKind | undefined,
+  sink: FindingSink<CredentialIssue>,
+): AnyCredential | undefined {
   const schemas = CREDENTIAL_SCHEMAS[kind ?? detectKind(value)];
   const schema: Schema<AnyCredential> = isV1p1(value) ? schemas.v1p1 : schemas.v2;
-  const { value: credential, issues } = parseJson(schema, value);
-  if (credential === undefined) return { issues };
-  return { value: credential, issues: [...issues, ...ruleIssues(credential)] };
+  const credential = parseJson(schema, value, sink);
+  if (credential !== undefined) sink.add(ruleIssues(credential));
+  return credential;
 }
 
 /** Reads an object of a class, and judges it when its shape is right. */
-export function inspectEntity(kind: EntityKind, value: unknown): Inspection<Entity> {
-  const { value: entity, issues } = parseJson(ENTITY_SCHEMAS[kind], value);
-  if (entity === undefined) return { issues };
-  return { value: entity, issues: [...issues, ...ruleIssues(entity)] };
+export function inspectEntity(
+  kind: EntityKind,
+  value: unknown,
+  sink: FindingSink<CredentialIssue>,
+): Entity | undefined {
+  const entity = parseJson(ENTITY_SCHEMAS[kind], value, sink);
+  if (entity !== undefined) sink.add(ruleIssues(entity));
+  return entity;
 }
 
 /** Judges the subject of a credential, or the subject of a CLR in a JWT, that the specification wants identified. */
@@ -80,25 +110,4 @@ export function ruleIssues(value: AnyCredential | Entity): CredentialIssue[] {
   return "achievement" in subject || "verifiableCredential" in subject
     ? subjectIssues(subject, "credentialSubject")
     : [];
-}
-
-/** Returns the findings that are errors. */
-export function errorsOf(issues: readonly CredentialIssue[]): readonly CredentialIssue[] {
-  return issues.filter(({ severity }) => severity === "error");
-}
-
-/**
- * Writes the sentence of the `DataError` that a refused value gives: the first error with its path, and how many more
- * there are.
- *
- * @param label - Names the value, such as `The credential`.
- * @param errors - The errors, which are not empty when the shape is wrong.
- * @param validator - The function that lists every finding, such as `validateCredential`.
- */
-export function refusal(label: string, errors: readonly CredentialIssue[], validator: string): string {
-  const [first, ...others] = errors;
-  const where = first === undefined || first.path === "" ? "" : ` at ${first.path}`;
-  const count = others.length === 1 ? "1 more error" : `${others.length} more errors`;
-  const more = others.length === 0 ? "" : ` ${count}: ${validator} lists every finding.`;
-  return `${label} is invalid${where}: ${first?.message ?? "it has an error."}${more}`;
 }

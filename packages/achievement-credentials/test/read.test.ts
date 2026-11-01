@@ -323,6 +323,63 @@ describe("the refusal of readCredential", () => {
   });
 });
 
+describe("the limit of findings", () => {
+  const stopped = (findings: readonly { readonly rule: string }[]) => findings.at(-1)?.rule === "findings-stopped";
+
+  it("lists at most 1,000 findings of a credential and ends the list with one that says it stopped", () => {
+    const evidence = Array.from({ length: 100_000 }, () => ({}));
+    const findings = validateCredential({ ...achievementCredential(), evidence });
+    expect(findings).toHaveLength(1001);
+    expect(findings.at(-1)).toStrictEqual({
+      path: "",
+      rule: "findings-stopped",
+      message: "the check stopped after 1000 findings, so there may be more.",
+      severity: "error",
+    });
+  });
+
+  it("lists at most 1,000 findings of a list of numbers where strings belong, and of an entity", () => {
+    const zeros = Array.from({ length: 1_000_000 }, () => 0);
+    expect(validateCredential({ ...achievementCredential(), type: zeros })).toHaveLength(1001);
+    expect(validateEntity("Profile", { ...PROFILE, type: zeros })).toHaveLength(1001);
+    expect(validateEntity("Profile", { ...PROFILE, type: zeros }, { maxFindings: 7 })).toHaveLength(8);
+  });
+
+  it("keeps the findings in the order of the check, whatever the limit", () => {
+    const value = { ...achievementCredential(), evidence: Array.from({ length: 500 }, () => ({})) };
+    const some = validateCredential(value, { maxFindings: 5 });
+    expect(some).toHaveLength(6);
+    expect(validateCredential(value, { maxFindings: 9 }).slice(0, 5)).toStrictEqual(some.slice(0, 5));
+  });
+
+  it("does not stop a list that has exactly the limit", () => {
+    const value = { ...achievementCredential(), id: 5, name: 7 };
+    expect(validateCredential(value, { maxFindings: 2 })).toHaveLength(2);
+    expect(stopped(validateCredential(value, { maxFindings: 1 }))).toBe(true);
+  });
+
+  it("makes a reader refuse a value whose errors stopped the check, and say that there may be more", () => {
+    const value = { ...achievementCredential(), evidence: Array.from({ length: 50 }, () => ({})) };
+    expect(() => readCredential(value, { maxFindings: 2 })).toThrow(
+      "At least 1 more error: the check stopped at its limit, and validateCredential with a higher maxFindings lists more.",
+    );
+    expect(() => readEntity("Profile", { ...PROFILE, type: [0, 0, 0] }, { maxFindings: 1 })).toThrow(
+      "There may be more errors: the check stopped at its limit, and validateEntity with a higher maxFindings lists more.",
+    );
+  });
+
+  it("refuses a limit that is not a positive integer", () => {
+    expect(() => validateCredential(achievementCredential(), { maxFindings: 0 })).toThrow(
+      "The read options is invalid at maxFindings: expected a value of at least 1, found 0.",
+    );
+    expect(() => readEntity("Profile", PROFILE, JSON.parse('{"maxFindings":"5"}'))).toThrow(
+      'The read options is invalid at maxFindings: expected a number, found "5".',
+    );
+    expect(() => validateEntity("Profile", PROFILE, JSON.parse('{"kind":"Profile"}'))).toThrow(DataError);
+    expect(() => validateEntity("Profile", PROFILE, JSON.parse("null"))).toThrow(DataError);
+  });
+});
+
 describe("the options and the kind", () => {
   it("refuses options that are not an object with a kind of CREDENTIAL_KINDS", () => {
     for (const options of [null, "x", [], { kind: "Badge" }, { kind: 5 }, { other: 1 }]) {

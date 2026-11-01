@@ -7,6 +7,12 @@ import { serviceRoot } from "../model/internal.js";
 /** The most bytes of an answer that the client reads unless the host says otherwise: a package of a large framework. */
 const DEFAULT_MAX_BYTES = 16_777_216;
 
+/**
+ * The most tokens of JSON in an answer that the client reads unless the host says otherwise. A framework of 10,000 items has
+ * 990,000 tokens, and the largest answer by default, 16 MiB, has about 1,600,000 when it is a framework.
+ */
+const DEFAULT_MAX_TOKENS = 2_000_000;
+
 /** The number of records that the client asks for in one page, which the REST binding gives as the default `limit`. */
 const DEFAULT_PAGE_SIZE = 100;
 
@@ -42,6 +48,14 @@ export interface CaseClientConfig extends CallOptions {
    */
   readonly maxBytes?: number;
   /**
+   * The most tokens of JSON in one answer: each bracket, brace, colon and comma, each string, each number, and each of `true`,
+   * `false` and `null`. The memory of a parse grows with the tokens and not with the bytes, so an answer over the limit is
+   * refused before it is parsed.
+   *
+   * @defaultValue 2,000,000
+   */
+  readonly maxTokens?: number;
+  /**
    * The number of documents that `documents` asks for in one request.
    *
    * @defaultValue 100
@@ -57,6 +71,7 @@ export interface Settings {
   readonly authorization: CaseClientConfig["authorization"];
   readonly timeoutMs: number;
   readonly maxBytes: number;
+  readonly maxTokens: number;
   readonly pageSize: number;
   readonly signal: AbortSignal | undefined;
 }
@@ -75,6 +90,7 @@ const configSchema = strictRecord({
   ),
   timeoutMs: v.optional(positiveInteger),
   maxBytes: v.optional(positiveInteger),
+  maxTokens: v.optional(positiveInteger),
   pageSize: v.optional(positiveInteger),
   signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
 });
@@ -94,6 +110,7 @@ export function settingsOf(config: unknown): Settings {
     authorization: checked.authorization,
     timeoutMs: checked.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     maxBytes: checked.maxBytes ?? DEFAULT_MAX_BYTES,
+    maxTokens: checked.maxTokens ?? DEFAULT_MAX_TOKENS,
     pageSize: checked.pageSize ?? DEFAULT_PAGE_SIZE,
     signal: checked.signal,
   };

@@ -1,4 +1,5 @@
 import { DataError, retryAfterSeconds, ServiceError } from "@interopkit/core";
+import { hasMoreTokensThan, MAX_JSON_TOKENS } from "@interopkit/core/checks";
 import type { ImsxStatusInfo } from "../model/index.js";
 import { readEntity } from "../read/index.js";
 
@@ -28,10 +29,13 @@ export interface StatusDetail {
 export function readStatusInfo(error: ServiceError): StatusDetail {
   if (!(error instanceof ServiceError)) throw new DataError("The error must be a ServiceError.");
   const detail: { info?: ImsxStatusInfo; retryAfterSeconds?: number } = {};
-  try {
-    detail.info = readEntity("imsx_StatusInfo", JSON.parse(error.body));
-  } catch {
-    // A body that is not JSON, or not a status, is an answer without detail and not a fault of the caller.
+  // A body of more tokens than a status can have is not one, and is not parsed.
+  if (!hasMoreTokensThan(error.body, MAX_JSON_TOKENS)) {
+    try {
+      detail.info = readEntity("imsx_StatusInfo", JSON.parse(error.body));
+    } catch {
+      // A body that is not JSON, or not a status, is an answer without detail and not a fault of the caller.
+    }
   }
   const seconds = retryAfterSeconds(error.headers);
   if (seconds !== undefined) detail.retryAfterSeconds = seconds;

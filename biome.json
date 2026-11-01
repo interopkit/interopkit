@@ -160,7 +160,7 @@
       }
     },
     {
-      "includes": ["packages/core/src/formats.ts", "packages/core/src/json.ts"],
+      "includes": ["packages/core/src/formats.ts", "packages/core/src/json.ts", "packages/core/src/findings.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -170,7 +170,7 @@
                 "patterns": [
                   {
                     "group": ["./*", "./*/**"],
-                    "message": "formats.ts and json.ts depend on nothing of the package."
+                    "message": "formats.ts, json.ts and findings.ts depend on nothing of the package."
                   },
                   {
                     "group": ["@interopkit/**"],
@@ -193,8 +193,8 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["./*", "./*/**", "!./errors.js", "!./formats.js", "!./json.js"],
-                    "message": "checks.ts depends only on errors.ts, formats.ts and json.ts."
+                    "group": ["./*", "./*/**", "!./errors.js", "!./findings.js", "!./formats.js", "!./json.js"],
+                    "message": "checks.ts depends only on errors.ts, findings.ts, formats.ts and json.ts."
                   },
                   {
                     "group": ["@interopkit/**"],

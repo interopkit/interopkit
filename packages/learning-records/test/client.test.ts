@@ -66,6 +66,10 @@ describe("createLrsClient: the configuration", () => {
     ],
     [{ timeoutMs: "10" }, 'The configuration of the client is invalid at timeoutMs: expected a number, found "10".'],
     [{ maxBytes: 1.5 }, "The configuration of the client is invalid at maxBytes: expected a safe integer, found 1.5."],
+    [
+      { maxTokens: 0 },
+      "The configuration of the client is invalid at maxTokens: expected a value of at least 1, found 0.",
+    ],
     [{ signal: {} }, "The configuration of the client is invalid at signal: expected an AbortSignal, found an object."],
   ])("refuses the option %j", (option, sentence) => {
     const config = { endpoint: ENDPOINT, fetch: lrs.fetch, ...JSON.parse(JSON.stringify(option)) };
@@ -181,6 +185,15 @@ describe("the requests of the client", () => {
     const failure = await failureOf(clientOf(big, { maxBytes: 100 }).about());
     expect(failure).toBeInstanceOf(ServiceError);
     expect((failure as ServiceError).message).toContain("more than 100 bytes");
+  });
+
+  it("refuses an answer over maxTokens, and over a million tokens by default, before it parses the answer", async () => {
+    const many = fakeLrs(() => ({ body: `{"version":["2.0.0"],"extensions":[${"[],".repeat(400_000)}[]]}` }));
+    const failure = await failureOf(clientOf(many).about());
+    expect((failure as DataError).message).toContain("The text has more than 1000000 tokens");
+    const few = fakeLrs(() => ({ body: JSON.stringify({ version: ["2.0.0"] }) }));
+    expect((await failureOf(clientOf(few, { maxTokens: 3 }).about())) as DataError).toBeInstanceOf(DataError);
+    expect(await clientOf(few, { maxTokens: 7 }).about()).toStrictEqual({ version: ["2.0.0"] });
   });
 
   it("is an error with the status, headers and body for a status that the call does not expect", async () => {

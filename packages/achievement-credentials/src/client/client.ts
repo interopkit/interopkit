@@ -110,8 +110,8 @@ function checkSize(value: unknown, what: string, subject: string): void {
 /**
  * Reads the credentials of a page: a credential as the model has it, and a compact JWS as text. The page may hold at most the
  * `limit` that the request asked for (OB 6.2.2), and each credential at most `MAX_CREDENTIAL_CHARACTERS`, both checked before the
- * readers see them: the readers collect every finding, so a page of millions of small objects, or one credential of megabytes,
- * would cost them far more memory than its text.
+ * readers see them: a page of millions of small objects, or one credential of megabytes, would cost them far more memory than
+ * its text.
  */
 function readPage(settings: Settings, json: unknown, what: string): (string | AnyCredential)[] {
   if (!isRecord(json))
@@ -165,7 +165,7 @@ async function* pagesOfCredentials(
     const url = `${settings.root}/credentials?${query}`;
     const response = await send(settings, { method: "GET", url, accept: "application/json", expect: [200] }, signal);
     const what = `The ${STANDARDS[settings.api]} API at ${url}`;
-    const items = readPage(settings, jsonOf(textOf(response, what), what), what);
+    const items = readPage(settings, jsonOf(textOf(response, what), what, settings.maxTokens), what);
     if (items.length === 0) return;
     const fresh = items.filter((item) => {
       const key = typeof item === "string" ? `jws:${item}` : `id:${String(item.id)}`;
@@ -215,7 +215,7 @@ export function createCredentialsClient(config: CredentialsClientConfig): Creden
   /** Reads the profile in the answer of a call that expected one. */
   function profileOf(response: ServiceResponse, url: string): Profile {
     const name = what(url);
-    const json = jsonOf(textOf(response, name), name);
+    const json = jsonOf(textOf(response, name), name, settings.maxTokens);
     checkSize(json, name, "a profile");
     return readAnswer(settings, name, () => readEntity("Profile", json));
   }

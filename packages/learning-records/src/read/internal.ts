@@ -3,8 +3,7 @@
  *
  * @module
  */
-export { errorsOf, inspectStatement } from "./inspect.js";
-export { hasMoreTokensThan } from "./json-tokens.js";
+export { inspectStatement, issueSink } from "./inspect.js";
 export { singleActivityIssues } from "./provider.js";
 export { patternProblem } from "./response-pattern.js";
 export {

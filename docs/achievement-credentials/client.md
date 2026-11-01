@@ -144,6 +144,7 @@ version beside the name and the redirect addresses: pass `logoUri`, `tosUri`, `p
 | `token`     | the client                                | Returns the access token before every request; it receives the `signal` of the call                       | Required   |
 | `timeoutMs` | the client, `discoverService`             | The most time of one request, from the request to the last byte of the answer                              | 10,000     |
 | `maxBytes`  | the client                                | The most bytes of one answer                                                                               | 16,777,216 |
+| `maxTokens` | the client                                | The most tokens of JSON in one answer, counted before it is parsed: each bracket, brace, colon and comma, each string, each number and each `true`, `false` and `null` | 1,000,000  |
 | `pageSize`  | the client                                | The `limit` of a request for credentials, and the most credentials that a page may hold                    | 100        |
 | `signal`    | the client, `discoverService`, each call  | Ends the wait; the signal of the configuration and the signal of a call both count                         | none       |
 | `since`     | `listCredentials`                         | A date and time with an offset: only credentials issued after it                                           | none       |
@@ -177,6 +178,7 @@ its compact JWS, in the order of the page: the credentials first, then the compa
 | The server did not answer within `timeoutMs`, or `fetch` rejected                               | `ServiceError` with status 0                                                                                             |
 | The answer is larger than `maxBytes`                                                            | `ServiceError` with the status of the answer, naming the limit; the body is cancelled                                    |
 | The answer is a redirect                                                                        | `ServiceError`: the client follows none. Use the address that the server redirects to as `baseUrl`                       |
+| The answer has more tokens of JSON than `maxTokens`                                             | `DataError`: `The Open Badges API at <url> answered with a body of more than N tokens of JSON, above the limit of the option maxTokens.` Raise `maxTokens` for a server that sends larger pages |
 | The answer is not UTF-8 or not JSON, nests more than 64 levels, or is not valid Open Badges or CLR | `DataError`: `The Open Badges API at <url> answered with data that is not valid Open Badges: <the first fault>`       |
 | A page holds more credentials than `pageSize`, or a credential or a profile is too long          | `DataError`, before the readers see it                                                                                   |
 | The service description lacks the authorization code flow, or has an address that is not `https` | `DataError` that names the path of the first fault                                                                      |
@@ -220,12 +222,14 @@ replaces the whole profile.
 | `pageSize`                                         | 100        | `DataError` when a page holds more                                                |
 | Characters of a credential or a profile in an answer | 1,048,576  | `DataError`, before the readers see it                                            |
 | Levels of JSON in an answer                        | 64         | `DataError`, before the text is parsed                                            |
+| `maxTokens` of an answer                           | 1,000,000  | `DataError`, before the text is parsed                                            |
 | Redirects                                          | 0          | `ServiceError`                                                                    |
 
-The readers collect every finding of a value, and `JSON.parse` takes about forty times the text of small objects in memory.
-Measured on Node.js 26, an answer of 16 MiB of empty objects is refused for its count after 0.8 s and about 630 MiB, and a
-credential of 1 MiB that is a list of empty objects takes 0.5 s and about 540 MiB to read. Lower `maxBytes` for a server that
-you do not trust: the cost grows with it, and a page of credentials is a few kilobytes each.
+`JSON.parse` takes about forty times the text of small objects in memory, so the client counts the tokens of an answer before it
+parses it. Measured on Node.js 26, an answer of 16 MiB of empty objects is refused for its tokens in 30 ms and 84 MB above the
+process, and `readCredential` of a credential of 1 MiB that is a list of empty objects stops at `maxFindings` and takes 139 MB,
+most of it the parse and the copy of the value. Lower `maxBytes` for a server that you do not trust: the cost grows with it, and
+a page of credentials is a few kilobytes each.
 
 ## Not included
 

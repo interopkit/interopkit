@@ -1,27 +1,35 @@
-import { findingsOf } from "@interopkit/core/checks";
-import * as v from "valibot";
+import { createFindingSink, type FindingSink, findingsOf, safeParseBounded } from "@interopkit/core/checks";
 import type { RuleRole, Statement, StatementIssue } from "../model/index.js";
 import { ruleIssues } from "./rules.js";
 import { statementSchema } from "./schemas.js";
 
-/** What reading a value found: the Statement as the model has it when its shape is right, and every finding. */
-export interface Inspection {
-  /** The Statement, a copy that shares nothing with the input. It is there when the shape is right, whatever else is found. */
-  readonly value?: Statement;
-  /** Every finding, errors and warnings. */
-  readonly issues: readonly StatementIssue[];
+/**
+ * Makes the list of findings of a call that stops at a limit. A reader keeps the errors alone, because it does not report
+ * warnings, and a warning does not count toward the limit.
+ */
+export function issueSink(maxFindings: number, errorsOnly: boolean): FindingSink<StatementIssue> {
+  return createFindingSink(
+    maxFindings,
+    (finding) => ({ ...finding, severity: "error" }),
+    errorsOnly ? ({ severity }) => severity === "error" : undefined,
+  );
 }
 
-/** Reads a value into a Statement, and judges the rules between its properties when its shape is right. */
-export function inspectStatement(input: unknown, role: RuleRole): Inspection {
-  const result = v.safeParse(statementSchema, input);
+/**
+ * Reads a value into a Statement, and judges the rules between its properties when its shape is right.
+ *
+ * @returns The Statement, a copy that shares nothing with the input, when its shape is right, whatever else is found.
+ */
+export function inspectStatement(
+  input: unknown,
+  role: RuleRole,
+  sink: FindingSink<StatementIssue>,
+): Statement | undefined {
+  const result = safeParseBounded(statementSchema, input, sink.room);
   if (!result.success) {
-    return { issues: findingsOf(result.issues).map((finding) => ({ ...finding, severity: "error" })) };
+    sink.add(findingsOf(result.issues).map((finding) => ({ ...finding, severity: "error" })));
+    return undefined;
   }
-  return { value: result.output, issues: ruleIssues(result.output, role, input) };
-}
-
-/** Returns the findings that are errors. */
-export function errorsOf(issues: readonly StatementIssue[]): readonly StatementIssue[] {
-  return issues.filter(({ severity }) => severity === "error");
+  sink.add(ruleIssues(result.output, role, input));
+  return result.output;
 }

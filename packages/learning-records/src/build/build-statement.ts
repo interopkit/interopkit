@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { checkProperties, checkRecord, isDateTime } from "@interopkit/core/checks";
+import { checkProperties, checkRecord, DEFAULT_MAX_FINDINGS, isDateTime } from "@interopkit/core/checks";
 import {
   type Actor,
   type Attachment,
@@ -11,7 +11,7 @@ import {
   type StatementObject,
   type Verb,
 } from "../model/index.js";
-import { errorsOf, inspectStatement } from "../read/internal.js";
+import { inspectStatement, issueSink } from "../read/internal.js";
 
 /** The version that a Statement of this package carries. */
 const STATEMENT_VERSION = "2.0.0";
@@ -80,11 +80,13 @@ function inUtc(timestamp: unknown): unknown {
 export function buildStatement(input: StatementInput): Statement {
   checkRecord(input, "A statement input must be an object");
   checkProperties(input, "A statement input", INPUT_PROPERTIES);
-  const { value, issues } = inspectStatement(
+  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const value = inspectStatement(
     { ...input, timestamp: inUtc(input.timestamp), version: STATEMENT_VERSION },
     "provider",
+    sink,
   );
-  const errors = [...errorsOf(issues)];
+  const errors = sink.list();
   if (input.id === undefined) {
     errors.push({
       path: "id",

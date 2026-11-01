@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the properties of the service description are the specification's.
 
 import { DataError, ServiceError } from "@interopkit/core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   type CredentialsClientConfig,
   createCredentialsClient,
@@ -212,6 +212,7 @@ describe("createCredentialsClient", () => {
       { ...base, token: "t" },
       { ...base, timeoutMs: 0 },
       { ...base, maxBytes: "1" },
+      { ...base, maxTokens: 0 },
       { ...base, pageSize: 1.5 },
       { ...base, signal: {} },
       { ...base, more: 1 },
@@ -584,6 +585,30 @@ describe("every call", () => {
     const error = await rejection(client.getProfile());
     expect(error).toBeInstanceOf(ServiceError);
     expect((error as ServiceError).message).toContain("100 bytes");
+  });
+
+  it("is a DataError that names the limit when an answer has more tokens of JSON than maxTokens, counted before it is parsed", async () => {
+    const hostile = clientOf(fakeServer(() => text(`[${"[],".repeat(400_000)}[]]`)).fetch);
+    const error = await rejection(hostile.getProfile());
+    expect(error).toBeInstanceOf(DataError);
+    expect((error as DataError).message).toContain(
+      "more than 1000000 tokens of JSON, above the limit of the option maxTokens",
+    );
+    const unfinished = clientOf(fakeServer(() => text("[1,2,3,4,5,6,7,8,9,10,11,12,")).fetch, { maxTokens: 10 });
+    expect(((await rejection(unfinished.getProfile())) as DataError).message).toContain("more than 10 tokens of JSON");
+    const exact = clientOf(fakeServer(() => json(PROFILE)).fetch, { maxTokens: 1000 });
+    expect(await exact.getProfile()).toStrictEqual(PROFILE);
+  });
+
+  it("does not parse the body of a refusal that has more tokens than a status can have", () => {
+    const body = `[${"[],".repeat(400_000)}[]]`;
+    const parse = vi.spyOn(JSON, "parse");
+    try {
+      expect(readStatusInfo(new ServiceError("refused", 400, body))).toStrictEqual({});
+      expect(parse).not.toHaveBeenCalled();
+    } finally {
+      parse.mockRestore();
+    }
   });
 
   it("rejects with the reason of the signal of the configuration or of the call", async () => {

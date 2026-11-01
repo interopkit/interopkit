@@ -5,8 +5,8 @@
 The model of CASE 1.1 and 1.0: a competency framework package, each entity and set that the service exchanges, and
 `imsx_StatusInfo`. `readPackage` and `readEntity` read a value of either version into the model of 1.1, check it against the
 JSON schemas of 1EdTech and the rules of a package, and return a copy; they throw a `DataError` that names the path of the first
-error and counts the others. `validatePackage` and `validateEntity` return every finding, with its path, rule, sentence and
-severity, as data: they find a property that CASE does not have, an identifier that two entities share, a link that points to
+error and counts the others. `validatePackage` and `validateEntity` return the findings, at most `maxFindings` (1,000) of them, with their path, rule,
+sentence and severity, as data: they find a property that CASE does not have, an identifier that two entities share, a link that points to
 nothing, an `isChildOf` tree that loops (`child-of-cycle`), and an item that no chain of `isChildOf` leads to from the document
 (`item-outside-tree`). `toCaseVersion` takes a package or an entity of 1.1 to the form of 1.0, leaves out and reports what 1.0
 cannot hold, and reports an identifier or a URI that 1.0 would refuse (`form-not-in-1.0`).

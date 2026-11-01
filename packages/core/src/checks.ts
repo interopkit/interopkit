@@ -6,8 +6,17 @@
  */
 import * as v from "valibot";
 import { DataError } from "./errors.js";
+import { FINDINGS_STOPPED_RULE, type Finding } from "./findings.js";
 import { copyJson, type JsonObject } from "./json.js";
 
+export {
+  type BoundedParse,
+  createFindingSink,
+  DEFAULT_MAX_FINDINGS,
+  type Finding,
+  type FindingSink,
+  safeParseBounded,
+} from "./findings.js";
 export {
   absoluteUriSchema,
   dateSchema,
@@ -23,11 +32,13 @@ export {
 } from "./formats.js";
 export {
   copyJson,
+  hasMoreTokensThan,
   type JsonObject,
   type JsonObjectCopy,
   type JsonValue,
   type JsonValueCopy,
   MAX_JSON_DEPTH,
+  MAX_JSON_TOKENS,
   nestsDeeperThan,
 } from "./json.js";
 
@@ -478,16 +489,6 @@ export const positiveSchema = v.pipe(
   ),
 );
 
-/** One finding of a reader or a validator: where the fault is, which rule it breaks, and what is wrong. */
-export interface Finding {
-  /** Where the fault is, as code writes it: `items[3].name`. The empty string is the value as a whole. */
-  readonly path: string;
-  /** The rule that the data breaks, as a kebab-case label that a caller can branch on. */
-  readonly rule: string;
-  /** What is wrong, as a sentence that reads after the path: `expected a string, found 5.` It does not hold the path. */
-  readonly message: string;
-}
-
 /** The `type` of the issues of a value that has the wrong JSON type, or is a number of the wrong kind. */
 const WRONG_TYPES: ReadonlySet<string> = new Set([
   "string",
@@ -544,15 +545,23 @@ export function findingsOf(issues: readonly v.BaseIssue<unknown>[]): Finding[] {
  * Writes the sentence of the `DataError` that a reader throws for a value with errors: the first error with its path, and how
  * many more there are.
  *
+ * @remarks
+ * When the list of errors stopped at the limit, its last finding says so, and the sentence says that there may be more.
+ *
  * @param label - Names the value, such as `The statement`.
  * @param errors - The findings that are errors, at least one.
- * @param validator - The function that lists every finding, such as `validateStatement`.
+ * @param validator - The function that lists the findings, such as `validateStatement`.
  * @returns A sentence such as `The statement is invalid at actor: needs exactly one of mbox, found none. 2 more errors: validateStatement lists every finding.`
  */
 export function refusalOf(label: string, errors: readonly Finding[], validator: string): string {
-  const [first, ...others] = errors;
+  const stopped = errors.at(-1)?.rule === FINDINGS_STOPPED_RULE;
+  const [first, ...others] = stopped ? errors.slice(0, -1) : errors;
   const where = first === undefined || first.path === "" ? "" : ` at ${first.path}`;
   const count = others.length === 1 ? "1 more error" : `${others.length} more errors`;
-  const more = others.length === 0 ? "" : ` ${count}: ${validator} lists every finding.`;
+  let more = others.length === 0 ? "" : ` ${count}: ${validator} lists every finding.`;
+  if (stopped) {
+    const atLeast = others.length === 0 ? "There may be more errors" : `At least ${count}`;
+    more = ` ${atLeast}: the check stopped at its limit, and ${validator} with a higher maxFindings lists more.`;
+  }
   return `${label} is invalid${where}: ${first?.message ?? "it has an error."}${more}`;
 }

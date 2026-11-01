@@ -1,6 +1,14 @@
 /** The most levels that arrays and objects nest in a JSON value that a function of the packages reads, unless it is told another. */
 export const MAX_JSON_DEPTH = 64;
 
+/**
+ * The most tokens that a text of JSON may have when a function of the packages reads it, unless it is told another. A parser
+ * takes memory for each token and not for each byte: `[0,0,0` and so on is a token for each byte, and a text of 16 MiB written
+ * so takes over 700 MB to parse. A framework of 10,000 items has 990,000 tokens, and 1,000 Statements that use every property
+ * have 461,000.
+ */
+export const MAX_JSON_TOKENS = 1_000_000;
+
 /** A JSON value: what a text of JSON holds. */
 export type JsonValue =
   | null
@@ -122,6 +130,12 @@ const OPEN_BRACE = 0x7b;
 const CLOSE_BRACE = 0x7d;
 const OPEN_BRACKET = 0x5b;
 const CLOSE_BRACKET = 0x5d;
+const COMMA = 0x2c;
+const COLON = 0x3a;
+const SPACE = 0x20;
+const TAB = 0x09;
+const LINE_FEED = 0x0a;
+const CARRIAGE_RETURN = 0x0d;
 
 /** Returns the index of the quote that ends the string which starts at `start`, or the length of the text when it does not end. */
 function endOfString(text: string, start: number): number {
@@ -158,6 +172,60 @@ export function nestsDeeperThan(text: string, maxDepth: number): boolean {
     } else if (unit === CLOSE_BRACE || unit === CLOSE_BRACKET) {
       depth -= 1;
     }
+  }
+  return false;
+}
+
+/** Tells whether a code unit is one of the six structural characters of RFC 8259, section 2. */
+function isStructural(unit: number): boolean {
+  return (
+    unit === COMMA ||
+    unit === COLON ||
+    unit === OPEN_BRACKET ||
+    unit === CLOSE_BRACKET ||
+    unit === OPEN_BRACE ||
+    unit === CLOSE_BRACE
+  );
+}
+
+/** Tells whether a code unit is white space between the tokens of JSON (RFC 8259, section 2). */
+function isWhiteSpace(unit: number): boolean {
+  return unit === SPACE || unit === TAB || unit === LINE_FEED || unit === CARRIAGE_RETURN;
+}
+
+/**
+ * Tells whether a text of JSON has more tokens than a limit, reading no further than the first token above it. A token is a
+ * structural character, a string, or a number or one of `true`, `false` and `null`.
+ *
+ * @remarks
+ * Nothing is built, and the text need not be valid JSON, so the count can come before the parser. For valid JSON it is the
+ * number of tokens that the tokenizer of a parser makes, which its syntax tree has a node or two for.
+ *
+ * @param text - The text.
+ * @param maxTokens - The most tokens that are allowed.
+ * @returns Whether the text has more.
+ */
+export function hasMoreTokensThan(text: string, maxTokens: number): boolean {
+  let tokens = 0;
+  let inLiteral = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const unit = text.charCodeAt(index);
+    if (unit === QUOTE) {
+      index = endOfString(text, index);
+      inLiteral = false;
+    } else if (isStructural(unit)) {
+      inLiteral = false;
+    } else if (isWhiteSpace(unit)) {
+      inLiteral = false;
+      continue;
+    } else if (inLiteral) {
+      // The run of a number or a literal was counted at its first character.
+      continue;
+    } else {
+      inLiteral = true;
+    }
+    tokens += 1;
+    if (tokens > maxTokens) return true;
   }
   return false;
 }

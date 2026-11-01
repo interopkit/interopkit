@@ -1,21 +1,23 @@
 import { DataError } from "@interopkit/core";
-import { refusalOf } from "@interopkit/core/checks";
+import { DEFAULT_MAX_FINDINGS, refusalOf } from "@interopkit/core/checks";
 import type { Activity, ActivityDefinition, Verb } from "../model/index.js";
-import { errorsOf, inspectStatement } from "../read/internal.js";
+import { inspectStatement, issueSink } from "../read/internal.js";
 import { definitionInOneLanguage, oneLanguage } from "./language.js";
 import type { Mappers } from "./transform.js";
 
 /** Reads the canonical definition of an Activity, which a host gave, with the checks of a Statement whose Object it is. */
 function checkedDefinition(id: string, definition: unknown): ActivityDefinition | undefined {
-  const { value, issues } = inspectStatement(
+  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const value = inspectStatement(
     {
       actor: { mbox: "mailto:probe@example.org" },
       verb: { id: "https://example.org/probe" },
       object: { id, definition },
     },
     "lrs",
+    sink,
   );
-  const errors = errorsOf(issues);
+  const errors = sink.list();
   if (value === undefined || errors.length > 0) {
     throw new DataError(
       refusalOf(`The definition of ${JSON.stringify(id)} in the option activities`, errors, "validateStatement"),

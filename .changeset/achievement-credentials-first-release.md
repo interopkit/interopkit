@@ -8,8 +8,8 @@ achievements, results, alignments, evidence and proofs, the answers of the APIs,
 keys and the CLR payloads of a JWT, with the vocabularies and their `ext:` terms. `readCredential` and `readEntity` check a
 value against the JSON schemas of 1EdTech and the rules of the subject, and return a copy in which a list that the compacted
 form of JSON-LD writes as its only member is a list; they throw a `DataError` that names the path of the first error and counts
-the others. `validateCredential` and `validateEntity` return every finding, with its path, rule, sentence and severity, as
-data, among them `subject-unidentified` and `identity-hash-form`.
+the others. `validateCredential` and `validateEntity` return the findings, at most `maxFindings` (1,000) of them, with their path, rule,
+sentence and severity, as data, among them `subject-unidentified` and `identity-hash-form`.
 
 `buildAchievementCredential`, `buildEndorsementCredential` and `buildClrCredential` write the contexts, the types, the subject
 and the official `credentialSchema` around the parts that an issuer gives, check the result as the readers do, and throw a

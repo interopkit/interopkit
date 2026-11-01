@@ -1,8 +1,7 @@
 import { DataError } from "@interopkit/core";
-import { copyJson, findingsOf, type Schema } from "@interopkit/core/checks";
-import * as v from "valibot";
+import { copyJson, DEFAULT_MAX_FINDINGS, findingsOf, type Schema, safeParseBounded } from "@interopkit/core/checks";
 import type { CredentialIssue } from "../model/index.js";
-import { errorsOf, parseJson } from "../read/internal.js";
+import { issueSink, parseJson } from "../read/internal.js";
 import { refuseWith } from "./refusal.js";
 
 /**
@@ -13,8 +12,12 @@ import { refuseWith } from "./refusal.js";
 export function readInput<TInput>(schema: Schema<TInput>, input: unknown, label: string): TInput {
   const copy = copyJson(input, "");
   if ("problem" in copy) throw new DataError(`${label} is invalid: ${copy.problem}.`);
-  const result = v.safeParse(schema, copy.value);
-  if (!result.success) throw refuseWith(label, findingsOf(result.issues));
+  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const result = safeParseBounded(schema, copy.value, sink.room);
+  if (!result.success) {
+    sink.add(findingsOf(result.issues).map((finding) => ({ ...finding, severity: "error" as const })));
+    throw refuseWith(label, sink.list());
+  }
   return result.output;
 }
 
@@ -33,8 +36,10 @@ export function finish<TValue>(
   label: string,
   judge: (value: TValue) => readonly CredentialIssue[] = () => [],
 ): TValue {
-  const { value, issues } = parseJson(schema, written);
-  const errors = errorsOf(value === undefined ? issues : [...issues, ...judge(value)]);
+  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const value = parseJson(schema, written, sink);
+  if (value !== undefined) sink.add(judge(value));
+  const errors = sink.list();
   if (value === undefined || errors.length > 0) throw refuseWith(label, errors);
   return value;
 }

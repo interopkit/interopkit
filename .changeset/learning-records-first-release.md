@@ -5,8 +5,8 @@
 The model of xAPI 2.0: a Statement and everything it holds, the vocabularies, and `StatementIssue`. `readStatement` reads a
 value into the model for the rules of an LRS or of a Learning Record Provider (`role`), checks every property against the tables
 of the standard and the rules between them, and returns a copy; it throws a `DataError` that names the path of the first error
-and counts the others. `validateStatement` and `validateStatements` return every finding, with its path, rule, sentence and
-severity, as data: identifiers, the voided verb, scores, the forms of IRIs, UUIDs, times, durations and language tags, the form of
+and counts the others. `validateStatement` and `validateStatements` return the findings, at most `maxFindings` (1,000) of them for a whole batch,
+with their path, rule, sentence and severity, as data: identifiers, the voided verb, scores, the forms of IRIs, UUIDs, times, durations and language tags, the form of
 each interaction's response patterns, and for a provider UTC times and what the LRS sets. `readStatementJson` parses the text of
 a request within limits of size, depth and tokens, and refuses an object that names a property twice. `buildStatement` makes the
 Statement of an event with the time in UTC, and checks it against the rules of a provider; `voidingStatement` makes the one that

@@ -413,6 +413,16 @@ describe("refusalOf", () => {
   it("says that there is an error when it is given none", () => {
     expect(refusalOf("The statement", [], "validateStatement")).toBe("The statement is invalid: it has an error.");
   });
+
+  it("says that there may be more errors when the list stopped at its limit", () => {
+    const stopped = { path: "", rule: "findings-stopped", message: "the check stopped." };
+    expect(refusalOf("The statement", [first, second, stopped], "validateStatement")).toBe(
+      "The statement is invalid at actor: needs one identifier. At least 1 more error: the check stopped at its limit, and validateStatement with a higher maxFindings lists more.",
+    );
+    expect(refusalOf("The statement", [first, stopped], "validateStatement")).toBe(
+      "The statement is invalid at actor: needs one identifier. There may be more errors: the check stopped at its limit, and validateStatement with a higher maxFindings lists more.",
+    );
+  });
 });
 
 describe("strictRecord", () => {

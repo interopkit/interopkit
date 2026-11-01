@@ -1,5 +1,6 @@
 import { DataError, ServiceError } from "@interopkit/core";
-import { describe, expect, it } from "vitest";
+import { hasMoreTokensThan } from "@interopkit/core/checks";
+import { describe, expect, it, vi } from "vitest";
 import {
   type CaseClient,
   type CaseClientConfig,
@@ -95,7 +96,7 @@ describe("createCaseClient: the configuration", () => {
     expect(bad('{"authorization":"Bearer x"}')).toThrow("authorization: expected a function");
     expect(bad('{"signal":{}}')).toThrow("signal: expected an AbortSignal");
     expect(bad('{"version":"2.0"}')).toThrow('version: expected "1.0" or "1.1"');
-    for (const option of ["timeoutMs", "maxBytes", "pageSize"]) {
+    for (const option of ["timeoutMs", "maxBytes", "maxTokens", "pageSize"]) {
       for (const value of ["0", "-1", "1.5", '"5"', "null"]) expect(bad(`{"${option}":${value}}`)).toThrow(DataError);
     }
   });
@@ -203,6 +204,30 @@ describe("the calls that fetch one entity", () => {
     const error = await failureOf(clientOf(provider, { maxBytes: 100 }).item(id(7)));
     expect(error).toBeInstanceOf(ServiceError);
     expect((error as ServiceError).message).toContain("answered with more than 100 bytes");
+  });
+
+  it("counts the tokens of an answer before it parses the answer, so that text that is not JSON is refused for its size", async () => {
+    const unfinished = fakeProvider(() => ({ body: "[1,2,3,4,5,6,7,8,9,10,11,12," }));
+    const error = await failureOf(clientOf(unfinished, { maxTokens: 10 }).item(id(7)));
+    expect((error as DataError).message).toBe(
+      `The CASE provider at ${BASE}/ims/case/v1p1/CFItems/${id(7)} answered with a body of more than 10 tokens of JSON, above the limit of the option maxTokens.`,
+    );
+    const fewer = await failureOf(clientOf(unfinished, { maxTokens: 100 }).item(id(7)));
+    expect((fewer as DataError).message).toContain("answered with a body that is not JSON");
+  });
+
+  it("reads an answer of exactly the most tokens and refuses one with a token more", async () => {
+    const provider = fakeProvider(() => ({ body: entities.CFItem }));
+    let tokens = 0;
+    while (hasMoreTokensThan(JSON.stringify(entities.CFItem), tokens)) tokens += 1;
+    expect(await clientOf(provider, { maxTokens: tokens }).item(id(7))).toStrictEqual(entities.CFItem);
+    await expect(clientOf(provider, { maxTokens: tokens - 1 }).item(id(7))).rejects.toThrow("tokens of JSON");
+  });
+
+  it("limits the tokens of an answer to 2,000,000 unless told otherwise, so that a million empty arrays are refused", async () => {
+    const hostile = fakeProvider(() => ({ body: `[${"[],".repeat(700_000)}[]]` }));
+    const error = await failureOf(clientOf(hostile).item(id(7)));
+    expect((error as DataError).message).toContain("more than 2000000 tokens of JSON");
   });
 
   it("reads a package as large as the default limit allows", async () => {
@@ -689,6 +714,13 @@ describe("readStatusInfo", () => {
       retryAfterSeconds: 7,
     });
     expect(readStatusInfo(refusal(""))).toStrictEqual({});
+    const parse = vi.spyOn(JSON, "parse");
+    try {
+      expect(readStatusInfo(refusal(`[${"[],".repeat(400_000)}[]]`))).toStrictEqual({});
+      expect(parse).not.toHaveBeenCalled();
+    } finally {
+      parse.mockRestore();
+    }
     expect(readStatusInfo(refusal('{"imsx_codeMajor":"failure"}'))).toStrictEqual({});
   });
 

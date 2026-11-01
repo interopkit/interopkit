@@ -120,4 +120,11 @@ export {
   type VerifiableCredential,
   type VerifiableCredentialV1p1,
 } from "./model/index.js";
-export { type ReadOptions, readCredential, readEntity, validateCredential, validateEntity } from "./read/index.js";
+export {
+  type EntityReadOptions,
+  type ReadOptions,
+  readCredential,
+  readEntity,
+  validateCredential,
+  validateEntity,
+} from "./read/index.js";

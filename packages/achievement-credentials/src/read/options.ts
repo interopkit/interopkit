@@ -1,4 +1,4 @@
-import { parseWith, strictRecord } from "@interopkit/core/checks";
+import { DEFAULT_MAX_FINDINGS, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { CREDENTIAL_KINDS, type CredentialKind, ENTITY_KINDS, type EntityKind } from "../model/index.js";
 
@@ -12,14 +12,52 @@ export interface ReadOptions {
    * @defaultValue the kind that the `type` names
    */
   readonly kind?: CredentialKind;
+  /**
+   * The most findings that the call lists, or that `readCredential` and `readEntity` count errors up to before they stop. The
+   * check stops at the first finding beyond the limit and ends the list with a finding that says so: a value that is wrong in
+   * a million places costs the memory of the limit.
+   *
+   * @defaultValue 1,000
+   */
+  readonly maxFindings?: number;
 }
 
-const optionsSchema = strictRecord({ kind: v.optional(v.picklist(CREDENTIAL_KINDS)) });
+/** The options of `readEntity` and `validateEntity`. */
+export interface EntityReadOptions {
+  /**
+   * The most findings that the call lists, or that `readEntity` counts errors up to before it stops. The check stops at the
+   * first finding beyond the limit and ends the list with a finding that says so.
+   *
+   * @defaultValue 1,000
+   */
+  readonly maxFindings?: number;
+}
+
+const optionsSchema = strictRecord({
+  kind: v.optional(v.picklist(CREDENTIAL_KINDS)),
+  maxFindings: v.optional(positiveIntegerSchema),
+});
+const entityOptionsSchema = strictRecord({ maxFindings: v.optional(positiveIntegerSchema) });
 const kindSchema = v.picklist(ENTITY_KINDS);
 
-/** Checks the options of a read and returns the kind that they ask for, if any. */
-export function readKind(options: unknown): CredentialKind | undefined {
-  return parseWith(optionsSchema, options === undefined ? {} : options, "The read options").kind;
+/** The kind of credential and the limit of findings that the options of a read ask for. */
+export interface ReadSettings {
+  readonly kind: CredentialKind | undefined;
+  readonly maxFindings: number;
+}
+
+/** Checks the options of a read of a credential and returns what they ask for. */
+export function readSettings(options: unknown): ReadSettings {
+  const checked = parseWith(optionsSchema, options === undefined ? {} : options, "The read options");
+  return { kind: checked.kind, maxFindings: checked.maxFindings ?? DEFAULT_MAX_FINDINGS };
+}
+
+/** Checks the options of a read of an object that is not a credential and returns the limit of findings. */
+export function readEntityLimit(options: unknown): number {
+  return (
+    parseWith(entityOptionsSchema, options === undefined ? {} : options, "The read options").maxFindings ??
+    DEFAULT_MAX_FINDINGS
+  );
 }
 
 /** Checks the kind of an object that a caller asks for. */

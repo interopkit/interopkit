@@ -1,5 +1,12 @@
 import { type CallOptions, DataError, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
-import { describe, guardSchema, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
+import {
+  describe,
+  guardSchema,
+  MAX_JSON_TOKENS,
+  parseWith,
+  positiveIntegerSchema,
+  strictRecord,
+} from "@interopkit/core/checks";
 import * as v from "valibot";
 import { XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 
@@ -37,6 +44,14 @@ export interface LrsClientConfig extends CallOptions {
    * @defaultValue 10,485,760
    */
   readonly maxBytes?: number;
+  /**
+   * The most tokens of JSON in one answer: each bracket, brace, colon and comma, each string, each number, and each of `true`,
+   * `false` and `null`. The memory of a parse grows with the tokens and not with the bytes, so an answer over the limit is
+   * refused before it is parsed.
+   *
+   * @defaultValue 1,000,000
+   */
+  readonly maxTokens?: number;
 }
 
 /** What the client uses of its configuration, after the checks and with the defaults. */
@@ -50,6 +65,7 @@ export interface Settings {
   readonly authorization: LrsClientConfig["authorization"];
   readonly timeoutMs: number;
   readonly maxBytes: number;
+  readonly maxTokens: number;
   readonly signal: AbortSignal | undefined;
 }
 
@@ -65,6 +81,7 @@ const configSchema = strictRecord({
   ),
   timeoutMs: v.optional(positiveIntegerSchema),
   maxBytes: v.optional(positiveIntegerSchema),
+  maxTokens: v.optional(positiveIntegerSchema),
   signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
 });
 
@@ -102,6 +119,7 @@ export function settingsOf(config: unknown): Settings {
     authorization: checked.authorization,
     timeoutMs: checked.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     maxBytes: checked.maxBytes ?? DEFAULT_MAX_BYTES,
+    maxTokens: checked.maxTokens ?? MAX_JSON_TOKENS,
     signal: checked.signal,
   };
 }

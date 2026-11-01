@@ -11,7 +11,7 @@ import {
   validatePackage,
 } from "../src/index.js";
 import { copyOf, minimalPackage, summary } from "./fixture.js";
-import { fullEntities, fullPackage, id } from "./full-package.js";
+import { fullEntities, fullPackage, id, uri } from "./full-package.js";
 
 /** Judges a full package that a test has changed, and returns where, which rule and how serious. */
 function found(change: (pkg: Record<string, any>) => void, version?: "1.0" | "1.1") {
@@ -118,6 +118,8 @@ describe("readPackage", () => {
       [{ version: 1.1 }, 'The read options is invalid at version: expected "1.0" or "1.1", found 1.1.'],
       [{ version: null }, 'The read options is invalid at version: expected "1.0" or "1.1", found null.'],
       [{ versions: "1.1" }, 'The read options is invalid: unexpected property "versions".'],
+      [{ maxFindings: 0 }, "The read options is invalid at maxFindings: expected a value of at least 1, found 0."],
+      [{ maxFindings: "5" }, 'The read options is invalid at maxFindings: expected a number, found "5".'],
     ])("refuse %j with a sentence", (options, sentence) => {
       expect(() => readPackage(minimalPackage(), options as never)).toThrow(new DataError(sentence));
       expect(() => validatePackage(minimalPackage(), options as never)).toThrow(new DataError(sentence));
@@ -579,5 +581,91 @@ describe("readEntity: the type of the result", () => {
     const set = readEntity("CFAssociationSet", fullEntities().CFAssociationSet);
     expect(set.CFItem.identifier).toBe(item.identifier);
     expect(readEntity("imsx_StatusInfo", fullEntities().imsx_StatusInfo).imsx_codeMajor).toBe("failure");
+  });
+});
+
+describe("the limit of findings", () => {
+  /** A package of the given number of items that each lack every required property. */
+  const wrongItems = (count: number) => ({ ...minimalPackage(), CFItems: Array.from({ length: count }, () => ({})) });
+  /** An item that is right in shape and joined to no parent, which is a warning. */
+  const item = (number: number) => ({
+    identifier: id(number),
+    fullStatement: `Item ${number}`,
+    uri: uri("CFItems", number),
+    lastChangeDateTime: "2024-06-13T18:46:03+00:00",
+  });
+  const rules = (findings: readonly { readonly rule: string }[]) => findings.map(({ rule }) => rule);
+
+  it("lists at most 1,000 findings and ends the list with one that says it stopped", () => {
+    const findings = validatePackage(wrongItems(10_000));
+    expect(findings).toHaveLength(1001);
+    expect(findings.at(-1)).toStrictEqual({
+      path: "",
+      rule: "findings-stopped",
+      message: "the check stopped after 1000 findings, so there may be more.",
+      severity: "error",
+    });
+    expect(rules(findings.slice(0, -1)).every((rule) => rule === "missing-property")).toBe(true);
+  });
+
+  it("reads no more of the value than it takes to fill the list", () => {
+    let reads = 0;
+    const items = new Proxy(
+      Array.from({ length: 100_000 }, () => ({})),
+      {
+        get(target, property, receiver) {
+          if (typeof property === "string" && /^\d+$/u.test(property)) reads += 1;
+          return Reflect.get(target, property, receiver);
+        },
+      },
+    );
+    expect(validatePackage({ ...minimalPackage(), CFItems: items })).toHaveLength(1001);
+    expect(reads).toBeLessThan(1000);
+  });
+
+  it("lists the findings that it found in the order of the check, whatever the limit", () => {
+    const some = validatePackage(wrongItems(10_000), { maxFindings: 25 });
+    const more = validatePackage(wrongItems(10_000), { maxFindings: 40 });
+    expect(some).toHaveLength(26);
+    expect(more.slice(0, 25)).toStrictEqual(some.slice(0, 25));
+  });
+
+  it("does not stop a list that has exactly the limit", () => {
+    const exact = validatePackage(wrongItems(3), { maxFindings: 100 });
+    const count = exact.length;
+    expect(count).toBeLessThan(100);
+    expect(validatePackage(wrongItems(3), { maxFindings: count })).toStrictEqual(exact);
+    expect(validatePackage(wrongItems(3), { maxFindings: count - 1 })).toHaveLength(count);
+    expect(validatePackage(wrongItems(3), { maxFindings: count - 1 }).at(-1)?.rule).toBe("findings-stopped");
+  });
+
+  it("lists the warnings of a package that is right in shape up to the limit as well", () => {
+    const pkg = { ...minimalPackage(), CFItems: Array.from({ length: 30 }, (_, at) => item(at + 2)) };
+    const findings = validatePackage(pkg, { maxFindings: 10 });
+    expect(findings).toHaveLength(11);
+    expect(findings.at(-1)?.rule).toBe("findings-stopped");
+  });
+
+  it("makes a reader refuse a package whose errors stopped the check, and say that there may be more", () => {
+    expect(() => readPackage(wrongItems(10_000), { maxFindings: 3 })).toThrow(
+      'The package is invalid at CFItems[0].identifier: missing the property "identifier". At least 2 more errors: the check stopped at its limit, and validatePackage with a higher maxFindings lists more.',
+    );
+    expect(() => readPackage(wrongItems(10_000), { maxFindings: 1 })).toThrow(
+      "There may be more errors: the check stopped",
+    );
+    expect(() => readEntity("CFItem", {}, { maxFindings: 2 })).toThrow("At least 1 more error: the check stopped");
+  });
+
+  it("does not count the warnings toward the limit of a reader, which does not report them", () => {
+    const pkg = { ...minimalPackage(), CFItems: Array.from({ length: 30 }, (_, at) => item(at + 2)) };
+    expect(validatePackage(pkg).filter(({ severity }) => severity === "warning").length).toBeGreaterThan(5);
+    expect(readPackage(pkg, { maxFindings: 1 })).toStrictEqual(pkg);
+  });
+
+  it("limits the findings of an entity in the same way", () => {
+    const set = { CFDocuments: Array.from({ length: 5_000 }, () => ({})) };
+    const findings = validateEntity("CFDocumentSet", set, { maxFindings: 50 });
+    expect(findings).toHaveLength(51);
+    expect(findings.at(-1)?.rule).toBe("findings-stopped");
   });
 });

@@ -258,6 +258,19 @@ describe("readJson", () => {
     );
   });
 
+  it("accepts a body of exactly the most tokens and refuses one token more", () => {
+    expect(json("[1,2,3]", { maxTokens: 7 })).toStrictEqual([1, 2, 3]);
+    expect(() => json("[1,2,3]", { maxTokens: 6 })).toThrow(
+      new DataError("The JSON of the request has more than 6 tokens, above the limit of the option maxTokens."),
+    );
+  });
+
+  it("limits the tokens to 1,000,000 unless told otherwise, and refuses a body of empty arrays before parsing it", () => {
+    const text = `[${"[],".repeat(400_000)}[]]`;
+    expect(() => json(text, { maxBytes: 2_000_000 })).toThrow("has more than 1000000 tokens");
+    expect(json(text, { maxBytes: 2_000_000, maxTokens: 1_200_004 })).toHaveLength(400_001);
+  });
+
   it("refuses a body of a hundred thousand opening brackets without building anything", () => {
     expect(() => json("[".repeat(100_000), { maxBytes: 200_000 })).toThrow("nests deeper than the limit of 64 levels");
     expect(() => json('{"a":'.repeat(50_000), { maxBytes: 400_000 })).toThrow("nests deeper");
@@ -320,6 +333,7 @@ describe("readJson", () => {
       ['The option maxBytes must be a positive integer, found "10".', JSON.parse('{"maxBytes":"10"}')],
       ["The option maxDepth must be a positive integer, found 1.5.", { maxDepth: 1.5 }],
       ["The option maxDepth must be a positive integer, found null.", JSON.parse('{"maxDepth":null}')],
+      ["The option maxTokens must be a positive integer, found 0.", { maxTokens: 0 }],
     ];
     for (const [message, options] of cases) {
       expect(() => readJson(body, options), message).toThrow(new DataError(message));

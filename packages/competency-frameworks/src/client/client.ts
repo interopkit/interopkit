@@ -6,7 +6,14 @@ import {
   type ServiceResponse,
   totalCountOf,
 } from "@interopkit/core";
-import { checkAbortSignal, checkRecord, describe, isRecord, parseWith } from "@interopkit/core/checks";
+import {
+  checkAbortSignal,
+  checkRecord,
+  describe,
+  hasMoreTokensThan,
+  isRecord,
+  parseWith,
+} from "@interopkit/core/checks";
 import type {
   CasePackage,
   CaseQuery,
@@ -116,10 +123,21 @@ function signalOf(options: unknown): AbortSignal | undefined {
   return options.signal;
 }
 
-/** Reads the body of an answer as JSON. */
-function parseJson(response: ServiceResponse, what: string): unknown {
+/** Reads the body of an answer as JSON, after counting its tokens: the memory of a parse grows with them. */
+function parseJson(response: ServiceResponse, settings: Settings, what: string): unknown {
+  let text: string;
   try {
-    return JSON.parse(DECODER.decode(response.body));
+    text = DECODER.decode(response.body);
+  } catch {
+    throw new DataError(`${what} answered with a body that is not JSON.`);
+  }
+  if (hasMoreTokensThan(text, settings.maxTokens)) {
+    throw new DataError(
+      `${what} answered with a body of more than ${settings.maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
+    );
+  }
+  try {
+    return JSON.parse(text);
   } catch {
     throw new DataError(`${what} answered with a body that is not JSON.`);
   }
@@ -178,7 +196,7 @@ function endpoint<TValue>(settings: Settings, collection: string, read: (json: u
     const response = await get(settings, url, [200, 404], signal);
     if (response.status === 404) return undefined;
     const what = `The CASE provider at ${url}`;
-    const json = parseJson(response, what);
+    const json = parseJson(response, settings, what);
     return readAnswer(what, () => read(json));
   };
 }
@@ -229,7 +247,7 @@ async function* pagesOfDocuments(
     // A provider that has nothing more may answer 404 or an empty list for an offset past the end.
     if (response.status === 404) return;
     const what = `The CASE provider at ${url}`;
-    const json = parseJson(response, what);
+    const json = parseJson(response, settings, what);
     if (isRecord(json) && Array.isArray(json.CFDocuments) && json.CFDocuments.length === 0) return;
     const documents = readAnswer(what, () =>
       selecting
@@ -305,7 +323,7 @@ export function createCaseClient(config: CaseClientConfig): CaseClient {
       const url = `${settings.root}/${DISCOVERY_PATH}`;
       const response = await get(settings, url, [200], signal);
       const what = `The CASE provider at ${url}`;
-      const json = parseJson(response, what);
+      const json = parseJson(response, settings, what);
       return readAnswer(what, () => parseWith(openApiSchema, json, "The OpenAPI document"));
     },
   };

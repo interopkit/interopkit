@@ -139,7 +139,8 @@ describe.each(FRAMEWORKS)("the framework $title of $provider", ({ file, linksThe
         expect(readPackage(published, { version: "1.0" }).CFItems).toHaveLength(items);
         return;
       }
-      const findings = validatePackage(published, { version: "1.0" });
+      // A finding for each item and association, which are more than the default limit.
+      const findings = validatePackage(published, { version: "1.0", maxFindings: 1_000_000 });
       expect(findings.every(({ severity, rule }) => severity === "error" && rule === "unknown-property")).toBe(true);
       expect(findings.map(({ path }) => path.replace(/\[\d+\]/gu, "[]"))).toStrictEqual([
         "CFDocument.CFPackageURI",

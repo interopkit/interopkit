@@ -1,5 +1,12 @@
 import { DataError, requestService, type ServiceResponse } from "@interopkit/core";
-import { checkAbortSignal, checkRecord, MAX_JSON_DEPTH, nestsDeeperThan } from "@interopkit/core/checks";
+import {
+  checkAbortSignal,
+  checkRecord,
+  hasMoreTokensThan,
+  MAX_JSON_DEPTH,
+  MAX_JSON_TOKENS,
+  nestsDeeperThan,
+} from "@interopkit/core/checks";
 import type { Settings } from "./config.js";
 
 /** An access token as RFC 6750 and the servers write it: printable characters other than a space, so that it cannot end the header. */
@@ -74,10 +81,18 @@ export function textOf(response: ServiceResponse, what: string): string {
   }
 }
 
-/** Reads the text of an answer as JSON, which nests at most `MAX_JSON_DEPTH` levels, so that no parser builds a deeper tree. */
-export function jsonOf(text: string, what: string): unknown {
+/**
+ * Reads the text of an answer as JSON, which nests at most `MAX_JSON_DEPTH` levels and has at most `maxTokens` tokens, so that
+ * no parser builds a deeper or a larger tree.
+ */
+export function jsonOf(text: string, what: string, maxTokens: number = MAX_JSON_TOKENS): unknown {
   if (nestsDeeperThan(text, MAX_JSON_DEPTH)) {
     throw new DataError(`${what} answered with JSON that nests more than ${MAX_JSON_DEPTH} levels.`);
+  }
+  if (hasMoreTokensThan(text, maxTokens)) {
+    throw new DataError(
+      `${what} answered with a body of more than ${maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
+    );
   }
   try {
     return JSON.parse(text);

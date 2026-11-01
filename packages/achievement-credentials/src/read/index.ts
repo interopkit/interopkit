@@ -4,6 +4,6 @@
  *
  * @module
  */
-export type { ReadOptions } from "./options.js";
+export type { EntityReadOptions, ReadOptions } from "./options.js";
 export { readCredential, validateCredential } from "./read-credential.js";
 export { readEntity, validateEntity } from "./read-entity.js";

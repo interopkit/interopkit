@@ -3,7 +3,6 @@ import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { readStatement, readStatementJson, validateStatements } from "../src/index.js";
-import { hasMoreTokensThan } from "../src/read/internal.js";
 import { fullStatement, minimalStatement } from "./full-statement.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
@@ -277,40 +276,5 @@ describe("readStatementJson", () => {
       vi.doUnmock("@humanwhocodes/momoa");
       vi.resetModules();
     }
-  });
-});
-
-describe("the count of tokens", () => {
-  /** The number of tokens that the tokenizer of the syntax tree makes, which is the oracle of the count. */
-  const tokensOf = (text: string): number => tokenize(text, { mode: "json" }).length;
-
-  it("agrees with the tokenizer of the syntax tree for any JSON value, written in any way", () => {
-    fc.assert(
-      fc.property(fc.jsonValue(), fc.constantFrom(undefined, 1, "\t", "\n  "), (value, indent) => {
-        const text = JSON.stringify(value, null, indent);
-        const count = tokensOf(text);
-        expect(hasMoreTokensThan(text, count)).toBe(false);
-        expect(hasMoreTokensThan(text, count - 1)).toBe(true);
-      }),
-      RUNS,
-    );
-  });
-
-  it("does not count what is inside a string, escaped quotes included", () => {
-    const text = JSON.stringify(['[{"a":1,2}] "', 'a\\"', "\\", ",:"]);
-    expect(tokensOf(text)).toBe(9);
-    expect(hasMoreTokensThan(text, 9)).toBe(false);
-    expect(hasMoreTokensThan(text, 8)).toBe(true);
-  });
-
-  it("counts a number or a literal as one token, whatever its length", () => {
-    expect(hasMoreTokensThan("[-12345.678e+90,false]", 5)).toBe(false);
-    expect(hasMoreTokensThan("[-12345.678e+90,false]", 4)).toBe(true);
-  });
-
-  it("stops at the first token above the limit, so that a text without end costs little", () => {
-    expect(hasMoreTokensThan(`[${"0,".repeat(1_000_000)}`, 10)).toBe(true);
-    expect(hasMoreTokensThan("", 0)).toBe(false);
-    expect(hasMoreTokensThan("   \n\t ", 0)).toBe(false);
   });
 });

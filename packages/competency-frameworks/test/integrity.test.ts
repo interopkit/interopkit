@@ -3,6 +3,7 @@ import {
   type CasePackage,
   type CFPckgAssociation,
   type CFPckgItem,
+  type ReadOptions,
   readPackage,
   validatePackage,
 } from "../src/index.js";
@@ -281,8 +282,8 @@ describe("the links of a package", () => {
 
 describe("the tree of a package", () => {
   /** The rules of the errors that a package has. */
-  const errorRules = (pkg: CasePackage) =>
-    validatePackage(pkg)
+  const errorRules = (pkg: CasePackage, options?: ReadOptions) =>
+    validatePackage(pkg, options)
       .filter(({ severity }) => severity === "error")
       .map(({ rule }) => rule);
 
@@ -340,9 +341,11 @@ describe("the tree of a package", () => {
   it("reads a chain of 50,000 items, and a ring of as many, without exhausting the stack", () => {
     const count = 50_000;
     const chain = Array.from({ length: count - 1 }, (_, at) => childOf(at, at + 2, at + 3));
-    expect(validatePackage(treeOf(count, [...chain, childOf(count, count + 1, 1)]))).toStrictEqual([]);
+    // Every item has a warning, so the list is long.
+    const all = { maxFindings: 1_000_000 };
+    expect(validatePackage(treeOf(count, [...chain, childOf(count, count + 1, 1)]), all)).toStrictEqual([]);
     const ring = [...chain, childOf(count, count + 1, 2)];
-    expect(errorRules(treeOf(count, ring))).toStrictEqual(["child-of-cycle"]);
+    expect(errorRules(treeOf(count, ring), all)).toStrictEqual(["child-of-cycle"]);
   });
 
   describe("the items of the document", () => {

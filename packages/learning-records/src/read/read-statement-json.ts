@@ -1,8 +1,15 @@
 import { type AnyNode, evaluate, type ObjectNode, parse } from "@humanwhocodes/momoa";
 import { DataError } from "@interopkit/core";
-import { checkString, nestsDeeperThan, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
+import {
+  checkString,
+  hasMoreTokensThan,
+  MAX_JSON_TOKENS,
+  nestsDeeperThan,
+  parseWith,
+  positiveIntegerSchema,
+  strictRecord,
+} from "@interopkit/core/checks";
 import * as v from "valibot";
-import { hasMoreTokensThan } from "./json-tokens.js";
 import { item, member } from "./path.js";
 
 /** The most bytes of text that `readStatementJson` reads unless the caller says otherwise: 10 MiB, the size of an LRS request. */
@@ -10,13 +17,6 @@ const DEFAULT_MAX_BYTES = 10_485_760;
 
 /** The deepest nesting of arrays and objects that `readStatementJson` reads unless the caller says otherwise. */
 const DEFAULT_MAX_DEPTH = 64;
-
-/**
- * The most tokens that `readStatementJson` reads unless the caller says otherwise. The parse takes up to 250 bytes of memory for
- * each token, measured on the worst text, so this keeps its peak near 280 MB; 1,000 Statements that use every property have
- * 461,000 tokens.
- */
-const DEFAULT_MAX_TOKENS = 1_000_000;
 
 /** The options of `readStatementJson`. */
 export interface ReadStatementJsonOptions {
@@ -120,7 +120,7 @@ export function readStatementJson(text: string, options?: ReadStatementJsonOptio
   const {
     maxBytes = DEFAULT_MAX_BYTES,
     maxDepth = DEFAULT_MAX_DEPTH,
-    maxTokens = DEFAULT_MAX_TOKENS,
+    maxTokens = MAX_JSON_TOKENS,
   } = parseWith(optionsSchema, options === undefined ? {} : options, "The options object");
   // A string of more units than the limit has more bytes than it, so the longer ones need no encoding.
   const bytes = text.length > maxBytes ? text.length : new TextEncoder().encode(text).byteLength;

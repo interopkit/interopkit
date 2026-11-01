@@ -19,5 +19,8 @@ refresh, revocation and registration for the grants that the host names (the aut
 unless it says otherwise), authentication by secret, by a JWT that a `Signer` signs, or by none, and a token cache
 that shares one token among callers.
 `@interopkit/core/checks` also reads the formats that the standards share (a date, a date and time of RFC 3339, a UUID, a URI, a
-language tag of RFC 5646), copies JSON within a depth limit, tells whether the text of JSON nests deeper than a limit, turns
-the issues of a parse into findings with a path, a rule and a sentence, and writes the sentence of the refusal of a reader.
+language tag of RFC 5646), copies JSON within a depth limit, tells whether the text of JSON nests deeper or has more tokens than a limit, turns
+the issues of a parse into findings with a path, a rule and a sentence, and writes the sentence of the refusal of a reader. It
+bounds the findings of a reader: `safeParseBounded` stops a parse at the first issue beyond a limit, and `createFindingSink`
+holds at most `DEFAULT_MAX_FINDINGS`, 1,000, and ends a list that stopped with a finding that says so. `readJson` of
+`@interopkit/core/http` also refuses a body above `maxTokens`.

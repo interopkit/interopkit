@@ -93,14 +93,15 @@ refuses them.
 
 ## Reading and validating
 
-`readCredential(value, options)` reads a credential and `readEntity(kind, value)` reads another object of a class. Both return a
+`readCredential(value, options)` reads a credential and `readEntity(kind, value, options)` reads another object of a class. Both return a
 copy in the model, and throw a `DataError` when the value has an error. `validateCredential(value, options)` and
-`validateEntity(kind, value)` judge the same value and return every finding as data. The validators take what the readers take:
+`validateEntity(kind, value, options)` judge the same value and return the findings as data, at most `maxFindings` of them. The validators take what the readers take:
 parsed text, or a value that is already in the model.
 
 | Option | Meaning                                                                                                                                                                                                                      | Default             |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `kind` | The kind of credential that the value must be, one of `CREDENTIAL_KINDS`. The default is the kind that the `type` names: `ClrCredential`, then `EndorsementCredential`, then `AchievementCredential` or `OpenBadgeCredential` | The kind of `type`  |
+| `kind` | The kind of credential that the value must be, one of `CREDENTIAL_KINDS`. The default is the kind that the `type` names: `ClrCredential`, then `EndorsementCredential`, then `AchievementCredential` or `OpenBadgeCredential` (`readCredential` and `validateCredential` only) | The kind of `type`  |
+| `maxFindings` | The most findings that a validator lists, or that a reader counts errors up to. The check stops at the first one beyond the limit and ends the list with a finding of the rule `findings-stopped`, so that a value that is wrong in a million places costs the memory of the limit. A reader counts errors and not warnings | 1,000 |
 
 | Function                                | Result                                                                                                                    |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |

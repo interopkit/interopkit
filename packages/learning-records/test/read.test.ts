@@ -173,6 +173,8 @@ describe("the options", () => {
     [{ role: null }, 'The options object is invalid at role: expected "lrs" or "provider", found null.'],
     [{ role: 5 }, 'The options object is invalid at role: expected "lrs" or "provider", found 5.'],
     [{ version: "2.0.0" }, 'The options object is invalid: unexpected property "version".'],
+    [{ maxFindings: 0 }, "The options object is invalid at maxFindings: expected a value of at least 1, found 0."],
+    [{ maxFindings: "5" }, 'The options object is invalid at maxFindings: expected a number, found "5".'],
   ])("refuses %j, as JavaScript or JSON passes it, in all three functions", (options, sentence) => {
     const given = JSON.parse(JSON.stringify(options));
     expect(() => readStatement(minimalStatement(), given)).toThrow(new DataError(sentence));
@@ -323,5 +325,94 @@ describe("validateStatements", () => {
     expect(summary(validateStatements([null, "x", 5, [], minimalStatement()]))).toStrictEqual(
       [0, 1, 2, 3].map((index) => ({ path: `[${index}]`, rule: "wrong-type", severity: "error" })),
     );
+  });
+});
+
+describe("the limit of findings", () => {
+  const stopped = {
+    path: "",
+    rule: "findings-stopped",
+    message: "the check stopped after 1000 findings, so there may be more.",
+    severity: "error",
+  };
+  /** A Statement whose context holds the given number of Agents that name no one. */
+  const withAgents = (count: number) => ({
+    ...minimalStatement(),
+    context: { contextAgents: Array.from({ length: count }, () => ({})) },
+  });
+
+  it("lists at most 1,000 findings of a Statement and ends the list with one that says it stopped", () => {
+    const findings = validateStatement(withAgents(100_000));
+    expect(findings).toHaveLength(1001);
+    expect(findings.at(-1)).toStrictEqual(stopped);
+  });
+
+  it("lists at most 1,000 findings of a list of numbers where an object belongs", () => {
+    const statement = { ...minimalStatement(), context: { contextAgents: Array.from({ length: 1_000_000 }, () => 0) } };
+    expect(validateStatement(statement)).toHaveLength(1001);
+  });
+
+  it("reads no more of the value than it takes to fill the list", () => {
+    let reads = 0;
+    const agents = new Proxy(
+      Array.from({ length: 100_000 }, () => ({})),
+      {
+        get(target, property, receiver) {
+          if (typeof property === "string" && /^\d+$/u.test(property)) reads += 1;
+          return Reflect.get(target, property, receiver);
+        },
+      },
+    );
+    expect(validateStatement({ ...minimalStatement(), context: { contextAgents: agents } })).toHaveLength(1001);
+    expect(reads).toBeLessThan(1000);
+  });
+
+  it("reads no more Statements of a batch than it takes to fill the list", () => {
+    let reads = 0;
+    const batch = new Proxy(
+      Array.from({ length: 100_000 }, () => ({})),
+      {
+        get(target, property, receiver) {
+          if (typeof property === "string" && /^\d+$/u.test(property)) reads += 1;
+          return Reflect.get(target, property, receiver);
+        },
+      },
+    );
+    expect(validateStatements(batch)).toHaveLength(1001);
+    expect(reads).toBeLessThan(1000);
+  });
+
+  it("keeps the findings in the order of the check, whatever the limit", () => {
+    const some = validateStatement(withAgents(500), { maxFindings: 5 });
+    expect(some).toHaveLength(6);
+    expect(validateStatement(withAgents(500), { maxFindings: 9 }).slice(0, 5)).toStrictEqual(some.slice(0, 5));
+  });
+
+  it("does not stop a list that has exactly the limit", () => {
+    const exact = validateStatement(withAgents(2));
+    expect(exact.length).toBeGreaterThan(1);
+    expect(validateStatement(withAgents(2), { maxFindings: exact.length })).toStrictEqual(exact);
+    expect(validateStatement(withAgents(2), { maxFindings: exact.length - 1 }).at(-1)?.rule).toBe("findings-stopped");
+  });
+
+  it("holds the findings of a whole batch to the limit, and stops looking at its Statements", () => {
+    const batch = Array.from({ length: 100_000 }, () => ({}));
+    const findings = validateStatements(batch);
+    expect(findings).toHaveLength(1001);
+    expect(findings[0]?.path).toBe("[0].actor");
+    expect(findings.at(-1)).toStrictEqual(stopped);
+    const same = Array.from({ length: 2000 }, () => ({ ...minimalStatement(), id: uuid(1) }));
+    const duplicates = validateStatements(same, { maxFindings: 10 });
+    expect(duplicates).toHaveLength(11);
+    expect(duplicates[0]?.rule).toBe("duplicate-id");
+  });
+
+  it("counts the errors of a reader alone, and makes it refuse when they stopped the check", () => {
+    expect(() => readStatement(withAgents(50), { maxFindings: 2 })).toThrow(
+      "At least 1 more error: the check stopped at its limit, and validateStatement with a higher maxFindings lists more.",
+    );
+    expect(() => readStatement(withAgents(50), { maxFindings: 1 })).toThrow("There may be more errors");
+    const provider = { ...providerStatement(), version: "1.0.0" };
+    expect(readStatement(provider, { role: "lrs", maxFindings: 1 })).toStrictEqual(provider);
   });
 });

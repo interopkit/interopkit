@@ -1,5 +1,6 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { copyJson, MAX_JSON_DEPTH, nestsDeeperThan } from "../src/checks.js";
+import { copyJson, hasMoreTokensThan, MAX_JSON_DEPTH, nestsDeeperThan } from "../src/checks.js";
 
 /** An object that nests the given number of levels, the outermost included. */
 function nest(levels: number): Record<string, unknown> {
@@ -97,5 +98,47 @@ describe("nestsDeeperThan", () => {
   it("reads a text that is not JSON and stops at the first level above the limit", () => {
     expect(nestsDeeperThan("[".repeat(100_000), 64)).toBe(true);
     expect(nestsDeeperThan('"unterminated [[[[', 1)).toBe(false);
+  });
+});
+
+describe("hasMoreTokensThan", () => {
+  /** The number of tokens of a value written as JSON, counted from the value and not from the text: the oracle. */
+  function tokensOf(value: unknown): number {
+    if (Array.isArray(value))
+      return 2 + Math.max(0, value.length - 1) + value.reduce((sum, entry) => sum + tokensOf(entry), 0);
+    if (typeof value === "object" && value !== null) {
+      const entries = Object.values(value);
+      return 2 + Math.max(0, entries.length - 1) + entries.reduce((sum, entry) => sum + 2 + tokensOf(entry), 0);
+    }
+    return 1;
+  }
+
+  it("agrees with the count of the value for any JSON value, written in any way", () => {
+    fc.assert(
+      fc.property(fc.jsonValue(), fc.constantFrom(undefined, 1, "\t", "\n  "), (value, indent) => {
+        const text = JSON.stringify(value, null, indent);
+        const count = tokensOf(JSON.parse(text));
+        expect(hasMoreTokensThan(text, count)).toBe(false);
+        expect(hasMoreTokensThan(text, count - 1)).toBe(true);
+      }),
+      { seed: 20_261_102, numRuns: 300 },
+    );
+  });
+
+  it("does not count what is inside a string, escaped quotes included", () => {
+    const text = JSON.stringify(['[{"a":1,2}] "', 'a\\"', "\\", ",:"]);
+    expect(hasMoreTokensThan(text, 9)).toBe(false);
+    expect(hasMoreTokensThan(text, 8)).toBe(true);
+  });
+
+  it("counts a number or a literal as one token, whatever its length", () => {
+    expect(hasMoreTokensThan("[-12345.678e+90,false]", 5)).toBe(false);
+    expect(hasMoreTokensThan("[-12345.678e+90,false]", 4)).toBe(true);
+  });
+
+  it("stops at the first token above the limit, so that a text without end costs little", () => {
+    expect(hasMoreTokensThan(`[${"0,".repeat(1_000_000)}`, 10)).toBe(true);
+    expect(hasMoreTokensThan("", 0)).toBe(false);
+    expect(hasMoreTokensThan("   \n\t ", 0)).toBe(false);
   });
 });

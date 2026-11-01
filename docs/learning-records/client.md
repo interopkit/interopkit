@@ -114,6 +114,7 @@ A precondition that the version does not require is sent when the caller gives i
 | `authorization` | `LrsClientConfig`               | none       | `(options) => Promise<string \| undefined>`: the `Authorization` header, asked for before each request |
 | `timeoutMs`     | `LrsClientConfig`               | 10,000     | The most milliseconds of one request, from the request to the last byte                                |
 | `maxBytes`      | `LrsClientConfig`               | 10,485,760 | The most bytes of one answer                                                                           |
+| `maxTokens`     | `LrsClientConfig`               | 1,000,000  | The most tokens of JSON in one answer, counted before it is parsed                                     |
 | `signal`        | `LrsClientConfig`               | none       | Ends every wait of the client                                                                          |
 | `attachments`   | `SendOptions`                   | none       | The data of the Attachments, which makes the request a multipart message                               |
 | `format`        | `GetStatementOptions`           | `"exact"`  | `ids`, `exact` or `canonical`                                                                          |
@@ -134,7 +135,7 @@ The filters of `queryStatements` are the properties of `StatementQuery`: `agent`
 | Redirects                                        | None followed                                     | `ServiceError` with the status |
 | Pages of a query                                 | No limit; each is fetched when the iteration asks | The caller stops the iteration |
 | Parts of a multipart answer                      | 10,000                                            | `DataError`                    |
-| Bytes, depth and tokens of the JSON of an answer | `maxBytes`, 64 levels, 1,000,000 tokens           | `DataError`                    |
+| Bytes, depth and tokens of the JSON of an answer | `maxBytes`, 64 levels, `maxTokens` (1,000,000)    | `DataError`                    |
 
 ## Errors
 

@@ -80,6 +80,7 @@ that has no body, such as 204, takes `null`.
 | ----------------------------- | -------------------------------- | ------ | ------------ | ------------------------------------------------------------------- |
 | `readJson` `options.maxBytes` | 1,048,576                        | bytes  | `DataError`  | The size of the body, counted in bytes                              |
 | `readJson` `options.maxDepth` | 64                               | levels | `DataError`  | Arrays and objects nested inside each other: `[]` is 1, `[[]]` is 2 |
+| `readJson` `options.maxTokens` | 1,000,000                       | tokens | `DataError`  | Each bracket, brace, colon and comma, each string, each number and each `true`, `false` and `null` |
 | `jsonResponse` `headers`      | none                             |        |              | Win over the `content-type` that it sets                            |
 | `jsonResponse` `type`         | `application/json;charset=UTF-8` |        |              | The media type of the answer                                        |
 
@@ -92,6 +93,7 @@ handlers of the packages document.
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | Text                          | UTF-8 only. A byte sequence that is not UTF-8 is refused, never replaced. A byte order mark at the start is dropped            |
 | JSON depth                    | Checked on the text before it is parsed, so a body of a hundred thousand opening brackets is refused without building anything |
+| JSON tokens                   | Counted on the text before it is parsed, so a body of a million empty arrays is refused without building anything: the memory of a parse grows with the tokens, not the bytes |
 | JSON keys                     | `__proto__` becomes an own property of the result and changes no prototype                                                     |
 | A parameter that occurs twice | Refused in a query and in a form (RFC 6749 section 3.1)                                                                        |
 | Form media type               | `application/x-www-form-urlencoded`, in any case and with parameters such as `charset`; any other type is refused              |
