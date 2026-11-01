@@ -115,3 +115,49 @@ export function copyJson(value: unknown, path: string): JsonValueCopy;
 export function copyJson(value: unknown, path: string): JsonValueCopy {
   return copy(value, 0, path);
 }
+
+const QUOTE = 0x22;
+const BACKSLASH = 0x5c;
+const OPEN_BRACE = 0x7b;
+const CLOSE_BRACE = 0x7d;
+const OPEN_BRACKET = 0x5b;
+const CLOSE_BRACKET = 0x5d;
+
+/** Returns the index of the quote that ends the string which starts at `start`, or the length of the text when it does not end. */
+function endOfString(text: string, start: number): number {
+  for (let index = start + 1; index < text.length; index += 1) {
+    const unit = text.charCodeAt(index);
+    // A backslash escapes the next unit, which may be a quote.
+    if (unit === BACKSLASH) index += 1;
+    else if (unit === QUOTE) return index;
+  }
+  return text.length;
+}
+
+/**
+ * Tells whether the arrays and objects of a text of JSON nest deeper than a limit, reading no further than the first level
+ * above it. `[]` has depth 1 and `[[]]` has depth 2.
+ *
+ * @remarks
+ * The text need not be valid JSON, and nothing is built from it, so a text of ten thousand opening brackets is refused
+ * before a parser that recurses can overflow the stack on it.
+ *
+ * @param text - The text.
+ * @param maxDepth - The deepest nesting that is allowed.
+ * @returns Whether the text nests deeper.
+ */
+export function nestsDeeperThan(text: string, maxDepth: number): boolean {
+  let depth = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const unit = text.charCodeAt(index);
+    if (unit === QUOTE) {
+      index = endOfString(text, index);
+    } else if (unit === OPEN_BRACE || unit === OPEN_BRACKET) {
+      depth += 1;
+      if (depth > maxDepth) return true;
+    } else if (unit === CLOSE_BRACE || unit === CLOSE_BRACKET) {
+      depth -= 1;
+    }
+  }
+  return false;
+}

@@ -54,6 +54,7 @@ export default defineConfig({
       nodeProject("core"),
       nodeProject("competency-frameworks"),
       nodeProject("achievement-credentials"),
+      nodeProject("learning-records"),
       nodeProject("learning-analytics"),
       nodeProject("selective-disclosure"),
       {
@@ -98,6 +99,15 @@ export default defineConfig({
         test: {
           name: "achievement-credentials-spec",
           include: ["packages/achievement-credentials/test/**/*.spec.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The tests that read files that `pnpm schemas` downloads and compare the readers with them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "learning-records-corpus",
+          include: ["packages/learning-records/test/**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
         },
       },
@@ -150,6 +160,15 @@ export default defineConfig({
         },
       },
       {
+        // The examples of the xAPI base standard: `pnpm spec-examples` downloads them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "learning-records-spec",
+          include: ["packages/learning-records/test/**/*.spec.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
         // The examples of the specifications: `pnpm spec-examples` downloads them.
         resolve: { alias: SOURCES },
         test: {
@@ -174,6 +193,7 @@ export default defineConfig({
         "packages/competency-frameworks/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/achievement-credentials/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/learning-analytics/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
+        "packages/learning-records/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/selective-disclosure/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/tool-integration/src/**": { statements: 98, branches: 95, functions: 100, lines: 99 },
       },

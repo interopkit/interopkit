@@ -15,7 +15,9 @@ export {
   isAbsoluteUri,
   isDate,
   isDateTime,
+  isLanguageTag,
   isUuid,
+  languageTagSchema,
   parseDateTime,
   uuidSchema,
 } from "./formats.js";
@@ -26,6 +28,7 @@ export {
   type JsonValue,
   type JsonValueCopy,
   MAX_JSON_DEPTH,
+  nestsDeeperThan,
 } from "./json.js";
 
 /**
@@ -501,7 +504,7 @@ const WRONG_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 /** The `type` of the issues of a value that has the right JSON type and a value that the property does not allow. */
-const INVALID_VALUES: ReadonlySet<string> = new Set(["picklist", "literal", "custom", "raw_transform"]);
+const INVALID_VALUES: ReadonlySet<string> = new Set(["picklist", "literal", "variant", "custom", "raw_transform"]);
 
 /** Returns the rule that an issue of a schema breaks. */
 function ruleOf(issue: v.BaseIssue<unknown>): string {
@@ -535,4 +538,21 @@ export function findingsOf(issues: readonly v.BaseIssue<unknown>[]): Finding[] {
     rule: ruleOf(issue),
     message: `${detailOf(issue).text}.`,
   }));
+}
+
+/**
+ * Writes the sentence of the `DataError` that a reader throws for a value with errors: the first error with its path, and how
+ * many more there are.
+ *
+ * @param label - Names the value, such as `The statement`.
+ * @param errors - The findings that are errors, at least one.
+ * @param validator - The function that lists every finding, such as `validateStatement`.
+ * @returns A sentence such as `The statement is invalid at actor: needs exactly one of mbox, found none. 2 more errors: validateStatement lists every finding.`
+ */
+export function refusalOf(label: string, errors: readonly Finding[], validator: string): string {
+  const [first, ...others] = errors;
+  const where = first === undefined || first.path === "" ? "" : ` at ${first.path}`;
+  const count = others.length === 1 ? "1 more error" : `${others.length} more errors`;
+  const more = others.length === 0 ? "" : ` ${count}: ${validator} lists every finding.`;
+  return `${label} is invalid${where}: ${first?.message ?? "it has an error."}${more}`;
 }

@@ -7,7 +7,9 @@ import {
   isAbsoluteUri,
   isDate,
   isDateTime,
+  isLanguageTag,
   isUuid,
+  languageTagSchema,
   parseDateTime,
   uuidSchema,
 } from "../src/checks.js";
@@ -126,6 +128,69 @@ describe("isAbsoluteUri", () => {
   });
 });
 
+describe("isLanguageTag", () => {
+  it.each([
+    // The examples of RFC 5646 Appendix A, and the forms of section 2.1.
+    "de",
+    "fr",
+    "ja",
+    "zh-Hant",
+    "zh-Hans-CN",
+    "sr-Latn-RS",
+    "sl-rozaj",
+    "sl-rozaj-biske",
+    "sl-nedis",
+    "de-CH-1901",
+    "hy-Latn-IT-arevela",
+    "de-DE",
+    "en-US",
+    "es-419",
+    "zh-yue",
+    "zh-cmn-Hans-CN",
+    "de-CH-x-phonebk",
+    "az-Arab-x-AZE-derbend",
+    "x-whatever",
+    "qaa-Qaaa-QM-x-southern",
+    "en-a-bbb-x-a-ccc",
+    "en-t-ja-u-co-phonebk",
+    "english",
+    "und",
+    "EN-us",
+    "i-klingon",
+    "I-Klingon",
+    "en-GB-oed",
+    "zh-min-nan",
+  ])("reads %j as a well-formed tag", (text) => {
+    expect(isLanguageTag(text)).toBe(true);
+  });
+
+  it.each([
+    "",
+    "e",
+    "en-",
+    "-en",
+    "en_US",
+    "en US",
+    "de-419-DE",
+    "a-DE",
+    "abcdefghi",
+    "de-DE-x",
+    "x-",
+    "x-abcdefghi",
+    "en-US-a",
+    "en-abcd-abcd",
+    "en-aaa-bbb-ccc-ddd",
+    "abcdefghi-US",
+    "i-unknown",
+    "__proto__",
+    "constructor",
+    "en-\u212A",
+    "\u017Fr",
+  ])("refuses %j", (text) => {
+    expect(isLanguageTag(text)).toBe(false);
+  });
+});
+
 describe("the schemas of the formats", () => {
   it.each([
     [
@@ -142,6 +207,13 @@ describe("the schemas of the formats", () => {
       "2024-06-13T18:46:03+00:00",
       "2024-06-13",
       'expected a date and time as RFC 3339, such as 2024-06-13T18:46:03+00:00, found "2024-06-13"',
+    ],
+    [
+      "languageTagSchema",
+      languageTagSchema,
+      "en-US",
+      "en_US",
+      'expected a language tag of RFC 5646, such as en-US, found "en_US"',
     ],
     [
       "absoluteUriSchema",

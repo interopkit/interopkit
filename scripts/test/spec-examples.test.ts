@@ -8,6 +8,7 @@ import {
   fetchSpecExamples,
   jsonBlocks,
   loadLock,
+  markdownJsonBlocks,
   readSpecExamples,
 } from "../spec-examples.ts";
 
@@ -46,6 +47,36 @@ describe("jsonBlocks", () => {
   });
 });
 
+describe("markdownJsonBlocks", () => {
+  const Markdown = [
+    "# Examples",
+    "```",
+    '{ "a": 1 }',
+    "```  ",
+    "```json",
+    '[{ "b": [1, 2] }]',
+    "```",
+    "A fragment of members:",
+    "```",
+    '"definition": { "name": "x" }',
+    "```",
+    "```",
+    "POST /statements",
+    "```",
+    "```text",
+    "{ ... }",
+    "```",
+  ].join("\n");
+
+  it("returns the JSON of the fenced blocks in order, the fence being any language and trailing spaces", () => {
+    expect(markdownJsonBlocks(Markdown)).toStrictEqual([{ a: 1 }, [{ b: [1, 2] }], { definition: { name: "x" } }]);
+  });
+
+  it("skips a block that is not JSON, and reads nothing from text outside a fence", () => {
+    expect(markdownJsonBlocks('{ "a": 1 }\n```\nnot json\n```')).toStrictEqual([]);
+  });
+});
+
 describe("examplesHash", () => {
   it("is the SHA-256 of the examples as JSON, and changes when an example changes", () => {
     // printf '[{"a":1}]' | shasum -a 256
@@ -60,7 +91,7 @@ describe("the lock", () => {
     const lock = loadLock(join(import.meta.dirname, "../.."));
     expect(lock.length).toBeGreaterThan(0);
     for (const { url, file, sha256 } of lock) {
-      expect(url).toMatch(/^https:\/\/www\.(?:imsglobal\.org\/spec|w3\.org\/TR)\//u);
+      expect(url).toMatch(/^https:\/\/(?:www\.(?:imsglobal\.org\/spec|w3\.org\/TR)\/|opensource\.ieee\.org\/xapi\/)/u);
       expect(file).toMatch(/^[a-z0-9-]+\.json$/);
       expect(sha256).toMatch(/^[0-9a-f]{64}$/);
     }
@@ -69,12 +100,12 @@ describe("the lock", () => {
 
 describe("fetchSpecExamples", () => {
   /** A root with a lock of one page, and a `fetch` that answers with the given page. */
-  function setUp(name: string, hash: string, page: string): string {
+  function setUp(name: string, hash: string, page: string, url = "https://spec.example/page"): string {
     const root = join(directory, name);
     mkdirSync(join(root, "scripts"), { recursive: true });
     writeFileSync(
       join(root, "scripts/spec-examples.lock.json"),
-      JSON.stringify([{ url: "https://spec.example/page", file: "page.json", sha256: hash }]),
+      JSON.stringify([{ url, file: "page.json", sha256: hash }]),
     );
     vi.stubGlobal("fetch", () => Promise.resolve(new Response(page)));
     return root;
@@ -86,6 +117,13 @@ describe("fetchSpecExamples", () => {
     expect(JSON.parse(readFileSync(join(examplesDirectory(root), "page.json"), "utf8"))).toStrictEqual(
       jsonBlocks(PAGE),
     );
+  });
+
+  it("reads the fenced blocks of a file whose address ends in .md, and the preformatted blocks of any other", async () => {
+    const markdown = '```\n{ "a": 1 }\n```\n<pre>{ "b": 2 }</pre>';
+    const root = setUp("markdown", examplesHash([{ a: 1 }]), markdown, "https://spec.example/examples.md");
+    await fetchSpecExamples(root);
+    expect(JSON.parse(readFileSync(join(examplesDirectory(root), "page.json"), "utf8"))).toStrictEqual([{ a: 1 }]);
   });
 
   it("writes nothing and names both hashes when the examples differ from the pinned ones", async () => {

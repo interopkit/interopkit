@@ -1,0 +1,15 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.build.json",
+  "sourceLinkTemplate": "https://github.com/interopkit/interopkit/blob/{gitRevision}/packages/learning-records/{path}#L{line}",
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": true
+  },
+  "readme": "README.md",
+  "excludePrivate": true,
+  "projectDocuments": ["../../docs/learning-records/*.md"],
+  "treatWarningsAsErrors": true
+}

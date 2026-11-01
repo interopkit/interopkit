@@ -70,6 +70,7 @@ option. Inner functions trust their callers.
 | `httpsUrlSchema`                                    | An absolute `https` URL                                                                                                                                                                                                                                                                                                     |
 | `uuidSchema`, `dateSchema`, `dateTimeSchema`        | A UUID as 8-4-4-4-12 digits, a date that exists, and a date and time of RFC 3339 with an offset (see Formats)                                                                                                                                                                                                               |
 | `absoluteUriSchema`                                 | A URI with a scheme, such as `https://example.org/x`                                                                                                                                                                                                                                                                        |
+| `languageTagSchema`                                 | A language tag that is well-formed by RFC 5646, such as `en-US` (see Formats)                                                                                                                                                                                                                                               |
 
 The `Schema<TOutput>` type is a valibot schema of unknown input.
 
@@ -89,6 +90,10 @@ parse and owns the rule names:
 | `invalid-value`    | A value is outside a vocabulary, or a guard or a transform refuses it                                                          |
 | `too-few-entries`  | A list is shorter than the least that the schema allows                                                                        |
 
+A reader that throws writes the sentence of its `DataError` with `refusalOf(label, errors, validator)`: the first error with its
+path, how many errors follow, and the function that lists every finding, such as `The statement is invalid at actor: needs exactly
+one of mbox, mbox_sha1sum, openid and account, found none. 1 more error: validateStatement lists every finding.`
+
 ## Formats
 
 | Export                  | Reads                                                                                                                                                                                  |
@@ -98,6 +103,7 @@ parse and owns the rule names:
 | `isDateTime(text)`      | Whether `parseDateTime` reads it                                                                                                                                                       |
 | `isUuid(text)`          | A UUID as 8-4-4-4-12 hexadecimal digits of either case, which is the `uuid` of valibot                                                                                                 |
 | `isAbsoluteUri(text)`   | A URI that has a scheme and no white space, which `URL` parses                                                                                                                         |
+| `isLanguageTag(text)`   | A language tag that is well-formed by RFC 5646 section 2.1, grandfathered tags included; a subtag is not looked up in the registry                                                     |
 
 The `isoDate` and `isoTimestamp` of valibot are patterns, so that they accept `2023-02-31`; the date and the date and time are read
 by hand because valibot has no check that knows the calendar. A caller that needs a narrower form, such as the
@@ -113,6 +119,9 @@ the value is not JSON. `JsonValue` and `JsonObject` are the types.
 | `MAX_JSON_DEPTH` | 64    | The levels that arrays and objects nest in `copyJson`, and the default depth of `readJson`      |
 
 A member named `__proto__` stays a member of the copy and never changes its prototype.
+
+`nestsDeeperThan(text, maxDepth)` tells whether the arrays and objects of a text of JSON nest deeper than a limit, without parsing it: the text may be
+any string, and a string literal hides its brackets. `readJson` and `readStatementJson` check the depth with it before they parse.
 
 ## Errors
 

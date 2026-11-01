@@ -100,6 +100,70 @@ export function isAbsoluteUri(text: string): boolean {
   return ABSOLUTE_URI.test(text) && URL.canParse(text);
 }
 
+const ALPHA = "[A-Za-z]";
+const DIGIT = "[0-9]";
+const ALPHANUMERIC = "[A-Za-z0-9]";
+/**
+ * A well-formed language tag in the order of the ABNF of RFC 5646 section 2.1: a language with up to three extended
+ * languages, a script, a region, variants, extensions and private use. The classes name both cases of a letter, because the
+ * `i` flag with `u` also matches the long s and the Kelvin sign.
+ */
+const LANGUAGE_PATTERN = [
+  `(?:${ALPHA}{2,3}(?:-${ALPHA}{3}(?:-${ALPHA}{3}){0,2})?|${ALPHA}{4}|${ALPHA}{5,8})`,
+  `(?:-${ALPHA}{4})?`,
+  `(?:-(?:${ALPHA}{2}|${DIGIT}{3}))?`,
+  `(?:-(?:${ALPHANUMERIC}{5,8}|${DIGIT}${ALPHANUMERIC}{3}))*`,
+  `(?:-[0-9A-WY-Za-wy-z](?:-${ALPHANUMERIC}{2,8})+)*`,
+  `(?:-[Xx](?:-${ALPHANUMERIC}{1,8})+)?`,
+].join("");
+const LANGUAGE_TAG = new RegExp(`^(?:${LANGUAGE_PATTERN}|[Xx](?:-${ALPHANUMERIC}{1,8})+)$`, "u");
+/** The tags that RFC 5646 section 2.2.8 keeps from RFC 3066 and that the grammar above does not produce, in lower case. */
+const GRANDFATHERED: ReadonlySet<string> = new Set([
+  "en-gb-oed",
+  "i-ami",
+  "i-bnn",
+  "i-default",
+  "i-enochian",
+  "i-hak",
+  "i-klingon",
+  "i-lux",
+  "i-mingo",
+  "i-navajo",
+  "i-pwn",
+  "i-tao",
+  "i-tay",
+  "i-tsu",
+  "sgn-be-fr",
+  "sgn-be-nl",
+  "sgn-ch-de",
+  "art-lojban",
+  "cel-gaulish",
+  "no-bok",
+  "no-nyn",
+  "zh-guoyu",
+  "zh-hakka",
+  "zh-min",
+  "zh-min-nan",
+  "zh-xiang",
+]);
+
+/**
+ * Tells whether text is a language tag that is well-formed by RFC 5646 section 2.1, such as `en`, `zh-Hant-TW` or
+ * `x-private`.
+ *
+ * @remarks
+ * The check is of the form of the subtags, which is what xAPI asks an LRS to validate. It does not look a subtag up in the
+ * registry of IANA, so `qq` is well-formed and names no language. `Intl.getCanonicalLocales` is not used because it follows
+ * the grammar of Unicode locale identifiers, which is stricter than RFC 5646, and it differs between engines.
+ *
+ * @param text - The text.
+ * @returns Whether it is a well-formed tag.
+ * @see {@link https://www.rfc-editor.org/rfc/rfc5646#section-2.1 | RFC 5646 section 2.1}
+ */
+export function isLanguageTag(text: string): boolean {
+  return LANGUAGE_TAG.test(text) || GRANDFATHERED.has(text.toLowerCase());
+}
+
 /** A UUID as 8-4-4-4-12 hexadecimal digits of either case: the form that the JSON schemas of 1EdTech ask for. */
 export const uuidSchema = v.pipe(
   v.string(),
@@ -128,6 +192,12 @@ export const absoluteUriSchema = v.pipe(
     isAbsoluteUri,
     (issue) => `expected a URI with a scheme, such as https://example.org/x, found ${issue.received}`,
   ),
+);
+
+/** A language tag that is well-formed by RFC 5646, such as `en-US`. */
+export const languageTagSchema = v.pipe(
+  v.string(),
+  v.check(isLanguageTag, (issue) => `expected a language tag of RFC 5646, such as en-US, found ${issue.received}`),
 );
 
 /**

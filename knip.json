@@ -13,6 +13,9 @@
     "packages/learning-analytics": {
       "entry": ["src/index.ts"]
     },
+    "packages/learning-records": {
+      "entry": ["src/index.ts"]
+    },
     "packages/selective-disclosure": {
       "entry": ["src/index.ts"]
     },

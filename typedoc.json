@@ -7,6 +7,7 @@
     "packages/tool-integration",
     "packages/learning-analytics",
     "packages/competency-frameworks",
+    "packages/learning-records",
     "packages/selective-disclosure",
     "packages/achievement-credentials"
   ],

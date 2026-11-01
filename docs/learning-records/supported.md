@@ -1,0 +1,39 @@
+# Supported
+
+What `@interopkit/learning-records` implements of xAPI. The package implements the standard and is not certified or endorsed
+by IEEE or ADL. Section numbers are those of the LRS book (4.x) and the Content book (5.x) of IEEE 9274.1.1.
+
+```mermaid
+flowchart LR
+  spec["IEEE 9274.1.1<br/>xAPI 2.0"] --> model["Statement model<br/>4.2.2, 5.2.2"]
+  model --> read["Readers and validators<br/>LRS rules 4.2, provider rules 5.2"]
+  model --> text["Text of a request<br/>4.2.1, 4.1.6.1"]
+  spec -.-> outside["Not included here:<br/>1.0.3, requests, store,<br/>profiles, cmi5"]
+```
+
+| Area               | Specification                | Included                                                                                                                                       |
+| ------------------ | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| The Statement      | 4.2.2, 5.2.2                 | `id`, `actor`, `verb`, `object`, `result`, `context`, `timestamp`, `stored`, `authority`, `version`, `attachments`                             |
+| Agents and Groups  | 4.2.2.1                      | The four identifiers and the rule of exactly one, anonymous and identified Groups, Accounts, no Group inside `member`                          |
+| Verbs              | 4.2.2.2                      | `id` and `display`; the voided verb with its Statement Reference                                                                               |
+| Objects            | 4.2.2.3                      | Activities with definitions, Agents, Groups, Statement References and SubStatements, with no SubStatement inside a SubStatement                |
+| Interactions       | 4.2.2.3                      | The ten interaction types, their lists of components, the forms of their response patterns and the characterstring parameters                  |
+| Results and Scores | 4.2.2.4                      | Every property, the range of `scaled`, and `raw` between `min` and `max`                                                                       |
+| Contexts           | 4.2.2.5                      | Every property, `contextAgents` and `contextGroups` with `relevantTypes`, `contextActivities` returned as lists                                |
+| Attachments        | 4.2.2.6                      | The header of an Attachment: usage, display, content type, length, hash, address                                                               |
+| Rejection          | 4.2.1, 4.2.4.1, 4.2.4.2      | Missing properties, extra properties, nulls, wrong types, empty and ill-formed strings, keys and values of another case, IRIs without a scheme |
+| Voiding            | 4.2.5, 5.2.5                 | The voided verb needs a Statement Reference with an id; the target need not exist                                                              |
+| Data types         | 4.2.7, 5.2.7                 | IRIs, extensions, language maps, UUIDs, timestamps, durations at 0.01 second                                                                   |
+| Provider rules     | 5.2.1, 5.2.4.1, 5.2.7        | UTC times, millisecond precision, `version` 2.0.0, no `stored` and `authority`, an id, no empty objects, lists of Activities                   |
+| Batches            | 4.1.6.1                      | Two Statements with one id are refused                                                                                                         |
+| Text of a request  | 4.2.1, 4.1.5                 | RFC 8259 syntax, a property given twice refused, limits of size and depth                                                                      |
+| Examples           | The IEEE examples repository | Every Statement and batch of the examples is read, at a pinned hash                                                                            |
+
+## Not included
+
+| Not included                                      | Why                                                 |
+| ------------------------------------------------- | --------------------------------------------------- |
+| xAPI 1.0.3                                        | Its own rule set and routes; the readers apply 2.0  |
+| Building, comparing and formatting Statements     | Other modules of the package, with their own guides |
+| Signatures, attachments in a request, client, LRS | Other modules of the package                        |
+| xAPI Profiles, cmi5, launch                       | Standards of their own                              |

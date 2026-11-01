@@ -312,6 +312,22 @@ importers:
         specifier: ^4.10.2
         version: 4.10.2
 
+  packages/learning-records:
+    dependencies:
+      '@humanwhocodes/momoa':
+        specifier: 3.3.13
+        version: 3.3.13
+      '@interopkit/core':
+        specifier: workspace:^
+        version: link:../core
+      valibot:
+        specifier: 1.5.0
+        version: 1.5.0(typescript@6.0.3)
+    devDependencies:
+      fast-check:
+        specifier: ^4.10.2
+        version: 4.10.2
+
   packages/selective-disclosure:
     dependencies:
       '@digitalbazaar/di-sd-primitives':
@@ -993,6 +1009,10 @@ packages:
 
   '@gerrit0/mini-shiki@3.23.0':
     resolution: {integrity: sha512-bEMORlG0cqdjVyCEuU0cDQbORWX+kYCeo0kV1lbxF5bt4r7SID2l9bqsxJEM0zndaxpOUT7riCyIVEuqq/Ynxg==}
+
+  '@humanwhocodes/momoa@3.3.13':
+    resolution: {integrity: sha512-AbKq3EW41+HY6pNMJgAOrz68iyiTTf0Nr1JRHHfuG5zwniJ9Dw8J3U7oa1I2ptpqYwmEf1sXKOGK6lbdZ9eqmg==}
+    engines: {node: '>=18'}
 
   '@jridgewell/resolve-uri@3.1.2':
     resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
@@ -3129,6 +3149,8 @@ snapshots:
       '@shikijs/themes': 3.23.0
       '@shikijs/types': 3.23.0
       '@shikijs/vscode-textmate': 10.0.2
+
+  '@humanwhocodes/momoa@3.3.13': {}
 
   '@jridgewell/resolve-uri@3.1.2': {}
 

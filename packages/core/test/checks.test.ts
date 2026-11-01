@@ -31,6 +31,7 @@ import {
   pathOf,
   positiveIntegerSchema,
   positiveSchema,
+  refusalOf,
   strictRecord,
 } from "../src/checks.js";
 import { DataError } from "../src/index.js";
@@ -362,6 +363,55 @@ describe("findingsOf", () => {
     for (const finding of findingsOfValue({ name: 5, inner: { id: 1 } })) {
       expect(finding.message).not.toContain(finding.path);
     }
+  });
+});
+
+describe("findingsOf for a variant", () => {
+  const schema = v.pipe(
+    guardSchema(isRecord, "an object"),
+    v.variant(
+      "kind",
+      [v.strictObject({ kind: v.literal("a") }), v.strictObject({ kind: v.optional(v.literal("b")) })],
+      (issue) => `expected "a" or "b", found ${issue.received}`,
+    ),
+  );
+
+  it("gives an invalid value, at the discriminator, for a kind that no option has", () => {
+    expect(findingsOf(v.safeParse(schema, { kind: "c" }).issues ?? [])).toStrictEqual([
+      { path: "kind", rule: "invalid-value", message: 'expected "a" or "b", found "c".' },
+    ]);
+  });
+
+  it("reads an option whose discriminator is absent when the option allows that", () => {
+    expect(v.safeParse(schema, {}).success).toBe(true);
+  });
+});
+
+describe("refusalOf", () => {
+  const first = { path: "actor", rule: "identifier-count", message: "needs one identifier." };
+  const second = { path: "verb", rule: "missing-property", message: 'missing the property "id".' };
+
+  it("names the path and the sentence of the first error", () => {
+    expect(refusalOf("The statement", [first], "validateStatement")).toBe(
+      "The statement is invalid at actor: needs one identifier.",
+    );
+  });
+
+  it("leaves out the path of an error about the value as a whole", () => {
+    expect(refusalOf("The statement", [{ ...first, path: "" }], "validateStatement")).toBe(
+      "The statement is invalid: needs one identifier.",
+    );
+  });
+
+  it("counts the other errors and names the function that lists them", () => {
+    expect(refusalOf("The statement", [first, second], "validateStatement")).toBe(
+      "The statement is invalid at actor: needs one identifier. 1 more error: validateStatement lists every finding.",
+    );
+    expect(refusalOf("The statement", [first, second, second], "validateStatement")).toContain("2 more errors: ");
+  });
+
+  it("says that there is an error when it is given none", () => {
+    expect(refusalOf("The statement", [], "validateStatement")).toBe("The statement is invalid: it has an error.");
   });
 });
 

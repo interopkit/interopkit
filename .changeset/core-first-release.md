@@ -3,7 +3,7 @@
 ---
 
 The foundation of `@interopkit/tool-integration`, `@interopkit/learning-analytics`, `@interopkit/competency-frameworks`,
-`@interopkit/selective-disclosure` and `@interopkit/achievement-credentials`: `InteropkitError`, `DataError` and
+`@interopkit/learning-records`, `@interopkit/selective-disclosure` and `@interopkit/achievement-credentials`: `InteropkitError`, `DataError` and
 `ServiceError`, the checks of arguments, a `Clock`, `requestService` and `callService`, the calls to a service over HTTP with
 a deadline, a size limit of 65,536 bytes unless the call says otherwise, no redirects, any of GET, POST, PUT, DELETE and HEAD,
 bodies as text or bytes, statuses that a call returns as values, a `ServiceError` that carries the status, the headers and the
@@ -16,5 +16,6 @@ compact JWS and refuses a signature of the wrong form. `Random` and `SYSTEM_RAND
 `@interopkit/core/oauth` has the OAuth 2.0 clients on `oauth4webapi`: client credentials, authorization code with PKCE,
 refresh, revocation and registration, authentication by secret, by a JWT that a `Signer` signs, or by none, and a token cache
 that shares one token among callers.
-`@interopkit/core/checks` also reads the formats that the standards share (a date, a date and time of RFC 3339, a UUID, a URI),
-copies JSON within a depth limit, and turns the issues of a parse into findings with a path, a rule and a sentence.
+`@interopkit/core/checks` also reads the formats that the standards share (a date, a date and time of RFC 3339, a UUID, a URI, a
+language tag of RFC 5646), copies JSON within a depth limit, tells whether the text of JSON nests deeper than a limit, turns
+the issues of a parse into findings with a path, a rule and a sentence, and writes the sentence of the refusal of a reader.

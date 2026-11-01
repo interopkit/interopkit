@@ -8,6 +8,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 `@interopkit/core` is the shared foundation, `@interopkit/tool-integration` implements LTI 1.3 in both roles, and
 `@interopkit/learning-analytics` implements Caliper Analytics 1.2, `@interopkit/competency-frameworks` implements the
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
+`@interopkit/learning-records` implements the xAPI Statement and its readers,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
 implements the model and the readers of Open Badges 3.0 and CLR 2.0, and its builders and comparisons.
 
@@ -19,6 +20,7 @@ flowchart BT
   plat["tool-integration: platform"]
   la["learning-analytics"]
   cf["competency-frameworks<br/>model, read, version, graph, client, provider"]
+  lr["learning-records<br/>model, read"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
   ac["achievement-credentials<br/>model, read, issue, compare"]
   proto --> core
@@ -26,6 +28,7 @@ flowchart BT
   plat --> proto
   la --> core
   cf --> core
+  lr --> core
   sd --> core
   ac --> core
   gates["pnpm lint, check:standards, check:rules,<br/>typecheck, test, knip"] --> merge["Merge"]
@@ -51,7 +54,10 @@ Use these words with these meanings in code, comments and docs.
 | endpoint     | The service that receives the envelopes                                                                                         |
 | deadline     | The time a call to a service may take, `timeoutMs`                                                                              |
 | framework    | A CASE competency framework, held as a package: one document with its items, associations, definitions and rubrics              |
-| finding      | A `CaseIssue` or `CredentialIssue` of a reader: where, which rule, what is wrong, and whether it is an error or a warning       |
+| finding      | A `CaseIssue`, `CredentialIssue` or `StatementIssue` of a reader: where, which rule, what is wrong, and its severity
+| Statement    | An xAPI Statement, with a capital S: an Actor, a verb and an Object, with a result and a context when there are any
+| LRS          | The Learning Record Store: the service that receives Statements and shall reject those that break the rules
+| LRP          | A Learning Record Provider: the system that makes Statements and sends them to an LRS
 | credential   | An Open Badges or CLR verifiable credential, held as a value of the model: an achievement, an endorsement or a CLR              |
 | provider     | The service that publishes frameworks to consumers over the CASE REST binding: `handleCaseRequest` over a `FrameworkStore`      |
 | base proof   | The proof an issuer gives a holder: an HMAC key, the public key of the proof and a signature for each statement to hide         |
@@ -78,6 +84,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                             |
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
+| `packages/learning-records/`         | xAPI 2.0: `model/`, `read/`                                                                         |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
 | `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`                                |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`          |
@@ -124,9 +131,9 @@ current behavior only, and never how it came to be. A package's changeset is wri
 ## Boundaries
 
 - interopkit owns the messages between a platform and a tool, the gradebook protocol, the Caliper event model, sensor and
-  endpoint, and the CASE model with its readers, the questions a consumer asks of a framework, the client of its REST binding
-  and the handlers of a CASE provider. It does not own what a launched tool shows, what a score means, which delivery event
-  becomes which Caliper event, QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to
+  endpoint, the CASE model with its readers, the questions a consumer asks of a framework, the client of its REST binding,
+  the handlers of a CASE provider, and the xAPI Statement with its readers. It does not own what a launched tool shows, what a
+  score means, which delivery event becomes which Caliper or xAPI event, QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to
   assesskit and measurekit, to the adapter of each product and to the host.
 - `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders and the comparison of credentials. It does not own keys, proofs,
   status lists, verification, baking, the APIs or Open Badges 2.0 (those arrive in later modules), nor wallets, issuing
@@ -152,7 +159,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   either. In `selective-disclosure`, `proof-value/`, `keys/` and `document/` import none of the other folders, and
   `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`
   imports no other module, `read/` builds on `model/` only, and `issue/` and `compare/` build on `model/` and `read/`
-  and never import each other. Imports never form cycles.
+  and never import each other. In `learning-records`, `model/` imports no other module. Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -161,7 +168,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   two weeks old, and recorded in `SECURITY.md` with their reason and license. `pnpm-workspace.yaml` sets
   `minimumReleaseAge` so that an install cannot pick a younger version.
 - Generic concerns use mature libraries: `jose` for JOSE, `valibot` for schemas, `uuid` for name-based UUIDs, `@noble/hashes` for the hashes of an identity, `oauth4webapi` for
-  OAuth 2.0 clients. Hand-written
+  OAuth 2.0 clients, `momoa` for the syntax tree of JSON where a property given twice must be seen. Hand-written
   code is for domain logic that no library does correctly, with the reason in the guide of the module.
 - Candidates that were compared and not adopted may be development dependencies, as counterparties in tests: Digital Bazaar's
   `ecdsa-sd-2023` suite with `@digitalbazaar/data-integrity`, `jsonld-signatures` and `@digitalbazaar/ecdsa-multikey`, which
@@ -190,7 +197,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - Values and functions: camelCase. Module-level constant data: SCREAMING_SNAKE. Types: PascalCase. Type parameters: `T` or `T`
   plus a name.
 - No package, folder or brand name holds a specification name: the packages are `tool-integration`, `learning-analytics`,
-  `competency-frameworks`, `selective-disclosure` and `achievement-credentials`, and `pnpm check:standards` fails on `lti` or
+  `competency-frameworks`, `selective-disclosure`, `achievement-credentials` and `learning-records`, and `pnpm check:standards` fails on `lti` or
   `caliper` in one. Modules and functions use the names descriptively (`ltiLaunch`, `CaliperEvent`).
 - Function options are `<Name>Options`. Labels are string unions in kebab-case (`"key-unknown"`).
 - An error has a kebab-case `reason` where a caller must branch on it, and a `status` where it maps to HTTP.
@@ -269,8 +276,12 @@ Where the code departs from `STANDARDS.md`, with the reason.
   `scripts/schema-oracle.ts` and `scripts/schema-arbitrary.ts`: its classes and properties are derived from the schemas, and
   generated values and values with one change get the verdict of the schemas. Each difference is in `spec-gaps.md` and pinned
   by a test.
-- The examples that a specification prints are read in a `*.spec.test.ts` with `readSpecPage`; one that is not conformant is
-  pinned with its findings and recorded in `spec-gaps.md`.
+- The examples that a specification prints are read in a `*.spec.test.ts` with `readSpecPage`, from a page or, when the address
+  ends in `.md`, from the fenced blocks of a Markdown file; one that is not conformant is pinned with its findings and
+  recorded in `spec-gaps.md`.
+- The rules of a standard that has no JSON schema are a table in `scripts/` (`scripts/xapi-rules.ts`): one entry for each
+  sentence of the standard, a value that breaks it, and what a reader of each role finds. A test runs the table against the
+  readers, and the table is written from the standard and not from the code.
 - The test vectors of a cryptosuite are reproduced byte for byte in a `*.spec.test.ts`: a base proof from the fixed secrets of the
   specification through the `internal.ts` of its module, which the package does not export and a host cannot reach, and a
   derived proof from that base proof. A counterparty suite signs, derives and verifies beside the package in every order, in a

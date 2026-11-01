@@ -2,7 +2,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { mapConcurrently, sha256 } from "./schemas.ts";
 
-/** A specification page whose JSON examples tests read, pinned to the SHA-256 of the examples that the page holds. */
+/**
+ * A specification page, or a Markdown file when the address ends in `.md`, whose JSON examples tests read, pinned to the
+ * SHA-256 of the examples that it holds.
+ */
 export interface SpecPage {
   /** The address of the page. */
   readonly url: string;
@@ -55,6 +58,26 @@ export function jsonBlocks(html: string): unknown[] {
   return values;
 }
 
+/**
+ * Returns the JSON values that the fenced blocks of a Markdown page hold, in order. A block of members, such as
+ * `"definition": { ... }`, is read as an object; a block that is not JSON is skipped.
+ */
+export function markdownJsonBlocks(markdown: string): unknown[] {
+  const values: unknown[] = [];
+  for (const [, block] of markdown.matchAll(/^```[^\n]*\n([\s\S]*?)^```[ \t]*$/gmu)) {
+    const text = (block ?? "").trim();
+    for (const candidate of [text, `{${text}}`]) {
+      try {
+        values.push(JSON.parse(candidate));
+        break;
+      } catch {
+        // A block of another language, a request line or a fragment with an ellipsis is not an example to read.
+      }
+    }
+  }
+  return values;
+}
+
 /** Returns the hash that a page is pinned by: the SHA-256 of its examples written as JSON. */
 export function examplesHash(blocks: readonly unknown[]): string {
   return sha256(new TextEncoder().encode(JSON.stringify(blocks)));
@@ -74,7 +97,8 @@ export function examplesDirectory(root: string): string {
 async function readPage(page: SpecPage): Promise<unknown[]> {
   const response = await fetch(page.url);
   if (!response.ok) throw new Error(`Downloading ${page.url} failed: HTTP ${response.status}.`);
-  return jsonBlocks(await response.text());
+  const text = await response.text();
+  return page.url.endsWith(".md") ? markdownJsonBlocks(text) : jsonBlocks(text);
 }
 
 /**

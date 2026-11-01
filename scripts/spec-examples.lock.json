@@ -33,5 +33,15 @@
     "url": "https://www.imsglobal.org/spec/clr/v2p0/main/",
     "file": "clr-2p0.json",
     "sha256": "430d41dcb9774faf4649fe923bb0bdeb3193df0fc593ad7c42e34861e6eb9113"
+  },
+  {
+    "url": "https://opensource.ieee.org/xapi/xapi-base-standard-examples/-/raw/efb2ebbc449fb8a476f7ddf88b48d0ba6effc999/9274.1.1%20xAPI%20Base%20Standard%20Examples.md",
+    "file": "xapi-base-standard-examples.json",
+    "sha256": "f020c08dd464b65eff894628a830a930bff34b0fbc9249f44950fc21206fa13f"
+  },
+  {
+    "url": "https://opensource.ieee.org/xapi/xapi-base-standard-examples/-/raw/efb2ebbc449fb8a476f7ddf88b48d0ba6effc999/PUT%20and%20POST%20requests%20Examples.md",
+    "file": "xapi-put-and-post-examples.json",
+    "sha256": "6af3b2040825489e08be90a7e325c3b13a80925f868f0678ad08e1e566c3f28e"
   }
 ]

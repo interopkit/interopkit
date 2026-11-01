@@ -2,7 +2,7 @@
 
 TypeScript packages for learning-platform interoperability: the launches, grades and other messages that pass between a
 learning platform and a tool (LTI 1.3), the learning analytics events that a system reports (Caliper Analytics 1.2), the
-competency frameworks that a provider publishes (CASE 1.1), the achievement credentials that an issuer awards (Open Badges
+competency frameworks that a provider publishes (CASE 1.1), the learning records that a system keeps (xAPI 2.0), the achievement credentials that an issuer awards (Open Badges
 3.0 and CLR 2.0), and the credentials that a holder shows in part (the `ecdsa-sd-2023` cryptosuite). The packages know
 nothing of QTI or of any product. A host passes in its storage, its `fetch`
 and its clock.
@@ -17,11 +17,13 @@ flowchart LR
     tool["@interopkit/tool-integration<br/>tool role, platform role"]
     analytics["@interopkit/learning-analytics<br/>events, sensor"]
     frameworks["@interopkit/competency-frameworks<br/>CASE model, readers, graph, provider"]
+    records["@interopkit/learning-records<br/>xAPI model, readers"]
     disclosure["@interopkit/selective-disclosure<br/>ecdsa-sd-2023"]
     credentials["@interopkit/achievement-credentials<br/>Open Badges and CLR model, readers, builders"]
     tool --> core
     analytics --> core
     frameworks --> core
+    records --> core
     disclosure --> core
     credentials --> core
   end
@@ -30,6 +32,7 @@ flowchart LR
   host --> tool
   host --> analytics
   host --> frameworks
+  host --> records
   host --> disclosure
   host --> credentials
   tool <-->|"launches, grades"| platform
@@ -42,6 +45,7 @@ flowchart LR
 | [`@interopkit/tool-integration`](packages/tool-integration/README.md)               | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Version 0.1; its README says what it contains                                |
 | [`@interopkit/learning-analytics`](packages/learning-analytics/README.md)           | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Version 0.1; its README says what it contains                                    |
 | [`@interopkit/competency-frameworks`](packages/competency-frameworks/README.md)     | CASE 1.1 and 1.0: the model of a framework package, its readers, its tree and changes, and the conversion to 1.0                                           |
+| [`@interopkit/learning-records`](packages/learning-records/README.md)               | xAPI 2.0: the model of a Statement, and readers that check it against the rules of an LRS and of a provider                                                |
 | [`@interopkit/achievement-credentials`](packages/achievement-credentials/README.md) | Open Badges 3.0 and CLR 2.0: the model of an achievement credential and of the APIs, and readers that check them, builders, identity hashes and comparison |
 | [`@interopkit/selective-disclosure`](packages/selective-disclosure/README.md)       | The `ecdsa-sd-2023` cryptosuite: a base proof for the issuer, a derived proof for the holder and its verification                                          |
 
@@ -77,7 +81,7 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                                                                                          |
 | `pnpm corpus`          | Downloads the pinned repositories that tests read                                                                                                               |
 | `pnpm schemas`         | Downloads the pinned specification files that tests read                                                                                                        |
-| `pnpm spec-examples`   | Downloads the JSON examples of the LTI specifications at pinned hashes; `pnpm test:spec` runs the tests that read them                                          |
+| `pnpm spec-examples`   | Downloads the JSON examples of the specifications at pinned hashes; `pnpm test:spec` runs the tests that read them                                              |
 
 [AGENTS.md](AGENTS.md) states the conventions, [CONTRIBUTING.md](CONTRIBUTING.md) the process and
 [SECURITY.md](SECURITY.md) how to report a vulnerability and how to deploy safely.
@@ -90,9 +94,11 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `packages/tool-integration/`                                                                                                                                     | LTI 1.3, tool and platform roles                                                                 |
 | `packages/learning-analytics/`                                                                                                                                   | Caliper 1.2                                                                                      |
 | `packages/competency-frameworks/`                                                                                                                                | CASE 1.1 and 1.0                                                                                 |
+| `packages/learning-records/`                                                                                                                                     | xAPI 2.0                                                                                         |
 | `packages/achievement-credentials/`                                                                                                                              | Open Badges 3.0 and CLR 2.0                                                                      |
 | `packages/selective-disclosure/`                                                                                                                                 | `ecdsa-sd-2023`: base proof, derived proof, verification                                         |
 | `docs/core/`, `docs/tool-integration/`, `docs/learning-analytics/`, `docs/competency-frameworks/`, `docs/achievement-credentials/`, `docs/selective-disclosure/` | Guides of each package                                                                           |
+| `docs/learning-records/`                                                                                                                                         | Guides of learning-records                                                                       |
 | `examples/`                                                                                                                                                      | Runnable examples, each a package of its own, run by a test                                      |
 | `compat/`                                                                                                                                                        | The scenarios of the examples on each runtime                                                    |
 | `scripts/`                                                                                                                                                       | The standards check, the mutation check of the security rules, and the downloads of pinned files |
@@ -102,4 +108,5 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 ## License
 
 [Apache License 2.0](LICENSE). LTI, Learning Tools Interoperability, LTI Advantage, Caliper Analytics, Sensor API and 1EdTech
-are trademarks of 1EdTech Consortium, Inc.; see the NOTICE of each package.
+are trademarks of 1EdTech Consortium, Inc.; xAPI names the standard IEEE 9274.1.1 of the Institute of Electrical and Electronics
+Engineers, Inc.; see the NOTICE of each package.

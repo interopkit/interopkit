@@ -6,8 +6,8 @@ Contributions in English or Bahasa Indonesia are welcome. Everyone taking part i
 ```mermaid
 flowchart LR
   subgraph repo["The repository"]
-    packages["packages/core, tool-integration,<br/>learning-analytics, competency-frameworks,<br/>selective-disclosure,<br/>achievement-credentials<br/>src, test"]
-    docs["docs/core, docs/tool-integration,<br/>docs/learning-analytics, docs/competency-frameworks,<br/>docs/selective-disclosure,<br/>docs/achievement-credentials<br/>guides that run in tests"]
+    packages["packages/core, tool-integration,<br/>learning-analytics, competency-frameworks,<br/>learning-records, selective-disclosure,<br/>achievement-credentials<br/>src, test"]
+    docs["docs/core, docs/tool-integration,<br/>docs/learning-analytics, docs/competency-frameworks,<br/>docs/learning-records, docs/selective-disclosure,<br/>docs/achievement-credentials<br/>guides that run in tests"]
     examples["examples<br/>run by a test"]
     tooling["scripts, validation, compat"]
   end

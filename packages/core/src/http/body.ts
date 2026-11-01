@@ -1,6 +1,6 @@
 import { checkPositiveInteger, checkRecord } from "../checks.js";
 import { DataError } from "../errors.js";
-import { MAX_JSON_DEPTH } from "../json.js";
+import { MAX_JSON_DEPTH, nestsDeeperThan } from "../json.js";
 import type { HttpRequest } from "./request.js";
 
 /** The most bytes of a JSON body that `readJson` reads unless the caller says otherwise. */
@@ -8,13 +8,6 @@ const DEFAULT_MAX_JSON_BYTES = 1_048_576;
 
 /** Throws on bytes that are not UTF-8, where the default decoder would replace them. */
 const DECODER = new TextDecoder("utf-8", { fatal: true });
-
-const QUOTE = 0x22;
-const BACKSLASH = 0x5c;
-const OPEN_BRACE = 0x7b;
-const CLOSE_BRACE = 0x7d;
-const OPEN_BRACKET = 0x5b;
-const CLOSE_BRACKET = 0x5d;
 
 /** What `readJson` limits. */
 export interface ReadJsonOptions {
@@ -30,34 +23,6 @@ export interface ReadJsonOptions {
    * @defaultValue 64
    */
   readonly maxDepth?: number;
-}
-
-/** Returns the index of the quote that ends the string which starts at `start`, or the length of the text when it does not end. */
-function endOfString(text: string, start: number): number {
-  for (let index = start + 1; index < text.length; index += 1) {
-    const unit = text.charCodeAt(index);
-    // A backslash escapes the next unit, which may be a quote.
-    if (unit === BACKSLASH) index += 1;
-    else if (unit === QUOTE) return index;
-  }
-  return text.length;
-}
-
-/** Tells whether arrays and objects nest deeper than the limit, reading no further than the first level above it. */
-function nestsDeeperThan(text: string, maxDepth: number): boolean {
-  let depth = 0;
-  for (let index = 0; index < text.length; index += 1) {
-    const unit = text.charCodeAt(index);
-    if (unit === QUOTE) {
-      index = endOfString(text, index);
-    } else if (unit === OPEN_BRACE || unit === OPEN_BRACKET) {
-      depth += 1;
-      if (depth > maxDepth) return true;
-    } else if (unit === CLOSE_BRACE || unit === CLOSE_BRACKET) {
-      depth -= 1;
-    }
-  }
-  return false;
 }
 
 /**

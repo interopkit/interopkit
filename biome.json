@@ -718,6 +718,26 @@
       }
     },
     {
+      "includes": ["packages/learning-records/src/model/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/read", "**/read/**"],
+                    "message": "model/ holds the types, the terms and the data types and imports no module that builds on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": [
         "packages/competency-frameworks/src/model/**",
         "packages/competency-frameworks/src/provider/handle-request.ts",
@@ -731,6 +751,10 @@
         "packages/achievement-credentials/src/read/*-schemas.ts",
         "packages/achievement-credentials/src/read/registry.ts",
         "packages/achievement-credentials/test/**",
+        "packages/learning-records/src/model/**",
+        "packages/learning-records/src/read/schemas.ts",
+        "packages/learning-records/test/**",
+        "scripts/xapi-rules.ts",
         "scripts/test/schema-arbitrary.test.ts",
         "scripts/test/schema-oracle.test.ts"
       ],

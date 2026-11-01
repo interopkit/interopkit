@@ -16,6 +16,7 @@ body:
         - "@interopkit/tool-integration"
         - "@interopkit/learning-analytics"
         - "@interopkit/competency-frameworks"
+        - "@interopkit/learning-records"
         - "@interopkit/selective-disclosure"
     validations:
       required: true

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { copyJson, MAX_JSON_DEPTH } from "../src/checks.js";
+import { copyJson, MAX_JSON_DEPTH, nestsDeeperThan } from "../src/checks.js";
 
 /** An object that nests the given number of levels, the outermost included. */
 function nest(levels: number): Record<string, unknown> {
@@ -78,5 +78,24 @@ describe("copyJson", () => {
     expect(copyJson(value, "value")).toStrictEqual({
       problem: `value${".n".repeat(MAX_JSON_DEPTH)} nests more than ${MAX_JSON_DEPTH} levels, the most that a JSON value may here`,
     });
+  });
+});
+
+describe("nestsDeeperThan", () => {
+  it("counts the levels of arrays and objects, and refuses one more than the limit", () => {
+    expect(nestsDeeperThan("[[[]]]", 3)).toBe(false);
+    expect(nestsDeeperThan("[[[[]]]]", 3)).toBe(true);
+    expect(nestsDeeperThan('{"a":{"b":{"c":{}}}}', 3)).toBe(true);
+    expect(nestsDeeperThan("1", 0)).toBe(false);
+  });
+
+  it("does not count brackets inside strings, whatever escapes come before them", () => {
+    expect(nestsDeeperThan('["[[[[", "\\\\"]', 1)).toBe(false);
+    expect(nestsDeeperThan('["\\\\"], [[[[', 2)).toBe(true);
+  });
+
+  it("reads a text that is not JSON and stops at the first level above the limit", () => {
+    expect(nestsDeeperThan("[".repeat(100_000), 64)).toBe(true);
+    expect(nestsDeeperThan('"unterminated [[[[', 1)).toBe(false);
   });
 });
