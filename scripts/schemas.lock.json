@@ -70,6 +70,11 @@
     "sha256": "d1dfd9f4b766a730db50bf2322dcad8848970d07d0dd1b4d1e78ed3f19e1c869"
   },
   {
+    "url": "https://purl.imsglobal.org/spec/case/v1p1/schema/openapi/imscasev1p1_openapi3_v1p0.json",
+    "file": "imscasev1p1_openapi3_v1p0.json",
+    "sha256": "40f183b6ca3ce4979e4908d4414b9d099dd22493bea45694b60e7a72a19a22bf"
+  },
+  {
     "url": "https://purl.imsglobal.org/spec/case/v1p0/schema/json/caseservicegroupv1p0-getallcfdocuments-200-responsepayload-schemav2p0.json",
     "file": "caseservicegroupv1p0-getallcfdocuments-200-responsepayload-schemav2p0.json",
     "sha256": "ac98534be8090daffb0d4a189f8df65e527c4500563c51803323e701a1cdc5a2"

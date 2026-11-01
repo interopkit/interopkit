@@ -1,9 +1,12 @@
+/** The versions of CASE that this package reads and writes: the CASE Service 1.0 of 2017 and the CASE Service 1.1 of 2024. */
+export const CASE_VERSIONS = ["1.0", "1.1"] as const;
+
 /**
- * The versions of CASE that this package reads and writes: the CASE Service 1.0 of 2017 and the CASE Service 1.1 of 2024.
+ * A version of CASE that this package reads and writes.
  *
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1}
  */
-export type CaseVersion = "1.0" | "1.1";
+export type CaseVersion = (typeof CASE_VERSIONS)[number];
 
 /**
  * The association types that CASE 1.1 defines (Information Model 7.4.1).

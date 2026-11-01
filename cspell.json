@@ -26,6 +26,7 @@
     "Bahasa",
     "capnp",
     "cfworker",
+    "CLDR",
     "cpus",
     "dpop",
     "errormsg",
@@ -34,6 +35,7 @@
     "fullsuccess",
     "gradebook",
     "HMAC",
+    "imscasev",
     "imsglobal",
     "Imsx",
     "instructure",
@@ -56,6 +58,7 @@
     "pyjwt",
     "PyJWT",
     "RSASSA",
+    "skogen",
     "SSSZ",
     "timeback",
     "unauthorised",
@@ -64,6 +67,7 @@
     "venv",
     "webapi",
     "Wakan",
-    "workerd"
+    "workerd",
+    "Älg"
   ]
 }

@@ -5,7 +5,7 @@
       "entry": ["src/index.ts", "src/checks.ts", "src/http/index.ts", "src/oauth/index.ts"]
     },
     "packages/competency-frameworks": {
-      "entry": ["src/index.ts"]
+      "entry": ["src/index.ts", "src/provider/index.ts"]
     },
     "packages/learning-analytics": {
       "entry": ["src/index.ts"]

@@ -7,7 +7,7 @@ enforced by `pnpm lint` (Biome and cspell), `pnpm check:standards`, `pnpm check:
 interopkit is a toolkit for learning-platform interoperability in JavaScript and TypeScript, in one repository:
 `@interopkit/core` is the shared foundation, `@interopkit/tool-integration` implements LTI 1.3 in both roles, and
 `@interopkit/learning-analytics` implements Caliper Analytics 1.2, and `@interopkit/competency-frameworks` implements the
-CASE model and its readers.
+CASE model, its readers and a provider of the REST binding.
 
 ```mermaid
 flowchart BT
@@ -16,7 +16,7 @@ flowchart BT
   tool["tool-integration: tool"]
   plat["tool-integration: platform"]
   la["learning-analytics"]
-  cf["competency-frameworks<br/>model, read, version"]
+  cf["competency-frameworks<br/>model, read, version, provider"]
   proto --> core
   tool --> proto
   plat --> proto
@@ -46,6 +46,7 @@ Use these words with these meanings in code, comments and docs.
 | deadline     | The time a call to a service may take, `timeoutMs`                                                                              |
 | framework    | A CASE competency framework, held as a package: one document with its items, associations, definitions and rubrics              |
 | finding      | A `CaseIssue` of a reader: where, which rule, what is wrong, and whether it is an error or a warning                            |
+| provider     | The service that publishes frameworks to consumers over the CASE REST binding: `handleCaseRequest` over a `FrameworkStore`      |
 
 ## Layout
 
@@ -66,7 +67,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                              |
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                             |
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
-| `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`                                                     |
+| `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `provider/`                                        |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`          |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -111,9 +112,9 @@ current behavior only, and never how it came to be. A package's changeset is wri
 ## Boundaries
 
 - interopkit owns the messages between a platform and a tool, the gradebook protocol, the Caliper event model, sensor and
-  endpoint, and the CASE model with its readers. It does not own what a launched tool shows, what a score means, which
-  delivery event becomes which Caliper event, QTI content, or databases, servers, sessions and accounts. Those belong to the
-  tool, to assesskit and measurekit, to the adapter of each product and to the host.
+  endpoint, and the CASE model with its readers and the handlers of a CASE provider. It does not own what a launched tool
+  shows, what a score means, which delivery event becomes which Caliper event, QTI content, or databases, servers, sessions
+  and accounts. Those belong to the tool, to assesskit and measurekit, to the adapter of each product and to the host.
 - Packages of different families never import each other. interopkit defines ports (a store, a lookup, a `Fetch`, a `Clock`)
   or speaks an open standard, and an adapter to another family lives in the examples of that family or in the host. Names of
   QTI (`ItemKey`, `LtiLink`) never appear in interopkit.
@@ -125,8 +126,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
 
 - A package imports only what its row in the diagram above allows. Biome enforces the rows for `core`, and for the folders
   of `tool-integration`: `protocol/` imports neither `tool/` nor `platform/`, and `tool/` and `platform/` never import each
-  other. In `competency-frameworks`, `model/` imports neither `read/` nor `version/`, and those two never import each other.
-  Imports never form cycles.
+  other. In `competency-frameworks`, `model/` imports neither `read/` nor `version/`, and those two never import each other;
+  `provider/` builds on all three and none of them imports it. Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -189,7 +190,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   any 3xx is an error, an answer has at most `maxBytes`, 65,536 by default, and every wait is raced against the deadline.
 - A handler takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, checks the request with
   `checkHttpRequest` at its entry, and reads the body with `readText`, `readJson` or `readForm`. No package defines its own
-  request or answer type.
+  request or answer type. It answers with the status codes and bodies of its specification, answers 500 with nothing of the
+  cause when a port rejects, throws `DataError` only for a port that breaks its contract, and rejects with the reason of the
+  `signal` when it aborts.
 - Signing takes a `Signer` of `@interopkit/core`, never a key, so that a key in a KMS or an HSM works. A pick at random takes a
   `Random`.
 - Never use `Math.random`, read a clock, or reach for `fetch`. Take a `Clock`, a random source or a `Fetch` from the caller.

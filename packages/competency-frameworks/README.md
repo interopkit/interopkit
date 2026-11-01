@@ -3,8 +3,8 @@
 CASE (Competencies and Academic Standards Exchange) [1.1](https://www.imsglobal.org/spec/case/v1p1) and
 [1.0](https://www.imsglobal.org/spec/case/v1p0): the model of a competency framework package and of each entity that CASE
 exchanges, readers that check them against the JSON schemas of 1EdTech and the rules of a package, validators that list
-every finding, and the conversion of 1.1 data to the form of 1.0. It knows nothing of any product: the host says where a
-framework comes from and what it is for.
+every finding, the conversion of 1.1 data to the form of 1.0, and a provider that serves a store of frameworks over the REST
+binding. It knows nothing of any product: the host says where a framework comes from and what it is for.
 
 ```mermaid
 flowchart LR
@@ -13,6 +13,7 @@ flowchart LR
     read["readPackage, readEntity<br/>schemas, then identifiers, links, tree"]
     validate["validatePackage, validateEntity"]
     version["toCaseVersion"]
+    provider["/provider<br/>handleCaseRequest over a FrameworkStore<br/>paging, filter, sort, fields, discovery"]
   end
   model["CasePackage, CFItem, ...<br/>the model of CASE 1.1"]
   old[("A consumer of CASE 1.0")]
@@ -22,6 +23,10 @@ flowchart LR
   validate -->|"findings"| host
   model --> version
   version -->|"1.0 form and what was left out"| old
+  consumer[("A consumer of CASE")]
+  host -->|"HttpRequest, FrameworkStore"| provider
+  provider -->|"HttpResponse in 1.1 or 1.0"| consumer
+  version --> provider
 ```
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
@@ -34,13 +39,18 @@ npm install @interopkit/competency-frameworks
 
 ## API
 
-| Subpath                             | Exports                                                                                                                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/competency-frameworks` | `readPackage`, `readEntity`, `ReadOptions`: read a package or an entity of either version into the model of 1.1, and throw `DataError` on an error                                                      |
-|                                     | `validatePackage`, `validateEntity`, `CaseIssue`: judge a value and return every finding, errors and warnings, as data                                                                                  |
-|                                     | `toCaseVersion`, `VersionedValue`, `Converted`: a package or an entity in the form of 1.0, and what was left out                                                                                        |
-|                                     | `CasePackage`, `CFPckgDocument`, `CFPckgItem`, `CFPckgAssociation`, `CFDocument`, `CFItem`, `CFAssociation`, `CFDefinition` and the other classes: the model                                            |
-|                                     | `ASSOCIATION_TYPES`, `ENTITY_KINDS`, `STATUS_CODES_MAJOR`, `STATUS_CODES_MINOR`, `STATUS_SEVERITIES`, `CaseVersion`, `CaseEntityKind`, `CaseEntity`, `ImsxStatusInfo` and the types of the vocabularies |
+| Subpath                             | Exports                                                                                                                                                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@interopkit/competency-frameworks` | `readPackage`, `readEntity`, `ReadOptions`: read a package or an entity of either version into the model of 1.1, and throw `DataError` on an error                                                                       |
+|                                     | `validatePackage`, `validateEntity`, `CaseIssue`: judge a value and return every finding, errors and warnings, as data                                                                                                   |
+|                                     | `toCaseVersion`, `VersionedValue`, `Converted`: a package or an entity in the form of 1.0, and what was left out                                                                                                         |
+|                                     | `CasePackage`, `CFPckgDocument`, `CFPckgItem`, `CFPckgAssociation`, `CFDocument`, `CFItem`, `CFAssociation`, `CFDefinition` and the other classes: the model                                                             |
+|                                     | `ASSOCIATION_TYPES`, `CASE_VERSIONS`, `ENTITY_KINDS`, `STATUS_CODES_MAJOR`, `STATUS_CODES_MINOR`, `STATUS_SEVERITIES`, `CaseVersion`, `CaseEntityKind`, `CaseEntity`, `ImsxStatusInfo` and the types of the vocabularies |
+|                                     | `CaseQuery`, `CaseFilter`, `CaseCondition`, `OpenApiDocument`, `FILTER_PREDICATES`, `SORT_ORDERS`: what the provider and a client of the endpoints share                                                                 |
+| `.../provider`                      | `handleCaseRequest`, `CaseProviderOptions`, `AccessDecision`: serve the twelve endpoints of the binding, in 1.1 and in 1.0, over a store                                                                                 |
+|                                     | `FrameworkStore`, `CasePage`, `DocumentPage`: what the provider needs from the host                                                                                                                                      |
+|                                     | `parseCaseQuery`, `ParsedCaseQuery`, `QueryRefusal`, `queryEntities`, `QueryEntitiesOptions`: the query grammar, and the filter and sort in memory                                                                       |
+|                                     | `localizeOpenApi`, `LocalizeOpenApiOptions`: the OpenAPI file of 1EdTech made into the localized discovery file                                                                                                          |
 
 ```ts
 import { readPackage, toCaseVersion, validatePackage } from "@interopkit/competency-frameworks";
@@ -88,9 +98,11 @@ a `message` and its `severity`. A warning does not keep a value from being read.
 | Vocabularies                                  | The ten association types, `ext:` terms, `targetType`, `caseVersion`, the codes of a status                                                               |
 | Package rules                                 | One document, unique identifiers, links that resolve, `isChildOf` without loops, items in the tree                                                        |
 | 1.0                                           | Reading it, and the conversion from 1.1 with a report of what 1.0 cannot hold                                                                             |
+| The provider                                  | The twelve endpoints in both versions, paging, sorting, filtering, field selection, the status of a failure, service discovery                            |
 
-[The model guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/model.md) has the options with
-their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
+[The model guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/model.md) and
+[the provider guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/provider.md) have the options
+with their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
 why, and the differences from the references.
 
 ## License

@@ -109,6 +109,28 @@ above apply.
 | Markdown or LaTeX in `fullStatement`, `description` and `notes` | The package carries the text and never renders it. A consumer renders it through a sanitizing renderer and never inserts it into a page as HTML       |
 | A result that shares an object with its input                   | A reader returns a copy, and `toCaseVersion` returns a new value; an input is never changed                                                           |
 
+### The provider
+
+`handleCaseRequest` answers requests from consumers of a framework over the REST binding ([provider guide](docs/competency-frameworks/provider.md)).
+It reads a query and no body, keeps nothing between requests and makes no request.
+
+| Threat                                                           | Control                                                                                                                                                                   |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A consumer reads what it may not                                 | `authorize` receives the request and decides before any lookup or query is read; a refusal is 401 or 403 and the store is not asked. The host's `authorize` checks tokens |
+| A consumer cannot learn how to authenticate                      | The discovery file is the one answer that skips `authorize`; the host puts nothing secret in it                                                                           |
+| An identifier that is not a UUID reaches the store               | It is refused with 404 `Invalid UUID` before the store is asked, so a store never sees a path, a query or a pattern in place of an identifier                             |
+| A filter that makes the parser or the evaluator work without end | The filter has at most 2,048 characters and one logical operator; the parser reads it once, left to right, with no backtracking pattern                                   |
+| A filter or a sort that reads what an object inherits            | A path reads own properties only, so `constructor`, `__proto__` and a polluted prototype give no value                                                                    |
+| A page of any size                                               | `limit` is at most `maxPageSize` (1,000 by default), `offset` is a safe integer, and a store that answers more documents than the limit is refused                        |
+| A failure of the store or of `authorize` shows its cause         | The answer is 500 with a fixed sentence; the message of the failure is never in the answer                                                                                |
+| A wait for the store that never ends                             | Every call of a port is raced against the `signal`; an abort rejects the request at once                                                                                  |
+| A localized discovery file that points elsewhere                 | `localizeOpenApi` sets `servers` to one address that ends with the root of the API, and returns a copy of JSON within 64 levels                                           |
+| The URL that builds the `Link` header                            | It is the URL of the request; behind a proxy the host builds the request from its public address and not from a header that a consumer controls                           |
+
+- A host that serves frameworks to anyone leaves `authorize` out. A host that serves some frameworks to some consumers
+  decides in `authorize` from the request, or filters in its store: the provider has no notion of an owner.
+- Limit the rate in front of the handler; the provider never answers 429.
+
 ## The tool role
 
 A learning platform launches the tool through the browser of the user, so the launch is untrusted until `ltiLaunch` has
@@ -188,6 +210,10 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `core`                  | `assertionLifetimeSeconds` of `private_key_jwt`                          | 300                               | seconds      | `exp` after `iat` of a client assertion                                                                                  |
 | `core`                  | `refreshSkewSeconds` of `createTokenCache`                               | 60                                | seconds      | How long before its expiry a cached token counts as expired                                                              |
 | `competency-frameworks` | Levels that the value of an extension nests                              | 64                                | levels       | The `extensions` of any entity of CASE; a deeper value is an `invalid-value`; not replaceable                            |
+| `competency-frameworks` | `pageSize` and `maxPageSize` of the provider                             | 100 and 1,000                     | documents    | A page of `/CFDocuments`; a larger `limit` is lowered to `maxPageSize`                                                   |
+| `competency-frameworks` | Characters of a `filter`                                                 | 2,048                             | characters   | The `filter` of a request for the list; a longer one is 400 `invalid_filter_field`; not replaceable                      |
+| `competency-frameworks` | Logical operators in a `filter`                                          | 1                                 | operators    | One `AND` or `OR`; a second is 400 `invalid_filter_field`; not replaceable                                               |
+| `competency-frameworks` | Levels that the discovery document nests                                 | 64                                | levels       | The OpenAPI document of `localizeOpenApi`; a deeper one is a `DataError`; not replaceable                                |
 | `learning-analytics`    | `timeoutMs`                                                              | 10,000                            | milliseconds | One call of `sendCaliper` (`DEFAULT_CALIPER_TIMEOUT_MS`)                                                                 |
 | `learning-analytics`    | latest time                                                              | 9999-12-31T23:59:59.999Z          |              | The latest time that `caliperTime` writes, after 1970-01-01T00:00:00.000Z; not replaceable                               |
 | `tool-integration`      | `ttlSeconds` of `createJwksCache`                                        | 3,600                             | seconds      | How long a key set stays cached                                                                                          |
@@ -216,5 +242,5 @@ The packages that the libraries load at run time are pinned to exact versions at
 | -------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `jose`         | 6.2.12  | MIT     | `tool-integration`: signs and verifies the JWS and JWT of LTI messages, assertions and hints (algorithm allowlist, `crit`, `iss`, `aud`, `sub`, `exp`), and fetches key sets. Web Crypto only                                                                   |
 | `oauth4webapi` | 3.8.8   | MIT     | `core`: the requests and the validation of the responses of the OAuth 2.0 clients (client credentials, authorization code with PKCE, refresh, revocation, registration), through the `fetch` of `requestService`. It has no dependency and uses Web Crypto only |
-| `valibot`      | 1.5.0   | MIT     | `core`, `competency-frameworks`, `learning-analytics` and `tool-integration`: the schemas that read untrusted JSON, and `parseWith`, which turns the first issue into a `DataError` that names its path. It has no dependency                                                            |
+| `valibot`      | 1.5.0   | MIT     | `core`, `competency-frameworks`, `learning-analytics` and `tool-integration`: the schemas that read untrusted JSON, and `parseWith`, which turns the first issue into a `DataError` that names its path. It has no dependency                                   |
 | `uuid`         | 14.0.3  | MIT     | `learning-analytics`: the name-based UUID of version 5 (RFC 9562) of the identifiers of events. It has no dependency                                                                                                                                            |

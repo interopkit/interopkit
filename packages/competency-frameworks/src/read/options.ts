@@ -1,6 +1,6 @@
 import { parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
-import { type CaseEntityKind, type CaseVersion, ENTITY_KINDS } from "../model/index.js";
+import { CASE_VERSIONS, type CaseEntityKind, type CaseVersion, ENTITY_KINDS } from "../model/index.js";
 
 /** The options of `readPackage`, `readEntity`, `validatePackage` and `validateEntity`. */
 export interface ReadOptions {
@@ -13,7 +13,7 @@ export interface ReadOptions {
   readonly version?: CaseVersion;
 }
 
-const optionsSchema = strictRecord({ version: v.optional(v.picklist(["1.0", "1.1"])) });
+const optionsSchema = strictRecord({ version: v.optional(v.picklist(CASE_VERSIONS)) });
 const kindSchema = v.picklist(ENTITY_KINDS);
 
 /** Checks the options of a read and returns the version that they ask for. */

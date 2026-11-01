@@ -1,13 +1,20 @@
 import type {
-  CaseEntity,
-  CaseEntityKind,
   CasePackage,
+  CFAssociation,
+  CFAssociationGrouping,
   CFAssociationSet,
+  CFConcept,
   CFConceptSet,
+  CFDocument,
   CFDocumentSet,
+  CFItem,
+  CFItemType,
   CFItemTypeSet,
+  CFLicense,
   CFPckgAssociation,
   CFPckgItem,
+  CFRubric,
+  CFSubject,
   CFSubjectSet,
   ImsxStatusInfo,
   LinkURI,
@@ -272,8 +279,27 @@ export function fullPackage(): CasePackage {
   };
 }
 
+/** One entity of each kind, each with its own type. */
+export interface FullEntities {
+  readonly CFDocument: CFDocument;
+  readonly CFItem: CFItem;
+  readonly CFAssociation: CFAssociation;
+  readonly CFAssociationGrouping: CFAssociationGrouping;
+  readonly CFConcept: CFConcept;
+  readonly CFSubject: CFSubject;
+  readonly CFLicense: CFLicense;
+  readonly CFItemType: CFItemType;
+  readonly CFRubric: CFRubric;
+  readonly CFDocumentSet: CFDocumentSet;
+  readonly CFAssociationSet: CFAssociationSet;
+  readonly CFConceptSet: CFConceptSet;
+  readonly CFSubjectSet: CFSubjectSet;
+  readonly CFItemTypeSet: CFItemTypeSet;
+  readonly imsx_StatusInfo: ImsxStatusInfo;
+}
+
 /** One entity of each kind, taken from the full package, in the form that a provider serves it. */
-export function fullEntities(): Readonly<Record<CaseEntityKind, CaseEntity>> {
+export function fullEntities(): FullEntities {
   const pkg = fullPackage();
   const [parent, child] = pkg.CFItems ?? [];
   const definitions = pkg.CFDefinitions ?? {};

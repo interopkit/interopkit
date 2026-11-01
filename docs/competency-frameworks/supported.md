@@ -8,29 +8,40 @@ flowchart LR
   spec["CASE Service 1.1<br/>and 1.0"] --> model["Information Model<br/>classes, vocabularies"]
   model --> read["Readers<br/>schemas, rules of a package"]
   model --> version["Conversion 1.1 to 1.0"]
+  model --> provider["Provider<br/>REST binding, query grammar,<br/>discovery"]
+  version --> provider
   spec -.-> outside["Not included:<br/>Markdown and LaTeX rendering,<br/>JSON-LD form of 1.0"]
 ```
 
-| Area                                 | Specification                      | Included                                                                                                                                                                      |
-| ------------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The package                          | Information Model 7.1.21           | `CasePackage`: one document, items, associations, definitions, rubrics, `extensions`                                                                                          |
-| The document, items and associations | Information Model 7.1.1 to 7.1.25  | In a package (`CFPckg*`) and outside it (`CFDocument`, `CFItem`, `CFAssociation`)                                                                                             |
-| The definitions                      | Information Model 7.1.6 to 7.1.19  | `CFConcept`, `CFSubject`, `CFLicense`, `CFItemType`, `CFAssociationGrouping`, `CFDefinition`                                                                                  |
-| Rubrics                              | Information Model 7.1.26 to 7.1.31 | `CFRubric`, `CFRubricCriterion`, `CFRubricCriterionLevel`                                                                                                                     |
-| The sets                             | Information Model 7.1.5 to 7.1.34  | `CFDocumentSet`, `CFAssociationSet`, `CFConceptSet`, `CFSubjectSet`, `CFItemTypeSet`                                                                                          |
-| Links                                | Information Model 7.1.35, 7.1.36   | `LinkURI`, `LinkGenURI` with `targetType`                                                                                                                                     |
-| Status                               | Information Model 7.1.37 to 7.1.39 | `ImsxStatusInfo`, read as the kind `imsx_StatusInfo`, the codes of 7.4.4 to 7.4.6 and `invalid_filter_field` of the REST binding                                              |
-| Vocabularies                         | Information Model 7.3, 7.4         | Ten association types, `ext:` terms, `TargetType`, `caseVersion`                                                                                                              |
-| 1.1 additions                        | Information Model 1.3              | `frameworkType`, `caseVersion`, item `subject` and `subjectURI`, association `notes`, `targetType`, `isTranslationOf`, `extensions` on 13 classes, Markdown and LaTeX as text |
-| Package integrity                    | Information Model 3.3, Guide 3.1   | One document, unique identifiers, links that resolve, `isChildOf` without loops, nodes that agree in URI, items in the tree                                                   |
-| CASE 1.0 consumers                   | Information Model 1.3              | Reading 1.0, `toCaseVersion` for a package, an entity and a set, and the forms that 1.0 refuses reported                                                                      |
-| JSON schemas                         | The schemas of 1EdTech             | Every class of both versions, compared in the tests with the published files at pinned hashes                                                                                 |
+| Area                                 | Specification                      | Included                                                                                                                                                                               |
+| ------------------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The package                          | Information Model 7.1.21           | `CasePackage`: one document, items, associations, definitions, rubrics, `extensions`                                                                                                   |
+| The document, items and associations | Information Model 7.1.1 to 7.1.25  | In a package (`CFPckg*`) and outside it (`CFDocument`, `CFItem`, `CFAssociation`)                                                                                                      |
+| The definitions                      | Information Model 7.1.6 to 7.1.19  | `CFConcept`, `CFSubject`, `CFLicense`, `CFItemType`, `CFAssociationGrouping`, `CFDefinition`                                                                                           |
+| Rubrics                              | Information Model 7.1.26 to 7.1.31 | `CFRubric`, `CFRubricCriterion`, `CFRubricCriterionLevel`                                                                                                                              |
+| The sets                             | Information Model 7.1.5 to 7.1.34  | `CFDocumentSet`, `CFAssociationSet`, `CFConceptSet`, `CFSubjectSet`, `CFItemTypeSet`                                                                                                   |
+| Links                                | Information Model 7.1.35, 7.1.36   | `LinkURI`, `LinkGenURI` with `targetType`                                                                                                                                              |
+| Status                               | Information Model 7.1.37 to 7.1.39 | `ImsxStatusInfo`, read as the kind `imsx_StatusInfo`, the codes of 7.4.4 to 7.4.6 and `invalid_filter_field` of the REST binding                                                       |
+| Vocabularies                         | Information Model 7.3, 7.4         | Ten association types, `ext:` terms, `TargetType`, `caseVersion`                                                                                                                       |
+| 1.1 additions                        | Information Model 1.3              | `frameworkType`, `caseVersion`, item `subject` and `subjectURI`, association `notes`, `targetType`, `isTranslationOf`, `extensions` on 13 classes, Markdown and LaTeX as text          |
+| Package integrity                    | Information Model 3.3, Guide 3.1   | One document, unique identifiers, links that resolve, `isChildOf` without loops, nodes that agree in URI, items in the tree                                                            |
+| CASE 1.0 consumers                   | Information Model 1.3              | Reading 1.0, `toCaseVersion` for a package, an entity and a set, and the forms that 1.0 refuses reported                                                                               |
+| The twelve endpoints                 | REST binding 2.1, 2.2, 2.4         | The provider: `/CFDocuments` and eleven by identifier, under `/ims/case/v1p1` and `/ims/case/v1p0`, over a `FrameworkStore`                                                            |
+| Paging                               | REST binding 3.1                   | `limit` (100 by default, at most 1,000), `offset`, `X-Total-Count`, `Link`                                                                                                             |
+| Sorting                              | REST binding 3.2                   | `sort` and `orderBy` with the Unicode collation of a locale                                                                                                                            |
+| Filtering                            | REST binding 3.3                   | `=`, `!=`, `>`, `>=`, `<`, `<=`, `~`, one `AND` or `OR`, dot paths, case-insensitive values, lists; `queryEntities` for a store in memory                                              |
+| Field selection                      | REST binding 3.4                   | `fields`                                                                                                                                                                               |
+| Failures                             | REST binding 2.4                   | `imsx_StatusInfo` with `invalid_selection_field`, `invalid_filter_field`, `unauthorised_request`, `forbidden`, `unknownobject`, `invalid_uuid`, `internal_server_error`                |
+| Service discovery                    | REST binding 2.5                   | The localized OpenAPI file at `/ims/case/v1p1/discovery/imscasev1p1_openapi3_v1p0.json`, and `localizeOpenApi`                                                                         |
+| Security                             | REST binding 4                     | The `authorize` port: the host checks TLS and tokens                                                                                                                                   |
+| JSON schemas                         | The schemas of 1EdTech             | Every class of both versions, compared in the tests with the published files at pinned hashes, and every answer of the provider against the OpenAPI file of 1.1 and the schemas of 1.0 |
 
 ## Not included
 
-| Not included                                    | Why                                                             |
-| ----------------------------------------------- | --------------------------------------------------------------- |
-| Rendering Markdown and LaTeX                    | The consumer's interface does it, through a sanitizing renderer |
-| The JSON-LD form of CASE 1.0                    | A document form of 1.0 that 1.1 does not have                   |
-| Writing identifiers and URIs for a framework    | The host's identifiers are its own; the readers check them      |
-| Service endpoints, paging, filtering, discovery | Not part of the model                                           |
+| Not included                                 | Why                                                             |
+| -------------------------------------------- | --------------------------------------------------------------- |
+| Rendering Markdown and LaTeX                 | The consumer's interface does it, through a sanitizing renderer |
+| The JSON-LD form of CASE 1.0                 | A document form of 1.0 that 1.1 does not have                   |
+| Writing identifiers and URIs for a framework | The host's identifiers are its own; the readers check them      |
+| A client of the endpoints                    | Not part of the model                                           |
+| A store, writing a framework, authentication | The host's: the provider takes a store and an `authorize`       |

@@ -3,4 +3,6 @@
  *
  * @module
  */
+
+export { openApiSchema } from "./open-api.js";
 export { SCHEMAS } from "./schemas.js";

@@ -482,8 +482,8 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/read", "**/read/**", "**/version", "**/version/**"],
-                    "message": "model/ holds the types and terms and imports neither read/ nor version/: they build on it."
+                    "group": ["**/read", "**/read/**", "**/version", "**/version/**", "**/provider", "**/provider/**"],
+                    "message": "model/ holds the types and terms and imports neither read/, version/ nor provider/: they build on it."
                   }
                 ]
               }
@@ -502,8 +502,8 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/version", "**/version/**"],
-                    "message": "read/ builds on model/ and @interopkit/core only: version/ is its sibling and never a layer under it."
+                    "group": ["**/version", "**/version/**", "**/provider", "**/provider/**"],
+                    "message": "read/ builds on model/ and @interopkit/core only: version/ is its sibling and provider/ builds on it."
                   }
                 ]
               }
@@ -522,8 +522,28 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/read", "**/read/**"],
-                    "message": "version/ builds on model/ and @interopkit/core only: read/ is its sibling and never a layer under it."
+                    "group": ["**/read", "**/read/**", "**/provider", "**/provider/**"],
+                    "message": "version/ builds on model/ and @interopkit/core only: read/ is its sibling and provider/ builds on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/competency-frameworks/src/provider/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/graph", "**/graph/**", "**/client", "**/client/**"],
+                    "message": "provider/ builds on model/, read/, version/ and @interopkit/core only: graph/ and client/ are its siblings and never a layer under it."
                   }
                 ]
               }
@@ -535,6 +555,8 @@
     {
       "includes": [
         "packages/competency-frameworks/src/model/**",
+        "packages/competency-frameworks/src/provider/handle-request.ts",
+        "packages/competency-frameworks/src/provider/status.ts",
         "packages/competency-frameworks/src/read/schemas.ts",
         "packages/competency-frameworks/test/**",
         "scripts/test/schema-arbitrary.test.ts",

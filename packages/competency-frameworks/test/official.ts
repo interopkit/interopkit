@@ -109,18 +109,18 @@ const UUID_1_1 = fc
   .chain((uuid) => fc.constantFrom(uuid, uuid.toUpperCase()));
 
 /** A date and time with an offset, as RFC 3339 writes it and every validator reads it. */
-const DATE_TIME = fc
+export const DATE_TIME = fc
   .tuple(
     fc.date({ min: new Date("1971-01-01T00:00:00Z"), max: new Date("2099-12-31T23:59:59Z"), noInvalidDate: true }),
     fc.constantFrom("Z", "+00:00", "+05:30", "-08:00"),
   )
   .map(([date, offset]) => `${date.toISOString().slice(0, 19)}${offset}`);
 
-const DATE = fc
+export const DATE = fc
   .date({ min: new Date("1971-01-01T00:00:00Z"), max: new Date("2099-12-31T23:59:59Z"), noInvalidDate: true })
   .map((date) => date.toISOString().slice(0, 10));
 
-const ABSOLUTE_URI = fc
+export const ABSOLUTE_URI = fc
   .stringMatching(/^[a-z0-9]{1,12}$/u)
   .map((name) => `https://case.example.edu/ims/case/v1p1/${name}`);
 
@@ -131,7 +131,7 @@ const URI_1_1 = fc.oneof(ABSOLUTE_URI, fc.constantFrom("", "relative/path", "CFI
  * The terms of an extension of the association vocabulary on which the Information Model and the pattern of the schema agree:
  * the pattern has no hyphen in its class of characters, because `|-|` is a range.
  */
-const EXTENSION_TERM = fc.stringMatching(/^ext:[A-Za-z0-9._]+$/u);
+export const EXTENSION_TERM = fc.stringMatching(/^ext:[A-Za-z0-9._]+$/u);
 
 /** The text of the pattern that the 1.1 schemas give an extension term, which is looser than the Information Model. */
 const EXTENSION_PATTERN = "(ext:)[a-z|A-Z|0-9|.|-|_]+";

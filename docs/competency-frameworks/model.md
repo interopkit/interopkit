@@ -21,11 +21,11 @@ flowchart TD
   convert --> form10["The 1.0 form<br/>dropped: what 1.0 cannot hold"]
 ```
 
-| Module    | Holds                                                                                              |
-| --------- | -------------------------------------------------------------------------------------------------- |
-| `model`   | The types of the classes and sets, `CaseIssue`, `ASSOCIATION_TYPES`, `ENTITY_KINDS`, `CaseVersion` |
-| `read`    | `readPackage`, `readEntity`, `validatePackage`, `validateEntity`, `ReadOptions`                    |
-| `version` | `toCaseVersion`, `VersionedValue`, `Converted`                                                     |
+| Module    | Holds                                                                                                                                                                                                 |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`   | The types of the classes and sets, `CaseIssue`, `ASSOCIATION_TYPES`, `ENTITY_KINDS`, `CaseVersion`, `CASE_VERSIONS`, the query types `CaseQuery`, `CaseFilter` and `CaseCondition`, `OpenApiDocument` |
+| `read`    | `readPackage`, `readEntity`, `validatePackage`, `validateEntity`, `ReadOptions`                                                                                                                       |
+| `version` | `toCaseVersion`, `VersionedValue`, `Converted`                                                                                                                                                        |
 
 All of them come from `@interopkit/competency-frameworks`. The package depends on `@interopkit/core` for the errors, the
 formats, the copy of JSON and the findings, and on `valibot` for the schemas. Its test suite reads the schemas of 1EdTech with
@@ -219,9 +219,9 @@ exhaust the stack of the host.
 | Not included                                                    | Why                                                                                          |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Rendering Markdown and LaTeX                                    | The consumer's interface renders it, through a sanitizing renderer that the consumer chooses |
-| Writing a package: building items, associations and identifiers | The host knows its own framework; the model types and `validatePackage` check what it builds    |
+| Writing a package: building items, associations and identifiers | The host knows its own framework; the model types and `validatePackage` check what it builds |
 | The JSON-LD form of CASE 1.0 (`@context`, `type`)               | A document form of 1.0 that 1.1 does not have and the REST binding does not serve            |
-| Reading a package that is wrong, to recover what is right in it | A package with an error is not returned; `validatePackage` says where to look                        |
+| Reading a package that is wrong, to recover what is right in it | A package with an error is not returned; `validatePackage` says where to look                |
 | Fetching a framework from a provider, and serving one           | Not part of the model                                                                        |
 
 ## Differences from the references

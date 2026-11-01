@@ -26,6 +26,16 @@ export type { CaseIssue } from "./issue.js";
 export type { Extensions } from "./json.js";
 export { type CaseEntity, type CaseEntityKind, ENTITY_KINDS } from "./kinds.js";
 export type { LinkGenURI, LinkURI } from "./links.js";
+export type { OpenApiDocument } from "./open-api.js";
+export {
+  type CaseCondition,
+  type CaseFilter,
+  type CaseQuery,
+  FILTER_PREDICATES,
+  type FilterPredicate,
+  SORT_ORDERS,
+  type SortOrder,
+} from "./query.js";
 export type { CFAssociationSet, CFConceptSet, CFDocumentSet, CFItemTypeSet, CFSubjectSet } from "./sets.js";
 export {
   type ImsxStatusInfo,
@@ -41,6 +51,7 @@ export {
 export {
   ASSOCIATION_TYPES,
   type AssociationType,
+  CASE_VERSIONS,
   type CaseVersion,
   type ExtensionTerm,
   type TargetType,
