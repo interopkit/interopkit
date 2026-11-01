@@ -128,6 +128,9 @@ await token(); // => "at-1"
 server.registrationEndpoint; // => "https://auth.example.org/registration"
 ```
 
+Registration at an Open Badges server (OB 7.1.1.2) asks for the grants `authorization_code` and `refresh_token`, which is what
+`registerClient` asks for unless `grantTypes` says otherwise, and requires a logo, terms, a privacy policy and a software id and
+version beside the name and the redirect addresses: pass `logoUri`, `tosUri`, `policyUri`, `softwareId` and `softwareVersion`.
 `server`, a registered client and the user's consent give the `obtain` function with `registerClient`, `authorizationRequest`,
 `exchangeCode` and `refreshAccessToken` (see [the OAuth guide](../core/oauth.md)); `token` is then the `token` option of the client.
 

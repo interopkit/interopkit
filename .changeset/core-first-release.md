@@ -14,7 +14,8 @@ and the answer of a handler as plain data with bodies as bytes, `readText`, `rea
 in the process or in a KMS or an HSM, `signerFromCryptoKey` makes one from a `CryptoKey`, and `signCompactJws` assembles a
 compact JWS and refuses a signature of the wrong form. `Random` and `SYSTEM_RANDOM` are the source of random picks.
 `@interopkit/core/oauth` has the OAuth 2.0 clients on `oauth4webapi`: client credentials, authorization code with PKCE,
-refresh, revocation and registration, authentication by secret, by a JWT that a `Signer` signs, or by none, and a token cache
+refresh, revocation and registration for the grants that the host names (the authorization code and refresh token grants
+unless it says otherwise), authentication by secret, by a JWT that a `Signer` signs, or by none, and a token cache
 that shares one token among callers.
 `@interopkit/core/checks` also reads the formats that the standards share (a date, a date and time of RFC 3339, a UUID, a URI, a
 language tag of RFC 5646), copies JSON within a depth limit, tells whether the text of JSON nests deeper than a limit, turns

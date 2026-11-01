@@ -28,9 +28,49 @@ describe("registerClient", () => {
       client_uri: "https://app.example",
       scope: "https://purl.imsglobal.org/spec/ob/v3p0/scope/credential.readonly offline_access",
       token_endpoint_auth_method: "client_secret_basic",
+      grant_types: ["authorization_code", "refresh_token"],
+      response_types: ["code"],
+    });
+  });
+
+  it("asks for the grants that the host names, and for the code response type only with the authorization code grant", async () => {
+    const asked = async (grantTypes: unknown, more: Record<string, unknown> = {}) => {
+      const server = fakeServer(() => json(REGISTERED, 201));
+      await registerClient(SERVER, { ...METADATA, ...more, grantTypes } as never, callOptions(server.fetch));
+      return JSON.parse(server.requests[0]?.body ?? "");
+    };
+    expect(await asked(["authorization_code", "refresh_token", "client_credentials"])).toMatchObject({
       grant_types: ["authorization_code", "refresh_token", "client_credentials"],
       response_types: ["code"],
     });
+    expect(await asked(["client_credentials"])).toMatchObject({
+      grant_types: ["client_credentials"],
+      response_types: [],
+    });
+    expect(await asked(["authorization_code"], { tokenEndpointAuthMethod: "none" })).toMatchObject({
+      grant_types: ["authorization_code"],
+      response_types: ["code"],
+    });
+  });
+
+  it("refuses grants that are not a list of the grants of this module, without a request", async () => {
+    const server = fakeServer(() => json(REGISTERED, 201));
+    const cases: [unknown, Record<string, unknown>?][] = [
+      [[]],
+      ["authorization_code"],
+      [["implicit"]],
+      [[1]],
+      [["authorization_code", "authorization_code"]],
+      [["refresh_token"]],
+      [["authorization_code", "client_credentials"], { tokenEndpointAuthMethod: "none" }],
+    ];
+    for (const [grantTypes, more] of cases) {
+      const error = await failureOf(
+        registerClient(SERVER, { ...METADATA, ...more, grantTypes } as never, callOptions(server.fetch)),
+      );
+      expect(error).toBeInstanceOf(DataError);
+    }
+    expect(server.requests).toHaveLength(0);
   });
 
   it("sends the optional metadata that is given, and the authentication method that is asked for", async () => {
@@ -48,7 +88,6 @@ describe("registerClient", () => {
       },
       callOptions(server.fetch),
     );
-    // A public client has no credentials to give for the client credentials grant.
     expect(JSON.parse(server.requests[0]?.body ?? "").grant_types).toStrictEqual([
       "authorization_code",
       "refresh_token",

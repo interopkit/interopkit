@@ -15,7 +15,13 @@ export {
 export type { ClientAuthentication, OAuthClient } from "./client.js";
 export { clientCredentialsToken } from "./client-credentials.js";
 export { refreshAccessToken } from "./refresh.js";
-export { type ClientMetadata, type RegisteredClient, registerClient } from "./registration.js";
+export {
+  type ClientMetadata,
+  GRANT_TYPES,
+  type GrantType,
+  type RegisteredClient,
+  registerClient,
+} from "./registration.js";
 export type { OAuthCallOptions } from "./request.js";
 export { revokeToken } from "./revocation.js";
 export type { AuthorizationServer } from "./server.js";

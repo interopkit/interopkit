@@ -11,6 +11,15 @@ import { MILLISECONDS_PER_SECOND } from "./time.js";
 
 const REGISTERED_METHODS: readonly string[] = ["client_secret_basic", "client_secret_post", "none"];
 
+/** The grant types that this module carries out (RFC 6749 sections 4.1, 4.4 and 6). */
+export const GRANT_TYPES = ["authorization_code", "refresh_token", "client_credentials"] as const;
+
+/** The name of a grant type that a client can register for. */
+export type GrantType = (typeof GRANT_TYPES)[number];
+
+/** The grants of a registration that names none: the ones that Open Badges 3.0 allows, which every server that registers a browser client offers. */
+const DEFAULT_GRANTS: readonly GrantType[] = ["authorization_code", "refresh_token"];
+
 /** What a client tells a server about itself when it registers (RFC 7591 section 2). */
 export interface ClientMetadata {
   /** Where the server may send the browser back to after the user authorizes, absolute URLs. */
@@ -21,6 +30,14 @@ export interface ClientMetadata {
   readonly clientUri: string;
   /** The scopes that the client will ask for. */
   readonly scopes: readonly string[];
+  /**
+   * The grants that the client will use. A server may refuse a registration that asks for a grant it does not offer: Open
+   * Badges 3.0 allows `authorization_code` and `refresh_token` only (7.1.1.2), and LTI tools use `client_credentials`.
+   * `refresh_token` needs `authorization_code`, and a public client (`none`) has no credentials for `client_credentials`.
+   *
+   * @defaultValue `["authorization_code", "refresh_token"]`
+   */
+  readonly grantTypes?: readonly GrantType[];
   /**
    * The logo that the server shows, an `https` URL.
    *
@@ -102,11 +119,36 @@ function checkMetadata(value: unknown): asserts value is ClientMetadata {
       `The tokenEndpointAuthMethod of the client metadata must be ${REGISTERED_METHODS.join(", ")}, found ${describe(method)}.`,
     );
   }
+  if (value.grantTypes !== undefined) checkGrantTypes(value.grantTypes, method);
+}
+
+/** Checks the grant types that the host asks for, against each other and against how the client authenticates. */
+function checkGrantTypes(grants: unknown, method: unknown): void {
+  checkArray(grants, "The grantTypes of the client metadata must be an array");
+  const known: readonly unknown[] = GRANT_TYPES;
+  const unlisted = grants.find((grant) => !known.includes(grant));
+  if (grants.length === 0 || unlisted !== undefined) {
+    throw new DataError(
+      `The grantTypes of the client metadata must list at least one of ${GRANT_TYPES.join(", ")}, found ${describe(unlisted ?? grants)}.`,
+    );
+  }
+  if (new Set(grants).size !== grants.length) {
+    throw new DataError("The grantTypes of the client metadata must not list a grant twice.");
+  }
+  if (grants.includes("refresh_token") && !grants.includes("authorization_code")) {
+    throw new DataError("The grantTypes of the client metadata list refresh_token without authorization_code.");
+  }
+  if (grants.includes("client_credentials") && method === "none") {
+    throw new DataError(
+      "A public client (tokenEndpointAuthMethod none) has no credentials for the client_credentials grant.",
+    );
+  }
 }
 
 /** The request body of RFC 7591 section 3.1, in the names of that RFC. */
 function registrationRequest(metadata: ClientMetadata): Record<string, string | string[]> {
   const method = metadata.tokenEndpointAuthMethod ?? "client_secret_basic";
+  const grants = metadata.grantTypes ?? DEFAULT_GRANTS;
   return {
     redirect_uris: [...metadata.redirectUris],
     client_name: metadata.clientName,
@@ -118,12 +160,9 @@ function registrationRequest(metadata: ClientMetadata): Record<string, string | 
     ...(metadata.softwareId === undefined ? {} : { software_id: metadata.softwareId }),
     ...(metadata.softwareVersion === undefined ? {} : { software_version: metadata.softwareVersion }),
     token_endpoint_auth_method: method,
-    // The grants that this module carries out. A public client has no credentials to give for the client credentials grant.
-    grant_types:
-      method === "none"
-        ? ["authorization_code", "refresh_token"]
-        : ["authorization_code", "refresh_token", "client_credentials"],
-    response_types: ["code"],
+    grant_types: [...grants],
+    // Only the authorization code grant sends the browser to the server and back with a code.
+    response_types: grants.includes("authorization_code") ? ["code"] : [],
   };
 }
 

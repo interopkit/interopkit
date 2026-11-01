@@ -81,7 +81,7 @@ new URL(pending.url).searchParams.get("code_challenge_method"); // => "S256"
 | `OAuthCallOptions`     | `fetch`, `timeoutMs` and `signal` of [service calls](service.md), and `clock`                                                                              |
 | `AccessToken`          | `accessToken`; `expiresAt`, in epoch milliseconds, when the server gave an `expires_in`; `refreshToken` when it sent one; `scopes`                         |
 | `PendingAuthorization` | `url`, `state`, `codeVerifier`, `redirectUri`: what the host keeps in the user's session between the redirect and the callback                             |
-| `ClientMetadata`       | `redirectUris`, `clientName`, `clientUri`, `scopes`; optional `logoUri`, `tosUri`, `policyUri`, `softwareId`, `softwareVersion`, `tokenEndpointAuthMethod` |
+| `ClientMetadata`       | `redirectUris`, `clientName`, `clientUri`, `scopes`; optional `grantTypes`, `logoUri`, `tosUri`, `policyUri`, `softwareId`, `softwareVersion`, `tokenEndpointAuthMethod` |
 | `RegisteredClient`     | An `OAuthClient`, with `registrationAccessToken` and `clientSecretExpiresAt` when the server gave them                                                     |
 
 ## The server
@@ -176,9 +176,12 @@ await current(); // => "at-1"
 
 ## Registration
 
-`registerClient` posts the metadata as JSON in the names of RFC 7591 and asks for the grants that this module carries out:
-`authorization_code` and `refresh_token`, and `client_credentials` unless the client is public (`none`), and the `code`
-response type. The result is an `OAuthClient` that the other calls take: the identifier and the secret that the server issued,
+`registerClient` posts the metadata as JSON in the names of RFC 7591 and asks for the grants in `grantTypes`, which are
+`authorization_code` and `refresh_token` unless the host names others, with the `code` response type when the authorization
+code grant is among them. A server refuses a grant that it does not offer, so ask only for what the API needs: Open Badges 3.0
+allows `authorization_code` and `refresh_token` (7.1.1.2), which is the default, and an LTI tool asks for `client_credentials`.
+`GRANT_TYPES` lists the three grants; `refresh_token` needs `authorization_code`, and a public client has no credentials for
+`client_credentials`. The result is an `OAuthClient` that the other calls take: the identifier and the secret that the server issued,
 or `none` for a public client. The secret is shown once, so the host stores it. `private_key_jwt` is not offered, since it needs
 the client's public keys, which `ClientMetadata` does not carry.
 

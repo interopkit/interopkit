@@ -92,6 +92,7 @@ describe("the public API", () => {
         "exchangeCode",
         "refreshAccessToken",
         "registerClient",
+        "GRANT_TYPES",
         "revokeToken",
       ].sort(),
     );

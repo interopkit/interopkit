@@ -9,6 +9,7 @@ import {
   authorizationRequest,
   clientCredentialsToken,
   exchangeCode,
+  type GrantType,
   type OAuthCallOptions,
   type OAuthClient,
   refreshAccessToken,
@@ -165,16 +166,23 @@ async function browse(url: string, answer: "continue" | "deny"): Promise<URL> {
 }
 
 /** Registers a client at the server. */
-const register = (tokenEndpointAuthMethod?: "client_secret_basic" | "client_secret_post" | "none") =>
+const register = (
+  tokenEndpointAuthMethod?: "client_secret_basic" | "client_secret_post" | "none",
+  grantTypes?: readonly GrantType[],
+) =>
   registerClient(
     SERVER,
-    { ...METADATA, ...(tokenEndpointAuthMethod === undefined ? {} : { tokenEndpointAuthMethod }) },
+    {
+      ...METADATA,
+      ...(tokenEndpointAuthMethod === undefined ? {} : { tokenEndpointAuthMethod }),
+      ...(grantTypes === undefined ? {} : { grantTypes }),
+    },
     options(),
   );
 
 describe("registration at an independent authorization server", () => {
   it("registers a client that gets a secret, and the client works at the token endpoint", async () => {
-    const client = await register();
+    const client = await register(undefined, ["client_credentials"]);
     expect(client).toMatchObject({
       authentication: { method: "client_secret_basic", clientSecret: expect.any(String) },
     });
@@ -185,7 +193,7 @@ describe("registration at an independent authorization server", () => {
   });
 
   it("registers for client_secret_post, and for none", async () => {
-    const post = await register("client_secret_post");
+    const post = await register("client_secret_post", ["client_credentials"]);
     expect(post.authentication).toMatchObject({ method: "client_secret_post" });
     expect((await clientCredentialsToken(SERVER, post, ["write"], options())).scopes).toStrictEqual(["write"]);
     const none = await register("none");

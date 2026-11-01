@@ -106,8 +106,7 @@ beforeAll(async () => {
     findAccount: async (_context: unknown, id: string) => ({ accountId: id, claims: async () => ({ sub: id }) }),
     features: {
       devInteractions: { enabled: true },
-      // `registerClient` of the OAuth module asks for the client credentials grant too, which a server must then accept.
-      clientCredentials: { enabled: true },
+      // The server offers no client credentials grant, as Open Badges 3.0 allows only the authorization code and refresh token grants.
       registration: { enabled: true },
       revocation: { enabled: true },
       introspection: { enabled: true },
@@ -187,16 +186,21 @@ describe("the client with an independent authorization server", () => {
       issuer: ISSUER,
     };
     const options: OAuthCallOptions = { fetch: through, timeoutMs: 10_000, clock: SYSTEM_CLOCK };
-    const registered = await registerClient(
+    const metadata = {
+      redirectUris: [REDIRECT_URI],
+      clientName: "Wallet",
+      clientUri: "https://client.example",
+      scopes: [...service.scopes, "offline_access"],
+    };
+    // A strict server refuses a registration that asks for a grant it does not offer; the default asks for the two that
+    // Open Badges 3.0 allows.
+    const refused = await registerClient(
       server,
-      {
-        redirectUris: [REDIRECT_URI],
-        clientName: "Wallet",
-        clientUri: "https://client.example",
-        scopes: [...service.scopes, "offline_access"],
-      },
+      { ...metadata, grantTypes: ["authorization_code", "client_credentials"] },
       options,
-    );
+    ).catch((error: unknown) => error as ServiceError);
+    expect(refused).toMatchObject({ status: 400, message: expect.stringContaining("invalid_client_metadata") });
+    const registered = await registerClient(server, metadata, options);
     const client = registered;
     if (client.authentication.method !== "client_secret_basic") throw new Error("The server issued no secret.");
     introspectionAuth = `Basic ${btoa(`${client.clientId}:${client.authentication.clientSecret}`)}`;
