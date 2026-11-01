@@ -1190,17 +1190,17 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A port that fails is answered 500 and nothing of the failure is passed on.",
-    file: "packages/competency-frameworks/src/provider/handle-request.ts",
+    file: "packages/core/src/call-port.ts",
     find: "if (signal?.aborted) throw error;",
     replace: "throw error;",
-    test: "packages/competency-frameworks/test/ports.test.ts",
+    test: "packages/core/test/call-port.test.ts",
   },
   {
     rule: "A port that fails after its signal aborted ends the request with the reason of the signal.",
-    file: "packages/competency-frameworks/src/provider/handle-request.ts",
+    file: "packages/core/src/call-port.ts",
     find: "if (signal?.aborted) throw error;",
     replace: "if (false) throw error;",
-    test: "packages/competency-frameworks/test/ports.test.ts",
+    test: "packages/core/test/call-port.test.ts",
   },
   {
     rule: "A store that answers more documents than the limit breaks its contract.",
@@ -2284,7 +2284,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The first part of a message is read as JSON without a repeated property.",
     file: "packages/learning-records/src/attachments/read-multipart.ts",
-    find: "return readStatementJson(text, { maxBytes });",
+    find: "return readStatementJson(text, { maxBytes: limits.maxPartBytes, maxDepth: limits.maxDepth });",
     replace: "return JSON.parse(text);",
     test: "packages/learning-records/test/attachments.test.ts",
   },
@@ -2719,8 +2719,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "Profiles are removed one by one, and only State by context.",
     file: "packages/learning-records/src/store/documents/parameters.ts",
-    find: '(request.method === "DELETE" && resource !== "state")',
-    replace: '(request.method === "DELETE" && false)',
+    find: '(method === "DELETE" && resource !== "state")',
+    replace: '(method === "DELETE" && false)',
     test: "packages/learning-records/test/store-documents.test.ts",
   },
   {
