@@ -18,6 +18,8 @@ export const CONTEXTS = {
   openBadges: "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
   /** CLR 2.0. */
   clr: "https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json",
+  /** The types of the 1EdTech extensions of a credential: `1EdTechJsonSchemaValidator2019`, `1EdTechRevocationList` and `1EdTechCredentialRefresh`. */
+  extensions: "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
 } as const;
 
 /** A context after the ones that a class requires: the address of a context, or a context that the credential holds. */

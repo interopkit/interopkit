@@ -268,5 +268,65 @@
     "url": "https://opensalt.net/ims/case/v1p0/CFPackages/0ef60b38-9109-11e9-9ab3-ef46d22b49d8",
     "file": "0ef60b38-9109-11e9-9ab3-ef46d22b49d8",
     "sha256": "df90dc6a59b925c49e24a15402c8c1a5bc4e62d3d2d963db9f5a69323132c390"
+  },
+  {
+    "url": "https://www.w3.org/2018/credentials/v1",
+    "file": "w3c-credentials-v1",
+    "sha256": "ab4ddd9a531758807a79a5b450510d61ae8d147eab966cc9a200c07095b0cdcc"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/context.json",
+    "file": "ob-context-3.0.0.json",
+    "sha256": "b077fa134d909d92c1dcd1c153f2af1b244aeb415967fdc1467d7fc5dd48ac10"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json",
+    "file": "ob-context-3.0.1.json",
+    "sha256": "5f3d9dd6288ef437ff8286cf95ffbff609c748a66f24a1e9450c45ca64be1571"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json",
+    "file": "ob-context-3.0.2.json",
+    "sha256": "00666ad080ba407687ed1846b7f5e7495f5019042b202a727de47c48a1755c53"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+    "file": "ob-context-3.0.3.json",
+    "sha256": "3d34f4d4ef1bce691106e63798beb5e7b862ba841423f5ee1e53ab7ddf3bca84"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+    "file": "ob-extensions.json",
+    "sha256": "87c06c81bc2317663bf288d740d94fddd2818c4342b186270ff6371dfaa63f93"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/context.json",
+    "file": "clr-context-2.0.0.json",
+    "sha256": "e198d7b517d74c5036434ce495086f67b10244709e9a3df9dcb7f8b1579b6167"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json",
+    "file": "clr-context-2.0.1.json",
+    "sha256": "880f1902d4158f2f33ce06af41b90719977cd1ea337a9de2e41edb3ff5e543d6"
+  },
+  {
+    "url": "https://w3id.org/security/data-integrity/v2",
+    "file": "data-integrity-v2",
+    "sha256": "67f21e6e33a6c14e5ccfd2fc7865f7474fb71a04af7e94136cb399dfac8ae8f4"
+  },
+  {
+    "url": "https://w3id.org/security/multikey/v1",
+    "file": "multikey-v1",
+    "sha256": "ba2c182de2d92f7e47184bcca8fcf0beaee6d3986c527bf664c195bbc7c58597"
+  },
+  {
+    "url": "https://www.w3.org/ns/did/v1",
+    "file": "did-v1",
+    "sha256": "4f3eae5568c9c5f036a082088f9e192019ee06faa78973c87ff91d5421b88dad"
+  },
+  {
+    "url": "https://w3id.org/security/suites/ed25519-2020/v1",
+    "file": "ed25519-2020-v1",
+    "sha256": "b9e1ab971fd8bf2c7553e0c4a9438e0b9450afde1ea1ca5b2492368b9f549588"
   }
 ]

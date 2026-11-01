@@ -37,7 +37,7 @@ export function buildClrCredential(
     "The input",
   );
   const written = {
-    "@context": [CONTEXTS.credentialsV2, CONTEXTS.clr, CONTEXTS.openBadges],
+    "@context": [CONTEXTS.credentialsV2, CONTEXTS.clr, CONTEXTS.openBadges, CONTEXTS.extensions],
     id,
     type: ["VerifiableCredential", "ClrCredential"],
     ...rest,

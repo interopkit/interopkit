@@ -80,6 +80,9 @@ export {
 export {
   CHECK_OUTCOMES,
   type CheckOutcome,
+  type ContextLoader,
+  type DataIntegritySuite,
+  type JsonLdIssue,
   KEY_RELATIONSHIPS,
   type KeyRelationship,
   type KeyResolver,

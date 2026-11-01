@@ -5,7 +5,8 @@
     "src/baking/index.ts",
     "src/client/index.ts",
     "src/keys/index.ts",
-    "src/jwt/index.ts"
+    "src/jwt/index.ts",
+    "src/data-integrity/index.ts"
   ],
   "tsconfig": "tsconfig.build.json",
   "sourceLinkTemplate": "https://github.com/interopkit/interopkit/blob/{gitRevision}/packages/achievement-credentials/{path}#L{line}",

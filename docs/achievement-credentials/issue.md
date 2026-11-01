@@ -60,7 +60,7 @@ const credential = buildAchievementCredential({
   },
 });
 credential.type; // => ["VerifiableCredential", "OpenBadgeCredential"]
-credential["@context"]; // => ["https://www.w3.org/ns/credentials/v2", "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"]
+credential["@context"]; // => ["https://www.w3.org/ns/credentials/v2", "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json", "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json"]
 const recipients = credential.credentialSubject.identifier ?? [];
 recipients.some((recipient) => matchesIdentifier(recipient, { type: "emailAddress", value: "learner@example.edu" })); // => true
 recipients.some((recipient) => matchesIdentifier(recipient, { type: "emailAddress", value: "other@example.edu" })); // => false
@@ -81,9 +81,9 @@ the copy. It adds no proof: a signer does.
 
 | Builder                      | Writes                                                                                                                                   |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `buildAchievementCredential` | The contexts of the Verifiable Credentials Data Model 2.0 and Open Badges 3.0.3, the types `VerifiableCredential` and `OpenBadgeCredential`, a subject of type `AchievementSubject` that holds the `subject` and the `achievement`, and the `credentialSchema` of the official AchievementCredential schema |
+| `buildAchievementCredential` | The contexts of the Verifiable Credentials Data Model 2.0, Open Badges 3.0.3 and the extensions of 1EdTech (which define the type of the `credentialSchema`, so that the credential survives JSON-LD safe mode), the types `VerifiableCredential` and `OpenBadgeCredential`, a subject of type `AchievementSubject` that holds the `subject` and the `achievement`, and the `credentialSchema` of the official AchievementCredential schema |
 | `buildEndorsementCredential` | The same contexts, the types `VerifiableCredential` and `EndorsementCredential`, a subject of type `EndorsementSubject` with the `id` that `endorses` and the `comment`, and the official EndorsementCredential schema                                                              |
-| `buildClrCredential`         | The contexts of the Verifiable Credentials Data Model 2.0, CLR 2.0.1 and Open Badges 3.0.3, the types `VerifiableCredential` and `ClrCredential`, a subject of type `ClrSubject` that holds the learner, the credentials, the achievements and the associations, and the official ClrCredential schema |
+| `buildClrCredential`         | The contexts of the Verifiable Credentials Data Model 2.0, CLR 2.0.1, Open Badges 3.0.3 and the extensions, the types `VerifiableCredential` and `ClrCredential`, a subject of type `ClrSubject` that holds the learner, the credentials, the achievements and the associations, and the official ClrCredential schema |
 
 | Input             | Meaning                                                                                                                                                       | Default                    |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |

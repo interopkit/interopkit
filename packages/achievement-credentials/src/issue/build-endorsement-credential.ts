@@ -21,7 +21,7 @@ import { ENDORSEMENT_CREDENTIAL_SCHEMA } from "./schema-urls.js";
 export function buildEndorsementCredential(input: EndorsementCredentialInput): EndorsementCredential {
   const { id, endorses, comment, ...rest } = readInput(endorsementCredentialInputSchema, input, "The input");
   const written = {
-    "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges],
+    "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges, CONTEXTS.extensions],
     id,
     type: ["VerifiableCredential", "EndorsementCredential"],
     ...rest,

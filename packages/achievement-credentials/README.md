@@ -44,8 +44,9 @@ flowchart LR
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
 environment variable and writes no log. It reaches the network only through a `fetch` that you pass. Its dependencies are
 `@interopkit/core`, [valibot](https://valibot.dev), [@noble/hashes](https://github.com/paulmillr/noble-hashes),
-[saxes](https://github.com/lddubeau/saxes), which `/baking` loads, [jose](https://github.com/panva/jose) and the key libraries of the
-[Interop Alliance](https://github.com/interop-alliance); it needs Node.js 24 or later.
+[saxes](https://github.com/lddubeau/saxes), which `/baking` loads, [jose](https://github.com/panva/jose), the key and Data Integrity
+libraries of the [Interop Alliance](https://github.com/interop-alliance) and `@interopkit/selective-disclosure`; it needs Node.js 24
+or later.
 
 ```bash
 npm install @interopkit/achievement-credentials
@@ -64,7 +65,7 @@ npm install @interopkit/achievement-credentials
 |                                       | `AchievementCredential`, `EndorsementCredential`, `ClrCredential`, `VerifiableCredential`, `Achievement`, `Profile` and the other classes of Open Badges and CLR: the model                                        |
 |                                       | `AchievementCredentialV1p1`, `EndorsementCredentialV1p1`, `ClrCredentialV1p1`, `VerifiableCredentialV1p1`: the credentials under the Verifiable Credentials Data Model 1.1                                         |
 |                                       | `GetOpenBadgeCredentialsResponse`, `GetClrCredentialsResponse`, `ImsxStatusInfo`, `ServiceDescriptionDocument`, `Multikey`, `JWK`, `JWKS`: the models of the APIs and of keys                                      |
-|                                       | `KeyResolver`, `VerificationKey`, `VerificationCheck`, `ProofResult`, `KEY_RELATIONSHIPS`, `VERIFICATION_CHECKS`, `CHECK_OUTCOMES`: the terms of verification |
+|                                       | `KeyResolver`, `VerificationKey`, `VerificationCheck`, `ProofResult`, `ContextLoader`, `DataIntegritySuite`, `JsonLdIssue`, `KEY_RELATIONSHIPS`, `VERIFICATION_CHECKS`, `CHECK_OUTCOMES`: the terms of verification |
 |                                       | `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CONTEXTS`, `ACHIEVEMENT_TYPES`, `ALIGNMENT_TARGET_TYPES`, `IDENTIFIER_TYPES`, `RESULT_TYPES`, `AUTHORIZATION_ERRORS` and the other vocabularies                               |
 |                                       | `IssuableCredential`, `CredentialV1p1`, `AnyCredential`, `Entity`, `CredentialKind`, `EntityKind`, `ExtensionTerm` and the types of the vocabularies                                                               |
 |                                       | `BakedCredential`, `BakedKind`: a credential read from an image, and its kind                                                                                                                                      |
@@ -75,6 +76,11 @@ npm install @interopkit/achievement-credentials
 |                                       | `verifyIssuerKey`: check that a key belongs to an issuer, as an `issuer` check                                                                                                                                      |
 | `@interopkit/achievement-credentials/jwt` | `signCredentialJwt`, `JwtSignOptions`: sign a credential as a JWT over a `Signer`, as Open Badges 8.2 asks                                                                                                         |
 |                                       | `readCredentialJwt`, `JwtReadOptions`: verify a compact JWS and read its credential, with the key bound to the issuer                                                                                              |
+| `@interopkit/achievement-credentials/data-integrity` | `addProof`, `ProofOptions`: sign a credential with `eddsa-rdfc-2022`, or write the base proof of `ecdsa-sd-2023`                                                                  |
+|                                       | `deriveDisclosure`, `DisclosureOptions`: derive a disclosure from a base proof                                                                                                                                      |
+|                                       | `verifyProof`, `DataIntegrityVerifyOptions`: verify the proofs of a credential, with the key bound to the issuer                                                                                                  |
+|                                       | `validateJsonLd`: what JSON-LD safe mode would drop                                                                                                                                                                 |
+|                                       | `createContextLoader`, `ContextLoaderOptions`, `KNOWN_CONTEXTS`: contexts only at their pins                                                                                                                       |
 
 ```ts
 import { readCredential, validateCredential } from "@interopkit/achievement-credentials";

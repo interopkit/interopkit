@@ -10,7 +10,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
 `@interopkit/learning-records` implements the xAPI Statement and its readers, the message of its Attachments, its signature, a client of an LRS and the handler of its requests,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
-implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client of the Open Badges and CLR APIs, the keys that verify them and their JWT proof.
+implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client of the Open Badges and CLR APIs, the keys that verify them and their JWT and Data Integrity proofs.
 
 ```mermaid
 flowchart BT
@@ -22,7 +22,7 @@ flowchart BT
   cf["competency-frameworks<br/>model, read, version, graph, client, provider"]
   lr["learning-records<br/>model, read, build, compare, format,<br/>attachments, signing, client, store"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
-  ac["achievement-credentials<br/>model, read, issue, compare, baking, client,<br/>keys, jwt"]
+  ac["achievement-credentials<br/>model, read, issue, compare, baking, client,<br/>keys, jwt, data-integrity"]
   proto --> core
   tool --> proto
   plat --> proto
@@ -31,6 +31,7 @@ flowchart BT
   lr --> core
   sd --> core
   ac --> core
+  ac --> sd
   gates["pnpm lint, check:standards, check:rules,<br/>typecheck, test, knip"] --> merge["Merge"]
 ```
 
@@ -88,7 +89,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/learning-records/`         | xAPI 2.0: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
-| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/` |
+| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/` |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -146,8 +147,9 @@ current behavior only, and never how it came to be. A package's changeset is wri
   assesskit and measurekit, to the adapter of each product and to the host.
 - `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders, the comparison of
   credentials, baking in PNG and SVG images, the client of the Open Badges and CLR APIs, the keys that verify credentials with
-  their binding to the issuer, and the JWT proof. It does not own Data Integrity proofs, status lists, verification, the provider
-  of the APIs, the OAuth 2.0 clients (those of `core/oauth`) or Open Badges 2.0 (those arrive in later modules), nor wallets,
+  their binding to the issuer, the JWT and Data Integrity proofs with the loader of contexts and their pins. It does not own
+  JSON-LD processing and the cryptosuites (the Interop Alliance libraries do them), status lists, verification, the provider of
+  the APIs, the OAuth 2.0 clients (those of `core/oauth`) or Open Badges 2.0 (those arrive in later modules), nor wallets,
   issuing platforms and storage. It reaches the network only through a `Fetch` that the caller passes.
 - `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
   canonicalization (the primitives of `@digitalbazaar/di-sd-primitives` do them), the resolution and binding of keys, the
@@ -170,7 +172,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   either. In `selective-disclosure`, `proof-value/`, `keys/` and `document/` import none of the other folders, and
   `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`
   imports no other module, `read/` builds on `model/` only, `issue/`, `compare/`, `baking/` and `client/` build on `model/` and `read/`
-  and never import each other, `keys/` builds on `model/` only, and `jwt/` builds on `model/`, `read/` and `keys/`. In `learning-records`, `model/` imports no other module,
+  and never import each other, `keys/` builds on `model/` only, and `jwt/` and `data-integrity/` build on `model/`, `read/` and `keys/` and never import each other. In `learning-records`, `model/` imports no other module,
   `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
   `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
   `model/`, `read/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. Imports never form cycles.
@@ -182,7 +184,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   two weeks old, and recorded in `SECURITY.md` with their reason and license. `pnpm-workspace.yaml` sets
   `minimumReleaseAge` so that an install cannot pick a younger version.
 - Generic concerns use mature libraries: `jose` for JOSE, `@interop/did-method-key`, `@interop/did-web-resolver` and the Multikey
-  packages of the Interop Alliance for DIDs and Multikeys, `valibot` for schemas, `uuid` for name-based UUIDs, `@noble/hashes` for the hashes of an identity and of an address, `oauth4webapi` for
+  packages and the Data Integrity packages of the Interop Alliance (`@interop/jsonld-signatures`, `data-integrity-proof`,
+  `ed25519-signature`, `ecdsa-signature`, `jsonld`) for DIDs, Multikeys and the cryptosuites, `valibot` for schemas, `uuid` for name-based UUIDs, `@noble/hashes` for the hashes of an identity and of an address, `oauth4webapi` for
   OAuth 2.0 clients, `momoa` for the syntax tree of JSON where a property given twice must be seen,
   `@remix-run/multipart-parser` for `multipart/mixed` messages, `saxes` for the XML of an SVG. Hand-written
   code is for domain logic that no library does correctly, with the reason in the guide of the module.

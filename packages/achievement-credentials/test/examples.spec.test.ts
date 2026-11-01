@@ -169,7 +169,11 @@ describe("the builders against the credentials that the specifications print", (
         achievement,
       };
       const built = buildAchievementCredential(input as never);
-      expect(built).toStrictEqual({ ...example, "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges] });
+      // The credentials of the page leave out the context of the extensions, which defines the type of the schema.
+      expect(built).toStrictEqual({
+        ...example,
+        "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges, CONTEXTS.extensions],
+      });
       expect(type).toStrictEqual(["AchievementSubject"]);
     }
   });
@@ -208,7 +212,7 @@ describe("the builders against the credentials that the specifications print", (
       } as never);
       // The pages print the schema of an AchievementCredential in a ClrCredential; the CLR's own is what 7.2 asks for.
       expect(built).toMatchObject({
-        "@context": [CONTEXTS.credentialsV2, CONTEXTS.clr, CONTEXTS.openBadges],
+        "@context": [CONTEXTS.credentialsV2, CONTEXTS.clr, CONTEXTS.openBadges, CONTEXTS.extensions],
         id: example.id,
         type: example.type,
         name: example.name,

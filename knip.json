@@ -8,7 +8,14 @@
       "entry": ["src/index.ts", "src/client/index.ts", "src/graph/index.ts", "src/provider/index.ts"]
     },
     "packages/achievement-credentials": {
-      "entry": ["src/index.ts", "src/baking/index.ts", "src/client/index.ts", "src/keys/index.ts", "src/jwt/index.ts"]
+      "entry": [
+        "src/index.ts",
+        "src/baking/index.ts",
+        "src/client/index.ts",
+        "src/keys/index.ts",
+        "src/jwt/index.ts",
+        "src/data-integrity/index.ts"
+      ]
     },
     "packages/learning-analytics": {
       "entry": ["src/index.ts"]

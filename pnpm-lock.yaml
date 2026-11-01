@@ -259,6 +259,9 @@ importers:
 
   packages/achievement-credentials:
     dependencies:
+      '@interop/data-integrity-proof':
+        specifier: 3.4.8
+        version: 3.4.8
       '@interop/did-method-key':
         specifier: 7.5.1
         version: 7.5.1
@@ -268,12 +271,27 @@ importers:
       '@interop/ecdsa-multikey':
         specifier: 2.4.2
         version: 2.4.2
+      '@interop/ecdsa-signature':
+        specifier: 2.0.10
+        version: 2.0.10(@interop/jsonld-signatures@11.9.0)
+      '@interop/ed25519-signature':
+        specifier: 7.2.5
+        version: 7.2.5(@interop/jsonld-signatures@11.9.0)
       '@interop/ed25519-verification-key':
         specifier: 8.2.2
         version: 8.2.2
+      '@interop/jsonld':
+        specifier: 9.0.3
+        version: 9.0.3
+      '@interop/jsonld-signatures':
+        specifier: 11.9.0
+        version: 11.9.0
       '@interopkit/core':
         specifier: workspace:^
         version: link:../core
+      '@interopkit/selective-disclosure':
+        specifier: workspace:^
+        version: link:../selective-disclosure
       '@noble/hashes':
         specifier: 2.4.0
         version: 2.4.0
@@ -1069,6 +1087,10 @@ packages:
     resolution: {integrity: sha512-FGj+D6VLb3q+UxAA5PRB0caoj5/cdpDLRW7Hu5cMI7xnpsEABnEi5leOL/BonTtSM6T/OdE/cuTOcrba0TGPdQ==}
     engines: {node: '>=24.0'}
 
+  '@interop/data-integrity-proof@3.4.8':
+    resolution: {integrity: sha512-4L7WlVxw4D7gQ80RWP40GVlAIq2ptY4qqKH863k3iy+LJAuNnPes8RrVwxzKv0FUEjFI8AdrZ/fdnLD2yoCr5A==}
+    engines: {node: '>=24.0'}
+
   '@interop/did-io@4.2.2':
     resolution: {integrity: sha512-Q/tko2ZQWP61R9nLHoEQaB4eaQn2XwYhaRmZHjv8/C4OT/dQSjvFjR8VeJfA6vTLEl8Urh2eRzUik2lVFuAUJw==}
     engines: {node: '>=24.0'}
@@ -1085,6 +1107,24 @@ packages:
     resolution: {integrity: sha512-qTNEf251RIz1KkW1TKxH1oty6i8JlOK2+Lw6rAxaeUoAYY+vgRswv6aWn39aDMPyf+eHhzQzQEZlqX/ZSbOCXg==}
     engines: {node: '>=24.0'}
 
+  '@interop/ecdsa-signature@2.0.10':
+    resolution: {integrity: sha512-VwA2ZLJbUiN/3kumHyp+4A2DcB+lc7Ak/aSkC1KT+ePuI39YZWyra4oqm+ERwksDXVkHS+uN4YK4/xc9Ucg8ag==}
+    engines: {node: '>=24.0'}
+    peerDependencies:
+      '@interop/jsonld-signatures': ^11.6.7
+    peerDependenciesMeta:
+      '@interop/jsonld-signatures':
+        optional: true
+
+  '@interop/ed25519-signature@7.2.5':
+    resolution: {integrity: sha512-5CMxkBl9iCoV5Zt8qr9R9hLQpU+3ihDe22x71YPzE3FvoJmBkOKyDDTvrWSSvMYJxzxNWAfpO5AA1+LPdEqVMw==}
+    engines: {node: '>=24.0'}
+    peerDependencies:
+      '@interop/jsonld-signatures': ^11.7.1
+    peerDependenciesMeta:
+      '@interop/jsonld-signatures':
+        optional: true
+
   '@interop/ed25519-verification-key@8.2.2':
     resolution: {integrity: sha512-6ML8T30+Oe7sHh0gR8BURz7F0vxSJ3XJmKqeDEWJjHnzYi1GlsnO7HAHQxlHLeP06V5+hZirjISKUERTH3Tztg==}
     engines: {node: '>=20'}
@@ -1097,6 +1137,14 @@ packages:
   '@interop/http-client@1.0.5':
     resolution: {integrity: sha512-t/zL0+mQOjNkzj6usOv6MCOvG/HVOH1GG8Dbp03ympkf4NVOaJavBBJZuE05Xi1Sp4izmjHydDwnJLlzkZpzXQ==}
     engines: {node: '>=22.12'}
+
+  '@interop/jsonld-signatures@11.9.0':
+    resolution: {integrity: sha512-WarIUNo8IdZfpN1T/Y+9LhtMLORRxoAJWC7sEHcmggIfH4M0VkAkq4KbQmzAStuT5uuz7gCjKiVOzT7vjuGzag==}
+    engines: {node: '>=18'}
+
+  '@interop/jsonld@9.0.3':
+    resolution: {integrity: sha512-i25LeKC9a9GBdwVGopwGlzvTQPuq5Ssgvt/Vh3XdNhJ2yIySCZmp+XApKlL14PxnjewFUfRnBO+bpm1qiAZW/A==}
+    engines: {node: '>=18'}
 
   '@interop/lru-memoize@4.0.3':
     resolution: {integrity: sha512-6c8dnoQNIiL25Q4YovC1a44mREO1lzW3F/lmvdwbAMMbhtGGRoQeqo1H4diwNhBzaxRrUMXrAIwbM26POmI/Yg==}
@@ -1656,6 +1704,11 @@ packages:
     resolution: {integrity: sha512-F705O3xrsUtgt98j7leetNhTWPe+5S72rlL5O4jA1pKqBVQ/dT1O1D6PFxmSXvc0SUOinWS57DKx0I3CHrXJHQ==}
     hasBin: true
 
+  canonicalize@3.0.0:
+    resolution: {integrity: sha512-yYLfHyDMIXRyRqsKBRLX023riFLpXY2YOfdtqKXZRZy9qsfOJ9U+4F9YZL7MEzL5+ziN2x2nlBvY/Voi3EBljA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   cborg@4.5.8:
     resolution: {integrity: sha512-6/viltD51JklRhq4L7jC3zgy6gryuG5xfZ3kzpE+PravtyeQLeQmCYLREhQH7pWENg5pY4Yu/XCd6a7dKScVlw==}
     hasBin: true
@@ -1816,6 +1869,9 @@ packages:
   did-context@3.1.1:
     resolution: {integrity: sha512-iFpszgSxc7d1kNBJWC+PAzNTpe5LPalzsIunTMIpbG3O37Q7Zi7u4iIaedaM7UhziBhT+Agr9DyvAiXSUyfepQ==}
 
+  ed25519-signature-2020-context@1.1.0:
+    resolution: {integrity: sha512-dBGSmoUIK6h2vadDctrDnhhTO01PR2hJk0mRNEfrRDPCjaIwrfy4J+eziEQ9Q1m8By4f/CSRgKM1h53ydKfdNg==}
+
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
@@ -1881,6 +1937,9 @@ packages:
 
   fast-string-width@3.0.2:
     resolution: {integrity: sha512-gX8LrtNEI5hq8DVUfRQMbr5lpaS4nMIWV+7XEbXk2b8kiQIizgnlr12B4dA3ZEx3308ze0O4Q1R+cHts8kyUJg==}
+
+  fast-text-encoding@1.0.6:
+    resolution: {integrity: sha512-VhXlQgj9ioXCqGstD37E/HBeqEGV/qOD/kmbVG8h5xKBYvM1L3lR1Zn4555cQ8GkYbJa8aJSipLPndE1k6zK2w==}
 
   fast-wrap-ansi@0.2.2:
     resolution: {integrity: sha512-7F2Fl+TjRSenLqlU3UjSH0iyqopqoZIu7eZVpEirP2g1GtWa2G/ecEmBdgz31+Mxr+ELclgg6sokpSFIQiZ02Q==}
@@ -3275,6 +3334,13 @@ snapshots:
     dependencies:
       '@scure/base': 2.4.0
 
+  '@interop/data-integrity-proof@3.4.8':
+    dependencies:
+      '@interop/data-integrity-core': 8.9.0
+      '@interop/jsonld-signatures': 11.9.0
+      '@noble/hashes': 2.4.0
+      '@scure/base': 2.4.0
+
   '@interop/did-io@4.2.2':
     dependencies:
       '@interop/data-integrity-core': 8.9.0
@@ -3304,6 +3370,29 @@ snapshots:
       '@interop/data-integrity-core': 8.9.0
       '@scure/base': 2.4.0
 
+  '@interop/ecdsa-signature@2.0.10(@interop/jsonld-signatures@11.9.0)':
+    dependencies:
+      '@interop/ecdsa-multikey': 2.4.2
+      '@interop/jsonld': 9.0.3
+      canonicalize: 3.0.0
+      rdf-canonize: 5.0.0
+    optionalDependencies:
+      '@interop/jsonld-signatures': 11.9.0
+
+  '@interop/ed25519-signature@7.2.5(@interop/jsonld-signatures@11.9.0)':
+    dependencies:
+      '@interop/data-integrity-core': 8.9.0
+      '@interop/data-integrity-proof': 3.4.8
+      '@interop/ed25519-verification-key': 8.2.2
+      '@interop/jsonld': 9.0.3
+      canonicalize: 3.0.0
+      ed25519-signature-2020-context: 1.1.0
+      rdf-canonize: 5.0.0
+    optionalDependencies:
+      '@interop/jsonld-signatures': 11.9.0
+    transitivePeerDependencies:
+      - react-native-get-random-values
+
   '@interop/ed25519-verification-key@8.2.2':
     dependencies:
       '@interop/data-integrity-core': 8.9.0
@@ -3315,6 +3404,22 @@ snapshots:
     dependencies:
       ky: 1.14.3
       undici: 7.30.1
+
+  '@interop/jsonld-signatures@11.9.0':
+    dependencies:
+      '@digitalbazaar/security-context': 1.0.1
+      '@interop/data-integrity-core': 8.9.0
+      '@interop/jsonld': 9.0.3
+      fast-text-encoding: 1.0.6
+      rdf-canonize: 5.0.0
+      serialize-error: 8.1.0
+
+  '@interop/jsonld@9.0.3':
+    dependencies:
+      '@interop/http-client': 1.0.5
+      canonicalize: 2.1.0
+      lru-cache: 6.0.0
+      rdf-canonize: 5.0.0
 
   '@interop/lru-memoize@4.0.3':
     dependencies:
@@ -3731,6 +3836,8 @@ snapshots:
 
   canonicalize@2.1.0: {}
 
+  canonicalize@3.0.0: {}
+
   cborg@4.5.8: {}
 
   cborg@6.1.3: {}
@@ -3912,6 +4019,8 @@ snapshots:
 
   did-context@3.1.1: {}
 
+  ed25519-signature-2020-context@1.1.0: {}
+
   ee-first@1.1.1: {}
 
   emoji-regex@8.0.0: {}
@@ -3982,6 +4091,8 @@ snapshots:
   fast-string-width@3.0.2:
     dependencies:
       fast-string-truncated-width: 3.0.3
+
+  fast-text-encoding@1.0.6: {}
 
   fast-wrap-ansi@0.2.2:
     dependencies:

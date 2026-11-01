@@ -203,6 +203,11 @@ the address that the connection resolves to.
 | An issuer or a `kid` chosen to make the verifier fetch                        | HTTPS only, no redirects, a deadline and a size limit; a document is fetched again for a missing key once a minute at most, and the cache holds 1,000 documents                         |
 | A private key in the header of a token, or a signature that a verifier would refuse | `signCredentialJwt` refuses a `jwk` with a private member and a signature of the wrong length (DER from a KMS) before it returns                                                       |
 | A key set member of a shared platform used for another issuer                 | A member's `iss` must be the issuer; a member with none binds every issuer of its host, so a platform writes the `iss` of each                                                            |
+| A context named by a credential, to make the verifier fetch or trust a document | A processor of JSON-LD loads a context through the loader of the package and no other; an address with no pin is refused before any read or fetch; a document that differs from its pin is refused always; a test fails if a processor reaches the default loader of the library or the network |
+| A credential whose graph costs more to canonicalize than it should (a clique of alike blank nodes) | The work factor of the canonicalization stays at the default of 1; the labelling stops with an error, which is a proof that does not verify, and a test pins it with such a graph |
+| An `ecdsa-sd-2023` base proof given to a verifier, which holds the key of the proof and every signature | `verifyProof` refuses it and says to derive a disclosure first; the guide says that disclosures of one credential can be linked |
+| A proof for a purpose other than assertion, an expired proof, a legacy proof | Only `assertionMethod` counts, `expires` is compared with the clock within the skew, and `Ed25519Signature2020` needs `legacyProofs` |
+| A signer that signs another algorithm than the cryptosuite names, or names no key | `addProof` refuses it with a `DataError` before it signs |
 
 ## Selective disclosure
 
@@ -406,6 +411,14 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `achievement-credentials` | Levels that a document of keys nests                                     | 16                                | levels       | The document holds nothing; not replaceable |
 | `achievement-credentials` | Keys that a document lists                                               | 100                               | keys         | The document publishes nothing; not replaceable |
 | `achievement-credentials` | Bits of an RSA modulus of a key                                          | 8,192                             | bits         | The key is left out; not replaceable |
+| `achievement-credentials` | `maxInputBytes` of `verifyProof`                                         | 1,048,576                         | characters   | The credential as JSON, checked before it is read; the proof is not valid |
+| `achievement-credentials` | `maxDepth` of `verifyProof`                                              | 64                                | levels       | The credential, counted from its text before it is read; the proof is not valid |
+| `achievement-credentials` | `maxBytes` of `createContextLoader`                                      | 262,144                           | bytes        | One context; a `ServiceError` |
+| `achievement-credentials` | `timeoutMs` of `createContextLoader`                                     | 10,000                            | milliseconds | One fetch of a context; a `ServiceError` |
+| `achievement-credentials` | Levels that a context nests                                              | 64                                | levels       | A fetched context; a `DataError`; not replaceable |
+| `achievement-credentials` | Contexts kept in memory by a loader                                      | 100                               | contexts     | The oldest goes first; not replaceable |
+| `achievement-credentials` | Findings of `validateJsonLd`                                             | 100                               | findings     | The rest are not reported; not replaceable |
+| `achievement-credentials` | RDF canonicalization work factor                                         | 1                                 |              | `rdf-canonize` default, which the cryptosuites keep; the proof does not verify, and signing is a `DataError` |
 | `selective-disclosure`    | `maxBytes` of `addBaseProof`, `deriveProof` and `verify`                 | 1,048,576                         | bytes                  | The document with its proof, as JSON; a `DataError` above it, and `false` from `verify`                                                                   |
 | `selective-disclosure`    | Levels that a document, a proof or a context nests                       | 64                                | levels                 | Checked before any processing; a `DataError`, and `false` from `verify`; not replaceable                                                                  |
 | `selective-disclosure`    | RDF canonicalization work factor                                         | 1                                 |                        | `maxWorkFactor` of the canonicalization; a `DataError`, and `false` from `verify`; not replaceable                                                        |
@@ -451,6 +464,11 @@ The packages that the libraries load at run time are pinned to exact versions at
 | `@interop/did-web-resolver`       | 6.5.0   | MIT          | `achievement-credentials`: derives the address of a `did:web` document and checks that the document names the DID. The fetch is the host's, passed in, and its logger says nothing |
 | `@interop/ed25519-verification-key` | 8.2.2 | BSD-3-Clause | `achievement-credentials`: reads an Ed25519 Multikey into a JWK |
 | `@interop/ecdsa-multikey`         | 2.4.2   | BSD-3-Clause | `achievement-credentials`: reads a P-256 or P-384 Multikey (compressed point) into a JWK |
+| `@interop/jsonld`                 | 9.0.3   | BSD-3-Clause | `achievement-credentials`: expands a credential in safe mode for `validateJsonLd`, and processes it for the proofs. Every call gets the loader of the package. Node.js 18 or later |
+| `@interop/jsonld-signatures`      | 11.9.0  | BSD-3-Clause | `achievement-credentials`: `sign` and the proof purpose of `addProof` |
+| `@interop/data-integrity-proof`   | 3.4.8   | MIT          | `achievement-credentials`: the data to sign and the check of the signature of a Data Integrity proof. Node.js 24 or later |
+| `@interop/ed25519-signature`      | 7.2.5   | BSD-3-Clause | `achievement-credentials`: the cryptosuite `eddsa-rdfc-2022` and the legacy `Ed25519Signature2020` |
+| `@interop/ecdsa-signature`        | 2.0.10  | BSD-3-Clause | `achievement-credentials`: the cryptosuite `ecdsa-rdfc-2019` |
 
 Two packages in the tree of `achievement-credentials` carry a license off the list. The owner approved both on 2026-11-01, and
 `scripts/check-licenses.ts` names them: `did-context` (JSON-LD data files under the W3C Software and Document License, the code

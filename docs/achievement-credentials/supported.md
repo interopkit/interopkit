@@ -10,8 +10,8 @@ flowchart LR
   model --> issue["Builders, identities,<br/>comparison, summary"]
   model --> baking["Baking in PNG and SVG,<br/>both kinds"]
   model --> client["Client of the APIs:<br/>discovery, credentials, profile"]
-  model --> keys["Keys, issuer binding,<br/>JWT proofs"]
-  spec -.-> outside["Not included here:<br/>Data Integrity proofs, status, refresh,<br/>verification, the provider of the APIs, Open Badges 2.0"]
+  model --> keys["Keys, issuer binding,<br/>JWT and Data Integrity proofs"]
+  spec -.-> outside["Not included here:<br/>status, refresh, verification,<br/>the provider of the APIs, Open Badges 2.0"]
 ```
 
 | Area                    | Specification              | Included                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -37,12 +37,15 @@ flowchart LR
 | VC-JWT proof            | OB 8.2, VC-JOSE-COSE       | `signCredentialJwt` over a `Signer`: the claims `iss`, `jti`, `nbf`, `sub`, `exp`, `kid` or `jwk`, `typ`; a CLR with its nested credentials as compact JWS. `readCredentialJwt` reads that form, the VC-JOSE-COSE form and the `vc` claim form of VC-JWT 1.1 |
 | Keys                    | OB 8.5, B.6                | `createKeyResolver`: a `kid` or verification method at an HTTPS address (a JWK, a Multikey, a key set, a controller document), `did:key` and `did:web`; other DID methods through a port |
 | Issuer binding          | Guide 3.1.12               | `verifyIssuerKey`: a key counts when the issuer publishes it under `assertionMethod` in its document or in the key set at `/.well-known/jwks.json`, with `controller` and `iss` kept apart |
+| Data Integrity proofs   | OB 8.3, Conformance 3.1.1, 4.2.1 | `addProof` with `eddsa-rdfc-2022` and `ecdsa-sd-2023` (the base proof), `deriveDisclosure`, `verifyProof` for `eddsa-rdfc-2022`, `ecdsa-rdfc-2019`, `ecdsa-sd-2023` and, with `legacyProofs`, `Ed25519Signature2020`; the key must be bound to the issuer |
+| JSON-LD safe mode       | OB Conformance 3           | `validateJsonLd`: the properties and values that safe mode drops, with their paths                                                                                  |
+| Contexts                | OB 5.3, VC Data Model 2.0  | `createContextLoader`: a context only at the pin of its address (`KNOWN_CONTEXTS`: VC 1.1 and 2.0, OB 3.0.0 to 3.0.3 and its extensions, CLR 2.0.0 and 2.0.1, Data Integrity 2, Multikey, DID) |
 
 ## Not included
 
 | Not included                                                         | Why                                                                                                         |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Data Integrity proofs, status lists, refresh, verification           | They need contexts, a clock and requests; the readers only check shape and the rules of the subject         |
+| Status lists, refresh, verification of a whole credential            | They need a clock and requests; the readers only check shape and the rules of the subject                    |
 | The provider side of the APIs of Open Badges and CLR                 | A server over requests, with the host's storage and authorization                                            |
 | Open Badges 2.0                                                      | A model of its own                                                                                          |
 | JSON-LD processing, a map of languages for a text, a single context | The compacted form is read as JSON; the contexts give no language container and a credential needs both contexts |

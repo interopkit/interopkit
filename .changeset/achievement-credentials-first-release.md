@@ -43,3 +43,11 @@ signs a credential over a `Signer` as Open Badges 8.2 asks, with a CLR's nested 
 `readCredentialJwt` verifies a compact JWS of the Open Badges form, the VC-JOSE-COSE form or the `vc` claim form of VC-JWT 1.1,
 checks its claims against the credential, and refuses a key that the issuer does not publish unless `allowUnboundKeys` is set.
 The package needs Node.js 24 or later.
+
+`addProof` signs a credential with `eddsa-rdfc-2022`, or writes the base proof of `ecdsa-sd-2023`, over a `Signer`; `deriveDisclosure`
+derives a disclosure from a base proof, and `verifyProof` verifies the Data Integrity proofs of a credential (`eddsa-rdfc-2022`,
+`ecdsa-rdfc-2019`, `ecdsa-sd-2023` and, on request, `Ed25519Signature2020`, or the suites that a host passes), with the key bound
+to the issuer; it refuses a base proof. `createContextLoader` serves a JSON-LD context only after its document matches the pin of its
+address (`KNOWN_CONTEXTS` pins those of Verifiable Credentials, Open Badges, CLR, Data Integrity, Multikey and DID), and every
+processor of JSON-LD loads contexts through it and no other way. `validateJsonLd` lists what safe mode would drop. The builders write
+the context of the 1EdTech extensions, so that a built credential survives safe mode.

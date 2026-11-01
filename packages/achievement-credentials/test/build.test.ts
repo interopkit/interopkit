@@ -35,7 +35,7 @@ const CREDENTIAL_SCHEMA = {
 describe("buildAchievementCredential", () => {
   it("writes the contexts, the types, the subject and the official schema around the input", () => {
     expect(buildAchievementCredential(achievementInput())).toStrictEqual({
-      "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges],
+      "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges, CONTEXTS.extensions],
       id: "https://example.edu/credentials/1",
       type: ["VerifiableCredential", "OpenBadgeCredential"],
       name: "Course badge",
@@ -159,7 +159,7 @@ describe("buildEndorsementCredential", () => {
 
   it("writes the subject that names what is endorsed, and the official schema", () => {
     expect(buildEndorsementCredential(input())).toStrictEqual({
-      "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges],
+      "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges, CONTEXTS.extensions],
       id: "https://example.edu/endorsements/1",
       type: ["VerifiableCredential", "EndorsementCredential"],
       name: "Endorsement",
@@ -215,7 +215,7 @@ describe("buildClrCredential", () => {
   it("writes the three contexts, the subject that holds the credentials, and the official schema", () => {
     const clr = buildClrCredential(input());
     expect(clr).toStrictEqual({
-      "@context": [CONTEXTS.credentialsV2, CONTEXTS.clr, CONTEXTS.openBadges],
+      "@context": [CONTEXTS.credentialsV2, CONTEXTS.clr, CONTEXTS.openBadges, CONTEXTS.extensions],
       id: "https://example.edu/clrs/1",
       type: ["VerifiableCredential", "ClrCredential"],
       name: "Transcript",

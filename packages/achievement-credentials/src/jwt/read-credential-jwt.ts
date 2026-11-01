@@ -1,8 +1,7 @@
-import { DataError, ServiceError } from "@interopkit/core";
+import { DataError } from "@interopkit/core";
 import { describe, isRecord, nestsDeeperThan } from "@interopkit/core/checks";
 import { base64url, compactVerify, importJWK } from "jose";
-import { verifyIssuerKey } from "../keys/index.js";
-import { publicJwk, thumbprintOf, thumbprintUri } from "../keys/internal.js";
+import { bindKey, publicJwk, thumbprintOf, thumbprintUri } from "../keys/internal.js";
 import type { AnyCredential, ProofResult, VerificationKey } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
 import { ADDED_CLAIMS, dateTimeOf, disagreement, valuesOf } from "./claims.js";
@@ -238,11 +237,6 @@ export async function readCredentialJwt(jws: string, options: JwtReadOptions): P
   if ("reason" in read) return invalid(read.reason);
   const { value: key } = verified;
   const { value: credential } = read;
-  if (settings.allowUnboundKeys) return { valid: true, credential, key, bound: false };
-  const binding = await verifyIssuerKey(key, valuesOf(credential).issuer, {
-    keys: settings.keys,
-    ...(settings.signal === undefined ? {} : { signal: settings.signal }),
-  });
-  if (binding.outcome === "unavailable") throw new ServiceError(binding.detail, 0, "");
-  return binding.outcome === "passed" ? { valid: true, credential, key, bound: true } : invalid(binding.detail);
+  const binding = await bindKey(key, valuesOf(credential).issuer, settings);
+  return "reason" in binding ? invalid(binding.reason) : { valid: true, credential, key, bound: binding.bound };
 }

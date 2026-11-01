@@ -654,6 +654,8 @@
                       "**/client/**",
                       "**/compare",
                       "**/compare/**",
+                      "**/data-integrity",
+                      "**/data-integrity/**",
                       "**/issue",
                       "**/issue/**",
                       "**/jwt",
@@ -689,6 +691,8 @@
                       "**/client/**",
                       "**/compare",
                       "**/compare/**",
+                      "**/data-integrity",
+                      "**/data-integrity/**",
                       "**/issue",
                       "**/issue/**",
                       "**/jwt",
@@ -722,6 +726,8 @@
                       "**/client/**",
                       "**/compare",
                       "**/compare/**",
+                      "**/data-integrity",
+                      "**/data-integrity/**",
                       "**/jwt",
                       "**/jwt/**",
                       "**/keys",
@@ -753,6 +759,8 @@
                       "**/client/**",
                       "**/compare",
                       "**/compare/**",
+                      "**/data-integrity",
+                      "**/data-integrity/**",
                       "**/issue",
                       "**/issue/**",
                       "**/jwt",
@@ -786,10 +794,43 @@
                       "**/client/**",
                       "**/compare",
                       "**/compare/**",
+                      "**/data-integrity",
+                      "**/data-integrity/**",
                       "**/issue",
                       "**/issue/**"
                     ],
                     "message": "jwt/ builds on model/, read/, keys/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/achievement-credentials/src/data-integrity/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/baking",
+                      "**/baking/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/issue",
+                      "**/issue/**",
+                      "**/jwt",
+                      "**/jwt/**"
+                    ],
+                    "message": "data-integrity/ builds on model/, read/, keys/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
                 ]
               }
@@ -813,6 +854,8 @@
                       "**/baking/**",
                       "**/client",
                       "**/client/**",
+                      "**/data-integrity",
+                      "**/data-integrity/**",
                       "**/issue",
                       "**/issue/**",
                       "**/jwt",
@@ -844,6 +887,8 @@
                       "**/client/**",
                       "**/compare",
                       "**/compare/**",
+                      "**/data-integrity",
+                      "**/data-integrity/**",
                       "**/issue",
                       "**/issue/**",
                       "**/jwt",
@@ -875,6 +920,8 @@
                       "**/baking/**",
                       "**/compare",
                       "**/compare/**",
+                      "**/data-integrity",
+                      "**/data-integrity/**",
                       "**/issue",
                       "**/issue/**",
                       "**/jwt",

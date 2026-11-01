@@ -63,6 +63,38 @@ export interface KeyResolver {
   issuerKeys(issuer: string, options?: CallOptions): Promise<readonly VerificationKey[]>;
 }
 
+/** Returns the JSON-LD context behind a URL, or rejects. The processors of JSON-LD read no context from anywhere else. */
+export type ContextLoader = (url: string, options?: CallOptions) => Promise<unknown>;
+
+/** A Data Integrity cryptosuite. The glue resolves and binds the key first, so a suite only checks the proof. */
+export interface DataIntegritySuite {
+  /** The `cryptosuite` of the proofs that it verifies, such as `eddsa-rdfc-2022`. */
+  readonly cryptosuite: string;
+  /**
+   * Checks a proof.
+   *
+   * @param document - The credential, with or without its proof.
+   * @param proof - The proof to check.
+   * @param options - The public key that verifies it, and the loader of the contexts of the document.
+   * @returns Whether the proof is valid for the document under the key.
+   */
+  verify(
+    document: Readonly<Record<string, unknown>>,
+    proof: Readonly<Record<string, unknown>>,
+    options: { readonly publicKeyJwk: JsonWebKey; readonly contexts: ContextLoader } & CallOptions,
+  ): Promise<boolean>;
+}
+
+/** A term of a credential that JSON-LD processing in safe mode would drop or cannot expand. */
+export interface JsonLdIssue {
+  /** Where the term is, as a JSON Pointer; the first place that the name occurs. */
+  readonly path: string;
+  /** The property or the value that the processor reports. */
+  readonly term: string;
+  /** What the processor says of it. */
+  readonly message: string;
+}
+
 /** The steps of a verification, in the order of Open Badges 9. */
 export const VERIFICATION_CHECKS = [
   "format",

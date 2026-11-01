@@ -59,8 +59,9 @@ export const KEYS = {
   es256: await generate("ES256"),
   es384: await generate("ES384"),
   ed25519: await generate("EdDSA"),
-  /** A second key of each kind, for the tests of a key that is not the issuer's. */
+  /** A second key of two kinds, for the tests of a key that is not the issuer's. */
   other: await generate("ES256"),
+  otherEd25519: await generate("EdDSA"),
 };
 
 /** The signer over a test key, with the identifier that its signature names. */

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as baking from "../src/baking/index.js";
+import * as dataIntegrity from "../src/data-integrity/index.js";
 import * as api from "../src/index.js";
 import * as jwt from "../src/jwt/index.js";
 import * as keys from "../src/keys/index.js";
@@ -46,6 +47,17 @@ describe("the exports", () => {
 
   it("of baking are its four functions", () => {
     expect(Object.keys(baking).sort()).toStrictEqual(["bakePng", "bakeSvg", "readPng", "readSvg"]);
+  });
+
+  it("are, for the subpath data-integrity, the proofs, the loader of contexts and safe mode", () => {
+    expect(Object.keys(dataIntegrity).sort()).toStrictEqual([
+      "KNOWN_CONTEXTS",
+      "addProof",
+      "createContextLoader",
+      "deriveDisclosure",
+      "validateJsonLd",
+      "verifyProof",
+    ]);
   });
 
   it("are, for the subpath keys, the resolver and the check of the binding", () => {

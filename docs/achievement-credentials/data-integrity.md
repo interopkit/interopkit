@@ -1,0 +1,227 @@
+# Data Integrity proofs
+
+`@interopkit/achievement-credentials/data-integrity` secures a credential with a Data Integrity proof and checks one. It signs
+with `eddsa-rdfc-2022`, writes the base proof of `ecdsa-sd-2023` for a holder to derive disclosures from, verifies a proof with
+the key that the issuer publishes, lists what JSON-LD safe mode would drop, and loads contexts only at their pins.
+
+```mermaid
+flowchart LR
+  subgraph issuer["Issuer"]
+    cred["A credential"] --> add["addProof<br/>eddsa-rdfc-2022 or ecdsa-sd-2023"]
+  end
+  subgraph holder["Holder"]
+    base["ecdsa-sd-2023 base proof"] --> derive["deriveDisclosure<br/>the parts to reveal"]
+  end
+  subgraph verifier["Verifier"]
+    verify["verifyProof"] --> key["KeyResolver:<br/>the key of the proof"]
+    key --> bind["verifyIssuerKey:<br/>the issuer publishes it"]
+  end
+  add -->|"eddsa-rdfc-2022"| verify
+  add -->|"base proof"| base
+  derive -->|"disclosure"| verify
+  loader["createContextLoader:<br/>a context only at its pin"] -.-> add
+  loader -.-> derive
+  loader -.-> verify
+  loader -.-> safe["validateJsonLd:<br/>what safe mode drops"]
+```
+
+| Export                 | Does                                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `addProof`             | Signs a credential over a `Signer` and returns it with its proof                                                                |
+| `deriveDisclosure`     | Derives a disclosure from a credential with an `ecdsa-sd-2023` base proof                                                       |
+| `verifyProof`          | Verifies the proofs of a credential and says whether the key belongs to the issuer                                              |
+| `validateJsonLd`       | Lists what JSON-LD processing in safe mode would drop or refuse                                                                 |
+| `createContextLoader`  | Makes the `ContextLoader` that serves a context only after its document matches its pin                                         |
+| `KNOWN_CONTEXTS`      | The pinned contexts: address and SHA-256 of the canonical JSON of the document                                                  |
+
+## Quick start
+
+```ts
+import { buildAchievementCredential } from "@interopkit/achievement-credentials";
+import { addProof, createContextLoader, verifyProof } from "@interopkit/achievement-credentials/data-integrity";
+import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
+import { signerFromCryptoKey } from "@interopkit/core";
+
+const pair = await crypto.subtle.generateKey("Ed25519", true, ["sign", "verify"]);
+const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
+const issuer = "https://example.edu/issuers/565049";
+const document = {
+  id: issuer,
+  verificationMethod: [{ id: `${issuer}#key-1`, type: "JsonWebKey", controller: issuer, publicKeyJwk }],
+  assertionMethod: [`${issuer}#key-1`],
+};
+const clock = { now: () => Date.UTC(2024, 5, 14) };
+const keys = createKeyResolver({
+  clock,
+  fetch: async (url) => new Response(url === issuer ? JSON.stringify(document) : "", { status: url === issuer ? 200 : 404 }),
+});
+
+// A host passes the W3C and 1EdTech contexts as documents, which the loader checks against the pins of KNOWN_CONTEXTS. This
+// sample stands in a small context for each and pins it, which the option pins allows: it takes the place of a known pin.
+const small = { "@context": { "@version": 1.1, "@vocab": "https://example.org/vocab#", id: "@id", type: "@type" } };
+const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(small)));
+const pin = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+const addresses = [
+  "https://www.w3.org/ns/credentials/v2",
+  "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+  "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+];
+const contexts = createContextLoader({
+  documents: new Map(addresses.map((address) => [address, small])),
+  pins: new Map(addresses.map((address) => [address, pin])),
+});
+
+const credential = buildAchievementCredential({
+  id: "https://example.edu/credentials/3732",
+  issuer: { id: issuer, type: ["Profile"], name: "Example University" },
+  validFrom: "2024-06-13T18:46:03Z",
+  name: "Fractions badge",
+  subject: { id: "did:example:learner" },
+  achievement: {
+    id: "https://example.edu/achievements/1",
+    type: ["Achievement"],
+    name: "Fractions",
+    description: "Understands fractions as numbers.",
+    criteria: { narrative: "Pass the final assessment." },
+  },
+});
+const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "EdDSA", keyId: `${issuer}#key-1` });
+const signed = await addProof(credential, signer, { contexts, clock });
+signed.proof?.[0]?.cryptosuite; // => "eddsa-rdfc-2022"
+signed.proof?.[0]?.created; // => "2024-06-14T00:00:00Z"
+
+const result = await verifyProof(signed, { keys, clock, contexts });
+result.valid; // => true
+"bound" in result && result.bound; // => true
+
+(await verifyProof({ ...signed, name: "Another badge" }, { keys, clock, contexts })).valid; // => false
+```
+
+## Signing
+
+`addProof(credential, signer, options)` checks the credential as `readCredential` checks it, signs a copy and returns the credential
+with a proof added to any it had. The proof names the signer's `keyId` as its `verificationMethod`, has the purpose
+`assertionMethod`, and its `created` is the time of the clock. The result holds the proof as a list, as the model does.
+
+| Option              | Meaning                                                                                                                                         | Default                                    |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `cryptosuite`       | `eddsa-rdfc-2022` signs with an Ed25519 signer (`EdDSA`). `ecdsa-sd-2023` writes a base proof with an ES256 signer                               | `"eddsa-rdfc-2022"`                        |
+| `mandatoryPointers` | For `ecdsa-sd-2023`: the JSON Pointers to what a holder can never hide                                                                          | The required properties that the credential holds, so that a disclosure stays a valid credential |
+| `contexts`          | The `ContextLoader` that returns the contexts of the credential and of the proof                                                                | Required                                   |
+| `clock`             | The `Clock` that `created` is written from                                                                                                       | Required                                   |
+| `signal`            | Ends the caller's wait, and reaches the signer                                                                                                   | None                                       |
+
+The default mandatory pointers are `/@context`, `/id`, `/type`, `/issuer/id`, `/issuer/type`, `/validFrom`, `/name`,
+`/credentialSubject/type`, the `id` and `identifier` of the subject, and for an achievement credential the `id`, `type`, `criteria`,
+`description` and `name` of the achievement. A holder cannot hide a property that the model requires, or the subject that
+nothing would then identify.
+
+## Disclosure
+
+A base proof holds the key that relabels the blank nodes of the credential and the signature of every statement, so it goes to
+the holder and never to a verifier: `verifyProof` answers that the proof is not valid and says to derive a disclosure first.
+`deriveDisclosure(credential, { selectivePointers, contexts })` returns a credential with the mandatory parts, the selected parts
+and a derived proof. It refuses a disclosure that is not a valid credential, and names the fix. Disclosures of one credential
+can be linked to each other, since they share the base signature and the key of the proof.
+
+## Verifying
+
+`verifyProof(credential, options)` returns a `ProofResult`. The credential is checked for its size and depth, then as the readers
+check a credential. Each proof is looked at in order, and the result is the first that is valid.
+
+| A proof is not valid when                                                                         | Reason                                        |
+| ------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| The credential has no proof, or is not a credential                                                | Said in the reason                            |
+| Its type is not `DataIntegrityProof` (or `Ed25519Signature2020` with `legacyProofs`)               | Said in the reason                            |
+| No suite verifies its cryptosuite                                                                  | `eddsa-rdfc-2022`, `ecdsa-rdfc-2019`, `ecdsa-sd-2023` and `suites` |
+| It is an `ecdsa-sd-2023` base proof                                                                | Derive a disclosure first                     |
+| Its purpose is not `assertionMethod`, it names no key, or `expires` has passed                      | Said in the reason                            |
+| The resolver finds no key for its `verificationMethod`                                             | Said in the reason                            |
+| Its signature does not verify with that key                                                        | Said in the reason                            |
+| The key is not published by the issuer, unless `allowUnboundKeys`                                  | The reason of `verifyIssuerKey`               |
+
+| Option             | Meaning                                                                                                              | Default       |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `keys`             | The `KeyResolver` (see the [keys guide](keys.md))                                                                    | Required      |
+| `clock`            | The `Clock` that `expires` is compared with                                                                          | Required      |
+| `contexts`         | The `ContextLoader`                                                                                                   | Required      |
+| `clockSkewSeconds` | The seconds by which `expires` may differ from the clock                                                              | `60`          |
+| `allowUnboundKeys` | Accept a key that the issuer does not publish; the binding is not looked up and the result has `bound: false`         | `false`       |
+| `legacyProofs`     | Accept `Ed25519Signature2020` proofs, which Open Badges 3.0.0 to 3.0.2 used                                            | `false`       |
+| `suites`           | More `DataIntegritySuite`s beside the built-in ones; a suite only checks the proof, the glue resolves and binds the key | None          |
+| `maxInputBytes`    | The most characters of the credential as JSON                                                                         | `1048576`     |
+| `maxDepth`         | The most levels that the credential nests                                                                             | `64`          |
+| `signal`           | Ends the caller's wait                                                                                                | None          |
+
+## Contexts
+
+`createContextLoader` serves a context from `documents`, from `cache`, or from a fetch through the host's `fetch`, and only
+after the SHA-256 of the canonical JSON of its document equals the pin of its address. The pins are those of `KNOWN_CONTEXTS`
+and of the `pins` option. An address with no pin is refused before anything is read or fetched for it, unless `allowUnknown` is
+set, and a document that differs from its pin is refused always. Nothing is loaded from a hint in a credential: the processors
+of JSON-LD call the loader and no other.
+
+| Option         | Meaning                                                                                                          | Default                                  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `fetch`        | The `Fetch` that gets a context the loader does not hold                                                          | None: only `documents` and `cache` serve |
+| `documents`    | Contexts the host holds, by address, checked against their pins                                                   | None                                     |
+| `pins`         | More pins, address to SHA-256 of the canonical JSON, for the contexts of an extension; a pin here takes the place of a known one | None                                     |
+| `cache`        | `get(url)` and `put(url, document)` of the host, for verified contexts; a context read from it is checked again   | None                                     |
+| `allowUnknown` | Serve a context that has no pin                                                                                    | `false`                                  |
+| `timeoutMs`    | The time a fetch may take                                                                                         | `10000`                                  |
+| `maxBytes`     | The most bytes of a context                                                                                        | `262144`                                 |
+
+W3C asks that its context addresses are not fetched on every request: a host passes the W3C and 1EdTech contexts in `documents`,
+or keeps them in `cache`. A verified context stays in memory (100 at most), and callers that ask while it loads share one fetch.
+
+## JSON-LD safe mode
+
+`validateJsonLd(credential, { contexts })` expands the credential with safe mode's checks and returns a `JsonLdIssue` for each
+event: a property that no context defines, a relative `id` or `type`. At most 100 are reported. Issuer conformance asks that a
+credential survive safe mode. The builders write the context of the 1EdTech extensions, which defines the type of the
+`credentialSchema`, so that a built credential loses no term.
+
+## Limits
+
+| Limit                                                   | Value                | Refused with                            |
+| ------------------------------------------------------- | -------------------- | --------------------------------------- |
+| Characters of the credential as JSON                    | `maxInputBytes`, 1,048,576 | `valid: false`, before it is read |
+| Levels that the credential nests                        | `maxDepth`, 64       | `valid: false`, before it is read       |
+| RDF canonicalization work factor (`rdf-canonize` default) | 1                  | The signature does not verify; signing is refused with a `DataError` |
+| Bytes of a context, levels of a context                 | `maxBytes`, 64       | `ServiceError`, `DataError`             |
+| Contexts kept in memory                                 | 100                  | The oldest goes first                   |
+| Findings of `validateJsonLd`                            | 100                  | The rest are not reported               |
+
+The work factor is the default of the adopted canonicalization, which the cryptosuites keep: a graph of blank nodes that look
+alike makes the labelling cost more than the limit allows, and it is refused (`Maximum deep iterations exceeded`). A test pins
+the default with such a graph.
+
+## Errors
+
+| Case                                                                                        | Result                                                             |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| An option or an argument has the wrong type; a signer of another algorithm or with no `keyId` | `DataError` that names it                                         |
+| The credential to sign is not valid, or its graph cannot be canonicalized                    | `DataError`: `The credential is invalid ...`, `... cannot be processed as JSON-LD: ...` |
+| A context has no pin or is not the pinned document                                           | While signing or deriving: `DataError`. While verifying: `valid: false` |
+| A context cannot be fetched                                                                  | `ServiceError`                                                     |
+| A disclosure hides what the model requires                                                   | `DataError` that names the pointers to add                         |
+| The signal aborts                                                                            | The `reason` of the signal                                         |
+
+## Not included
+
+| Not included                                           | Why                                                                                                                                |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Signing with `ecdsa-rdfc-2019`, `eddsa-jcs-2022` and `ecdsa-jcs-2019` | Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023` for issuers; `ecdsa-rdfc-2019` is verified                    |
+| Presentations                                          | Open Badges and CLR define none                                                                                                    |
+| Other cryptosuites                                     | A host passes a `DataIntegritySuite` in `suites`                                                                                   |
+| Proof chains and `previousProof`                       | A credential has proofs that each secure it                                                                                         |
+| Where a request goes                                   | The host's `fetch` refuses private addresses                                                                                       |
+
+## Differences from the references
+
+| Case                             | The references                                                                                     | This package                                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| The controller of the key        | VC Data Integrity 2.6: the method's `controller` is the issuer, checked by the proof purpose        | The key must be among what the issuer itself publishes under `assertionMethod`, and its controller must be the issuer |
+| A base proof of `ecdsa-sd-2023`  | Verify Derived Proof is the only algorithm defined                                                  | A credential that carries a base proof is not valid, and the reason says to derive a disclosure first      |
+| Contexts                         | A processor loads a context by its address                                                           | Only at a pinned hash                                                                                    |
+| Proofs                           | The compacted form writes a single proof as an object                                                | The result of `addProof` holds a list of one                                                              |

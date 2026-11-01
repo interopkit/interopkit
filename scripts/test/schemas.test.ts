@@ -15,10 +15,14 @@ afterAll(() => {
 });
 
 describe("the list", () => {
-  it("pins every file to an https address, a file name and a SHA-256", () => {
+  it("pins every file to an https address, a file name that no other file has and a SHA-256", () => {
+    const names = new Set<string>();
     for (const { url, file, sha256: hash } of loadList(join(import.meta.dirname, "../.."))) {
       expect(url.startsWith("https://")).toBe(true);
-      expect(url.endsWith(`/${file}`)).toBe(true);
+      // Contexts of different standards end in the same segment (`v1`, `context.json`), so a name is its own.
+      expect(file).toMatch(/^[A-Za-z0-9._-]+$/u);
+      expect(names.has(file)).toBe(false);
+      names.add(file);
       expect(hash).toMatch(/^[0-9a-f]{64}$/);
     }
   });

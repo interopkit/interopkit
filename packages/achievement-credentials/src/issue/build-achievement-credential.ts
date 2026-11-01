@@ -24,7 +24,7 @@ import { ACHIEVEMENT_CREDENTIAL_SCHEMA } from "./schema-urls.js";
 export function buildAchievementCredential(input: AchievementCredentialInput): AchievementCredential {
   const { id, subject, achievement, ...rest } = readInput(achievementCredentialInputSchema, input, "The input");
   const written = {
-    "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges],
+    "@context": [CONTEXTS.credentialsV2, CONTEXTS.openBadges, CONTEXTS.extensions],
     id,
     type: ["VerifiableCredential", "OpenBadgeCredential"],
     ...rest,

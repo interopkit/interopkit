@@ -1,12 +1,13 @@
 # Architecture of achievement-credentials
 
-`@interopkit/achievement-credentials` has eight modules that share one model. `model` holds the types, the vocabularies, the
+`@interopkit/achievement-credentials` has nine modules that share one model. `model` holds the types, the vocabularies, the
 findings and the terms of verification. `read` turns untrusted JSON into the model. `issue` writes credentials from their parts,
 `compare` looks at credentials, `baking` writes a credential into an image and reads it out, and `client` calls the APIs of a
-server. `keys` resolves the keys that verify a proof and checks that a key belongs to an issuer, and `jwt` signs and reads a
-credential as a JSON Web Token. `read` imports only `model` and `@interopkit/core`, `issue`, `compare`, `baking` and `client`
-import those and `read` and never each other, `keys` imports `model` and `core`, `jwt` imports those and `read` and `keys`, and
-`model` imports nothing of the family.
+server. `keys` resolves the keys that verify a proof and checks that a key belongs to an issuer, `jwt` signs and reads a
+credential as a JSON Web Token, and `data-integrity` secures a credential with a Data Integrity proof and loads contexts at their
+pins. `read` imports only `model` and `@interopkit/core`, `issue`, `compare`, `baking` and `client` import those and `read` and
+never each other, `keys` imports `model` and `core`, `jwt` imports those and `read` and `keys`, `data-integrity` imports those
+three as well and never `jwt`, and `model` imports nothing of the family.
 
 ```mermaid
 flowchart BT
@@ -19,6 +20,7 @@ flowchart BT
   client["client<br/>discovery, credentials, profile"]
   keys["keys<br/>resolver, issuer binding"]
   jwt["jwt<br/>sign and read a JWS"]
+  di["data-integrity<br/>proofs, contexts, safe mode"]
   root["index.ts<br/>the public API"]
   read --> model
   read --> core
@@ -35,6 +37,9 @@ flowchart BT
   jwt --> read
   jwt --> keys
   jwt --> core
+  di --> read
+  di --> keys
+  di --> core
   root --> model
   root --> read
   root --> issue
@@ -63,6 +68,8 @@ flowchart BT
 |           | `documents.ts`, `did.ts`, `did-jwk.ts`, `jwk.ts`, `multibase.ts`                                 | The fetch of a document and the keys it holds, the DID methods, the public JWK           |
 | `jwt`     | `sign-credential-jwt.ts`, `read-credential-jwt.ts`                                               | Signing a credential as Open Badges 8.2, and reading a compact JWS                      |
 |           | `claims.ts`, `options.ts`                                                                        | The claims that repeat a credential, and the options of both                            |
+| `data-integrity` | `add-proof.ts`, `derive-disclosure.ts`, `verify-proof.ts`, `validate-json-ld.ts`                | The functions that secure, disclose, verify and check a credential                       |
+|           | `suites.ts`, `contexts.ts`, `canonical-json.ts`, `document-loader.ts`, `proof-list.ts`, `mandatory-pointers.ts`, `options.ts` | The suites over the adopted library, the loader of contexts and the pins, and the glue to the processors of JSON-LD |
 
 `@interopkit/core/checks` holds what other standards need as much: records that refuse or keep unknown properties, the formats
 of a date and a date and time, the copy of JSON within a depth limit, and the conversion of the issues of a parse to findings
