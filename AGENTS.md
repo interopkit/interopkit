@@ -192,7 +192,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
   commented-out code.
 - US English. Docs state facts in short sentences; prefer a table or list to prose. Code samples are complete: they show their
   imports and hold no TypeScript syntax, so that they run as they are. A guide gives the result of a sample as
-  `// => result`, and `runGuideSamples` of `test/guide-samples.ts` runs the samples of the README and the guides in a test
+  `// => result`, and `runGuideSamples` of `scripts/guide-samples.ts` runs the samples of the README and the guides in a test
   of the package and fails on a result that differs. What a call throws goes into a table of errors, not into a sample. No
   marketing language, emojis or filler.
 - Visualization comes first, then tables, then short prose. Every README, `CONTRIBUTING.md` and guide opens with a Mermaid
