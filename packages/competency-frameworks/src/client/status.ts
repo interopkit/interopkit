@@ -1,9 +1,6 @@
-import { DataError, ServiceError } from "@interopkit/core";
+import { DataError, retryAfterSeconds, ServiceError } from "@interopkit/core";
 import type { ImsxStatusInfo } from "../model/index.js";
 import { readEntity } from "../read/index.js";
-
-/** The most digits of a number of seconds in `Retry-After`: more are not a delay a client can wait. */
-const SECONDS = /^\d{1,15}$/u;
 
 /** What a provider said when it refused a request. */
 export interface StatusDetail {
@@ -36,7 +33,7 @@ export function readStatusInfo(error: ServiceError): StatusDetail {
   } catch {
     // A body that is not JSON, or not a status, is an answer without detail and not a fault of the caller.
   }
-  const delay = error.headers["retry-after"]?.trim();
-  if (delay !== undefined && SECONDS.test(delay)) detail.retryAfterSeconds = Number(delay);
+  const seconds = retryAfterSeconds(error.headers);
+  if (seconds !== undefined) detail.retryAfterSeconds = seconds;
   return detail;
 }

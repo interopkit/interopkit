@@ -7,7 +7,6 @@ import {
   createCaseClient,
   readStatusInfo,
 } from "../src/client/index.js";
-import { hasNextLink, totalCountOf } from "../src/client/internal.js";
 import type { CasePackage, CFDocument } from "../src/index.js";
 import { type FakeProvider, fakeProvider, type Reply } from "./fake-provider.js";
 import { copyOf } from "./fixture.js";
@@ -702,41 +701,5 @@ describe("readStatusInfo", () => {
   it("refuses an argument that is not a ServiceError", () => {
     expect(() => readStatusInfo(fromJson("null"))).toThrow("The error must be a ServiceError.");
     expect(() => readStatusInfo(new Error("x") as never)).toThrow(DataError);
-  });
-});
-
-describe("the paging headers", () => {
-  it("find a next page in the Link header of the binding's example", () => {
-    const link =
-      '<https://imsglobal.org/ims/case/v1p0/CFDocuments?limit=10&offset=20>; rel="next", <https://imsglobal.org/ims/case/v1p0/CFDocuments?limit=3&offset=500>; rel="last", <https://imsglobal.org/ims/case/v1p0/CFDocuments?limit=10&offset=0>; rel="first", <https://imsglobal.org/ims/case/v1p0/CFDocuments?limit=10&offset=0>; rel="prev"';
-    expect(hasNextLink({ link })).toBe(true);
-    expect(hasNextLink({ link: link.replace('rel="next"', 'rel="last"') })).toBe(false);
-  });
-
-  it("read the relation quoted or not, in any case, among several, and with commas and semicolons in the address", () => {
-    expect(hasNextLink({ link: "<https://x.example/a>; rel=next" })).toBe(true);
-    expect(hasNextLink({ link: '<https://x.example/a>; REL="NEXT"' })).toBe(true);
-    expect(hasNextLink({ link: '<https://x.example/a>; rel="prev next"' })).toBe(true);
-    expect(hasNextLink({ link: '<https://x.example/a?fields=a,b;rel=next>; rel="first"' })).toBe(false);
-    expect(hasNextLink({ link: '<https://x.example/a>; title="x"; rel="next"' })).toBe(true);
-    expect(hasNextLink({ link: '<https://x.example/a>; rel="nexus"' })).toBe(false);
-    expect(hasNextLink({ link: '<https://x.example/a>; rel="first", <https://x.example/b>; rel="next"' })).toBe(true);
-  });
-
-  it("find nothing without a Link header, and no next in a value that is not a link", () => {
-    expect(hasNextLink({})).toBeUndefined();
-    expect(hasNextLink({ link: "" })).toBe(false);
-    expect(hasNextLink({ link: "rel=next" })).toBe(false);
-    expect(hasNextLink({ link: '<https://x.example/a>; title="x"' })).toBe(false);
-  });
-
-  it("read the count of a collection when it is a number and give nothing otherwise", () => {
-    expect(totalCountOf({ "x-total-count": "503" })).toBe(503);
-    expect(totalCountOf({ "x-total-count": " 12 " })).toBe(12);
-    expect(totalCountOf({ "x-total-count": "0" })).toBe(0);
-    for (const value of ["", "-1", "1.5", "abc", "12 13", "1e3", "9999999999999999"]) {
-      expect(totalCountOf({ "x-total-count": value })).toBeUndefined();
-    }
-    expect(totalCountOf({})).toBeUndefined();
   });
 });

@@ -8,7 +8,7 @@ import {
   discoverService,
   readStatusInfo,
 } from "../src/client/index.js";
-import { hasNextLink, readAnswer, totalCountOf } from "../src/client/internal.js";
+import { readAnswer } from "../src/client/internal.js";
 import { MAX_CREDENTIAL_CHARACTERS } from "../src/model/internal.js";
 import { BASE, fakeServer, JWS, json, text } from "./fake-server.js";
 import { achievementCredential, clrCredential, PROFILE } from "./fixtures.js";
@@ -647,20 +647,5 @@ describe("the wrapper of the readers of an answer", () => {
       }),
     ).toThrow("The CLR API at a answered with data that is not valid CLR: plain text");
     expect(readAnswer(settings, "x", () => 5)).toBe(5);
-  });
-});
-
-describe("the readers of the paging headers", () => {
-  it("read a total that is a count, and a Link header with a next relation of any spelling", () => {
-    expect(totalCountOf({ "x-total-count": " 42 " })).toBe(42);
-    for (const header of [undefined, "", "-1", "1.5", "abc", "1".repeat(16)]) {
-      expect(totalCountOf(header === undefined ? {} : { "x-total-count": header })).toBeUndefined();
-    }
-    expect(hasNextLink({})).toBeUndefined();
-    expect(hasNextLink({ link: '<https://a.example/?o=2>; rel="next"' })).toBe(true);
-    expect(hasNextLink({ link: "<https://a.example/?o=2>; REL=Next" })).toBe(true);
-    expect(hasNextLink({ link: '<https://a.example/?o=2>; rel="prev next"' })).toBe(true);
-    expect(hasNextLink({ link: '<https://a.example/1>; rel="first", <https://a.example/9>; rel="last"' })).toBe(false);
-    expect(hasNextLink({ link: "<https://a.example/1>" })).toBe(false);
   });
 });

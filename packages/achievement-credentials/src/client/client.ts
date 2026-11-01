@@ -1,4 +1,11 @@
-import { type CallOptions, DataError, ServiceError, type ServiceResponse } from "@interopkit/core";
+import {
+  type CallOptions,
+  DataError,
+  hasNextLink,
+  ServiceError,
+  type ServiceResponse,
+  totalCountOf,
+} from "@interopkit/core";
 import {
   checkProperties,
   checkRecord,
@@ -14,7 +21,6 @@ import { MAX_CREDENTIAL_CHARACTERS } from "../model/internal.js";
 import { readCredential, readEntity } from "../read/index.js";
 import { jws } from "../read/internal.js";
 import { type CredentialsClientConfig, type Settings, settingsOf } from "./config.js";
-import { hasNextLink, totalCountOf } from "./paging.js";
 import { type Body, type Call, jsonOf, send, signalOf, textOf } from "./request.js";
 
 /** The calls to an Open Badges or CLR resource server: the credentials and the profile of the user whose token the host holds. */

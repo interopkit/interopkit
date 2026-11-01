@@ -1,4 +1,11 @@
-import { type CallOptions, DataError, requestService, type ServiceResponse } from "@interopkit/core";
+import {
+  type CallOptions,
+  DataError,
+  hasNextLink,
+  requestService,
+  type ServiceResponse,
+  totalCountOf,
+} from "@interopkit/core";
 import { checkAbortSignal, checkRecord, describe, isRecord, parseWith } from "@interopkit/core/checks";
 import type {
   CasePackage,
@@ -19,7 +26,6 @@ import { checkEndpointIdentifier, DISCOVERY_FILE, endpointUrl } from "../model/i
 import { readEntity, readPackage, validateEntity } from "../read/index.js";
 import { openApiSchema } from "../read/internal.js";
 import { type CaseClientConfig, type Settings, settingsOf } from "./config.js";
-import { hasNextLink, totalCountOf } from "./paging.js";
 import { queryString } from "./query.js";
 
 /** A document with the fields that a query asked for, and none of the others unless they were asked for. */

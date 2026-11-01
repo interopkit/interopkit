@@ -86,6 +86,34 @@ answer repeats joined by a comma and a space, and the body as a `Uint8Array`, em
 | A `fetch` that ignores its signal       | Cannot hold the call past `timeoutMs`: every wait is raced against the deadline                                                                                                                |
 | The body of an answer that arrives late | Cancelled, so the connection is freed                                                                                                                                                          |
 
+## The headers of an answer
+
+The REST bindings of CASE and Open Badges page a collection with `X-Total-Count` and `Link`, and ask a client to read
+`Retry-After` when a server is busy. Three functions read them from the `headers` of a `ServiceResponse` or a `ServiceError`,
+which hold them by name in lower case:
+
+| Function                  | Reads                          | Gives                                                                                                              |
+| ------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `totalCountOf(headers)`   | `X-Total-Count`                | The count, or `undefined` when the header is absent or is not a whole number of at most 15 digits                  |
+| `hasNextLink(headers)`    | `Link` (RFC 8288)              | `undefined` without the header, else whether a value has the relation `next`, quoted or not, in any case, among several |
+| `retryAfterSeconds(headers)` | `Retry-After` (RFC 9110)    | The seconds, or `undefined` when it is absent, gives a date (that needs a clock) or is not a whole number           |
+
+```ts
+import { hasNextLink, retryAfterSeconds, totalCountOf } from "@interopkit/core";
+
+const headers = {
+  "x-total-count": "503",
+  link: '<https://x.example/items?limit=10&offset=20>; rel="next", <https://x.example/items?limit=10&offset=500>; rel="last"',
+  "retry-after": "30",
+};
+totalCountOf(headers); // => 503
+hasNextLink(headers); // => true
+retryAfterSeconds(headers); // => 30
+```
+
+`hasNextLink` never returns the address: a client that follows the address in a header could be led anywhere, so it builds
+each request from its own base.
+
 ## Failure paths
 
 | Case                                                      | Result                                                                                                                                                                                                                                              |

@@ -1673,10 +1673,17 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A retry delay that is not a number of seconds is not read.",
-    file: "packages/competency-frameworks/src/client/status.ts",
-    find: "delay !== undefined && SECONDS.test(delay)",
+    file: "packages/core/src/answer-headers.ts",
+    find: "delay !== undefined && WHOLE_NUMBER.test(delay)",
     replace: "delay !== undefined",
-    test: "packages/competency-frameworks/test/client.test.ts",
+    test: "packages/core/test/answer-headers.test.ts",
+  },
+  {
+    rule: "A total count that is not a whole number is not read.",
+    file: "packages/core/src/answer-headers.ts",
+    find: "text !== undefined && WHOLE_NUMBER.test(text)",
+    replace: "text !== undefined",
+    test: "packages/core/test/answer-headers.test.ts",
   },
   {
     rule: "A field name is a name or a path of names.",

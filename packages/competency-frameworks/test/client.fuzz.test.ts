@@ -2,7 +2,7 @@ import { DataError, ServiceError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { caseFilter, readStatusInfo } from "../src/client/index.js";
-import { hasNextLink, queryString, totalCountOf } from "../src/client/internal.js";
+import { queryString } from "../src/client/internal.js";
 import { type CaseFilter, FILTER_PREDICATES } from "../src/index.js";
 import { parseCaseQuery } from "../src/provider/index.js";
 
@@ -82,37 +82,7 @@ describe("the parameters of a request on any query", () => {
   });
 });
 
-describe("the readers of the headers and of an error on any text", () => {
-  it("give a count or nothing, and a flag or nothing", () => {
-    fc.assert(
-      fc.property(fc.string(), (text) => {
-        const count = totalCountOf({ "x-total-count": text });
-        expect(count === undefined || (Number.isSafeInteger(count) && count >= 0)).toBe(true);
-        expect([true, false]).toContain(hasNextLink({ link: text }));
-      }),
-      RUNS,
-    );
-  });
-
-  it("find a next page in a Link header of well-formed values, wherever the next one is", () => {
-    const address = fc.stringMatching(/^https:\/\/[a-z]{1,8}\.example\/[a-z?=&,;]{0,12}$/u);
-    const relation = fc.constantFrom("first", "last", "prev", "self");
-    fc.assert(
-      fc.property(
-        fc.array(fc.tuple(address, relation), { maxLength: 4 }),
-        fc.nat(4),
-        address,
-        (others, place, next) => {
-          const values = others.map(([target, rel]) => `<${target}>; rel="${rel}"`);
-          expect(hasNextLink({ link: values.join(", ") })).toBe(false);
-          values.splice(Math.min(place, values.length), 0, `<${next}>; rel="next"`);
-          expect(hasNextLink({ link: values.join(", ") })).toBe(true);
-        },
-      ),
-      RUNS,
-    );
-  });
-
+describe("the reader of an error on any text", () => {
   it("read the status of an error whose body is any text, and throw nothing", () => {
     fc.assert(
       fc.property(fc.string(), fc.string(), (body, delay) => {
