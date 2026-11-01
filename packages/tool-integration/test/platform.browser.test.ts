@@ -11,6 +11,7 @@ import {
   platformStorage,
   type ToolLaunch,
 } from "../src/platform/index.js";
+import { hostileOrigin as hostile, requestsTo, seenBy } from "./hostile.js";
 import { waitFor } from "./wait.js";
 
 /**
@@ -18,7 +19,7 @@ import { waitFor } from "./wait.js";
  * page reaches under its own policy, and which records the path that the form posts to.
  */
 
-const { other, stranger, hostile } = inject("fixtures");
+const { other, stranger } = inject("fixtures");
 const TOOL = "https://tool.example.com";
 const launch: ToolLaunch = {
   principal: "candidate-7",
@@ -116,16 +117,11 @@ function load(page: HttpResponse): HTMLIFrameElement {
   return frame;
 }
 
-/** The paths that a fixture server was asked for. */
-async function requests(origin: string): Promise<string[]> {
-  return (await fetch(`${origin}/__hits`, { cache: "no-store" })).json();
-}
-
 describe("the page that posts the id_token", () => {
   it("posts the form to the redirect URI of the tool by itself, under its policy", async () => {
     const path = `/launch/${crypto.randomUUID()}`;
     load(await answer(path, "state-1"));
-    await waitFor(async () => expect(await requests(other)).toContain(path));
+    await waitFor(async () => expect(await requestsTo(other)).toContain(path));
   });
 
   it("writes a hostile state as text in the markup, whatever the engine's parser", async () => {
@@ -139,8 +135,8 @@ describe("the page that posts the id_token", () => {
     expect(document2.querySelector<HTMLInputElement>("input[name=state]")?.value).toBe(hostile);
     expect(document2.querySelector("form")?.getAttribute("action")).toBe(`${TOOL}${path}`);
     load(page);
-    await waitFor(async () => expect(await requests(other)).toContain(path));
-    expect(await requests(stranger)).toEqual([]);
+    await waitFor(async () => expect(await requestsTo(other)).toContain(path));
+    expect(await requestsTo(stranger)).toEqual([]);
   });
 
   it("writes a redirect URI with a query as text in the markup", async () => {
@@ -246,14 +242,41 @@ window.addEventListener("message", function (event) {
     intruder.src = `${hostile}/probe?id=${id}&to=${index}&send=${encodeURIComponent(JSON.stringify(request))}`;
     frames.push(intruder);
     document.body.append(intruder);
-    await waitFor(async () => {
-      const paths = await requests(hostile);
-      expect(paths.some((path) => path.startsWith(`/seen?id=${id}&`))).toBe(true);
-    });
-    const [seen] = (await requests(hostile)).filter((path) => path.startsWith(`/seen?id=${id}&`));
-    const answer = JSON.parse(decodeURIComponent((seen ?? "").slice((seen ?? "").indexOf("&m=") + 3)));
-    expect(answer.data).toMatchObject({ subject: "lti.get_data.response", error: { code: "key_not_found" } });
+    await waitFor(async () => expect(await seenBy(id)).toHaveLength(1));
+    const [answer] = await seenBy(id);
+    expect(answer?.data).toMatchObject({ subject: "lti.get_data.response", error: { code: "key_not_found" } });
     expect(JSON.stringify(answer)).not.toContain("secret");
+  });
+
+  it("answers to the origin that sent the request: a tool frame that moved to another site before the answer does not get it", async () => {
+    const { ask } = await pages();
+    await ask({ subject: "lti.put_data", key: "state_1", value: "secret" });
+    const storage = document.querySelector<HTMLIFrameElement>("iframe[name=lti-storage]")?.contentWindow;
+    const tool = document.querySelector<HTMLIFrameElement>("iframe[name=lti-tool]");
+    const id = crypto.randomUUID();
+    // The frame of the tool goes to another site, as it may while its request waits: the window stays, and its document is
+    // the hostile one.
+    tool?.removeAttribute("srcdoc");
+    tool?.setAttribute("src", `${hostile}/probe?id=${id}`);
+    await waitFor(async () => expect(await requestsTo(hostile)).toContain(`/ready?id=${id}`));
+    // The page then handles a request that the tool's own document sent before it left: from the origin of the test page, and
+    // from the window of the frame. The two properties are set on the event, because Firefox does not take a window of another
+    // origin as the `source` of a constructed event.
+    const request = (origin: string, messageId: string, key: string): MessageEvent => {
+      const data = { subject: "lti.get_data", message_id: messageId, key };
+      const event = new MessageEvent("message", { data });
+      Object.defineProperty(event, "origin", { value: origin });
+      Object.defineProperty(event, "source", { value: tool?.contentWindow });
+      return event;
+    };
+    storage?.dispatchEvent(request(location.origin, "late", "state_1"));
+    // A request from the hostile origin itself is answered to it. The messages arrive in order, so once this one has, the
+    // answer to the late request has had its turn too, and the probe has seen it if it was sent.
+    storage?.dispatchEvent(request(hostile, "control", "none"));
+    await waitFor(async () => expect(await seenBy(id)).not.toHaveLength(0));
+    const seen = await seenBy(id);
+    expect(seen.map(({ data }) => data.message_id)).toStrictEqual(["control"]);
+    expect(JSON.stringify(seen)).not.toContain("secret");
   });
 
   it("answers only the frame of the tool: a request from the page that frames it gets no answer", async () => {

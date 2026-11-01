@@ -1,5 +1,5 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
-import { afterEach, describe, expect, inject, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { createJwksCache, type HttpResponse } from "../src/index.js";
 import {
   type LoginRecord,
@@ -9,6 +9,7 @@ import {
   ltiLogin,
   type PlatformRegistration,
 } from "../src/tool/index.js";
+import { hostileOrigin, requestsTo, seenBy } from "./hostile.js";
 import { waitFor } from "./wait.js";
 
 /**
@@ -17,7 +18,6 @@ import { waitFor } from "./wait.js";
  */
 
 const origin = location.origin;
-const { hostile: hostileOrigin } = inject("fixtures");
 const PLATFORM = "https://lms.example.edu";
 const pair = await crypto.subtle.generateKey(
   { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
@@ -172,18 +172,6 @@ async function storageFrame(name: string): Promise<Window> {
   await loaded;
   if (!frame.contentWindow) throw new Error("The storage frame has no window.");
   return frame.contentWindow;
-}
-
-/** The paths that a fixture server was asked for. */
-async function requestsTo(server: string): Promise<string[]> {
-  return (await fetch(`${server}/__hits`, { cache: "no-store" })).json();
-}
-
-/** The messages that the probe of the hostile origin with an id received, as the origin and the data of each. */
-async function seenBy(id: string): Promise<{ origin: string; data: Record<string, unknown> }[]> {
-  return (await requestsTo(hostileOrigin))
-    .filter((path) => path.startsWith(`/seen?id=${id}&`))
-    .map((path) => JSON.parse(decodeURIComponent(path.slice(path.indexOf("&m=") + 3))));
 }
 
 /** Opens a frame of the hostile origin: it posts the messages to the frame, if it is given, and records what it receives. */

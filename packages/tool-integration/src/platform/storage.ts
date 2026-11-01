@@ -24,7 +24,9 @@ const STORAGE_MAX_KEYS = 500;
 // The page runs in a frame of the platform's origin, beside the frame of the tool. The tool posts to it with the origin of
 // the authentication endpoint as the target, which the host's own origin could not receive, and checks that the answer
 // comes from that origin. The page answers only the window of the tool's frame, keeps the values by the origin of the
-// message, and replies to the window and the origin that sent the request.
+// message, and replies to the window and the origin that sent the request. The origin is the target of the reply, and not `*`:
+// a tool frame that has moved to another site while its request waited gets nothing. A message from an opaque origin is
+// refused first, though `postMessage` to the target `"null"` throws, so that the refusal does not rest on that throw alone.
 const SCRIPT = `(function () {
   "use strict";
   var config = JSON.parse(document.getElementById("lti").dataset.config);

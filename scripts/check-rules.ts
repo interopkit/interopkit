@@ -800,6 +800,14 @@ export const RULES: readonly Rule[] = [
     test: "packages/tool-integration/test/protocol.test.ts",
   },
   {
+    rule: "The storage page answers to the origin that sent the request, so that a frame that has moved to another site gets nothing.",
+    file: "packages/tool-integration/src/platform/storage.ts",
+    find: "event.source.postMessage(reply, event.origin);",
+    replace: 'event.source.postMessage(reply, "*");',
+    test: "packages/tool-integration/test/platform.browser.test.ts",
+    browser: true,
+  },
+  {
     rule: "The storage page answers only the frame of the tool.",
     file: "packages/tool-integration/src/platform/storage.ts",
     find: "event.source === null || event.source !== tool()) return;",
