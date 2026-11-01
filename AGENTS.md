@@ -6,8 +6,9 @@ enforced by `pnpm lint` (Biome and cspell), `pnpm check:standards`, `pnpm check:
 
 interopkit is a toolkit for learning-platform interoperability in JavaScript and TypeScript, in one repository:
 `@interopkit/core` is the shared foundation, `@interopkit/tool-integration` implements LTI 1.3 in both roles, and
-`@interopkit/learning-analytics` implements Caliper Analytics 1.2, and `@interopkit/competency-frameworks` implements the
-CASE model, its readers and a provider of the REST binding.
+`@interopkit/learning-analytics` implements Caliper Analytics 1.2, `@interopkit/competency-frameworks` implements the
+CASE model, its readers and a provider of the REST binding, and `@interopkit/selective-disclosure` implements the
+`ecdsa-sd-2023` cryptosuite.
 
 ```mermaid
 flowchart BT
@@ -17,11 +18,13 @@ flowchart BT
   plat["tool-integration: platform"]
   la["learning-analytics"]
   cf["competency-frameworks<br/>model, read, version, provider"]
+  sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
   proto --> core
   tool --> proto
   plat --> proto
   la --> core
   cf --> core
+  sd --> core
   gates["pnpm lint, check:standards, check:rules,<br/>typecheck, test, knip"] --> merge["Merge"]
 ```
 
@@ -47,6 +50,9 @@ Use these words with these meanings in code, comments and docs.
 | framework    | A CASE competency framework, held as a package: one document with its items, associations, definitions and rubrics              |
 | finding      | A `CaseIssue` of a reader: where, which rule, what is wrong, and whether it is an error or a warning                            |
 | provider     | The service that publishes frameworks to consumers over the CASE REST binding: `handleCaseRequest` over a `FrameworkStore`      |
+| base proof   | The proof an issuer gives a holder: an HMAC key, the public key of the proof and a signature for each statement to hide         |
+| disclosure   | A document with only the parts a holder reveals and a derived proof, the signatures of the statements that stay                 |
+| statement    | One canonical N-Quad of a document. A mandatory statement is always revealed; the key of the proof signs each of the others     |
 
 ## Layout
 
@@ -68,6 +74,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                             |
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `provider/`                                        |
+| `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`          |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -115,19 +122,26 @@ current behavior only, and never how it came to be. A package's changeset is wri
   endpoint, and the CASE model with its readers and the handlers of a CASE provider. It does not own what a launched tool
   shows, what a score means, which delivery event becomes which Caliper event, QTI content, or databases, servers, sessions
   and accounts. Those belong to the tool, to assesskit and measurekit, to the adapter of each product and to the host.
+- `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
+  canonicalization (the primitives of `@digitalbazaar/di-sd-primitives` do them), the resolution and binding of keys, the
+  loader of contexts and their pins, other suites, or a verifiable credential data model: the caller passes a key and a loader.
 - Packages of different families never import each other. interopkit defines ports (a store, a lookup, a `Fetch`, a `Clock`)
   or speaks an open standard, and an adapter to another family lives in the examples of that family or in the host. Names of
   QTI (`ItemKey`, `LtiLink`) never appear in interopkit.
 - The packages use no platform API outside web standards: no `node:*`, no `process`, no DOM, and `fetch` appears only as an
   option that the caller passes. They run in Node.js, browsers, Deno, Bun and Cloudflare Workers. The `lib` of every
-  `tsconfig` is `ES2023` and `WebWorker`, and `types` is empty, so `tsc` fails on a platform API.
+  `tsconfig` is `ES2023` and `WebWorker`, and `types` is empty, so `tsc` fails on a platform API. The primitives of
+  `selective-disclosure` import `node:crypto` on Node.js and Web Crypto where a bundler applies the `browser` field of their
+  package; the code of the package uses Web Crypto only.
 
 ## Dependencies
 
 - A package imports only what its row in the diagram above allows. Biome enforces the rows for `core`, and for the folders
   of `tool-integration`: `protocol/` imports neither `tool/` nor `platform/`, and `tool/` and `platform/` never import each
   other. In `competency-frameworks`, `model/` imports neither `read/` nor `version/`, and those two never import each other;
-  `provider/` builds on all three and none of them imports it. Imports never form cycles.
+  `provider/` builds on all three and none of them imports it. In `selective-disclosure`, `proof-value/`, `keys/` and
+  `document/` import none of the other folders, and `base/`, `derive/` and `verify/` import those three and never each other.
+  Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -138,7 +152,9 @@ current behavior only, and never how it came to be. A package's changeset is wri
 - Generic concerns use mature libraries: `jose` for JOSE, `valibot` for schemas, `uuid` for name-based UUIDs, `oauth4webapi` for
   OAuth 2.0 clients. Hand-written
   code is for domain logic that no library does correctly, with the reason in the guide of the module.
-- Candidates that were compared and not adopted may be development dependencies, as counterparties in tests.
+- Candidates that were compared and not adopted may be development dependencies, as counterparties in tests: Digital Bazaar's
+  `ecdsa-sd-2023` suite with `@digitalbazaar/data-integrity`, `jsonld-signatures` and `@digitalbazaar/ecdsa-multikey`, which
+  sign, derive and verify beside `selective-disclosure`, and `jsonld`, whose default loader the loader test makes fail.
   `@cfworker/json-schema` is a development dependency of the repository, for `scripts/schema-oracle.ts`: the validator that
   tests run the published JSON schemas of a standard through.
 
@@ -155,6 +171,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
 | `ltiLaunch` throws an `LtiError` for a refused launch, and returns a page or a launch      | A refusal needs a reason and an HTTP status for the route; tell the results apart with `"status" in result`                                          |
 | `toCaseVersion` reads the structure that it converts and not every property that it copies | `readPackage` and `readEntity` check the properties; the conversion reports the forms that 1.0 refuses, and it cannot tell the kind of a lone entity |
 | The strings of the three small pages are in English and not in a catalog                   | A person sees them only when the login fails; a host that needs another language builds its own page from the same script                            |
+| The HMAC key and the key of a proof are not injected                                       | A source that a host or a test could replace could make predictable what binds a base proof; the vectors reach fixed ones through `base/internal.ts` |
 
 ## Naming
 
@@ -240,6 +257,10 @@ Where the code departs from `STANDARDS.md`, with the reason.
   by a test.
 - The examples that a specification prints are read in a `*.spec.test.ts` with `readSpecPage`; one that is not conformant is
   pinned with its findings and recorded in `spec-gaps.md`.
+- The test vectors of a cryptosuite are reproduced byte for byte in a `*.spec.test.ts`: a base proof from the fixed secrets of the
+  specification through the `internal.ts` of its module, which the package does not export and a host cannot reach, and a
+  derived proof from that base proof. A counterparty suite signs, derives and verifies beside the package in every order, in a
+  `*.corpus.test.ts`. The contexts they need are files of `scripts/schemas.lock.json`.
 - Expected values come from an oracle, never from the code under test: the specification's own statements and worked
   examples, an independent implementation, or a script in `validation/`. Typed by hand only for edge cases small enough to
   derive exactly.

@@ -18,5 +18,10 @@
     "url": "https://www.imsglobal.org/spec/case/v1p1/impl/",
     "file": "case-implementation-guide-1p1.json",
     "sha256": "867b34fb8ad3439ed6883035888b8ef910481a42fb64216c0b60cb0c29e265dd"
+  },
+  {
+    "url": "https://www.w3.org/TR/2025/REC-vc-di-ecdsa-20250515/",
+    "file": "vc-di-ecdsa-1p0.json",
+    "sha256": "9155b96580a16a4258588de6ba02bee717334d1633c531ca082beff7c33e0342"
   }
 ]

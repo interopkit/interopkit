@@ -60,7 +60,7 @@ describe("the lock", () => {
     const lock = loadLock(join(import.meta.dirname, "../.."));
     expect(lock.length).toBeGreaterThan(0);
     for (const { url, file, sha256 } of lock) {
-      expect(url.startsWith("https://www.imsglobal.org/spec/")).toBe(true);
+      expect(url).toMatch(/^https:\/\/www\.(?:imsglobal\.org\/spec|w3\.org\/TR)\//u);
       expect(file).toMatch(/^[a-z0-9-]+\.json$/);
       expect(sha256).toMatch(/^[0-9a-f]{64}$/);
     }

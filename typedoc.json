@@ -6,7 +6,8 @@
     "packages/core",
     "packages/tool-integration",
     "packages/learning-analytics",
-    "packages/competency-frameworks"
+    "packages/competency-frameworks",
+    "packages/selective-disclosure"
   ],
   "readme": "README.md",
   "out": "docs/api",

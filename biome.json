@@ -559,6 +559,8 @@
         "packages/competency-frameworks/src/provider/status.ts",
         "packages/competency-frameworks/src/read/schemas.ts",
         "packages/competency-frameworks/test/**",
+        "packages/selective-disclosure/src/document/primitives.ts",
+        "packages/selective-disclosure/test/**",
         "scripts/test/schema-arbitrary.test.ts",
         "scripts/test/schema-oracle.test.ts"
       ],
@@ -576,6 +578,159 @@
         "rules": {
           "suspicious": {
             "noExplicitAny": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/selective-disclosure/src/proof-value/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "../keys",
+                      "../keys/**",
+                      "../document",
+                      "../document/**",
+                      "../base",
+                      "../base/**",
+                      "../derive",
+                      "../derive/**",
+                      "../verify",
+                      "../verify/**"
+                    ],
+                    "message": "proof-value/ is a layer under base/, derive/ and verify/ and a sibling of the other two bottom modules: it imports none of them."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/selective-disclosure/src/keys/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "../proof-value",
+                      "../proof-value/**",
+                      "../document",
+                      "../document/**",
+                      "../base",
+                      "../base/**",
+                      "../derive",
+                      "../derive/**",
+                      "../verify",
+                      "../verify/**"
+                    ],
+                    "message": "keys/ is a layer under base/, derive/ and verify/ and a sibling of the other two bottom modules: it imports none of them."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/selective-disclosure/src/document/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "../proof-value",
+                      "../proof-value/**",
+                      "../keys",
+                      "../keys/**",
+                      "../base",
+                      "../base/**",
+                      "../derive",
+                      "../derive/**",
+                      "../verify",
+                      "../verify/**"
+                    ],
+                    "message": "document/ is a layer under base/, derive/ and verify/ and a sibling of the other two bottom modules: it imports none of them."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/selective-disclosure/src/base/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["../derive", "../derive/**", "../verify", "../verify/**"],
+                    "message": "base/ builds on proof-value/, keys/ and document/ only: base/, derive/ and verify/ are siblings and never a layer under one another."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/selective-disclosure/src/derive/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["../base", "../base/**", "../verify", "../verify/**"],
+                    "message": "derive/ builds on proof-value/, keys/ and document/ only: base/, derive/ and verify/ are siblings and never a layer under one another."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/selective-disclosure/src/verify/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["../base", "../base/**", "../derive", "../derive/**"],
+                    "message": "verify/ builds on proof-value/, keys/ and document/ only: base/, derive/ and verify/ are siblings and never a layer under one another."
+                  }
+                ]
+              }
+            }
           }
         }
       }

@@ -1,0 +1,9 @@
+---
+"@interopkit/selective-disclosure": minor
+---
+
+The `ecdsa-sd-2023` cryptosuite in its three roles. `addBaseProof` gives an issuer's credential a base proof that signs every
+statement a holder may hide; `deriveProof` gives the holder a proof for the parts that stay, chosen by JSON pointers; and
+`selectiveDisclosureSuite.verify` checks it under the issuer's key. `isBaseProof` tells a base proof, which never goes to a
+verifier. Proof values are CBOR as the Recommendation writes them, the key of each proof is a new P-256 key, and the package
+reproduces the test vectors of the Recommendation byte for byte.

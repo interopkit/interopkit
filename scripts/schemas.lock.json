@@ -138,5 +138,15 @@
     "url": "https://purl.imsglobal.org/spec/case/v1p0/schema/json/caseservicegroupv1p0-getcfpackage-400-401-403-404-429-500-default-responsepayload-schemav2p0.json",
     "file": "caseservicegroupv1p0-getcfpackage-400-401-403-404-429-500-default-responsepayload-schemav2p0.json",
     "sha256": "e453bd9c0bcd8a1d29f5f384a9b6b172cf76a8fb6e18d4b5094654c1fb69ceec"
+  },
+  {
+    "url": "https://www.w3.org/ns/credentials/v2",
+    "file": "v2",
+    "sha256": "59955ced6697d61e03f2b2556febe5308ab16842846f5b586d7f1f7adec92734"
+  },
+  {
+    "url": "https://w3id.org/citizenship/v4rc1",
+    "file": "v4rc1",
+    "sha256": "5038c7383afd7ab2158f1b997913a8f60978a0abcf96e0b0d08e29f146d2db1e"
   }
 ]

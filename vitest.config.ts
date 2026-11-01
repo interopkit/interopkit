@@ -54,12 +54,22 @@ export default defineConfig({
       nodeProject("core"),
       nodeProject("competency-frameworks"),
       nodeProject("learning-analytics"),
+      nodeProject("selective-disclosure"),
       {
         // The tests that read the files `pnpm schemas` downloads. `pnpm test` leaves them out and `pnpm test:corpus` runs them.
         resolve: { alias: SOURCES },
         test: {
           name: "learning-analytics-corpus",
           include: ["packages/learning-analytics/test/**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The tests that read the contexts that `pnpm schemas` downloads, and sign and verify with Digital Bazaar's suite.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "selective-disclosure-corpus",
+          include: ["packages/selective-disclosure/test/**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
         },
       },
@@ -112,6 +122,15 @@ export default defineConfig({
         },
       },
       {
+        // The test vectors of the ecdsa-sd-2023 Recommendation: `pnpm spec-examples` downloads them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "selective-disclosure-spec",
+          include: ["packages/selective-disclosure/test/**/*.spec.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
         // The examples of the specifications: `pnpm spec-examples` downloads them.
         resolve: { alias: SOURCES },
         test: {
@@ -135,6 +154,7 @@ export default defineConfig({
         "packages/core/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/competency-frameworks/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/learning-analytics/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
+        "packages/selective-disclosure/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/tool-integration/src/**": { statements: 98, branches: 95, functions: 100, lines: 99 },
       },
     },

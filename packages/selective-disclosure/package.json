@@ -1,0 +1,61 @@
+{
+  "name": "@interopkit/selective-disclosure",
+  "version": "0.0.0",
+  "description": "The ecdsa-sd-2023 Data Integrity cryptosuite: a base proof for the issuer, a derived proof for the holder and its verification.",
+  "keywords": [
+    "interopkit",
+    "selective-disclosure",
+    "ecdsa-sd-2023",
+    "data-integrity",
+    "verifiable-credentials"
+  ],
+  "author": "Fariz Wakan",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/interopkit/interopkit.git",
+    "directory": "packages/selective-disclosure"
+  },
+  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/selective-disclosure#readme",
+  "bugs": "https://github.com/interopkit/interopkit/issues",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "node --eval \"for (const path of ['dist', 'tsconfig.build.tsbuildinfo']) fs.rmSync(path, { recursive: true, force: true })\"",
+    "build": "pnpm clean && tsc -b tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:packages": "pnpm build && publint --pack pnpm --strict && attw --pack . --profile esm-only"
+  },
+  "devDependencies": {
+    "@digitalbazaar/data-integrity": "2.5.0",
+    "@digitalbazaar/ecdsa-multikey": "1.8.0",
+    "@digitalbazaar/ecdsa-sd-2023-cryptosuite": "3.4.1",
+    "fast-check": "^4.10.2",
+    "jsonld": "9.0.0",
+    "jsonld-signatures": "11.6.0"
+  },
+  "dependencies": {
+    "@digitalbazaar/di-sd-primitives": "3.3.0",
+    "@interopkit/core": "workspace:^",
+    "@noble/curves": "2.4.0",
+    "@scure/base": "2.4.0",
+    "cborg": "6.1.3"
+  }
+}

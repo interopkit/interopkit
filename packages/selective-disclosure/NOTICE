@@ -1,0 +1,9 @@
+@interopkit/selective-disclosure
+Copyright Fariz Wakan
+
+W3C is a trademark of the World Wide Web Consortium. This package implements the ecdsa-sd-2023 cryptosuite of the W3C
+Recommendation Data Integrity ECDSA Cryptosuites v1.0. It is not certified or endorsed by W3C and includes no W3C files: the
+contexts and the test vectors that its tests read are downloaded at pinned hashes and never committed.
+
+It builds on @digitalbazaar/di-sd-primitives (BSD-3-Clause, Digital Bazaar, Inc.) with jsonld and rdf-canonize beneath it,
+cborg (Apache-2.0), @noble/curves (MIT) and @scure/base (MIT).

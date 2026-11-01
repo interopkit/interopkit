@@ -2,7 +2,8 @@
 "@interopkit/core": minor
 ---
 
-The foundation of `@interopkit/tool-integration`, `@interopkit/learning-analytics` and `@interopkit/competency-frameworks`: `InteropkitError`, `DataError` and
+The foundation of `@interopkit/tool-integration`, `@interopkit/learning-analytics`, `@interopkit/competency-frameworks` and
+`@interopkit/selective-disclosure`: `InteropkitError`, `DataError` and
 `ServiceError`, the checks of arguments, a `Clock`, `requestService` and `callService`, the calls to a service over HTTP with
 a deadline, a size limit of 65,536 bytes unless the call says otherwise, no redirects, any of GET, POST, PUT, DELETE and HEAD,
 bodies as text or bytes, statuses that a call returns as values, and a `signal` that ends the caller's wait, and

@@ -10,6 +10,9 @@
     "packages/learning-analytics": {
       "entry": ["src/index.ts"]
     },
+    "packages/selective-disclosure": {
+      "entry": ["src/index.ts"]
+    },
     "packages/tool-integration": {
       "entry": ["src/index.ts", "src/tool/index.ts", "src/platform/index.ts"]
     },
