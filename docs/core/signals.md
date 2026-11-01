@@ -33,6 +33,7 @@ await wait.catch((error) => error.message);
 | Export                           | Does                                                                                                                                                                                     |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CallOptions`                    | The options type with `signal`, default none. Every options type of a function that waits on I/O extends it                                                                              |
+| `callPort(call, signal?)`        | Waits for a port of the host: its value in an object, `undefined` when it fails, so that a handler answers 500 and says nothing of the failure; an abort rejects with its reason         |
 | `untilAborted(promise, signal?)` | Settles with the promise, or rejects with `signal.reason` as soon as the signal aborts. The promise runs on and its outcome is dropped. Without a signal it returns the promise as it is |
 
 ## Rules

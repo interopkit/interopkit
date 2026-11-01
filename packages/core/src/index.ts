@@ -7,6 +7,7 @@
  */
 export { hasNextLink, retryAfterSeconds, totalCountOf } from "./answer-headers.js";
 export type { CallOptions } from "./call-options.js";
+export { callPort, type PortOutcome } from "./call-port.js";
 export { type Clock, checkClock, readClock, SYSTEM_CLOCK } from "./clock.js";
 export { DataError, InteropkitError, ServiceError, type ServiceErrorOptions } from "./errors.js";
 export { type Random, SYSTEM_RANDOM } from "./random.js";

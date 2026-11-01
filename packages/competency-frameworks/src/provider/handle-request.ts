@@ -1,4 +1,4 @@
-import { DataError, untilAborted } from "@interopkit/core";
+import { callPort, DataError } from "@interopkit/core";
 import { isUuid, parseWith } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse, readQuery } from "@interopkit/core/http";
 import * as v from "valibot";
@@ -24,22 +24,6 @@ const decisionSchema = v.variant("allowed", [
   v.object({ allowed: v.literal(true) }),
   v.object({ allowed: v.literal(false), status: v.picklist([401, 403]) }),
 ]);
-
-/** What a port answered, or `undefined` when it failed. */
-type Outcome<T> = { readonly value: T } | undefined;
-
-/**
- * Waits for a call of the host's port. A failure of the port is `undefined`, so that the handler answers 500 and says
- * nothing of it; a signal that aborted ends the wait with its reason, because nobody is left to read an answer.
- */
-async function callPort<T>(call: () => Promise<T> | T, signal: AbortSignal | undefined): Promise<Outcome<T>> {
-  try {
-    return { value: await untilAborted(Promise.resolve(call()), signal) };
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    return undefined;
-  }
-}
 
 /** Returns an object of the model in the form of a version of CASE. It is `undefined` when 1.0 has no form for it. */
 function inVersion(value: CaseEntity | CasePackage, version: CaseVersion): CaseEntity | CasePackage | undefined {

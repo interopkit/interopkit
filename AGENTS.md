@@ -82,6 +82,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/random.ts`        | `Random`, `SYSTEM_RANDOM`                                                                           |
 | `packages/core/src/oauth/`           | The OAuth 2.0 clients and the token cache, which `@interopkit/core/oauth` exports                   |
 | `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                              |
+| `packages/core/src/call-port.ts`     | `callPort`, which turns the failure of a port into a value for a handler                            |
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                             |
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |

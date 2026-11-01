@@ -8,6 +8,7 @@ describe("the public API", () => {
   it("exports from the root only what the package documents", () => {
     expect(Object.keys(root).sort()).toStrictEqual(
       [
+        "callPort",
         "callService",
         "checkClock",
         "DataError",
