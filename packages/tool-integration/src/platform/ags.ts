@@ -55,7 +55,7 @@ function mediaType(request: HttpRequest): string | undefined {
 }
 
 /**
- * Answers a request for the line item of an item instance (LTI AGS 2.0 section 3.2.2.1): `GET {origin}/ags/{line item}`.
+ * Answers a request for the line item of a launch (LTI AGS 2.0 section 3.2.2.1): `GET {origin}/ags/{line item}`.
  *
  * @remarks
  * The line item is the one that `ltiPlatformAuthorize` named in the launch. The request needs a token of the tool that the
@@ -97,7 +97,7 @@ export async function agsLineItem(request: HttpRequest, options: PlatformOptions
  * @remarks
  * The request needs a token of the tool that the line item is for, with the scope `score`, and a score that
  * `readAgsScore` accepts and whose `userId` is the `sub` of the launch. A `scoreGiven` above `scoreMaximum` is accepted
- * (section 3.4.4). The score goes to `options.onScore` with the session and the item instance, and the answer is 204. It is 401 for
+ * (section 3.4.4). The score goes to `options.onScore` with the resource of the launch, and the answer is 204. It is 401 for
  * a missing or unusable token, 403 for a missing scope, another tool's line item or another user, 404 for a path that
  * names no line item, 405 for a method other than POST, 415 for another media type and 400 for a body that is not a score.
  *

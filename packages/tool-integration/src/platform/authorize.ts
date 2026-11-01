@@ -83,8 +83,8 @@ async function bindHint(
  *
  * @remarks
  * The request is bound to the `lti_message_hint` that `ltiPlatformLogin` made, and not to a cookie: it is a navigation,
- * often a cross-site POST inside the cross-site frame of the tool, where browsers may withhold the host's session cookie
- * . The checks, in order: the request is for the platform's origin; `scope=openid`, `response_type=id_token`,
+ * often a cross-site POST inside the cross-site frame of the tool, where browsers may withhold the host's session cookie.
+ * The checks, in order: the request is for the platform's origin; `scope=openid`, `response_type=id_token`,
  * `response_mode=form_post` and `prompt=none`; `client_id` is a tool of the platform and `redirect_uri` one of its redirect
  * URIs; `nonce` and `state` are present; the hint is valid, unexpired, for this tool, names the principal of `login_hint`
  * and, when `options.checkLaunch` is given, passes it; and `options.once` has not seen the hint before, so that it is single-use.

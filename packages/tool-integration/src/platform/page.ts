@@ -18,7 +18,8 @@ export interface AutoPost {
 /**
  * Builds the page that posts the `id_token` to the tool (Security Framework section 5.1.1.3, `response_mode=form_post`). The page
  * has a policy that allows its one script by hash, forms only to the origin of the redirect URI and framing only by the
- * player, because the tool's frame is same-origin with the platform's pages on the player's origin; every value in it is HTML-encoded; and the answer is not cached and sends no referrer.
+ * the host's frame page, because the tool's frame is same-origin with the platform's pages on the platform's origin; every
+ * value in it is HTML-encoded; and the answer is not cached and sends no referrer.
  */
 export async function autoPostPage(post: AutoPost): Promise<HttpResponse> {
   const { redirectUri, idToken, state, frameOrigin } = post;

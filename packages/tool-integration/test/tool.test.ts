@@ -19,6 +19,7 @@ import {
   type PlatformRegistration,
 } from "../src/tool/index.js";
 import { readTokenResponse } from "../src/tool/internal.js";
+import { getDataPage } from "../src/tool/pages.js";
 import {
   ACCESS_TOKEN_URL,
   AGS_SCOPES,
@@ -1180,6 +1181,7 @@ describe("ltiLaunch", () => {
       expect(page.headers["content-type"]).toBe("text/html; charset=utf-8");
       expect(page.headers["cache-control"]).toBe("no-store");
       expect(page.headers["x-content-type-options"]).toBe("nosniff");
+      expect(page.headers["referrer-policy"]).toBe("no-referrer");
       expect(page.headers["content-security-policy"]).toBe(
         `default-src 'none'; script-src 'sha256-${view.hash}'; base-uri 'none'; form-action 'self'`,
       );
@@ -1413,6 +1415,7 @@ describe("ltiLogin", () => {
     expect(response.headers["content-type"]).toBe("text/html; charset=utf-8");
     expect(response.headers["cache-control"]).toBe("no-store");
     expect(response.headers["x-content-type-options"]).toBe("nosniff");
+    expect(response.headers["referrer-policy"]).toBe("no-referrer");
     expect(view.scripts).toBe(1);
   });
 
@@ -1605,5 +1608,25 @@ describe("properties", () => {
       }),
       { numRuns: 60 },
     );
+  });
+});
+
+describe("the verification page", () => {
+  it("writes the redirect URI and the token as text in the form, whatever they hold", async () => {
+    const hostile = `x"><img src="https://stranger.example/leak"><script>alert(1)</script>'`;
+    const page = await getDataPage({
+      frame: "_parent",
+      state: hostile,
+      nonce: hostile,
+      authenticationUrl: "https://lms.example.edu/auth",
+      redirectUri: `https://tool.example.com/l${hostile}`,
+      idToken: hostile,
+    });
+    const encoded =
+      "x&quot;&gt;&lt;img src=&quot;https://stranger.example/leak&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;&#39;";
+    expect(page.body).toContain(`action="https://tool.example.com/l${encoded}"`);
+    expect(page.body).toContain(`name="id_token" value="${encoded}"`);
+    expect(page.body).not.toContain("<img");
+    expect(page.body.match(/<script>/gu)).toHaveLength(1);
   });
 });

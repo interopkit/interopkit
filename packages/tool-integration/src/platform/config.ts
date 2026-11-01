@@ -34,7 +34,7 @@ export interface PlatformEndpoints {
   readonly jwks: string;
   /** The OAuth 2.0 token endpoint, served by `platformToken`; also the audience of the tool's client assertions. */
   readonly token: string;
-  /** The storage page that the player shows in a frame beside the frame of the tool, served by `platformStorage`. */
+  /** The storage page that the host shows in a frame beside the frame of the tool, served by `platformStorage`. */
   readonly storage: string;
 }
 

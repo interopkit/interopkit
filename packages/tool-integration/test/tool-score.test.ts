@@ -77,6 +77,16 @@ describe("publishAgsScore", () => {
     expect(lms.calls).toStrictEqual([`POST ${LINE_ITEM_URL}/scores`]);
   });
 
+  it("refuses a launch whose line item is not an https URL, before any request", async () => {
+    const { lms, launch, options } = await launched();
+    const plain = {
+      ...launch,
+      ags: { ...launch.ags, scopes: launch.ags?.scopes ?? [], lineitem: "http://lms.example.edu/li/1" },
+    };
+    await expect(publishAgsScore(final, plain, options)).rejects.toThrow(DataError);
+    expect(lms.calls).toStrictEqual([]);
+  });
+
   it("posts a score that waits for a person without points, as the specification shows it", async () => {
     const { lms, launch, options } = await launched();
     await publishAgsScore(

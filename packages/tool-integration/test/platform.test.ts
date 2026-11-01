@@ -22,6 +22,7 @@ import {
   type ToolRegistration,
 } from "../src/platform/index.js";
 import { LTI_HINT_TTL_SECONDS } from "../src/platform/internal.js";
+import { autoPostPage } from "../src/platform/page.js";
 import { ltiAccessToken, ltiLaunch, ltiLogin, type PlatformRegistration } from "../src/tool/index.js";
 import { MemoryStore } from "./fake-platform.js";
 import {
@@ -1357,6 +1358,11 @@ describe("ltiPlatformLogin", () => {
         "A tool must have exactly one of the properties jwksUrl and keys.",
       ],
       [
+        "a redirect URI that is http",
+        { redirectUris: ["http://tool.example/launch"] },
+        'A redirect URI of a tool must be an absolute https URL, found "http://tool.example/launch".',
+      ],
+      [
         "an allow list with a comma",
         { allow: "microphone, camera" },
         "The allow list of a tool must be a Permissions Policy allow list",
@@ -1914,5 +1920,23 @@ describe("properties", () => {
       }),
       { numRuns: 60 },
     );
+  });
+});
+
+describe("the page that posts the id_token", () => {
+  it("writes the redirect URI, the token and the state as text in the form, whatever they hold", async () => {
+    const hostile = `x"><img src="https://stranger.example/leak"><script>alert(1)</script>'`;
+    const page = await autoPostPage({
+      redirectUri: `https://tool.example/l${hostile}`,
+      idToken: hostile,
+      state: hostile,
+      frameOrigin: "https://app.platform.example",
+    });
+    const encoded =
+      "x&quot;&gt;&lt;img src=&quot;https://stranger.example/leak&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;&#39;";
+    expect(page.body).toContain(`action="https://tool.example/l${encoded}"`);
+    expect(page.body).toContain(`name="id_token" value="${encoded}"`);
+    expect(page.body).not.toContain("<img");
+    expect(page.body.match(/<script>/gu)).toHaveLength(1);
   });
 });

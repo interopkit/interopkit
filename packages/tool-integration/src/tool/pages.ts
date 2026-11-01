@@ -123,6 +123,7 @@ ${body}<p id="failure" role="alert" hidden>${FAILURE}</p>
       "content-type": "text/html; charset=utf-8",
       "cache-control": "no-store",
       "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
       "content-security-policy": await pagePolicy(script, "'self'"),
     },
     body: html,

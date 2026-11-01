@@ -127,7 +127,7 @@ function contentItem(item: DeepLinkItem): Readonly<Record<string, unknown>> {
  *
  * @param launch - The Deep Linking request that `ltiLaunch` returned.
  * @param items - The resource links to place; an empty array places none.
- * @param options - The registrations of the tool and its `fetch`.
+ * @param options - The registrations of the tool and its clock.
  * @returns The signed JWT, as the text of the form parameter `JWT`.
  * @throws `DataError` when an argument has the wrong type, or the platform does not accept what the items are: it does not
  * accept `ltiResourceLink`, or several items.

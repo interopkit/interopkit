@@ -2,7 +2,15 @@ import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { LtiError } from "../src/errors.js";
-import { checkHttpRequest, pagePolicy, readCookie, readForm, readQuery, verifyJwt } from "../src/protocol/internal.js";
+import {
+  checkHttpRequest,
+  escapeHtml,
+  pagePolicy,
+  readCookie,
+  readForm,
+  readQuery,
+  verifyJwt,
+} from "../src/protocol/internal.js";
 import { createClock, generateKeyPair, NOW, request, signToken } from "./fixture.js";
 import { FUZZ } from "./fuzz.js";
 
@@ -192,6 +200,22 @@ describe("verifyJwt and the claims it names", () => {
     await expect(
       verifyJwt(token, async () => key.publicKey, { issuer, audience: "tool", requiredClaims: ["exp"] }, NOW),
     ).rejects.toMatchObject({ reason: "issued-in-future" });
+  });
+});
+
+describe("escapeHtml", () => {
+  it("encodes the five characters that end an attribute value or open a tag, each as its entity", () => {
+    expect(escapeHtml(`&<>"'`)).toBe("&amp;&lt;&gt;&quot;&#39;");
+    for (const [text, entity] of [
+      ["&", "&amp;"],
+      ["<", "&lt;"],
+      [">", "&gt;"],
+      ['"', "&quot;"],
+      ["'", "&#39;"],
+    ]) {
+      expect(escapeHtml(`a${text}b`), text).toBe(`a${entity}b`);
+    }
+    expect(escapeHtml("plain text 123")).toBe("plain text 123");
   });
 });
 

@@ -1,8 +1,11 @@
+// biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
 import { DataError } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
-// biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
 import { escapeHtml, type HttpResponse, pagePolicy } from "../protocol/internal.js";
 import { checkPlatformOptions, type PlatformStorageOptions } from "./options.js";
+
+/** The name of the frame of the tool, when the host names none. */
+const DEFAULT_TOOL_FRAME = "lti-tool";
 
 /**
  * The most bytes, as the sum of the lengths of the keys and values, that the page keeps for one origin. It is the least that
@@ -10,9 +13,6 @@ import { checkPlatformOptions, type PlatformStorageOptions } from "./options.js"
  *
  * @see {@link https://www.imsglobal.org/spec/lti-pm-s/v0p1 | LTI postMessage Storage 0.1}
  */
-/** The name of the frame of the tool, when the host names none. */
-const DEFAULT_TOOL_FRAME = "lti-tool";
-
 const STORAGE_MAX_BYTES = 4096;
 
 /**
@@ -23,7 +23,7 @@ const STORAGE_MAX_BYTES = 4096;
 const STORAGE_MAX_KEYS = 500;
 
 // The page runs in a frame of the platform's origin, beside the frame of the tool. The tool posts to it with the origin of
-// the authentication endpoint as the target, which the player's own origin could not receive, and checks that the answer
+// the authentication endpoint as the target, which the host's own origin could not receive, and checks that the answer
 // comes from that origin. The page answers only the window of the tool's frame, keeps the values by the origin of the
 // message, and replies to the window and the origin that sent the request.
 const SCRIPT = `(function () {
@@ -96,7 +96,7 @@ const SCRIPT = `(function () {
 /**
  * Builds the page that stores the values of a tool for the length of its frame: `lti.put_data` and `lti.get_data`, kept by
  * the origin of the message and answered to the window that sent them, and only to the frame of the tool. The page has a policy
- * that allows its one script by hash and framing only by the player; the answer is not cached and sends no referrer.
+ * that allows its one script by hash and framing only by the host's frame page; the answer is not cached and sends no referrer.
  *
  * @param frameOrigin - The origin of the page that frames this one, the only one that may.
  * @param toolFrame - The name of the frame of the tool, the only one that the page answers.
@@ -130,7 +130,7 @@ async function storagePage(frameOrigin: string, toolFrame: string): Promise<Http
 
 /**
  * Answers a request for the storage page of the platform: the page that keeps the `state` and the `nonce` of a tool's login
- * (LTI Client Side OIDC 0.1) and that the `lti_storage_target` of `ltiPlatformLogin` names. The player shows it in a hidden
+ * (LTI Client Side OIDC 0.1) and that the `lti_storage_target` of `ltiPlatformLogin` names. The host shows it in a hidden
  * frame beside the frame of the tool.
  *
  * @see {@link https://www.imsglobal.org/spec/lti-cs-oidc/v0p1 | LTI Client Side OIDC 0.1}
