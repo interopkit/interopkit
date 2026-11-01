@@ -81,6 +81,11 @@ npm install @interopkit/achievement-credentials
 |                                       | `verifyProof`, `DataIntegrityVerifyOptions`: verify the proofs of a credential, with the key bound to the issuer                                                                                                  |
 |                                       | `validateJsonLd`: what JSON-LD safe mode would drop                                                                                                                                                                 |
 |                                       | `createContextLoader`, `ContextLoaderOptions`, `KNOWN_CONTEXTS`: contexts only at their pins                                                                                                                       |
+| `@interopkit/achievement-credentials/status` | `createStatusList`, `allocateStatusIndex`, `setCredentialStatus`, `StatusList`: a Bitstring Status List as plain data, a free index at random, an entry set or cleared                  |
+|                                       | `issueStatusListCredential`, `StatusListCredentialInput`, `StatusIssueOptions`: the credential that holds the list, as a JWS or with a Data Integrity proof                               |
+|                                       | `verifyCredentialStatus`, `StatusCheckOptions`, `createStatusListCache`, `StatusListCache`: the validate algorithm with its codes, and list credentials kept across verifications          |
+| `@interopkit/achievement-credentials/refresh` | `refreshCredential`, `RefreshOptions`: get the newer version of a credential from its refresh service                                                                              |
+|                                       | `handleRefreshRequest`, `RefreshHandlerOptions`: answer a request to refresh, for the issuer                                                                                                        |
 
 ```ts
 import { readCredential, validateCredential } from "@interopkit/achievement-credentials";

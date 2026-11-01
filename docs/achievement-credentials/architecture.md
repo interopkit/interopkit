@@ -1,13 +1,15 @@
 # Architecture of achievement-credentials
 
-`@interopkit/achievement-credentials` has nine modules that share one model. `model` holds the types, the vocabularies, the
+`@interopkit/achievement-credentials` has eleven modules that share one model. `model` holds the types, the vocabularies, the
 findings and the terms of verification. `read` turns untrusted JSON into the model. `issue` writes credentials from their parts,
 `compare` looks at credentials, `baking` writes a credential into an image and reads it out, and `client` calls the APIs of a
 server. `keys` resolves the keys that verify a proof and checks that a key belongs to an issuer, `jwt` signs and reads a
 credential as a JSON Web Token, and `data-integrity` secures a credential with a Data Integrity proof and loads contexts at their
-pins. `read` imports only `model` and `@interopkit/core`, `issue`, `compare`, `baking` and `client` import those and `read` and
-never each other, `keys` imports `model` and `core`, `jwt` imports those and `read` and `keys`, `data-integrity` imports those
-three as well and never `jwt`, and `model` imports nothing of the family.
+pins. `status` keeps and checks the status lists of credentials, and `refresh` gets and answers the refresh of a credential.
+`read` imports only `model` and `@interopkit/core`, `issue`, `compare`, `baking` and `client` import those and `read` and never
+each other, `keys` imports `model` and `core`, `jwt` imports those and `read` and `keys`, `data-integrity` imports those three as
+well and never `jwt`, `status` builds on those and loads `data-integrity` only when a Data Integrity proof is asked for, `refresh`
+imports `model` and `core` only, and `model` imports nothing of the family.
 
 ```mermaid
 flowchart BT
@@ -21,6 +23,8 @@ flowchart BT
   keys["keys<br/>resolver, issuer binding"]
   jwt["jwt<br/>sign and read a JWS"]
   di["data-integrity<br/>proofs, contexts, safe mode"]
+  status["status<br/>lists, validate algorithm, cache"]
+  refresh["refresh<br/>get and answer a refresh"]
   root["index.ts<br/>the public API"]
   read --> model
   read --> core
@@ -40,6 +44,12 @@ flowchart BT
   di --> read
   di --> keys
   di --> core
+  status --> read
+  status --> keys
+  status --> jwt
+  status -.->|"on demand"| di
+  refresh --> model
+  refresh --> core
   root --> model
   root --> read
   root --> issue
@@ -70,6 +80,8 @@ flowchart BT
 |           | `claims.ts`, `options.ts`                                                                        | The claims that repeat a credential, and the options of both                            |
 | `data-integrity` | `add-proof.ts`, `derive-disclosure.ts`, `verify-proof.ts`, `validate-json-ld.ts`                | The functions that secure, disclose, verify and check a credential                       |
 |           | `suites.ts`, `contexts.ts`, `canonical-json.ts`, `document-loader.ts`, `proof-list.ts`, `mandatory-pointers.ts`, `options.ts` | The suites over the adopted library, the loader of contexts and the pins, and the glue to the processors of JSON-LD |
+| `status`  | `bitstring.ts`, `encoded-list.ts`, `issue-status-list-credential.ts`, `verify-credential-status.ts`, `status-list-cache.ts`, `options.ts` | The list as plain data, its encoding under a limit, the issue of its credential, the validate algorithm and the cache |
+| `refresh` | `refresh-credential.ts`, `handle-refresh-request.ts`                                             | Getting a credential from its refresh service, and answering as that service              |
 
 `@interopkit/core/checks` holds what other standards need as much: records that refuse or keep unknown properties, the formats
 of a date and a date and time, the copy of JSON within a depth limit, and the conversion of the issues of a parse to findings

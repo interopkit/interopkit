@@ -40,12 +40,14 @@ flowchart LR
 | Data Integrity proofs   | OB 8.3, Conformance 3.1.1, 4.2.1 | `addProof` with `eddsa-rdfc-2022` and `ecdsa-sd-2023` (the base proof), `deriveDisclosure`, `verifyProof` for `eddsa-rdfc-2022`, `ecdsa-rdfc-2019`, `ecdsa-sd-2023` and, with `legacyProofs`, `Ed25519Signature2020`; the key must be bound to the issuer |
 | JSON-LD safe mode       | OB Conformance 3           | `validateJsonLd`: the properties and values that safe mode drops, with their paths                                                                                  |
 | Contexts                | OB 5.3, VC Data Model 2.0  | `createContextLoader`: a context only at the pin of its address (`KNOWN_CONTEXTS`: VC 1.1 and 2.0, OB 3.0.0 to 3.0.3 and its extensions, CLR 2.0.0 and 2.0.1, Data Integrity 2, Multikey, DID) |
+| Status lists            | OB 9.1, Bitstring Status List 2.1, 3.2 | `createStatusList`, `allocateStatusIndex` (a free index at random), `setCredentialStatus`, `issueStatusListCredential` (a JWS or a Data Integrity proof), `verifyCredentialStatus` (the validate algorithm with its codes), `createStatusListCache` (`ttl` and `validUntil`); entries of the `message` purpose or wider than 1 bit are `skipped` |
+| Refresh                 | OB 9.1, VCCR               | `refreshCredential` (`1EdTechCredentialRefresh` and `ImsCredentialRefresh`), `handleRefreshRequest` for the issuer                                                                                |
 
 ## Not included
 
 | Not included                                                         | Why                                                                                                         |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Status lists, refresh, verification of a whole credential            | They need a clock and requests; the readers only check shape and the rules of the subject                    |
+| Verification of a whole credential                                   | `/verify` joins the checks; the readers only check shape and the rules of the subject                        |
 | The provider side of the APIs of Open Badges and CLR                 | A server over requests, with the host's storage and authorization                                            |
 | Open Badges 2.0                                                      | A model of its own                                                                                          |
 | JSON-LD processing, a map of languages for a text, a single context | The compacted form is read as JSON; the contexts give no language container and a credential needs both contexts |

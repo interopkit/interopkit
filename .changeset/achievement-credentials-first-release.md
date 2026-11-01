@@ -51,3 +51,10 @@ to the issuer; it refuses a base proof. `createContextLoader` serves a JSON-LD c
 address (`KNOWN_CONTEXTS` pins those of Verifiable Credentials, Open Badges, CLR, Data Integrity, Multikey and DID), and every
 processor of JSON-LD loads contexts through it and no other way. `validateJsonLd` lists what safe mode would drop. The builders write
 the context of the 1EdTech extensions, so that a built credential survives safe mode.
+
+`createStatusList`, `allocateStatusIndex`, `setCredentialStatus` and `issueStatusListCredential` make a Bitstring Status List and the
+credential that holds it, as a compact JWS or with a Data Integrity proof; `verifyCredentialStatus` follows its validate algorithm
+and reports each failure by its code, reads an entry of the `message` purpose or wider than one bit as `skipped`, inflates the
+list through a stream that stops at 16,777,216 bytes, and binds the key of the list credential to its issuer; `createStatusListCache`
+keeps list credentials until their `ttl` or `validUntil`. `refreshCredential` gets the newer version of a credential from its
+`1EdTechCredentialRefresh` service and `handleRefreshRequest` answers as that service for an issuer.

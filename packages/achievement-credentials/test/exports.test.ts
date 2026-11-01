@@ -4,6 +4,8 @@ import * as dataIntegrity from "../src/data-integrity/index.js";
 import * as api from "../src/index.js";
 import * as jwt from "../src/jwt/index.js";
 import * as keys from "../src/keys/index.js";
+import * as refresh from "../src/refresh/index.js";
+import * as status from "../src/status/index.js";
 
 describe("the exports", () => {
   it("are what the package documents and nothing else", () => {
@@ -58,6 +60,21 @@ describe("the exports", () => {
       "validateJsonLd",
       "verifyProof",
     ]);
+  });
+
+  it("are, for the subpath status, the list, the index, the credential of the list and its check", () => {
+    expect(Object.keys(status).sort()).toStrictEqual([
+      "allocateStatusIndex",
+      "createStatusList",
+      "createStatusListCache",
+      "issueStatusListCredential",
+      "setCredentialStatus",
+      "verifyCredentialStatus",
+    ]);
+  });
+
+  it("are, for the subpath refresh, the request to the service and the answer of the issuer", () => {
+    expect(Object.keys(refresh).sort()).toStrictEqual(["handleRefreshRequest", "refreshCredential"]);
   });
 
   it("are, for the subpath keys, the resolver and the check of the binding", () => {

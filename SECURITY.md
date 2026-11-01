@@ -208,6 +208,12 @@ the address that the connection resolves to.
 | An `ecdsa-sd-2023` base proof given to a verifier, which holds the key of the proof and every signature | `verifyProof` refuses it and says to derive a disclosure first; the guide says that disclosures of one credential can be linked |
 | A proof for a purpose other than assertion, an expired proof, a legacy proof | Only `assertionMethod` counts, `expires` is compared with the clock within the skew, and `Ed25519Signature2020` needs `legacyProofs` |
 | A signer that signs another algorithm than the cryptosuite names, or names no key | `addProof` refuses it with a `DataError` before it signs |
+| A status list credential that inflates to gigabytes (a gzip bomb within the fetch limit)   | The list is inflated through a `DecompressionStream` that is cancelled at 16,777,216 bytes; the library's decoder, which inflates with no limit, is never called; a test inflates a bomb of 20 MiB from under 100 KB |
+| A status list credential published by another party for a credential's status               | The list credential's proof is verified and its key is bound to its issuer, who must be the credential's issuer or one of `statusIssuers`; a purpose that differs from the entry's fails |
+| A status read wrongly: an entry of the `message` purpose, or of more than one bit           | Such an entry is `skipped` with a detail and the list is never read as one bit; a list of fewer than 131,072 entries or an index outside it fails |
+| Indexes that betray the order of issue                                                       | `allocateStatusIndex` draws a free index at random from the `Random` the host passes (`SYSTEM_RANDOM` in production) |
+| A verifier of JWTs that loads a processor of JSON-LD through the status module               | `status` loads `data-integrity` only for a Data Integrity proof; a test checks that no static import of `jwt`, `keys`, `status` or `refresh`, or of their dependencies, reaches a processor of JSON-LD |
+| A refresh service that answers with a huge or hostile document                               | HTTPS only, no redirects, time and size limits and a depth check before parsing; the answer is a candidate that the caller verifies like any credential; a failed refresh is not a reason to refuse the credential |
 
 ## Selective disclosure
 
@@ -411,6 +417,13 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `achievement-credentials` | Levels that a document of keys nests                                     | 16                                | levels       | The document holds nothing; not replaceable |
 | `achievement-credentials` | Keys that a document lists                                               | 100                               | keys         | The document publishes nothing; not replaceable |
 | `achievement-credentials` | Bits of an RSA modulus of a key                                          | 8,192                             | bits         | The key is left out; not replaceable |
+| `achievement-credentials` | Bytes that a status list inflates to                                     | 16,777,216                        | bytes        | The inflation stops; the status is `failed`; not replaceable |
+| `achievement-credentials` | Entries of a status list when it is created, and the least accepted      | 131,072                           | entries      | `DataError` when creating; `STATUS_LIST_LENGTH_ERROR` when verifying; not replaceable |
+| `achievement-credentials` | `maxBytes` of `verifyCredentialStatus`                                   | 1,048,576                         | bytes        | The status list credential; the status is `unavailable` |
+| `achievement-credentials` | `timeoutMs` of `verifyCredentialStatus` and `refreshCredential`          | 10,000                            | milliseconds | One fetch; `unavailable` for a status, a `ServiceError` for a refresh |
+| `achievement-credentials` | `maxBytes` of `refreshCredential`                                        | 1,048,576                         | bytes        | The refreshed credential; a `ServiceError` |
+| `achievement-credentials` | List credentials in the cache of a status check                          | 1,000                             | credentials  | The oldest goes first |
+| `achievement-credentials` | `ttl` of a list credential that gives none                               | 300,000                           | milliseconds | How long the cache keeps it; not replaceable |
 | `achievement-credentials` | `maxInputBytes` of `verifyProof`                                         | 1,048,576                         | characters   | The credential as JSON, checked before it is read; the proof is not valid |
 | `achievement-credentials` | `maxDepth` of `verifyProof`                                              | 64                                | levels       | The credential, counted from its text before it is read; the proof is not valid |
 | `achievement-credentials` | `maxBytes` of `createContextLoader`                                      | 262,144                           | bytes        | One context; a `ServiceError` |

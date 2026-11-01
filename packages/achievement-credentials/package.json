@@ -45,6 +45,14 @@
     "./data-integrity": {
       "types": "./dist/data-integrity/index.d.ts",
       "default": "./dist/data-integrity/index.js"
+    },
+    "./status": {
+      "types": "./dist/status/index.d.ts",
+      "default": "./dist/status/index.js"
+    },
+    "./refresh": {
+      "types": "./dist/refresh/index.d.ts",
+      "default": "./dist/refresh/index.js"
     }
   },
   "files": [
@@ -66,7 +74,6 @@
   },
   "devDependencies": {
     "fast-check": "^4.10.2",
-    "jose": "6.2.12",
     "oidc-provider": "9.12.2"
   },
   "dependencies": {

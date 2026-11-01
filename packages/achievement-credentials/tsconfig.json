@@ -9,9 +9,12 @@
       "@interopkit/core": ["../core/src/index.ts"],
       "@interopkit/core/checks": ["../core/src/checks.ts"],
       "@interopkit/core/oauth": ["../core/src/oauth/index.ts"],
+      "@interopkit/core/http": ["../core/src/http/index.ts"],
       "@interopkit/selective-disclosure": ["../selective-disclosure/src/index.ts"],
       "@interopkit/achievement-credentials/data-integrity": ["./src/data-integrity/index.ts"],
       "@interopkit/achievement-credentials/keys": ["./src/keys/index.ts"],
+      "@interopkit/achievement-credentials/refresh": ["./src/refresh/index.ts"],
+      "@interopkit/achievement-credentials/status": ["./src/status/index.ts"],
       "@interopkit/achievement-credentials/jwt": ["./src/jwt/index.ts"]
     }
   },
