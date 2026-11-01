@@ -84,6 +84,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm spec-examples
+      # The test vectors of the cryptosuite read the contexts that pnpm schemas downloads.
+      - run: pnpm schemas
       - run: pnpm test:spec
 
   # The pages of the client-side login, in the current Chromium, Firefox and WebKit.
