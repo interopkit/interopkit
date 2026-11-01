@@ -479,7 +479,8 @@
             "noUndeclaredDependencies": "off"
           }
         }
-      }
+      },
+      "plugins": ["./biome/unique-doubles-same-value-zero.grit"]
     }
   ],
   "javascript": {

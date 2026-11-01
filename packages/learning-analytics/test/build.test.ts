@@ -16,6 +16,11 @@ import {
 import { ACTOR, ASSESSMENT, EVENT_TIME, fromJson, IDS, SESSION, startedInput, urnOf } from "./fixture.js";
 
 const MAX_TIME = 253_402_300_799_999;
+/**
+ * Scores that JSON carries unchanged. JSON writes -0 as 0, and `toStrictEqual` tells the two apart, so -0 is drawn on purpose
+ * and then becomes 0 (-0 + 0 is 0).
+ */
+const SCORES = fc.oneof(fc.constant(-0), fc.double({ noNaN: true, noDefaultInfinity: true })).map((score) => score + 0);
 
 describe("the namespace of the identifiers", () => {
   it("is used with a library that gives the worked example of RFC 9562 Appendix A.4", () => {
@@ -290,22 +295,17 @@ describe("buildEvent", () => {
 
   it("builds an event that is valid JSON-LD input for any valid time, identifier and score", () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: MAX_TIME }),
-        fc.string(),
-        fc.double({ noNaN: true, noDefaultInfinity: true }),
-        (at, session, score) => {
-          const time = caliperTime(at, "The time");
-          const event: CaliperEvent = buildEvent({
-            ...startedInput(),
-            id: mintUrn(["event", session, at]),
-            eventTime: time,
-            generated: { id: urnOf("attempt", SESSION), type: "Score", scoreGiven: score, dateCreated: time },
-          });
-          expect(JSON.parse(JSON.stringify(event))).toStrictEqual(event);
-          expect(event.eventTime).toBe(time);
-        },
-      ),
+      fc.property(fc.integer({ min: 0, max: MAX_TIME }), fc.string(), SCORES, (at, session, score) => {
+        const time = caliperTime(at, "The time");
+        const event: CaliperEvent = buildEvent({
+          ...startedInput(),
+          id: mintUrn(["event", session, at]),
+          eventTime: time,
+          generated: { id: urnOf("attempt", SESSION), type: "Score", scoreGiven: score, dateCreated: time },
+        });
+        expect(JSON.parse(JSON.stringify(event))).toStrictEqual(event);
+        expect(event.eventTime).toBe(time);
+      }),
       { numRuns: 80, seed: 20_261_101 },
     );
   });

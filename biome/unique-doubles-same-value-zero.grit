@@ -1,0 +1,5 @@
+`$fc.uniqueArray($arguments)` where {
+  $arguments <: contains `$_.double($_)`,
+  $arguments <: not contains `comparator`,
+  register_diagnostic(span=$fc, message="The default comparison of uniqueArray draws -0 and 0 as two values, though they are one number: set the option comparator to SameValueZero when the values are doubles.", severity="error")
+}
