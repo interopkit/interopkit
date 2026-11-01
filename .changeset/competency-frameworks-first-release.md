@@ -10,6 +10,8 @@ severity, as data: they find a property that CASE does not have, an identifier t
 nothing, an `isChildOf` tree that loops (`child-of-cycle`), and an item that no chain of `isChildOf` leads to from the document
 (`item-outside-tree`). `toCaseVersion` takes a package or an entity of 1.1 to the form of 1.0, leaves out and reports what 1.0
 cannot hold, and reports an identifier or a URI that 1.0 would refuse (`form-not-in-1.0`).
+`@interopkit/competency-frameworks/graph` answers what a consumer asks of a framework: `frameworkTree`, `associationsOf`,
+`crosswalk`, `diffPackages`, `isNewer`, `adoptionStatus` and `caseEntityUri`.
 `@interopkit/competency-frameworks/provider` serves a store of frameworks over the CASE REST binding: `handleCaseRequest`
 answers the twelve endpoints in 1.1 and in 1.0 with paging, sorting, filtering, field selection and the `imsx_StatusInfo` of a
 failure, and serves the discovery file that `localizeOpenApi` makes. `parseCaseQuery` reads the query grammar, and

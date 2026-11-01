@@ -1,13 +1,5 @@
-import type {
-  CaseEntity,
-  CaseIssue,
-  CasePackage,
-  CFPckgAssociation,
-  CFRubric,
-  LinkGenURI,
-  LinkURI,
-} from "../model/index.js";
-import { INFORMATION_MODEL_UUID } from "../model/internal.js";
+import type { CaseEntity, CaseIssue, CasePackage, CFPckgAssociation, CFRubric, LinkURI } from "../model/index.js";
+import { INFORMATION_MODEL_UUID, identifierKey, isCaseNode } from "../model/internal.js";
 
 /** An identifier of an entity, and where it is. */
 interface Identified {
@@ -18,11 +10,6 @@ interface Identified {
 
 /** The URIs of the entities of one class that a package holds, by the identifier in lower case. */
 type Targets = ReadonlyMap<string, string>;
-
-/** Compares identifiers as UUIDs: the digits of a UUID are the same in either case. */
-function keyOf(identifier: string): string {
-  return identifier.toLowerCase();
-}
 
 function issue(path: string, rule: string, severity: CaseIssue["severity"], message: string): CaseIssue {
   return { path, rule, message, severity };
@@ -82,7 +69,7 @@ function identifierIssues(identified: readonly Identified[]): CaseIssue[] {
   const issues: CaseIssue[] = [];
   const first = new Map<string, string>();
   for (const { path, identifier } of identified) {
-    const key = keyOf(identifier);
+    const key = identifierKey(identifier);
     const earlier = first.get(key);
     if (earlier === undefined) first.set(key, path);
     else {
@@ -122,7 +109,7 @@ interface PackageTargets {
 
 /** Maps identifiers to URIs. */
 function targetsOf(list: readonly { readonly identifier: string; readonly uri: string }[] | undefined): Targets {
-  return new Map((list ?? []).map(({ identifier, uri }) => [keyOf(identifier), uri]));
+  return new Map((list ?? []).map(({ identifier, uri }) => [identifierKey(identifier), uri]));
 }
 
 function packageTargets(pkg: CasePackage): PackageTargets {
@@ -142,7 +129,7 @@ function packageTargets(pkg: CasePackage): PackageTargets {
 /** Checks that a link points to an entity of the package, with the same URI. */
 function linkIssues(link: LinkURI | undefined, path: string, targets: Targets, what: string): CaseIssue[] {
   if (link === undefined) return [];
-  const uri = targets.get(keyOf(link.identifier));
+  const uri = targets.get(identifierKey(link.identifier));
   if (uri === undefined) {
     return [
       issue(
@@ -170,18 +157,13 @@ function linksIssues(links: readonly LinkURI[] | undefined, path: string, target
   return (links ?? []).flatMap((link, at) => linkIssues(link, `${path}[${at}]`, targets, what));
 }
 
-/** Tells whether a node is of CASE, which is what an absent `targetType` means. */
-function isCaseNode(node: LinkGenURI): boolean {
-  return node.targetType === undefined || node.targetType === "CASE";
-}
-
 /** Checks the nodes of an association: a node that names the package's own document or item agrees with it in URI. */
 function nodeIssues(association: CFPckgAssociation, path: string, nodes: Targets): CaseIssue[] {
   const issues: CaseIssue[] = [];
   let local = 0;
   for (const side of ["originNodeURI", "destinationNodeURI"] as const) {
     const node = association[side];
-    const uri = isCaseNode(node) ? nodes.get(keyOf(node.identifier)) : undefined;
+    const uri = isCaseNode(node) ? nodes.get(identifierKey(node.identifier)) : undefined;
     if (uri === undefined) continue;
     local += 1;
     if (uri !== node.uri) {
@@ -220,7 +202,7 @@ function childEdges(associations: readonly CFPckgAssociation[], nodes: Targets):
   for (const [at, association] of associations.entries()) {
     const { originNodeURI: origin, destinationNodeURI: destination } = association;
     if (association.associationType !== "isChildOf" || !isCaseNode(origin) || !isCaseNode(destination)) continue;
-    const [child, parent] = [keyOf(origin.identifier), keyOf(destination.identifier)];
+    const [child, parent] = [identifierKey(origin.identifier), identifierKey(destination.identifier)];
     if (!nodes.has(child) || !nodes.has(parent)) continue;
     edges.set(child, [...(edges.get(child) ?? []), { parent, at }]);
   }
@@ -279,7 +261,7 @@ function outsideTreeIssues(pkg: CasePackage, edges: ReadonlyMap<string, readonly
   for (const [child, parents] of edges) {
     for (const { parent } of parents) children.set(parent, [...(children.get(parent) ?? []), child]);
   }
-  const reached = new Set([keyOf(pkg.CFDocument.identifier)]);
+  const reached = new Set([identifierKey(pkg.CFDocument.identifier)]);
   const queue = [...reached];
   for (let node = queue.shift(); node !== undefined; node = queue.shift()) {
     for (const child of children.get(node) ?? []) {
@@ -289,7 +271,7 @@ function outsideTreeIssues(pkg: CasePackage, edges: ReadonlyMap<string, readonly
     }
   }
   return (pkg.CFItems ?? []).flatMap((item, at) =>
-    reached.has(keyOf(item.identifier))
+    reached.has(identifierKey(item.identifier))
       ? []
       : [
           issue(
@@ -344,7 +326,7 @@ function associationIssues(pkg: CasePackage, targets: PackageTargets): CaseIssue
 function rubricIssues(pkg: CasePackage, targets: PackageTargets): CaseIssue[] {
   const issues: CaseIssue[] = [];
   const parentIssue = (path: string, claimed: string | undefined, parent: string, what: string) =>
-    claimed === undefined || keyOf(claimed) === keyOf(parent)
+    claimed === undefined || identifierKey(claimed) === identifierKey(parent)
       ? []
       : [
           issue(

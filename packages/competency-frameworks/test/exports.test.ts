@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as graph from "../src/graph/index.js";
 import * as root from "../src/index.js";
 import * as provider from "../src/provider/index.js";
 
@@ -12,6 +13,7 @@ describe("the public API", () => {
         "FILTER_PREDICATES",
         "readEntity",
         "readPackage",
+        "SERVED_KINDS",
         "SORT_ORDERS",
         "STATUS_CODES_MAJOR",
         "STATUS_CODES_MINOR",
@@ -19,6 +21,21 @@ describe("the public API", () => {
         "toCaseVersion",
         "validateEntity",
         "validatePackage",
+      ].sort(),
+    );
+  });
+
+  it("exports only what the graph module documents", () => {
+    expect(Object.keys(graph).sort()).toStrictEqual(
+      [
+        "ADOPTION_STATUSES",
+        "adoptionStatus",
+        "associationsOf",
+        "caseEntityUri",
+        "crosswalk",
+        "diffPackages",
+        "frameworkTree",
+        "isNewer",
       ].sort(),
     );
   });

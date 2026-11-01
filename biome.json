@@ -482,8 +482,17 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/read", "**/read/**", "**/version", "**/version/**", "**/provider", "**/provider/**"],
-                    "message": "model/ holds the types and terms and imports neither read/, version/ nor provider/: they build on it."
+                    "group": [
+                      "**/read",
+                      "**/read/**",
+                      "**/version",
+                      "**/version/**",
+                      "**/graph",
+                      "**/graph/**",
+                      "**/provider",
+                      "**/provider/**"
+                    ],
+                    "message": "model/ holds the types and terms and imports no other module of the package: they build on it."
                   }
                 ]
               }
@@ -502,8 +511,15 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/version", "**/version/**", "**/provider", "**/provider/**"],
-                    "message": "read/ builds on model/ and @interopkit/core only: version/ is its sibling and provider/ builds on it."
+                    "group": [
+                      "**/version",
+                      "**/version/**",
+                      "**/graph",
+                      "**/graph/**",
+                      "**/provider",
+                      "**/provider/**"
+                    ],
+                    "message": "read/ builds on model/ and @interopkit/core only: version/ and graph/ are its siblings and provider/ builds on it."
                   }
                 ]
               }
@@ -522,8 +538,8 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/read", "**/read/**", "**/provider", "**/provider/**"],
-                    "message": "version/ builds on model/ and @interopkit/core only: read/ is its sibling and provider/ builds on it."
+                    "group": ["**/read", "**/read/**", "**/graph", "**/graph/**", "**/provider", "**/provider/**"],
+                    "message": "version/ builds on model/ and @interopkit/core only: read/ and graph/ are its siblings and provider/ builds on it."
                   }
                 ]
               }
@@ -553,11 +569,32 @@
       }
     },
     {
+      "includes": ["packages/competency-frameworks/src/graph/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/read", "**/read/**", "**/version", "**/version/**", "**/provider", "**/provider/**"],
+                    "message": "graph/ builds on model/ and @interopkit/core only: the other modules are its siblings and never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": [
         "packages/competency-frameworks/src/model/**",
         "packages/competency-frameworks/src/provider/handle-request.ts",
         "packages/competency-frameworks/src/provider/status.ts",
         "packages/competency-frameworks/src/read/schemas.ts",
+        "packages/competency-frameworks/src/graph/package-view.ts",
         "packages/competency-frameworks/test/**",
         "packages/selective-disclosure/src/document/primitives.ts",
         "packages/selective-disclosure/test/**",

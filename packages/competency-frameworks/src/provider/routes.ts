@@ -1,5 +1,6 @@
 import type { CallOptions } from "@interopkit/core";
 import type { CaseEntity, CasePackage, CaseVersion } from "../model/index.js";
+import { SERVICE_PATHS } from "../model/internal.js";
 import { DISCOVERY_FILE } from "./discovery.js";
 import type { ProviderSettings } from "./options.js";
 import type { FrameworkStore } from "./store.js";
@@ -12,9 +13,6 @@ export type Route =
   | { readonly kind: "documents"; readonly version: CaseVersion }
   | { readonly kind: "entity"; readonly version: CaseVersion; readonly id: string; readonly lookup: Lookup }
   | { readonly kind: "discovery" };
-
-/** The root of the paths of each version (REST binding 2.2). */
-const API_ROOTS: Readonly<Record<CaseVersion, string>> = { "1.0": "/ims/case/v1p0", "1.1": "/ims/case/v1p1" };
 
 const DOCUMENTS = "CFDocuments";
 const DISCOVERY = "discovery";
@@ -54,7 +52,7 @@ export function routeOf(pathname: string, { basePath, versions }: ProviderSettin
   if (!pathname.startsWith(basePath)) return undefined;
   const below = pathname.slice(basePath.length);
   for (const version of versions) {
-    const root = `${API_ROOTS[version]}/`;
+    const root = `${SERVICE_PATHS[version]}/`;
     if (below.startsWith(root)) return routeIn(version, below.slice(root.length));
   }
   return undefined;

@@ -3,8 +3,9 @@
 CASE (Competencies and Academic Standards Exchange) [1.1](https://www.imsglobal.org/spec/case/v1p1) and
 [1.0](https://www.imsglobal.org/spec/case/v1p0): the model of a competency framework package and of each entity that CASE
 exchanges, readers that check them against the JSON schemas of 1EdTech and the rules of a package, validators that list
-every finding, the conversion of 1.1 data to the form of 1.0, and a provider that serves a store of frameworks over the REST
-binding. It knows nothing of any product: the host says where a framework comes from and what it is for.
+every finding, the conversion of 1.1 data to the form of 1.0, what a consumer asks of a framework (its tree, its crosswalks,
+its changes and its staleness), and a provider that serves a store of frameworks over the REST binding. It knows nothing of any
+product: the host says where a framework comes from and what it is for.
 
 ```mermaid
 flowchart LR
@@ -13,6 +14,7 @@ flowchart LR
     read["readPackage, readEntity<br/>schemas, then identifiers, links, tree"]
     validate["validatePackage, validateEntity"]
     version["toCaseVersion"]
+    graph["/graph<br/>frameworkTree, crosswalk,<br/>diffPackages, isNewer"]
     provider["/provider<br/>handleCaseRequest over a FrameworkStore<br/>paging, filter, sort, fields, discovery"]
   end
   model["CasePackage, CFItem, ...<br/>the model of CASE 1.1"]
@@ -22,6 +24,8 @@ flowchart LR
   host -->|"JSON as parsed"| validate
   validate -->|"findings"| host
   model --> version
+  model --> graph
+  graph -->|"tree, links, changes"| host
   version -->|"1.0 form and what was left out"| old
   consumer[("A consumer of CASE")]
   host -->|"HttpRequest, FrameworkStore"| provider
@@ -47,6 +51,7 @@ npm install @interopkit/competency-frameworks
 |                                     | `CasePackage`, `CFPckgDocument`, `CFPckgItem`, `CFPckgAssociation`, `CFDocument`, `CFItem`, `CFAssociation`, `CFDefinition` and the other classes: the model                                                             |
 |                                     | `ASSOCIATION_TYPES`, `CASE_VERSIONS`, `ENTITY_KINDS`, `STATUS_CODES_MAJOR`, `STATUS_CODES_MINOR`, `STATUS_SEVERITIES`, `CaseVersion`, `CaseEntityKind`, `CaseEntity`, `ImsxStatusInfo` and the types of the vocabularies |
 |                                     | `CaseQuery`, `CaseFilter`, `CaseCondition`, `OpenApiDocument`, `FILTER_PREDICATES`, `SORT_ORDERS`: what the provider and a client of the endpoints share                                                                 |
+| `.../graph`                         | `frameworkTree`, `associationsOf`, `crosswalk`, `diffPackages`, `isNewer`, `adoptionStatus`, `caseEntityUri`: the questions a consumer asks of a package                                                                 |
 | `.../provider`                      | `handleCaseRequest`, `CaseProviderOptions`, `AccessDecision`: serve the twelve endpoints of the binding, in 1.1 and in 1.0, over a store                                                                                 |
 |                                     | `FrameworkStore`, `CasePage`, `DocumentPage`: what the provider needs from the host                                                                                                                                      |
 |                                     | `parseCaseQuery`, `ParsedCaseQuery`, `QueryRefusal`, `queryEntities`, `QueryEntitiesOptions`: the query grammar, and the filter and sort in memory                                                                       |
@@ -92,15 +97,17 @@ a `message` and its `severity`. A warning does not keep a value from being read.
 
 ## What this version includes
 
-| Part of CASE                                  | Included                                                                                                                                                  |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Classes of the Information Model, 1.1 and 1.0 | Every class: the package, its document, items, associations, definitions and rubrics, the entities outside a package, the five sets and `imsx_StatusInfo` |
-| Vocabularies                                  | The ten association types, `ext:` terms, `targetType`, `caseVersion`, the codes of a status                                                               |
-| Package rules                                 | One document, unique identifiers, links that resolve, `isChildOf` without loops, items in the tree                                                        |
-| 1.0                                           | Reading it, and the conversion from 1.1 with a report of what 1.0 cannot hold                                                                             |
-| The provider                                  | The twelve endpoints in both versions, paging, sorting, filtering, field selection, the status of a failure, service discovery                            |
+| Part of CASE                                  | Included                                                                                                                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Classes of the Information Model, 1.1 and 1.0 | Every class: the package, its document, items, associations, definitions and rubrics, the entities outside a package, the five sets and `imsx_StatusInfo`           |
+| Vocabularies                                  | The ten association types, `ext:` terms, `targetType`, `caseVersion`, the codes of a status                                                                         |
+| Package rules                                 | One document, unique identifiers, links that resolve, `isChildOf` without loops, items in the tree                                                                  |
+| 1.0                                           | Reading it, and the conversion from 1.1 with a report of what 1.0 cannot hold                                                                                       |
+| Hierarchy, associations, change               | The tree from `isChildOf`, the associations of a node, crosswalks between frameworks, the difference between versions, the staleness of a copy, the adoption status |
+| The provider                                  | The twelve endpoints in both versions, paging, sorting, filtering, field selection, the status of a failure, service discovery                                      |
 
-[The model guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/model.md) and
+[The model guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/model.md),
+[the graph guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/graph.md) and
 [the provider guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/provider.md) have the options
 with their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
 why, and the differences from the references.

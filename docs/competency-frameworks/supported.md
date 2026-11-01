@@ -8,6 +8,7 @@ flowchart LR
   spec["CASE Service 1.1<br/>and 1.0"] --> model["Information Model<br/>classes, vocabularies"]
   model --> read["Readers<br/>schemas, rules of a package"]
   model --> version["Conversion 1.1 to 1.0"]
+  model --> graph["Tree, crosswalk, difference,<br/>staleness, adoption status"]
   model --> provider["Provider<br/>REST binding, query grammar,<br/>discovery"]
   version --> provider
   spec -.-> outside["Not included:<br/>Markdown and LaTeX rendering,<br/>JSON-LD form of 1.0"]
@@ -26,6 +27,9 @@ flowchart LR
 | 1.1 additions                        | Information Model 1.3              | `frameworkType`, `caseVersion`, item `subject` and `subjectURI`, association `notes`, `targetType`, `isTranslationOf`, `extensions` on 13 classes, Markdown and LaTeX as text          |
 | Package integrity                    | Information Model 3.3, Guide 3.1   | One document, unique identifiers, links that resolve, `isChildOf` without loops, nodes that agree in URI, items in the tree                                                            |
 | CASE 1.0 consumers                   | Information Model 1.3              | Reading 1.0, `toCaseVersion` for a package, an entity and a set, and the forms that 1.0 refuses reported                                                                               |
+| Hierarchy, associations, crosswalks  | Implementation Guide 3.3, 4.7      | `frameworkTree`, `associationsOf`, `crosswalk`                                                                                                                                         |
+| Change management                    | Implementation Guide 4.2, 4.3      | `diffPackages` for items and `replacedBy`, `adoptionStatus` with `Adopted` and `Deprecated` read as their successors                                                                   |
+| Caching                              | Implementation Guide 4.1, 4.10     | `isNewer`, `caseEntityUri`                                                                                                                                                             |
 | The twelve endpoints                 | REST binding 2.1, 2.2, 2.4         | The provider: `/CFDocuments` and eleven by identifier, under `/ims/case/v1p1` and `/ims/case/v1p0`, over a `FrameworkStore`                                                            |
 | Paging                               | REST binding 3.1                   | `limit` (100 by default, at most 1,000), `offset`, `X-Total-Count`, `Link`                                                                                                             |
 | Sorting                              | REST binding 3.2                   | `sort` and `orderBy` with the Unicode collation of a locale                                                                                                                            |

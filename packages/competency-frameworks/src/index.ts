@@ -45,6 +45,8 @@ export {
   type LinkGenURI,
   type LinkURI,
   type OpenApiDocument,
+  SERVED_KINDS,
+  type ServedKind,
   SORT_ORDERS,
   type SortOrder,
   STATUS_CODES_MAJOR,

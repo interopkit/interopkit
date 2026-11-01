@@ -98,7 +98,8 @@ above apply.
 ## Competency frameworks
 
 `readPackage`, `readEntity`, `validatePackage`, `validateEntity` and `toCaseVersion` take frameworks that a provider or a file gives
-([model guide](docs/competency-frameworks/model.md)). They make no request, keep nothing and write nothing.
+([model guide](docs/competency-frameworks/model.md)). The functions of `@interopkit/competency-frameworks/graph` work on packages
+that are already read ([graph guide](docs/competency-frameworks/graph.md)). They make no request, keep nothing and write nothing.
 
 | Threat                                                          | Control                                                                                                                                               |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -108,6 +109,8 @@ above apply.
 | A tree that loops, or a chain of any length                     | `child-of-cycle` is an error; the walk keeps its own stack and cannot overflow the stack of the host                                                  |
 | Markdown or LaTeX in `fullStatement`, `description` and `notes` | The package carries the text and never renders it. A consumer renders it through a sanitizing renderer and never inserts it into a page as HTML       |
 | A result that shares an object with its input                   | A reader returns a copy, and `toCaseVersion` returns a new value; an input is never changed                                                           |
+| A package that loops or gives an item several parents, to make a walk run on | `frameworkTree` places each item once and keeps its own queue, so the work is linear in the items and associations                      |
+| An identifier or a base that changes the path of an address     | `caseEntityUri` refuses `.` and `..`, percent-encodes the identifier, and refuses a base with credentials, a query or a fragment                      |
 
 ### The provider
 
