@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   checkConsole,
   checkDiagrams,
+  checkDownloads,
   checkEntries,
   checkErrorNames,
   checkFamilies,
@@ -149,6 +150,53 @@ describe("families", () => {
       "packages/core/src/x.ts",
       "packages/core/test/x.test.ts",
     ]);
+  });
+});
+
+describe("tests that read a download", () => {
+  const ImportOracle = 'import { schemaValidator } from "../../../scripts/schema-oracle.js";\n';
+
+  it("reports a test that imports a module that reads a download, once for each import", () => {
+    const files = repository({
+      "packages/a/test/read.test.ts": `${ImportOracle}import { readSpecPage } from "../../../scripts/spec-examples.js";\n`,
+      "packages/a/test/arbitrary.test.ts": 'import { schemaArbitrary } from "../../../scripts/schema-arbitrary.js";\n',
+      "packages/a/test/schemas.test.ts": 'import { requireSchemas } from "../../../scripts/schemas.js";\n',
+      "examples/a/test/run.test.ts": 'import { fetchCorpus } from "../../../scripts/corpus.js";\n',
+    });
+    expect(checkDownloads(files).map(({ file, line, rule }) => [file, line, rule])).toStrictEqual([
+      ["packages/a/test/read.test.ts", 1, "download"],
+      ["packages/a/test/read.test.ts", 2, "download"],
+      ["packages/a/test/arbitrary.test.ts", 1, "download"],
+      ["packages/a/test/schemas.test.ts", 1, "download"],
+      ["examples/a/test/run.test.ts", 1, "download"],
+    ]);
+  });
+
+  it("reports a test that imports a helper that reads a download, directly or through another helper", () => {
+    const files = repository({
+      "packages/a/test/oracle.ts": ImportOracle,
+      "packages/a/test/official.ts": 'import { officialValidator } from "./oracle.js";\n',
+      "packages/a/test/direct.test.ts": 'import { x } from "./oracle.js";\n',
+      "packages/a/test/indirect.test.ts": 'import { y } from "./official.js";\n',
+      "packages/a/test/plain.test.ts": 'import { z } from "./fixture.js";\n',
+    });
+    expect(checkDownloads(files).map(({ file }) => file)).toStrictEqual([
+      "packages/a/test/direct.test.ts",
+      "packages/a/test/indirect.test.ts",
+    ]);
+  });
+
+  it("allows the corpus tests and the spec tests, and the helpers they share, and the tests of the scripts", () => {
+    const files = repository({
+      "packages/a/test/oracle.ts": ImportOracle,
+      "packages/a/test/schemas.corpus.test.ts": 'import { x } from "./oracle.js";\n',
+      "packages/a/test/read.fuzz.corpus.test.ts": ImportOracle,
+      "packages/a/test/examples.spec.test.ts": 'import { readSpecPage } from "../../../scripts/spec-examples.js";\n',
+      "packages/a/test/spec-examples.test.ts":
+        'import { readSpecExamples } from "../../../scripts/spec-examples.js";\n',
+      "scripts/test/schemas.test.ts": 'import { downloadSchemas } from "../schemas.ts";\n',
+    });
+    expect(checkDownloads(files)).toStrictEqual([]);
   });
 });
 

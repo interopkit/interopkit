@@ -52,6 +52,8 @@ function matchLines(
 const isTypeScript = (file: string): boolean => extname(file) === ".ts";
 const isMarkdown = (file: string): boolean => extname(file) === ".md";
 const isTest = (file: string): boolean => /(^|\/)test\/.*\.ts$/.test(file) || /\.(test|bench)\.ts$/.test(file);
+/** The tests of a package or of an example, which scripts/ tests are not: they test the downloads themselves. */
+const isPackageTest = (file: string): boolean => /^(packages|examples)\/[^/]+\/test\/.*\.ts$/.test(file);
 const isLibrary = (file: string): boolean => /^packages\/[^/]+\/src\/.*\.ts$/.test(file);
 
 /** The lines of a Markdown file outside fenced code, with inline code and quoted strings removed, as `[line number, text]`. */
@@ -264,6 +266,60 @@ export function checkEntries(files: Files): Violation[] {
   return found;
 }
 
+/** The modules of `scripts/` that read what `pnpm schemas`, `pnpm spec-examples` or `pnpm corpus` download. */
+const DOWNLOAD_READERS = /(^|\/)scripts\/(schemas|schema-oracle|schema-arbitrary|spec-examples|corpus)\.js$/;
+/** The tests that may read a download: the corpus and spec projects, which run after the download. */
+const DOWNLOAD_TESTS = /\.(corpus|spec)\.test\.ts$|(^|\/)spec-examples\.test\.ts$/;
+
+/** The target of a relative import of a file, as a path of a source file. */
+function importedFile(file: string, specifier: string): string {
+  return posix.normalize(posix.join(dirname(file), specifier.replace(/\.js$/, ".ts")));
+}
+
+/**
+ * The helpers of a package's tests that read a download, directly or through another helper: a file that is not a test and
+ * imports a module of `scripts/` that reads one.
+ */
+function downloadHelpers(files: Files): Set<string> {
+  const helpers = new Set<string>();
+  const candidates = [...files].filter(
+    ([file]) => isTypeScript(file) && isPackageTest(file) && !/\.test\.ts$/.test(file),
+  );
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const [file, text] of candidates) {
+      if (helpers.has(file)) continue;
+      const reads = specifiersOf(text).some(
+        ([, specifier]) => DOWNLOAD_READERS.test(specifier) || helpers.has(importedFile(file, specifier)),
+      );
+      if (reads) {
+        helpers.add(file);
+        grew = true;
+      }
+    }
+  }
+  return helpers;
+}
+
+/** A test that reads a download is a corpus or a spec test, so that `pnpm test` needs none. */
+export function checkDownloads(files: Files): Violation[] {
+  const helpers = downloadHelpers(files);
+  const found: Violation[] = [];
+  for (const [file, text] of files) {
+    if (!isTypeScript(file) || !isPackageTest(file) || !/\.test\.ts$/.test(file) || DOWNLOAD_TESTS.test(file)) continue;
+    for (const [line, specifier] of specifiersOf(text)) {
+      if (DOWNLOAD_READERS.test(specifier) || helpers.has(importedFile(file, specifier)))
+        found.push({
+          file,
+          line,
+          rule: "download",
+          message: `${specifier} reads a download; name the test *.corpus.test.ts or *.spec.test.ts, so that pnpm test needs none.`,
+        });
+    }
+  }
+  return found;
+}
+
 /** A library never writes to the console: the caller passes a logger, or reads what the library returns. */
 export function checkConsole(files: Files): Violation[] {
   return [...files].flatMap(([file, text]) =>
@@ -325,6 +381,7 @@ export const CHECKS: readonly ((files: Files) => Violation[])[] = [
   checkPackageNames,
   checkFamilies,
   checkEntries,
+  checkDownloads,
   checkConsole,
 ];
 

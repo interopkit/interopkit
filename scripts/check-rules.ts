@@ -1097,6 +1097,20 @@ export const RULES: readonly Rule[] = [
     test: "packages/competency-frameworks/test/read.test.ts",
   },
   {
+    rule: "The caseVersion of a document is 1.1 or absent.",
+    file: "packages/competency-frameworks/src/read/schemas.ts",
+    find: 'caseVersion: v.optional(v.literal("1.1")),',
+    replace: "caseVersion: v.optional(text),",
+    test: "packages/competency-frameworks/test/read.test.ts",
+  },
+  {
+    rule: "A term that extends a vocabulary is ext: and a name, and nothing around them.",
+    file: "packages/competency-frameworks/src/read/extension-term.ts",
+    find: "/^ext:[A-Za-z0-9._-]+$/u",
+    replace: "/ext:[A-Za-z0-9._-]+/u",
+    test: "packages/competency-frameworks/test/read.test.ts",
+  },
+  {
     rule: "An association whose type CASE 1.0 lacks is left out of the 1.0 form.",
     file: "packages/competency-frameworks/src/version/to-case-version.ts",
     find: "!ASSOCIATION_TYPES_1_0.includes(type)",

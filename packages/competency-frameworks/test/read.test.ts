@@ -217,6 +217,43 @@ describe("validatePackage", () => {
     },
   );
 
+  it.each(["1.0", "1.2", "1", 1.1, null])(
+    "refuses %j as the caseVersion of a document, which is 1.1 or absent",
+    (version) => {
+      expect(
+        found((pkg) => {
+          pkg.CFDocument.caseVersion = version;
+        }),
+      ).toStrictEqual([{ path: "CFDocument.caseVersion", rule: "invalid-value", severity: "error" }]);
+    },
+  );
+
+  it.each(["ext:a b", "next:a", "ext:a|b", "ext:", "EXT:a", "ext:a/b"])(
+    "refuses %j as an association type and as a target type, which are a term of ext: and a name",
+    (term) => {
+      expect(
+        found((pkg) => {
+          pkg.CFAssociations[0].associationType = term;
+        }),
+      ).toStrictEqual([{ path: "CFAssociations[0].associationType", rule: "invalid-value", severity: "error" }]);
+      expect(
+        found((pkg) => {
+          pkg.CFAssociations[0].originNodeURI.targetType = term;
+        }),
+      ).toStrictEqual([
+        { path: "CFAssociations[0].originNodeURI.targetType", rule: "invalid-value", severity: "error" },
+      ]);
+    },
+  );
+
+  it.each(["ext:a", "ext:A.b_c-d", "ext:0"])("accepts %j as an association type and as a target type", (term) => {
+    const errors = found((pkg) => {
+      pkg.CFAssociations[0].associationType = term;
+      pkg.CFAssociations[0].originNodeURI.targetType = term;
+    }).filter(({ severity }) => severity === "error");
+    expect(errors).toStrictEqual([]);
+  });
+
   it("holds 1.0 to an identifier of the Information Model and a URI with a scheme, which 1.1 reads more loosely", () => {
     const loose = (change: (pkg: Record<string, any>) => void) => {
       const pkg: Record<string, any> = copyOf(minimalPackage());

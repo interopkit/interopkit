@@ -106,7 +106,7 @@ Changesets version and publish the packages, each on its own version. A release 
 runs `pnpm changeset version`, which bumps the versions, writes `CHANGELOG.md` and consumes the changesets. After it is
 merged, the maintainer runs the Release workflow by hand: it builds and publishes the versions not yet on npm with
 provenance. No workflow opens pull requests, and Dependabot version updates are off. Changesets, docs and TSDoc describe
-current behavior only, and never how it came to be.
+current behavior only, and never how it came to be. A package's changeset is written last, from the API table of its README.
 
 ## Boundaries
 
@@ -138,8 +138,8 @@ current behavior only, and never how it came to be.
   OAuth 2.0 clients. Hand-written
   code is for domain logic that no library does correctly, with the reason in the guide of the module.
 - Candidates that were compared and not adopted may be development dependencies, as counterparties in tests.
-  `@cfworker/json-schema` is a development dependency of the repository, for `scripts/schema-oracle.ts`: the validator that tests
-  run the published JSON schemas of a standard through.
+  `@cfworker/json-schema` is a development dependency of the repository, for `scripts/schema-oracle.ts`: the validator that
+  tests run the published JSON schemas of a standard through.
 
 ## Deviations from the standards
 
@@ -160,9 +160,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - Files: kebab-case. One concept per file, named after it. Group files in folders by module. No `utils`, `helpers` or `misc`.
 - Values and functions: camelCase. Module-level constant data: SCREAMING_SNAKE. Types: PascalCase. Type parameters: `T` or `T`
   plus a name.
-- No package, folder or brand name holds a specification name: the packages are `tool-integration`,
-  `learning-analytics` and `competency-frameworks`, and `pnpm check:standards` fails on `lti` or `caliper` in one. Modules and functions use the names descriptively
-  (`ltiLaunch`, `CaliperEvent`).
+- No package, folder or brand name holds a specification name: the packages are `tool-integration`, `learning-analytics` and
+  `competency-frameworks`, and `pnpm check:standards` fails on `lti` or `caliper` in one. Modules and functions use the names
+  descriptively (`ltiLaunch`, `CaliperEvent`).
 - Function options are `<Name>Options`. Labels are string unions in kebab-case (`"key-unknown"`).
 - An error has a kebab-case `reason` where a caller must branch on it, and a `status` where it maps to HTTP.
 - The names of the properties of a specification (`CFItems`, `imsx_codeMajor`) are kept as it writes them: the folders and
@@ -210,8 +210,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - US English. Docs state facts in short sentences; prefer a table or list to prose. Code samples are complete: they show their
   imports and hold no TypeScript syntax, so that they run as they are. A guide gives the result of a sample as
   `// => result`, and `runGuideSamples` of `scripts/guide-samples.ts` runs the samples of the README and the guides in a test
-  of the package and fails on a result that differs; `typecheckGuideSamples` compiles them under `strict`. What a call throws goes into a table of errors, not into a sample. No
-  marketing language, emojis or filler.
+  of the package and fails on a result that differs; `typecheckGuideSamples` compiles them under `strict`. What a call throws
+  goes into a table of errors, not into a sample. No marketing language, emojis or filler.
 - Visualization comes first, then tables, then short prose. Every README, `CONTRIBUTING.md` and guide opens with a Mermaid
   diagram of the architecture, the flow or the states that it describes (`pnpm check:standards` fails without one). GitHub
   renders the diagrams, and the Mermaid plugin of TypeDoc renders them on the docs site (`typedoc.json` pins the version of
@@ -229,7 +229,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
   published examples, schemas and tables, and fail when something is missing.
 - One verb, one meaning: `read<X>(value, options?)` takes untrusted data into the model and throws `DataError` on invalid input;
   `validate<X>(value, options?)` judges a value and returns its findings, with their severity, as data; `check<X>` in `core`
-  asserts one value and throws. Nothing named `check*` returns findings.
+  asserts one value and throws. Nothing named `check*` returns findings; a step of verification is `verify<X>`. A package keeps
+  `read<X>` and `validate<X>` in one module, `read/`.
 - A reader of data that has published JSON schemas is compared with them in a `*.corpus.test.ts` through
   `scripts/schema-oracle.ts` and `scripts/schema-arbitrary.ts`: its classes and properties are derived from the schemas, and
   generated values and values with one change get the verdict of the schemas. Each difference is in `spec-gaps.md` and pinned
@@ -243,7 +244,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
   and what it may call back.
 - A rule that keeps a request from being forged, replayed or redirected has an entry in `scripts/check-rules.ts`. Replacing
   `find` with `replace` in `file` must make its test fail; `pnpm check:rules` proves it on a scratch copy, and a test checks
-  that every entry still matches its file. So does each behavior of a reader or a converter that refuses or changes a value.
+  that every entry still matches its file. So does each behavior of a reader or a converter that refuses or changes a value,
+  guarded by a test that is not a corpus test, because the scratch copy has no download.
 - Every public function has a test of input of other types, as JavaScript or JSON pass it: `null` options and arguments, a
   string for a number, an object for an array. Pass such input with `JSON.parse`, not a cast.
 - Properties that hold for any input are tested with fast-check, with a fixed seed and a bounded number of runs. Every parser
@@ -252,6 +254,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   sleeps, no loosened assertions.
 - Each package has a coverage floor in `vitest.config.ts`; a file `*.browser.test.ts` runs in the browsers, a file
   `*.corpus.test.ts` reads the downloaded schemas and repositories, and a file `*.spec.test.ts` the downloaded examples.
+- `pnpm test` needs no download: a test that reads one, or imports a helper that does, is a `*.corpus.test.ts` or a
+  `*.spec.test.ts` (`pnpm check:standards` fails on any other). The fuzz of `fc.anything` is in `pnpm test`; the fuzz of the
+  values of a schema is a `*.fuzz.corpus.test.ts` that shares its properties with an offline one.
 - Fixtures are never typed by hand when an oracle can write them, and a downloaded specification file is never committed.
 
 ## Where things go

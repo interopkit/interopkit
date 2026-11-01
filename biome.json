@@ -536,7 +536,9 @@
       "includes": [
         "packages/competency-frameworks/src/model/**",
         "packages/competency-frameworks/src/read/schemas.ts",
-        "packages/competency-frameworks/test/**"
+        "packages/competency-frameworks/test/**",
+        "scripts/test/schema-arbitrary.test.ts",
+        "scripts/test/schema-oracle.test.ts"
       ],
       "linter": {
         "rules": {

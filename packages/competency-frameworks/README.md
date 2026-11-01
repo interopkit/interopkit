@@ -34,13 +34,13 @@ npm install @interopkit/competency-frameworks
 
 ## API
 
-| Subpath                             | Exports                                                                                                                                                      |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@interopkit/competency-frameworks` | `readPackage`, `readEntity`, `ReadOptions`: read a package or an entity of either version into the model of 1.1, and throw `DataError` on an error           |
-|                                     | `validatePackage`, `validateEntity`, `CaseIssue`: judge a value and return every finding, errors and warnings, as data                                       |
-|                                     | `toCaseVersion`, `VersionedValue`, `Converted`: a package or an entity in the form of 1.0, and what was left out                                             |
-|                                     | `CasePackage`, `CFPckgDocument`, `CFPckgItem`, `CFPckgAssociation`, `CFDocument`, `CFItem`, `CFAssociation`, `CFDefinition` and the other classes: the model |
-|                                     | `ASSOCIATION_TYPES`, `ENTITY_KINDS`, `CaseVersion`, `CaseEntityKind`, `CaseEntity`, `ImsxStatusInfo` and the types of the vocabularies                       |
+| Subpath                             | Exports                                                                                                                                                                                                 |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@interopkit/competency-frameworks` | `readPackage`, `readEntity`, `ReadOptions`: read a package or an entity of either version into the model of 1.1, and throw `DataError` on an error                                                      |
+|                                     | `validatePackage`, `validateEntity`, `CaseIssue`: judge a value and return every finding, errors and warnings, as data                                                                                  |
+|                                     | `toCaseVersion`, `VersionedValue`, `Converted`: a package or an entity in the form of 1.0, and what was left out                                                                                        |
+|                                     | `CasePackage`, `CFPckgDocument`, `CFPckgItem`, `CFPckgAssociation`, `CFDocument`, `CFItem`, `CFAssociation`, `CFDefinition` and the other classes: the model                                            |
+|                                     | `ASSOCIATION_TYPES`, `ENTITY_KINDS`, `STATUS_CODES_MAJOR`, `STATUS_CODES_MINOR`, `STATUS_SEVERITIES`, `CaseVersion`, `CaseEntityKind`, `CaseEntity`, `ImsxStatusInfo` and the types of the vocabularies |
 
 ```ts
 import { readPackage, toCaseVersion, validatePackage } from "@interopkit/competency-frameworks";
