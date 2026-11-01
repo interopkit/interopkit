@@ -148,5 +148,95 @@
     "url": "https://w3id.org/citizenship/v4rc1",
     "file": "v4rc1",
     "sha256": "5038c7383afd7ab2158f1b997913a8f60978a0abcf96e0b0d08e29f146d2db1e"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_achievementcredential_schema.json",
+    "file": "ob_v3p0_achievementcredential_schema.json",
+    "sha256": "b7358e895f492e74055dc6bfc7ffc420d0e497f90c4579fb83d9519b86d393ea"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_anyachievementcredential_schema.json",
+    "file": "ob_v3p0_anyachievementcredential_schema.json",
+    "sha256": "047bfff61075b556949af97905bd071edbd51becbd71d7d617f7f047d7e07d8c"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_anyendorsementcredential_schema.json",
+    "file": "ob_v3p0_anyendorsementcredential_schema.json",
+    "sha256": "ad95c1f332d26390f8b9a5c54ed42e5bc3b131c3030658ea245b865e39bc28d0"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_endorsementcredential_schema.json",
+    "file": "ob_v3p0_endorsementcredential_schema.json",
+    "sha256": "786b1190ea97e7e339d8057f02414603c0e2b8b1cbe46fd72165c73f39a256c6"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_getopenbadgecredentialsresponse_schema.json",
+    "file": "ob_v3p0_getopenbadgecredentialsresponse_schema.json",
+    "sha256": "26a2c1ef205f3f49682502994ae6567acfbf64f0edf6c4944e6d411b30c6d566"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_imsx_statusinfo_schema.json",
+    "file": "ob_v3p0_imsx_statusinfo_schema.json",
+    "sha256": "578a26bc71c9c3a63d84ee334d3eb0cc03fee3cbd2716bbf0b5b77e630ae03de"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_profile_schema.json",
+    "file": "ob_v3p0_profile_schema.json",
+    "sha256": "6b268f2caa591bf657e2a290e195713c41dc2db4e1c797723cfd00a1a83f8f13"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_servicedescriptiondocument_schema.json",
+    "file": "ob_v3p0_servicedescriptiondocument_schema.json",
+    "sha256": "7c43d8f073bb4c39f5d809d70889b18a2469cd7708a9a2d08cb019afb6a140db"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_achievementcredential_schema.json",
+    "file": "clr_v2p0_achievementcredential_schema.json",
+    "sha256": "c3cbfc94bde1c1ed8500994933fefb2dadc13a591bbe7b6c58e9978921fd34c3"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_anyachievementcredential_schema.json",
+    "file": "clr_v2p0_anyachievementcredential_schema.json",
+    "sha256": "c42a469f9fd155f933ff38f8090db65bf6e375fbb77ebe83f3b7f273fea11faa"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_anyclrcredential_schema.json",
+    "file": "clr_v2p0_anyclrcredential_schema.json",
+    "sha256": "0233e6b252be926d0d28aeebc34df5c98e22c546a8efca91d9f10fef8b2a2e7c"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_anyendorsementcredential_schema.json",
+    "file": "clr_v2p0_anyendorsementcredential_schema.json",
+    "sha256": "b256dad1694ada8b33718cef421aba4fd332eebf3d41f413706e0f146fe493c7"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_clrcredential_schema.json",
+    "file": "clr_v2p0_clrcredential_schema.json",
+    "sha256": "59d778659204b0bd593e9e2ab1683fb6f688e339885c44019f606ed6feb4caee"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_endorsementcredential_schema.json",
+    "file": "clr_v2p0_endorsementcredential_schema.json",
+    "sha256": "0617e920a8daa0497a42537380036617e8239da01bf8ca3e7341e5b3e74b1356"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_getclrcredentialsresponse_schema.json",
+    "file": "clr_v2p0_getclrcredentialsresponse_schema.json",
+    "sha256": "9c5077de9d5e944fc41750ed9add69e8fb55853c04bca94493e38729e70703bf"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_imsx_statusinfo_schema.json",
+    "file": "clr_v2p0_imsx_statusinfo_schema.json",
+    "sha256": "53618e0d672c1db37d265638a085137d2e33276a3f684712de0509dcc2e2eacf"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_profile_schema.json",
+    "file": "clr_v2p0_profile_schema.json",
+    "sha256": "b9e1ed2da5761c107b1d440dd875374848ad56d40b1c006a8c4198a869d905b3"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/clr/v2p0/schema/json/clr_v2p0_servicedescriptiondocument_schema.json",
+    "file": "clr_v2p0_servicedescriptiondocument_schema.json",
+    "sha256": "7da1090a1dfa05be9337dc2663b22223596b17a7d50673cc2575ab38d6b1e162"
   }
 ]

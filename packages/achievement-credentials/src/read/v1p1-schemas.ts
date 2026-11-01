@@ -1,0 +1,178 @@
+/**
+ * The schemas that read the classes of Open Badges 3.0 under the Verifiable Credentials Data Model 1.1 (OB B.9): a credential with `issuanceDate` and `expirationDate`.
+ *
+ * @module
+ */
+
+import {
+  dateSchema,
+  dateTimeSchema,
+  finiteSchema,
+  openRecord,
+  type Schema,
+  strictRecord,
+} from "@interopkit/core/checks";
+import * as v from "valibot";
+import type {
+  AchievementCredentialV1p1,
+  AchievementSubjectV1p1,
+  AchievementV1p1,
+  EndorsementCredentialV1p1,
+  ProfileV1p1,
+  VerifiableCredentialV1p1,
+} from "../model/index.js";
+import { ACHIEVEMENT_TYPES, CONTEXTS } from "../model/index.js";
+import {
+  addressSchema,
+  alignmentSchema,
+  credentialSchemaSchema,
+  credentialStatusSchema,
+  credentialSubjectSchema,
+  criteriaSchema,
+  endorsementSubjectSchema,
+  evidenceSchema,
+  identifierEntrySchema,
+  identityObjectSchema,
+  imageSchema,
+  profileSchema,
+  proofSchema,
+  refreshServiceSchema,
+  relatedSchema,
+  resultDescriptionSchema,
+  resultSchema,
+  termsOfUseSchema,
+} from "./credential-schemas.js";
+import {
+  contextSchema,
+  jws,
+  language,
+  many,
+  OB_CONTEXT_PATTERN,
+  openEnumeration,
+  ref,
+  text,
+  types,
+} from "./primitives.js";
+
+export const achievementCredentialV1p1Schema: Schema<AchievementCredentialV1p1> = openRecord({
+  "@context": contextSchema([CONTEXTS.credentialsV1, OB_CONTEXT_PATTERN]),
+  id: text,
+  type: types("VerifiableCredential", ["AchievementCredential", "OpenBadgeCredential"]),
+  name: text,
+  description: v.optional(text),
+  image: v.optional(ref(() => imageSchema)),
+  awardedDate: v.optional(dateTimeSchema),
+  credentialSubject: ref(() => achievementSubjectV1p1Schema),
+  endorsement: v.optional(many(ref(() => endorsementCredentialV1p1Schema))),
+  endorsementJwt: v.optional(many(jws)),
+  issuer: ref(() => profileV1p1Schema),
+  issuanceDate: dateTimeSchema,
+  expirationDate: v.optional(dateTimeSchema),
+  proof: v.optional(many(ref(() => proofSchema))),
+  credentialSchema: v.optional(many(ref(() => credentialSchemaSchema))),
+  credentialStatus: v.optional(ref(() => credentialStatusSchema)),
+  refreshService: v.optional(ref(() => refreshServiceSchema)),
+  termsOfUse: v.optional(many(ref(() => termsOfUseSchema))),
+  evidence: v.optional(many(ref(() => evidenceSchema))),
+});
+
+export const endorsementCredentialV1p1Schema: Schema<EndorsementCredentialV1p1> = openRecord({
+  "@context": contextSchema([CONTEXTS.credentialsV1, OB_CONTEXT_PATTERN]),
+  type: types("VerifiableCredential", "EndorsementCredential"),
+  id: text,
+  name: text,
+  description: v.optional(text),
+  credentialSubject: ref(() => endorsementSubjectSchema),
+  awardedDate: v.optional(dateTimeSchema),
+  issuer: ref(() => profileV1p1Schema),
+  issuanceDate: dateTimeSchema,
+  expirationDate: v.optional(dateTimeSchema),
+  proof: v.optional(many(ref(() => proofSchema))),
+  credentialSchema: v.optional(many(ref(() => credentialSchemaSchema))),
+  credentialStatus: v.optional(ref(() => credentialStatusSchema)),
+  refreshService: v.optional(ref(() => refreshServiceSchema)),
+  termsOfUse: v.optional(many(ref(() => termsOfUseSchema))),
+  evidence: v.optional(many(ref(() => evidenceSchema))),
+});
+
+export const verifiableCredentialV1p1Schema: Schema<VerifiableCredentialV1p1> = openRecord({
+  "@context": contextSchema([CONTEXTS.credentialsV1]),
+  id: v.optional(text),
+  type: types("VerifiableCredential"),
+  issuer: ref(() => profileV1p1Schema),
+  issuanceDate: dateTimeSchema,
+  expirationDate: v.optional(dateTimeSchema),
+  credentialSubject: ref(() => credentialSubjectSchema),
+  proof: v.optional(many(ref(() => proofSchema))),
+  credentialSchema: v.optional(many(ref(() => credentialSchemaSchema))),
+  credentialStatus: v.optional(ref(() => credentialStatusSchema)),
+  refreshService: v.optional(ref(() => refreshServiceSchema)),
+  termsOfUse: v.optional(many(ref(() => termsOfUseSchema))),
+  evidence: v.optional(many(ref(() => evidenceSchema))),
+});
+
+export const achievementSubjectV1p1Schema: Schema<AchievementSubjectV1p1> = strictRecord({
+  id: v.optional(text),
+  type: types("AchievementSubject"),
+  activityEndDate: v.optional(dateTimeSchema),
+  activityStartDate: v.optional(dateTimeSchema),
+  creditsEarned: v.optional(finiteSchema),
+  achievement: ref(() => achievementV1p1Schema),
+  identifier: v.optional(many(ref(() => identityObjectSchema))),
+  image: v.optional(ref(() => imageSchema)),
+  licenseNumber: v.optional(text),
+  narrative: v.optional(text),
+  result: v.optional(many(ref(() => resultSchema))),
+  role: v.optional(text),
+  source: v.optional(ref(() => profileV1p1Schema)),
+  term: v.optional(text),
+});
+
+export const achievementV1p1Schema: Schema<AchievementV1p1> = openRecord({
+  id: text,
+  type: types("Achievement"),
+  alignment: v.optional(many(ref(() => alignmentSchema))),
+  achievementType: v.optional(openEnumeration(ACHIEVEMENT_TYPES, "an achievement type")),
+  creator: v.optional(ref(() => profileV1p1Schema)),
+  creditsAvailable: v.optional(finiteSchema),
+  criteria: ref(() => criteriaSchema),
+  description: text,
+  endorsement: v.optional(many(ref(() => endorsementCredentialV1p1Schema))),
+  endorsementJwt: v.optional(many(jws)),
+  fieldOfStudy: v.optional(text),
+  humanCode: v.optional(text),
+  image: v.optional(ref(() => imageSchema)),
+  inLanguage: v.optional(language),
+  name: text,
+  otherIdentifier: v.optional(many(ref(() => identifierEntrySchema))),
+  related: v.optional(many(ref(() => relatedSchema))),
+  resultDescription: v.optional(many(ref(() => resultDescriptionSchema))),
+  specialization: v.optional(text),
+  tag: v.optional(many(text)),
+  version: v.optional(text),
+});
+
+export const profileV1p1Schema: Schema<ProfileV1p1> = openRecord({
+  id: text,
+  type: types("Profile"),
+  name: v.optional(text),
+  url: v.optional(text),
+  phone: v.optional(text),
+  description: v.optional(text),
+  endorsement: v.optional(many(ref(() => endorsementCredentialV1p1Schema))),
+  endorsementJwt: v.optional(many(jws)),
+  image: v.optional(ref(() => imageSchema)),
+  email: v.optional(text),
+  address: v.optional(ref(() => addressSchema)),
+  otherIdentifier: v.optional(many(ref(() => identifierEntrySchema))),
+  official: v.optional(text),
+  parentOrg: v.optional(ref(() => profileSchema)),
+  familyName: v.optional(text),
+  givenName: v.optional(text),
+  additionalName: v.optional(text),
+  patronymicName: v.optional(text),
+  honorificPrefix: v.optional(text),
+  honorificSuffix: v.optional(text),
+  familyNamePrefix: v.optional(text),
+  dateOfBirth: v.optional(dateSchema),
+});

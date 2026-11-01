@@ -1,0 +1,7 @@
+@interopkit/achievement-credentials
+Copyright Fariz Wakan
+
+Open Badges, Comprehensive Learner Record, CLR and 1EdTech are trademarks of 1EdTech Consortium, Inc. This package
+implements Open Badges 3.0 and CLR 2.0: the model of an achievement credential and of the APIs, readers, builders and the
+comparison of credentials. It is not certified by 1EdTech and includes no 1EdTech files: the JSON schemas and the
+specification pages that its tests read are downloaded at pinned hashes and never committed.

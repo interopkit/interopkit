@@ -2,8 +2,9 @@
 
 TypeScript packages for learning-platform interoperability: the launches, grades and other messages that pass between a
 learning platform and a tool (LTI 1.3), the learning analytics events that a system reports (Caliper Analytics 1.2), the
-competency frameworks that a provider publishes (CASE 1.1), and the credentials that a holder shows in part (the
-`ecdsa-sd-2023` cryptosuite). The packages know nothing of QTI or of any product. A host passes in its storage, its `fetch`
+competency frameworks that a provider publishes (CASE 1.1), the achievement credentials that an issuer awards (Open Badges
+3.0 and CLR 2.0), and the credentials that a holder shows in part (the `ecdsa-sd-2023` cryptosuite). The packages know
+nothing of QTI or of any product. A host passes in its storage, its `fetch`
 and its clock.
 
 Version 0.1 is not the whole of LTI Advantage: both roles have the launch, access tokens and the score service of Assignment and Grade Services, the tool role also has Deep Linking, and neither role has Names and Role Provisioning or Dynamic Registration ([what is supported](docs/tool-integration/supported.md)).
@@ -17,10 +18,12 @@ flowchart LR
     analytics["@interopkit/learning-analytics<br/>events, sensor"]
     frameworks["@interopkit/competency-frameworks<br/>CASE model, readers, graph, provider"]
     disclosure["@interopkit/selective-disclosure<br/>ecdsa-sd-2023"]
+    credentials["@interopkit/achievement-credentials<br/>Open Badges and CLR model, readers"]
     tool --> core
     analytics --> core
     frameworks --> core
     disclosure --> core
+    credentials --> core
   end
   platform["A learning platform<br/>or a tool"]
   endpoint["A Caliper endpoint"]
@@ -28,17 +31,19 @@ flowchart LR
   host --> analytics
   host --> frameworks
   host --> disclosure
+  host --> credentials
   tool <-->|"launches, grades"| platform
   analytics -->|"events"| endpoint
 ```
 
-| Package                                                                         | What it is                                                                                                                  |
-| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| [`@interopkit/core`](packages/core/README.md)                                   | The errors, the checks of arguments, the clock and the service call that the other packages share                           |
-| [`@interopkit/tool-integration`](packages/tool-integration/README.md)           | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Version 0.1; its README says what it contains |
-| [`@interopkit/learning-analytics`](packages/learning-analytics/README.md)       | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Version 0.1; its README says what it contains     |
-| [`@interopkit/competency-frameworks`](packages/competency-frameworks/README.md) | CASE 1.1 and 1.0: the model of a framework package, its readers, its tree and changes, and the conversion to 1.0            |
-| [`@interopkit/selective-disclosure`](packages/selective-disclosure/README.md)   | The `ecdsa-sd-2023` cryptosuite: a base proof for the issuer, a derived proof for the holder and its verification           |
+| Package                                                                             | What it is                                                                                                                  |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [`@interopkit/core`](packages/core/README.md)                                       | The errors, the checks of arguments, the clock and the service call that the other packages share                           |
+| [`@interopkit/tool-integration`](packages/tool-integration/README.md)               | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Version 0.1; its README says what it contains |
+| [`@interopkit/learning-analytics`](packages/learning-analytics/README.md)           | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Version 0.1; its README says what it contains     |
+| [`@interopkit/competency-frameworks`](packages/competency-frameworks/README.md)     | CASE 1.1 and 1.0: the model of a framework package, its readers, its tree and changes, and the conversion to 1.0            |
+| [`@interopkit/achievement-credentials`](packages/achievement-credentials/README.md) | Open Badges 3.0 and CLR 2.0: the model of an achievement credential and of the APIs, and readers that check them            |
+| [`@interopkit/selective-disclosure`](packages/selective-disclosure/README.md)       | The `ecdsa-sd-2023` cryptosuite: a base proof for the issuer, a derived proof for the holder and its verification           |
 
 To launch tools from your platform, or to be launched by one, use `tool-integration`. To report learning events, use
 `learning-analytics`. Neither needs the other.
@@ -79,19 +84,20 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 
 ## Layout
 
-| Folder                                                                                                                          | Holds                                                                                            |
-| ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `packages/core/`                                                                                                                | The shared foundation                                                                            |
-| `packages/tool-integration/`                                                                                                    | LTI 1.3, tool and platform roles                                                                 |
-| `packages/learning-analytics/`                                                                                                  | Caliper 1.2                                                                                      |
-| `packages/competency-frameworks/`                                                                                               | CASE 1.1 and 1.0                                                                                 |
-| `packages/selective-disclosure/`                                                                                                | `ecdsa-sd-2023`: base proof, derived proof, verification                                         |
-| `docs/core/`, `docs/tool-integration/`, `docs/learning-analytics/`, `docs/competency-frameworks/`, `docs/selective-disclosure/` | Guides of each package                                                                           |
-| `examples/`                                                                                                                     | Runnable examples, each a package of its own, run by a test                                      |
-| `compat/`                                                                                                                       | The scenarios of the examples on each runtime                                                    |
-| `scripts/`                                                                                                                      | The standards check, the mutation check of the security rules, and the downloads of pinned files |
-| `validation/`                                                                                                                   | Python scripts that write fixtures                                                               |
-| `biome/`                                                                                                                        | GritQL lint rules                                                                                |
+| Folder                                                                                                                                                           | Holds                                                                                            |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `packages/core/`                                                                                                                                                 | The shared foundation                                                                            |
+| `packages/tool-integration/`                                                                                                                                     | LTI 1.3, tool and platform roles                                                                 |
+| `packages/learning-analytics/`                                                                                                                                   | Caliper 1.2                                                                                      |
+| `packages/competency-frameworks/`                                                                                                                                | CASE 1.1 and 1.0                                                                                 |
+| `packages/achievement-credentials/`                                                                                                                              | Open Badges 3.0 and CLR 2.0                                                                      |
+| `packages/selective-disclosure/`                                                                                                                                 | `ecdsa-sd-2023`: base proof, derived proof, verification                                         |
+| `docs/core/`, `docs/tool-integration/`, `docs/learning-analytics/`, `docs/competency-frameworks/`, `docs/achievement-credentials/`, `docs/selective-disclosure/` | Guides of each package                                                                           |
+| `examples/`                                                                                                                                                      | Runnable examples, each a package of its own, run by a test                                      |
+| `compat/`                                                                                                                                                        | The scenarios of the examples on each runtime                                                    |
+| `scripts/`                                                                                                                                                       | The standards check, the mutation check of the security rules, and the downloads of pinned files |
+| `validation/`                                                                                                                                                    | Python scripts that write fixtures                                                               |
+| `biome/`                                                                                                                                                         | GritQL lint rules                                                                                |
 
 ## License
 

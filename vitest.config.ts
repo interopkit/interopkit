@@ -53,6 +53,7 @@ export default defineConfig({
     projects: [
       nodeProject("core"),
       nodeProject("competency-frameworks"),
+      nodeProject("achievement-credentials"),
       nodeProject("learning-analytics"),
       nodeProject("selective-disclosure"),
       {
@@ -79,6 +80,24 @@ export default defineConfig({
         test: {
           name: "competency-frameworks-corpus",
           include: ["packages/competency-frameworks/test/**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The tests that read the schemas of Open Badges and CLR that `pnpm schemas` downloads, and compare the readers with them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "achievement-credentials-corpus",
+          include: ["packages/achievement-credentials/test/**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The examples and schemas that the pages of Open Badges and CLR print: `pnpm spec-examples` downloads them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "achievement-credentials-spec",
+          include: ["packages/achievement-credentials/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
         },
       },
@@ -153,6 +172,7 @@ export default defineConfig({
       thresholds: {
         "packages/core/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/competency-frameworks/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
+        "packages/achievement-credentials/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/learning-analytics/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/selective-disclosure/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/tool-integration/src/**": { statements: 98, branches: 95, functions: 100, lines: 99 },

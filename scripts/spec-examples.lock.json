@@ -23,5 +23,15 @@
     "url": "https://www.w3.org/TR/2025/REC-vc-di-ecdsa-20250515/",
     "file": "vc-di-ecdsa-1p0.json",
     "sha256": "9155b96580a16a4258588de6ba02bee717334d1633c531ca082beff7c33e0342"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/ob/v3p0/main/",
+    "file": "open-badges-3p0.json",
+    "sha256": "01a4e23405e2354ae10bfdfc68b65782e7d4dbbe6413521689127599424c8e94"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/clr/v2p0/main/",
+    "file": "clr-2p0.json",
+    "sha256": "430d41dcb9774faf4649fe923bb0bdeb3193df0fc593ad7c42e34861e6eb9113"
   }
 ]

@@ -1,0 +1,770 @@
+{
+ "/{UM": [
+  [
+   true,
+   true,
+   4.59222056479129e+138,
+   -2.1079470115284877e+249
+  ],
+  [
+   "`W^OKw",
+   true,
+   null,
+   false,
+   " 0c!DG#q:",
+   -6.729256230711747e-82,
+   "e?6E'y."
+  ]
+ ],
+ "J": false,
+ "\"=_a)~H[": {
+  "7QaI": null,
+  "a9x@s^": "Bqom=D",
+  "p4{5": null,
+  "eM.9 PP": 2.0462025023198502e+24,
+  "": -1.7126569715047658e-261,
+  "hvXnx": null,
+  "#yV&": null,
+  "F}(Z/?": false
+ },
+ "id": "TVb~o\"nP",
+ "type": "Profile",
+ "name": "3~b)Vlt#)H",
+ "url": "$3=",
+ "phone": "n",
+ "description": "\\KG&78",
+ "endorsement": {
+  "{": {
+   "*pKL%]Wc": {
+    "$v/p.{*'": null
+   },
+   "#u": -2.159959505412341e-255,
+   "a^omtZ_,2": [
+    false,
+    null,
+    null,
+    4.167853412335445e+210,
+    -1.4317660259680182e+138,
+    "syL|e4@"
+   ]
+  },
+  "NENLT": null,
+  "@context": [
+   "https://www.w3.org/ns/credentials/v2",
+   "https://purl.imsglobal.org/spec/ob/v3p0/context-3.9.7-3.5.6-3.4.8-3.3.6-3.2.0.json"
+  ],
+  "type": [
+   "VerifiableCredential",
+   "EndorsementCredential"
+  ],
+  "id": "Jscy$)\"BK\"",
+  "name": "y\"*&\"&{",
+  "description": "",
+  "credentialSubject": {
+   "w#\"D": {
+    "ul3R ": ");)uqbT9",
+    "=?v0w": "!j'",
+    "PDF}c|6`Uh": "DZS+q)",
+    "f": null,
+    "kB{": null,
+    "P/Uw1TKET%": null,
+    "]l!fN*R": 3.6388766186338297e-14,
+    "U:0=": 1481403460.427891,
+    "": true
+   },
+   "id": "|\"~",
+   "type": "EndorsementSubject",
+   "endorsementComment": "bb"
+  },
+  "awardedDate": "2047-02-28T17:30:57Z",
+  "issuer": {
+   "ur|": {
+    "~|#`c%": null,
+    "Ht)Bq3": "m",
+    "zsNs": true,
+    "key": false,
+    "$!ref": "!&DW",
+    " ?};-!X": null,
+    "#": 3.911835914825068e+162,
+    "Rxoh'VvXd": null
+   },
+   "id": "e",
+   "type": "Profile"
+  },
+  "validFrom": "2099-12-31T23:59:58Z",
+  "validUntil": "2099-12-31T23:59:58-08:00",
+  "proof": {
+   "type": "=5p'*",
+   "created": "2027-08-07T17:27:15Z",
+   "cryptosuite": "}",
+   "challenge": "Uzf\"bR& :",
+   "domain": "3&\\XB",
+   "nonce": "",
+   "proofPurpose": "valueO",
+   "proofValue": "2gu3AP\\!^",
+   "verificationMethod": ".]]"
+  },
+  "credentialSchema": [
+   {
+    "d": [
+     true,
+     false,
+     null,
+     null,
+     -5.569803435086026e+107,
+     "z>>",
+     null,
+     true,
+     false,
+     -7.824926489502773e+116
+    ],
+    "id": "",
+    "type": ",$k"
+   },
+   {
+    "id": "oPZ,|t",
+    "type": "N1,O[L"
+   }
+  ],
+  "credentialStatus": {
+   "M&k01": {
+    "xoHi": {
+     "#r@Xl": null,
+     "249S)LsnDb": true,
+     "@dja3KUD": -2.90978045371313,
+     "": 3.1687703390601044e+292,
+     "\"e:`_0f-B": true
+    },
+    "0GfqWg": {
+     "": -5.623011881097253e-133,
+     "B": "4?Adj*"
+    },
+    "%": {
+     "Vb-": null,
+     "E": 4.906703527416344e-286,
+     "MK?~XM]H?/": null
+    }
+   },
+   ",z": [
+    {
+     "7^/**]": "lPocO",
+     "e": "_",
+     "I%gJrFb": true
+    },
+    [
+     "caller",
+     -8.4e-323,
+     true
+    ],
+    2.5999841476438013e+150
+   ],
+   "id": "",
+   "type": "s\"!Nh^"
+  },
+  "refreshService": {
+   "Xyv9": {
+    "IRN&D": null,
+    "": null,
+    "<.{.|^": "'8 +s4EY_$",
+    "W#foY2PzD]": false,
+    "<": 3.925099836927602e-76,
+    "v,>_6JH<S}": null
+   },
+   "EjVNtWdn": [
+    1.397911915989763e-269,
+    false,
+    null,
+    true
+   ],
+   "E": {
+    "k": true
+   },
+   "id": "b)RI",
+   "type": "?"
+  },
+  "termsOfUse": {
+   "_*4^": [
+    [
+     -4.5323964480184707e+244,
+     null,
+     true,
+     "_U5*T;;"
+    ]
+   ],
+   "47ml[": {
+    "5]]fK": "R",
+    "}b": true,
+    "DKa' Y^": "8v}t^J",
+    "g": null,
+    "kNY": null,
+    "v": "He",
+    "gqg&": true,
+    "": null,
+    "'W": null
+   },
+   "S5": null,
+   "id": "Rc",
+   "type": "i"
+  },
+  "evidence": {
+   "2Pjf9QN'": {
+    "": true,
+    "7?za": null,
+    "gkw": "c>z&M^N",
+    "UV@'": -1.7456705767611892e-227,
+    "{,)t\"',;r": "\"E*t6OJ",
+    ";-a": "",
+    "UEka{n6I|": null,
+    "pf": "f\\'~u]g",
+    "oODO#5": "J5N",
+    "^qn$": true
+   },
+   "!E+MA": {},
+   "id": "\"\"",
+   "type": [
+    "Evidence"
+   ],
+   "narrative": "y=c",
+   "name": "FI+X4",
+   "description": "key",
+   "genre": "$toStringO",
+   "audience": "Q_^,#*"
+  }
+ },
+ "endorsementJwt": "-893_-E-.ab.2_4-8Mz",
+ "image": {
+  "id": "ge",
+  "type": "Image",
+  "caption": "%y!z 0e"
+ },
+ "email": "9[Qp",
+ "address": {
+  "<$;": 7.4e-323,
+  "type": "Address",
+  "addressCountry": "apply",
+  "addressCountryCode": "j",
+  "addressRegion": "w&];f",
+  "addressLocality": "#dz$4/&A",
+  "streetAddress": ":L=OszHn\\V",
+  "postOfficeBoxNumber": "B&__",
+  "postalCode": "i",
+  "geo": {
+   "^NDpM*BL": [
+    -6.331031606715962e-269,
+    null,
+    "s1g! =j",
+    "hi",
+    -4.535572227130417e+272,
+    null
+   ],
+   "Gk)1|2": 7.627830256767273e-226,
+   "zL)TS`O": [
+    {
+     ".\\_]0": -2.0683186542582217e+98,
+     "F$nXSc": "}",
+     "(gJ h)": null
+    }
+   ],
+   "type": "GeoCoordinates",
+   "latitude": -1.797693134862315e+308,
+   "longitude": -1.7976931348623151e+308
+  }
+ },
+ "otherIdentifier": [
+  {
+   "type": "IdentifierEntry",
+   "identifier": ":",
+   "identifierType": "ltiToolId"
+  },
+  {
+   "type": "IdentifierEntry",
+   "identifier": " a }{%{",
+   "identifierType": "nationalIdentityNumber"
+  },
+  {
+   "type": "IdentifierEntry",
+   "identifier": "\"",
+   "identifierType": "productId"
+  }
+ ],
+ "official": "R'%",
+ "parentOrg": {
+  "|": true,
+  "id": "app",
+  "type": "Profile",
+  "name": "Z9CL)[",
+  "url": "_Z",
+  "phone": "",
+  "description": "w7~#",
+  "endorsement": [
+   {
+    "@context": [
+     "https://www.w3.org/ns/credentials/v2",
+     "https://purl.imsglobal.org/spec/ob/v3p0/context-3.1.2-3.1.6-3.6.9.json",
+     {},
+     "/~FoiEn-J4"
+    ],
+    "type": [
+     "VerifiableCredential",
+     "EndorsementCredential",
+     "O:Q`8+Y\""
+    ],
+    "id": "\"%|z",
+    "name": "gKDj(IL",
+    "description": "~",
+    "credentialSubject": {
+     "id": "{SYJ%",
+     "type": "EndorsementSubject"
+    },
+    "awardedDate": "2050-06-27T10:47:55Z",
+    "issuer": "S_5",
+    "validFrom": "2041-09-08T05:25:37+00:00",
+    "validUntil": "1971-01-01T00:00:00+05:30",
+    "proof": {
+     "l#~": {},
+     "type": "Io*l}r"
+    },
+    "credentialSchema": [
+     {
+      "B": {
+       "": false,
+       "z^@&it+0@,": 3.643270513188572e+113,
+       "c*a(#v": "8",
+       "ti`,Ze": true,
+       "_RU&#)e1P": "J?/7R5J%u-",
+       "']1": false,
+       "en\"97*h|": -3.4251534662078026e-256
+      },
+      "4\\Pb.v": {
+       "\\": "SmRz~o@z}",
+       "v|V,m": 9.577854804465617e-175,
+       "5p": null,
+       "0cP|Tj": false,
+       "-q9i3)": null,
+       "o*W826X,": false,
+       "E": true
+      },
+      "#QGDcM": 1.2026101309717785e+70,
+      "id": "(++",
+      "type": "toString"
+     },
+     {
+      "&f": {
+       "(%jdQn": null,
+       "}e`>2m;Z": 1.8866448518613778e-239,
+       "5p": true,
+       "call": "xPfN|z",
+       "EL-[": -0.003892171294811599
+      },
+      "N`": {
+       "&YL": null,
+       "#lle": true,
+       "": "\"",
+       "sc": null
+      },
+      "3** 6D": true,
+      "id": "prototype",
+      "type": "7wJsi$ZN"
+     }
+    ],
+    "credentialStatus": {
+     "0#WAJ2m@": null,
+     "N0cw#Ev(": {
+      "/B": {
+       "{hW": null,
+       "lk9',7": 1.042991963197141e+282,
+       "dMH/=|z": false,
+       ";?%": null
+      },
+      "": [
+       2.0269351729160695e-42,
+       true,
+       -1392606402068824800,
+       null
+      ],
+      "+ o": [
+       -4.30447102070335e+81,
+       false,
+       "",
+       true,
+       false
+      ]
+     },
+     "type": "Y\\s[O="
+    },
+    "refreshService": {
+     "id": "",
+     "type": "}oto:na"
+    },
+    "termsOfUse": [
+     {
+      "type": "\\|0l"
+     },
+     {
+      "fp$": [
+       null,
+       "r",
+       2.806911674771185e+258,
+       "9jtsr=tD",
+       true,
+       2.0693783156548676e+84,
+       null,
+       "",
+       "l$rIjV;"
+      ],
+      "dg3]5twY": {
+       "5b]@B*&": 1.7820632876306788e-10,
+       "": 3.685051877867251e+257,
+       "D": null,
+       "Rhl%-9": null,
+       "W": false,
+       "7?-1(Q6%u": "G",
+       "~": "q,\\jMZ4&E.",
+       "ZzT": null,
+       "tEKLz:I": null
+      },
+      "p<>": [
+       true
+      ],
+      "type": "M"
+     }
+    ],
+    "evidence": {
+     "@5^2\\O`&": "uNDZ:T",
+     "|X B": "",
+     "type": "Evidence"
+    }
+   },
+   {
+    "<^}ujG": [],
+    "X\"": {
+     "^p\"[Y8UY": false,
+     "Vn1 gzsFl": null,
+     "#DPAI#Z_,$": null,
+     ";*92,i`)": -5.426408286715156e-83,
+     "/hhp#u{nb": "SMq\"",
+     "JNEY?kIgew": "$[m)T\"8X#E",
+     "Psv1": null,
+     "l": "&/1n&"
+    },
+    "qh": "2I",
+    "@context": [
+     "https://www.w3.org/ns/credentials/v2",
+     "https://purl.imsglobal.org/spec/ob/v3p0/context-3.9.1-3.0.5-3.2.7-3.8.4.json",
+     "xLW+~\\A",
+     {}
+    ],
+    "type": [
+     "VerifiableCredential",
+     "EndorsementCredential"
+    ],
+    "id": "q",
+    "name": "}>#",
+    "description": "__proto__",
+    "credentialSubject": {
+     "6*yshF": {
+      "Y9^>{H]DN[": true,
+      "mT}cK": false,
+      "{#}": true,
+      "s": 1.6441496753828746e-166,
+      "HI$3|'": "Ka*\"F(>Xn6",
+      "BRSN`G(XyH": null,
+      "[@": false,
+      " W`HWZ/": -3.359424260657754e-283,
+      "##4OQ~]'G": 1.717347271991938e+26
+     },
+     "id": "_",
+     "type": "EndorsementSubject"
+    },
+    "awardedDate": "2076-09-06T06:44:01Z",
+    "issuer": "P",
+    "validFrom": "2017-03-06T14:53:15+05:30",
+    "validUntil": "2090-11-10T21:56:16+00:00",
+    "proof": [
+     {
+      "ka*W": null,
+      "type": "r>i88z"
+     }
+    ],
+    "credentialSchema": [
+     {
+      "P": {
+       "Equ}N": 8.68945206959692e-139,
+       "!K/hu": "/[",
+       "pNv;x>Ps": null,
+       "rr/f`": -1.8826026033152374e-171,
+       "": null,
+       "_Q,;j": true,
+       "\"iKb": true,
+       "na6": null,
+       "|K~": 1.0222056983637237e-184
+      },
+      "Yn=r*R!": 3.2609823416393512e-288,
+      "t": [
+       "99$zK",
+       true,
+       "",
+       "(B@|t\"<V",
+       null,
+       "Q=n~7|pG",
+       null,
+       3.5849225537616893e+46,
+       "SB1[z_$5C",
+       "~+b~"
+      ],
+      "id": "ouJfg",
+      "type": "fy't~"
+     },
+     {
+      "ZPJxi": [
+       null,
+       -9.114910892096877e+129,
+       null,
+       -1.311566394034402e-120,
+       null,
+       "8",
+       "&@ '",
+       null,
+       "U",
+       false
+      ],
+      "%a%SfHx<": null,
+      "T!!x$\"?u": {
+       "": false,
+       "#=Kl": true,
+       "YZ7-": null,
+       "F#": 3.787172392333051e+119,
+       "r": false,
+       "$.6<Xl": true,
+       "0ve\\3|": null,
+       "/vD:x+z": false
+      },
+      "id": ":xwo^",
+      "type": "QMjCBfhZq"
+     }
+    ],
+    "credentialStatus": {
+     "3Oc{^=": {
+      "%$": null
+     },
+     "type": "t"
+    },
+    "refreshService": {
+     "id": "(wTx",
+     "type": "W|"
+    },
+    "termsOfUse": [
+     {
+      "%##~$+ix": [],
+      "type": "#!"
+     }
+    ],
+    "evidence": [
+     {
+      "\"u": true,
+      "+~d:": {},
+      "type": "Evidence"
+     },
+     {
+      "8dJ*": {
+       "9!Nlaf": true,
+       "gl": -4.856701282892159e+210,
+       "mj": "/T2\"`",
+       "#'>.": null,
+       "P^~": null,
+       "oBval1": true,
+       "$vsJJ=": "$JqT)2"
+      },
+      "IG'": {
+       "1": {
+        "(YMZdZn": false
+       },
+       "mc)": [
+        true,
+        -2.5881165733687605e-45,
+        -1.6439043438646412e+103,
+        ""
+       ],
+       "\"414hfZ": -6.449221311161139e-86
+      },
+      "type": [
+       "Evidence",
+       "h/2#q\"mi",
+       "pF."
+      ]
+     },
+     {
+      "PG+ 5": [
+       {
+        "}TY^@&&e*+": "L'3",
+        " Pk\\E": "{'}",
+        "Gbd.0f\"": null,
+        " plFHmV0>": true,
+        "": 8.555400192146155e+270,
+        "$/0]U-": "l0%",
+        "(%bI(@3": "D|rQT*Qb\\c",
+        "xOTqnquuA": true,
+        " ": false,
+        "4Q`=-K.[&": "il8W]}"
+       }
+      ],
+      " ": {
+       "x": "m'[$@",
+       "y i": false,
+       "f;R2$": "#[",
+       "0'LzyFPul": null,
+       "O": 1.3148556383711847e-100,
+       "b-Z'sX": true,
+       "'`6V6nf-mW": true
+      },
+      "type": "Evidence"
+     }
+    ]
+   }
+  ],
+  "endorsementJwt": [
+   "3ng-nDy.64_1.__",
+   "19k_tVV5RWso.9.Ymm2"
+  ],
+  "image": {
+   "id": "<)^",
+   "type": "Image",
+   "caption": "JfgvFldNK"
+  },
+  "email": "",
+  "address": {
+   "type": "Address",
+   "addressCountry": "$b&<4F",
+   "addressCountryCode": "valueOf",
+   "addressRegion": "ZPEzN!ek<i",
+   "addressLocality": "t",
+   "streetAddress": "",
+   "postOfficeBoxNumber": "3]k+",
+   "postalCode": "",
+   "geo": {
+    "type": "GeoCoordinates",
+    "latitude": 4.857155455310108e-82,
+    "longitude": 3.754450245335479e-299
+   }
+  },
+  "otherIdentifier": [
+   {
+    "type": "IdentifierEntry",
+    "identifier": "?R>",
+    "identifierType": "ext:U-"
+   }
+  ],
+  "official": "59xkzZT~a",
+  "parentOrg": {
+   "R=fnJz": [],
+   "!Qr</w1": [
+    5.639376689246779e+268,
+    "':$;",
+    false,
+    null,
+    null,
+    "R;IE"
+   ],
+   "id": "Z\"<D>ZyVB@",
+   "type": "Profile",
+   "name": "y:*1~%E'",
+   "url": "B0otj+U(",
+   "phone": "dQ",
+   "description": "toString",
+   "endorsement": {
+    "$v^!'": "z,$~]!!y\"",
+    "@context": [
+     "https://www.w3.org/ns/credentials/v2",
+     "https://purl.imsglobal.org/spec/ob/v3p0/context-3.1.8-3.6.0-3.5.3-3.5.8-3.5.6-3.7.3-3.2.5-3.2.5-3.8.1-3.1.9.json",
+     "*2VW;#u"
+    ],
+    "type": [
+     "VerifiableCredential",
+     "EndorsementCredential",
+     ",Lz@I3."
+    ],
+    "id": "DkawR",
+    "name": "x",
+    "credentialSubject": {
+     "<V/]m": {
+      "x!T": {
+       "": null
+      },
+      "+x_": null
+     },
+     "id": "",
+     "type": [
+      "EndorsementSubject",
+      "1(A/[KN9`"
+     ]
+    },
+    "issuer": "key",
+    "validFrom": "2099-12-31T23:59:58-08:00"
+   },
+   "endorsementJwt": "DB2D.key.6_xC-",
+   "image": {
+    "id": "!%X!:dsY}A",
+    "type": "Image"
+   },
+   "email": " !$$ [ ",
+   "address": {
+    "U": 2.524474679587038e+287,
+    "-W": null,
+    "type": [
+     "Address",
+     "",
+     "h |TT"
+    ]
+   },
+   "otherIdentifier": [
+    {
+     "type": "IdentifierEntry",
+     "identifier": "8",
+     "identifierType": "ltiToolId"
+    },
+    {
+     "type": "IdentifierEntry",
+     "identifier": "Ri",
+     "identifierType": "ltiToolId"
+    }
+   ],
+   "official": "key",
+   "parentOrg": {
+    "\"%r": [
+     true,
+     "~|rvz%A% $",
+     "caller",
+     null,
+     "4VmX8",
+     false
+    ],
+    "id": "",
+    "type": "Profile"
+   },
+   "familyName": "<MCJp",
+   "givenName": "bCTr@Zs",
+   "additionalName": "&yC{$c~s",
+   "patronymicName": "Z&0z7nddA0",
+   "honorificPrefix": "_",
+   "honorificSuffix": "asf[5#fY%",
+   "familyNamePrefix": "6TJB#\\",
+   "dateOfBirth": "2085-08-12"
+  },
+  "familyName": "9V ^",
+  "givenName": "<%",
+  "additionalName": "G[`&n:V,:",
+  "patronymicName": "X",
+  "honorificPrefix": "\\PN",
+  "honorificSuffix": "@F}!!w)}",
+  "familyNamePrefix": "N",
+  "dateOfBirth": "1971-01-01"
+ },
+ "familyName": "tpQOB@72",
+ "givenName": "#$\"G~",
+ "additionalName": "v8",
+ "patronymicName": "y",
+ "honorificPrefix": "n",
+ "honorificSuffix": "7$$",
+ "familyNamePrefix": "=iz\\y?Z;RX",
+ "dateOfBirth": "2025-11-16"
+}

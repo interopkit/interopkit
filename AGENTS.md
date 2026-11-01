@@ -7,8 +7,9 @@ enforced by `pnpm lint` (Biome and cspell), `pnpm check:standards`, `pnpm check:
 interopkit is a toolkit for learning-platform interoperability in JavaScript and TypeScript, in one repository:
 `@interopkit/core` is the shared foundation, `@interopkit/tool-integration` implements LTI 1.3 in both roles, and
 `@interopkit/learning-analytics` implements Caliper Analytics 1.2, `@interopkit/competency-frameworks` implements the
-CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding, and
-`@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite.
+CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
+`@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
+implements the model and the readers of Open Badges 3.0 and CLR 2.0.
 
 ```mermaid
 flowchart BT
@@ -19,12 +20,14 @@ flowchart BT
   la["learning-analytics"]
   cf["competency-frameworks<br/>model, read, version, graph, client, provider"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
+  ac["achievement-credentials<br/>model, read"]
   proto --> core
   tool --> proto
   plat --> proto
   la --> core
   cf --> core
   sd --> core
+  ac --> core
   gates["pnpm lint, check:standards, check:rules,<br/>typecheck, test, knip"] --> merge["Merge"]
 ```
 
@@ -48,7 +51,8 @@ Use these words with these meanings in code, comments and docs.
 | endpoint     | The service that receives the envelopes                                                                                         |
 | deadline     | The time a call to a service may take, `timeoutMs`                                                                              |
 | framework    | A CASE competency framework, held as a package: one document with its items, associations, definitions and rubrics              |
-| finding      | A `CaseIssue` of a reader: where, which rule, what is wrong, and whether it is an error or a warning                            |
+| finding      | A `CaseIssue` or `CredentialIssue` of a reader: where, which rule, what is wrong, and whether it is an error or a warning       |
+| credential   | An Open Badges or CLR verifiable credential, held as a value of the model: an achievement, an endorsement or a CLR              |
 | provider     | The service that publishes frameworks to consumers over the CASE REST binding: `handleCaseRequest` over a `FrameworkStore`      |
 | base proof   | The proof an issuer gives a holder: an HMAC key, the public key of the proof and a signature for each statement to hide         |
 | disclosure   | A document with only the parts a holder reveals and a derived proof, the signatures of the statements that stay                 |
@@ -75,6 +79,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
+| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`                                                      |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`          |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -120,9 +125,12 @@ current behavior only, and never how it came to be. A package's changeset is wri
 
 - interopkit owns the messages between a platform and a tool, the gradebook protocol, the Caliper event model, sensor and
   endpoint, and the CASE model with its readers, the questions a consumer asks of a framework, the client of its REST binding
-  and the handlers of a CASE provider. It does not own what a launched tool shows, what a score means, which delivery event becomes which Caliper event,
-  QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to assesskit and measurekit, to the
-  adapter of each product and to the host.
+  and the handlers of a CASE provider. It does not own what a launched tool shows, what a score means, which delivery event
+  becomes which Caliper event, QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to
+  assesskit and measurekit, to the adapter of each product and to the host.
+- `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers. It does not own keys, proofs,
+  status lists, verification, baking, the APIs or Open Badges 2.0 (those arrive in later modules), nor wallets, issuing
+  platforms and storage.
 - `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
   canonicalization (the primitives of `@digitalbazaar/di-sd-primitives` do them), the resolution and binding of keys, the
   loader of contexts and their pins, other suites, or a verifiable credential data model: the caller passes a key and a loader.
@@ -137,12 +145,13 @@ current behavior only, and never how it came to be. A package's changeset is wri
 
 ## Dependencies
 
-- A package imports only what its row in the diagram above allows. Biome enforces the rows for `core`, and for the folders
-  of `tool-integration`: `protocol/` imports neither `tool/` nor `platform/`, and `tool/` and `platform/` never import each
-  other. In `competency-frameworks`, `model/` imports no other module, and `read/`, `version/` and `graph/` never import
-  each other; `client/` builds on `read/`, `provider/` on `read/` and `version/`, and none of them imports either. In `selective-disclosure`,
-  `proof-value/`, `keys/` and `document/` import none of the other folders, and `base/`, `derive/` and `verify/` import those
-  three and never each other. Imports never form cycles.
+- A package imports only what its row in the diagram above allows. Biome enforces the rows for `core`, and for the
+  folders of `tool-integration`: `protocol/` imports neither `tool/` nor `platform/`, and `tool/` and `platform/` never
+  import each other. In `competency-frameworks`, `model/` imports no other module, and `read/`, `version/` and `graph/`
+  never import each other; `client/` builds on `read/`, `provider/` on `read/` and `version/`, and none of them imports
+  either. In `selective-disclosure`, `proof-value/`, `keys/` and `document/` import none of the other folders, and
+  `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`
+  imports no other module, `read/` builds on `model/` only. Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -179,9 +188,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - Files: kebab-case. One concept per file, named after it. Group files in folders by module. No `utils`, `helpers` or `misc`.
 - Values and functions: camelCase. Module-level constant data: SCREAMING_SNAKE. Types: PascalCase. Type parameters: `T` or `T`
   plus a name.
-- No package, folder or brand name holds a specification name: the packages are `tool-integration`, `learning-analytics` and
-  `competency-frameworks`, and `pnpm check:standards` fails on `lti` or `caliper` in one. Modules and functions use the names
-  descriptively (`ltiLaunch`, `CaliperEvent`).
+- No package, folder or brand name holds a specification name: the packages are `tool-integration`, `learning-analytics`,
+  `competency-frameworks`, `selective-disclosure` and `achievement-credentials`, and `pnpm check:standards` fails on `lti` or
+  `caliper` in one. Modules and functions use the names descriptively (`ltiLaunch`, `CaliperEvent`).
 - Function options are `<Name>Options`. Labels are string unions in kebab-case (`"key-unknown"`).
 - An error has a kebab-case `reason` where a caller must branch on it, and a `status` where it maps to HTTP.
 - The names of the properties of a specification (`CFItems`, `imsx_codeMajor`) are kept as it writes them: the folders and
@@ -199,6 +208,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   every argument is checked once, where the public function reads it, with a check of `@interopkit/core/checks`. An option's
   label is `The option <name>`. Inner functions trust their callers. JSON and objects that a host passes in are read with a
   valibot schema named `<name>Schema` and `parseWith`, which names the path of the first issue.
+- A class of a JSON-LD specification that anyone may extend is read with `openRecord` of `core/checks`, a closed one with
+  `strictRecord`; a list that the compacted form writes as its only member is read into a list with `many`, so that the model
+  has one form.
 - Expected outcomes that a caller must handle are values in the result. Invalid input and broken invariants throw `DataError`.
   A failed call to a service is a `ServiceError` with its `status`, `headers` and `body`.
 - Anything that waits on I/O is async and takes `signal` of `CallOptions`, which ends that caller's wait. Work that several

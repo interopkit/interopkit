@@ -638,6 +638,46 @@
       }
     },
     {
+      "includes": ["packages/achievement-credentials/src/model/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/read", "**/read/**", "**/issue", "**/issue/**", "**/compare", "**/compare/**"],
+                    "message": "model/ holds the types and terms and imports no other module: they build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/achievement-credentials/src/read/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/issue", "**/issue/**", "**/compare", "**/compare/**"],
+                    "message": "read/ builds on model/ and @interopkit/core only: issue/ and compare/ build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": [
         "packages/competency-frameworks/src/model/**",
         "packages/competency-frameworks/src/provider/handle-request.ts",
@@ -647,6 +687,10 @@
         "packages/competency-frameworks/test/**",
         "packages/selective-disclosure/src/document/primitives.ts",
         "packages/selective-disclosure/test/**",
+        "packages/achievement-credentials/src/model/**",
+        "packages/achievement-credentials/src/read/*-schemas.ts",
+        "packages/achievement-credentials/src/read/registry.ts",
+        "packages/achievement-credentials/test/**",
         "scripts/test/schema-arbitrary.test.ts",
         "scripts/test/schema-oracle.test.ts"
       ],

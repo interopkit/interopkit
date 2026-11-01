@@ -1,0 +1,567 @@
+{
+ "verifiableCredential": [
+  "Rler.toString.bBL_-G_96-_",
+  "0__gvn_9_..-5--s5-"
+ ],
+ "id": "gGZT>",
+ "type": "ClrSubject",
+ "identifier": [
+  {
+   "type": "IdentityObject",
+   "hashed": false,
+   "identityHash": "caller",
+   "identityType": "ext:T.4",
+   "salt": "Q"
+  },
+  {
+   "type": "IdentityObject",
+   "hashed": false,
+   "identityHash": "|\"~",
+   "identityType": "ext:j9p._J-",
+   "salt": "Rx$qTW\""
+  },
+  {
+   "type": "IdentityObject",
+   "hashed": true,
+   "identityHash": "Q!",
+   "identityType": "lisSourcedId",
+   "salt": "`Uh'rDZ"
+  }
+ ],
+ "achievement": [
+  {
+   "ZBRSN`": {
+    "yHOc[@D?": [
+     1.3851862561275344e-257,
+     true,
+     true,
+     null
+    ],
+    "": [
+     "OQ~]'G}/v",
+     true,
+     false,
+     false,
+     null,
+     -2.5549108806498158e+210,
+     null,
+     false,
+     3.16846545378948e-279,
+     -3.852646557218025e-53
+    ]
+   },
+   "id": "f",
+   "type": "Achievement",
+   "alignment": [
+    {
+     "yN~;C9&h": [],
+     "type": [
+      "Alignment",
+      "7"
+     ],
+     "targetCode": "/Uw1TKET",
+     "targetDescription": "[0]l!",
+     "targetName": "",
+     "targetFramework": "*",
+     "targetType": "ext:7._-9-",
+     "targetUrl": ";i%="
+    },
+    {
+     "]VzsN": {
+      "Gm7ky/": false,
+      "Bqjy_!": null,
+      "PwxTJOOw": -1.2968561256792438e+182,
+      "DW[> ?}": true
+     },
+     "X/~": [
+      "agz}=6"
+     ],
+     "Rxoh'Vv": [
+      [
+       false,
+       false,
+       ""
+      ],
+      [
+       true,
+       -4.064527740002837e-263,
+       true,
+       "5$9I",
+       5.686923507586146e-189,
+       false,
+       1.7827799826003238e-288,
+       true,
+       -2.2132045393627162e+89
+      ],
+      {
+       "f)L07b<R'd": -5.900479484288538e+55,
+       "": null,
+       "n": true,
+       "\\XB/MF9PW": null,
+       "lBz3&j": -8.774411497561037e+238
+      }
+     ],
+     "type": [
+      "Alignment",
+      " j0",
+      "yj-[Gu"
+     ],
+     "targetCode": "",
+     "targetDescription": "37",
+     "targetName": "p|mOnO{U?Y",
+     "targetFramework": "w|h\\aFX`'c",
+     "targetType": "CFRubricCriterionLevel",
+     "targetUrl": "6%BHt)Bq3>"
+    }
+   ],
+   "achievementType": "ext:..Z9._98-2-",
+   "creator": {
+    "id": "<|gz`,$k>",
+    "type": "Profile",
+    "name": "Wd$v-jG",
+    "url": "E;",
+    "phone": "",
+    "description": "y1~",
+    "endorsement": {
+     "@context": [
+      "https://www.w3.org/ns/credentials/v2",
+      "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.5-3.2.9-3.2.2-3.7.8-3.8.2-3.9.2-3.4.8.json",
+      {},
+      ">N1,O[L"
+     ],
+     "type": [
+      "VerifiableCredential",
+      "EndorsementCredential"
+     ],
+     "id": "5T",
+     "name": "j-Ag{s\"!N",
+     "credentialSubject": {
+      "v": {
+       "cOxoHi": "C0#r@Xl$",
+       "249S)LsnDb": true,
+       "@dja3KUD": -2.90978045371313,
+       "": 3.1687703390601044e+292,
+       "\"e:`_0f-B": true
+      },
+      "f0Gf": {
+       "|&zP0NL=": null,
+       "L|Bj{24": true,
+       "j": false,
+       "e;d": false,
+       "Eq?V": null,
+       "T4E-H}\\MK?": null,
+       "M]H?/": null,
+       "": 3.259194873496386e-226,
+       "k^GpmCOLf7": false,
+       "6lPo": null
+      },
+      "id": "^jMjt*w",
+      "type": [
+       "EndorsementSubject"
+      ]
+     },
+     "issuer": "e",
+     "validFrom": "2005-01-16T07:36:12Z"
+    },
+    "endorsementJwt": "__cb2_M-CNc.-__n4_-.-5",
+    "image": {
+     "id": "BkD4b)R",
+     "type": "Image"
+    },
+    "email": "9G",
+    "address": {
+     ":'Xy": [
+      false,
+      "RN&D",
+      null,
+      true,
+      null,
+      null,
+      null
+     ],
+     ".|^": {
+      "8 +s4EY": null,
+      "QW#f": false,
+      "P": null,
+      "]/G <": 3.925099836927602e-76,
+      "v,>_6JH<S}": null,
+      "EjV": null,
+      "Wdn;z5": 2.162111299871694e-172,
+      "4.a": true,
+      "OBkOlgP/1h": null,
+      "[R{c3gfM": null
+     },
+     "5M ": {
+      "4^*)~": null,
+      "$": true,
+      "|&": null,
+      "U5*T;;": true,
+      "ml": true,
+      "a5]]fKbcR": null,
+      "byEYDKa": 7.390980147312974e+208,
+      " b8v}t^J5": -5.385892670878653e+70,
+      "N": 2.2489644315323004e+221,
+      "VLHeEgqg&E": -1.6316512572745097e-281
+     },
+     "type": [
+      "Address",
+      "c"
+     ]
+    },
+    "otherIdentifier": {
+     "type": "IdentifierEntry",
+     "identifier": "",
+     "identifierType": "ext:.6"
+    },
+    "official": "E%p'x",
+    "parentOrg": {
+     "=vWGc^FI": [
+      ".?x\"?>'TQ",
+      null,
+      null,
+      "pGo",
+      3.4253828199610536e+81,
+      -1.1139225920945426e+223,
+      -3.5455951090609943e+28,
+      null,
+      null,
+      -3.729453851289481e+298
+     ],
+     "id": "t]O\"k",
+     "type": [
+      "Profile",
+      "fw",
+      "Q-4c{"
+     ]
+    },
+    "familyName": "2Pjf9QN",
+    "givenName": "QZW",
+    "additionalName": "NJ7?za56",
+    "patronymicName": "kw",
+    "honorificPrefix": "fc",
+    "honorificSuffix": "z&M^NNUV@'",
+    "familyNamePrefix": "4a{",
+    "dateOfBirth": "1978-08-13"
+   },
+   "creditsAvailable": 3.8193595846178316e+33,
+   "criteria": {
+    "id": "rG",
+    "narrative": "\"E*t6OJ"
+   },
+   "description": "j\\(UEka",
+   "endorsement": {
+    "@context": [
+     "https://www.w3.org/ns/credentials/v2",
+     "https://purl.imsglobal.org/spec/ob/v3p0/context-3.7.1-3.2.9-3.2.5-3.0.4.json",
+     "'~"
+    ],
+    "type": [
+     "VerifiableCredential",
+     "EndorsementCredential"
+    ],
+    "id": "g$",
+    "name": "ODO#5",
+    "description": "AJ5NE",
+    "credentialSubject": {
+     "id": "qn$G",
+     "type": "EndorsementSubject"
+    },
+    "awardedDate": "2062-05-11T18:49:08+05:30",
+    "issuer": "",
+    "validFrom": "2086-04-01T08:08:07+00:00",
+    "validUntil": "1995-10-16T14:20:00-08:00",
+    "proof": {
+     "type": "L*p"
+    },
+    "credentialSchema": {
+     "ud{i": [
+      true,
+      null,
+      false,
+      true,
+      "Nt8hwK",
+      4.167853412335445e+210,
+      -1.4317660259680182e+138,
+      "syL|e4@",
+      true
+     ],
+     "NLT": null,
+     "C": [
+      null,
+      9.539851262490158e-239,
+      "",
+      "/jrk",
+      true
+     ],
+     "id": "cwH",
+     "type": "$v/p.{*'"
+    },
+    "credentialStatus": {
+     "type": "N?8~ja "
+    },
+    "refreshService": {
+     "id": "",
+     "type": "b|rncj`"
+    },
+    "termsOfUse": {
+     "8CDWL": {
+      "`ah80feV9": {
+       "QpFWlZX-)": 90370196.18615118,
+       "'w&]": "(",
+       "": -2.8292524414778823e+299,
+       "go": -2.1680952540286626e+236,
+       "r1^J4w/D\\[": -3.984334805791239e-291,
+       ":L=OszHn\\V": true
+      },
+      "z3QE": [
+       "D",
+       "PP^",
+       2.2367812807708732e-269,
+       null
+      ],
+      "iy2": {
+       "A": null,
+       "9D^NDpM": -5.903218018646331e-256,
+       " IbPq:": null,
+       "1g! ": null,
+       "Fahivxj": null
+      }
+     },
+     "type": "a Egeg5&y?"
+    },
+    "evidence": [
+     {
+      "3Yz": [
+       true,
+       2.322207551229025e-33,
+       null,
+       "",
+       null,
+       2.9408177249616515e-109
+      ],
+      "type": "Evidence"
+     }
+    ]
+   },
+   "endorsementJwt": "_B_-_E8SMH.4G._V-L-7-",
+   "fieldOfStudy": "v#@",
+   "humanCode": "BipUQ",
+   "image": {
+    "id": "EQry:2hNV",
+    "type": "Image",
+    "caption": "fUjy"
+   },
+   "inLanguage": "umgy-Cvgs",
+   "name": "f7)rlt6 l",
+   "otherIdentifier": {
+    "type": "IdentifierEntry",
+    "identifier": "-%R",
+    "identifierType": "ext:1G"
+   },
+   "related": [
+    {
+     "id": "NoEYMBHU",
+     "type": [
+      "Related",
+      "L)[S:",
+      "Z"
+     ],
+     "inLanguage": "bqy-Bkbx",
+     "version": ""
+    },
+    {
+     "id": "#Kq,",
+     "type": "Related",
+     "inLanguage": "prcj-Caoj-WL",
+     "version": "+Y\" nk[uXF"
+    }
+   ],
+   "resultDescription": [
+    {
+     "R": -4.148130831880357e-144,
+     "@'": 4.4283439405432306e+167,
+     "id": "B-'lgKDj(I",
+     "type": "ResultDescription",
+     "alignment": {
+      "4!": {
+       "dY": null,
+       "z&": true,
+       "A": false,
+       "X9\\": false,
+       "t": true,
+       "ewN": 5.078867282292857e+81,
+       "B0": -1.9976673482710432e+129,
+       "*l}r@": false
+      },
+      "<BlJ": null,
+      "type": "Alignment",
+      "targetName": "Y",
+      "targetUrl": "sh?"
+     },
+     "allowedValue": [
+      "^GPE!"
+     ],
+     "name": "",
+     "requiredLevel": "`VmKaT(+",
+     "requiredValue": "tl`]*l",
+     "resultType": "PerformanceLevel",
+     "rubricCriterionLevel": [
+      {
+       "{1": -2.050759880803121e+237,
+       "(#v/E8S": [
+        false,
+        true,
+        true,
+        false,
+        null
+       ],
+       "id": "=E@2)%z",
+       "type": "RubricCriterionLevel",
+       "name": "&it+"
+      }
+     ],
+     "valueMax": "#",
+     "valueMin": "e1P2wJ"
+    },
+    {
+     "`VcR": [
+      {
+       "5": 4.658199463990758e-221,
+       "=&": null,
+       "LL#$H": -1.3818426901776858e+152,
+       "B#": false,
+       "h3Rrq": false,
+       "M": "&",
+       "g{s": "1Y3**",
+       "": -8.012074793617205e-162,
+       "k": "=Y\\"
+      }
+     ],
+     "id": "n\"",
+     "type": "ResultDescription",
+     "alignment": {
+      "Rz": [
+       1.8042274039974028e+90,
+       null,
+       true,
+       null
+      ],
+      "type": "Alignment",
+      "targetName": "|o~RB",
+      "targetUrl": "\\Pb.v`\"\\\\4"
+     },
+     "allowedValue": "J",
+     "name": "U5",
+     "requiredLevel": ",~0",
+     "requiredValue": "P|Tj2",
+     "resultType": "LetterGrade",
+     "rubricCriterionLevel": {
+      "S": {
+       "GDcM-yCs|8": 5.893708200170312e+178,
+       "<C-7wJ": true,
+       "ZNk7z<5O": "hq2sfXe$8",
+       "((%": "Qnp=*}",
+       "`>2m;Z": 2.4463162324731443e+202,
+       "Ks^q_=%51Q": null,
+       "?: RLlMr3": "OxP"
+      },
+      "id": "9i3)FDo*",
+      "type": "RubricCriterionLevel",
+      "name": "26X,}P"
+     },
+     "valueMax": "|zbmE",
+     "valueMin": "-[/]4]"
+    },
+    {
+     "Ue": {
+      "*ys": [
+       -7.934627730157291e+269,
+       null,
+       ">{H]DN[C",
+       null,
+       2.7202156240992254e+148,
+       -1.2252772375660837e+228,
+       false,
+       2.2541893473443205e-77
+      ]
+     },
+     "id": "O=5l9kkM",
+     "type": "ResultDescription",
+     "alignment": [
+      {
+       "type": "Alignment",
+       "targetName": "2m@B]z",
+       "targetUrl": "N0cw#E"
+      },
+      {
+       "',7[Z": {
+        "MH/=": false,
+        "Cv;?%_": "3`jJ}g",
+        "?": true,
+        "+ o": null,
+        "s?v?\"": "",
+        "!h.n": false,
+        "y ;1Nc5F6": "z37Z"
+       },
+       "':XK^Q(r": "e.n\\|0l:,z",
+       "type": "Alignment",
+       "targetName": "g/B",
+       "targetUrl": "Gs{hWw*"
+      }
+     ],
+     "allowedValue": "45fp",
+     "name": "zW{lVr",
+     "requiredLevel": "a .[",
+     "requiredValue": "jtsr=tD`(h",
+     "resultType": "Percent",
+     "rubricCriterionLevel": [
+      {
+       "id": "",
+       "type": [
+        "RubricCriterionLevel",
+        "$rIjV;[d"
+       ],
+       "name": "3]5twYU/'"
+      },
+      {
+       "hl": {
+        ",DWW`77": null,
+        "1(Q6%u%)": true,
+        "Y5q,\\jM": "&E.,Zz",
+        "DRtEKL": false,
+        "<ip<>DlqQ0": null
+       },
+       "rYhM_": [
+        "\\O`&h",
+        "uNDZ:T",
+        null,
+        " Bo/6&)",
+        "(SV{2tIf",
+        null,
+        "(o]",
+        "Tx",
+        "+~\\A}0",
+        ".s4+tF"
+       ],
+       "9qH2": 2.8341022188073845e+183,
+       "id": "B*&9\\ayT9",
+       "type": "RubricCriterionLevel",
+       "name": "D"
+      }
+     ],
+     "valueMax": "!gO]",
+     "valueMin": "H~7EB=Zi,"
+    }
+   ],
+   "specialization": "{hsVF/",
+   "tag": "I$3|'",
+   "version": ">Ka*\"F(>"
+  }
+ ],
+ "association": {
+  "type": "Association",
+  "associationType": "isPartOf",
+  "sourceId": "88z`M_ka",
+  "targetId": "i$wV@qjo"
+ }
+}

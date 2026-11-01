@@ -61,6 +61,7 @@ describe("the public API", () => {
         "methodsSchema",
         "nonEmptyStringSchema",
         "nonNegativeIntegerSchema",
+        "openRecord",
         "parseDateTime",
         "parseWith",
         "pathOf",

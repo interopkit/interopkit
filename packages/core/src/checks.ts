@@ -188,6 +188,7 @@ const EXPECTED_WORDS: ReadonlyMap<string, string> = new Map([
   ["array", "an array"],
   ["tuple", "an array"],
   ["strict_tuple", "an array"],
+  ["tuple_with_rest", "an array"],
   ["object", "an object"],
   ["strict_object", "an object"],
   ["loose_object", "an object"],
@@ -355,6 +356,40 @@ export function strictRecord<const TEntries extends v.ObjectEntries>(entries: TE
 }
 
 /**
+ * The schema of an object with the given entries that carries the properties it does not know, as `additionalProperties:
+ * true` does, such as a JSON-LD class that anyone may extend. It refuses an array whatever the entries.
+ *
+ * @remarks
+ * The result shares nothing with the input: a property that no entry names is copied by `copyJson`, so it must be JSON, and
+ * a value nested deeper than `MAX_JSON_DEPTH` is refused. A property of the object itself named `__proto__`, `constructor` or
+ * `prototype` that no entry names is not carried, because it would change the prototype of the result; inside a property that
+ * no entry names such a member stays data.
+ *
+ * @param entries - The schemas of the properties.
+ */
+export function openRecord<const TEntries extends v.ObjectEntries>(entries: TEntries) {
+  return v.pipe(
+    recordSchema,
+    v.looseObject(entries),
+    v.rawTransform(({ dataset, addIssue, NEVER }) => {
+      for (const [name, member] of Object.entries(dataset.value)) {
+        if (Object.hasOwn(entries, name)) continue;
+        const result = copyJson(member, name);
+        if ("problem" in result) {
+          addIssue({
+            message: result.problem,
+            path: [{ type: "object", origin: "value", input: dataset.value, key: name, value: member }],
+          });
+          return NEVER;
+        }
+        Object.assign(dataset.value, { [name]: result.value });
+      }
+      return dataset.value;
+    }),
+  );
+}
+
+/**
  * The schema of an object that must be JSON, such as the proprietary data of an entity: the result is a copy, which
  * `copyJson` makes, so that it shares nothing with the input.
  */
@@ -458,6 +493,9 @@ const WRONG_TYPES: ReadonlySet<string> = new Set([
   "object",
   "strict_object",
   "array",
+  "tuple",
+  "strict_tuple",
+  "tuple_with_rest",
   "integer",
   "finite",
 ]);

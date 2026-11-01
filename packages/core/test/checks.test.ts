@@ -26,6 +26,7 @@ import {
   methodsSchema,
   nonEmptyStringSchema,
   nonNegativeIntegerSchema,
+  openRecord,
   parseWith,
   pathOf,
   positiveIntegerSchema,
@@ -289,6 +290,7 @@ const findingsSchema = strictRecord({
   term: v.optional(guardSchema((value): value is "x" => value === "x", "x")),
   inner: v.optional(strictRecord({ id: v.string() })),
   items: v.optional(v.array(strictRecord({ name: v.string() }))),
+  pair: v.optional(v.tupleWithRest([v.string()], v.number())),
 });
 
 /** The findings of a value that the schema above reads. */
@@ -339,6 +341,7 @@ describe("findingsOf", () => {
       "missing-property",
       'missing the property "id".',
     ],
+    ["a tuple that is not a list", { name: "n", pair: "x" }, "pair", "wrong-type", 'expected an array, found "x".'],
     [
       "a property of an object in a list",
       { name: "n", items: [{ name: "a" }, { name: 2 }] },
@@ -375,6 +378,36 @@ describe("strictRecord", () => {
     expect(
       findingsOf(v.safeParse(schema, { id: "a", first: 1, second: 2 }).issues ?? []).map(({ path }) => path),
     ).toStrictEqual(["first"]);
+  });
+});
+
+describe("openRecord", () => {
+  const schema = openRecord({ id: v.string() });
+
+  it("reads an object with the entries, keeps the properties it does not know, and refuses an array", () => {
+    expect(v.safeParse(schema, { id: "a", extra: { n: [1] } }).output).toStrictEqual({ id: "a", extra: { n: [1] } });
+    expect(v.safeParse(openRecord({ id: v.optional(v.string()) }), []).success).toBe(false);
+    expect(v.safeParse(schema, {}).success).toBe(false);
+  });
+
+  it("copies the properties it does not know, so that the result shares nothing with the input", () => {
+    const input = { id: "a", extra: { list: [1] } };
+    const result = v.parse(schema, input);
+    expect(result.extra).toStrictEqual(input.extra);
+    expect(result.extra).not.toBe(input.extra);
+  });
+
+  it("refuses a property it does not know that is not JSON, and says which", () => {
+    const issues = v.safeParse(schema, { id: "a", extra: { at: () => 1 } }).issues ?? [];
+    expect(findingsOf(issues)).toStrictEqual([
+      { path: "extra", rule: "invalid-value", message: "extra.at is a function, which JSON cannot hold." },
+    ]);
+  });
+
+  it("does not carry a property named __proto__ and leaves the prototype of the result alone", () => {
+    const result = v.safeParse(schema, JSON.parse('{"id":"a","__proto__":{"x":1},"constructor":2}')).output;
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect(result).toStrictEqual({ id: "a" });
   });
 });
 
