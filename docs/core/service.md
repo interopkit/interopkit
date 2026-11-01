@@ -50,14 +50,15 @@ In a host, `fetch` is the global one: `{ fetch: globalThis.fetch, timeoutMs: DEF
 
 ## Rules
 
-| Rule                                    | Value                                                                                                                                 |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Deadline                                | `timeoutMs`, for the request and the whole body together                                                                              |
-| Most bytes of an answer                 | 65,536, then the reader is cancelled; `ServiceError.body` holds the bytes up to the limit, whatever the chunks                        |
-| Redirects                               | Never followed: `redirect` is `"manual"`, and any 3xx answer, or an answer that a `fetch` followed anyway (`redirected`), is an error |
-| `fetch` is called                       | As a bare function, so that a global `fetch` works whatever its receiver rules                                                        |
-| A `fetch` that ignores its signal       | Cannot hold the call past `timeoutMs`: every wait is raced against the deadline                                                       |
-| The body of an answer that arrives late | Cancelled, so the connection is freed                                                                                                 |
+| Rule                                    | Value                                                                                                                                                                                          |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deadline                                | `timeoutMs`, for the request and the whole body together                                                                                                                                       |
+| Most bytes of an answer                 | 65,536, then the reader is cancelled; `ServiceError.body` holds the bytes up to the limit, whatever the chunks                                                                                 |
+| Where a request goes                    | Not checked: only the URL's scheme. A host whose URLs come from a counterparty passes a `fetch` that checks the address the connection resolves to, not the host name, or DNS rebinding passes |
+| Redirects                               | Never followed: `redirect` is `"manual"`, and any 3xx answer, or an answer that a `fetch` followed anyway (`redirected`), is an error                                                          |
+| `fetch` is called                       | As a bare function, so that a global `fetch` works whatever its receiver rules                                                                                                                 |
+| A `fetch` that ignores its signal       | Cannot hold the call past `timeoutMs`: every wait is raced against the deadline                                                                                                                |
+| The body of an answer that arrives late | Cancelled, so the connection is freed                                                                                                                                                          |
 
 ## Failure paths
 

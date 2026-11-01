@@ -226,6 +226,14 @@ host that keeps scores keeps a score unless a later one is kept, and treats an e
 | Most characters of the names and values of `ToolLaunch.custom` | 2,048         |
 | Leeway for clock skew                                          | 60 seconds    |
 
+## Calls to tools
+
+The only call to a tool is the fetch of its key set from the `jwksUrl` of its registration, through `createJwksCache`: `https`, no
+redirect, a time limit and at most 64 KiB. A platform whose tools are registered by people it does not control passes a `fetch` that
+refuses loopback, private and link-local addresses, checked on the address that the connection resolves to and not on the host
+name, or DNS rebinding gets through (see [the tool role](tool.md#calls-to-the-platform)). A tool that gives its public key in
+the registration needs no fetch.
+
 ## Failure paths
 
 | Port                    | Fails                                                                               | Hangs                                            | Called again                                                                        | May call back                         |

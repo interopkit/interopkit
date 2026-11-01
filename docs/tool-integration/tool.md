@@ -344,6 +344,14 @@ leave HTTPS) and at most 64 KiB of the answer. A failure is a `ServiceError`: it
 `status` is the HTTP status, or `0` when the platform did not answer. An answer that is not what the specification describes is
 a `DataError`.
 
+Nothing checks where a request goes beyond the `https` scheme, and the key set, the token endpoint and the line item come from a
+registration or from a claim of a platform. A tool that serves many platforms, whose administrators it does not control, passes a
+`fetch` that refuses loopback, private and link-local addresses. The check must be on the address that the connection resolves
+to and not on the host name, or DNS rebinding gets through: a name that is public when it is checked can be private when the
+connection is made. Resolve the name once, refuse the address if it is in one of those ranges (the metadata address
+`169.254.169.254` among them, and an IPv4 address written as IPv6), and connect to that address; in Node.js that is a `lookup`
+function in the options of the connection. See [SECURITY](../../SECURITY.md).
+
 ## The clock
 
 `clock.now()` answers whole milliseconds, as `Date.now()` does ([clock](../core/clock.md)). The functions read no other clock,

@@ -16,6 +16,10 @@ export const DEFAULT_TIMEOUT_MS = 10_000;
  * @remarks
  * The libraries never follow a redirect, because it could lead from HTTPS to another scheme: `redirect` is `"manual"`,
  * which every runtime accepts, and any 3xx answer is an error. Cloudflare Workers throw on `"error"`.
+ *
+ * Nothing checks where a request goes. A host whose URLs come from a counterparty passes a `fetch` that refuses loopback,
+ * private and link-local addresses, checked on the address that the connection resolves to and not on the host name: a name
+ * that is public when it is checked can be private when the connection is made (DNS rebinding).
  */
 export type Fetch = (
   url: string,
