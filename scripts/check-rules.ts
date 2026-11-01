@@ -465,8 +465,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The jti of an assertion is remembered through the clock-skew leeway, as long as the assertion verifies.",
     file: "packages/tool-integration/src/platform/token.ts",
-    find: "const expiresAt = (exp + CLOCK_SKEW_SECONDS) * MILLISECONDS;",
+    find: "const expiresAt = (Math.ceil(exp) + CLOCK_SKEW_SECONDS) * MILLISECONDS;",
     replace: "const expiresAt = exp * MILLISECONDS;",
+    test: "packages/tool-integration/test/platform.test.ts",
+  },
+  {
+    rule: "The jti of an assertion with a fractional expiry is remembered until the next whole second after it and the leeway.",
+    file: "packages/tool-integration/src/platform/token.ts",
+    find: "(Math.ceil(exp) + CLOCK_SKEW_SECONDS) * MILLISECONDS;",
+    replace: "(exp + CLOCK_SKEW_SECONDS) * MILLISECONDS;",
     test: "packages/tool-integration/test/platform.test.ts",
   },
   {

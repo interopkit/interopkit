@@ -1525,6 +1525,27 @@ describe("platformToken", () => {
     expect(JSON.parse((await post()).body).error).toBe("invalid_client");
   });
 
+  it("remembers the jti of an assertion with a fractional expiry until the next whole second after it and the leeway", async () => {
+    const ctx = setup();
+    const remembered = new Map<string, number>();
+    const forgetting = async (id: string, expiresAt: number): Promise<boolean> => {
+      if ((remembered.get(id) ?? 0) > ctx.clock.now()) return false;
+      remembered.set(id, expiresAt);
+      return true;
+    };
+    const options = { ...ctx.token, once: forgetting };
+    const assertion = await clientAssertion(toolKeys, endpoints.token, ctx.clock, { exp: SECONDS + 10.5 });
+    const post = () => platformToken(tokenRequest(endpoints.token, assertion, SCORE), options);
+    expect((await post()).status).toBe(200);
+    // The signature check works in whole seconds, so it still accepts the assertion 70.7 seconds after the start, which is
+    // 0.2 seconds after the expiry plus the leeway.
+    ctx.clock.advance(70.7);
+    const replay = await post();
+    expect(replay.status).toBe(400);
+    expect(JSON.parse(replay.body).error_description).toBe("The jti of the assertion has been used.");
+    expect([...remembered.values()]).toEqual([(SECONDS + 11 + 60) * 1000]);
+  });
+
   it("refuses an assertion with an empty jti", async () => {
     const ctx = setup();
     const response = await token(ctx, { jti: "" });

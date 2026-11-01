@@ -78,7 +78,7 @@ function readRequest(request: HttpRequest): { readonly assertion: string; readon
  * Verifies the client assertion (Security Framework section 4.1.1, LTI 1.3 Core section 6.2, RFC 7523 section 3): the tool named by `iss` signed
  * it with RS256 and a key of its registration; `iss` and `sub` are its client identifier; `aud` is the token URL; it has
  * not expired and does not expire in too long; it has a non-empty `jti` that `options.once` has not seen. The `jti` is remembered
- * until the expiry plus the clock-skew leeway of 60 seconds, as long as the assertion verifies.
+ * until the expiry, rounded up to a whole second, plus the clock-skew leeway of 60 seconds, as long as the assertion verifies.
  */
 async function verifyAssertion(assertion: string, options: PlatformTokenOptions): Promise<string> {
   const iss = required(unverifiedClaims(assertion), "iss", OWNER, STRING);
@@ -100,8 +100,9 @@ async function verifyAssertion(assertion: string, options: PlatformTokenOptions)
   }
   const jti = required(claims, "jti", OWNER, NON_EMPTY_STRING);
   // The assertion still verifies until `exp` plus the leeway, so the `jti` is remembered that long: a host's `once` forgets it
-  // at `expiresAt`, and a captured assertion could otherwise be used again in the leeway.
-  const expiresAt = (exp + CLOCK_SKEW_SECONDS) * MILLISECONDS;
+  // at `expiresAt`, and a captured assertion could otherwise be used again in the leeway. `exp` may have a fraction (RFC 7519
+  // section 2), and the check of the signature compares whole seconds, so the assertion verifies until the next whole second.
+  const expiresAt = (Math.ceil(exp) + CLOCK_SKEW_SECONDS) * MILLISECONDS;
   // An abort before `once` leaves the assertion unspent. Once it is spent, a later abort fails closed: the tool asks again.
   options.signal?.throwIfAborted();
   if (!(await options.once(`assertion:${clientId}:${jti}`, expiresAt, callOptionsOf(options)))) {
