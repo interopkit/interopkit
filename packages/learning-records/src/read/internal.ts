@@ -3,5 +3,6 @@
  *
  * @module
  */
+export { errorsOf, inspectStatement } from "./inspect.js";
 export { singleActivityIssues } from "./provider.js";
 export { patternProblem } from "./response-pattern.js";

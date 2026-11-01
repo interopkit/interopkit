@@ -1,32 +1,50 @@
 # Architecture of learning-records
 
-`@interopkit/learning-records` has two modules so far that share one model. `model` holds the types, the vocabularies and the
-data types. `read` turns untrusted data into the model and judges it. `model` imports nothing of the family, and `read` imports
-only `model` and `@interopkit/core`.
+`@interopkit/learning-records` has five modules that share one model. `model` holds the types, the vocabularies and the data
+types. `read` turns untrusted data into the model and judges it. `build`, `compare` and `format` make Statements, compare them and
+write them in a format, and each reads a Statement with `read` first. `model` imports nothing of the family, `read` imports only
+`model` and `@interopkit/core`, and the three that build on `read` are siblings that never import each other.
 
 ```mermaid
 flowchart BT
   core["@interopkit/core<br/>DataError, checks, formats"]
   model["model<br/>types, vocabularies, durations, times, formats"]
   read["read<br/>schemas, rules, readers, text of a request"]
+  build["build<br/>Statements, ids, hashes"]
+  compare["compare<br/>sameStatement"]
+  format["format<br/>ids, exact, canonical"]
   root["index.ts<br/>the public API"]
   read --> model
   read --> core
   model --> core
+  build --> read
+  compare --> read
+  format --> read
+  build --> model
+  compare --> model
+  format --> model
   root --> model
   root --> read
+  root --> build
+  root --> compare
+  root --> format
 ```
 
-| Module  | Files                                                                                   | Holds                                                                                         |
-| ------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `model` | `statement.ts`, `actor.ts`, `activity.ts`, `result.ts`, `context.ts`, `attachment.ts`   | The types of every table of the standard                                                      |
-|         | `terms.ts`, `language-map.ts`, `json.ts`, `issue.ts`                                    | The vocabularies as tuples with their types, `LanguageMap`, `Extensions` and `StatementIssue` |
-|         | `duration.ts`, `timestamp.ts`, `formats.ts`                                             | The data types: the grammar of a duration, the form of a time, `mbox`, hashes and media types |
-| `read`  | `schemas.ts`                                                                            | The valibot schema of a Statement and of what it holds: shape, types and forms                |
-|         | `walk.ts`, `rules.ts`                                                                   | The walk over a Statement and the composition of the rules between properties                 |
-|         | `identifiers.ts`, `results.ts`, `relations.ts`, `interaction.ts`, `response-pattern.ts` | The rules, one concept to a file                                                              |
-|         | `provider.ts`                                                                           | What only a Learning Record Provider is held to                                               |
-|         | `inspect.ts`, `read-statement.ts`, `options.ts`, `read-statement-json.ts`               | The parse, the readers and validators, the check of the options, and the text of a request    |
+| Module    | Files                                                                                   | Holds                                                                                                                     |
+| --------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `model`   | `statement.ts`, `actor.ts`, `activity.ts`, `result.ts`, `context.ts`, `attachment.ts`   | The types of every table of the standard                                                                                  |
+|           | `terms.ts`, `language-map.ts`, `json.ts`, `issue.ts`                                    | The vocabularies as tuples with their types, `LanguageMap`, `Extensions` and `StatementIssue`                             |
+|           | `duration.ts`, `timestamp.ts`, `formats.ts`                                             | The data types: the grammar of a duration, the form of a time, `mbox`, hashes and media types                             |
+| `read`    | `schemas.ts`                                                                            | The valibot schema of a Statement and of what it holds: shape, types and forms                                            |
+|           | `walk.ts`, `rules.ts`                                                                   | The walk over a Statement and the composition of the rules between properties                                             |
+|           | `identifiers.ts`, `results.ts`, `relations.ts`, `interaction.ts`, `response-pattern.ts` | The rules, one concept to a file                                                                                          |
+|           | `provider.ts`                                                                           | What only a Learning Record Provider is held to                                                                           |
+|           | `inspect.ts`, `read-statement.ts`, `options.ts`, `read-statement-json.ts`               | The parse, the readers and validators, the check of the options, and the text of a request                                |
+| `build`   | `build-statement.ts`, `voiding-statement.ts`                                            | The Statement of an event and the Statement that voids another                                                            |
+|           | `derive-statement-id.ts`, `mbox-sha1sum.ts`                                             | The id of an event, as a UUID of version 5, and the hash of an address                                                    |
+| `compare` | `same-statement.ts`, `canonical.ts`                                                     | The comparison, and the canonical text that two Statements share when they are the same                                   |
+| `format`  | `format-statement.ts`, `options.ts`                                                     | `formatStatement` and the check of its format and options                                                                 |
+|           | `format-ids.ts`, `format-canonical.ts`, `language.ts`, `transform.ts`                   | The two formats that change a Statement, the choice of a language, and the copy that changes Agents, Activities and Verbs |
 
 `@interopkit/core/checks` holds what other standards need as much: strict records, the formats of a time, a UUID, a URI and a
 language tag, the copy of JSON within a depth limit, the check of the depth of a text, the conversion of the issues of a parse to
@@ -65,9 +83,9 @@ a list where the input had one Activity.
 
 ## Boundaries
 
-| The package owns                                                                        | The package does not own                                                  |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| The model of a Statement of xAPI 2.0, its readers and validators, the text of a request | Storing Statements, serving requests, authentication, xAPI Profiles, cmi5 |
+| The package owns                                                                                                          | The package does not own                                                  |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| The model of a Statement of xAPI 2.0, its readers and validators, the text of a request, builders, comparison and formats | Storing Statements, serving requests, authentication, xAPI Profiles, cmi5 |
 
 The package makes no request, keeps nothing between calls, reads no clock and no environment variable, and imports no other
 family of interopkit. It uses no API outside web standards, so it runs in Node.js, browsers, Deno, Bun and Cloudflare Workers.

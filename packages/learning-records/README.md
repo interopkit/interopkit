@@ -1,9 +1,9 @@
 # @interopkit/learning-records
 
 xAPI [2.0](https://opensource.ieee.org/xapi/xapi-base-standard-documentation) (IEEE 9274.1.1-2023): the model of a Statement,
-readers that check it against the rules of an LRS and of a Learning Record Provider, validators that list every finding, and a
-reader of the text of a request that refuses a property given twice. It knows nothing of any product: the host says where a
-Statement comes from and what it is for.
+readers that check it against the rules of an LRS and of a Learning Record Provider, validators that list every finding, a
+reader of the text of a request that refuses a property given twice, builders of Statements, and the comparison and the formats
+of Statements. It knows nothing of any product: the host says where a Statement comes from and what it is for.
 
 ```mermaid
 flowchart LR
@@ -12,6 +12,8 @@ flowchart LR
     json["readStatementJson<br/>text, no repeated property"]
     read["readStatement<br/>shape, then the rules between properties"]
     validate["validateStatement, validateStatements"]
+    build["buildStatement, voidingStatement,<br/>deriveStatementId"]
+    compare["sameStatement, formatStatement"]
   end
   model["Statement, Actor, Activity, Result, Context, ...<br/>the model of xAPI 2.0"]
   host -->|"text"| json
@@ -20,11 +22,16 @@ flowchart LR
   read --> model
   host -->|"parsed value"| validate
   validate -->|"findings"| host
+  host -->|"an event"| build
+  build --> model
+  model --> compare
+  compare -->|"same or not, in a format"| host
 ```
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
 environment variable, writes no log and makes no request. Its dependencies are `@interopkit/core`,
-[valibot](https://valibot.dev) and [momoa](https://github.com/humanwhocodes/momoa).
+[valibot](https://valibot.dev), [momoa](https://github.com/humanwhocodes/momoa), [uuid](https://github.com/uuidjs/uuid) and
+[@noble/hashes](https://github.com/paulmillr/noble-hashes).
 
 ```bash
 npm install @interopkit/learning-records
@@ -32,13 +39,17 @@ npm install @interopkit/learning-records
 
 ## API
 
-| Subpath                        | Exports                                                                                                                                                         |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/learning-records` | `readStatement`, `ReadOptions`: read a Statement into the model for the rules of an LRS or of a provider, and throw `DataError` on an error                     |
-|                                | `validateStatement`, `validateStatements`, `StatementIssue`: judge a Statement or a batch and return every finding, errors and warnings, as data                |
-|                                | `readStatementJson`, `ReadStatementJsonOptions`: parse the text of a request, and refuse a property that occurs twice                                           |
-|                                | `Statement`, `SubStatement`, `StatementRef`, `Actor`, `Agent`, `Group`, `Activity`, `ActivityDefinition`, `Result`, `Context`, `Attachment` and the other types |
-|                                | `INTERACTION_TYPES`, `CONTEXT_ACTIVITY_TYPES`, `RULE_ROLES`, `VERB_VOIDED` and the types of the vocabularies                                                    |
+| Subpath                        | Exports                                                                                                                                                                           |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@interopkit/learning-records` | `readStatement`, `ReadOptions`: read a Statement into the model for the rules of an LRS or of a provider, and throw `DataError` on an error                                       |
+|                                | `validateStatement`, `validateStatements`, `StatementIssue`: judge a Statement or a batch and return every finding, errors and warnings, as data                                  |
+|                                | `readStatementJson`, `ReadStatementJsonOptions`: parse the text of a request, and refuse a property that occurs twice                                                             |
+|                                | `buildStatement`, `StatementInput`, `voidingStatement`: build the Statement of an event, or the one that voids another, checked against the rules of a provider                   |
+|                                | `deriveStatementId`, `mboxSha1sum`, `formatDuration`, `parseDuration`, `formatTimestamp`: the id of an event, the hash of an address, and the durations and times of the standard |
+|                                | `sameStatement`: whether two Statements are the same by the rules of immutability                                                                                                 |
+|                                | `formatStatement`, `FormatOptions`, `StatementFormat`: a Statement as `ids`, `exact` or `canonical`                                                                               |
+|                                | `Statement`, `SubStatement`, `StatementRef`, `Actor`, `Agent`, `Group`, `Activity`, `ActivityDefinition`, `Result`, `Context`, `Attachment` and the other types                   |
+|                                | `INTERACTION_TYPES`, `CONTEXT_ACTIVITY_TYPES`, `RULE_ROLES`, `VERB_VOIDED` and the types of the vocabularies                                                                      |
 
 ```ts
 import { readStatement, readStatementJson, validateStatement } from "@interopkit/learning-records";
@@ -73,11 +84,15 @@ validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `
 | Rules of a provider             | What a Learning Record Provider shall and should do (5.2): UTC, the properties the LRS sets, precision, empty objects, lists of Activities                      |
 | Data types                      | IRIs, UUIDs, RFC 3339 times, ISO 8601 durations, language tags, extension keys, `mailto` IRIs, hashes and media types                                           |
 | Interaction patterns            | The form of every `correctResponsesPattern` by interaction type, and its characterstring parameters                                                             |
+| Building                        | A Statement from an event with the time in UTC, an id that a resend repeats, the Statement that voids another, durations and the hash of an address             |
+| Comparing and formats           | Whether two Statements are the same by the rules of immutability, and a Statement as `ids`, `exact` or `canonical`                                              |
 | Text of a request               | `readStatementJson`: RFC 8259 syntax, size and depth limits, and a property given twice refused                                                                 |
 
 [The model guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/model.md) has the options with their
 defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and why, and the
-differences from the references.
+differences from the references. The guides of [building](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/build.md),
+[comparing](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/compare.md) and
+[formats](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/format.md) do the same.
 
 ## License
 

@@ -1,6 +1,18 @@
+import { DataError } from "@interopkit/core";
+import { isDateTime, parseDateTime } from "@interopkit/core/checks";
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { CONTEXT_ACTIVITY_TYPES, INTERACTION_TYPES, RULE_ROLES, VERB_VOIDED } from "../src/index.js";
 import {
+  CONTEXT_ACTIVITY_TYPES,
+  formatDuration,
+  formatTimestamp,
+  INTERACTION_TYPES,
+  parseDuration,
+  RULE_ROLES,
+  VERB_VOIDED,
+} from "../src/index.js";
+import {
+  durationKey,
   hasFinerThanCentiseconds,
   hasMillisecondPrecision,
   isDuration,
@@ -214,5 +226,167 @@ describe("the forms of the strings of the tables", () => {
     ["", false],
   ])("tells whether %j is an Internet media type: %s", (text, valid) => {
     expect(isMediaType(text)).toBe(valid);
+  });
+});
+
+describe("parseDuration", () => {
+  it.each([
+    ["PT1H30M", { years: 0, months: 0, days: 0, hours: 1, minutes: 30, seconds: 0 }],
+    ["P3Y6M4DT12H30M5.25S", { years: 3, months: 6, days: 4, hours: 12, minutes: 30, seconds: 5.25 }],
+    ["P2W", { years: 0, months: 0, days: 14, hours: 0, minutes: 0, seconds: 0 }],
+    ["P1.5W", { years: 0, months: 0, days: 10.5, hours: 0, minutes: 0, seconds: 0 }],
+    ["PT1,5S", { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 1.5 }],
+    ["P1M", { years: 0, months: 1, days: 0, hours: 0, minutes: 0, seconds: 0 }],
+    ["PT1M", { years: 0, months: 0, days: 0, hours: 0, minutes: 1, seconds: 0 }],
+    ["PT0S", { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0 }],
+  ])("reads %j into its components", (text, expected) => {
+    expect(parseDuration(text)).toStrictEqual(expected);
+  });
+
+  it.each(["", "P", "1H", "PT1H1H", "P0001-00-00T00:00:00"])(
+    "returns nothing for %j, which is not a duration",
+    (text) => {
+      expect(parseDuration(text)).toBeUndefined();
+    },
+  );
+});
+
+describe("formatDuration", () => {
+  it.each([
+    [0, "PT0S"],
+    [9, "PT0S"],
+    [10, "PT0.01S"],
+    [90, "PT0.09S"],
+    [100, "PT0.1S"],
+    [1000, "PT1S"],
+    [1500, "PT1.5S"],
+    [59_990, "PT59.99S"],
+    [59_999, "PT59.99S"],
+    [60_000, "PT1M"],
+    [1_234_000, "PT20M34S"],
+    [3_600_000, "PT1H"],
+    [3_661_010, "PT1H1M1.01S"],
+    [5_432_150, "PT1H30M32.15S"],
+    [86_400_000, "PT24H"],
+    [Number.MAX_SAFE_INTEGER, "PT2501999792H59M0.99S"],
+  ])("writes %i milliseconds as %s, cutting what is finer than 0.01 second", (milliseconds, expected) => {
+    expect(formatDuration(milliseconds)).toBe(expected);
+  });
+
+  it("writes a duration that reads back to the time cut at 0.01 second, for any time", () => {
+    fc.assert(
+      fc.property(fc.nat({ max: 10_000_000_000_000 }), (milliseconds) => {
+        const text = formatDuration(milliseconds);
+        const parts = parseDuration(text);
+        expect(parts).toBeDefined();
+        const { hours = 0, minutes = 0, seconds = 0 } = parts ?? {};
+        expect(Math.round(((hours * 60 + minutes) * 60 + seconds) * 1000)).toBe(Math.floor(milliseconds / 10) * 10);
+        expect(hasFinerThanCentiseconds(splitFor(text))).toBe(false);
+      }),
+      { seed: 20_241_102, numRuns: 300 },
+    );
+  });
+
+  it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 53, "1000", null, undefined, {}])(
+    "refuses %j, which is not a whole number of milliseconds from 0",
+    (value) => {
+      expect(() => formatDuration(value as number)).toThrow(DataError);
+      expect(() => formatDuration(value as number)).toThrow(
+        /^The duration in milliseconds must be a non-negative integer, found /,
+      );
+    },
+  );
+});
+
+/** The components of a duration that is known to be one. */
+function splitFor(text: string) {
+  return splitDuration(text) ?? {};
+}
+
+describe("durationKey", () => {
+  it.each([
+    ["PT1H", "PT60M"],
+    ["PT1H", "PT3600S"],
+    ["PT1H", "PT3600.004S"],
+    ["PT59.14S", "PT59.149S"],
+    ["PT0.1S", "PT0.10S"],
+    ["PT0.1S", "PT0,1S"],
+    ["PT0.3H", "PT18M"],
+    ["PT0.123456H", "PT444.44S"],
+    ["P1W", "P7D"],
+    ["P0D", "PT0S"],
+    ["PT0.29S", "PT0.299S"],
+  ])("gives %s and %s one key", (a, b) => {
+    expect(durationKey(a)).toBe(durationKey(b));
+  });
+
+  it.each([
+    ["PT1H", "PT1H0.01S"],
+    ["PT1H", "PT1M"],
+    ["P1D", "PT24H"],
+    ["P1M", "PT1M"],
+    ["P1Y", "P12M"],
+    ["PT0.29S", "PT0.3S"],
+    ["PT0.1S", "PT0.2S"],
+  ])("gives %s and %s two keys", (a, b) => {
+    expect(durationKey(a)).not.toBe(durationKey(b));
+  });
+
+  it("returns nothing for what is not a duration", () => {
+    expect(durationKey("1:30")).toBeUndefined();
+  });
+});
+
+describe("formatTimestamp", () => {
+  it.each([
+    [0, "1970-01-01T00:00:00.000Z"],
+    [1_718_304_363_250, "2024-06-13T18:46:03.250Z"],
+    [-62_167_219_200_000, "0000-01-01T00:00:00.000Z"],
+    [253_402_300_799_999, "9999-12-31T23:59:59.999Z"],
+    ["2024-06-13T18:46:03Z", "2024-06-13T18:46:03.000Z"],
+    ["2024-06-13T20:46:03.25+02:00", "2024-06-13T18:46:03.250Z"],
+    ["2024-06-13T13:16:03.2509-05:30", "2024-06-13T18:46:03.250Z"],
+    ["2024-06-13t18:46:03z", "2024-06-13T18:46:03.000Z"],
+    ["2016-12-31T23:59:60Z", "2017-01-01T00:00:00.000Z"],
+    ["0000-01-01T00:00:00Z", "0000-01-01T00:00:00.000Z"],
+  ])("writes %j as %s", (at, expected) => {
+    expect(formatTimestamp(at)).toBe(expected);
+  });
+
+  it.each([
+    "2024-06-13",
+    "2024-06-13T18:46:03",
+    "2024-02-30T10:00:00Z",
+    "yesterday",
+    "",
+    "9999-12-31T23:59:59-23:59",
+    "0000-01-01T00:00:00+23:59",
+    1.5,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    253_402_300_800_000,
+    -62_167_219_200_001,
+    null,
+    undefined,
+    {},
+    [],
+  ])("refuses %j, which is not a time in the years 0000 to 9999", (at) => {
+    expect(() => formatTimestamp(at as number)).toThrow(DataError);
+    expect(() => formatTimestamp(at as number)).toThrow(
+      /^The time must be epoch milliseconds or an RFC 3339 date and time/,
+    );
+  });
+
+  it("writes a time that reads back to the same instant, in UTC with milliseconds, for any instant", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -62_167_219_200_000, max: 253_402_300_799_999 }), (milliseconds) => {
+        const text = formatTimestamp(milliseconds);
+        expect(isDateTime(text)).toBe(true);
+        expect(parseDateTime(text)).toBe(milliseconds);
+        expect(isUtc(text) && hasMillisecondPrecision(text)).toBe(true);
+        expect(formatTimestamp(text)).toBe(text);
+      }),
+      { seed: 20_241_102, numRuns: 300 },
+    );
   });
 });

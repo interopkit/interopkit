@@ -50,6 +50,8 @@
   "dependencies": {
     "@humanwhocodes/momoa": "3.3.13",
     "@interopkit/core": "workspace:^",
+    "@noble/hashes": "2.4.0",
+    "uuid": "14.0.3",
     "valibot": "1.5.0"
   }
 }

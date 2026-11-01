@@ -1,9 +1,20 @@
 /**
  * xAPI 2.0 learning records: the model of a Statement, readers and validators for the rules of an LRS and of a Learning Record
- * Provider, and the text of a request read without a repeated property.
+ * Provider, the text of a request read without a repeated property, builders of Statements, and their comparison and formats.
  *
  * @module @interopkit/learning-records
  */
+
+export {
+  buildStatement,
+  deriveStatementId,
+  mboxSha1sum,
+  type StatementInput,
+  type VoidingInput,
+  voidingStatement,
+} from "./build/index.js";
+export { sameStatement } from "./compare/index.js";
+export { type FormatOptions, formatStatement, STATEMENT_FORMATS, type StatementFormat } from "./format/index.js";
 export {
   type Account,
   type Activity,
@@ -18,13 +29,17 @@ export {
   type ContextActivityType,
   type ContextAgent,
   type ContextGroup,
+  type Duration,
   type Extensions,
+  formatDuration,
+  formatTimestamp,
   type Group,
   INTERACTION_TYPES,
   type InteractionComponent,
   type InteractionType,
   type InverseFunctionalIdentifiers,
   type LanguageMap,
+  parseDuration,
   type Result,
   RULE_ROLES,
   type RuleRole,

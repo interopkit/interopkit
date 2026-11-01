@@ -727,8 +727,97 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/read", "**/read/**"],
+                    "group": [
+                      "**/read",
+                      "**/read/**",
+                      "**/build",
+                      "**/build/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/format",
+                      "**/format/**"
+                    ],
                     "message": "model/ holds the types, the terms and the data types and imports no module that builds on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-records/src/read/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/build", "**/build/**", "**/compare", "**/compare/**", "**/format", "**/format/**"],
+                    "message": "read/ builds on model/ and @interopkit/core only: build/, compare/ and format/ build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-records/src/build/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/compare", "**/compare/**", "**/format", "**/format/**"],
+                    "message": "build/ builds on model/, read/ and @interopkit/core only: compare/ and format/ are its siblings and never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-records/src/compare/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/build", "**/build/**", "**/format", "**/format/**"],
+                    "message": "compare/ builds on model/, read/ and @interopkit/core only: build/ and format/ are its siblings and never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-records/src/format/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/build", "**/build/**", "**/compare", "**/compare/**"],
+                    "message": "format/ builds on model/, read/ and @interopkit/core only: build/ and compare/ are its siblings and never a layer under it."
                   }
                 ]
               }
@@ -753,6 +842,8 @@
         "packages/achievement-credentials/test/**",
         "packages/learning-records/src/model/**",
         "packages/learning-records/src/read/schemas.ts",
+        "packages/learning-records/src/compare/canonical.ts",
+        "packages/learning-records/src/format/format-ids.ts",
         "packages/learning-records/test/**",
         "scripts/xapi-rules.ts",
         "scripts/test/schema-arbitrary.test.ts",
@@ -767,7 +858,7 @@
       }
     },
     {
-      "includes": ["packages/competency-frameworks/test/**"],
+      "includes": ["packages/competency-frameworks/test/**", "packages/learning-records/test/**"],
       "linter": {
         "rules": {
           "suspicious": {

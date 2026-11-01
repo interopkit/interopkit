@@ -11,7 +11,7 @@ export const RUNS = { seed: 20_241_102, numRuns: 300 };
 export const ROLES = fc.constantFrom<RuleRole>("lrs", "provider");
 
 /** The strings that a member may be replaced by: the bad forms of the formats, and the terms of the vocabularies. */
-const STRINGS = [
+export const STRINGS = [
   ...BAD_STRINGS,
   "Agent",
   "Group",
