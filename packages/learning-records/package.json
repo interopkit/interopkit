@@ -30,6 +30,10 @@
       "types": "./dist/attachments/index.d.ts",
       "default": "./dist/attachments/index.js"
     },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "default": "./dist/client/index.js"
+    },
     "./signing": {
       "types": "./dist/signing/index.d.ts",
       "default": "./dist/signing/index.js"

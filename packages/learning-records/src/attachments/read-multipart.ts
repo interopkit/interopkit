@@ -8,7 +8,7 @@ import {
   parseMultipart,
 } from "@remix-run/multipart-parser";
 import type { AttachmentData } from "../model/index.js";
-import { isMediaType, isSha2Hex } from "../model/internal.js";
+import { isMediaType, isSha2Hex, mediaTypeOf } from "../model/internal.js";
 import { readStatementJson } from "../read/index.js";
 import { checkBytes, hashesTo } from "./attachment-hash.js";
 import { type MultipartLimits, readLimits } from "./limits.js";
@@ -27,11 +27,6 @@ export interface MultipartContent {
   readonly statements: unknown;
   /** The data of the other parts by their hash in lower case. */
   readonly parts: ReadonlyMap<string, AttachmentData>;
-}
-
-/** Returns the media type of a header value, such as `application/json`, in lower case and without its parameters. */
-function mediaTypeOf(value: string): string {
-  return (value.split(";", 1)[0] ?? "").trim().toLowerCase();
 }
 
 /** Returns the boundary of a `multipart/mixed` content type. */

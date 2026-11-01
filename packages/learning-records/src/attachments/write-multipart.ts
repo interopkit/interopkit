@@ -20,7 +20,7 @@ export interface MultipartMessage {
   /** The `Content-Type` header, with the boundary. */
   readonly contentType: string;
   /** The bytes of the message. */
-  readonly body: Uint8Array;
+  readonly body: Uint8Array<ArrayBuffer>;
 }
 
 /** The Statements of the first part: one Statement for a PUT, an array for a POST, and a result for the answer to a query. */
@@ -86,7 +86,7 @@ function readParts(parts: unknown, statements: readonly Statement[]): readonly A
 }
 
 /** Joins byte arrays into one. */
-function join(chunks: readonly Uint8Array[]): Uint8Array {
+function join(chunks: readonly Uint8Array[]): Uint8Array<ArrayBuffer> {
   const joined = new Uint8Array(chunks.reduce((size, chunk) => size + chunk.byteLength, 0));
   let offset = 0;
   for (const chunk of chunks) {

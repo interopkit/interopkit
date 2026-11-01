@@ -11,6 +11,17 @@ export { type Duration, formatDuration, parseDuration } from "./duration.js";
 export type { StatementIssue } from "./issue.js";
 export type { Extensions } from "./json.js";
 export type { LanguageMap } from "./language-map.js";
+export type {
+  About,
+  DocumentScope,
+  DocumentTarget,
+  LrsDocument,
+  LrsDocumentInput,
+  Person,
+  Precondition,
+  StatementQuery,
+  StateScope,
+} from "./resources.js";
 export type { Result, Score } from "./result.js";
 export type {
   Statement,
@@ -29,6 +40,10 @@ export {
   type InteractionType,
   RULE_ROLES,
   type RuleRole,
+  STATEMENT_FORMATS,
+  type StatementFormat,
   VERB_VOIDED,
+  XAPI_VERSIONS,
+  type XapiVersion,
 } from "./terms.js";
 export { formatTimestamp } from "./timestamp.js";

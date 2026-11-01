@@ -14,8 +14,9 @@ export {
   voidingStatement,
 } from "./build/index.js";
 export { sameStatement } from "./compare/index.js";
-export { type FormatOptions, formatStatement, STATEMENT_FORMATS, type StatementFormat } from "./format/index.js";
+export { type FormatOptions, formatStatement } from "./format/index.js";
 export {
+  type About,
   type Account,
   type Activity,
   type ActivityDefinition,
@@ -30,6 +31,8 @@ export {
   type ContextActivityType,
   type ContextAgent,
   type ContextGroup,
+  type DocumentScope,
+  type DocumentTarget,
   type Duration,
   type Extensions,
   formatDuration,
@@ -40,21 +43,31 @@ export {
   type InteractionType,
   type InverseFunctionalIdentifiers,
   type LanguageMap,
+  type LrsDocument,
+  type LrsDocumentInput,
+  type Person,
+  type Precondition,
   parseDuration,
   type Result,
   RULE_ROLES,
   type RuleRole,
   type Score,
+  STATEMENT_FORMATS,
   type Statement,
+  type StatementFormat,
   type StatementIssue,
   type StatementObject,
   type StatementProperties,
+  type StatementQuery,
   type StatementRef,
   type StatementResult,
+  type StateScope,
   type SubStatement,
   type SubStatementObject,
   VERB_VOIDED,
   type Verb,
+  XAPI_VERSIONS,
+  type XapiVersion,
 } from "./model/index.js";
 export {
   type ReadOptions,

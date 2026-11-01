@@ -1,12 +1,6 @@
 import { guardSchema, isLanguageTag, parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
-import type { ActivityDefinition } from "../model/index.js";
-
-/** The formats of the Statements that an LRS returns (4.1.6.1). */
-export const STATEMENT_FORMATS = ["ids", "exact", "canonical"] as const;
-
-/** A format of the Statements that an LRS returns: `ids`, `exact` or `canonical`. */
-export type StatementFormat = (typeof STATEMENT_FORMATS)[number];
+import { type ActivityDefinition, STATEMENT_FORMATS, type StatementFormat } from "../model/index.js";
 
 /** The options of `formatStatement`. */
 export interface FormatOptions {

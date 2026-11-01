@@ -15,7 +15,17 @@ import {
   uuidSchema,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
-import { type AttachmentData, INTERACTION_TYPES, type LanguageMap, type Statement } from "../model/index.js";
+import {
+  type About,
+  type Activity,
+  type Actor,
+  type Agent,
+  type AttachmentData,
+  INTERACTION_TYPES,
+  type LanguageMap,
+  type Person,
+  type Statement,
+} from "../model/index.js";
 import { isDuration, isMailtoIri, isMediaType, isSha1Hex, isSha2Hex } from "../model/internal.js";
 
 const text = v.string();
@@ -226,6 +236,31 @@ export const attachmentDataSchema: Schema<AttachmentData> = strictRecord({
   sha2,
   contentType: mediaType,
   body: guardSchema((value): value is Uint8Array => value instanceof Uint8Array, "a Uint8Array"),
+});
+
+/** Reads an Agent, as a request names one for a query or a document. */
+export const agentSchema: Schema<Agent> = agent;
+
+/** Reads an Agent or a Group, as a request names one for a query. */
+export const actorSchema: Schema<Actor> = actor;
+
+/** Reads an Activity as the Activities resource returns it (4.1.6.4). */
+export const activitySchema: Schema<Activity> = activity;
+
+/** Reads the Person that the Agents resource returns (4.1.6.3): the identifiers of an Agent, each as a list. */
+export const personSchema: Schema<Person> = strictRecord({
+  objectType: v.literal("Person"),
+  name: v.optional(v.array(text)),
+  mbox: v.optional(v.array(mbox)),
+  mbox_sha1sum: v.optional(v.array(mboxSha1sum)),
+  openid: v.optional(v.array(iri)),
+  account: v.optional(v.array(account)),
+});
+
+/** Reads what the About resource returns (4.1.6.7). */
+export const aboutSchema: Schema<About> = strictRecord({
+  version: v.pipe(v.array(text), v.minLength(1)),
+  extensions: v.optional(jsonObjectSchema),
 });
 
 /** The options of an Object that a SubStatement may have, told apart by `objectType`. */

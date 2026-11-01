@@ -1,8 +1,8 @@
-import type { Statement } from "../model/index.js";
+import type { Statement, StatementFormat } from "../model/index.js";
 import { readStatement } from "../read/index.js";
 import { canonicalMappers } from "./format-canonical.js";
 import { IDS } from "./format-ids.js";
-import { type FormatOptions, readFormat, readFormatOptions, type StatementFormat } from "./options.js";
+import { type FormatOptions, readFormat, readFormatOptions } from "./options.js";
 import { mapStatement } from "./transform.js";
 
 /**

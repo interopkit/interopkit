@@ -17,3 +17,7 @@ Statements by the rules of immutability, and `formatStatement` returns a Stateme
 by SHA-2 hash and read within limits of parts and bytes, and `@interopkit/learning-records/signing` signs a Statement over a
 `Signer` of `@interopkit/core` with RS256, RS384 or RS512 and verifies the signature against the leaf of its `x5c` or a key, with
 the equivalence of the payload.
+`@interopkit/learning-records/client` is the client of an LRS over the `fetch` of the host: `createLrsClient` sends Statements with
+`PUT` and `POST`, fetches one or queries them in pages that follow `more` on the origin of the LRS, reads and writes the State,
+Agent Profile and Activity Profile documents under the preconditions that `version` requires, and asks for Activities, Agents and
+About. Statements are checked before they are sent and every answer is read into the model.

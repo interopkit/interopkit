@@ -35,3 +35,15 @@ export const RULE_ROLES = ["lrs", "provider"] as const;
 
 /** The role whose rules a reader applies. */
 export type RuleRole = (typeof RULE_ROLES)[number];
+
+/** The versions of xAPI that a client speaks, as the `X-Experience-API-Version` header writes them (4.1.7). */
+export const XAPI_VERSIONS = ["2.0.0", "1.0.3"] as const;
+
+/** A version of xAPI. */
+export type XapiVersion = (typeof XAPI_VERSIONS)[number];
+
+/** The formats of the Statements that an LRS returns (4.1.6.1). */
+export const STATEMENT_FORMATS = ["ids", "exact", "canonical"] as const;
+
+/** A format of the Statements that an LRS returns: `ids`, `exact` or `canonical`. */
+export type StatementFormat = (typeof STATEMENT_FORMATS)[number];

@@ -16,6 +16,12 @@ const MEDIA_TYPE = new RegExp(
   "u",
 );
 
+/** Returns the type and subtype of an Internet media type in lower case, without its parameters: `text/plain` for `Text/Plain; charset=utf-8`. */
+export function mediaTypeOf(text: string): string {
+  const end = text.indexOf(";");
+  return (end < 0 ? text : text.slice(0, end)).trim().toLowerCase();
+}
+
 /** Tells whether text is a `mailto` IRI with one email address, the form of `mbox` (4.2.2.1). */
 export function isMailtoIri(text: string): boolean {
   return MAILTO.test(text);

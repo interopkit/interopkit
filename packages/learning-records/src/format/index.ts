@@ -5,4 +5,4 @@
  * @module
  */
 export { formatStatement } from "./format-statement.js";
-export { type FormatOptions, STATEMENT_FORMATS, type StatementFormat } from "./options.js";
+export type { FormatOptions } from "./options.js";

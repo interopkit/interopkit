@@ -739,7 +739,9 @@
                       "**/attachments",
                       "**/attachments/**",
                       "**/signing",
-                      "**/signing/**"
+                      "**/signing/**",
+                      "**/client",
+                      "**/client/**"
                     ],
                     "message": "model/ holds the types, the terms and the data types and imports no module that builds on it."
                   }
@@ -770,7 +772,9 @@
                       "**/attachments",
                       "**/attachments/**",
                       "**/signing",
-                      "**/signing/**"
+                      "**/signing/**",
+                      "**/client",
+                      "**/client/**"
                     ],
                     "message": "read/ builds on model/ and @interopkit/core only: the other modules build on it."
                   }
@@ -799,7 +803,9 @@
                       "**/attachments",
                       "**/attachments/**",
                       "**/signing",
-                      "**/signing/**"
+                      "**/signing/**",
+                      "**/client",
+                      "**/client/**"
                     ],
                     "message": "build/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it."
                   }
@@ -828,7 +834,9 @@
                       "**/attachments",
                       "**/attachments/**",
                       "**/signing",
-                      "**/signing/**"
+                      "**/signing/**",
+                      "**/client",
+                      "**/client/**"
                     ],
                     "message": "compare/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it."
                   }
@@ -857,7 +865,9 @@
                       "**/attachments",
                       "**/attachments/**",
                       "**/signing",
-                      "**/signing/**"
+                      "**/signing/**",
+                      "**/client",
+                      "**/client/**"
                     ],
                     "message": "format/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it."
                   }
@@ -886,7 +896,9 @@
                       "**/format",
                       "**/format/**",
                       "**/signing",
-                      "**/signing/**"
+                      "**/signing/**",
+                      "**/client",
+                      "**/client/**"
                     ],
                     "message": "attachments/ builds on model/, read/ and @interopkit/core only: signing/ builds on it."
                   }
@@ -907,8 +919,37 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/build", "**/build/**", "**/format", "**/format/**"],
+                    "group": ["**/build", "**/build/**", "**/format", "**/format/**", "**/client", "**/client/**"],
                     "message": "signing/ builds on model/, read/, compare/, attachments/ and @interopkit/core only."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-records/src/client/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/build",
+                      "**/build/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/format",
+                      "**/format/**",
+                      "**/signing",
+                      "**/signing/**"
+                    ],
+                    "message": "client/ builds on model/, read/, attachments/ and @interopkit/core only."
                   }
                 ]
               }

@@ -4,5 +4,5 @@
  * @module
  */
 export { durationKey, hasFinerThanCentiseconds, isDuration, splitDuration } from "./duration.js";
-export { isMailtoIri, isMediaType, isSha1Hex, isSha2Hex } from "./formats.js";
+export { isMailtoIri, isMediaType, isSha1Hex, isSha2Hex, mediaTypeOf } from "./formats.js";
 export { hasMillisecondPrecision, isUtc } from "./timestamp.js";

@@ -1,6 +1,7 @@
 import { DataError } from "@interopkit/core";
 import { describe, expect, it, vi } from "vitest";
 import { attachmentHash, readMultipart, writeMultipart } from "../src/attachments/index.js";
+import type { Statement } from "../src/index.js";
 import { minimalStatement, subStatementStatement } from "./full-statement.js";
 import { dataOf, messageOf, sha2Of, statementWithAttachments } from "./multipart.js";
 
@@ -430,6 +431,14 @@ describe("writeMultipart", () => {
       [shared, inner],
     );
     expect(readMultipart(written.contentType, written.body).parts.size).toBe(2);
+  });
+
+  it("writes a message for a SubStatement that has no attachments", () => {
+    const { attachments: _attachments, ...inner } = subStatementStatement().object as { attachments?: unknown };
+    const statement = { ...subStatementStatement(), object: inner } as Statement;
+    expect(readMultipart(...(Object.values(writeMultipart([statement], [])) as [string, Uint8Array])).parts.size).toBe(
+      0,
+    );
   });
 
   describe("input that an LRS would refuse", () => {
