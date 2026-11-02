@@ -115,7 +115,7 @@ issuer whose documents cannot be read would otherwise pass.
 | `verified`     | Whether the credential may be treated as verified                                                                                                              |
 | `credential`   | What the proof secures: set when the proof is valid and the issuer check did not fail. After a successful refresh it is the refreshed credential, so a host that stores what it was given sets `refresh` to `false`. A credential that failed its status or its validity is still returned, so that a displayer can say why. Read `verified` first |
 | `checks`       | The eight checks, each with its `outcome` and a `detail` that says what was found                                                                              |
-| `endorsements` | The results for the endorsements of the credential, of its issuer's profile and of its achievements, each verified as an `EndorsementCredential`                |
+| `endorsements` | The results for the endorsements that the credential holds, wherever they are, each verified as an `EndorsementCredential`, in the order of the credential |
 | `nested`       | For a CLR, the results for the credentials that it holds, each verified as an Open Badges credential                                                           |
 
 ## The order of the work
@@ -138,7 +138,7 @@ is withheld. The status lists of one call are fetched once, and so is each schem
 
 | Case                                      | Rule                                                                                                                                                           |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Which endorsements are verified           | `endorsement` and `endorsementJwt` of the credential, of its issuer's profile and of the achievements of its subject                                            |
+| Which endorsements are verified           | Every `endorsement` and `endorsementJwt` that the credential holds (Open Badges 9.1: any it contains): its own, its issuer's and its parent organizations', its achievements' and their creators', the source of its subject. Not those inside an endorsement or a credential of a CLR, which are verified on their own |
 | An endorsement                            | Verified as Open Badges 9.2: form, schema, proof, issuer, refresh, status and validity, with its own issuer's key. Its recipient check is `skipped`; its own endorsements are not followed |
 | The credentials of a CLR                  | Verified as Open Badges 9.1, each with its own proof and issuer. Their recipient check is `skipped`: the recipient is checked on the CLR. The credentials they hold are not followed |
 | A forged endorsement or held credential   | Its result is `verified: false` with `issuer` `failed`, the credential that holds it keeps its own checks, and `verified` of the credential is false                |

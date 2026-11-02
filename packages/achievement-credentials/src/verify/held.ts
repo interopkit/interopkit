@@ -7,19 +7,30 @@ function listOf(value: unknown): readonly unknown[] {
   return Array.isArray(value) ? value : [value];
 }
 
-/** The endorsements that an entity carries, as objects and as compact JWS. */
-function endorsementsOfEntity(entity: unknown): readonly unknown[] {
-  return isRecord(entity) ? [...listOf(entity.endorsement), ...listOf(entity.endorsementJwt)] : [];
-}
+/**
+ * The properties that hold credentials of their own, whose endorsements are theirs: an endorsement is verified without its
+ * endorsements (Open Badges 9.2), and a credential that a CLR holds is verified on its own.
+ */
+const OWN_CREDENTIALS: ReadonlySet<string> = new Set(["endorsement", "endorsementJwt", "verifiableCredential"]);
 
 /**
- * Returns the endorsements that a credential carries (Open Badges 9.1: any EndorsementCredential it contains): its own, those of
- * its issuer's profile and those of the achievements of its subject.
+ * Returns the endorsements that a credential carries (Open Badges 9.1: any EndorsementCredential it contains), as objects and as
+ * compact JWS, wherever they are: its own, its issuer's and that issuer's parent organizations', those of its achievements and of
+ * their creators, and those of the source of its subject. The credential has been read within the levels of the input.
  */
 export function endorsementsOf(credential: AnyVerifiableCredential): readonly unknown[] {
-  const subject: unknown = credential.credentialSubject;
-  const achievements = isRecord(subject) ? listOf(subject.achievement) : [];
-  return [credential, credential.issuer, ...achievements].flatMap(endorsementsOfEntity);
+  const found: unknown[] = [];
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item);
+      return;
+    }
+    if (!isRecord(node)) return;
+    found.push(...listOf(node.endorsement), ...listOf(node.endorsementJwt));
+    for (const [name, value] of Object.entries(node)) if (!OWN_CREDENTIALS.has(name)) walk(value);
+  };
+  walk(credential);
+  return found;
 }
 
 /** Returns the credentials that a CLR holds in its subject, as objects and as compact JWS (CLR 8.1). */

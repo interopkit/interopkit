@@ -189,7 +189,10 @@ export interface VerificationResult {
   readonly credential?: AnyCredential;
   /** Every check of the verification, in the order of Open Badges 9. */
   readonly checks: readonly VerificationCheck[];
-  /** The results for the endorsements of the credential, of its issuer and of its achievements. */
+  /**
+   * The results for the endorsements that the credential holds, wherever they are: its own, its issuer's and its achievements',
+   * and those of the other profiles that it holds, in the order of the credential.
+   */
   readonly endorsements: readonly VerificationResult[];
   /** The results for the credentials that a CLR holds. */
   readonly nested: readonly VerificationResult[];

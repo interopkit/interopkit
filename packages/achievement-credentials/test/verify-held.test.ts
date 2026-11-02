@@ -41,13 +41,38 @@ describe("the endorsements of a credential", () => {
     };
     const result = await verifyCredential(await jwsOf(credential), options);
     expect(result.verified).toBe(true);
-    expect(result.endorsements.map(idOf)).toStrictEqual([
+    // The endorsements are in the order of the credential as the model reads it.
+    expect(result.endorsements.map(idOf).toSorted()).toStrictEqual([
       "https://example.edu/endorsements/1",
       "https://example.edu/endorsements/2",
       "https://example.edu/endorsements/3",
     ]);
     expect(result.endorsements.every((endorsement) => endorsement.verified)).toBe(true);
     expect(outcomes(result)).toStrictEqual(ALL_PASSED);
+  });
+
+  it("are verified wherever the credential holds a profile: the creator of the achievement and a parent organization", async () => {
+    const { options } = world();
+    const endorsed = async (name: string) => ({ ...PROFILE, name, endorsementJwt: [await endorsementJws()] });
+    const credential = {
+      ...badge(),
+      issuer: { ...PROFILE, parentOrg: await endorsed("The university") },
+      credentialSubject: {
+        ...(badge().credentialSubject as object),
+        achievement: { ...ACHIEVEMENT, creator: await endorsed("The department") },
+      },
+    };
+    const result = await verifyCredential(await jwsOf(credential), options);
+    expect(result.endorsements).toHaveLength(2);
+    expect(result.verified).toBe(true);
+    const forged = await signCredentialJwt(endorsementCredential() as never, signerOf(KEYS.other), {
+      jwk: KEYS.other.publicJwk,
+    });
+    const deep = {
+      ...credential,
+      issuer: { ...PROFILE, parentOrg: { ...PROFILE, name: "The university", endorsementJwt: [forged] } },
+    };
+    expect((await verifyCredential(await jwsOf(deep), options)).verified).toBe(false);
   });
 
   it("are verified when they are objects with a Data Integrity proof of their own", async () => {
