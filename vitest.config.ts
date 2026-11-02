@@ -177,6 +177,33 @@ export default defineConfig({
         },
       },
       {
+        // The speed of verifyCredential against did-jwt-vc and Digital Bazaar's vc: `pnpm bench` runs it against the build that
+        // ships. It reads the contexts that `pnpm schemas` downloads.
+        resolve: {
+          alias: [
+            {
+              find: /^@interopkit\/achievement-credentials$/,
+              replacement: resolve(import.meta.dirname, "packages/achievement-credentials/dist/index.js"),
+            },
+            {
+              find: /^@interopkit\/achievement-credentials\/(.+)$/,
+              replacement: resolve(import.meta.dirname, "packages/achievement-credentials/dist/$1/index.js"),
+            },
+          ],
+        },
+        test: {
+          name: "achievement-credentials-bench",
+          include: [],
+          server: { deps: { external: [/\/packages\/achievement-credentials\/dist\//] } },
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
+          benchmark: {
+            include: ["packages/achievement-credentials/test/**/*.bench.ts"],
+            suppressExportGetterWarnings: true,
+          },
+        },
+      },
+      {
         // The same for the three roles of `ecdsa-sd-2023`, timed against Digital Bazaar's suite in the same run. They read the
         // contexts that `pnpm schemas` downloads.
         resolve: {
