@@ -616,9 +616,140 @@ describe("a port of the host that never answers", () => {
   });
 });
 
-describe("a proof that names a previous proof", () => {
-  it("is refused with the reason, since a proof chain is not verified and the proof is not secured until the proofs it names are", async () => {
-    const issuer = issuerOf(KEYS.ed25519);
+/**
+ * Signs a proof with the adopted library over a document as it is given: for a proof of a chain, the credential with the proofs
+ * that the proof names (Data Integrity 4.5).
+ */
+async function libraryProof(
+  document: Record<string, unknown>,
+  key: TestKey,
+  options: Record<string, unknown>,
+  load: (url: string) => Promise<unknown>,
+): Promise<Record<string, unknown>> {
+  const method = `did:key:${key.multikey}#${key.multikey}`;
+  const ed25519 = key === KEYS.ed25519;
+  const suite = new DataIntegrityProof({
+    cryptosuite: ed25519 ? eddsaRdfc2022 : ecdsaRdfc2019,
+    date: NOW,
+    signer: {
+      id: method,
+      algorithm: ed25519 ? "Ed25519" : "P-256",
+      sign: ({ data }: { data: Uint8Array }) => signerOf(key, method).sign(data),
+    } as never,
+  });
+  suite.proof = options;
+  const documentLoader = async (url: string) => ({ contextUrl: null, documentUrl: url, document: await load(url) });
+  return (await suite.createProof({
+    document,
+    purpose: new jsigs.purposes.AssertionProofPurpose(),
+    proofSet: [],
+    documentLoader,
+  } as never)) as Record<string, unknown>;
+}
+
+describe("the proofs of a set and of a chain", () => {
+  const issuer = issuerOf(KEYS.ed25519);
+  const WITNESS = "urn:uuid:3a9f0c1e-4b7d-4c2a-9e6f-1d8b5a7c2e40";
+
+  /** A credential of the issuer, the proof of a witness over it, and the issuer's proof that names the witness's. */
+  async function chained() {
+    const w = world();
+    const unsecured = credentialOf(issuer.did) as unknown as Record<string, unknown>;
+    const witness = await libraryProof(unsecured, KEYS.es256, { id: WITNESS }, w.contexts.load);
+    const own = await libraryProof(
+      { ...unsecured, proof: [witness] },
+      KEYS.ed25519,
+      { previousProof: WITNESS },
+      w.contexts.load,
+    );
+    const read = { keys: w.keys, clock: w.clock, contexts: w.contexts.load };
+    return { unsecured, witness, own, read, w };
+  }
+
+  const as = (value: Record<string, unknown>) => value as unknown as IssuableCredential;
+
+  it("are verified with the proof of the issuer, wherever it is in a set", async () => {
+    const { unsecured, read, w } = await chained();
+    const signed = proofOf(await addProof(as(unsecured), issuer.signer, w.options));
+    const witness = await libraryProof(unsecured, KEYS.es256, {}, w.contexts.load);
+    for (const proof of [
+      [witness, signed],
+      [signed, witness],
+    ]) {
+      expect(await verifyProof(as({ ...unsecured, proof }), read)).toMatchObject({ valid: true, bound: true });
+    }
+  });
+
+  it("are not valid when only a party that is not the issuer signed, with the reason of the binding", async () => {
+    const { unsecured, read, w } = await chained();
+    const witness = await libraryProof(unsecured, KEYS.es256, {}, w.contexts.load);
+    expect(await verifyProof(as({ ...unsecured, proof: [witness] }), read)).toMatchObject({
+      valid: false,
+      reason: expect.stringContaining("not by the issuer"),
+    });
+  });
+
+  it("verify a proof that names a previousProof over the credential with the proofs it names (Data Integrity 4.5)", async () => {
+    const { unsecured, witness, own, read } = await chained();
+    for (const proof of [
+      [witness, own],
+      [own, witness],
+      [{ ...witness }, { ...own, previousProof: [WITNESS] }],
+    ]) {
+      expect(await verifyProof(as({ ...unsecured, proof }), read)).toMatchObject({ valid: true, bound: true });
+    }
+    // Without the proof that it names, the proof is read as one that secures the credential alone, which it does not.
+    const alone = await verifyProof(as({ ...unsecured, proof: [{ ...own, previousProof: undefined }] }), read);
+    expect(alone.valid).toBe(false);
+  });
+
+  it("refuse a proof that names a proof the credential lacks, one that does not verify, or one in a cycle", async () => {
+    const { unsecured, witness, own, read } = await chained();
+    const missing = await verifyProof(as({ ...unsecured, proof: [own] }), read);
+    expect(missing).toMatchObject({ valid: false, reason: expect.stringContaining("names no proof") });
+    const broken = { ...witness, proofValue: `${String(witness.proofValue).slice(0, -2)}11` };
+    const changed = await verifyProof(as({ ...unsecured, proof: [own, broken] }), read);
+    expect(changed).toMatchObject({ valid: false, reason: expect.stringContaining("that it names is not valid") });
+    const cycle = await verifyProof(
+      as({
+        ...unsecured,
+        proof: [own, { ...witness, previousProof: "urn:uuid:own" }].map((proof, index) =>
+          index === 0 ? { ...proof, id: "urn:uuid:own" } : proof,
+        ),
+      }),
+      read,
+    );
+    expect(cycle).toMatchObject({ valid: false, reason: expect.stringContaining("cycle") });
+    const number = await verifyProof(as({ ...unsecured, proof: [{ ...own, previousProof: 7 }] }), read);
+    expect(number).toMatchObject({ valid: false, reason: expect.stringContaining("must be the id of a proof") });
+  });
+
+  it("check no more than four proofs, the proofs that a chain names among them", async () => {
+    const { unsecured, witness, own, read, w } = await chained();
+    const broken = [1, 2, 3, 4].map((at) => ({ ...witness, id: `urn:uuid:other-${at}`, proofValue: "z1" }));
+    const late = await verifyProof(as({ ...unsecured, proof: [...broken, witness, own] }), read);
+    expect(late).toMatchObject({ valid: false, reason: expect.stringContaining("first 4 of its 6 proofs") });
+    const named = await Promise.all(
+      broken.map(({ id }) => libraryProof(unsecured, KEYS.es256, { id }, w.contexts.load)),
+    );
+    // Each signature that is checked resolves its key once, so the resolver counts the work.
+    const resolved: string[] = [];
+    const keys = {
+      resolve: async (method: string) => {
+        resolved.push(method);
+        return await read.keys.resolve(method);
+      },
+      issuerKeys: read.keys.issuerKeys,
+    };
+    const deep = await verifyProof(
+      as({ ...unsecured, proof: [{ ...own, previousProof: named.map(({ id }) => id) }, ...named] }),
+      { ...read, keys },
+    );
+    expect(deep.valid).toBe(false);
+    expect(resolved).toHaveLength(3);
+  });
+
+  it("refuse a proof made by a library that signs the previousProof but not the proofs it names", async () => {
     const w = world();
     const signature = new DataIntegrityProof({
       cryptosuite: eddsaRdfc2022,
@@ -629,8 +760,7 @@ describe("a proof that names a previous proof", () => {
         sign: ({ data }: { data: Uint8Array }) => issuer.signer.sign(data),
       } as never,
     });
-    // A proof that names a previousProof signs it with the rest of its options, as the algorithm of a proof chain does.
-    signature.proof = { previousProof: "urn:uuid:26329423-bec9-4b2e-88cb-a7c7d9dc4544" };
+    signature.proof = { previousProof: WITNESS };
     const signed = (await jsigs.sign(structuredClone(credentialOf(issuer.did)), {
       suite: signature,
       purpose: new jsigs.purposes.AssertionProofPurpose(),
@@ -640,7 +770,7 @@ describe("a proof that names a previous proof", () => {
         document: await w.contexts.load(url),
       }),
     } as never)) as unknown as IssuableCredential;
-    expect(proofOf(signed)).toMatchObject({ previousProof: "urn:uuid:26329423-bec9-4b2e-88cb-a7c7d9dc4544" });
+    expect(proofOf(signed)).toMatchObject({ previousProof: WITNESS });
     const read = { keys: w.keys, clock: w.clock, contexts: w.contexts.load };
     expect(await verifyProof(signed, read)).toMatchObject({
       valid: false,
@@ -687,23 +817,26 @@ describe("a suite that is given a proof with no verification method", () => {
 describe("looking at the proofs of a credential that has been read", () => {
   const issuer = issuerOf(KEYS.ed25519);
 
+  /** The issuer check of a caller that does not tie keys to issuers. */
+  const SKIPPED = { check: "issuer", outcome: "skipped", detail: "Not tied." } as const;
+
   async function signed() {
     const { keys, clock, contexts, options } = world();
     const credential = await addProof(credentialOf(issuer.did), issuer.signer, options);
     const check = (document: unknown, extra: Record<string, unknown> = {}) =>
-      inspectProofs(document as Record<string, unknown>, readCredential(document, { kind: "AchievementCredential" }), {
-        keys,
-        clock,
-        contexts: contexts.load,
-        ...extra,
-      });
+      inspectProofs(
+        document as Record<string, unknown>,
+        readCredential(document, { kind: "AchievementCredential" }),
+        { keys, clock, contexts: contexts.load, ...extra },
+        async () => SKIPPED,
+      );
     return { credential, check };
   }
 
-  it("gives the key that verified the proof and leaves the key unbound when the caller says so", async () => {
+  it("gives the key that verified the proof with the issuer check of the caller", async () => {
     const { credential, check } = await signed();
-    const verdict = await check(credential, { allowUnboundKeys: true });
-    expect(verdict).toMatchObject({ valid: true, bound: false, key: { id: issuer.method } });
+    const verdict = await check(credential);
+    expect(verdict).toMatchObject({ valid: true, issuer: SKIPPED, key: { id: issuer.method } });
   });
 
   it("says that a proof is not valid when it does not verify, and that it is unavailable when no suite checks it", async () => {
@@ -738,6 +871,7 @@ describe("looking at the proofs of a credential that has been read", () => {
           clock: clockAt(NOW),
           contexts: world().contexts.load,
         },
+        async () => SKIPPED,
       ),
     ).rejects.toBeInstanceOf(ServiceError);
   });
@@ -753,6 +887,7 @@ describe("looking at the proofs of a credential that has been read", () => {
           clock: clockAt(NOW),
           contexts: "loader" as never,
         },
+        async () => SKIPPED,
       ),
     ).rejects.toBeInstanceOf(DataError);
   });

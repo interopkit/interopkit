@@ -2006,10 +2006,31 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {
-    rule: "A proof that names a previousProof is refused, since a proof chain is not verified.",
+    rule: "A proof that names a previousProof is checked over the credential with the proofs that it names.",
     file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
-    find: "if (proof.previousProof !== undefined) {",
-    replace: "if (false) {",
+    find: "const secured = previous.length === 0 ? set.unsecured : { ...set.unsecured, proof: previous };",
+    replace: "const secured = set.unsecured;",
+    test: "packages/achievement-credentials/test/data-integrity.test.ts",
+  },
+  {
+    rule: "A proof that names a proof the credential lacks is not valid.",
+    file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
+    find: "if (at === -1) return {",
+    replace: "if (at === -1) continue; return {",
+    test: "packages/achievement-credentials/test/data-integrity.test.ts",
+  },
+  {
+    rule: "A proof of a chain is valid only when each proof that it names is.",
+    file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
+    find: 'if ("reason" in checked) {\n      return {\n        reason: `The proof ${id} that it names',
+    replace: "if (false) {\n      return {\n        reason: `The proof ${id} that it names",
+    test: "packages/achievement-credentials/test/data-integrity.test.ts",
+  },
+  {
+    rule: "A valid proof whose key is not the issuer's does not end the search for the issuer's proof.",
+    file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
+    find: "unbound ??= { key: checked.key, issuer };",
+    replace: "return { key: checked.key, issuer };",
     test: "packages/achievement-credentials/test/data-integrity.test.ts",
   },
   {
@@ -4965,15 +4986,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A proof whose signature does not verify with the resolved key is refused.",
     file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
-    find: "if (!verdict) return",
-    replace: "if (false) return",
+    find: "return verdict\n    ? { key: resolved }",
+    replace: "return true\n    ? { key: resolved }",
     test: "packages/achievement-credentials/test/data-integrity.test.ts",
   },
   {
     rule: "The key of a proof is bound to the issuer of the credential.",
     file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
-    find: "const binding = await bindKey(resolved, issuer, settings);",
-    replace: "const binding = { bound: true };",
+    find: 'if (outcome === "failed") return { valid: false, reason: detail };',
+    replace: "",
     test: "packages/achievement-credentials/test/data-integrity.test.ts",
   },
   {
@@ -5931,11 +5952,11 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/data-integrity-limits.test.ts",
   },
   {
-    rule: "Only the first four proofs of a credential are checked, so that their number does not multiply the work and the fetches.",
+    rule: "No more than four proofs of a credential are checked, those that a chain names among them, so that their number does not multiply the work and the fetches.",
     file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
-    find: "proofs.slice(0, MAX_CHECKED_PROOFS)",
-    replace: "proofs",
-    test: "packages/achievement-credentials/test/data-integrity-limits.test.ts",
+    find: "if (set.checked.size >= MAX_CHECKED_PROOFS) {",
+    replace: "if (false) {",
+    test: "packages/achievement-credentials/test/data-integrity.test.ts",
   },
   {
     rule: "A suite that refuses a document with a DataError gives the reason of the check and not an error to the caller.",
@@ -5961,8 +5982,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A suite is given the credential without its proof, so that nothing is counted twice and the credential is one object for all the proofs.",
     file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
-    find: "const checked = await checkProof(unsecured, proof, issuer, settings);",
-    replace: "const checked = await checkProof(document, proof, issuer, settings);",
+    find: "const best = await bestProof({ all, unsecured, settings, checked: new Map() }, bind);",
+    replace: "const best = await bestProof({ all, unsecured: document, settings, checked: new Map() }, bind);",
     test: "packages/achievement-credentials/test/data-integrity-limits.test.ts",
   },
   {
@@ -5988,9 +6009,9 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "The credential without its proof stays one object for all the proofs, so that the library canonizes it once.",
-    file: "packages/achievement-credentials/src/data-integrity/suites.ts",
-    find: 'const unsecured = "proof" in document ? withoutProof(document) : document;',
-    replace: "const unsecured = withoutProof(document);",
+    file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
+    find: "const secured = previous.length === 0 ? set.unsecured :",
+    replace: "const secured = previous.length === 0 ? { ...set.unsecured } :",
     test: "packages/achievement-credentials/test/data-integrity-limits.test.ts",
   },
   {

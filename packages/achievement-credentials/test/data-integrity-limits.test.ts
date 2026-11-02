@@ -240,15 +240,16 @@ describe("the proofs of one credential", () => {
 });
 
 describe("a suite of the library", () => {
-  it("takes the credential with its proof or without it, and checks the proof against the credential without", async () => {
+  it("checks the proof over the document as given, so a document that carries proofs is secured with them", async () => {
     const { sign, contexts } = world();
     const signed = await addProof(credentialOf(eddsa.did), eddsa.signer, sign);
     const [proof] = proofsOf(signed);
     const options = { publicKeyJwk: KEYS.ed25519.publicJwk, contexts: contexts.load };
-    expect(await EDDSA_RDFC_2022.verify(signed as never, proof as never, options)).toBe(true);
     const { proof: _proof, ...unsecured } = signed as unknown as Record<string, unknown>;
     expect(await EDDSA_RDFC_2022.verify(unsecured, proof as never, options)).toBe(true);
     expect(await EDDSA_RDFC_2022.verify({ ...unsecured, name: "Changed" }, proof as never, options)).toBe(false);
+    // The proofs that a document carries are what a proof of a chain signs with it, which this proof did not.
+    expect(await EDDSA_RDFC_2022.verify(signed as never, proof as never, options)).toBe(false);
   });
 });
 

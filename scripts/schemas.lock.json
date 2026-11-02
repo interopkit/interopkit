@@ -378,5 +378,30 @@
     "url": "https://raw.githubusercontent.com/1EdTech/openbadges-validator-core/0a66b52a8a0b7841469a35b056e5c3f8e5ce87d1/openbadges/verifier/openbadges_context.py",
     "file": "openbadges-validator-core-context.py",
     "sha256": "4b065cd2f2604633deb5afcc62a9db68fe4cac6ae2259fcd599e1bbd629fa601"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/w3c-ccg/data-integrity-test-suite-assertion/8d84d182f022f02049135f7d1ad3d5d0181e5560/inputs/eddsa-rdfc-2022/2.0-previousProofArrayOk-SimpleSigned2.json",
+    "file": "2.0-previousProofArrayOk-SimpleSigned2.json",
+    "sha256": "08491a293d8fecbfea1fe1617522b86d9451e2f74a9f198e20f63d790da5d989"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/w3c-ccg/data-integrity-test-suite-assertion/8d84d182f022f02049135f7d1ad3d5d0181e5560/inputs/eddsa-rdfc-2022/2.0-previousProofStringOk-SimpleSigned2.json",
+    "file": "2.0-previousProofStringOk-SimpleSigned2.json",
+    "sha256": "446d0794e8ddb4c3f93e5c3859413dccc9e766cd56917a0d433102fe95e065cf"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/w3c-ccg/data-integrity-test-suite-assertion/8d84d182f022f02049135f7d1ad3d5d0181e5560/inputs/eddsa-rdfc-2022/2.0-previousProofStringMissingFail-SimpleSigned2.json",
+    "file": "2.0-previousProofStringMissingFail-SimpleSigned2.json",
+    "sha256": "67676b24ca3692111bc1a5e6959ac12fdc531cdc6f79814344754273663dc344"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/w3c-ccg/data-integrity-test-suite-assertion/8d84d182f022f02049135f7d1ad3d5d0181e5560/inputs/eddsa-rdfc-2022/2.0-previousProofArrayMissingFail-SimpleSigned2.json",
+    "file": "2.0-previousProofArrayMissingFail-SimpleSigned2.json",
+    "sha256": "5d5572d80c042e7279086f199fa07a4666cbf52993b0c12c3f5477ef5b43d46f"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/w3c-ccg/data-integrity-test-suite-assertion/8d84d182f022f02049135f7d1ad3d5d0181e5560/inputs/eddsa-rdfc-2022/2.0-previousProofNotStringFail-SimpleSigned2.json",
+    "file": "2.0-previousProofNotStringFail-SimpleSigned2.json",
+    "sha256": "13da809b520073473267465263d3638f75fce9182d08e62223f5b5e2cb5f40e7"
   }
 ]

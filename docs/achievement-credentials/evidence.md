@@ -49,7 +49,7 @@ verifies with `verifyProof` and `verifyCredentialStatus`, derives with `deriveDi
 
 | Suite                                 | Commit    | Tests | Pass | Skipped by the suite | Not applicable |
 | ------------------------------------- | --------- | ----: | ---: | -------------------: | -------------: |
-| `vc-di-eddsa-test-suite`              | `1e86cc4` |    44 |   43 |                    0 |              1 |
+| `vc-di-eddsa-test-suite`              | `1e86cc4` |    44 |   44 |                    0 |              0 |
 | `vc-di-ecdsa-test-suite`              | `94dca21` |    59 |   55 |                    1 |              3 |
 | `vc-bitstring-status-list-test-suite` | `960ab9a` |    56 |   40 |                   16 |              0 |
 | `vc-data-model-2.0-test-suite`        | `6283645` |    59 |   40 |                    0 |             19 |
@@ -63,7 +63,7 @@ fault of the package and is fixed there; the first runs found these:
 | An `ecdsa-sd-2023` base proof of a credential whose subject holds only its `id` failed                       | The default mandatory pointers name the subject and an `issuer` that is an address as wholes                         |
 | A credential with an empty `credentialSubject` was issued                                                    | `subject-empty` is an error of the readers                                                                           |
 | A credential that ends before it begins was issued and verified                                              | `validity-period` is an error of the readers, under both data models                                                 |
-| A proof that names a `previousProof` verified as if it named none                                            | It is not valid, with the reason: a proof chain is not verified                                                      |
+| A proof that names a `previousProof` verified as if it named none, and then a proof chain was refused         | A proof of a chain is checked over the credential with the proofs that it names, and counts only when they do      |
 
 The 23 tests that do not apply, and the reason of each group, are in [the README of the suites](../../validation/w3c-suites/README.md#what-the-suites-ask-that-open-badges-does-not):
 Verifiable Presentations (7), credentials that Open Badges itself narrows (7), `relatedResource` (5), a proof chain (1) and three
@@ -147,5 +147,4 @@ it is the library itself at its pinned version, not a claim about its other rele
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | A credential of the generic Data Model | The suites send credentials with an `id`, a type and a subject                                           | Open Badges requires `validFrom`, a `type` of a Profile issuer, one subject and at most one refresh service |
 | The key of a proof                     | The validator reads it from the method, and Digital Bazaar's `vc` from the document of the method          | It must be a key that the issuer publishes                                                          |
-| A proof that names a `previousProof`   | Data Integrity 4.5 verifies it with the proofs that it names                                             | It is not valid, with the reason                                                                    |
 | `relatedResource`                      | The Data Model 2.0 asks a verifier to check its form and the digest of what it names                      | A term of an extension that the package carries and does not check                                  |

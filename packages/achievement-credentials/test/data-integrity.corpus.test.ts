@@ -11,7 +11,7 @@ import { contextHash } from "../src/data-integrity/internal.js";
 import type { IssuableCredential } from "../src/index.js";
 import { buildAchievementCredential, buildClrCredential, buildEndorsementCredential } from "../src/index.js";
 import { createKeyResolver } from "../src/keys/index.js";
-import { downloadedContexts } from "./downloaded-contexts.js";
+import { downloadedContexts, downloadedFile } from "./downloaded-contexts.js";
 import { clockAt, KEYS, signerOf, type TestKey } from "./key-fixtures.js";
 
 /** The contexts as the downloaded files hold them. */
@@ -108,5 +108,22 @@ describe("a credential with the real contexts", () => {
     const signed = await addProof(credentials.badge as IssuableCredential, ed.signer, options);
     const changed = { ...signed, name: "Fractions badge." } as unknown as IssuableCredential;
     expect(await verifyProof(changed, read)).toMatchObject({ valid: false });
+  });
+});
+
+/** The proof chains that the W3C suite of the Data Integrity cryptosuites posts to a verifier, signed by its authors. */
+const CHAINS =
+  "https://raw.githubusercontent.com/w3c-ccg/data-integrity-test-suite-assertion/8d84d182f022f02049135f7d1ad3d5d0181e5560/inputs/eddsa-rdfc-2022/";
+
+describe("the proof chains of the W3C suite of Data Integrity", () => {
+  it.each([
+    ["a chain that names its previous proof by a string", "previousProofStringOk", true],
+    ["a chain that names its previous proofs in a list", "previousProofArrayOk", true],
+    ["a proof that names a proof by a string the credential lacks", "previousProofStringMissingFail", false],
+    ["a proof that names proofs in a list the credential lacks", "previousProofArrayMissingFail", false],
+    ["a proof whose previousProof is a number", "previousProofNotStringFail", false],
+  ])("verify as the suite expects: %s", async (_name, file, valid) => {
+    const credential = JSON.parse(downloadedFile(`${CHAINS}2.0-${file}-SimpleSigned2.json`)) as IssuableCredential;
+    expect((await verifyProof(credential, read)).valid).toBe(valid);
   });
 });

@@ -64,6 +64,8 @@ interface Secured {
   readonly raw: unknown;
   readonly key: VerificationKey;
   readonly timeFault: string | undefined;
+  /** The issuer check of the key, when the proofs were looked at with it. */
+  readonly issuer?: VerificationCheck;
 }
 
 /** What the proof of a credential gave: what it secures, or the checks that say why it secures nothing. */
@@ -118,22 +120,29 @@ async function dataIntegrityProof(
   const { inspectProofs } = await import("../data-integrity/internal.js");
   const { jwt } = settings;
   try {
-    // The issuer check binds the key afterwards, so that its failure is a check of its own.
-    const verdict = await inspectProofs(value, credential, {
-      keys: jwt.keys,
-      clock: jwt.clock,
-      contexts: settings.contexts,
-      clockSkewSeconds: jwt.clockSkewSeconds,
-      allowUnboundKeys: true,
-      legacyProofs: settings.legacyProofs,
-      suites: settings.suites,
-      maxInputBytes: jwt.maxInputBytes,
-      maxDepth: jwt.maxDepth,
-      maxTokens: jwt.maxTokens,
-      maxJsonLdTokens: settings.maxJsonLdTokens,
-      ...(jwt.signal === undefined ? {} : { signal: jwt.signal }),
-    });
-    if (verdict.valid) return { secured: { credential, kind, raw: value, key: verdict.key, timeFault: undefined } };
+    // The issuer check of a proof's key is a check of its own, so that its failure is told apart from the proof's.
+    const verdict = await inspectProofs(
+      value,
+      credential,
+      {
+        keys: jwt.keys,
+        clock: jwt.clock,
+        contexts: settings.contexts,
+        clockSkewSeconds: jwt.clockSkewSeconds,
+        legacyProofs: settings.legacyProofs,
+        suites: settings.suites,
+        maxInputBytes: jwt.maxInputBytes,
+        maxDepth: jwt.maxDepth,
+        maxTokens: jwt.maxTokens,
+        maxJsonLdTokens: settings.maxJsonLdTokens,
+        ...(jwt.signal === undefined ? {} : { signal: jwt.signal }),
+      },
+      (key) => issuerCheckOf(credential, key, context),
+    );
+    if (verdict.valid) {
+      const { key, issuer } = verdict;
+      return { secured: { credential, kind, raw: value, key, timeFault: undefined, issuer } };
+    }
     return proof(verdict.unavailable ? "unavailable" : "failed", verdict.reason);
   } catch (error) {
     if (!(error instanceof ServiceError)) throw error;
@@ -160,7 +169,7 @@ export async function authenticate(prepared: Prepared, context: Context): Promis
   }
   if ("checks" in step) return { checks: step.checks };
   const { credential, kind, raw, key, timeFault } = step.secured;
-  const issuer = await issuerCheckOf(credential, key, context);
+  const issuer = step.secured.issuer ?? (await issuerCheckOf(credential, key, context));
   const checks: Checks = {
     format: formatPassed(),
     proof: checkOf("proof", "passed", `The proof verifies with the key ${key.id}.`),

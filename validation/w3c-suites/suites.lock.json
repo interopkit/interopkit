@@ -8,12 +8,7 @@
     "patch": "eddsa.patch",
     "tests": 44,
     "pending": 0,
-    "expected": [
-      {
-        "title": "An OPTIONAL string value (proof.previousProof) or unordered list of string values",
-        "reason": "The test verifies a proof chain, which the suite marks optional (optionalTests.proofChain) and Open Badges does not use. A proof that names a previousProof is refused and never read as a plain proof, so the chain is not verified."
-      }
-    ]
+    "expected": []
   },
   {
     "name": "ecdsa",

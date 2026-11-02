@@ -76,7 +76,7 @@ from being forged, an entry of `scripts/check-rules.ts`. The first runs found th
 | `ecdsa`                 | The base proof of a credential whose subject holds only its `id` was refused | The default mandatory pointers named `/credentialSubject/id`, which selects nothing in a document whose subject has no other property, and left out an `issuer` that is an address, which a disclosure could then hide |
 | `model`                 | A credential with an empty `credentialSubject` was issued                                                           | No rule of the readers said that a subject makes a claim (`subject-empty`)                                                                                         |
 | `model`                 | A credential that ends before it begins was issued and verified                                                     | No rule compared `validUntil` with `validFrom`, or `expirationDate` with `issuanceDate` (`validity-period`)                                                        |
-| `eddsa`                 | A proof that names a `previousProof` verified as if it named none                                                   | `verifyProof` read each proof on its own; a proof that names another is refused (`previousProof`)                                                                   |
+| `eddsa`                 | A proof that names a `previousProof` verified as if it named none, and then a proof chain was refused               | `verifyProof` read each proof on its own; it now checks a proof of a chain over the credential with the proofs that it names (Data Integrity 4.5)                  |
 
 ## What the suites ask that Open Badges does not
 
@@ -88,7 +88,6 @@ a test of what an Open Badges verifier is not for, and none is a rule that the p
 |     7 | `model`  | They send Verifiable Presentations, which Open Badges and CLR do not define: the service has no verifier of presentations                                                                                               |
 |     7 | `model`  | They send credentials that Open Badges narrows, with the section that says so: an `issuer` that is a Profile has a `type` (B.1.7), a credential has one subject and at most one refresh service (B.1.2), an `evidence` has the type `Evidence` (B.1.9) |
 |     5 | `model`  | They test `relatedResource`, a property of the Data Model that Open Badges does not define; the package carries it as a term of an extension, and checks neither its form nor the digest of what it names                |
-|     1 | `eddsa`  | It verifies a proof chain, which the suite marks as optional (`optionalTests.proofChain`) and Open Badges does not use; a proof that names a `previousProof` is refused, so the chain is never verified as a set of plain proofs |
 |     3 | `ecdsa`  | They verify a derived proof of the vector of the specification, whose credential has no `validFrom` and names an issuer at `https://vc.example`; a signature of the authors cannot take the property that Open Badges requires |
 
 The 16 tests that the status suite skips are pending in the suite itself, and no test of it fails.

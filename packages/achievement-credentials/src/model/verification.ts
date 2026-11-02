@@ -100,7 +100,8 @@ export interface DataIntegritySuite {
    * for a reason the caller should read, such as a limit: the glue reports the message as the reason of the `proof` check. A
    * `ServiceError` of a context and the abort of the signal reach the caller as they are.
    *
-   * @param document - The credential without its proof.
+   * @param document - The credential as the proof secures it: without its proofs, or, for a proof that names a
+   * `previousProof`, with the proofs that it names as its `proof` (Data Integrity 4.5).
    * @param proof - The proof to check.
    * @param options - The public key that verifies it, the loader of the contexts of the document and the limits.
    * @returns Whether the proof is valid for the document under the key.

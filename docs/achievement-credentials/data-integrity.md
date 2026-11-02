@@ -129,9 +129,12 @@ can be linked to each other, since they share the base signature and the key of 
 ## Verifying
 
 `verifyProof(credential, options)` returns a `ProofResult`. The credential is checked for its size and depth, then as the readers
-check a credential, and then for what a JSON-LD processor may read (see Limits). The first four proofs are looked at in order,
-and the result is the first that is valid; a proof after the fourth is not looked at, and the reason says so. The credential is
-canonicalized once for all of them.
+check a credential, and then for what a JSON-LD processor may read (see Limits). The proofs are looked at in order, and the result
+is the first that is valid and whose key the issuer publishes: a valid proof of a witness does not end the search, wherever it is in
+the set. When no valid proof is the issuer's, the reason is that of its key; when none is valid, that of the first. A proof that names
+a `previousProof` is checked over the credential with the proofs that it names, and is valid only when they are (a proof chain, Data
+Integrity 4.5). At most four proofs are checked, those that a chain names among them, and the reason says so. The credential is
+canonicalized once for all the proofs of a set.
 
 | A proof is not valid when                                                                         | Reason                                        |
 | ------------------------------------------------------------------------------------------------- | --------------------------------------------- |
@@ -143,6 +146,7 @@ canonicalized once for all of them.
 | Its purpose is not `assertionMethod`, it names no key, or `expires` has passed                      | Said in the reason                            |
 | The resolver finds no key for its `verificationMethod`                                             | Said in the reason                            |
 | Its signature does not verify with that key                                                        | Said in the reason                            |
+| It names a `previousProof` that the credential lacks or that is not valid, or proofs that name each other in a cycle | Said in the reason                     |
 | The key is not published by the issuer, unless `allowUnboundKeys`                                  | The reason of `verifyIssuerKey`               |
 
 | Option             | Meaning                                                                                                              | Default       |
@@ -162,7 +166,8 @@ canonicalized once for all of them.
 
 ### A suite of the host
 
-A `DataIntegritySuite` is given the credential **without its proof**, the proof, the public key that the glue resolved and bound,
+A `DataIntegritySuite` is given the credential **as the proof secures it**: without its proofs, or, for a proof that names a
+`previousProof`, with the proofs that it names as its `proof`. It is also given the proof, the public key that the glue resolved,
 the loader of contexts, and the limits that the glue has already checked: `maxBytes` (the number of `maxInputBytes`, which the glue
 counts as characters) and `maxTokens` (`maxJsonLdTokens`). A suite that counts them itself, as `ecdsa-sd-2023` does, therefore refuses nothing that the glue let
 through, and counts the proof once. A suite answers `false` for a proof that does not verify. It rejects with a `DataError` for a
@@ -269,7 +274,7 @@ canonicalized once for all of them. Bounded as it is, a credential at the token 
 | Signing with `ecdsa-rdfc-2019`, `eddsa-jcs-2022` and `ecdsa-jcs-2019`; verifying the two JCS suites | Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023` for issuers; `ecdsa-rdfc-2019` is verified |
 | Presentations                                          | Open Badges and CLR define none                                                                                                    |
 | Other cryptosuites                                     | A host passes a `DataIntegritySuite` in `suites`                                                                                   |
-| Proof chains and `previousProof`                       | A credential has proofs that each secure it, and Open Badges chains none: a proof that names a `previousProof` is not valid, with the reason, and is never read as a plain proof |
+| Signing a proof of a chain                             | No role of Open Badges or CLR adds a proof to another party's credential: `addProof` adds a proof to a set, and `verifyProof` verifies chains |
 | Where a request goes                                   | The host's `fetch` refuses private addresses                                                                                       |
 
 ## Differences from the references
@@ -280,5 +285,5 @@ canonicalized once for all of them. Bounded as it is, a credential at the token 
 | A base proof of `ecdsa-sd-2023`  | Verify Derived Proof is the only algorithm defined                                                  | A credential that carries a base proof is not valid, and the reason says to derive a disclosure first      |
 | Contexts                         | A processor loads a context by its address                                                           | Only at a pinned hash                                                                                    |
 | Proofs                           | The compacted form writes a single proof as an object                                                | The result of `addProof` holds a list of one                                                              |
-| The number of proofs             | A verifier may check all of them                                                                     | The first four; each costs a canonicalization of its options and may cost a fetch of a key                  |
+| The number of proofs             | Data Integrity 4.5 checks all of them, or a subset whose chains it follows                           | At most four, those that a chain names among them; each costs a canonicalization and may cost a fetch of a key |
 | Canonicalization                 | RDF Dataset Canonicalization 4.8: a work factor bounds the runs of Hash N-Degree Quads                | A fixed count of 1,000 runs, and a count of the tokens that a processor reads                             |

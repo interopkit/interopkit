@@ -39,12 +39,6 @@ function methodOf(proof: Readonly<Record<string, unknown>>, publicKeyJwk: JsonWe
   } as LibraryMethod;
 }
 
-/** Returns a document without its `proof`. */
-function withoutProof(document: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
-  const { proof: _secured, ...unsecured } = document;
-  return unsecured;
-}
-
 /**
  * Makes the suite of a cryptosuite of the adopted library: the data that the proof signs, as the Data Integrity algorithm
  * builds it, and the check of the signature with the key that the glue resolved.
@@ -57,14 +51,14 @@ function libraryGlue(name: string, make: () => DataIntegrityProof, cryptosuite: 
   return {
     cryptosuite: name,
     async verify(document, proof, { publicKeyJwk, contexts, signal }) {
-      // The glue gives the credential without its proof, and the same object for each proof, so that it is canonized once.
-      const unsecured = "proof" in document ? withoutProof(document) : document;
+      // The glue gives the credential as the proof secures it, and the same object for each proof of a set, so that it is
+      // canonized once: without its proofs, or with the proofs that a proof of a chain names, which it signs as well.
       const instance = make();
       const verificationMethod = methodOf(proof, publicKeyJwk);
       try {
         const input = {
           cryptosuite,
-          document: unsecured,
+          document,
           proof,
           documentLoader: documentLoaderOf(contexts, signal),
           dataIntegrityProof: instance,
