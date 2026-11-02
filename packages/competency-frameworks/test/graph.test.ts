@@ -492,13 +492,16 @@ describe("crosswalk", () => {
 
   it("refuses options that are not valid", () => {
     expect(() => crosswalk(mine, otherFramework(), JSON.parse("5"))).toThrow(
-      "The options of crosswalk must be an object",
+      "The options is invalid: expected an object, found 5.",
     );
     expect(() => crosswalk(mine, otherFramework(), JSON.parse('{"types":"isRelatedTo"}'))).toThrow(
-      "The option types must be an array",
+      "The options is invalid at types: expected an array",
     );
     expect(() => crosswalk(mine, otherFramework(), JSON.parse('{"types":[1]}'))).toThrow(
-      "Each of the option types must be a non-empty string",
+      "The options is invalid at types[0]",
+    );
+    expect(() => crosswalk(mine, otherFramework(), JSON.parse('{"type":["isRelatedTo"]}'))).toThrow(
+      'The options is invalid: unexpected property "type".',
     );
     expect(() => crosswalk(JSON.parse("null"), otherFramework())).toThrow("The package from is invalid");
     expect(() => crosswalk(mine, JSON.parse("{}"))).toThrow("The package to is invalid");

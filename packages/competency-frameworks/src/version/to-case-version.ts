@@ -256,6 +256,10 @@ export function toCaseVersion<TEntity extends CaseEntity>(
   value: TEntity,
   version: "1.0",
 ): VersionedValue<Converted<TEntity>>;
+export function toCaseVersion(
+  value: CasePackage | CaseEntity,
+  version: "1.0",
+): VersionedValue<CasePackage | CaseEntity | undefined>;
 export function toCaseVersion(value: unknown, version: unknown): VersionedValue<unknown> {
   parseWith(versionSchema, version, "The version");
   checkRecord(value, "The value must be an object");

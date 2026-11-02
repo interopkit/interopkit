@@ -1,7 +1,7 @@
 {
   "name": "@interopkit/competency-frameworks",
   "version": "0.0.0",
-  "description": "CASE 1.1 competency frameworks: the model of a framework package and its entities, readers that check them against the 1EdTech schemas and the rules of a package, and the conversion to CASE 1.0.",
+  "description": "CASE 1.1 and 1.0 competency frameworks: the model of a framework package and its entities, readers that check them against the 1EdTech schemas and the rules of a package, the conversion to 1.0, the tree, crosswalks and changes of a framework, and a client and a provider of the REST binding.",
   "keywords": [
     "interopkit",
     "competency-frameworks",

@@ -1,4 +1,5 @@
-import { checkArray, checkNonEmptyString, checkRecord } from "@interopkit/core/checks";
+import { nonEmptyStringSchema, parseWith, strictRecord } from "@interopkit/core/checks";
+import * as v from "valibot";
 import type { AssociationType, CasePackage, CFPckgAssociation, ExtensionTerm } from "../model/index.js";
 import { identifierKey, isCaseNode } from "../model/internal.js";
 import { checkPackageView, copyOf, itemsByKey } from "./package-view.js";
@@ -28,14 +29,12 @@ export interface CrosswalkOptions {
   readonly types?: readonly (AssociationType | ExtensionTerm)[];
 }
 
+const optionsSchema = strictRecord({ types: v.optional(v.array(nonEmptyStringSchema)) });
+
 /** Checks the options of `crosswalk`, and returns the types that make a link. */
 function typesOf(options: unknown): ReadonlySet<string> {
-  if (options === undefined) return new Set(CROSSWALK_TYPES);
-  checkRecord(options, "The options of crosswalk must be an object");
-  if (options.types === undefined) return new Set(CROSSWALK_TYPES);
-  checkArray(options.types, "The option types must be an array");
-  for (const type of options.types) checkNonEmptyString(type, "Each of the option types");
-  return new Set(options.types.map(String));
+  const { types = CROSSWALK_TYPES } = parseWith(optionsSchema, options === undefined ? {} : options, "The options");
+  return new Set(types);
 }
 
 /**

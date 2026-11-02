@@ -28,7 +28,7 @@ const decisionSchema = v.variant("allowed", [
 /** Returns an object of the model in the form of a version of CASE. It is `undefined` when 1.0 has no form for it. */
 function inVersion(value: CaseEntity | CasePackage, version: CaseVersion): CaseEntity | CasePackage | undefined {
   if (version === "1.1") return value;
-  return "CFDocument" in value ? toCaseVersion(value, "1.0").value : toCaseVersion(value, "1.0").value;
+  return toCaseVersion(value, "1.0").value;
 }
 
 /** Asks `authorize` about a request, and returns the answer to send when the request may not go on. */
