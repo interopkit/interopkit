@@ -170,6 +170,21 @@ describe("createJwksCache", () => {
     expect(party.requests).toHaveLength(4);
   });
 
+  it("throws DataError for a set of more than 100 keys, before it reads one, and keeps nothing of it", async () => {
+    const { clock, party, fetch } = setup();
+    const cache = createJwksCache({ fetch, clock });
+    const set = (count: number) => ({
+      keys: Array.from({ length: count }, (_, index) => ({ ...platformKey.publicJwk, kid: `${index}` })),
+    });
+    party.keySetResponse = () => Response.json(set(101));
+    await expect(key(cache, "0")).rejects.toStrictEqual(
+      new DataError(`The key set at ${JWKS_URL} has 101 keys, above the limit of 100.`),
+    );
+    party.keySetResponse = () => Response.json(set(100));
+    expect(await key(cache, "99")).toBeDefined();
+    expect(party.requests).toHaveLength(2);
+  });
+
   it("throws ServiceError with the status and the body when the party refuses, and fetches again on the next call", async () => {
     const { clock, party, fetch } = setup();
     party.keySetResponse = () => new Response("down", { status: 503 });

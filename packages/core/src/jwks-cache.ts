@@ -1,6 +1,6 @@
-import { createLocalJWKSet, errors, type JWTVerifyGetKey } from "jose";
+import { createLocalJWKSet, errors, type JSONWebKeySet, type JWTVerifyGetKey } from "jose";
 import type { CallOptions } from "./call-options.js";
-import { checkFunction, checkHttpsUrl, checkPositiveInteger, checkRecord } from "./checks.js";
+import { checkFunction, checkHttpsUrl, checkPositiveInteger, checkRecord, isRecord } from "./checks.js";
 import { type Clock, checkClock } from "./clock.js";
 import { DataError } from "./errors.js";
 import { createKeyedCache } from "./keyed-cache.js";
@@ -9,11 +9,13 @@ import { callService, DEFAULT_TIMEOUT_MS, type Fetch } from "./service.js";
 const MILLISECONDS_PER_SECOND = 1000;
 const DEFAULT_TTL_SECONDS = 3600;
 const DEFAULT_REFRESH_SECONDS = 60;
-/**
- * The most key sets that a cache keeps: the one fetched first goes first. Each is at most 64 KiB, the limit of `callService`,
- * so the cache holds at most 64 MiB of them.
- */
+/** The most key sets that a cache keeps: the one fetched first goes first. */
 const MAX_KEY_SETS = 1000;
+/**
+ * The most keys of a key set: a party publishes its current key and those of a rotation. jose copies each key and keeps a note of
+ * it, so that a set of 64 KiB of empty keys would take some 20 MiB to read.
+ */
+const MAX_KEYS = 100;
 
 /** The options of `createJwksCache`. */
 export interface JwksCacheOptions {
@@ -62,14 +64,30 @@ export interface JwksCache {
   keySet(url: string, options?: CallOptions): JWTVerifyGetKey;
 }
 
+/** Tells whether a value has the list of keys of a JWK Set, whose members jose then checks. */
+function hasKeys(value: unknown): value is JSONWebKeySet {
+  return isRecord(value) && Array.isArray(value.keys);
+}
+
 /** Reads the text of a key set into the function of jose that picks a key from it. */
 function readKeySet(text: string, url: string): JWTVerifyGetKey {
+  const refusal = () => new DataError(`The key set at ${url} must be a JWK Set (RFC 7517 section 5).`);
+  let set: unknown;
   try {
     // The text has at most 64 KiB, which bounds what its parse holds.
-    return createLocalJWKSet(JSON.parse(text));
+    set = JSON.parse(text);
   } catch {
-    // JSON.parse throws a SyntaxError for text that is not JSON, and jose a JWKSInvalid for JSON that is not a JWK Set.
-    throw new DataError(`The key set at ${url} must be a JWK Set (RFC 7517 section 5).`);
+    throw refusal();
+  }
+  if (!hasKeys(set)) throw refusal();
+  if (set.keys.length > MAX_KEYS) {
+    throw new DataError(`The key set at ${url} has ${set.keys.length} keys, above the limit of ${MAX_KEYS}.`);
+  }
+  try {
+    return createLocalJWKSet(set);
+  } catch {
+    // jose throws a JWKSInvalid for a key that is not an object.
+    throw refusal();
   }
 }
 
@@ -78,9 +96,10 @@ function readKeySet(text: string, url: string): JWTVerifyGetKey {
  * platform launches.
  *
  * @remarks
- * The cache keeps up to 1,000 key sets, and the URLs come from the host's registrations, never from a token. A fetch is
- * shared by the requests that wait for it. The key sets are fetched with the `fetch` of the host, without redirects, within
- * `timeoutMs` and up to 64 KiB. A set that cannot be fetched or read is not kept, and is never served past `ttlSeconds`.
+ * The cache keeps up to 1,000 key sets of up to 100 keys, and the URLs come from the host's registrations, never from a
+ * token. A fetch is shared by the requests that wait for it. The key sets are fetched with the `fetch` of the host, without
+ * redirects, within `timeoutMs` and up to 64 KiB. A set that cannot be fetched or read is not kept, and is never served past
+ * `ttlSeconds`.
  *
  * @param options - The `fetch`, the clock, the lifetimes and the timeout.
  * @returns The cache.

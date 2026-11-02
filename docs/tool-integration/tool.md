@@ -405,6 +405,8 @@ read no other clock.
 | Lifetime of a Deep Linking response     | 300 seconds  |
 | Leeway for clock skew                   | 60 seconds   |
 | Most bytes of a key set of the platform | 65,536       |
+| Most keys of a key set of the platform  | 100          |
+| Most key sets that the cache keeps      | 1,000        |
 | Most bytes of an answer of a service    | 1,048,576 (`maxBytes` of `createServiceClient`) |
 | Key set `ttlSeconds`, `refreshSeconds`  | 3,600 and 60 |
 

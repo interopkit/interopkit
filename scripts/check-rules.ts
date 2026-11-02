@@ -1589,6 +1589,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/core/test/jwks-cache.test.ts",
   },
   {
+    rule: "A key set of more keys than the limit is refused before jose copies them.",
+    file: "packages/core/src/jwks-cache.ts",
+    find: "if (set.keys.length > MAX_KEYS) {",
+    replace: "if (false) {",
+    test: "packages/core/test/jwks-cache.test.ts",
+  },
+  {
     rule: "A key set is cached for its lifetime.",
     file: "packages/core/src/jwks-cache.ts",
     find: "lifetime: () => ttlSeconds * MILLISECONDS_PER_SECOND,",

@@ -353,7 +353,7 @@ The handler measures a body that the host has already read, so the host caps the
 ## Calls to tools
 
 The only call to a tool is the fetch of its key set from the `jwksUrl` of its registration, through `createJwksCache`: `https`, no
-redirect, a time limit and at most 64 KiB. A platform whose tools are registered by people it does not control passes a `fetch`
+redirect, a time limit, at most 64 KiB and 100 keys. A platform whose tools are registered by people it does not control passes a `fetch`
 that refuses loopback, private and link-local addresses, checked on the address that the connection resolves to and not on the
 host name, or DNS rebinding gets through (see [the tool role](tool.md#calls-to-the-platform)). A tool that gives its public keys
 in the registration needs no fetch.
