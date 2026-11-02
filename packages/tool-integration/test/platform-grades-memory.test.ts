@@ -17,7 +17,7 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one handler.
 describe("the peak memory of the bodies of the grade services", () => {
-  it("stays within the budget for line items and scores of 64 KiB of nesting and of arrays", async () => {
+  it("stays within the budget for line items and scores of 64 KiB of nesting and of arrays", async ({ annotate }) => {
     const ctx = setup({ tools: [toolRegistration({ scopes: [SCOPES.lineitem, SCOPES.score] })] });
     const gradebook = new MemoryGradebook(TOOL_CLIENT_ID).add("course-1", {
       id: "quiz",
@@ -43,6 +43,8 @@ describe("the peak memory of the bodies of the grade services", () => {
     );
     const before = peak();
     for (const post of posts) expect((await handle(ctx, post, { services })).status).toBe(400);
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

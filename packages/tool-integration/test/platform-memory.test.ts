@@ -18,7 +18,9 @@ function formTo(url: string, body: string) {
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one handler.
 describe("the peak memory of the authentication and token requests", () => {
-  it("stays within the budget for forms at the limit of repeated parameters, and for forms far above it", async () => {
+  it("stays within the budget for forms at the limit of repeated parameters, and for forms far above it", async ({
+    annotate,
+  }) => {
     const ctx = setup();
     // Each `a=&` is one parameter of three bytes: the most parameters that a form at the limit can hold.
     const repeated = "a=&".repeat(Math.floor(MAX_BODY_BYTES / 3));
@@ -33,6 +35,8 @@ describe("the peak memory of the authentication and token requests", () => {
     ]);
     const before = peak();
     for (const each of requests) expect([400, 405, 413]).toContain((await handle(ctx, each)).status);
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

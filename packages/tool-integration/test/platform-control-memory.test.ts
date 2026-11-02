@@ -16,7 +16,7 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one handler.
 describe("the peak memory of the bodies of the Assessment Control Service", () => {
-  it("stays within the budget for control requests of 64 KiB of nesting and of arrays", async () => {
+  it("stays within the budget for control requests of 64 KiB of nesting and of arrays", async ({ annotate }) => {
     const ctx = setup({ tools: [toolRegistration({ scopes: [SCOPES.assessmentControl] })] });
     const services = { control: { control: async () => ({ status: "running" as const }) } };
     const assertion = await clientAssertion(toolKeys, endpoints.token, ctx.clock);
@@ -34,6 +34,8 @@ describe("the peak memory of the bodies of the Assessment Control Service", () =
     );
     const before = peak();
     for (const post of posts) expect((await handle(ctx, post, { services })).status).toBe(400);
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

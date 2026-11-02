@@ -73,7 +73,9 @@ const TOOL_CONFIGURATION = {
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one step.
 describe("the peak memory of registerTool", () => {
-  it("stays within the budget for a registration of an array just under the limit, and for one of 1 MiB", async () => {
+  it("stays within the budget for a registration of an array just under the limit, and for one of 1 MiB", async ({
+    annotate,
+  }) => {
     const initiation = { openidConfiguration: CONFIGURATION_URL };
     let body = registered(2_200);
     const fetch = async (url: string) =>
@@ -90,6 +92,8 @@ describe("the peak memory of registerTool", () => {
     body = registered(50_000);
     expect(body.length).toBeGreaterThan(MIB);
     await expect(registerTool(platform, TOOL_CONFIGURATION, initiation, { fetch })).rejects.toThrow("maxBytes");
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

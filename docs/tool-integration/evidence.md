@@ -2,7 +2,8 @@
 
 What shows that the package does what it says: the vocabularies and examples of the specifications, tokens that another library
 signs, a round trip between the two roles, tools of other authors that launch from the platform role and use its services, Moodle
-in both roles, the speed of the hot paths, and four runtimes. Each layer answers a question that the one before cannot.
+in both roles, the speed of every hot path, the peak memory of every reader, and four runtimes. Each layer answers a question that
+the one before cannot.
 
 ```mermaid
 flowchart LR
@@ -13,7 +14,8 @@ flowchart LR
   py --> moodle["Moodle in containers,<br/>both roles<br/>pnpm moodle"]
   moodle --> hand["saLTIre and the reference tool<br/>by hand before a release"]
   trip --> rules["Mutation rules<br/>pnpm check:rules"]
-  trip --> speed["Launch, authorization, pages<br/>against jose and JSON.parse<br/>pnpm bench"]
+  trip --> speed["Every hot path against jose, JSON,<br/>@lti-tool/core and lti-core<br/>pnpm bench"]
+  trip --> memory["Peak memory of each reader<br/>pnpm test"]
   trip --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
 ```
 
@@ -27,7 +29,8 @@ flowchart LR
 | Moodle             | Does Moodle launch a tool built on the package, and does it use a platform built on the package, with registration, launch, services and Deep Linking? | `validation/moodle/`, `packages/tool-integration/test/moodle.corpus.test.ts` | `pnpm moodle` |
 | Online testers     | Do the testers that 1EdTech and saLTIre host pass the platform and the tool?                           | The log below                                                                                   | By hand before a release |
 | Mutation rules     | Does the test of each rule that keeps a request from being forged, replayed or redirected fail without it? | `scripts/check-rules.ts`                                                                   | `pnpm check:rules`      |
-| Speed              | How long do the launch, the authorization and the reading of a page take, against what they build on? | `packages/tool-integration/test/*.bench.ts`, `test/budgets.ts`                                  | `pnpm bench`            |
+| Speed              | How long does each hot path take, against what it builds on and against the tools of other authors?  | `packages/tool-integration/test/*.bench.ts`, `test/budgets.ts`                                  | `pnpm bench`            |
+| Memory             | Does each reader of untrusted input stay under its budget on its worst input?                         | `packages/tool-integration/test/*-memory.test.ts`, `packages/core/test/jwks-cache-memory.test.ts` | `pnpm test`             |
 | Runtimes           | Does the example give the same results on each runtime?                                               | `compat/`                                                                                       | `pnpm compat`           |
 
 ## Tools in the process of the tests
@@ -115,22 +118,76 @@ each run, with the date, the commit that was tested, the tester and the result.
 
 ## Speed
 
-`pnpm bench` builds the package and times the hot paths of the build that ships, in `vitest bench`, against a reference in the
-same run. A ratio holds on any machine, and the budget of a ratio is five times the largest that three runs measured, rounded up
-to one significant digit. The budgets in time are pending: the design asks for them from the runner of CI, which has not run these
-benchmarks yet, so each time below is the fastest sample of a laptop with an Apple chip, shown and not enforced.
+`pnpm bench` builds the package and times the hot paths of the build that ships against a reference in the same run, the two in
+turns through `alternate` of `scripts/bench-rounds.ts`: three rounds that alternate which runs first, so that a machine that speeds
+up or slows down weighs on both. A ratio of the fastest samples holds on any machine; its budget is five times the largest that
+three runs on a laptop with an Apple chip measured, rounded up to one significant digit. The budgets in time wait for a sample of
+the runners of CI.
 
-| What is timed                                                                          | Reference in the same run                          | Ratio measured | Budget | Fastest sample |
-| -------------------------------------------------------------------------------------- | -------------------------------------------------- | -------------- | ------ | -------------- |
-| `ltiLaunch` with an RS256 `id_token`: login, signature, claims                         | `jwtVerify` of jose, same token                    | 2.72 to 2.93   | 20     | 0.095 ms       |
-| `ltiLaunch` with an ES256 `id_token`                                                   | `jwtVerify` of jose, same token                    | 1.77 to 1.95   | 10     | 0.115 ms       |
-| The authorization request that signs an RS256 `id_token` with every claim              | `SignJWT` of jose, same claims                     | 1.27 to 1.36   | 7      | 0.50 ms        |
-| The same, ES256                                                                        | `SignJWT` of jose, same claims                     | 3.02 to 3.47   | 20     | 0.15 ms        |
-| `members` of a page of 1,000 members (295 KB)                                          | `JSON.parse` of its text                           | 3.93 to 4.22   | 30     | 1.36 ms        |
-| `results` of a page of 1,000 results (243 KB)                                          | `JSON.parse` of its text                           | 6.35 to 7.91   | 40     | 1.55 ms        |
-| The authorization request that substitutes the 44 variables that the platform supports | The same request with the names written plainly | 0.99 to 1.00   | 5      | 0.52 ms        |
+| Benchmark | Reference in the same run | Ratio | Budget |
+| --- | --- | ---: | ---: |
+| `ltiLaunch`, a message with every claim, 0.067 ms | `verifyLaunch` of `@lti-tool/core`, same message | 1.28–1.31 | 7 |
+| The same | `validate` of `lti-core`, same message | 1.98–2.06 | 20 |
+| `ltiLaunch` with an RS256 `id_token` | `jwtVerify` of jose, same token | 2.35–2.40 | 20 |
+| `ltiLaunch` with an ES256 `id_token` | the same | 1.76–1.78 | 20 |
+| The authorization request that signs an RS256 `id_token` with every claim | `SignJWT` of jose, same claims | 1.28 | 7 |
+| The same, ES256 | the same | 1.99–2.98 | 20 |
+| The same, substituting the 44 variables of the platform | the same request with the names written plainly | 0.99–1.02 | 5 |
+| A key from a cached key set, 0.40 µs | `createRemoteJWKSet` of jose holding the set | 1.90–2.04 | 20 |
+| The same | `createLocalJWKSet` of jose | 2.63–2.72 | 20 |
+| `members`, a page of 1,000 (295 KB) | `JSON.parse` of its text | 3.84–4.12 | 30 |
+| `results`, a page of 1,000 (243 KB) | the same | 6.47–6.49 | 40 |
+| `lineItems`, a page of 1,000 (272 KB) | the same | 7.13–7.27 | 40 |
+| `publishScore`, `control`, `registerTool` | `callService` of core, same request and answer | 2.49–4.72 | 20, 20, 30 |
+| The token endpoint, 0.044 ms | `jwtVerify` of jose on its client assertion | 2.41–2.50 | 20 |
+| The members of a context, a page of 1,000, 1.1 ms | `JSON.stringify` of the page | 6.14–6.24 | 40 |
+| The results of a line item, a page of 1,000, 1.0 ms | the same | 7.65–8.06 | 50 |
+| A score, a control request, a registration | `compactVerify` of jose on the token and `JSON.parse` of the body | 2.80–3.39 | 20 |
+| `createDeepLinkResponse` with five items, `createStartAssessmentPage` | `SignJWT` of jose, same claims | 1.06–1.14 | 6 |
+| `readDeepLinkingResponse`, `readStartAssessment` | `jwtVerify` of jose on the JWT | 2.49–3.25 | 20 |
 
-Substituting 44 variables costs what a request without them costs, since the signature takes the time.
+Substituting 44 variables costs what a request without them costs, since the signature takes the time. Four fixes changed no
+output: on the tests, on 1,698 inputs given to the build before and the build after (pages with odd users and extensions, every
+token of the fixtures with each last character, the handler of results on odd line items and broken stores), and on a property
+test of the check of a token against jose's own round trip. Timed in turns against the build before:
+
+| Fix | Paths, the fastest sample before and after |
+| --- | --- |
+| A writer drops its `undefined` members in a loop; `Object.fromEntries` took half of the page of members | The members of a context 2.2 to 1.1 ms; the results 2.2 to 1.0 ms with the next fix; a score posted 12 percent less |
+| The address of each result is the address of the results, parsed once, with its user as the query; the platform reads what its store gives without the addresses it then checked again | The results of a line item |
+| A part of a token is canonical base64url by its alphabet, its length and its spare bits, without decoding and encoding it | `ltiLaunch` 0.078 to 0.064 ms; `readDeepLinkingResponse` and `readStartAssessment` 17 and 18 percent less; the token endpoint 15 |
+| Extensions are found by the names of the members | `lineItems` 9 percent less |
+
+The gaps that remain have named causes. `ltiLaunch` reads the form and the cookie, checks the registration that the lookup returns,
+counts the JSON tokens of the payload before it parses it, and reads every claim of the message with its schema; `lti-core` reads
+fewer claims and verifies RS256 alone. The key set cache checks the URL of each call, 0.19 of its 0.40 µs, which jose checks once
+when it makes a set; a launch spends 0.5 percent of its time there. A handler of a page reads each item of the store with the
+schema of its class, as a reader does, and checks the addresses that it writes; a reader of line items checks two dates of each.
+
+## Memory
+
+Each reader of untrusted input has a test of its peak memory on its worst input within its limits, in a file of its own because
+the peak of a process only grows; the test reports the rise. The rises are those of Node.js 22 and 24.
+
+| Reader | Worst input | Peak rose by | Budget |
+| --- | --- | ---: | ---: |
+| `ltiLogin` | Forms and queries of 64 KiB of repeated and of distinct parameters, and a form of 64 MiB | 0.1–1.3 MiB | 32 MiB |
+| `ltiLaunch` | A form of 64 KiB whose token is one array of small objects, and a form of 64 MiB | 1.3–5.0 MiB | 32 MiB |
+| The claims of a token before its signature | A payload of 3.6 million tokens, refused by their number | 1.2–2.2 MiB | 64 MiB |
+| A key set, `createJwksCache` | 64 KiB of empty keys, refused above 100; 100 keys of 64 KiB; one nested 32,000 deep; 64 MiB | 12–15 MiB | 32 MiB |
+| `lineItems` and the other pages | A page of a million tokens in an extension that the reader copies; 1 MiB of empty objects | 84–126 MiB | 256 MiB |
+| `members` | The same | 36–50 MiB | 256 MiB |
+| `control` | A status of a million tokens; 24 MiB | 86–94 MiB | 256 MiB |
+| `preferences` | A record of a million tokens; 24 MiB | 134–171 MiB | 256 MiB |
+| `discoverPlatform`, `registerTool` | An answer of an array just under 64 KiB, and one of 1 MiB | 12–20 MiB | 32 MiB |
+| The authorization and token requests of the platform | Forms of 64 KiB of repeated and distinct parameters, and of 64 MiB | 3.1–6.3 MiB | 32 MiB |
+| The grade services, the Assessment Control Service and the registration endpoint | Bodies of 64 KiB of nesting and of arrays | 0.5–1.1 MiB | 32 MiB |
+| `readDeepLinkingResponse` | A form of under 1 MiB that lists 10,000 items, refused by their number | 11–13 MiB | 64 MiB |
+| `readStartAssessment` | A form of 64 KiB whose token is one array of small objects | 14–16 MiB | 32 MiB |
+
+A key set of 64 KiB of empty keys took some 20 MiB to read, since jose copies each key and keeps a note of it: the cache refuses a set
+of more than 100 keys before jose sees it. A client of a service takes an answer of up to `maxBytes`, 1 MiB, and `maxTokens`, a
+million, by default, so its worst answer is a million tokens; a host that reads small answers lowers both.
 
 ## Runtimes
 

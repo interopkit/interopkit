@@ -39,7 +39,9 @@ function resolve(body: string | (() => Response)) {
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one cache.
 describe("the peak memory of reading a key set", () => {
-  it("stays within the budget for the sets at the limits of bytes and keys, one nested too deep to copy, and one far above", async () => {
+  it("stays within the budget for the sets at the limits of bytes and keys, one nested too deep to copy, and one far above", async ({
+    annotate,
+  }) => {
     // Each `{},` is one key of three bytes: the most keys that an answer at the limit can hold, refused by their number.
     const keys = `{"keys":[${"{},".repeat(Math.floor((MAX_BYTES - 12) / 3) - 1)}{}]}`;
     // The most keys that a set may have, each with a member that fills the answer to its limit.
@@ -54,6 +56,8 @@ describe("the peak memory of reading a key set", () => {
     await expect(resolve(large)).rejects.toMatchObject({ code: "ERR_JWKS_NO_MATCHING_KEY" });
     await expect(resolve(nested)).rejects.toBeInstanceOf(DataError);
     await expect(resolve(hugeAnswer)).rejects.toBeInstanceOf(ServiceError);
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

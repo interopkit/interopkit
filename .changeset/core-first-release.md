@@ -10,7 +10,8 @@ bodies as text or bytes, statuses that a call returns as values, a `ServiceError
 body of the answer, and a `signal` that ends the caller's wait, and
 `untilAborted`, which ends one caller's wait on work that several callers share, and `createKeyedCache`, which keeps values by
 key and shares the load of each. `createJwksCache` keeps the JWK Sets of other parties on it, by the `Clock` of the host, for
-`jwtVerify` of jose: a set is fetched again past its lifetime, and for a missing `kid` at most once a refresh time. `totalCountOf`, `hasNextLink` and
+`jwtVerify` of jose: a set of up to 100 keys is fetched again past its lifetime, and for a missing `kid` at most once a refresh
+time. `totalCountOf`, `hasNextLink` and
 `retryAfterSeconds` read the paging and retry headers of an answer, and `linkTarget` gives the address of a link only on the
 origin of the request. `@interopkit/core/http` holds the request
 and the answer of a handler as plain data with bodies as bytes, `readText`, `readJson`, `readQuery` and `readForm` with a limit on its bytes,

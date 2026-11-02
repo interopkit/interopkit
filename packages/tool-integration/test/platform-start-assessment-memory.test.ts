@@ -19,7 +19,9 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one reader.
 describe("the peak memory of readStartAssessment", () => {
-  it("stays within the budget for a form at the limit whose token is one array of small objects", async () => {
+  it("stays within the budget for a form at the limit whose token is one array of small objects", async ({
+    annotate,
+  }) => {
     const ctx = setup();
     const { claims } = await launch(ctx, {
       ...baseFields,
@@ -44,6 +46,8 @@ describe("the peak memory of readStartAssessment", () => {
     expect(form.body.byteLength).toBeLessThanOrEqual(FORM_LIMIT);
     const before = peak();
     await expect(readStartAssessment(form, toolMessageOptions(ctx))).resolves.toMatchObject({ attemptNumber: 1 });
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

@@ -16,7 +16,9 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one client.
 describe("the peak memory of a preferences record", () => {
-  it("stays within the budget for a record just under the limits of bytes and tokens, and for an answer far above them", async () => {
+  it("stays within the budget for a record just under the limits of bytes and tokens, and for an answer far above them", async ({
+    annotate,
+  }) => {
     const ctx = setup();
     const lms = new FakeRosterLms(ctx.platform);
     const { request } = await cookieLogin(ctx);
@@ -37,6 +39,8 @@ describe("the peak memory of a preferences record", () => {
     expect(record?.list).toHaveLength(objects);
     lms.answer = () => new Response(huge, { headers: { "content-type": "application/json" } });
     await expect(client.preferences(claim, "ana-1", "a")).rejects.toThrow("maxBytes");
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

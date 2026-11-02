@@ -17,7 +17,9 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one client.
 describe("the peak memory of a page of members", () => {
-  it("stays within the budget for a page just under the limit of tokens, and for 1 MiB of empty members, refused at it", async () => {
+  it("stays within the budget for a page just under the limit of tokens, and for 1 MiB of empty members, refused at it", async ({
+    annotate,
+  }) => {
     const ctx = setup();
     const lms = new FakeRosterLms(ctx.platform);
     const { request } = await cookieLogin(ctx);
@@ -39,6 +41,8 @@ describe("the peak memory of a page of members", () => {
     expect((await client.members(MEMBERSHIPS_URL)).items).toHaveLength(1);
     body = refused;
     await expect(client.members(MEMBERSHIPS_URL)).rejects.toThrow("the limit of the option maxTokens");
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

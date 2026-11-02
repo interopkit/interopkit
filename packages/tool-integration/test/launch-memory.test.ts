@@ -17,7 +17,9 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one function.
 describe("the peak memory of a launch", () => {
-  it("stays within the budget for a form at the limit whose token is one array of small objects, and for a form far above it", async () => {
+  it("stays within the budget for a form at the limit whose token is one array of small objects, and for a form far above it", async ({
+    annotate,
+  }) => {
     const ctx = setup();
     const { auth, cookie } = await cookieLogin(ctx);
     const [header = "", , signature = ""] = auth.idToken.split(".");
@@ -32,6 +34,8 @@ describe("the peak memory of a launch", () => {
     const before = peak();
     await expect(ltiLaunch(atLimit, ctx.options)).rejects.toMatchObject({ reason: "token-malformed" });
     await expect(ltiLaunch(huge, ctx.options)).rejects.toMatchObject({ reason: "form-too-large" });
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

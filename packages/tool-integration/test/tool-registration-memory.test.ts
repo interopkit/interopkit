@@ -38,7 +38,9 @@ function configuration(claims: number): string {
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one step.
 describe("the peak memory of discoverPlatform", () => {
-  it("stays within the budget for a configuration of an array just under the limit, and for one of 1 MiB", async () => {
+  it("stays within the budget for a configuration of an array just under the limit, and for one of 1 MiB", async ({
+    annotate,
+  }) => {
     let body = configuration(15_000);
     const fetch = async () => new Response(body, { headers: { "content-type": "application/json" } });
     expect(body.length).toBeGreaterThan(MAX_BYTES - 8192);
@@ -50,6 +52,8 @@ describe("the peak memory of discoverPlatform", () => {
     body = configuration(270_000);
     expect(body.length).toBeGreaterThan(MIB);
     await expect(discoverPlatform({ openidConfiguration: CONFIGURATION_URL }, { fetch })).rejects.toThrow("maxBytes");
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

@@ -26,7 +26,9 @@ function formPost(body: string) {
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one function.
 describe("the peak memory of a login initiation", () => {
-  it("stays within the budget for initiations at the limit of repeated and of distinct parameters, and for a form far above it", async () => {
+  it("stays within the budget for initiations at the limit of repeated and of distinct parameters, and for a form far above it", async ({
+    annotate,
+  }) => {
     const ctx = setup();
     // Each `a=&` is one parameter of three bytes: the most parameters that a form at the limit can hold.
     const repeated = "a=&".repeat(Math.floor(MAX_INITIATION_BYTES / 3));
@@ -45,6 +47,8 @@ describe("the peak memory of a login initiation", () => {
     ];
     const before = peak();
     for (const initiation of initiations) await expect(ltiLogin(initiation, ctx.options)).rejects.toThrow(DataError);
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

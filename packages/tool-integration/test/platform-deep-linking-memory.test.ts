@@ -17,7 +17,9 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one reader.
 describe("the peak memory of readDeepLinkingResponse", () => {
-  it("stays within the budget for a form of under 1 MiB that lists 10,000 items, which it refuses by their number", async () => {
+  it("stays within the budget for a form of under 1 MiB that lists 10,000 items, which it refuses by their number", async ({
+    annotate,
+  }) => {
     const ctx = setup();
     const { claims } = await launch(ctx, {
       ...baseFields,
@@ -41,6 +43,8 @@ describe("the peak memory of readDeepLinkingResponse", () => {
     await expect(readDeepLinkingResponse(listing, toolMessageOptions(ctx))).rejects.toMatchObject({
       reason: "content-items-limit",
     });
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });
