@@ -10,7 +10,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
 `@interopkit/learning-records` implements the xAPI Statement of 2.0 and 1.0.3 and its readers, the message of its Attachments, its signature, a client of an LRS and the handler of its requests,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
-implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists, their refresh and their verification, and it reads and verifies Open Badges 2.0.
+implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client and the provider of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists, their refresh and their verification, and it reads and verifies Open Badges 2.0.
 
 ```mermaid
 flowchart BT
@@ -22,7 +22,7 @@ flowchart BT
   cf["competency-frameworks<br/>model, read, version, graph, client, provider"]
   lr["learning-records<br/>model, read, build, compare, format,<br/>attachments, signing, client, store"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
-  ac["achievement-credentials<br/>model, read, issue, compare, baking, client,<br/>keys, jwt, data-integrity,<br/>status, refresh, verify"]
+  ac["achievement-credentials<br/>model, read, issue, compare, baking, client,<br/>keys, jwt, data-integrity,<br/>status, refresh, verify, provider"]
   proto --> core
   tool --> proto
   plat --> proto
@@ -60,7 +60,7 @@ Use these words with these meanings in code, comments and docs.
 | LRS          | The Learning Record Store: the service that receives Statements and shall reject those that break the rules
 | LRP          | A Learning Record Provider: the system that makes Statements and sends them to an LRS
 | credential   | An Open Badges or CLR verifiable credential, held as a value of the model: an achievement, an endorsement or a CLR; an Open Badges 2.0 assertion with its BadgeClass and issuer is a `BadgeAssertionV2` |
-| provider     | The service that publishes frameworks to consumers over the CASE REST binding: `handleCaseRequest` over a `FrameworkStore`      |
+| provider     | The server side of a 1EdTech REST binding: `handleCaseRequest` over a `FrameworkStore` for CASE, `handleCredentialsRequest` over a `CredentialStore` and a `ProfileStore` for Open Badges and CLR |
 | base proof   | The proof an issuer gives a holder: an HMAC key, the public key of the proof and a signature for each statement to hide         |
 | disclosure   | A document with only the parts a holder reveals and a derived proof, the signatures of the statements that stay                 |
 | statement    | One canonical N-Quad of a document. A mandatory statement is always revealed; the key of the proof signs each of the others     |
@@ -90,7 +90,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
-| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading and verification of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/`, `verify/` |
+| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading and verification of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/`, `verify/`, `provider/` |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -156,11 +156,11 @@ current behavior only, and never how it came to be. A package's changeset is wri
   score means, which delivery event becomes which Caliper or xAPI event, QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to
   assesskit and measurekit, to the adapter of each product and to the host.
 - `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders, the comparison of
-  credentials, baking in PNG and SVG images, the client of the Open Badges and CLR APIs, the keys that verify credentials with
+  credentials, baking in PNG and SVG images, the client and the provider of the Open Badges and CLR APIs, the keys that verify credentials with
   their binding to the issuer, the JWT and Data Integrity proofs with the loader of contexts and their pins, the status lists
   and the refresh, the verification of a credential with its endorsements and the credentials of a CLR, and the model, the
   reader and the verification of Open Badges 2.0, with its baked images. It does not own JSON-LD processing and the
-  cryptosuites (the Interop Alliance libraries do them), the provider of the APIs, the OAuth 2.0 clients (those of
+  cryptosuites (the Interop Alliance libraries do them), an authorization server, the OAuth 2.0 clients (those of
   `core/oauth`), the issuing, signing and baking of Open Badges 2.0 (Open Badges 3.0 supersedes it), nor wallets, issuing
   platforms and storage. It reaches the network only through a `Fetch` that the caller passes.
 - `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
@@ -185,7 +185,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`
   imports no other module, `read/` builds on `model/` only, `issue/`, `compare/`, `baking/` and `client/` build on `model/` and `read/`
   and never import each other, `keys/` builds on `model/` only, and `jwt/` and `data-integrity/` build on `model/`, `read/` and `keys/` and never import each other, `status/` builds on those and `jwt/` and imports `data-integrity/` only dynamically (a test keeps
-  a verifier of JWTs free of JSON-LD), and `refresh/` imports `model/` and `core` only, and `verify/` builds on all of them but `baking/` and `client/`, imports `data-integrity/` only dynamically, and is imported by no module. In `learning-records`, `model/` imports no other module,
+  a verifier of JWTs free of JSON-LD), and `refresh/` imports `model/` and `core` only, and `verify/` builds on all of them but `baking/` and `client/` and imports `data-integrity/` only dynamically, and `provider/` imports `model/`, `read/`, `jwt/` and the `internal.ts` of `verify/` and loads the `index.ts` of `verify/` only dynamically, so that a provider that does not verify never loads the verifier; no other module imports `verify/`. In `learning-records`, `model/` imports no other module,
   `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
   `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
   `model/`, `read/`, `compare/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. In `learning-analytics`, `model/`

@@ -1,15 +1,8 @@
 import { type CallOptions, DEFAULT_TIMEOUT_MS, type Fetch, requestService } from "@interopkit/core";
-import {
-  guardSchema,
-  httpsUrlSchema,
-  looseRecord,
-  nonEmptyStringSchema,
-  parseWith,
-  positiveIntegerSchema,
-  strictRecord,
-} from "@interopkit/core/checks";
+import { guardSchema, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { CREDENTIAL_APIS, type CredentialApi } from "../model/index.js";
+import { usableDescriptionSchema } from "../read/internal.js";
 import { apiRoot } from "./config.js";
 import { jsonOf, textOf } from "./request.js";
 
@@ -65,31 +58,6 @@ export interface DiscoverOptions extends CallOptions {
   readonly timeoutMs?: number;
 }
 
-/** The part of a service description that the client reads, and the name of each part in the OpenAPI file (OB 6.3, 7.1.1). */
-const descriptionSchema = looseRecord({
-  info: looseRecord({
-    title: nonEmptyStringSchema,
-    termsOfService: v.optional(httpsUrlSchema),
-    "x-imssf-image": v.optional(v.string()),
-    "x-imssf-privacyPolicyUrl": httpsUrlSchema,
-  }),
-  components: looseRecord({
-    securitySchemes: looseRecord({
-      OAuth2ACG: looseRecord({
-        "x-imssf-registrationUrl": httpsUrlSchema,
-        flows: looseRecord({
-          authorizationCode: looseRecord({
-            authorizationUrl: httpsUrlSchema,
-            tokenUrl: httpsUrlSchema,
-            refreshUrl: v.optional(httpsUrlSchema),
-            scopes: v.record(v.string(), v.unknown()),
-          }),
-        }),
-      }),
-    }),
-  }),
-});
-
 const optionsSchema = strictRecord({
   fetch: guardSchema((value): value is Fetch => typeof value === "function", "a function"),
   timeoutMs: v.optional(positiveIntegerSchema),
@@ -137,7 +105,7 @@ export async function discoverService(
     { maxBytes: DISCOVERY_MAX_BYTES, expect: [200] },
   );
   const json = jsonOf(textOf(response, what), what);
-  const { info, components } = parseWith(descriptionSchema, json, what);
+  const { info, components } = parseWith(usableDescriptionSchema, json, what);
   const scheme = components.securitySchemes.OAuth2ACG;
   const flow = scheme.flows.authorizationCode;
   return {

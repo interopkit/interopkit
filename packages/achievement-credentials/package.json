@@ -1,7 +1,7 @@
 {
   "name": "@interopkit/achievement-credentials",
   "version": "0.0.0",
-  "description": "Open Badges 3.0 and CLR 2.0 credentials: the model of an achievement credential and of the API, readers that check them against the 1EdTech schemas, builders, identity hashes and comparison, the keys that verify them, their proofs, status lists and refresh, and their verification.",
+  "description": "Open Badges 3.0 and CLR 2.0 credentials: the model of an achievement credential and of the API, readers that check them against the 1EdTech schemas, builders, identity hashes and comparison, the keys that verify them, their proofs, status lists and refresh, their verification, and the provider of the Open Badges and CLR APIs.",
   "keywords": [
     "interopkit",
     "achievement-credentials",
@@ -57,6 +57,10 @@
     "./verify": {
       "types": "./dist/verify/index.d.ts",
       "default": "./dist/verify/index.js"
+    },
+    "./provider": {
+      "types": "./dist/provider/index.d.ts",
+      "default": "./dist/provider/index.js"
     }
   },
   "files": [

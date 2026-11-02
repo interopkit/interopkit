@@ -75,7 +75,7 @@ function dependencyClosure(roots: Iterable<string>): Set<string> {
 }
 
 describe("the import graph of a verifier of JWTs", () => {
-  it.each(["jwt", "keys", "status", "refresh", "verify"])(
+  it.each(["jwt", "keys", "status", "refresh", "verify", "provider"])(
     "holds no processor of JSON-LD in the static imports of %s",
     (module) => {
       const { packages } = closure(join(PACKAGE, "src", module, "index.ts"));
@@ -97,6 +97,21 @@ describe("the import graph of a verifier of JWTs", () => {
     );
     const dynamic = sources.flatMap((source) => [...source.matchAll(/import\("([^"]+)"\)/gu)].map((match) => match[1]));
     expect(dynamic).toStrictEqual(["../data-integrity/internal.js"]);
+  });
+
+  it("loads the verifier into the provider only through one dynamic import, so that a provider that does not verify never loads it", () => {
+    const sources = readdirSync(join(PACKAGE, "src", "provider")).map((name) =>
+      readFileSync(join(PACKAGE, "src", "provider", name), "utf8"),
+    );
+    const dynamic = sources.flatMap((source) => [...source.matchAll(/import\("([^"]+)"\)/gu)].map((match) => match[1]));
+    expect(dynamic).toStrictEqual(["../verify/index.js"]);
+    const { files } = closure(join(PACKAGE, "src", "provider", "index.ts"));
+    expect(
+      [...files]
+        .filter((file) => file.includes(`${join("src", "verify")}`))
+        .map((file) => file.split("/").at(-1))
+        .sort(),
+    ).toStrictEqual(["internal.ts", "kind.ts", "options.ts"]);
   });
 
   it("holds them in the static imports of data-integrity, which is why status loads it on demand", () => {

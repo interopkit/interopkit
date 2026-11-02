@@ -156,6 +156,16 @@ export {
   type VerificationResult,
   type VerificationTypeV2,
 } from "./model/index.js";
+export type {
+  CredentialList,
+  CredentialStore,
+  CredentialsAccess,
+  CredentialsPage,
+  CredentialsProviderOptions,
+  ProfileStore,
+  ReceivedCredential,
+  UpsertOutcome,
+} from "./provider/index.js";
 export {
   type EntityReadOptions,
   type ReadOptions,

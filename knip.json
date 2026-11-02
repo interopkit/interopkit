@@ -17,7 +17,8 @@
         "src/data-integrity/index.ts",
         "src/status/index.ts",
         "src/refresh/index.ts",
-        "src/verify/index.ts"
+        "src/verify/index.ts",
+        "src/provider/index.ts"
       ]
     },
     "packages/learning-analytics": {

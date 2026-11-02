@@ -1212,6 +1212,43 @@
       }
     },
     {
+      "includes": ["packages/achievement-credentials/src/provider/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/baking",
+                      "**/baking/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/data-integrity",
+                      "**/data-integrity/**",
+                      "**/issue",
+                      "**/issue/**",
+                      "**/keys",
+                      "**/keys/**",
+                      "**/refresh",
+                      "**/refresh/**",
+                      "**/status",
+                      "**/status/**"
+                    ],
+                    "message": "provider/ builds on model/, read/, jwt/, verify/ and @interopkit/core only, and loads the index of verify/ on demand: the other modules are its siblings or below verify/."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["packages/learning-records/src/model/**"],
       "linter": {
         "rules": {
@@ -1508,7 +1545,6 @@
         "packages/achievement-credentials/src/model/**",
         "packages/achievement-credentials/src/read/*-schemas.ts",
         "packages/achievement-credentials/src/read/registry.ts",
-        "packages/achievement-credentials/src/client/discovery.ts",
         "packages/achievement-credentials/test/**",
         "packages/learning-analytics/src/read/*-schemas.ts",
         "packages/learning-analytics/src/model/entities/ranges.ts",

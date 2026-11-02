@@ -242,6 +242,30 @@ nothing across calls but the caches that the host passes. A host passes a `signa
 | A result mistaken for trust in what it carries                                             | `credential` is what the proof secures and is set only when the proof is valid and the issuer check did not fail; a revoked or expired credential is still returned, and `verified` says it is not accepted |
 | A call that never ends: a CLR of 1,000 credentials, each naming a list, a service, a schema | No deadline of its own: the host passes a `signal` such as `AbortSignal.timeout(...)`, which ends the call with its reason                                                                                  |
 
+### The provider of the APIs
+
+`handleCredentialsRequest` answers the Open Badges API or the CLR Standard API as the resource server
+([provider guide](docs/achievement-credentials/provider.md)). It keeps nothing between requests and makes no request of its own:
+with `verify` set, `verifyCredential` makes the requests that the verification needs, under its own rules above.
+
+| Threat                                                                     | Control                                                                                                                                                                                                                   |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A client reaches the credentials or the profile of another user            | `authorize` receives the request and the scope of the operation, and names the owner; the stores are asked only for that owner, and not at all when `authorize` refuses                                                  |
+| A token of one operation used for another                                  | Each operation asks for its own scope of OB 6.2.1 or CLR 5.2.1, and a provider of one API never for a scope of the other; a 403 names the scope that the token lacks (RFC 6750)                                          |
+| A forged credential stored and served as genuine                           | With `verify`, a credential is verified before it is stored, its key bound to its issuer, and refused with 422 when it does not verify; without it, the store holds what a user uploaded, and the host verifies before it shows it to anyone else |
+| A credential that makes the server call an address of the uploader's choice | The provider fetches nothing. The verifier fetches no address that a credential names until its proof and its issuer's hold on the key pass, only over HTTPS, and never the refresh service: the provider sets `refresh: false`. The host's `fetch` refuses private addresses |
+| A body built to exhaust memory                                             | At most `maxBodyBytes` (1,048,576), refused with 413 before it is read; its tokens (`maxTokens`, 1,000,000) and levels (64) counted before it is parsed, and so are those of the payload of a JWS. Measured, the worst body within the limits raises the peak by about 120 MiB |
+| A credential of another kind stored as a badge                             | The body is read as the credential of the API (`AchievementCredential` or `ClrCredential`); an endorsement or a credential of the other API is refused with 422                                                          |
+| A failure of a port shows its cause                                        | The answer is 500 with a fixed sentence; the message of the failure is never in the answer                                                                                                                                |
+| A wait for a port or the verifier that never ends                          | Every call of a port, and the verification, is raced against the `signal`; an abort rejects the request at once                                                                                                         |
+| The URL that builds the `Link` header                                      | It is the URL of the request; behind a proxy the host builds the request from its public address. The client of the package never follows the address of a `Link`                                                       |
+| A service description that sends clients elsewhere                         | It is the host's own document: the provider serves it unprotected, as OB 6.3 asks, and checks that its addresses are `https` and that its flow offers every scope of the API                                                |
+
+- Limit the rate of requests: count them in the host, and refuse the request over the limit in `authorize` with 429 and
+  `retryAfterSeconds`, which the provider answers as `server_busy` with `Retry-After`.
+- A store compares credentials with `sameCredential` and `newerCredential` and keeps them for their owner only; the profile that a
+  user replaces is read whole and holds no more than the model of a `Profile`.
+
 ### Open Badges 2.0
 
 `readCredential` and `validateCredential` read Open Badges 2.0 assertions with their BadgeClass and issuer
@@ -527,6 +551,9 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `achievement-credentials` | Keys of an issuer that a 2.0 badge without a `creator` is tried against  | 8                                 | keys                   | Each a fetch; the others are not tried; not replaceable |
 | `achievement-credentials` | Bits of an RSA key of a 2.0 badge                                        | 8,192                             | bits                   | `proof` `failed` before the signature is checked; not replaceable |
 | `achievement-credentials` | `clockSkewSeconds` of `verifyCredential`                                 | 60                                | seconds                | Of a time claim, a validity period, a proof's expiry and a list credential |
+| `achievement-credentials` | `maxBodyBytes` of `handleCredentialsRequest`                             | 1,048,576                         | bytes                  | The body of an upsert or of a profile; 413 |
+| `achievement-credentials` | `maxTokens` of `handleCredentialsRequest`                                | 1,000,000                         | tokens                 | The JSON of a body, or the payload of a JWS, counted before it is parsed; 400 or 422 |
+| `achievement-credentials` | `pageSize` and `maxPageSize` of `handleCredentialsRequest`               | 100 and 1,000                     | credentials            | A larger `limit` is lowered to `maxPageSize` |
 | `selective-disclosure`    | `maxBytes` of `addBaseProof`, `deriveProof` and `verify`                 | 1,048,576                         | bytes                  | The document with its proof, as JSON; a `DataError` above it, and `false` from `verify`                                                                   |
 | `selective-disclosure`    | `maxTokens` of `addBaseProof`, `deriveProof` and `verify`                | 20,000                            | tokens                 | The document with its proof, as JSON, counted before any processing; a `DataError` above it, and `false` from `verify`                                   |
 | `selective-disclosure`    | Levels that a document, a proof or a context nests                       | 64                                | levels                 | Checked before any processing; a `DataError`, and `false` from `verify`; not replaceable                                                                  |

@@ -5,8 +5,8 @@ import { decodeBase64url } from "../base64url.js";
 import { type JsonLimits, parseJsonText } from "../json-text.js";
 import { bindKey, publicJwk, thumbprintOf, thumbprintUri } from "../keys/internal.js";
 import type { AnyVerifiableCredential, ProofResult, VerificationKey } from "../model/index.js";
-import { credentialOrReason } from "../read/internal.js";
-import { ADDED_CLAIMS, dateTimeOf, disagreement, valuesOf } from "./claims.js";
+import { carriedCredential, readCarried } from "./carried-credential.js";
+import { dateTimeOf, disagreement, valuesOf } from "./claims.js";
 import { type JwtReadOptions, type ReadSettings, readSettings } from "./options.js";
 
 /** The most characters of the protected header: it names an algorithm and a key, and a key of 8,192 bits is under 1,500 characters. */
@@ -75,35 +75,6 @@ function timeProblem(payload: Readonly<Record<string, unknown>>, settings: ReadS
   if (typeof nbf === "number" && nbf - settings.clockSkewSeconds > now)
     return `The JWT is not valid before ${dateTimeOf(nbf)}.`;
   return undefined;
-}
-
-/** Builds the credential that a payload in the `vc` claim form carries (VC Data Model 1.1, section 6.3.1): the claims fill what `vc` leaves out. */
-function foldClaims(payload: Readonly<Record<string, unknown>>, vc: Readonly<Record<string, unknown>>) {
-  const { iss, jti, nbf, exp, sub } = payload;
-  const subject = vc.credentialSubject;
-  return {
-    ...vc,
-    ...(vc.issuer === undefined && iss !== undefined ? { issuer: iss } : {}),
-    ...(vc.id === undefined && typeof jti === "string" ? { id: jti } : {}),
-    ...(vc.issuanceDate === undefined && typeof nbf === "number" ? { issuanceDate: dateTimeOf(nbf) } : {}),
-    ...(vc.expirationDate === undefined && typeof exp === "number" ? { expirationDate: dateTimeOf(exp) } : {}),
-    ...(typeof sub === "string" && isRecord(subject) && subject.id === undefined
-      ? { credentialSubject: { ...subject, id: sub } }
-      : {}),
-  };
-}
-
-/** Returns the credential that a payload carries: in the `vc` claim, or the payload itself less the claims that repeat it. */
-function carriedCredential(payload: Readonly<Record<string, unknown>>): unknown {
-  if (isRecord(payload.vc)) return foldClaims(payload, payload.vc);
-  return Object.fromEntries(Object.entries(payload).filter(([name]) => !ADDED_CLAIMS.includes(name)));
-}
-
-/** Reads the credential of a payload, as a CLR whose nested credentials are compact JWS when its type says it is a CLR. */
-function readCarried(candidate: unknown): Step<AnyVerifiableCredential> {
-  const types = isRecord(candidate) ? candidate.type : undefined;
-  const isClr = Array.isArray(types) && types.includes("ClrCredential");
-  return credentialOrReason(candidate, "The credential in the JWT", isClr);
 }
 
 /** The parts of a JWS that passed the checks of its shape: the header, and the payload as bytes. */

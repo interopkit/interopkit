@@ -10,11 +10,12 @@ flowchart LR
   model --> issue["Builders, identities,<br/>comparison, summary"]
   model --> baking["Baking in PNG and SVG,<br/>both kinds"]
   model --> client["Client of the APIs:<br/>discovery, credentials, profile"]
+  model --> provider["Provider of the APIs:<br/>scopes, paging, upsert, profile"]
   model --> keys["Keys, issuer binding,<br/>JWT and Data Integrity proofs"]
   spec2["Open Badges 2.0"] --> read2["Reader of 2.0<br/>documents, aliases, rules"]
   read2 --> verify2["Verification of 2.0:<br/>hosted and signed badges"]
   model --> verify["Verification: every check of Open Badges 9<br/>and CLR 8, endorsements, held credentials"]
-  spec -.-> outside["Not included here:<br/>the provider of the APIs,<br/>issuing Open Badges 2.0"]
+  spec -.-> outside["Not included here:<br/>an authorization server,<br/>issuing Open Badges 2.0"]
 ```
 
 | Area                    | Specification              | Included                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -33,6 +34,7 @@ flowchart LR
 | Document formats        | OB 5.3, CLR 4.3            | `bakePng`, `readPng`, `bakeSvg`, `readSvg`: a compact JWS or the JSON of a credential in an `iTXt` chunk (`openbadgecredential`, `clrcredential`) or in a `credential` element of `https://purl.imsglobal.org/ob/v3p0` or `https://purl.imsglobal.org/clr/v2p0`; the shape of the image and of the credential is checked and the credential is not verified |
 | Open Badges 2.0 images  | OB 2.0 Baking              | `readPng` and `readSvg` find an assertion as JSON or a compact JWS in an `iTXt` chunk `openbadges`, the address of a hosted assertion in a legacy `tEXt` chunk, and an `assertion` element of `http://openbadges.org`; the bakers refuse 2.0 |
 | API                     | OB 6, CLR 5                | `discoverService`, `createCredentialsClient`: `getCredentials` with `limit`, `offset`, `since`, `X-Total-Count` and `Link`; `upsertCredential` as a compact JWS or JSON (200, 201, 304); `getProfile`; `putProfile`; `getServiceDescription`; the paths of both APIs; `Retry-After` reported by `readStatusInfo` and no retry |
+| API provider            | OB 6, CLR 5                | `handleCredentialsRequest`: the five operations of each API below its path; the scopes of OB 6.2.1 and CLR 5.2.1 asked of the host's `authorize`; `limit`, `offset` and `since`, `X-Total-Count` when the store counts and `Link`; an upsert as JSON or a compact JWS, read as the kind of the API and answered 201, 200 or 304; `getProfile` and `putProfile`; the service description, unprotected; `imsx_StatusInfo` with the codes of OB B.3.6; verification before storing on request |
 | API security            | OB 7, CLR 6                | The client takes its tokens from a function of the host: `@interopkit/core/oauth` does registration, the authorization code flow with PKCE S256, refresh and revocation from the endpoints that `discoverService` reads |
 | Display                 | OB conformance 4           | `credentialSummary`: name, description, image, issuer and dates of a badge, a CLR or an endorsement, under either data model, and of an Open Badges 2.0 assertion                                                                                                                                                                                                                                                                                              |
 | Open Badges 2.0 classes | OB 2.0 vocabulary          | `AssertionV2`, `BadgeClassV2`, `ProfileV2`, `IdentityObjectV2`, `VerificationObjectV2`, `CryptographicKeyV2`, `RevocationListV2`, `EvidenceV2`, `CriteriaV2`, `AlignmentObjectV2`, `ImageV2`, `EndorsementV2`, joined in `BadgeAssertionV2`; read and never written ([guide](open-badges-2.md)) |
@@ -58,7 +60,7 @@ flowchart LR
 
 | Not included                                                         | Why                                                                                                         |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| The provider side of the APIs of Open Badges and CLR                 | A server over requests, with the host's storage and authorization                                            |
+| An authorization server for the APIs                                 | An application: the provider asks the host's `authorize` about each token                                    |
 | Issuing, signing and baking Open Badges 2.0                          | Open Badges 3.0 supersedes it: a 2.0 badge is read, verified and found in an image only                      |
 | The endorsements of a 2.0 badge                                      | They are read and not verified: the verification of Open Badges 2.0 is that of an assertion                  |
 | JSON-LD processing, a map of languages for a text, a single context | The compacted form is read as JSON; the contexts give no language container and a credential needs both contexts |

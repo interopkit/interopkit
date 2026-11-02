@@ -101,3 +101,13 @@ the canonicalization of the cryptosuites stops after 1,000 runs of Hash N-Degree
 checks the first four proofs of a credential and canonicalizes the credential once for all of them. A limit is the reason of the
 `proof` check and not a signature that fails. A `DataIntegritySuite` is given the credential without its proof and the limits that
 the glue checked (`maxBytes`, `maxTokens`), and a `DataError` that it rejects with becomes that reason.
+
+`@interopkit/achievement-credentials/provider` is the resource server of the Open Badges API and the CLR Standard API:
+`handleCredentialsRequest` answers `getCredentials` with `limit`, `offset` and `since`, the objects in `credential` and the compact
+JWS in `compactJwsString`, `X-Total-Count` when the store counts and `Link`; `upsertCredential` as JSON or a compact JWS, read as
+the credential of the API and answered 201, 200 or 304 as the `CredentialStore` decides; `getProfile` and `putProfile` over a
+`ProfileStore`; and the service description, unprotected, which it checks offers every scope of the API. Each operation asks the
+host's `authorize` for its scope and the owner of the token (`CredentialsAccess`), and a refusal is 401, 403 with
+`insufficient_scope` or 429 with `Retry-After`. With `verify`, a credential is verified before it is stored, without following its
+refresh service, and refused with 422 when it does not verify. A body has at most `maxBodyBytes` (1,048,576) and `maxTokens`
+(1,000,000), and every failure is an `imsx_StatusInfo` with the code of Open Badges B.3.6.

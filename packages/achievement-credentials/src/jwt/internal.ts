@@ -4,5 +4,6 @@
  * @module
  */
 
+export { credentialInJws } from "./carried-credential.js";
 export { type ReadSettings, readSettings } from "./options.js";
 export { inspectJwt, MAX_HEADER_CHARS } from "./read-credential-jwt.js";
