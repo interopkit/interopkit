@@ -1,0 +1,8 @@
+{
+  "repository": "adlnet/lrs-conformance-test-suite",
+  "branch": "LRS-2.0",
+  "commit": "d17a26a0139523db65909fe5e9fdd6701c786013",
+  "sha256": "33ea22333f1157e21946ea4399ac66177040e277be7182eb40540d1bf0f3f510",
+  "xapiVersion": "2.0.0",
+  "tests": 1442
+}

@@ -1349,6 +1349,8 @@
         "packages/learning-records/src/compare/canonical.ts",
         "packages/learning-records/src/format/format-ids.ts",
         "packages/learning-records/src/store/agents.ts",
+        "examples/learning-records/src/documents.ts",
+        "examples/learning-records/test/stores.test.ts",
         "packages/learning-records/src/store/documents/parameters.ts",
         "packages/learning-records/test/**",
         "scripts/xapi-rules.ts",

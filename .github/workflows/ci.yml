@@ -148,3 +148,17 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm opensalt
+
+  # The ADL conformance suite of xAPI 2.0 against the example LRS (validation/adl-lrs/README.md). It builds first.
+  adl-lrs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm adl-lrs

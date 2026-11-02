@@ -1,0 +1,16 @@
+{
+  "name": "@interopkit/example-learning-records",
+  "private": true,
+  "type": "module",
+  "description": "A campus LRS in memory behind a plain HTTP handler, a learning platform that sends Statements and documents to it, and a dashboard that reads them.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node scenario.ts",
+    "serve": "node serve.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@interopkit/core": "workspace:^",
+    "@interopkit/learning-records": "workspace:^"
+  }
+}

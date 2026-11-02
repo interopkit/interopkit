@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node"],
+    "paths": {
+      "@interopkit/core": ["../../packages/core/src/index.ts"],
+      "@interopkit/core/checks": ["../../packages/core/src/checks.ts"],
+      "@interopkit/core/http": ["../../packages/core/src/http/index.ts"],
+      "@interopkit/learning-records": ["../../packages/learning-records/src/index.ts"],
+      "@interopkit/learning-records/attachments": ["../../packages/learning-records/src/attachments/index.ts"],
+      "@interopkit/learning-records/client": ["../../packages/learning-records/src/client/index.ts"],
+      "@interopkit/learning-records/signing": ["../../packages/learning-records/src/signing/index.ts"],
+      "@interopkit/learning-records/store": ["../../packages/learning-records/src/store/index.ts"]
+    }
+  },
+  "include": ["scenario.ts", "serve.ts", "src", "test"]
+}

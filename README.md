@@ -80,6 +80,7 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `pnpm compat`          | Runs the scenarios of the three examples, built as the packages ship, on Node.js, Deno, Bun and workerd; it needs Deno and Bun installed ([compat](compat/README.md)) |
 | `pnpm bench`           | Times reading, checking and walking a framework of 10,000 items against budgets ([evidence](docs/competency-frameworks/evidence.md))                                  |
 | `pnpm opensalt`        | Starts OpenSALT in containers and runs the CASE client and provider of the example against it ([validation/opensalt](validation/opensalt/README.md))                  |
+| `pnpm adl-lrs`         | Runs the ADL conformance suite of xAPI 2.0 against the example LRS ([validation/adl-lrs](validation/adl-lrs/README.md)); build first                                  |
 | `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                                                                                                |
 | `pnpm corpus`          | Downloads the pinned repositories that tests read                                                                                                                     |
 | `pnpm schemas`         | Downloads the pinned specification files that tests read                                                                                                              |

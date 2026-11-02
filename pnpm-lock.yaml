@@ -248,6 +248,15 @@ importers:
         specifier: workspace:^
         version: link:../../packages/learning-analytics
 
+  examples/learning-records:
+    devDependencies:
+      '@interopkit/core':
+        specifier: workspace:^
+        version: link:../../packages/core
+      '@interopkit/learning-records':
+        specifier: workspace:^
+        version: link:../../packages/learning-records
+
   examples/tool-integration:
     devDependencies:
       '@interopkit/core':

@@ -4,6 +4,7 @@ Python scripts that write the reference fixtures in `packages/*/test/fixtures/`,
 scripts sign with libraries that share no code with the packages, so that a test compares the packages with an independent
 implementation. A counterparty is an application that runs beside the packages: [opensalt](opensalt/README.md) is a CASE server
 and editor, which `pnpm opensalt` starts in containers and runs the client and provider of the example against.
+[adl-lrs](adl-lrs/README.md) is the conformance suite of ADL, which `pnpm adl-lrs` runs against the example LRS of xAPI.
 
 ```mermaid
 flowchart LR

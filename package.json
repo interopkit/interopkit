@@ -16,6 +16,7 @@
     "test:spec": "vitest run --project '*-spec'",
     "bench": "pnpm -r bench",
     "opensalt": "node validation/opensalt/run.ts",
+    "adl-lrs": "node validation/adl-lrs/run.ts",
     "lint": "biome check . && cspell --no-progress",
     "check:standards": "node scripts/check-standards.ts",
     "check:rules": "node scripts/check-rules.ts",

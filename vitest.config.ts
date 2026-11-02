@@ -187,6 +187,16 @@ export default defineConfig({
           hookTimeout: HANG_LIMIT,
         },
       },
+      {
+        // The campus LRS in memory, its learning platform and its dashboard: the scenario and the tests run against the sources.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "example-learning-records",
+          include: ["examples/learning-records/test/**/*.test.ts"],
+          exclude: ["**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
       nodeProject("tool-integration"),
       {
         // The pages of the client-side login, which run in the engines of the browsers.
