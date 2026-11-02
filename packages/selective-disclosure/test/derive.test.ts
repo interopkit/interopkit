@@ -159,6 +159,20 @@ describe("deriveProof, given pointers", () => {
     }
   });
 
+  it("refuses a pointer of millions of characters with a DataError, reading it once", async () => {
+    const { base, contexts } = await signedCredential();
+    for (const pointer of [
+      `/${"a".repeat(10_000_000)}`,
+      `/${"~0".repeat(5_000_000)}`,
+      `/${"a".repeat(10_000_000)}~2`,
+    ]) {
+      const result = await deriveProof(base, { selectivePointers: [pointer], contexts: contexts.load }).catch(
+        (error: unknown) => error,
+      );
+      expect(result).toBeInstanceOf(DataError);
+    }
+  });
+
   it("refuses a text that is no JSON pointer, because the primitives would read it as the pointer to the whole document", async () => {
     const { base, contexts } = await signedCredential();
     for (const pointer of ["credentialSubject", "credentialSubject/name", "#/issuer", "/a~2b", "/a~", "", "/~"]) {

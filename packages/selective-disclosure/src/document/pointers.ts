@@ -1,8 +1,17 @@
 import { DataError } from "@interopkit/core";
 import { checkArray, describe, isRecord } from "@interopkit/core/checks";
 
-/** A JSON pointer as RFC 6901 section 3 writes it: any number of `/` and a token, where `~` is followed by 0 or 1. */
-const POINTER = /^(?:\/(?:[^/~]|~[01])*)*$/u;
+/** A `~` that is not followed by 0 or 1, which no token of a JSON pointer holds (RFC 6901 section 3). */
+const BAD_ESCAPE = /~(?![01])/u;
+
+/**
+ * Tells whether text is a JSON pointer as RFC 6901 section 3 writes it: empty, or any number of `/` and a token, where `~` is
+ * followed by 0 or 1. It reads the text once, since a pattern with a quantified group runs out of stack on a pointer of some
+ * millions of characters.
+ */
+function isPointer(text: string): boolean {
+  return text === "" || (text.startsWith("/") && !BAD_ESCAPE.test(text));
+}
 
 /** An array index as RFC 6901 section 4 writes it: no sign and no leading zero. */
 const ARRAY_INDEX = /^(?:0|[1-9]\d*)$/u;
@@ -67,7 +76,7 @@ export function checkPointers(
 ): readonly string[] {
   checkArray(pointers, `${label} must be an array`);
   for (const pointer of pointers) {
-    if (typeof pointer !== "string" || !POINTER.test(pointer)) {
+    if (typeof pointer !== "string" || !isPointer(pointer)) {
       throw new DataError(
         `${label} must hold JSON pointers such as "/credentialSubject/name", found ${describe(pointer)}.`,
       );

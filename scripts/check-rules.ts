@@ -2134,7 +2134,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A text that is no JSON pointer is refused, because the primitives read it as the pointer to the whole document.",
     file: "packages/selective-disclosure/src/document/pointers.ts",
-    find: "!POINTER.test(pointer)",
+    find: "!isPointer(pointer)",
     replace: "false",
     test: "packages/selective-disclosure/test/derive.test.ts",
   },
