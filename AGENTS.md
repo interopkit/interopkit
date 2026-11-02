@@ -218,6 +218,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `@digitalcredentials/verifier-core` and `did-jwt-vc` with `did-jwt`, which verify what the package signs and sign what it
   verifies, and are timed against `verifyCredential`; `pnpm-workspace.yaml` overrides the `zod` of `@interop/verifier-core`, which
   asks for a version that has a known vulnerability and no repair.
+  `esbuild` is a development dependency of the repository, for `scripts/entry-size.ts`, and of `compat`, which bundles the scenarios.
   `@cfworker/json-schema` is a development dependency of the repository, for `scripts/schema-oracle.ts`: the validator that
   tests run the published JSON schemas of a standard through, and a dependency of `achievement-credentials` for the schemas that a
   credential names beyond those of 1EdTech. `oidc-provider` is a development dependency of `core` and of
@@ -390,6 +391,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - Baked images are written by `validation/baked_images.py` (`struct` and `zlib` for the PNG chunks, string edits for the SVG, ElementTree to
   parse every SVG), and `test/baking.test.ts` compares the bytes and the text with the fixture. A reader of images has a test of the
   worst input of each limit.
+- The `test/size.test.ts` of a package bundles each entry point of its `exports` alone with `scripts/entry-size.ts` (esbuild,
+  minified, every dependency inside) and fails when one is above its budget after gzip, 1.25 times the size measured rounded up
+  to the next 500 bytes, or holds a module of the package or a dependency that its budget does not list.
 - A benchmark is a `*.bench.ts` in a project named `*-bench` (`pnpm bench`); its budgets are in `test/budgets.ts`: five times the
   fastest sample, rounded up to one significant digit, and a ratio to a reference in the same run where one exists; a package that has no sample of the CI runner yet states its budgets in time as pending, and its ratios hold on any machine. It imports
   its package by name: `tsc` reads the name as the source through the `paths` of the `tsconfig.json`, which has an entry for
@@ -402,7 +406,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
   (its client in `ServiceClient`) and in `platform/services/routes.ts` (its `Service`: store, scopes, claim, routes), its port in
   `platform/ports.ts` and `PlatformServices`, the schema of the port in `platform/options.ts`, and its part of `MessageServicesInput`.
 - A module of a package: a folder in `src/` with `index.ts`, `internal.ts` where other modules or the tests need more, a
-  subpath in `package.json` `exports`, `typedoc.json` and `knip.json` when the host imports it, the same subpath in the
+  subpath in `package.json` `exports` with its budget in `test/size.test.ts`, `typedoc.json` and `knip.json` when the host imports it, the same subpath in the
   `paths` of the `tsconfig` of each package or example that imports it, a test file, a guide in `docs/`, import rules in
   `biome.json`, and a row in the API table of the README of the package.
 - A check shared by packages: `packages/core/src/checks.ts`, or a file that it re-exports. Code that two packages need goes in
