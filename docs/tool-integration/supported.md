@@ -1,15 +1,15 @@
 # Supported
 
 What `@interopkit/tool-integration` implements of LTI 1.3: the tool role first, then the platform role. The package
-implements these specifications and is not certified by 1EdTech. It claims no LTI Advantage conformance: the Names and Role
-Provisioning Services are absent.
+implements these specifications and is not certified by 1EdTech.
 
 ```mermaid
 flowchart LR
   login["Third-party login<br/>+ client-side login"] --> launch["Launch<br/>id_token validation, claims"]
   launch --> dl["Deep Linking<br/>createDeepLinkResponse,<br/>readDeepLinkingResponse"]
   launch --> ags["AGS<br/>createServiceClient: line items,<br/>results, scores, cached tokens"]
-  launch -.-> missing["Not yet:<br/>the services of NRPS, groups and PNP,<br/>registration, proctoring"]
+  launch --> roster["Roster services<br/>members, groups, preferences record"]
+  launch -.-> missing["Not yet:<br/>registration, proctoring"]
 ```
 
 | Area                                | Specification              | Tool role                                                                 | Not yet                                                                                                                                                                                |
@@ -39,12 +39,12 @@ flowchart LR
 | Client-side login                   | OIDC with postMessages 0.1 | `lti.put_data` and `lti.get_data` pages                                   |                                                                                                                                                                                        |
 | postMessage Storage                 | PM Storage 0.1             | The two pages                                                             |                                                                                                                                                                                        |
 | Capabilities | postMessages 0.1 | Both pages ask `lti.capabilities` and use the frame that the answer names, else `lti_storage_target` |  |
-| Names and Role Provisioning         | NRPS 2.0                   | `services.roster`, the claim                                              | The service                                                                                                                                                                            |
+| Names and Role Provisioning         | NRPS 2.0                   | `services.roster`, the claim; `members`: role, limit, resource link with its message section, groups, differences, `next` and `differences` links |  |
 | Dynamic Registration                | DR 1.0                     |                                                                           | All                                                                                                                                                                                    |
 | Submission Review                   | SR 1.0                     | The request, as `SubmissionReviewMessage`; `submissionReview` of a line item | |
 | Proctoring                          | Proctoring 1.0             | `LtiStartProctoring` and `LtiEndAssessment`, as messages                  | The Start Assessment message and the Assessment Control Service                                                                                                                        |
-| Context Groups                      | Groups 1.0                 | `services.groups`, the claim                                              | The service                                                                                                                                                                            |
-| AfA PNP connector                   | PNP Connector 1.0          | `services.preferences`, the claim                                         | The service                                                                                                                                                                            |
+| Context Groups                      | Groups 1.0                 | `services.groups`, the claim; `groups` with the user filter, `groupSets`, paging |  |
+| AfA PNP connector                   | PNP Connector 1.0          | `services.preferences`, the claim; `preferences`: the record of a user for an activity, the `fields` filter |  |
 
 ## Platform role
 
@@ -54,7 +54,8 @@ flowchart LR
   authorize --> token["/jwks<br/>/token"]
   login -.-> storage["/storage<br/>buildCapabilitiesScript"]
   token --> ags["/contexts/.../line-items<br/>GradebookStore"]
-  token -.-> missing["Not yet:<br/>NRPS, groups, PNP, control,<br/>the readers of tool messages, registration"]
+  token --> roster["/contexts/.../memberships, groups<br/>/ims/afapnp/...<br/>RosterStore, GroupStore, PreferencesStore"]
+  token -.-> missing["Not yet:<br/>control, the reader of the<br/>Start Assessment message, registration"]
 ```
 
 | Area                                | Specification              | Platform role                                                                                                   | Not yet                                                    |
@@ -82,11 +83,11 @@ flowchart LR
 | postMessage Storage                 | PM Storage 0.1             | The minimum limits, and `storage_exhaustion`                                                                    |                                                            |
 | Capabilities                        | postMessages 0.1           | `buildCapabilitiesScript` for the host's frame page                                                             |                                                            |
 | AGS                                 | AGS 2.0                    | Over a `GradebookStore`: the claim with `lineitems` and `lineitem`, line items with filters and pages, results, scores kept by AGS 3.4.9; the client and the scopes checked again on every call | |
-| Names and Role Provisioning         | NRPS 2.0                   |                                                                                                                 | All                                                        |
+| Names and Role Provisioning         | NRPS 2.0                   | Over a `RosterStore`: the claim, `role`, `limit`, `rlid` with the message section, `groups`, the `differences` link and `since`, `next` links, `lti11_legacy_user_id`; only what the request asked for is shared | |
 | Dynamic Registration                | DR 1.0                     |                                                                                                                 | All                                                        |
 | Submission Review                   | SR 1.0                     | The request, with the line item of its message | |
-| Context Groups                      | Groups 1.0                 |                                                                                                                 | All                                                        |
-| AfA PNP connector                   | PNP Connector 1.0          |                                                                                                                 | All                                                        |
+| Context Groups                      | Groups 1.0                 | Over a `GroupStore`: the claim with the sets URL on request, groups and groups of a user, group sets, `next` links | |
+| AfA PNP connector                   | PNP Connector 1.0          | Over a `PreferencesStore`: the claim, the record of a user for an activity below `/ims/afapnp/v1p0`, held to the `fields` asked for | |
 
 Specifications whose text is behind a sign-in at 1EdTech (the Asset Processor family, EULA, Context Message, Data Privacy,
 Rubric Service and others) are not assessed.
@@ -102,9 +103,9 @@ tested; the client of the tool role and the handler of the platform role use tho
 | Line items                 | AGS 3.2           | Line item with `activityId`, `gradesReleased` and `submissionReview`, its container, its filters | |
 | Scores                     | AGS 3.4           | Score with `scoringUserId`, `submission` and extensions                                          | |
 | Results                    | AGS 3.3           | Result and its container, its filters                                                            | |
-| Memberships                | NRPS 2.0          | Container, member, message of a resource link, group enrollments, filters                        | Client, handler, differences |
-| Groups                     | Groups 1.0        | Groups, group sets, filters                                                                      | Client, handler            |
+| Memberships                | NRPS 2.0          | Container, member, message of a resource link, group enrollments, filters                        | |
+| Groups                     | Groups 1.0        | Groups, group sets, filters                                                                      | |
 | Content items              | DL 3              | The five types, their extensions and other types; the check against the settings of the request | |
 | Configurations             | DR 2              | Platform, tool, acknowledgment, translations, extensions                                         | Steps, routes              |
 | Assessment Control Service | Proctoring 5      | Control request and status                                                                       | Client, handler            |
-| Preferences                | PNP Connector 1.0 | The record as JSON, the `fields` filter                                                          | Client, handler            |
+| Preferences                | PNP Connector 1.0 | The record as JSON, the `fields` filter                                                          | |

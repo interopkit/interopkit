@@ -24,6 +24,7 @@ export interface Outcome {
   readonly launch: Readonly<Record<string, unknown>>;
   readonly graded: Readonly<Record<string, unknown>>;
   readonly kept: readonly Readonly<Record<string, unknown>>[];
+  readonly roster: Readonly<Record<string, unknown>>;
   readonly deepLinked: Readonly<Record<string, unknown>>;
   readonly replay: { readonly status: number; readonly error: string };
 }
@@ -151,13 +152,21 @@ export async function runScenario(): Promise<Outcome> {
     roles: [LEARNER],
     resourceLink: { id: "session-1-question-4", title: "Drawing tool" },
     custom: { exam: "tryout-1", user: "$User.id", lineItem: "$LineItem.url" },
-    services: { grades: { lineItemId: "quiz-1", container: false } },
+    services: {
+      grades: { lineItemId: "quiz-1", container: false },
+      roster: true,
+      groups: { sets: true },
+      preferences: { activityIds: ["session-1-question-4"] },
+    },
   });
   const launch = tool.launches[0];
   if (launch === undefined) throw new Error(`The tool did not accept the launch: ${launched.status}.`);
 
   // The tool grades the user of the launch through the grade services.
   const graded = await tool.grade(launch, 8);
+
+  // The tool reads the members of the course, its groups and the record of needs of the user through the roster services.
+  const roster = await tool.readRoster(launch);
 
   // The authentication request of a launch is answered once: the message is taken, so the same request a second time gets
   // the authentication error response, which the page posts to the tool.
@@ -196,6 +205,7 @@ export async function runScenario(): Promise<Outcome> {
       scoreGiven: score.scoreGiven,
       timestamp: score.timestamp,
     })),
+    roster: { ...roster },
     deepLinked: {
       posted: { to: answer.action, fields: [...answer.fields.keys()] },
       status: received.status,

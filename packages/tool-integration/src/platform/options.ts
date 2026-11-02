@@ -13,7 +13,15 @@ import * as v from "valibot";
 import type { JwksCache } from "../protocol/index.js";
 import { checkPlatformConfig, type PlatformConfig } from "./config.js";
 import type { MessageInput } from "./messages/input.js";
-import type { GradebookStore, LaunchStore, PlatformServices, Substitution } from "./ports.js";
+import type {
+  GradebookStore,
+  GroupStore,
+  LaunchStore,
+  PlatformServices,
+  PreferencesStore,
+  RosterStore,
+  Substitution,
+} from "./ports.js";
 import type { ToolRegistration } from "./registration.js";
 
 /** What every function of the platform role needs: what the platform is, and the time. */
@@ -253,6 +261,9 @@ const requestOptionsSchema = strictRecord({
           "keepScore",
         ),
       ),
+      roster: v.optional(methodsSchema<RosterStore>("members")),
+      groups: v.optional(methodsSchema<GroupStore>("groups", "groupSets")),
+      preferences: v.optional(methodsSchema<PreferencesStore>("record")),
     }),
   ),
   pageSize: v.optional(positiveIntegerSchema),

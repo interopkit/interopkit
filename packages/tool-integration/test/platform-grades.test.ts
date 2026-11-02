@@ -1,14 +1,14 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI claims, AGS bodies and OAuth 2.0 answers are those of the specifications.
 
 import { DataError } from "@interopkit/core";
-import type { HttpResponse } from "@interopkit/core/http";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SCOPES } from "../src/index.js";
 import { ltiPlatformLogin, type MessageInput, type PlatformRequestOptions } from "../src/platform/index.js";
 import { readMessage } from "../src/protocol/internal.js";
 import { clientAssertion, TOOL_CLIENT_ID, TOOL_DEPLOYMENT_ID, tokenRequest, toolRegistration } from "./fake-tool.js";
-import { NOW, request } from "./fixture.js";
+import { NOW } from "./fixture.js";
 import { MemoryGradebook } from "./gradebook.js";
+import { call, json, tokenFor } from "./platform-services.js";
 import {
   baseFields,
   baseMessage,
@@ -47,35 +47,6 @@ function graded(scopes: readonly string[] = ALL): Setup & { readonly gradebook: 
   Object.assign(ctx.requests, { services: { gradebook } });
   return Object.assign(ctx, { gradebook });
 }
-
-/** Gets an access token for the first tool, with a deployment in its assertion unless `deployment` is `null`. */
-async function tokenFor(ctx: Setup, scope: string, deployment: string | null = TOOL_DEPLOYMENT_ID): Promise<string> {
-  const claims = deployment === null ? {} : { [`${CLAIM}deployment_id`]: deployment };
-  const assertion = await clientAssertion(toolKeys, endpoints.token, ctx.clock, claims);
-  const response = await handle(ctx, tokenRequest(endpoints.token, assertion, scope));
-  expect(response.status, textOf(response.body)).toBe(200);
-  return JSON.parse(textOf(response.body)).access_token;
-}
-
-/** A request to a service of the platform with a bearer token. */
-function call(
-  url: string,
-  token: string | undefined,
-  init: { method?: string; type?: string; body?: unknown } = {},
-): ReturnType<typeof request> {
-  return request({
-    url,
-    method: init.method ?? "GET",
-    headers: {
-      ...(token === undefined ? {} : { authorization: `Bearer ${token}` }),
-      ...(init.type === undefined ? {} : { "content-type": init.type }),
-    },
-    body: init.body === undefined ? "" : typeof init.body === "string" ? init.body : JSON.stringify(init.body),
-  });
-}
-
-/** The JSON body of an answer. */
-const json = (response: HttpResponse) => JSON.parse(textOf(response.body));
 
 /** A score as AGS 3.4 shows it, for the learner of the tests. */
 const score = (change: Record<string, unknown> = {}) => ({

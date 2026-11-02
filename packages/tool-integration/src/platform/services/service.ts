@@ -1,9 +1,11 @@
-import { type CallOptions, callPort } from "@interopkit/core";
+import { type CallOptions, callPort, DataError } from "@interopkit/core";
+import { nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
+import * as v from "valibot";
 import type { MessageServices } from "../../protocol/index.js";
 import type { MessageInput } from "../messages/input.js";
 import type { PlatformSettings } from "../options.js";
-import type { PlatformServices, ServiceCaller } from "../ports.js";
+import type { PlatformServices, ServiceCaller, StorePage } from "../ports.js";
 
 /** A request to a route of a service whose token passed: the request, the parameters of its path, the caller and the store. */
 export interface ServiceRequest<TStore> {
@@ -76,4 +78,39 @@ export async function askStore<T>(call: RouteCall, port: (options: CallOptions) 
   const outcome = await callPort(() => port({ signal }), signal);
   if (outcome === undefined) throw new StoreFailed();
   return outcome.value;
+}
+
+/**
+ * Reads what a store answered with a reader of the model, and names the store in the error.
+ *
+ * @remarks
+ * A writer takes the types of the model, so a value of another shape fails it with a `TypeError`; that too is a store that breaks
+ * its contract.
+ *
+ * @throws `DataError` that names the store and says what is wrong.
+ */
+export function fromStore<T>(label: string, read: () => T): T {
+  try {
+    return read();
+  } catch (error) {
+    if (error instanceof DataError || error instanceof TypeError) {
+      throw new DataError(`The answer of ${label} breaks its contract: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/** The members of the page that a store answers, beside which a store may give more. */
+export const PAGE_ENTRIES = { items: v.array(v.unknown()), cursor: v.optional(nonEmptyStringSchema) };
+
+const pageSchema = v.object(PAGE_ENTRIES);
+
+/**
+ * Reads the frame of a page that a store answered: a list of items, which the caller reads, and the opaque cursor of the next page.
+ *
+ * @throws `DataError` that names the store when the answer is not a page.
+ */
+export function readStorePage(label: string, value: unknown): StorePage<unknown> {
+  const page = parseWith(pageSchema, value, `The answer of ${label}`);
+  return page.cursor === undefined ? { items: page.items } : { items: page.items, cursor: page.cursor };
 }

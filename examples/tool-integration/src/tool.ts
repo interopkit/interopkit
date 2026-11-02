@@ -1,5 +1,5 @@
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
-import type { DeepLinkingRequestMessage, LtiMessage, Result } from "@interopkit/tool-integration";
+import { type DeepLinkingRequestMessage, type LtiMessage, type Result, SCOPES } from "@interopkit/tool-integration";
 import {
   advanceScoreTimestamp,
   createDeepLinkResponse,
@@ -18,6 +18,23 @@ interface Graded {
   readonly results: readonly Result[];
 }
 
+/** What the tool saw of the course when it read its roster. */
+interface Roster {
+  /** The label of the course. */
+  readonly course: string | undefined;
+  /** Each member with the names of the groups they are in. */
+  readonly members: readonly {
+    readonly userId: string;
+    readonly roles: readonly string[];
+    readonly groups: readonly string[];
+  }[];
+  /** The names of the groups of the course and of its group sets. */
+  readonly groups: readonly string[];
+  readonly sets: readonly string[];
+  /** The record of needs of the user of the launch for its activity, as the platform shares it. */
+  readonly needs: Readonly<Record<string, unknown>> | undefined;
+}
+
 /** The tool: the handler of its origin, and the grading of a launch. */
 export interface Tool {
   /** The launches that the tool accepted, in order. A real tool keeps one in the user's session. */
@@ -26,6 +43,8 @@ export interface Tool {
   readonly handle: Handler;
   /** Reads the line item of a launch, publishes the score of its user, and reads the results of the line item back. */
   grade(launch: LtiMessage, scoreGiven: number): Promise<Graded>;
+  /** Reads the members of the course of a launch with their groups, the groups and group sets, and the record of needs of its user. */
+  readRoster(launch: LtiMessage): Promise<Roster>;
 }
 
 /** Creates the tool that a setup configures. */
@@ -85,7 +104,32 @@ export function createTool({ options }: ToolSetup): Tool {
     const { items } = await client.results(grades.lineitem);
     return { label: lineItem.label, results: items };
   };
-  return { launches, handle, grade };
+  const readRoster = async (launch: LtiMessage): Promise<Roster> => {
+    const { roster, groups, preferences } = launch.services;
+    const activityId = launch.messageType === "LtiResourceLinkRequest" ? launch.resourceLink.id : undefined;
+    const userId = launch.user.subject;
+    if (roster === undefined || groups?.contextGroupSetsUrl === undefined || preferences === undefined) {
+      throw new Error("The launch offers no roster.");
+    }
+    if (activityId === undefined || userId === undefined) throw new Error("The launch offers no activity of a user.");
+    // The claim of Names and Role Provisioning has no scopes: the specification fixes its one scope.
+    const scopes = [SCOPES.contextMembershipReadonly, ...groups.scopes, ...preferences.scopes];
+    const client = createServiceClient(launch, { ...options, scopes });
+    const members = await client.members(roster.contextMembershipsUrl, { groups: true });
+    const names = new Map((await client.groups(groups.contextGroupsUrl)).items.map((group) => [group.id, group.name]));
+    return {
+      course: members.context.label ?? members.context.title,
+      members: members.items.map((member) => ({
+        userId: member.userId,
+        roles: member.roles,
+        groups: (member.groupEnrollments ?? []).map(({ groupId }) => names.get(groupId) ?? groupId),
+      })),
+      groups: [...names.values()],
+      sets: (await client.groupSets(groups.contextGroupSetsUrl)).items.map((set) => set.name),
+      needs: await client.preferences(preferences, userId, activityId),
+    };
+  };
+  return { launches, handle, grade, readRoster };
 }
 
 /** What the route of the launch tells the browser: enough for the scenario to check the launch, and nothing secret. */

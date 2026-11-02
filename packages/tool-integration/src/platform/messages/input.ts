@@ -122,6 +122,33 @@ export interface MessageServicesInput {
     /** Whether the claim names the container of the line items of the context as `lineitems`. */
     readonly container: boolean;
   };
+  /**
+   * Names and Role Provisioning (NRPS 2.0 section 4.1): the claim names the members of the context, and of a resource link of it
+   * with `rlid`.
+   *
+   * @defaultValue none
+   */
+  readonly roster?: true;
+  /**
+   * Context Groups (Context Groups 1.0 section 2.7.1.1): the claim names the groups of the context and, when `sets` is true, its
+   * group sets.
+   *
+   * @defaultValue none
+   */
+  readonly groups?: {
+    /** Whether the claim names the group sets of the context as `context_group_sets_url`. */
+    readonly sets: boolean;
+  };
+  /**
+   * The AfA PNP Connector (AfA PNP Connector 1.0, claims in LTI messages): the claim names the activities that have a record. It
+   * needs no context, since the record of a user is below the host and not below a context.
+   *
+   * @defaultValue none
+   */
+  readonly preferences?: {
+    /** The identifiers of the activities that have a record, such as the resource link or the line item. At least one. */
+    readonly activityIds: readonly string[];
+  };
 }
 
 /** A launch of a resource link (`LtiResourceLinkRequest`, LTI 1.3 Core section 5). */
@@ -163,8 +190,8 @@ export interface SubmissionReviewInput extends MessageInputBase {
   readonly resourceLink?: ResourceLink;
   /** The user whose work is shown. */
   readonly forUser: ForUser;
-  /** The line item of the review, which the claim of the grade services names (Submission Review 1.0 section 2.5). */
-  readonly services: {
+  /** The services, which name the line item of the review in the grade services (Submission Review 1.0 section 2.5). */
+  readonly services: MessageServicesInput & {
     /** The grade services, which name the line item of the review. */
     readonly grades: {
       /** The store's identifier of the line item of the review. */
@@ -255,6 +282,14 @@ const identityEntries = {
 const resourceLinkSchema = strictRecord({ id: IDENTIFIER, title: TEXT, description: TEXT });
 const proctoringSettingsSchema = strictRecord({ data: TEXT });
 
+const gradesEntry = strictRecord({ lineItemId: v.optional(nonEmptyStringSchema), container: v.boolean() });
+/** The services beside the grade services, which every message may offer. */
+const otherServicesEntries = {
+  roster: v.optional(v.literal(true)),
+  groups: v.optional(strictRecord({ sets: v.boolean() })),
+  preferences: v.optional(strictRecord({ activityIds: v.pipe(v.array(nonEmptyStringSchema), v.minLength(1)) })),
+};
+
 const baseEntries = {
   clientId: nonEmptyStringSchema,
   deploymentId: IDENTIFIER,
@@ -286,11 +321,7 @@ const baseEntries = {
       oauthConsumerKey: nonEmptyStringSchema,
     }),
   ),
-  services: v.optional(
-    strictRecord({
-      grades: v.optional(strictRecord({ lineItemId: v.optional(nonEmptyStringSchema), container: v.boolean() })),
-    }),
-  ),
+  services: v.optional(strictRecord({ grades: v.optional(gradesEntry), ...otherServicesEntries })),
 };
 
 const deepLinkingSettingsEntries = {
@@ -339,6 +370,7 @@ const messageInputSchema = v.pipe(
       }),
       services: strictRecord({
         grades: strictRecord({ lineItemId: nonEmptyStringSchema, container: v.boolean() }),
+        ...otherServicesEntries,
       }),
     }),
     v.strictObject({
@@ -361,6 +393,13 @@ const messageInputSchema = v.pipe(
   ]),
 );
 
+/** The services whose URLs lie below the context of the message, with the word that names each in an error. */
+const CONTEXT_SERVICES = [
+  ["grades", "grade"],
+  ["roster", "roster"],
+  ["groups", "group"],
+] as const;
+
 /**
  * Reads a message that the host launches, or that the `LaunchStore` gave back, into a copy that shares nothing with it.
  *
@@ -371,8 +410,10 @@ const messageInputSchema = v.pipe(
  */
 export function readMessageInput(value: unknown, label: string): MessageInput {
   const message = parseWith(messageInputSchema, value, label);
-  if (message.services?.grades !== undefined && message.context === undefined) {
-    throw new DataError(`${label} offers the grade services, which need its context.`);
+  const services: MessageServicesInput | undefined = message.services;
+  const names = CONTEXT_SERVICES.filter(([key]) => services?.[key] !== undefined).map(([, name]) => name);
+  if (names.length > 0 && message.context === undefined) {
+    throw new DataError(`${label} offers the ${names.join(" and ")} services, which need its context.`);
   }
   return message;
 }

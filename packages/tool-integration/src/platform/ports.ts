@@ -1,5 +1,14 @@
 import type { CallOptions } from "@interopkit/core";
-import type { LineItemInput, Result, Score } from "../protocol/index.js";
+import type {
+  Group,
+  GroupSet,
+  LineItemInput,
+  Member,
+  MembershipContext,
+  PreferencesRecord,
+  Result,
+  Score,
+} from "../protocol/index.js";
 import type { MessageInput } from "./messages/input.js";
 import type { ToolRegistration } from "./registration.js";
 
@@ -179,6 +188,117 @@ export interface GradebookStore {
   ): Promise<"kept" | "older" | undefined>;
 }
 
+/** The filters of a request for the members of a context, with the page asked for. */
+export interface StoreMemberQuery {
+  /**
+   * Only the members with this role, as a URI: the simple name of a context role in the request, such as `Learner`, is already
+   * its URI (`canonicalizeRole`). A member's `roles` are as the platform stores them.
+   */
+  readonly role?: string;
+  /** Only the members who can reach this resource link, each with the `message` of that link; the link must be the tool's and in the context. */
+  readonly resourceLinkId?: string;
+  /** Whether each member carries the `groupEnrollments` of the context; the library drops them when it is not `true`. */
+  readonly groups?: boolean;
+  /** The token of the differences with an earlier read: the `differences` that the store gave then. */
+  readonly since?: string;
+  /** The most members to return: the request's `limit`, or `pageSize`, at most `maxPageSize`. */
+  readonly limit: number;
+  /** Where the page starts: the `cursor` of the page before, or none for the first page. */
+  readonly cursor?: string;
+}
+
+/** A page of the members of a context, with the names of the context and the token of the differences from this read. */
+export interface StoreMemberPage extends StorePage<Member> {
+  /**
+   * The label and the title of the context; its `id` is the one in the path.
+   *
+   * @defaultValue none
+   */
+  readonly context?: Omit<MembershipContext, "id">;
+  /**
+   * A token that a later request returns as `since` to read the differences from now (NRPS 2.0, membership differences); the
+   * library puts it in the `differences` link, which it builds from the request with `since` set.
+   *
+   * @defaultValue none, and the answer has no `differences` link
+   */
+  readonly differences?: string;
+}
+
+/**
+ * The roster of the platform behind Names and Role Provisioning: the members of each context, and of each resource link of it.
+ * Every method receives the caller, and answers `undefined` for a context, a resource link or a cursor that is not the caller's
+ * or is gone, so that the route answers 404 and existence does not leak.
+ */
+export interface RosterStore {
+  /**
+   * Returns a page of the members of a context that match the query: a member with a user identifier and roles, and as much
+   * more as the platform and the tool agreed to share (NRPS 2.0, sharing of personal data). Only a read of the differences
+   * (`since`) may give a member the status `Deleted`.
+   *
+   * @returns The page, or `undefined` for a context that is not the caller's, a resource link that is not the tool's or not in
+   * the context, or a cursor or token that is gone. A tool that gets 404 for a cursor starts from the first page.
+   */
+  members(
+    caller: ServiceCaller,
+    contextId: string,
+    query: StoreMemberQuery,
+    options?: CallOptions,
+  ): Promise<StoreMemberPage | undefined>;
+}
+
+/** The filters of a request for the groups of a context, with the page asked for. */
+export interface StoreGroupQuery {
+  /** Only the groups this user is enrolled in. */
+  readonly userId?: string;
+  /** The most groups to return. */
+  readonly limit: number;
+  /** Where the page starts: the `cursor` of the page before, or none for the first page. */
+  readonly cursor?: string;
+}
+
+/**
+ * The groups of the platform behind Context Groups: the groups of each context and its group sets. Every method receives the
+ * caller, and answers `undefined` for a context that is not the caller's, so that the route answers 404.
+ */
+export interface GroupStore {
+  /** Returns a page of the groups of a context, or of the groups a user is enrolled in, or `undefined` for a context that is not the caller's. */
+  groups(
+    caller: ServiceCaller,
+    contextId: string,
+    query: StoreGroupQuery,
+    options?: CallOptions,
+  ): Promise<StorePage<Group> | undefined>;
+  /** Returns a page of the group sets of a context, or `undefined` for a context that is not the caller's. */
+  groupSets(
+    caller: ServiceCaller,
+    contextId: string,
+    query: { readonly limit: number; readonly cursor?: string },
+    options?: CallOptions,
+  ): Promise<StorePage<GroupSet> | undefined>;
+}
+
+/**
+ * The needs and preferences of the platform's users behind the AfA PNP Connector: the record of a user for a learning activity,
+ * which passes as JSON. The caller receives the user and the activity from the path, so the store decides whether the tool may
+ * read them.
+ */
+export interface PreferencesStore {
+  /**
+   * Returns the record of a user for an activity, or `undefined` when the tool may not read it or there is none.
+   *
+   * @param userSourcedId - The user, as the path of the request names it.
+   * @param activityId - The activity, as the path names it; an identifier that the message offered.
+   * @param fields - The members of the record to return, or none for all; the library drops the others.
+   */
+  record(
+    caller: ServiceCaller,
+    userSourcedId: string,
+    activityId: string,
+    fields: readonly string[] | undefined,
+    options?: CallOptions,
+  ): Promise<PreferencesRecord | undefined>;
+}
+
 /** The stores of the services of the platform. A service whose store is absent is neither offered in a claim nor routed. */
 export interface PlatformServices {
   /**
@@ -187,4 +307,22 @@ export interface PlatformServices {
    * @defaultValue none
    */
   readonly gradebook?: GradebookStore;
+  /**
+   * The roster behind Names and Role Provisioning.
+   *
+   * @defaultValue none
+   */
+  readonly roster?: RosterStore;
+  /**
+   * The groups and group sets behind Context Groups.
+   *
+   * @defaultValue none
+   */
+  readonly groups?: GroupStore;
+  /**
+   * The records behind the AfA PNP Connector.
+   *
+   * @defaultValue none
+   */
+  readonly preferences?: PreferencesStore;
 }

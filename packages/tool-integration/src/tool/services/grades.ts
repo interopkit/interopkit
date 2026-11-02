@@ -25,7 +25,7 @@ import {
   writeResultQuery,
   writeScore,
 } from "../../protocol/internal.js";
-import type { Page, ServiceAccess } from "./access.js";
+import { containerRequest, type Page, type ServiceAccess, withQuery } from "./access.js";
 
 /** The scopes that read line items, the narrower first. */
 const READ_LINE_ITEMS = [SCOPES.lineitemReadonly, SCOPES.lineitem];
@@ -79,19 +79,6 @@ function belowLineItem(lineItemUrl: string, suffix: string): URL {
   const url = new URL(lineItemUrl);
   if (!url.pathname.endsWith(suffix)) url.pathname = `${url.pathname.replace(TRAILING_SLASH, "")}${suffix}`;
   return url;
-}
-
-/** Adds the filters of a query to a URL, and a `limit` when neither the query nor the URL names one. */
-function withQuery(url: URL, filters: URLSearchParams, pageLimit: number): string {
-  for (const [name, value] of filters) url.searchParams.set(name, value);
-  if (!url.searchParams.has("limit")) url.searchParams.set("limit", String(pageLimit));
-  return url.href;
-}
-
-/** Returns the URL of a request for a container: the URL with the filters of the query. */
-function containerRequest(url: string, filters: URLSearchParams, pageLimit: number): string {
-  checkHttpsUrl(url, "The URL of the container");
-  return withQuery(new URL(url), filters, pageLimit);
 }
 
 /**

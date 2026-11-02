@@ -7,10 +7,10 @@ import type { PlatformServices } from "../ports.js";
 import type { ToolRegistration } from "../registration.js";
 import { authorizeService } from "./access.js";
 import { GRADES } from "./grades.js";
+import { GROUPS } from "./groups.js";
+import { ROSTER } from "./members.js";
+import { PREFERENCES } from "./preferences.js";
 import { type ClaimRequest, type RouteCall, type Service, StoreFailed } from "./service.js";
-
-/** The services of the platform, one line each. */
-const SERVICES = [GRADES] as const;
 
 /** A route of a service whose store the host gave, with the store bound to its methods. */
 interface BoundRoute {
@@ -46,9 +46,23 @@ function bind<TName extends keyof PlatformServices>(
   return { scopes: service.scopes, claim: service.claim, routes };
 }
 
+/** A service of the platform with the type of its store erased: what the router needs of it. */
+interface ListedService {
+  readonly claim: BoundService["claim"];
+  readonly bind: (services: PlatformServices) => BoundService | undefined;
+}
+
+/** Lists a service, so that services with stores of different types are one list. */
+function listed<TName extends keyof PlatformServices>(service: Service<TName>): ListedService {
+  return { claim: service.claim, bind: (services) => bind(service, services) };
+}
+
+/** The services of the platform, one line each. */
+const SERVICES: readonly ListedService[] = [listed(GRADES), listed(ROSTER), listed(GROUPS), listed(PREFERENCES)];
+
 /** Returns the services whose store the host gave. */
 function boundServices(settings: PlatformSettings): BoundService[] {
-  return SERVICES.flatMap((service) => bind(service, settings.services ?? {}) ?? []);
+  return SERVICES.flatMap((service) => service.bind(settings.services ?? {}) ?? []);
 }
 
 /** Returns the scopes that the services of the platform offer: those of every service whose store the host gave. */

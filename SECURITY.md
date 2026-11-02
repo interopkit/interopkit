@@ -427,7 +427,8 @@ platform's key, to the tool's client and deployment, and to one use.
   nowhere. Trust the 1.1 identifiers of a launch only when `migration.verified` is `true`.
 - **Service tokens.** `createServiceClient` keeps one access token for each scope in memory until it is about to expire, asks for
   the narrowest scope that a call needs, and sends the token only to a URL on the registration's `serviceOrigins`, or, without
-  them, an `https` URL that names a public host; a `next` link of another origin ends the pages. A 401 drops the token.
+  them, an `https` URL that names a public host; a `next` or `differences` link of another origin ends the pages. A 401 drops the
+  token. The record of the AfA PNP Connector is asked of the `hostUrl` of the launch's claim and of no other host.
 - A score is not idempotent: AGS requires a strictly later `timestamp` for each update of a line item and user, and a platform
   may drop an equal or earlier one. After a timeout the first attempt is in doubt, and the resend takes a later time.
 - Launch claims (the `sub`, roles and custom properties) pass through the package to the host; it stores nothing.
@@ -483,6 +484,13 @@ them ([platform role](docs/tool-integration/platform.md)).
   request: a removed tool or deployment is 401 at once, and a scope that the registration no longer grants is 403. Every store
   receives the caller, and answers `undefined` for a context that is not the caller's, which is 404, so that existence does not
   leak. The bodies are measured before they are parsed, and the store orders the scores (AGS 3.4.9).
+- **The roster services share personal data.** A member carries names, email and roles, a group enrollment says who is with whom, and
+  a record of needs and preferences can disclose a disability. The platform gives the tool what the request asked for and nothing
+  more: the group enrollments only with `groups=true`, the message of a resource link only with `rlid`, and the members of a
+  record only as `fields` names them, whatever the store gave. The store decides which users, contexts and activities a tool may
+  see, from the caller; the library never lists or counts what the store did not give. A member that left (`Deleted`) is for a read
+  of the differences alone, and the `differences` link carries a token of the store and no cursor. The claim of the connector is
+  not offered to a tool whose registration grants none of its scope.
 - **LTI 1.1 secrets.** `migrationSecret` gives the secret of a consumer key for one HMAC of the migration claim at authorization;
   no message or store of the package ever holds it.
 

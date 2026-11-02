@@ -1,7 +1,6 @@
 import { DataError } from "@interopkit/core";
-import { checkNonEmptyString, isRecord, nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
+import { checkNonEmptyString, isRecord } from "@interopkit/core/checks";
 import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
-import * as v from "valibot";
 import { type LineItem, type MessageServices, type Result, SCOPES } from "../../protocol/index.js";
 import {
   LINE_ITEM_CONTAINER_MEDIA_TYPE,
@@ -24,7 +23,7 @@ import { notFound, refusal } from "../answers.js";
 import type { GradebookStore, ReceivedScore, StorePage } from "../ports.js";
 import { readBody } from "./body.js";
 import { pageHeaders, readPageRequest } from "./paging.js";
-import { askStore, type ClaimRequest, type Service, type ServiceRequest } from "./service.js";
+import { askStore, type ClaimRequest, fromStore, readStorePage, type Service, type ServiceRequest } from "./service.js";
 
 /** The scopes that read the line items: the narrower first. */
 const READ_LINE_ITEMS = [SCOPES.lineitemReadonly, SCOPES.lineitem];
@@ -48,21 +47,9 @@ function pathOf(call: Call): { readonly context: string; readonly lineItem: stri
   return { context: call.params.context ?? "", lineItem: call.params.lineItem ?? "" };
 }
 
-/** Reads what a store answered with a reader of the model, and names the store in the error. */
-function fromStore<T>(label: string, read: () => T): T {
-  try {
-    return read();
-  } catch (error) {
-    if (error instanceof DataError) throw new DataError(`The answer of ${label} breaks its contract: ${error.message}`);
-    throw error;
-  }
-}
-
-const pageSchema = v.object({ items: v.array(v.unknown()), cursor: v.optional(nonEmptyStringSchema) });
-
 /** Reads a page that a store answered, its items with a reader. */
 function storePage<T>(label: string, value: unknown, read: (item: unknown) => T): StorePage<T> {
-  const page = parseWith(pageSchema, value, `The answer of ${label}`);
+  const page = readStorePage(label, value);
   const items = page.items.map((item) => fromStore(label, () => read(item)));
   return page.cursor === undefined ? { items } : { items, cursor: page.cursor };
 }

@@ -45,6 +45,25 @@ describe("the scenario", () => {
     });
   });
 
+  it("reads the members of the course with their groups, the groups and sets, and the record of needs of the user", async () => {
+    const { roster } = await runScenario();
+    expect(roster).toStrictEqual({
+      course: "DRAW 101",
+      members: [
+        { userId: "instructor-1", roles: ["http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor"], groups: [] },
+        {
+          userId: "candidate-7",
+          roles: ["http://purl.imsglobal.org/vocab/lis/v2/membership#Learner"],
+          groups: ["Drawing group A"],
+        },
+        { userId: "candidate-8", roles: ["http://purl.imsglobal.org/vocab/lis/v2/membership#Learner"], groups: [] },
+      ],
+      groups: ["Drawing group A"],
+      sets: ["Drawing lab"],
+      needs: { "additional-testing-time": { "time-factor": 1.5 } },
+    });
+  });
+
   it("places the content that the tool chose, which the platform reads with the data that it sealed into the request", async () => {
     const { deepLinked } = await runScenario();
     expect(deepLinked).toStrictEqual({

@@ -7,7 +7,7 @@ import {
   type ServiceInit,
   type ServiceResponse,
 } from "@interopkit/core";
-import { describe, hasMoreTokensThan } from "@interopkit/core/checks";
+import { checkHttpsUrl, describe, hasMoreTokensThan } from "@interopkit/core/checks";
 import { createTokenCache } from "@interopkit/core/oauth";
 import { LtiError } from "../../errors.js";
 import type { LtiDeployment } from "../../protocol/index.js";
@@ -79,6 +79,8 @@ export interface ServiceAccess {
   read<T>(response: ServiceResponse, what: string, reader: (value: unknown) => T): T;
   /** Returns the `next` link of an answer, on the origin of the request, or `undefined`. */
   next(response: ServiceResponse, url: string): string | undefined;
+  /** Returns the link of an answer with a relation, such as `differences`, on the origin of the request, or `undefined`. */
+  link(response: ServiceResponse, relation: string, url: string): string | undefined;
 }
 
 const DECODER = new TextDecoder("utf-8", { fatal: true });
@@ -104,6 +106,23 @@ function requestOf(init: ServiceRequestInit, token: string): ServiceInit {
   if (init.body === undefined) return { method: init.method, headers };
   headers["content-type"] = init.body.type;
   return { method: init.method, headers, body: JSON.stringify(init.body.json) };
+}
+
+/** Adds the filters of a query to a URL, and a `limit` when neither the query nor the URL names one. */
+export function withQuery(url: URL, filters: URLSearchParams, pageLimit: number): string {
+  for (const [name, value] of filters) url.searchParams.set(name, value);
+  if (!url.searchParams.has("limit")) url.searchParams.set("limit", String(pageLimit));
+  return url.href;
+}
+
+/**
+ * Returns the URL of a request for a container: the URL with the filters of the query, and a `limit`.
+ *
+ * @throws `DataError` when the URL is not an `https` URL.
+ */
+export function containerRequest(url: string, filters: URLSearchParams, pageLimit: number): string {
+  checkHttpsUrl(url, "The URL of the container");
+  return withQuery(new URL(url), filters, pageLimit);
 }
 
 /** The name of a URL in an error. */
@@ -186,6 +205,9 @@ export function createServiceAccess(deployment: LtiDeployment, settings: Service
     },
     next(response, url) {
       return linkTarget(response.headers, "next", url);
+    },
+    link(response, relation, url) {
+      return linkTarget(response.headers, relation, url);
     },
   };
 }

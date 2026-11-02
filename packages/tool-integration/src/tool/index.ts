@@ -5,7 +5,8 @@
  * The tool starts the OpenID Connect login (with a cookie, or with the platform's browser storage in an iframe), validates
  * the launch of every message type, serves its key set, answers a Deep Linking request with `createDeepLinkResponse`, and calls
  * the services of the platform with `createServiceClient`: the line items, results and scores of the Assignment and Grade
- * Services, with access tokens that its signer asks for and that it reuses.
+ * Services, the members of a context, its groups and the preferences record of a user, with access tokens that its signer asks for
+ * and that it reuses.
  *
  * @module @interopkit/tool-integration/tool
  */
@@ -17,6 +18,9 @@ export type { LtiLaunchOptions, LtiLoginOptions, ToolOptions } from "./options.j
 export type { PlatformRegistration } from "./registration.js";
 export type { Page } from "./services/access.js";
 export { advanceScoreTimestamp, type GradesClient } from "./services/grades.js";
+export type { GroupsClient } from "./services/groups.js";
+export type { MemberPage, MembersClient } from "./services/members.js";
 export type { ServiceClientOptions } from "./services/options.js";
 export { createServiceClient, type ServiceClient } from "./services/parts.js";
+export type { PreferencesClient } from "./services/preferences.js";
 export type { LoginRecord, LtiStore } from "./store.js";

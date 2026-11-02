@@ -26,8 +26,8 @@ sequenceDiagram
   opt Deep Linking request
     T->>P: createDeepLinkResponse: a page that posts the signed JWT to the return URL
   end
-  opt Grade services
-    T->>P: createServiceClient: a cached access token, then the line item, the score, the results
+  opt Grade and roster services
+    T->>P: createServiceClient: a cached access token, then the line item, the score, the results, the members, the groups
   end
 ```
 
@@ -37,7 +37,7 @@ sequenceDiagram
 | `ltiLaunch(request, options)`                 | Validates the `id_token` and returns the launch, or the verification page of the storage path |
 | `serveToolJwks(request, keys, options)`       | Answers the request for the tool's key set: the public keys of its `KeySet`                   |
 | `createDeepLinkResponse(launch, response, options)` | Checks the items, signs the response to a Deep Linking request and returns the page that posts it ([Deep Linking](deep-linking.md)) |
-| `createServiceClient(deployment, options)`    | Returns the client of the grade services of a platform ([grade services](grades.md))          |
+| `createServiceClient(deployment, options)`    | Returns the client of the services of a platform: grades ([grade services](grades.md)), members, groups and preferences ([roster services](roster.md)) |
 | `advanceScoreTimestamp(lastSent, now)`        | Returns a timestamp of a score strictly later than the last one sent                          |
 | `createJwksCache(options)`                    | Creates the cache of the platforms' key sets that `ltiLaunch` verifies signatures with        |
 
@@ -248,7 +248,7 @@ An `LtiMessage` is a union by `messageType`; [Messages and vocabularies](model.m
 | `roles`                              | The role URIs, as the platform sent them; `canonicalizeRole` maps a deprecated simple name to its URI                    |
 | `context`, `platform`, `presentation` | The `context`, `tool_platform` and `launch_presentation` claims                                                         |
 | `custom`                             | The custom properties of the link, a `Map`                                                                               |
-| `services`                           | The service claims: `grades` has `scopes`, `lineitems` and `lineitem`; a service the platform does not offer is absent  |
+| `services`                           | The service claims: `grades` has `scopes`, `lineitems` and `lineitem`, `roster` the `contextMembershipsUrl`, `groups` the group URLs and `preferences` the host and the activities; a service the platform does not offer is absent  |
 | `claims`                             | Every claim of the token as JSON, vendor claims among them                                                               |
 | `migration`                          | The `lti1p1` claim, with `verified` true only when `legacySecret` gave the secret that signs its consumer key            |
 | `resourceLink`                       | `LtiResourceLinkRequest`: `id`, `title`, `description`                                                                   |
@@ -301,7 +301,7 @@ The client of the services, `createServiceClient`, asks the platform for access 
 `iss` and `sub` the client identifier, `aud` the token endpoint (or the `audience` of the registration), `iat`, `exp` (300
 seconds later), a new `jti`, and the deployment claim (LTI 1.3 Core section 6.2.1). It keeps a token for each scope until it
 is about to expire, and sends it only to the registration's `serviceOrigins`, or to an `https` URL that names a public host. The
-[grade services](grades.md) guide has the methods, the options, the timestamps of scores and the errors.
+[grade services](grades.md) guide has the methods, the options, the timestamps of scores and the errors; the [roster services](roster.md) guide has the members, the groups and the preferences record.
 
 ## The key set cache
 

@@ -44,6 +44,15 @@ flowchart LR
 | `resultMaximum` of a result | The text says a platform that sends none means 1 | The reader leaves it absent and the type says what absent means |
 | Context Groups: a group in several sets | Section 2.1 says a group may be part of at most one group set; `set_ids` is an array and the example puts a group in two sets | `setIds` is a list |
 | The group sets of Context Groups 2.2.1.1 | The printed example has no comma before `"hidden"`, so it is not JSON | The test reads it with the comma added |
+| The claim of NRPS and the scope of the call | The claim of NRPS 4.1 has no `scope`, and the scope of the service is fixed in 4.2 | The claim is offered whatever the registration grants, as the claim of the grade services is; the tool passes `SCOPES.contextMembershipReadonly` to its client |
+| `scope` of the claim of Context Groups | The claim's `scope` must always hold the one scope of the service | Holds the scopes that the registration grants, none for a tool without it |
+| The claim of the AfA PNP Connector and its scopes | The connector requires one or more `scopes` in the claim | A tool whose registration grants none of the connector's scope is not offered the claim, since the reader would refuse it |
+| `limit` of a request for members, groups or sets | The platform "may use this as a guide" and "include more or less" | A page holds at most the `limit`, as the store must return; the tool follows `next` for the rest |
+| The `message` section of a member | NRPS 3 adds it "when queried in the context of a Resource Link" | Shared only with `rlid`; a store's `message` is dropped without it |
+| `group_enrollments` of a member | Context Groups 2.4 says the tool "must specify" `groups=true` to get them | Shared only with `groups=true`; a store's enrollments are dropped without it |
+| A `Deleted` membership | NRPS says a normal request lists current memberships only, and a differences read may list a deleted one | A member with the status `Deleted` is accepted from the store only for a request with `since` |
+| `fields` of the AfA PNP Connector | The connector says `fields` names the properties that "MUST ONLY be returned" | The platform drops every member of the store's record that `fields` does not name |
+| The paths of the AfA PNP Connector and the host of its claim | The claim gives a host, and the paths below it begin with `/ims/afapnp/v1p0` | The platform serves them below its origin and names its origin as `afapnp_endpoint_hosturl`; the tool appends the path to the host of the claim, with or without a path of its own |
 | A set filter of Context Groups | The roster design of this package lists user and set filters; the text defines `user_id` and `limit` only | `GroupQuery` has those two |
 | The platform configuration of Dynamic Registration 2.1.3 | The example of `lti-platform-configuration` has no `version`, which the table does not mark optional | `version` is optional |
 | The tool configuration of Dynamic Registration 2.2.5 | The printed example has no comma after the `roles` of its last message, so it is not JSON | It is not read; the tests build the configurations from the table |

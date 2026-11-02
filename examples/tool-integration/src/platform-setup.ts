@@ -13,6 +13,7 @@ import {
 } from "@interopkit/tool-integration/platform";
 import { createGradebook, type Gradebook } from "./gradebook.ts";
 import { generateHintKey, generatePlatformKeys } from "./keys.ts";
+import { courseOf, createRosterStores } from "./roster.ts";
 
 /** What the platform knows of the tool: the tool's side of the registration. */
 export interface ToolSide {
@@ -75,8 +76,16 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
     loginUrl: side.loginUrl,
     redirectUris: [side.redirectUri],
     keys: new Map([[side.keyId, side.publicKey]]),
-    // The tool may read the line items and the results, and post scores; it may not change the line items.
-    scopes: [SCOPES.lineitemReadonly, SCOPES.resultReadonly, SCOPES.score],
+    // The tool may read the line items and the results, and post scores; it may not change the line items. It may read the
+    // members of the course, its groups and the record of needs of a user.
+    scopes: [
+      SCOPES.lineitemReadonly,
+      SCOPES.resultReadonly,
+      SCOPES.score,
+      SCOPES.contextMembershipReadonly,
+      SCOPES.contextGroupReadonly,
+      SCOPES.preferencesRecordReadonly,
+    ],
   };
   const tools = async (clientId: string) => (clientId === registration.clientId ? registration : undefined);
   // The ledger of single-use identifiers: a client assertion is accepted once.
@@ -88,11 +97,20 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
   };
   const launches = launchStore();
   const gradebook = createGradebook();
+  const { roster, groups, preferences } = createRosterStores(courseOf(side.clientId));
   // The tool gave its key, so the platform never fetches a key set of the tool.
   const jwks = createJwksCache({ fetch: () => Promise.reject(new Error("The tool gave its key.")) });
   return {
     login: { config, clock, registration: tools, check: async () => undefined, launches },
-    requests: { config, clock, client: tools, launches, once, jwks, services: { gradebook: gradebook.store } },
+    requests: {
+      config,
+      clock,
+      client: tools,
+      launches,
+      once,
+      jwks,
+      services: { gradebook: gradebook.store, roster, groups, preferences },
+    },
     toolMessage: { config, clock, client: tools, jwks, once },
     endpoints: buildPlatformEndpoints(config),
     gradebook,

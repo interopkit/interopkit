@@ -5,7 +5,7 @@
 `ltiPlatformLogin` keeps it in the host's `LaunchStore` and returns the URL of the tool's login; one handler,
 `handlePlatformRequest`, answers every request to the platform's origin: the tool's authentication request with the `id_token`
 of the kept message, the key set, the token requests, the storage page and the routes of the services whose stores the host
-gives ([grade services](grades.md)). It runs on a server or an edge runtime, signs with a
+gives ([grade services](grades.md), [roster services](roster.md)). It runs on a server or an edge runtime, signs with a
 `Signer` of [`@interopkit/core`](../core/signer.md), and verifies the tools' tokens with [jose](https://github.com/panva/jose).
 
 ```mermaid
@@ -138,6 +138,7 @@ refuses a tool whose `targetLinkUri`, login URL or redirect URIs are on any of t
 | Token         | `/token`            | POST      |
 | Storage page  | `/storage`          | GET       |
 | Grade services | `/contexts/{context}/line-items`, and below it | With `services.gradebook`: see [grade services](grades.md) |
+| Roster services | `/contexts/{context}/memberships`, `/groups`, `/group-sets`, and `/ims/afapnp/v1p0/users/{user}/activities/{activity}/afapnprecords` | With `services.roster`, `groups` and `preferences`: see [roster services](roster.md) |
 
 A path that names nothing is 404, and a method that a route does not serve is 405 with `Allow`.
 
@@ -317,7 +318,7 @@ the origin that asked.
 | `checkLaunch(launch, options)`        | none                   | A last check of `{ clientId, deploymentId, principal }` before the message is taken      |
 | `substitution`                        | none                   | `names` and `resolve` of the variables the host resolves                                 |
 | `migrationSecret(consumerKey, options)` | none                 | The LTI 1.1 secret that signs the migration claim                                        |
-| `services`                            | none                   | The stores of the services: `gradebook` ([grade services](grades.md))                   |
+| `services`                            | none                   | The stores of the services: `gradebook` ([grade services](grades.md)), `roster`, `groups` and `preferences` ([roster services](roster.md)) |
 | `pageSize`                            | 100                    | The items of a page of a service when the request names no `limit`                       |
 | `maxPageSize`                         | 1,000                  | The most items of a page of a service                                                    |
 | `toolFrame`                           | `"lti-tool"`           | The frame of the tool that the storage page answers                                      |
@@ -395,6 +396,7 @@ signal.
 | The LTI 1.1 secret                                           | `migrationSecret`             | One HMAC, then dropped                                        | No                  |
 | The hints, access tokens, session data, Deep Linking data    | Sealed with the hint key      | The tool, which can read them; the host's `data` holds no secret and no personal data | No |
 | The Deep Linking response: items, titles, texts, addresses   | The tool, in a form the browser posts | The host, from `readDeepLinkingResponse`                | No                  |
+| The members of a context, their groups, the needs of a user  | The host's `RosterStore`, `GroupStore`, `PreferencesStore` | The tool, for the tool's token, as the store gives them | No      |
 | The nonce of a message of a tool                             | The tool                      | The host's `once`                                             | No                  |
 
 ## Differences from the references
@@ -407,6 +409,6 @@ package. Where a specification disagrees with an example, see [spec-gaps](spec-g
 
 | What                                                                                         | Reason                                                       |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Names and Role Provisioning, Context Groups, the PNP connector, the Assessment Control Service, Dynamic Registration | Not yet: see [supported](supported.md) |
+| The Assessment Control Service, Dynamic Registration | Not yet: see [supported](supported.md) |
 | The reader of the Start Assessment message                                                   | Not yet: see [supported](supported.md)                       |
 | Sessions, routes beyond the handler, a database, the page that frames the tool, a picker     | The host's                                                   |
