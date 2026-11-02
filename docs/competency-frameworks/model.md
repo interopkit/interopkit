@@ -115,7 +115,7 @@ departs from what the specification or its guide asks for. Where a user can act,
 | `invalid-value`               | error    | A value is not in the vocabulary of its property, or an `extensions` holds what JSON cannot or nests too deep                     |
 | `too-few-entries`             | error    | A set has no member                                                                                                               |
 | `duplicate-identifier`        | error    | Two entities of a package, or of a set or a rubric, have the same identifier, compared as UUIDs                                   |
-| `child-of-cycle`              | error    | The `isChildOf` associations loop. The association that closes the loop is named                                                  |
+| `child-of-cycle`              | error    | The `isChildOf` associations loop. The association that closes the loop is named, and the message names five nodes of the loop at most |
 | `identifier-form`             | warning  | An identifier is not lower case, of version 1 to 5 and of variant 8 to b, which the Information Model gives                       |
 | `unresolved-reference`        | warning  | A link to a definition, a grouping or a criterion's item points to nothing in the package                                         |
 | `reference-mismatch`          | warning  | A link, or a node of an association, names an entity of the package with another URI; a criterion or a level names another parent |

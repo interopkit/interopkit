@@ -348,6 +348,45 @@ describe("the tree of a package", () => {
     expect(errorRules(treeOf(count, ring), all)).toStrictEqual(["child-of-cycle"]);
   });
 
+  it("names five nodes of a long loop and counts the others, so that the message stays short", () => {
+    const count = 50_000;
+    const ring = [
+      ...Array.from({ length: count - 1 }, (_, at) => childOf(at, at + 2, at + 3)),
+      childOf(count, count + 1, 2),
+    ];
+    const [found] = validatePackage(treeOf(count, ring)).filter(({ severity }) => severity === "error");
+    const named = [2, 3, 4, 5, 6].map((number) => id(number)).join(" -> ");
+    expect(found?.message).toBe(
+      `the isChildOf associations loop through ${named} -> ${count - 5} more -> ${id(2)}; a tree has no loop, so remove one of the associations.`,
+    );
+  });
+
+  it("stops at the limit when thousands of associations each close a loop of thousands of items", () => {
+    // Each association from the last item to the first closes the whole chain again: a list of every loop would hold
+    // 20,000 times 20,000 identifiers, gigabytes for a package of 9 MB.
+    const count = 20_000;
+    const chain = Array.from({ length: count - 1 }, (_, at) => childOf(at, at + 2, at + 3));
+    const closing = Array.from({ length: count }, (_, at) => childOf(count + at, count + 1, 2));
+    const pkg = treeOf(count, [...chain, ...closing]);
+    const findings = validatePackage(pkg, { maxFindings: 10 });
+    expect(findings.map(({ rule }) => rule)).toStrictEqual([
+      ...Array.from({ length: 10 }, () => "child-of-cycle"),
+      "findings-stopped",
+    ]);
+    expect(() => readPackage(pkg)).toThrow("At least 999 more errors: the check stopped at its limit");
+  });
+
+  it("finds the items of a document of 50,000 children, and those that a child of two parents leaves out", () => {
+    const count = 50_000;
+    const flat = Array.from({ length: count }, (_, at) => childOf(at, at + 2, 1));
+    expect(validatePackage(treeOf(count, flat))).toStrictEqual([]);
+    const twoParents = Array.from({ length: count }, (_, at) => childOf(at, 2, at + 3));
+    const outside = validatePackage(treeOf(count + 1, twoParents), { maxFindings: 1_000_000 }).filter(
+      ({ rule }) => rule === "item-outside-tree",
+    );
+    expect(outside).toHaveLength(count + 1);
+  });
+
   describe("the items of the document", () => {
     const outside = (pkg: CasePackage) =>
       validatePackage(pkg)

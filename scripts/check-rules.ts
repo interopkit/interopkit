@@ -1071,8 +1071,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A loop of isChildOf associations is an error.",
     file: "packages/competency-frameworks/src/read/integrity.ts",
-    find: 'if (status === "open") {',
+    find: 'if (typeof place === "number") {',
     replace: "if (false) {",
+    test: "packages/competency-frameworks/test/integrity.test.ts",
+  },
+  {
+    rule: "The finding of a loop names at most five of its nodes, so that a package of loops cannot exhaust memory.",
+    file: "packages/competency-frameworks/src/read/integrity.ts",
+    find: "start + Math.min(length, LOOP_NODES_NAMED)",
+    replace: "start + length",
     test: "packages/competency-frameworks/test/integrity.test.ts",
   },
   {

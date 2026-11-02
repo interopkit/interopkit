@@ -65,35 +65,29 @@ function identifiersOfAnyEntity(entity: CaseEntity): Identified[] {
 }
 
 /** Finds the identifiers that two entities share, and the identifiers that are not of the form of the Information Model. */
-function identifierIssues(identified: readonly Identified[]): CaseIssue[] {
-  const issues: CaseIssue[] = [];
+function* identifierIssues(identified: readonly Identified[]): Generator<CaseIssue> {
   const first = new Map<string, string>();
   for (const { path, identifier } of identified) {
     const key = identifierKey(identifier);
     const earlier = first.get(key);
     if (earlier === undefined) first.set(key, path);
     else {
-      issues.push(
-        issue(
-          path,
-          "duplicate-identifier",
-          "error",
-          `the identifier ${JSON.stringify(identifier)} is also the identifier at ${earlier}; give each entity an identifier of its own.`,
-        ),
+      yield issue(
+        path,
+        "duplicate-identifier",
+        "error",
+        `the identifier ${JSON.stringify(identifier)} is also the identifier at ${earlier}; give each entity an identifier of its own.`,
       );
     }
     if (!INFORMATION_MODEL_UUID.test(identifier)) {
-      issues.push(
-        issue(
-          path,
-          "identifier-form",
-          "warning",
-          `the identifier ${JSON.stringify(identifier)} is not of the form that the Information Model gives: a UUID of lower-case digits, of version 1 to 5.`,
-        ),
+      yield issue(
+        path,
+        "identifier-form",
+        "warning",
+        `the identifier ${JSON.stringify(identifier)} is not of the form that the Information Model gives: a UUID of lower-case digits, of version 1 to 5.`,
       );
     }
   }
-  return issues;
 }
 
 /** The entities of a package that links point to, by the class of the link. */
@@ -127,39 +121,38 @@ function packageTargets(pkg: CasePackage): PackageTargets {
 }
 
 /** Checks that a link points to an entity of the package, with the same URI. */
-function linkIssues(link: LinkURI | undefined, path: string, targets: Targets, what: string): CaseIssue[] {
-  if (link === undefined) return [];
+function* linkIssues(link: LinkURI | undefined, path: string, targets: Targets, what: string): Generator<CaseIssue> {
+  if (link === undefined) return;
   const uri = targets.get(identifierKey(link.identifier));
   if (uri === undefined) {
-    return [
-      issue(
-        path,
-        "unresolved-reference",
-        "warning",
-        `the ${what} ${JSON.stringify(link.identifier)} is not in the package, which should hold what its links point to; add it to the definitions or leave the link out.`,
-      ),
-    ];
+    yield issue(
+      path,
+      "unresolved-reference",
+      "warning",
+      `the ${what} ${JSON.stringify(link.identifier)} is not in the package, which should hold what its links point to; add it to the definitions or leave the link out.`,
+    );
+  } else if (uri !== link.uri) {
+    yield issue(
+      path,
+      "reference-mismatch",
+      "warning",
+      `the link to the ${what} ${JSON.stringify(link.identifier)} has the URI ${JSON.stringify(link.uri)}, and the ${what} has ${JSON.stringify(uri)}; use the URI of the ${what}.`,
+    );
   }
-  return uri === link.uri
-    ? []
-    : [
-        issue(
-          path,
-          "reference-mismatch",
-          "warning",
-          `the link to the ${what} ${JSON.stringify(link.identifier)} has the URI ${JSON.stringify(link.uri)}, and the ${what} has ${JSON.stringify(uri)}; use the URI of the ${what}.`,
-        ),
-      ];
 }
 
 /** Checks each link of a list. */
-function linksIssues(links: readonly LinkURI[] | undefined, path: string, targets: Targets, what: string): CaseIssue[] {
-  return (links ?? []).flatMap((link, at) => linkIssues(link, `${path}[${at}]`, targets, what));
+function* linksIssues(
+  links: readonly LinkURI[] | undefined,
+  path: string,
+  targets: Targets,
+  what: string,
+): Generator<CaseIssue> {
+  for (const [at, link] of (links ?? []).entries()) yield* linkIssues(link, `${path}[${at}]`, targets, what);
 }
 
 /** Checks the nodes of an association: a node that names the package's own document or item agrees with it in URI. */
-function nodeIssues(association: CFPckgAssociation, path: string, nodes: Targets): CaseIssue[] {
-  const issues: CaseIssue[] = [];
+function* nodeIssues(association: CFPckgAssociation, path: string, nodes: Targets): Generator<CaseIssue> {
   let local = 0;
   for (const side of ["originNodeURI", "destinationNodeURI"] as const) {
     const node = association[side];
@@ -167,27 +160,22 @@ function nodeIssues(association: CFPckgAssociation, path: string, nodes: Targets
     if (uri === undefined) continue;
     local += 1;
     if (uri !== node.uri) {
-      issues.push(
-        issue(
-          `${path}.${side}`,
-          "reference-mismatch",
-          "warning",
-          `the node ${JSON.stringify(node.identifier)} has the URI ${JSON.stringify(node.uri)}, and the document or item of the package has ${JSON.stringify(uri)}; use the URI of the document or item.`,
-        ),
+      yield issue(
+        `${path}.${side}`,
+        "reference-mismatch",
+        "warning",
+        `the node ${JSON.stringify(node.identifier)} has the URI ${JSON.stringify(node.uri)}, and the document or item of the package has ${JSON.stringify(uri)}; use the URI of the document or item.`,
       );
     }
   }
   if (local === 0) {
-    issues.push(
-      issue(
-        path,
-        "association-outside-package",
-        "warning",
-        "neither node of the association is the document or an item of the package, which holds the associations of its own document and items; move the association to the package of its nodes.",
-      ),
+    yield issue(
+      path,
+      "association-outside-package",
+      "warning",
+      "neither node of the association is the document or an item of the package, which holds the associations of its own document and items; move the association to the package of its nodes.",
     );
   }
-  return issues;
 }
 
 /** One `isChildOf` association between two nodes of the package: the child, the parent and the place of the association. */
@@ -204,7 +192,9 @@ function childEdges(associations: readonly CFPckgAssociation[], nodes: Targets):
     if (association.associationType !== "isChildOf" || !isCaseNode(origin) || !isCaseNode(destination)) continue;
     const [child, parent] = [identifierKey(origin.identifier), identifierKey(destination.identifier)];
     if (!nodes.has(child) || !nodes.has(parent)) continue;
-    edges.set(child, [...(edges.get(child) ?? []), { parent, at }]);
+    const parents = edges.get(child);
+    if (parents === undefined) edges.set(child, [{ parent, at }]);
+    else parents.push({ parent, at });
   }
   return edges;
 }
@@ -215,14 +205,28 @@ interface Frame {
   visited: number;
 }
 
-/** Finds the `isChildOf` associations that close a loop, by a walk that keeps its own stack so that a long chain cannot overflow. */
-function cycleIssues(edges: ReadonlyMap<string, readonly ChildEdge[]>): CaseIssue[] {
-  const issues: CaseIssue[] = [];
-  const state = new Map<string, "open" | "done">();
+/** The most nodes of a loop that its finding names, so that the message of a loop of any length stays short. */
+const LOOP_NODES_NAMED = 5;
+
+/** Names the nodes of a loop that starts at a place of the walk's stack, and goes back to its first node. */
+function loopText(stack: readonly Frame[], start: number): string {
+  const length = stack.length - start;
+  const named = stack.slice(start, start + Math.min(length, LOOP_NODES_NAMED)).map(({ node }) => node);
+  const more = length > LOOP_NODES_NAMED ? [`${length - LOOP_NODES_NAMED} more`] : [];
+  return [...named, ...more, named[0]].join(" -> ");
+}
+
+/**
+ * Finds the `isChildOf` associations that close a loop, by a walk that keeps its own stack so that a long chain cannot overflow.
+ * Each node on the stack keeps its place there, so that an association that closes a loop costs the same however long it is.
+ */
+function* cycleIssues(edges: ReadonlyMap<string, readonly ChildEdge[]>): Generator<CaseIssue> {
+  // The place on the stack of a node that the walk is in, or "done" for a node whose parents are all walked.
+  const state = new Map<string, number | "done">();
   for (const start of edges.keys()) {
     if (state.has(start)) continue;
     const stack: Frame[] = [{ node: start, visited: 0 }];
-    state.set(start, "open");
+    state.set(start, 0);
     for (let frame = stack.at(-1); frame !== undefined; frame = stack.at(-1)) {
       const parents = edges.get(frame.node) ?? [];
       const edge = parents[frame.visited];
@@ -232,154 +236,142 @@ function cycleIssues(edges: ReadonlyMap<string, readonly ChildEdge[]>): CaseIssu
         stack.pop();
         continue;
       }
-      const status = state.get(edge.parent);
-      if (status === "open") {
-        const loop = [
-          ...stack.slice(stack.findIndex(({ node }) => node === edge.parent)).map(({ node }) => node),
-          edge.parent,
-        ];
-        issues.push(
-          issue(
-            `CFAssociations[${edge.at}]`,
-            "child-of-cycle",
-            "error",
-            `the isChildOf associations loop through ${loop.join(" -> ")}; a tree has no loop, so remove one of the associations.`,
-          ),
+      const place = state.get(edge.parent);
+      if (typeof place === "number") {
+        yield issue(
+          `CFAssociations[${edge.at}]`,
+          "child-of-cycle",
+          "error",
+          `the isChildOf associations loop through ${loopText(stack, place)}; a tree has no loop, so remove one of the associations.`,
         );
-      } else if (status === undefined) {
-        state.set(edge.parent, "open");
+      } else if (place === undefined) {
+        state.set(edge.parent, stack.length);
         stack.push({ node: edge.parent, visited: 0 });
       }
     }
   }
-  return issues;
 }
 
-/** Finds the items that no chain of `isChildOf` associations leads from to the document, which the items are components of. */
-function outsideTreeIssues(pkg: CasePackage, edges: ReadonlyMap<string, readonly ChildEdge[]>): CaseIssue[] {
+/** Collects the nodes that a chain of `isChildOf` associations leads down to from the document, the document included. */
+function reachedFromDocument(pkg: CasePackage, edges: ReadonlyMap<string, readonly ChildEdge[]>): ReadonlySet<string> {
   const children = new Map<string, string[]>();
   for (const [child, parents] of edges) {
-    for (const { parent } of parents) children.set(parent, [...(children.get(parent) ?? []), child]);
+    for (const { parent } of parents) {
+      const siblings = children.get(parent);
+      if (siblings === undefined) children.set(parent, [child]);
+      else siblings.push(child);
+    }
   }
-  const reached = new Set([identifierKey(pkg.CFDocument.identifier)]);
-  const queue = [...reached];
-  for (let node = queue.shift(); node !== undefined; node = queue.shift()) {
+  const queue = [identifierKey(pkg.CFDocument.identifier)];
+  const reached = new Set(queue);
+  // The loop reads the entries that it appends: the queue is the walk, level by level.
+  for (const node of queue) {
     for (const child of children.get(node) ?? []) {
       if (reached.has(child)) continue;
       reached.add(child);
       queue.push(child);
     }
   }
-  return (pkg.CFItems ?? []).flatMap((item, at) =>
-    reached.has(identifierKey(item.identifier))
-      ? []
-      : [
-          issue(
-            `CFItems[${at}]`,
-            "item-outside-tree",
-            "warning",
-            "the item has no chain of isChildOf associations to the document, which its items are components of; add an isChildOf association from the item to its parent, or to the document.",
-          ),
-        ],
-  );
+  return reached;
+}
+
+/** Finds the items that no chain of `isChildOf` associations leads from to the document, which the items are components of. */
+function* outsideTreeIssues(pkg: CasePackage, edges: ReadonlyMap<string, readonly ChildEdge[]>): Generator<CaseIssue> {
+  const reached = reachedFromDocument(pkg, edges);
+  for (const [at, item] of (pkg.CFItems ?? []).entries()) {
+    if (reached.has(identifierKey(item.identifier))) continue;
+    yield issue(
+      `CFItems[${at}]`,
+      "item-outside-tree",
+      "warning",
+      "the item has no chain of isChildOf associations to the document, which its items are components of; add an isChildOf association from the item to its parent, or to the document.",
+    );
+  }
 }
 
 /** Checks the links of the document and of each item against the definitions of the package. */
-function definitionLinkIssues(pkg: CasePackage, targets: PackageTargets): CaseIssue[] {
+function* definitionLinkIssues(pkg: CasePackage, targets: PackageTargets): Generator<CaseIssue> {
   const { CFDocument: document } = pkg;
-  const issues = [
-    ...linksIssues(document.subjectURI, "CFDocument.subjectURI", targets.subjects, "subject"),
-    ...linkIssues(document.licenseURI, "CFDocument.licenseURI", targets.licenses, "license"),
-  ];
+  yield* linksIssues(document.subjectURI, "CFDocument.subjectURI", targets.subjects, "subject");
+  yield* linkIssues(document.licenseURI, "CFDocument.licenseURI", targets.licenses, "license");
   for (const [at, item] of (pkg.CFItems ?? []).entries()) {
     const path = `CFItems[${at}]`;
-    issues.push(
-      ...linkIssues(item.conceptKeywordsURI, `${path}.conceptKeywordsURI`, targets.concepts, "concept"),
-      ...linksIssues(item.subjectURI, `${path}.subjectURI`, targets.subjects, "subject"),
-      ...linkIssues(item.CFItemTypeURI, `${path}.CFItemTypeURI`, targets.itemTypes, "item type"),
-      ...linkIssues(item.licenseURI, `${path}.licenseURI`, targets.licenses, "license"),
-    );
+    yield* linkIssues(item.conceptKeywordsURI, `${path}.conceptKeywordsURI`, targets.concepts, "concept");
+    yield* linksIssues(item.subjectURI, `${path}.subjectURI`, targets.subjects, "subject");
+    yield* linkIssues(item.CFItemTypeURI, `${path}.CFItemTypeURI`, targets.itemTypes, "item type");
+    yield* linkIssues(item.licenseURI, `${path}.licenseURI`, targets.licenses, "license");
   }
-  return issues;
 }
 
 /** Checks the links of the associations: their groupings, their nodes, and the tree that `isChildOf` makes. */
-function associationIssues(pkg: CasePackage, targets: PackageTargets): CaseIssue[] {
+function* associationIssues(pkg: CasePackage, targets: PackageTargets): Generator<CaseIssue> {
   const associations = pkg.CFAssociations ?? [];
-  const issues = associations.flatMap((association, at) => {
+  for (const [at, association] of associations.entries()) {
     const path = `CFAssociations[${at}]`;
-    return [
-      ...linkIssues(
-        association.CFAssociationGroupingURI,
-        `${path}.CFAssociationGroupingURI`,
-        targets.groupings,
-        "grouping",
-      ),
-      ...nodeIssues(association, path, targets.nodes),
-    ];
-  });
+    yield* linkIssues(
+      association.CFAssociationGroupingURI,
+      `${path}.CFAssociationGroupingURI`,
+      targets.groupings,
+      "grouping",
+    );
+    yield* nodeIssues(association, path, targets.nodes);
+  }
   const edges = childEdges(associations, targets.nodes);
-  return [...issues, ...cycleIssues(edges), ...outsideTreeIssues(pkg, edges)];
+  yield* cycleIssues(edges);
+  yield* outsideTreeIssues(pkg, edges);
+}
+
+/** Says that a criterion or a level names another parent than the one that holds it. */
+function* parentIssues(path: string, claimed: string | undefined, parent: string, what: string): Generator<CaseIssue> {
+  if (claimed === undefined || identifierKey(claimed) === identifierKey(parent)) return;
+  yield issue(
+    path,
+    "reference-mismatch",
+    "warning",
+    `${JSON.stringify(claimed)} is not the identifier ${JSON.stringify(parent)} of the ${what} that holds it; name the ${what} that holds it.`,
+  );
 }
 
 /** Checks that each criterion and level of the rubrics names its parent, and that a criterion's item is in the package. */
-function rubricIssues(pkg: CasePackage, targets: PackageTargets): CaseIssue[] {
-  const issues: CaseIssue[] = [];
-  const parentIssue = (path: string, claimed: string | undefined, parent: string, what: string) =>
-    claimed === undefined || identifierKey(claimed) === identifierKey(parent)
-      ? []
-      : [
-          issue(
-            path,
-            "reference-mismatch",
-            "warning",
-            `${JSON.stringify(claimed)} is not the identifier ${JSON.stringify(parent)} of the ${what} that holds it; name the ${what} that holds it.`,
-          ),
-        ];
+function* rubricIssues(pkg: CasePackage, targets: PackageTargets): Generator<CaseIssue> {
   for (const [at, rubric] of (pkg.CFRubrics ?? []).entries()) {
     for (const [index, criterion] of (rubric.CFRubricCriteria ?? []).entries()) {
       const path = `CFRubrics[${at}].CFRubricCriteria[${index}]`;
-      issues.push(
-        ...parentIssue(`${path}.rubricId`, criterion.rubricId, rubric.identifier, "rubric"),
-        ...linkIssues(criterion.CFItemURI, `${path}.CFItemURI`, targets.items, "item"),
-      );
+      yield* parentIssues(`${path}.rubricId`, criterion.rubricId, rubric.identifier, "rubric");
+      yield* linkIssues(criterion.CFItemURI, `${path}.CFItemURI`, targets.items, "item");
       for (const [position, level] of (criterion.CFRubricCriterionLevels ?? []).entries()) {
-        issues.push(
-          ...parentIssue(
-            `${path}.CFRubricCriterionLevels[${position}].rubricCriterionId`,
-            level.rubricCriterionId,
-            criterion.identifier,
-            "criterion",
-          ),
+        yield* parentIssues(
+          `${path}.CFRubricCriterionLevels[${position}].rubricCriterionId`,
+          level.rubricCriterionId,
+          criterion.identifier,
+          "criterion",
         );
       }
     }
   }
-  return issues;
 }
 
 /**
  * Checks a package that has the shape of CASE: identifiers, links and the tree.
  *
  * @param pkg - The package.
- * @returns The findings, in no order that a caller may rely on.
+ * @returns The findings, one at a time, so that a list that stops at its limit stops the check; in no order that a caller may
+ * rely on.
  */
-export function packageIssues(pkg: CasePackage): CaseIssue[] {
+export function* packageIssues(pkg: CasePackage): Generator<CaseIssue> {
   const targets = packageTargets(pkg);
-  return [
-    ...identifierIssues(identifiersOfPackage(pkg)),
-    ...definitionLinkIssues(pkg, targets),
-    ...associationIssues(pkg, targets),
-    ...rubricIssues(pkg, targets),
-  ];
+  yield* identifierIssues(identifiersOfPackage(pkg));
+  yield* definitionLinkIssues(pkg, targets);
+  yield* associationIssues(pkg, targets);
+  yield* rubricIssues(pkg, targets);
 }
 
 /**
  * Checks an entity that has the shape of CASE: its identifiers.
  *
  * @param entity - The entity.
- * @returns The findings.
+ * @returns The findings, one at a time.
  */
-export function entityIssues(entity: CaseEntity): CaseIssue[] {
+export function entityIssues(entity: CaseEntity): Generator<CaseIssue> {
   return identifierIssues(identifiersOfAnyEntity(entity));
 }
