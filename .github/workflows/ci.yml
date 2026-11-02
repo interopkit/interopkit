@@ -8,7 +8,223 @@ on:
 permissions:
   contents: read
 
+# A newer push to a branch or a pull request cancels the run in progress: it holds the commits of the older run, and `changes`
+# compares with the last run that passed, so what the cancelled run did not check is checked by the newer one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # What a push or a pull request changed since the last commit of main whose run passed, or since the base of a pull request,
+  # and so which jobs have something to check. A job that is skipped passes a required check. When nothing can be compared,
+  # for instance when no run has passed yet, every job runs. A job runs when a member of the workspace that it reads, or a member
+  # that uses that one, changed (the packages, the examples and compat, with their dependencies read from their package.json
+  # files); the lock file, the root configuration, the scripts that the tests share and this workflow reach every job; the
+  # Markdown, the changesets and the configuration of the linters reach none but check. A file that no rule names reaches every
+  # job. The guides of a package are tests of that package alone. The list of rules, scripts/check-rules.ts, reaches the rules
+  # that it changes. Outputs: test, rules, spec, browsers, bench, runtimes, opensalt, adl_lrs and sql_lrs say whether the job
+  # runs; projects and packages are the Vitest projects and the packages whose coverage floors the test job checks; rule_paths
+  # are the files and folders whose rules check:rules checks, none for every rule.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      test: ${{ steps.filter.outputs.test }}
+      projects: ${{ steps.filter.outputs.projects }}
+      packages: ${{ steps.filter.outputs.packages }}
+      rules: ${{ steps.filter.outputs.rules }}
+      rule_paths: ${{ steps.filter.outputs.rule_paths }}
+      spec: ${{ steps.filter.outputs.spec }}
+      browsers: ${{ steps.filter.outputs.browsers }}
+      bench: ${{ steps.filter.outputs.bench }}
+      runtimes: ${{ steps.filter.outputs.runtimes }}
+      opensalt: ${{ steps.filter.outputs.opensalt }}
+      adl_lrs: ${{ steps.filter.outputs.adl_lrs }}
+      sql_lrs: ${{ steps.filter.outputs.sql_lrs }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PULL_BASE: ${{ github.event.pull_request.base.sha }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            BASE="$PULL_BASE"
+          else
+            BASE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=$BRANCH&event=push&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // empty') || BASE=""
+          fi
+          git cat-file -e "$BASE^{commit}" 2>/dev/null || BASE=""
+          export BASE
+          node - <<'EOF'
+          const { execFileSync } = require("node:child_process");
+          const { appendFileSync, readFileSync, readdirSync } = require("node:fs");
+
+          const git = (...args) => execFileSync("git", args, { encoding: "utf8", maxBuffer: 1 << 27 });
+
+          // The workspace: its packages, its examples and compat, each with the workspace packages it uses.
+          const folders = (parent) =>
+            readdirSync(parent, { withFileTypes: true })
+              .filter((entry) => entry.isDirectory())
+              .map((entry) => `${parent}/${entry.name}`);
+          const members = new Map();
+          const names = new Map();
+          for (const dir of [...folders("packages"), ...folders("examples"), "compat"]) {
+            const manifest = JSON.parse(readFileSync(`${dir}/package.json`, "utf8"));
+            members.set(dir, manifest);
+            names.set(manifest.name, dir);
+          }
+          const usedBy = (dir) => {
+            const { dependencies, devDependencies, peerDependencies } = members.get(dir);
+            return Object.keys({ ...dependencies, ...devDependencies, ...peerDependencies })
+              .filter((name) => names.has(name))
+              .map((name) => names.get(name));
+          };
+          const project = (dir) => (dir.startsWith("examples/") ? `example-${dir.slice(9)}` : dir.slice(9));
+
+          // Every rule of scripts/check-rules.ts: its lines, and the file and the test it names. Null when the file is not laid out
+          // as expected, and then every rule runs.
+          const rulesOf = (text) => {
+            const lines = text.split("\n");
+            const rules = [];
+            let from = 0;
+            lines.forEach((line, index) => {
+              if (line === "  {") from = index + 1;
+              else if (line === "  }," && from > 0) {
+                const body = lines.slice(from, index).join("\n");
+                const [, file] = /file: "([^"]+)"/.exec(body) ?? [];
+                const [, test] = /test: "([^"]+)"/.exec(body) ?? [];
+                rules.push({ from, to: index + 1, file, test });
+                from = 0;
+              }
+            });
+            const declared = (text.match(/^ {4}rule: "/gm) ?? []).length;
+            return rules.length === declared && rules.every(({ file, test }) => file && test) ? rules : null;
+          };
+
+          // What changed. Null when there is nothing to compare with: everything is then checked.
+          let changed = null;
+          if (process.env.BASE) {
+            try {
+              changed = git("diff", "--name-only", "--no-renames", process.env.BASE, "HEAD").split("\n").filter(Boolean);
+            } catch {
+              changed = null;
+            }
+          }
+
+          // A change to these reaches no job but check.
+          const NOT_CHECKED =
+            /^(\.changeset\/|\.github\/(?!workflows\/ci\.yml$)|[^/]+\.md$|LICENSE$|biome\.json$|biome\/|cspell\.json$|knip\.json$|typedoc\.json$|lefthook\.yml$|\.editorconfig$|validation\/[^/]+$)/;
+          // The scripts that only check, or are checked by the tests of scripts. Every other script serves the tests of the packages.
+          const OWN_SCRIPTS = /^scripts\/(test\/|check-standards\.ts$|check-licenses\.ts$|check-rules\.ts$)/;
+
+          let everything = changed === null;
+          let scriptTests = false;
+          const touched = new Set();
+          const guides = new Set();
+          const validation = new Set();
+          for (const file of changed ?? []) {
+            const [top, name, third] = file.split("/");
+            if ((top === "packages" || top === "examples") && members.has(`${top}/${name}`)) touched.add(`${top}/${name}`);
+            else if (top === "compat") touched.add("compat");
+            else if (top === "docs" && third !== undefined && members.has(`packages/${name}`)) guides.add(`packages/${name}`);
+            else if (top === "validation" && ["opensalt", "adl-lrs", "sql-lrs"].includes(name)) validation.add(name);
+            else if (OWN_SCRIPTS.test(file)) scriptTests = true;
+            else if (!NOT_CHECKED.test(file)) everything = true;
+          }
+
+          // The members that the change reaches: those it touched, and the members that use them, however far.
+          const reached = new Set(everything ? members.keys() : touched);
+          for (let grew = true; grew; ) {
+            grew = false;
+            for (const dir of members.keys()) {
+              if (!reached.has(dir) && usedBy(dir).some((used) => reached.has(used))) {
+                reached.add(dir);
+                grew = true;
+              }
+            }
+          }
+          const packages = [...reached].filter((dir) => dir.startsWith("packages/"));
+          const examples = [...reached].filter((dir) => dir.startsWith("examples/"));
+
+          // The Vitest projects of the tests, the packages whose coverage floors they check, and what each other job needs.
+          const projects = new Set([...packages, ...examples, ...guides].map(project));
+          if (everything || scriptTests) projects.add("scripts");
+          const covered = new Set([...packages, ...guides].map((dir) => dir.slice(9)));
+          const hasTest = (pattern) => (dir) => {
+            try {
+              return readdirSync(`${dir}/test`, { recursive: true }).some((file) => pattern.test(file));
+            } catch {
+              return false;
+            }
+          };
+
+          // The rules to check: those of the packages that the change reaches, those that a reached package tests, and those that
+          // the change to the list of rules touches. The paths are files and folders, as check-rules.ts takes them.
+          const rulePaths = new Set(packages);
+          let allRules = everything;
+          if (!allRules) {
+            const rules = rulesOf(readFileSync("scripts/check-rules.ts", "utf8"));
+            const reachedPath = (path) => [...reached].some((dir) => path.startsWith(`${dir}/`));
+            if (rules === null) allRules = true;
+            else {
+              for (const { file, test } of rules) if (reachedPath(test)) rulePaths.add(file);
+              if (changed.includes("scripts/check-rules.ts")) {
+                let old = null;
+                try {
+                  old = rulesOf(git("show", `${process.env.BASE}:scripts/check-rules.ts`));
+                } catch {
+                  old = null;
+                }
+                const hunks = git("diff", "-U0", "--no-renames", process.env.BASE, "HEAD", "--", "scripts/check-rules.ts");
+                const touchedRules = (found, from, count) => {
+                  if (found === null) return false;
+                  for (let line = from; line < from + count; line++) {
+                    const rule = found.find((entry) => entry.from <= line && line <= entry.to);
+                    if (!rule) return false;
+                    rulePaths.add(rule.file);
+                  }
+                  return true;
+                };
+                for (const [, before, beforeCount = "1", after, afterCount = "1"] of hunks.matchAll(
+                  /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/gm,
+                )) {
+                  if (!touchedRules(old, Number(before), Number(beforeCount)) || !touchedRules(rules, Number(after), Number(afterCount)))
+                    allRules = true;
+                }
+              }
+            }
+          }
+
+          const any = (dirs) => everything || dirs.length > 0;
+          const outputs = {
+            test: projects.size > 0 || reached.size > 0 || scriptTests,
+            projects: [...projects].join(" "),
+            packages: [...covered].join(" "),
+            rules: allRules || rulePaths.size > 0,
+            rule_paths: allRules ? "" : [...rulePaths].filter((path) => ![...rulePaths].some((other) => path.startsWith(`${other}/`))).join(" "),
+            spec: any(packages.filter(hasTest(/spec[^/]*\.test\.ts$/))),
+            browsers: any(packages.filter(hasTest(/\.browser\.test\.ts$/))),
+            bench: any(packages.filter((dir) => members.get(dir).scripts?.bench)),
+            runtimes: everything || examples.length > 0 || reached.has("compat"),
+            opensalt: everything || reached.has("examples/competency-frameworks") || validation.has("opensalt"),
+            adl_lrs: everything || reached.has("examples/learning-records") || validation.has("adl-lrs"),
+            sql_lrs: everything || reached.has("examples/learning-records") || validation.has("sql-lrs"),
+          };
+          for (const [name, value] of Object.entries(outputs)) {
+            console.log(`${name}=${value}`);
+            if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
+          }
+          EOF
+
   check:
     runs-on: ubuntu-latest
     steps:
@@ -35,7 +251,12 @@ jobs:
           github.actor != 'dependabot[bot]'
         run: pnpm changeset status --since=origin/main
 
+  # The tests of the Vitest projects that the change reaches, on each supported Node.js. TypeScript reads the same sources
+  # whichever Node.js runs it, so one run of it is enough. The coverage floors of the packages among the projects are checked
+  # once, on the oldest supported Node.js, by the same run that tests them.
   test:
+    needs: changes
+    if: needs.changes.outputs.test == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -48,17 +269,36 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm test
-      # The tests that read the files that pnpm schemas downloads at their pinned hashes.
-      - run: pnpm schemas
-      - run: pnpm test:corpus
-      # The coverage floor of each package (vitest.config.ts) is checked once, on the oldest supported Node.js.
       - if: matrix.node == 22
-        run: pnpm test:coverage
+        run: pnpm typecheck
+      - if: needs.changes.outputs.projects != ''
+        env:
+          PROJECTS: ${{ needs.changes.outputs.projects }}
+          PACKAGES: ${{ needs.changes.outputs.packages }}
+          NODE_MAJOR: ${{ matrix.node }}
+        run: |
+          read -ra names <<< "$PROJECTS"
+          read -ra packages <<< "$PACKAGES"
+          projects=()
+          for name in "${names[@]}"; do projects+=(--project "$name"); done
+          if [ "$NODE_MAJOR" = 22 ] && [ "${#packages[@]}" -gt 0 ]; then
+            include=()
+            for name in "${packages[@]}"; do include+=("--coverage.include=packages/$name/src/**"); done
+            pnpm test:coverage "${projects[@]}" "${include[@]}"
+          else
+            pnpm test "${projects[@]}"
+          fi
+      # The tests that read the files that pnpm schemas downloads at their pinned hashes.
+      - if: needs.changes.outputs.projects != ''
+        run: pnpm schemas
+      - if: needs.changes.outputs.projects != ''
+        run: pnpm test:corpus
 
   # Removes each security rule that scripts/check-rules.ts lists from a copy of the code, and fails when its test still passes.
+  # It checks the rules that the change reaches.
   rules:
+    needs: changes
+    if: needs.changes.outputs.rules == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -70,10 +310,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # The rules of the pages that run in a browser are checked in Chromium.
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm check:rules
+      - env:
+          RULE_PATHS: ${{ needs.changes.outputs.rule_paths }}
+        run: |
+          read -ra paths <<< "$RULE_PATHS"
+          pnpm check:rules "${paths[@]}"
 
   # The tests that read the examples of the specifications, downloaded at the hashes that scripts/spec-examples.lock.json pins.
   spec:
+    needs: changes
+    if: needs.changes.outputs.spec == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -90,6 +336,8 @@ jobs:
 
   # The pages of the client-side login, in the current Chromium, Firefox and WebKit.
   browsers:
+    needs: changes
+    if: needs.changes.outputs.browsers == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -104,6 +352,8 @@ jobs:
 
   # The scenarios of the two examples, built as the packages ship, on Node.js, Deno, Bun and workerd (compat/README.md).
   runtimes:
+    needs: changes
+    if: needs.changes.outputs.runtimes == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -126,6 +376,8 @@ jobs:
   # packages/competency-frameworks/test/budgets.ts (docs/competency-frameworks/evidence.md), and the time of the three roles of
   # ecdsa-sd-2023 against Digital Bazaar's suite (docs/selective-disclosure/proofs.md). It builds first.
   bench:
+    needs: changes
+    if: needs.changes.outputs.bench == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -141,6 +393,8 @@ jobs:
 
   # OpenSALT in containers as a counterparty of the CASE client and provider (validation/opensalt/README.md).
   opensalt:
+    needs: changes
+    if: needs.changes.outputs.opensalt == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -154,6 +408,8 @@ jobs:
 
   # The ADL conformance suite of xAPI 2.0 against the example LRS (validation/adl-lrs/README.md). It builds first.
   adl-lrs:
+    needs: changes
+    if: needs.changes.outputs.adl_lrs == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -168,6 +424,8 @@ jobs:
 
   # SQL LRS in a container as the oracle of the rules and a counterparty of the client (validation/sql-lrs/README.md).
   sql-lrs:
+    needs: changes
+    if: needs.changes.outputs.sql_lrs == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

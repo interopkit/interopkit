@@ -128,6 +128,10 @@ CI. Run each job that the change touches in a fresh clone of the commit (`git cl
 --frozen-lockfile` there), with the steps of the job in its order. A gate that needs a build or a download gets the step for it
 in its job.
 
+A job runs only when what it reads changed since the last green run of main: its packages, what they use, the lockfile, the
+root configuration, the shared scripts or `ci.yml`; `changes` in `ci.yml` computes it and `check` always runs. A newer push to
+the same ref cancels the run in progress, and a cancelled run is not a failure.
+
 Development needs Node.js 22.18+ and pnpm 12. The scripts in `scripts/` are TypeScript that Node runs directly, so their
 relative imports end in `.ts`. On a shared machine run Vitest with `--maxWorkers=2` and containers with `--cpus=2`.
 
