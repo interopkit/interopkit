@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { createKeyedCache } from "../src/keyed-cache.js";
-import { clockAt } from "./key-fixtures.js";
+import { createKeyedCache, DataError } from "../src/index.js";
+
+/** A clock that tells a time the test sets. */
+function clockAt(start: number) {
+  let time = start;
+  return {
+    now: () => time,
+    set(value: number) {
+      time = value;
+    },
+  };
+}
 
 /** A promise and the means to settle it from outside. */
 function deferred<T>() {
@@ -114,5 +124,16 @@ describe("a cache of values by key", () => {
 
   it("refuses a signal that is not one", async () => {
     await expect(cacheOf().get("a", async () => 1, JSON.parse('{"signal":"x"}'))).rejects.toThrow("signal");
+  });
+});
+
+describe("the options of a cache", () => {
+  it.each([
+    ["no options", JSON.parse("null")],
+    ["a clock that is no clock", { clock: "now", lifetime: () => 1, maxEntries: 1 }],
+    ["a lifetime that is no function", { clock: clockAt(0), lifetime: 5, maxEntries: 1 }],
+    ["no room", { clock: clockAt(0), lifetime: () => 1, maxEntries: 0 }],
+  ])("are refused with %s", (_name, options) => {
+    expect(() => createKeyedCache(options)).toThrow(DataError);
   });
 });

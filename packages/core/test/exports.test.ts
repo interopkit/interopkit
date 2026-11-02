@@ -11,6 +11,7 @@ describe("the public API", () => {
         "callPort",
         "callService",
         "checkClock",
+        "createKeyedCache",
         "DataError",
         "DEFAULT_MAX_BYTES",
         "DEFAULT_TIMEOUT_MS",

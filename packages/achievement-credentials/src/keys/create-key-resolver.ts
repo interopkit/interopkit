@@ -1,4 +1,12 @@
-import { type CallOptions, type Clock, checkClock, DataError, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
+import {
+  type CallOptions,
+  type Clock,
+  checkClock,
+  createKeyedCache,
+  DataError,
+  DEFAULT_TIMEOUT_MS,
+  type Fetch,
+} from "@interopkit/core";
 import {
   checkAbortSignal,
   checkArray,
@@ -9,7 +17,6 @@ import {
   describe,
   MAX_JSON_TOKENS,
 } from "@interopkit/core/checks";
-import { createKeyedCache } from "../keyed-cache.js";
 import { KEY_RELATIONSHIPS, type KeyResolver, type VerificationKey } from "../model/index.js";
 import { type DidResolver, didKeyResolver, didWebResolver } from "./did.js";
 import { decodeDidJwk, isDidJwk } from "./did-jwk.js";

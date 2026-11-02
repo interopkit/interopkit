@@ -1,6 +1,5 @@
-import { type CallOptions, type Clock, checkClock, readClock } from "@interopkit/core";
+import { type CallOptions, type Clock, checkClock, createKeyedCache, readClock } from "@interopkit/core";
 import { checkPositiveInteger, checkRecord, isRecord } from "@interopkit/core/checks";
-import { createKeyedCache } from "../keyed-cache.js";
 
 /**
  * Status list credentials, and the revocation lists of the 1EdTech Revocation List Status Method, kept across verifications by

@@ -8,7 +8,8 @@ The foundation of `@interopkit/tool-integration`, `@interopkit/learning-analytic
 a deadline, a size limit of 65,536 bytes unless the call says otherwise, no redirects, any of GET, POST, PUT, DELETE and HEAD,
 bodies as text or bytes, statuses that a call returns as values, a `ServiceError` that carries the status, the headers and the
 body of the answer, and a `signal` that ends the caller's wait, and
-`untilAborted`, which ends one caller's wait on work that several callers share. `totalCountOf`, `hasNextLink` and
+`untilAborted`, which ends one caller's wait on work that several callers share, and `createKeyedCache`, which keeps values by
+key and shares the load of each. `totalCountOf`, `hasNextLink` and
 `retryAfterSeconds` read the paging and retry headers of an answer, and `linkTarget` gives the address of a link only on the
 origin of the request. `@interopkit/core/http` holds the request
 and the answer of a handler as plain data with bodies as bytes, `readText`, `readJson`, `readQuery` and `readForm` with a limit on its bytes,

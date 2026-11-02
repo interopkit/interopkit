@@ -35,6 +35,7 @@ await wait.catch((error) => error.message);
 | `CallOptions`                    | The options type with `signal`, default none. Every options type of a function that waits on I/O extends it                                                                              |
 | `callPort(call, signal?)`        | Waits for a port of the host: its value in an object, `undefined` when it fails, so that a handler answers 500 and says nothing of the failure; an abort rejects with its reason         |
 | `untilAborted(promise, signal?)` | Settles with the promise, or rejects with `signal.reason` as soon as the signal aborts. The promise runs on and its outcome is dropped. Without a signal it returns the promise as it is |
+| `createKeyedCache({ clock, lifetime, maxEntries })` | A cache of values by key whose loads are shared work: `get(key, load, options?, reloadAfter?)` returns the kept value while its `lifetime` holds, else joins or starts the one load of the key, which takes no caller's signal. A failed load is not kept; a value whose lifetime is zero or less is shared and not kept; the key loaded first goes first beyond `maxEntries`; `reloadAfter` loads again a value older than it, for a caller that misses something in a document. `createTokenCache` of `@interopkit/core/oauth` and the caches of the key resolver and the status lists of `achievement-credentials` are built on it |
 
 ## Rules
 
@@ -52,6 +53,7 @@ await wait.catch((error) => error.message);
 | -------------------------- | --------------------------------------------- | -------------------------------------------------------------------- |
 | The `reason` of the signal | The signal aborted, before or during the wait | Nothing: the caller ended the wait                                   |
 | `DataError`                | `signal` is not an `AbortSignal`              | Pass `AbortSignal.timeout(ms)` or the signal of an `AbortController` |
+| `DataError`                | An option of `createKeyedCache` is not valid  | Pass a `Clock`, a `lifetime` function and a positive `maxEntries`   |
 
 ## Not included
 

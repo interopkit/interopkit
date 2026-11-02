@@ -380,8 +380,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A cached token is given only while it is good.",
     file: "packages/core/src/oauth/token-cache.ts",
-    find: "current?.expiresAt !== undefined && current.expiresAt - skewMilliseconds > readClock(clock)",
-    replace: "current !== undefined",
+    find: "expiresAt - skewMilliseconds - readClock(clock)",
+    replace: "Number.MAX_SAFE_INTEGER",
     test: "packages/core/test/token-cache.test.ts",
   },
   {
@@ -4852,7 +4852,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A key that a cached document lacks fetches the document again at most once in the refetch time.",
-    file: "packages/achievement-credentials/src/keyed-cache.ts",
+    file: "packages/core/src/keyed-cache.ts",
     find: "now - entry.loadedAt < reloadAfter",
     replace: "true",
     test: "packages/achievement-credentials/test/keys.test.ts",

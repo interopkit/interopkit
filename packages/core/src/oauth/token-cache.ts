@@ -1,7 +1,7 @@
 import type { CallOptions } from "../call-options.js";
-import { checkAbortSignal, checkFunction, checkPositiveInteger, checkRecord } from "../checks.js";
+import { checkFunction, checkPositiveInteger, checkRecord } from "../checks.js";
 import { type Clock, checkClock, readClock } from "../clock.js";
-import { untilAborted } from "../until-aborted.js";
+import { createKeyedCache } from "../keyed-cache.js";
 import type { AccessToken } from "./access-token.js";
 import { MILLISECONDS_PER_SECOND } from "./time.js";
 
@@ -20,6 +20,9 @@ export interface TokenCacheOptions {
 
 /** The seconds before its expiry at which a cached token is replaced unless the host says otherwise. */
 const DEFAULT_REFRESH_SKEW_SECONDS = 60;
+
+/** The key of the one token that a cache holds. */
+const TOKEN_KEY = "token";
 
 /**
  * Makes a function that returns a current access token, and obtains a new one only when the last has expired.
@@ -47,31 +50,11 @@ export function createTokenCache(
     checkPositiveInteger(options.refreshSkewSeconds, "The option refreshSkewSeconds");
   const { clock } = options;
   const skewMilliseconds = (options.refreshSkewSeconds ?? DEFAULT_REFRESH_SKEW_SECONDS) * MILLISECONDS_PER_SECOND;
-  let kept: AccessToken | undefined;
-  let pending: Promise<AccessToken> | undefined;
-
-  const start = (): Promise<AccessToken> => {
-    const shared = obtain().then((token) => {
-      // A token with no expiry is kept too, and never served: only a token with an expiry is good.
-      kept = token;
-      return token;
-    });
-    pending = shared;
-    // Whether it succeeds or fails, the next caller starts afresh or finds the kept token.
-    const clear = (): void => {
-      if (pending === shared) pending = undefined;
-    };
-    shared.then(clear, clear);
-    return shared;
-  };
-
-  return async (callOptions) => {
-    if (callOptions?.signal !== undefined) checkAbortSignal(callOptions.signal, "The option signal");
-    callOptions?.signal?.throwIfAborted();
-    const current = kept;
-    if (current?.expiresAt !== undefined && current.expiresAt - skewMilliseconds > readClock(clock)) {
-      return current.accessToken;
-    }
-    return (await untilAborted(pending ?? start(), callOptions?.signal)).accessToken;
-  };
+  // One token, good until the skew before its expiry; a token with no expiry is shared by the callers that waited and not kept.
+  const kept = createKeyedCache<AccessToken>({
+    clock,
+    maxEntries: 1,
+    lifetime: ({ expiresAt }) => (expiresAt === undefined ? 0 : expiresAt - skewMilliseconds - readClock(clock)),
+  });
+  return async (callOptions) => (await kept.get(TOKEN_KEY, () => obtain(), callOptions)).accessToken;
 }

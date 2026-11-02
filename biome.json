@@ -330,6 +330,7 @@
                       "!../checks.js",
                       "!../clock.js",
                       "!../errors.js",
+                      "!../keyed-cache.js",
                       "!../service.js",
                       "!../until-aborted.js",
                       "!../signer/index.js",

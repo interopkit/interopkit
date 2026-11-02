@@ -1,5 +1,7 @@
-import { type CallOptions, type Clock, readClock, untilAborted } from "@interopkit/core";
-import { checkAbortSignal } from "@interopkit/core/checks";
+import type { CallOptions } from "./call-options.js";
+import { checkAbortSignal, checkFunction, checkPositiveInteger, checkRecord } from "./checks.js";
+import { type Clock, checkClock, readClock } from "./clock.js";
+import { untilAborted } from "./until-aborted.js";
 
 /** What a cache keeps: the value, when it was loaded and when it stops being good, in milliseconds since 1970. */
 interface Entry<TValue> {
@@ -14,7 +16,7 @@ export interface KeyedCacheOptions<TValue> {
   readonly clock: Clock;
   /** Tells how long a loaded value stays good, in milliseconds from now. A value for zero or less is not kept. */
   readonly lifetime: (value: TValue) => number;
-  /** The most entries kept: the oldest goes first. */
+  /** The most entries kept: the one loaded first goes first. */
   readonly maxEntries: number;
 }
 
@@ -38,11 +40,22 @@ export interface KeyedCache<TValue> {
 
 /**
  * Makes a cache of values by key, with the lifetime of each value, a bound on its size and loads shared by the callers that
- * wait for them.
+ * wait for them: the shared work of a key set, a document, a status list or a token, which many requests need at once.
+ *
+ * @remarks
+ * A load runs to its own deadline, which the `load` sets, and is kept when it succeeds; the key that was loaded first is dropped
+ * first once the cache holds `maxEntries`. A value whose lifetime is zero or less is shared by the callers that waited for it
+ * and is not kept.
  *
  * @param options - The clock, the lifetime of a value and the most entries.
+ * @returns The cache.
+ * @throws `DataError` when an option is not valid.
  */
 export function createKeyedCache<TValue>(options: KeyedCacheOptions<TValue>): KeyedCache<TValue> {
+  checkRecord(options, "The options of createKeyedCache must be an object");
+  checkClock(options.clock);
+  checkFunction(options.lifetime, "The option lifetime must be a function");
+  checkPositiveInteger(options.maxEntries, "The option maxEntries");
   const { clock, lifetime, maxEntries } = options;
   const kept = new Map<string, Entry<TValue>>();
   const loading = new Map<string, Promise<TValue>>();
