@@ -2,10 +2,9 @@ import { DataError, readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse, readForm } from "@interopkit/core/http";
 import { LtiError } from "../errors.js";
-import { callOptionsOf, readCookie } from "../protocol/internal.js";
+import type { LtiMessage } from "../protocol/index.js";
+import { callOptionsOf, readCookie, readMessage } from "../protocol/internal.js";
 import { verifyIdToken } from "./id-token.js";
-import { readLaunch } from "./launch-claims.js";
-import type { LtiLaunch } from "./launch-model.js";
 import { stateCookieName } from "./login.js";
 import { checkLaunchOptions, findRegistration, type LtiLaunchOptions } from "./options.js";
 import { getDataPage, STORED_NONCE, STORED_STATE } from "./pages.js";
@@ -107,7 +106,7 @@ function checkVerification(
  * @throws `ServiceError` when the platform's key set cannot be fetched.
  * @throws The `reason` of `options.signal` when it aborts before the login is deleted: the login stays.
  */
-export async function ltiLaunch(request: HttpRequest, options: LtiLaunchOptions): Promise<LtiLaunch | HttpResponse> {
+export async function ltiLaunch(request: HttpRequest, options: LtiLaunchOptions): Promise<LtiMessage | HttpResponse> {
   checkHttpRequest(request);
   checkLaunchOptions(options);
   if (request.method !== "POST") {
@@ -144,7 +143,11 @@ export async function ltiLaunch(request: HttpRequest, options: LtiLaunchOptions)
   if (claims.nonce !== record.nonce) {
     throw new LtiError("The nonce of the token is not the nonce of the login.", "nonce-mismatch");
   }
-  const launch = readLaunch(claims, registration);
+  const launch = readMessage(claims, {
+    issuer: registration.issuer,
+    clientId: registration.clientId,
+    deploymentIds: registration.deploymentIds,
+  });
   // The store removes the login for one caller only, so of two launches that race with one token, one completes.
   // An abort before this point leaves the login in the store, and the platform may post again; the delete is the point of
   // no return, after which the launch completes.

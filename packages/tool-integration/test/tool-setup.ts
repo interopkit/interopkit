@@ -1,11 +1,9 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 responses are snake_case.
 
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
-import { createJwksCache } from "../src/index.js";
+import { createJwksCache, type DeepLinkingRequestMessage, type LtiMessage } from "../src/index.js";
 import {
   type AccessTokenOptions,
-  type DeepLinkingLaunch,
-  type LtiLaunch,
   type LtiLaunchOptions,
   ltiLogin,
   type PlatformRegistration,
@@ -65,13 +63,13 @@ export function setup(overrides: Partial<PlatformRegistration> = {}): Setup {
 export const SECONDS = NOW / 1000;
 
 /** Returns the launch of a result that must be one. */
-export function launchOf(result: LtiLaunch | HttpResponse): LtiLaunch {
+export function launchOf(result: LtiMessage | HttpResponse): LtiMessage {
   if ("messageType" in result) return result;
   throw new Error("The result is a page, not a launch.");
 }
 
 /** Returns the Deep Linking request of a result that must be one. */
-export function deepLinkingOf(result: LtiLaunch | HttpResponse): DeepLinkingLaunch {
+export function deepLinkingOf(result: LtiMessage | HttpResponse): DeepLinkingRequestMessage {
   const launch = launchOf(result);
   if (launch.messageType === "LtiDeepLinkingRequest") return launch;
   throw new Error("The launch is not a Deep Linking request.");

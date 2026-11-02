@@ -10,16 +10,6 @@
 export { type AccessToken, ltiAccessToken } from "./access-token.js";
 export { type DeepLinkItem, type DeepLinkLineItem, deepLinkResponse } from "./deep-link.js";
 export { ltiLaunch } from "./launch.js";
-export type {
-  AgsEndpoint,
-  DeepLinkingLaunch,
-  DeepLinkingSettings,
-  LaunchBase,
-  LtiDeployment,
-  LtiLaunch,
-  ResourceLink,
-  ResourceLinkLaunch,
-} from "./launch-model.js";
 export { ltiLogin } from "./login.js";
 export type { AccessTokenOptions, LtiLaunchOptions, LtiLoginOptions, ToolOptions } from "./options.js";
 export { type AgsScoreInput, publishAgsScore } from "./publish-ags-score.js";

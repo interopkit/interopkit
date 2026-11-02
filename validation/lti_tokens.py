@@ -1,7 +1,8 @@
-"""Writes tokens that PyJWT signs, for the tests of the tool role: a launch that verifies, and launches that must not.
+"""Writes tokens that PyJWT signs, for the tests of the tool role: a launch that verifies for each of the six algorithms of
+Security Framework 1.1 section 7.2, launches that must not verify, and the signature of the LTI 1.1 consumer key.
 
 PyJWT is the library that PyLTI1p3 signs and verifies with, so these tokens come from an implementation that shares no code
-with the tool. The key is generated at each run: the signatures differ between runs, and the cases and the reasons that the
+with the tool. The keys are generated at each run: the signatures differ between runs, and the cases and the reasons that the
 tool must give do not. Run it from the repository root with the packages of `validation/requirements.txt` installed:
 
     python3 -m venv validation/.venv
@@ -10,11 +11,13 @@ tool must give do not. Run it from the repository root with the packages of `val
 """
 
 import base64
+import hashlib
+import hmac
 import json
 from pathlib import Path
 
 import jwt
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa
 
 OUTPUT = Path(__file__).resolve().parent.parent / "packages" / "tool-integration" / "test" / "fixtures" / "lti-tokens.json"
 ISSUER = "https://lms.example.edu"
@@ -74,7 +77,7 @@ def cases(key, other):
         ("a token that expired", sign({**claims, "exp": NOW - 3600, "iat": NOW - 3900}, key), "token-expired"),
         ("a token of another issuer", sign({**claims, "iss": "https://other.example"}, key), "issuer-mismatch"),
         ("a token for another client", sign({**claims, "aud": "another-client"}, key), "audience-mismatch"),
-        ("a token for two audiences", sign({**claims, "aud": [CLIENT_ID, "another-client"]}, key), "audience-mismatch"),
+        ("a token for two audiences", sign({**claims, "aud": [CLIENT_ID, "another-client"]}, key), "audience-untrusted"),
         ("a token with no algorithm", jwt.encode(claims, None, algorithm="none", headers={"kid": KEY_ID}), "algorithm-unsupported"),
         ("a token signed with HMAC", jwt.encode(claims, "x" * 64, algorithm="HS256", headers={"kid": KEY_ID}), "algorithm-unsupported"),
         ("a token signed by another key", sign(claims, other), "signature-invalid"),
@@ -84,6 +87,58 @@ def cases(key, other):
         ("a token issued in the future", sign({**claims, "iat": NOW + 3600, "exp": NOW + 3900}, key), "issued-in-future"),
         ("a token with no expiry", sign(without_exp, key), "claim-missing"),
     ]
+
+
+# The six algorithms of Security Framework 1.1 section 7.2 and the key each signs with (RFC 7518 sections 3.3 and 3.4).
+APPROVED = [
+    ("RS256", lambda: rsa.generate_private_key(public_exponent=65537, key_size=2048)),
+    ("RS384", lambda: rsa.generate_private_key(public_exponent=65537, key_size=2048)),
+    ("RS512", lambda: rsa.generate_private_key(public_exponent=65537, key_size=2048)),
+    ("ES256", lambda: ec.generate_private_key(ec.SECP256R1())),
+    ("ES384", lambda: ec.generate_private_key(ec.SECP384R1())),
+    ("ES512", lambda: ec.generate_private_key(ec.SECP521R1())),
+]
+# Algorithms that sign well and that the approved list leaves out: the tool must refuse them before it fetches a key.
+OUTSIDE = [
+    ("PS256", lambda: rsa.generate_private_key(public_exponent=65537, key_size=2048)),
+    ("EdDSA", lambda: ed25519.Ed25519PrivateKey.generate()),
+    ("ES256K", lambda: ec.generate_private_key(ec.SECP256K1())),
+]
+
+
+def public_jwk(algorithm, key, kid):
+    """The public key as a JWK with the `kid` of the platform's key set."""
+    if algorithm.startswith(("RS", "PS")):
+        jwk = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(key.public_key()))
+    elif algorithm == "EdDSA":
+        jwk = json.loads(jwt.algorithms.OKPAlgorithm.to_jwk(key.public_key()))
+    else:
+        jwk = json.loads(jwt.algorithms.ECAlgorithm.to_jwk(key.public_key()))
+    jwk.update({"kid": kid, "use": "sig", "alg": algorithm})
+    return jwk
+
+
+def signed_with(algorithm, make_key):
+    """A launch signed with the algorithm, with its public key."""
+    key = make_key()
+    kid = "platform-" + algorithm.lower()
+    token = jwt.encode(launch_claims(), key, algorithm=algorithm, headers={"kid": kid})
+    return {"algorithm": algorithm, "jwk": public_jwk(algorithm, key, kid), "token": token}
+
+
+def migration():
+    """The signature of the consumer key, over the parts and the secret of the worked example of the Migration Guide."""
+    parts = {
+        "consumerKey": "179248902",
+        "deploymentId": "689302",
+        "issuer": "https://lmsvendor.com",
+        "clientId": "PM48OJSfGDTAzAo",
+        "expiresAt": 1551290856,
+        "nonce": "172we8671fd8z",
+    }
+    base = "&".join(str(parts[name]) for name in ["consumerKey", "deploymentId", "issuer", "clientId", "expiresAt", "nonce"])
+    digest = hmac.new(b"my-lti11-secret", base.encode("utf-8"), hashlib.sha256).digest()
+    return {"secret": "my-lti11-secret", "parts": parts, "signature": base64.b64encode(digest).decode("ascii")}
 
 
 def main():
@@ -99,6 +154,9 @@ def main():
         "now": NOW,
         "jwk": jwk,
         "cases": [{"name": name, "token": token, "reason": reason} for name, token, reason in cases(key, other)],
+        "algorithms": [signed_with(algorithm, make_key) for algorithm, make_key in APPROVED],
+        "outside": [signed_with(algorithm, make_key) for algorithm, make_key in OUTSIDE],
+        "migration": migration(),
     }
     OUTPUT.write_text(json.dumps(fixture, indent=2) + "\n")
 

@@ -85,7 +85,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/oauth/`           | The OAuth 2.0 clients and the token cache, which `@interopkit/core/oauth` exports                   |
 | `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                              |
 | `packages/core/src/call-port.ts`     | `callPort`, which turns the failure of a port into a value for a handler                            |
-| `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                             |
+| `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/` (`claims/`, `message/`), `tool/`, `platform/`                     |
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
@@ -178,7 +178,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
 
 - A package imports only what its row in the diagram above allows. Biome enforces the rows for `core`, and for the
   folders of `tool-integration`: `protocol/` imports neither `tool/` nor `platform/`, and `tool/` and `platform/` never
-  import each other. In `competency-frameworks`, `model/` imports no other module, and `read/`, `version/` and `graph/`
+  import each other; inside `protocol/`, `claims/` imports no other folder and `message/` builds on `claims/`. In `competency-frameworks`, `model/` imports no other module, and `read/`, `version/` and `graph/`
   never import each other; `client/` builds on `read/`, `provider/` on `read/` and `version/`, and none of them imports
   either. In `selective-disclosure`, `proof-value/`, `keys/` and `document/` import none of the other folders, and
   `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`

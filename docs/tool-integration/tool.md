@@ -200,14 +200,14 @@ A request that is not a POST of a form with `id_token` and `state` is a `DataErr
 | Cookie path: the state cookie equals `state`                                                                                    | `state-cookie`                                    |
 | Storage path: the second post comes from the redirect URI's origin, with `stored_state` and `stored_nonce` equal to the login's | `origin-mismatch`, `storage-mismatch`             |
 | The token has three canonical base64url parts, a JSON header and a JSON payload; no `crit` header                               | `token-malformed`                                 |
-| `alg` is `RS256`; `none` and the HMAC algorithms are refused                                                                    | `algorithm-unsupported`                           |
-| The header has a `kid` that one key of the key set has, an RSA key for signing with RS256 of 2,048 bits or more                 | `key-unknown`                                     |
+| `alg` is one of RS256, RS384, RS512, ES256, ES384 and ES512; `none`, the HMAC algorithms and every other are refused before a key is fetched | `algorithm-unsupported` |
+| The header has a `kid` that one key of the key set has, a key for the algorithm: RSA of 2,048 bits or more, or EC on P-256, P-384 or P-521 | `key-unknown` |
 | The signature verifies with that key                                                                                            | `signature-invalid`                               |
 | `iss` equals the registration's issuer                                                                                          | `issuer-mismatch`                                 |
-| `aud` is the client identifier alone (a string or an array); `azp`, when present, is the client identifier                      | `audience-mismatch`, `authorized-party-mismatch`  |
+| `aud` holds the client identifier and names no other party; a token with several audiences has `azp`; `azp`, when present, is the client identifier | `audience-mismatch`, `audience-untrusted`, `authorized-party-missing`, `authorized-party-mismatch` |
 | `exp` is later than the time minus 60 seconds; `iat` is not later than the time plus 60 seconds                                 | `token-expired`, `issued-in-future`               |
 | `nonce` is present and equals the login's                                                                                       | `nonce-mismatch`                                  |
-| The message type is `LtiResourceLinkRequest` or `LtiDeepLinkingRequest`; the version is `1.3.0`                                 | `message-type-unsupported`, `version-unsupported` |
+| The message type is one of the five that a platform sends (see [messages](model.md)); the version is `1.3.0`                    | `message-type-unsupported`, `version-unsupported` |
 | `deployment_id` is one of the registration's                                                                                    | `deployment-unknown`                              |
 | The claims of the message type have the shape of the specifications                                                             | `claim-missing`, `claim-invalid`                  |
 | The store deletes the login                                                                                                     | `state-reused`                                    |
@@ -216,22 +216,24 @@ A host answers with the `status` of an `LtiError`, which the table of errors bel
 
 ### The launch
 
-`ltiLaunch` returns an `LtiLaunch` or an `HttpResponse`: the second post of the storage path is answered with the verification page, which the route sends to the browser as it is. Tell them apart with `"status" in result`, which is true for the `HttpResponse`; an `LtiLaunch` has a `messageType`. A launch that fails a check does not return: it throws an `LtiError` with a `reason` and a `status`, and the route answers with them.
+`ltiLaunch` returns an `LtiMessage` or an `HttpResponse`: the second post of the storage path is answered with the verification page, which the route sends to the browser as it is. Tell them apart with `"status" in result`, which is true for the `HttpResponse`; an `LtiMessage` has a `messageType`. A launch that fails a check does not return: it throws an `LtiError` with a `reason` and a `status`, and the route answers with them.
 
-An `LtiLaunch` is a union by `messageType`.
+An `LtiMessage` is a union by `messageType`; [Messages and vocabularies](model.md) lists every property. The ones a tool reads first:
 
 | Property                             | Meaning                                                                                                                  |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
 | `issuer`, `clientId`, `deploymentId` | The platform, the tool's client and the deployment                                                                       |
 | `targetLinkUri`                      | The `target_link_uri` claim. The tool relies on it, not on the unsigned parameter of the login                           |
-| `subject`                            | The user's `sub`; absent in an anonymous launch                                                                          |
-| `roles`                              | The role URIs                                                                                                            |
+| `user`                               | `subject`, the user's `sub`, absent in an anonymous launch, and the identity claims: names, email, picture, locale       |
+| `roles`                              | The role URIs, as the platform sent them; `canonicalizeRole` maps a deprecated simple name to its URI                    |
+| `context`, `platform`, `presentation` | The `context`, `tool_platform` and `launch_presentation` claims                                                         |
 | `custom`                             | The custom properties of the link, a `Map`                                                                               |
+| `services`                           | The service claims: `grades` has `scopes`, `lineitems` and `lineitem`; a service the platform does not offer is absent  |
+| `claims`                             | Every claim of the token as JSON, vendor claims among them                                                               |
 | `resourceLink`                       | `LtiResourceLinkRequest`: `id`, `title`, `description`                                                                   |
-| `ags`                                | `LtiResourceLinkRequest`: the grade services, `scopes`, `lineitems` and `lineitem`; absent when the platform offers none |
-| `settings`                           | `LtiDeepLinkingRequest`: `returnUrl`, `acceptTypes`, `acceptMultiple` and `data`                                         |
+| `settings`                           | `LtiDeepLinkingRequest`: the ten settings of Deep Linking 4.4.1, `returnUrl`, `acceptTypes` and `data` among them        |
 
-A launch holds a `Map`; a host that stores it converts `custom` to an array of entries.
+A message holds a `Map`; a host that stores it converts `custom` to an array of entries.
 
 ## Deep Linking
 
@@ -333,7 +335,7 @@ work and runs on to its own timeout.
 A set that is older than `ttlSeconds` is fetched again. A `kid` that the cached set lacks fetches it again only after
 `refreshSeconds` (Security Framework section 6.4: the platform adds a rotated key under a new `kid`), so a token with an invented
 `kid` cannot make the tool fetch on every request while the platform's key set answers. A key set that fails is not held back: each request that needs it fetches it again, so limit the rate of requests to the launch URL. Requests that wait for one fetch share it. The set resolves the key that
-has the `kid` and is meant for signing with RS256 (`use` is `sig` or absent, `alg` is `RS256` or absent, `key_ops` has
+has the `kid` and is meant for signing with the algorithm of the token (`use` is `sig` or absent, `alg` is that algorithm or absent, `key_ops` has
 `verify` when present); a `kid` that two keys share, and a set that is not a JWK Set (RFC 7517 section 5), are refused. A key of
 fewer than 2,048 bits does not verify (RFC 7518 section 3.3). The cache reads the time of the system, as jose does.
 
@@ -425,7 +427,7 @@ except that the key set cache of jose reads the time of the system.
 
 | Data                                                        | Comes from                         | Goes to                                                            | Kept by the package                    |
 | ----------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------ | -------------------------------------- |
-| The claims of a launch: `sub`, roles, names, e-mail, custom | The platform's `id_token`          | The `LtiLaunch` that `ltiLaunch` returns to the host               | No                                     |
+| The claims of a launch: `sub`, roles, names, e-mail, custom | The platform's `id_token`          | The `LtiMessage` that `ltiLaunch` returns to the host               | No                                     |
 | `state` and `nonce` of a login                              | `ltiLogin`                         | The host's `LtiStore`, and the browser (the cookie or the storage) | Only in the store, until used or 600 s |
 | The client assertion                                        | Signed with the tool's private key | The platform's token endpoint                                      | No                                     |
 | The access token                                            | The platform's token endpoint      | The score service and the line item, in the `Authorization` header | No: each call asks for its own         |

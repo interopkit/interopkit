@@ -11,6 +11,8 @@ const STATUS_OF_REASON: ReadonlyMap<string, number> = new Map([
   ["signature-invalid", 401],
   ["issuer-mismatch", 401],
   ["audience-mismatch", 401],
+  ["audience-untrusted", 401],
+  ["authorized-party-missing", 401],
   ["authorized-party-mismatch", 401],
   ["subject-mismatch", 401],
   ["token-expired", 401],

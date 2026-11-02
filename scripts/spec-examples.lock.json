@@ -1,11 +1,11 @@
 [
   {
-    "url": "https://www.imsglobal.org/spec/lti/v1p3",
+    "url": "https://standards.1edtech.org/lti/specifications/core/lti-spec",
     "file": "lti-core-1p3.json",
     "sha256": "5dbba14cd26c34e441a0b672ee90415f2707b76119844c1c493d35b2153b0484"
   },
   {
-    "url": "https://www.imsglobal.org/spec/lti-dl/v2p0",
+    "url": "https://standards.1edtech.org/lti/specifications/launch_messages/deep_linking/lti-deep-linking-spec",
     "file": "lti-deep-linking-2p0.json",
     "sha256": "209d7518008ad13343d2b8d7c2464f6975d443c7c1939c7d33d6afe6a1dab55f"
   },
@@ -63,5 +63,15 @@
     "url": "https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/examples/index.html",
     "file": "open-badges-2p0-examples.json",
     "sha256": "2671218ba136384b64486148894f64d4bcefd55797f08e4b5ec3484716fea05a"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/lti-sr/v1p0",
+    "file": "lti-submission-review-1p0.json",
+    "sha256": "5a491692b4b36e33226695b40cbdd77e4beb871d6d38212c807c80010beb9a7f"
+  },
+  {
+    "url": "https://www.imsglobal.org/sites/default/files/spec/afa/3p0/connector_service/1edtech-ltipnp-servicev1.html",
+    "file": "lti-pnp-connector-1p0.json",
+    "sha256": "83b7049c1019e0e4b2dd6360f4a9ac76e5b1a72b9b177b2146c22fca5f7bf155"
   }
 ]

@@ -1,14 +1,6 @@
 import { readClock } from "@interopkit/core";
 import { SignJWT } from "jose";
-import {
-  AGS_SCOPE,
-  CLAIM,
-  LEARNER_ROLE,
-  LTI_VERSION,
-  MESSAGE_TYPE,
-  rs256Header,
-  toSeconds,
-} from "../protocol/internal.js";
+import { CLAIM, LEARNER_ROLE, LTI_VERSION, rs256Header, SCOPES, toSeconds } from "../protocol/internal.js";
 import { LINE_ITEM_PATH, platformKeyId } from "./config.js";
 import type { PlatformOptions } from "./options.js";
 import type { ToolRegistration } from "./registration.js";
@@ -48,7 +40,7 @@ export async function issueIdToken(
   const iat = toSeconds(readClock(clock));
   return new SignJWT({
     nonce,
-    [CLAIM.messageType]: MESSAGE_TYPE.resourceLink,
+    [CLAIM.messageType]: "LtiResourceLinkRequest",
     [CLAIM.version]: LTI_VERSION,
     [CLAIM.deploymentId]: registration.deploymentId,
     [CLAIM.targetLinkUri]: hint.target,
@@ -56,7 +48,7 @@ export async function issueIdToken(
     [CLAIM.roles]: [LEARNER_ROLE],
     [CLAIM.custom]: hint.custom,
     [CLAIM.agsEndpoint]: {
-      scope: [AGS_SCOPE.lineitemReadonly, AGS_SCOPE.score],
+      scope: [SCOPES.lineitemReadonly, SCOPES.score],
       lineitem: await lineItemUrl(hint, options),
     },
   })

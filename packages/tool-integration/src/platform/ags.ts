@@ -1,10 +1,10 @@
 import { DataError } from "@interopkit/core";
 import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse, readJson } from "@interopkit/core/http";
 import {
-  AGS_SCOPE,
   callOptionsOf,
   errorBody,
   LINE_ITEM_MEDIA_TYPE,
+  SCOPES,
   SCORE_MEDIA_TYPE,
   SCORES_SUFFIX,
 } from "../protocol/internal.js";
@@ -73,7 +73,7 @@ export async function agsLineItem(request: HttpRequest, options: PlatformOptions
   const found = await find(request, options, "");
   if (found === undefined) return notFound();
   if (request.method !== "GET") return notAllowed("GET");
-  const access = await readAccess(request, options, [AGS_SCOPE.lineitemReadonly, AGS_SCOPE.lineitem]);
+  const access = await readAccess(request, options, [SCOPES.lineitemReadonly, SCOPES.lineitem]);
   if ("status" in access) return access;
   const { lineItem, url } = found;
   if (lineItem.client !== access.client) return forbidden("The line item is not the line item of this tool.");
@@ -110,7 +110,7 @@ export async function agsScores(request: HttpRequest, options: AgsScoresOptions)
   const found = await find(request, options, SCORES_SUFFIX);
   if (found === undefined) return notFound();
   if (request.method !== "POST") return notAllowed("POST");
-  const access = await readAccess(request, options, [AGS_SCOPE.score]);
+  const access = await readAccess(request, options, [SCOPES.score]);
   if ("status" in access) return access;
   const { lineItem } = found;
   if (lineItem.client !== access.client) return forbidden("The line item is not the line item of this tool.");

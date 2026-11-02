@@ -7,7 +7,7 @@ import {
   positiveSchema,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
-import { LtiError } from "../errors.js";
+import { LtiError } from "../../errors.js";
 
 /** The claims of a token: a JSON object. */
 export type Claims = Readonly<Record<string, unknown>>;
@@ -103,6 +103,26 @@ export function required<TSchema extends v.GenericSchema>(
 }
 
 /**
+ * Reads several properties of the object at once, which a schema of that object describes.
+ *
+ * @param owner - Names the object in the error message, such as `The id_token`.
+ * @param schema - What the object must be.
+ * @throws `LtiError` (`claim-missing`) when a required property is absent and (`claim-invalid`) when one has another shape.
+ */
+export function requiredFrom<TSchema extends v.GenericSchema>(
+  source: Claims,
+  owner: string,
+  schema: TSchema,
+): v.InferOutput<TSchema> {
+  const result = v.safeParse(schema, source, { abortEarly: true });
+  if (!result.success) {
+    const [issue] = result.issues;
+    throw invalid(owner, String(issue.path?.[0]?.key ?? ""), issue);
+  }
+  return result.output;
+}
+
+/**
  * Reads a property that may be absent.
  *
  * @param owner - Names the object in the error message, such as `The id_token`.
@@ -117,38 +137,3 @@ export function optional<TSchema extends v.GenericSchema>(
 ): v.InferOutput<TSchema> | undefined {
   return source[name] === undefined ? undefined : required(source, name, owner, schema);
 }
-
-/** The claims of LTI messages that the tool reads, by the URI that names each. */
-export const CLAIM = {
-  messageType: "https://purl.imsglobal.org/spec/lti/claim/message_type",
-  version: "https://purl.imsglobal.org/spec/lti/claim/version",
-  deploymentId: "https://purl.imsglobal.org/spec/lti/claim/deployment_id",
-  targetLinkUri: "https://purl.imsglobal.org/spec/lti/claim/target_link_uri",
-  resourceLink: "https://purl.imsglobal.org/spec/lti/claim/resource_link",
-  roles: "https://purl.imsglobal.org/spec/lti/claim/roles",
-  custom: "https://purl.imsglobal.org/spec/lti/claim/custom",
-  deepLinkingSettings: "https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings",
-  contentItems: "https://purl.imsglobal.org/spec/lti-dl/claim/content_items",
-  data: "https://purl.imsglobal.org/spec/lti-dl/claim/data",
-  agsEndpoint: "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint",
-} as const;
-
-/** The scopes of the Assignment and Grade Services that a launch offers (LTI AGS 2.0 sections 3.2 and 3.4.2). */
-export const AGS_SCOPE = {
-  lineitem: "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
-  lineitemReadonly: "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly",
-  score: "https://purl.imsglobal.org/spec/lti-ags/scope/score",
-} as const;
-
-/** The role of a user in a launch: a learner (LTI 1.3 Core Appendix A.2.3). */
-export const LEARNER_ROLE = "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner";
-
-/** The message types of a launch that the tool accepts. */
-export const MESSAGE_TYPE = {
-  resourceLink: "LtiResourceLinkRequest",
-  deepLinkingRequest: "LtiDeepLinkingRequest",
-  deepLinkingResponse: "LtiDeepLinkingResponse",
-} as const;
-
-/** The version of LTI that the tool speaks: `1.3.0` (LTI 1.3 Core section 5.3.2). */
-export const LTI_VERSION = "1.3.0";

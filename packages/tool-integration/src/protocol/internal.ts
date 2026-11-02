@@ -7,34 +7,42 @@
 export { checkAllowList } from "./allow-list.js";
 export { callOptionsOf } from "./call-options.js";
 export {
-  AGS_SCOPE,
-  BOOLEAN,
   CLAIM,
   type Claims,
-  CUSTOM_RECORD,
-  HTTPS_URL,
   IDENTIFIER,
+  isVocabularyContextType,
+  isVocabularyRole,
   LEARNER_ROLE,
   LTI_VERSION,
   MAX_IDENTIFIER_LENGTH,
-  MESSAGE_TYPE,
   NON_EMPTY_STRING,
-  NULLABLE_STRING,
   NUMBER,
-  optional,
   POSITIVE_NUMBER,
   required,
+  SCOPES,
   STRING,
   STRING_ARRAY,
   STRING_RECORD,
-} from "./claims.js";
+} from "./claims/index.js";
 export { CLOCK_SKEW_SECONDS } from "./clock-skew.js";
 export { readCookie } from "./cookie.js";
 export { errorBody } from "./error-body.js";
 export { escapeHtml, pagePolicy } from "./html.js";
 export { checkJwksCache, type JwksCache } from "./jwks.js";
 export { hasCanonicalParts, rs256Header, unverifiedClaims, verifyJwt } from "./jwt.js";
+export { checkKeySet } from "./key-set.js";
 export { isRsaKey, MIN_RSA_MODULUS_BITS } from "./keys.js";
+export {
+  type MessageToWrite,
+  readMessage,
+  readToolMessage,
+  signConsumerKey,
+  type ToolMessageToWrite,
+  verifyMigration,
+  writeMessage,
+  writeToolMessage,
+} from "./message/index.js";
+export { renderPage } from "./page.js";
 export { randomToken } from "./random.js";
 export { MILLISECONDS, toSeconds } from "./time.js";
 export {

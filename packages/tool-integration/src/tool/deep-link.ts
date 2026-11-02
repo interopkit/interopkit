@@ -9,8 +9,8 @@ import {
   describe,
 } from "@interopkit/core/checks";
 import { SignJWT } from "jose";
-import { CLAIM, LTI_VERSION, MESSAGE_TYPE, randomToken, rs256Header, toSeconds } from "../protocol/internal.js";
-import type { DeepLinkingLaunch } from "./launch-model.js";
+import type { DeepLinkingRequestMessage } from "../protocol/index.js";
+import { CLAIM, LTI_VERSION, randomToken, rs256Header, toSeconds } from "../protocol/internal.js";
 import { checkToolOptions, findDeployment, type ToolOptions } from "./options.js";
 
 // Security Framework section 4.1.1: a message of the tool expires "typically five minutes after the iat timestamp".
@@ -82,11 +82,11 @@ function checkItem(value: unknown): void {
 }
 
 /** Checks the launch that the host passes: a Deep Linking request that `ltiLaunch` returned. */
-function checkLaunch(value: unknown): asserts value is DeepLinkingLaunch {
+function checkLaunch(value: unknown): asserts value is DeepLinkingRequestMessage {
   checkRecord(value, "The launch must be an object");
-  if (value.messageType !== MESSAGE_TYPE.deepLinkingRequest) {
+  if (value.messageType !== "LtiDeepLinkingRequest") {
     throw new DataError(
-      `The launch must be a ${MESSAGE_TYPE.deepLinkingRequest}, found the message type ${describe(value.messageType)}.`,
+      `The launch must be a ${"LtiDeepLinkingRequest"}, found the message type ${describe(value.messageType)}.`,
     );
   }
   checkNonEmptyString(value.issuer, "The issuer of the launch");
@@ -99,7 +99,7 @@ function checkLaunch(value: unknown): asserts value is DeepLinkingLaunch {
 }
 
 /** Checks that the platform accepts what the host returns (Deep Linking 2.0 section 4.4.1). */
-function checkAccepted(launch: DeepLinkingLaunch, items: readonly unknown[]): void {
+function checkAccepted(launch: DeepLinkingRequestMessage, items: readonly unknown[]): void {
   const { acceptTypes, acceptMultiple } = launch.settings;
   if (items.length > 0 && !acceptTypes.includes(ITEM_TYPE)) {
     throw new DataError(`The platform accepts the types ${describe(acceptTypes.join(", "))}, and not ${ITEM_TYPE}.`);
@@ -135,7 +135,7 @@ function contentItem(item: DeepLinkItem): Readonly<Record<string, unknown>> {
  * deployment of the launch.
  */
 export async function deepLinkResponse(
-  launch: DeepLinkingLaunch,
+  launch: DeepLinkingRequestMessage,
   items: readonly DeepLinkItem[],
   options: ToolOptions,
 ): Promise<string> {
@@ -148,7 +148,7 @@ export async function deepLinkResponse(
   const iat = toSeconds(readClock(options.clock));
   return new SignJWT({
     nonce: randomToken(),
-    [CLAIM.messageType]: MESSAGE_TYPE.deepLinkingResponse,
+    [CLAIM.messageType]: "LtiDeepLinkingResponse",
     [CLAIM.version]: LTI_VERSION,
     [CLAIM.deploymentId]: launch.deploymentId,
     [CLAIM.data]: launch.settings.data,

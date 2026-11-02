@@ -14,9 +14,9 @@ import {
 } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { LtiError } from "../errors.js";
-import { AGS_SCOPE, LINE_ITEM_MEDIA_TYPE, SCORE_MEDIA_TYPE, SCORES_SUFFIX } from "../protocol/internal.js";
+import type { LtiMessage } from "../protocol/index.js";
+import { LINE_ITEM_MEDIA_TYPE, SCOPES, SCORE_MEDIA_TYPE, SCORES_SUFFIX } from "../protocol/internal.js";
 import { type AccessToken, ltiAccessToken } from "./access-token.js";
-import type { LtiLaunch } from "./launch-model.js";
 import { type AccessTokenOptions, checkToolOptions } from "./options.js";
 
 const TRAILING_SLASH = /\/$/u;
@@ -87,7 +87,7 @@ function checkScore(score: unknown): asserts score is AgsScoreInput {
 
 /** Returns the line item scope to ask for when the line item must be read: the read-only one if the launch offers it. */
 function lineItemScope(offered: readonly string[]): string {
-  const scope = [AGS_SCOPE.lineitemReadonly, AGS_SCOPE.lineitem].find((each) => offered.includes(each));
+  const scope = [SCOPES.lineitemReadonly, SCOPES.lineitem].find((each) => offered.includes(each));
   if (scope === undefined) {
     throw new LtiError(
       "The score has no scoreMaximum, so the call needs the scoreMaximum of the line item, and the launch offers no scope to read it.",
@@ -109,25 +109,29 @@ function serviceOf(launch: unknown): {
       `A score is published for a resource link launch, found the message type ${describe(launch.messageType)}.`,
     );
   }
-  const { ags, subject } = launch;
-  if (ags === undefined || (isRecord(ags) && ags.lineitem === undefined)) {
+  const { services, user } = launch;
+  checkRecord(services, "The services of the launch must be an object");
+  const { grades } = services;
+  if (grades === undefined || (isRecord(grades) && grades.lineitem === undefined)) {
     throw new LtiError("The launch offers no line item to publish a score to.", "line-item-unavailable");
   }
-  checkRecord(ags, "The grade services of the launch must be an object");
-  checkArray(ags.scopes, "The scopes of the grade services of the launch must be an array");
-  const scopes = ags.scopes.map((scope) => {
+  checkRecord(grades, "The grade services of the launch must be an object");
+  checkArray(grades.scopes, "The scopes of the grade services of the launch must be an array");
+  const scopes = grades.scopes.map((scope) => {
     checkNonEmptyString(scope, "A scope of the grade services of the launch");
     return scope;
   });
-  checkHttpsUrl(ags.lineitem, "The line item of the launch");
-  if (!scopes.includes(AGS_SCOPE.score)) {
+  checkHttpsUrl(grades.lineitem, "The line item of the launch");
+  if (!scopes.includes(SCOPES.score)) {
     throw new LtiError("The launch does not offer the scope to publish a score.", "scope-unavailable");
   }
+  checkRecord(user, "The user of the launch must be an object");
+  const { subject } = user;
   if (subject === undefined) {
     throw new LtiError("The launch is anonymous, so the score has no user to be for.", "subject-unavailable");
   }
   checkNonEmptyString(subject, "The subject of the launch");
-  return { lineItem: ags.lineitem, offered: scopes, userId: subject };
+  return { lineItem: grades.lineitem, offered: scopes, userId: subject };
 }
 
 /** Checks that the token holds the scopes the calls need: the platform may grant fewer than were asked. */
@@ -214,14 +218,14 @@ function scoreBody(score: AgsScoreInput, userId: string, scoreMaximum: number | 
  */
 export async function publishAgsScore(
   score: AgsScoreInput,
-  launch: LtiLaunch,
+  launch: LtiMessage,
   options: AccessTokenOptions,
 ): Promise<void> {
   checkToolOptions(options);
   checkScore(score);
   const { lineItem, offered, userId } = serviceOf(launch);
   const needsMaximum = score.scoreGiven !== undefined && score.scoreMaximum === undefined;
-  const scopes = needsMaximum ? [AGS_SCOPE.score, lineItemScope(offered)] : [AGS_SCOPE.score];
+  const scopes = needsMaximum ? [SCOPES.score, lineItemScope(offered)] : [SCOPES.score];
   const token = await ltiAccessToken(launch, scopes, options);
   checkGranted(token, scopes);
   const service = { fetch: options.fetch, timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS, signal: options.signal };

@@ -18,7 +18,7 @@ flowchart LR
   subgraph pkg["@interopkit/tool-integration"]
     tool["/tool<br/>ltiLogin, ltiLaunch, deepLinkResponse,<br/>ltiAccessToken, publishAgsScore"]
     platformRole["/platform<br/>ltiPlatformFrame, ltiPlatformAuthorize,<br/>platformJwks, platformToken, agsScores"]
-    root["root<br/>LtiError, createJwksCache"]
+    root["root<br/>LtiError, createJwksCache,<br/>the model of messages, vocabularies"]
   end
   http["@interopkit/core/http<br/>HttpRequest, HttpResponse"]
   platform <-->|"login, launch, tokens, scores"| routes
@@ -45,9 +45,9 @@ npm install @interopkit/tool-integration
 
 | Subpath                                 | Exports                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/tool-integration`          | `LtiError`, with a `reason` and an HTTP `status`; `createJwksCache`, `JwksCache`, `JwksCacheOptions`                                                                                                                                                                                                                                                                                                                |
+| `@interopkit/tool-integration`          | `LtiError`, with a `reason` and an HTTP `status`; `createJwksCache`, `JwksCache`, `JwksCacheOptions`; the model of the messages: `LtiMessage`, `ToolMessage`, the seven message types (`ResourceLinkMessage`, `DeepLinkingRequestMessage`, `SubmissionReviewMessage`, `StartProctoringMessage`, `EndAssessmentMessage`, `DeepLinkingResponseMessage`, `StartAssessmentMessage`, `OtherMessage`) and their parts; `KeySet`; the vocabularies `SYSTEM_ROLES`, `INSTITUTION_ROLES`, `CONTEXT_ROLES`, `CONTEXT_SUB_ROLES`, `LTI_SYSTEM_ROLES`, `CONTEXT_TYPES`; `canonicalizeRole`, `canonicalizeContextType`, `APPROVED_ALGORITHMS`, `SCOPES`, `MESSAGE_TYPES` |
 | `@interopkit/tool-integration/platform` | `ltiPlatformLogin`, `ltiPlatformFrame`, `ltiPlatformAuthorize`, `platformEndpoints`, `platformJwks`, `platformToken`, `platformStorage`, `agsLineItem`, `agsScores`, `readAgsScore`; `ToolLaunch`, `ToolRegistration`, `PlatformConfig`, `PlatformEndpoints`, `PlatformFrame`, `AgsScore`; the options `PlatformOptions`, `PlatformLoginOptions`, `PlatformAuthorizeOptions`, `PlatformTokenOptions`, `AgsScoresOptions`, `PlatformStorageOptions` |
-| `@interopkit/tool-integration/tool`     | `ltiLogin`, `ltiLaunch`, `deepLinkResponse`, `ltiAccessToken`, `publishAgsScore`; `PlatformRegistration`, `LtiStore`, `LoginRecord`, `AgsScoreInput`, `AccessToken`, `DeepLinkItem`, `DeepLinkLineItem`; the launch types `LtiLaunch`, `ResourceLinkLaunch`, `DeepLinkingLaunch` and their parts; the options `ToolOptions`, `LtiLoginOptions`, `LtiLaunchOptions`, `AccessTokenOptions`                                                           |
+| `@interopkit/tool-integration/tool`     | `ltiLogin`, `ltiLaunch`, `deepLinkResponse`, `ltiAccessToken`, `publishAgsScore`; `PlatformRegistration`, `LtiStore`, `LoginRecord`, `AgsScoreInput`, `AccessToken`, `DeepLinkItem`, `DeepLinkLineItem`; the options `ToolOptions`, `LtiLoginOptions`, `LtiLaunchOptions`, `AccessTokenOptions`                                                           |
 
 ```ts
 import { createJwksCache } from "@interopkit/tool-integration";

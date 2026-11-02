@@ -6,14 +6,12 @@ import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
 import { jwtVerify } from "jose";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createJwksCache } from "../src/index.js";
+import { createJwksCache, type DeepLinkingRequestMessage, type LtiMessage } from "../src/index.js";
 import { randomToken } from "../src/protocol/internal.js";
 import {
   type AccessTokenOptions,
   type DeepLinkItem,
-  type DeepLinkingLaunch,
   deepLinkResponse,
-  type LtiLaunch,
   ltiAccessToken,
   ltiLaunch,
   ltiLogin,
@@ -268,7 +266,7 @@ describe("deepLinkResponse", () => {
   const exam = new Map([["exam", "tryout-1"]]);
 
   /** A Deep Linking request through the whole login, as the platform sends it. */
-  async function deepLinkingRequest(ctx: Setup, claims: Issue["claims"] = {}): Promise<DeepLinkingLaunch> {
+  async function deepLinkingRequest(ctx: Setup, claims: Issue["claims"] = {}): Promise<DeepLinkingRequestMessage> {
     const { request: post } = await cookieLogin(ctx, { message: "deep-linking", claims });
     return deepLinkingOf(await ltiLaunch(post, ctx.options));
   }
@@ -613,13 +611,14 @@ describe("ltiLaunch", () => {
     it("returns the launch of a resource link, with the claims that the platform sent", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx);
-      expect(launchOf(await ltiLaunch(post, ctx.options))).toEqual({
+      expect(launchOf(await ltiLaunch(post, ctx.options))).toMatchObject({
         messageType: "LtiResourceLinkRequest",
         issuer: ISSUER,
         clientId: CLIENT_ID,
         deploymentId: DEPLOYMENT_ID,
+        version: "1.3.0",
         targetLinkUri: TARGET_LINK_URI,
-        subject: "a6d5c443-1f51-4783-ba1a-7686ffe3b54a",
+        user: { subject: "a6d5c443-1f51-4783-ba1a-7686ffe3b54a" },
         roles: [
           "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student",
           "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner",
@@ -633,10 +632,12 @@ describe("ltiLaunch", () => {
           title: "Introduction Assignment",
           description: "Assignment to introduce who you are",
         },
-        ags: {
-          scopes: AGS_SCOPES,
-          lineitems: "https://lms.example.edu/2344/lineitems/",
-          lineitem: "https://lms.example.edu/2344/lineitems/1234/lineitem",
+        services: {
+          grades: {
+            scopes: AGS_SCOPES,
+            lineitems: "https://lms.example.edu/2344/lineitems/",
+            lineitem: "https://lms.example.edu/2344/lineitems/1234/lineitem",
+          },
         },
       });
     });
@@ -645,7 +646,7 @@ describe("ltiLaunch", () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx, { message: "deep-linking" });
       const launch = deepLinkingOf(await ltiLaunch(post, ctx.options));
-      expect(launch.settings).toEqual({
+      expect(launch.settings).toMatchObject({
         returnUrl: RETURN_URL,
         acceptTypes: ["link", "file", "html", "ltiResourceLink", "image"],
         acceptMultiple: true,
@@ -666,9 +667,9 @@ describe("ltiLaunch", () => {
       };
       const { request: post } = await cookieLogin(ctx, { claims });
       const launch = launchOf(await ltiLaunch(post, ctx.options));
-      expect(launch).toMatchObject({ roles: [], custom: new Map(), ags: { scopes: [AGS_SCOPES[2]] } });
-      expect(launch.subject).toBeUndefined();
-      expect(launch.messageType === "LtiResourceLinkRequest" && launch.ags?.lineitem).toBeUndefined();
+      expect(launch).toMatchObject({ roles: [], custom: new Map(), services: { grades: { scopes: [AGS_SCOPES[2]] } } });
+      expect(launch.user.subject).toBeUndefined();
+      expect(launch.services.grades?.lineitem).toBeUndefined();
     });
 
     it("keeps an identifier such as __proto__ as data in the custom properties", async () => {
@@ -742,7 +743,7 @@ describe("ltiLaunch", () => {
 
     it("refuses a login after ten minutes", async () => {
       const ctx = setup();
-      const finish = async (seconds: number): Promise<LtiLaunch | HttpResponse> => {
+      const finish = async (seconds: number): Promise<LtiMessage | HttpResponse> => {
         const response = await ltiLogin(ctx.platform.initiation(), ctx.options);
         ctx.clock.advance(seconds);
         const auth = await ctx.platform.authenticate(response.headers.location ?? "");
@@ -752,7 +753,7 @@ describe("ltiLaunch", () => {
       await expect(finish(600)).rejects.toMatchObject({ name: "LtiError", reason: "state-expired" });
     });
 
-    it("refuses a token that is not signed with RS256", async () => {
+    it("refuses a token that is not signed with one of the six approved algorithms", async () => {
       const ctx = setup();
       const { auth, cookie } = await cookieLogin(ctx);
       const header = (alg: string): string => base64url(JSON.stringify({ alg, typ: "JWT", kid: "platform-1" }));
@@ -764,8 +765,10 @@ describe("ltiLaunch", () => {
       const forged = [
         ["none", `${header("none")}.${payload}.`],
         ["HS256 with the modulus of the public key as the secret", `${header("HS256")}.${payload}.${hmac}`],
-        ["RS384", signToken(auth.claims, platformKey, { alg: "RS384" })],
-        ["ES256", `${header("ES256")}.${payload}.${hmac}`],
+        ["HS512", `${header("HS512")}.${payload}.${hmac}`],
+        ["PS256", signToken(auth.claims, platformKey, { alg: "PS256" })],
+        ["EdDSA", `${header("EdDSA")}.${payload}.${hmac}`],
+        ["ES256K", `${header("ES256K")}.${payload}.${hmac}`],
       ] as const;
       for (const [name, token] of forged) {
         const post = formPost({ id_token: await token, state: auth.state }, { cookie });
@@ -890,20 +893,15 @@ describe("ltiLaunch", () => {
 
     it("refuses a token whose audience is not the tool alone", async () => {
       const ctx = setup();
-      const audiences: readonly unknown[] = [
-        "another-client",
-        ["another-client"],
-        [CLIENT_ID, "another-client"],
-        [],
-        undefined,
-        5,
-      ];
+      const audiences: readonly unknown[] = ["another-client", ["another-client"], [], undefined, 5];
       for (const aud of audiences) {
         const { request: post } = await cookieLogin(ctx, { claims: { aud } });
         await expect(ltiLaunch(post, ctx.options), JSON.stringify(aud)).rejects.toMatchObject({
           reason: "audience-mismatch",
         });
       }
+      const untrusted = await cookieLogin(ctx, { claims: { aud: [CLIENT_ID, "another-client"] } });
+      await expect(ltiLaunch(untrusted.request, ctx.options)).rejects.toMatchObject({ reason: "audience-untrusted" });
       const sole = await cookieLogin(ctx, { claims: { aud: [CLIENT_ID, CLIENT_ID] } });
       expect(launchOf(await ltiLaunch(sole.request, ctx.options)).clientId).toBe(CLIENT_ID);
     });
@@ -965,7 +963,7 @@ describe("ltiLaunch", () => {
         ["a long deployment", { [`${claim}deployment_id`]: "d".repeat(256) }, "claim-invalid"],
         [
           "another message type",
-          { [`${claim}message_type`]: "LtiSubmissionReviewRequest" },
+          { [`${claim}message_type`]: "LtiAssetProcessorSettingsRequest" },
           "message-type-unsupported",
         ],
         ["no message type", { [`${claim}message_type`]: undefined }, "claim-missing"],
@@ -993,18 +991,20 @@ describe("ltiLaunch", () => {
     it("refuses a Deep Linking request without valid settings", async () => {
       const ctx = setup();
       const settings = "https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings";
+      const TARGETS = { accept_presentation_document_targets: ["iframe"] };
       const cases: readonly [string, unknown, string][] = [
         ["none", undefined, "claim-missing"],
         [
           "a return URL that is http",
-          { deep_link_return_url: "http://lms.example/r", accept_types: [] },
+          { deep_link_return_url: "http://lms.example/r", accept_types: [], ...TARGETS },
           "claim-invalid",
         ],
-        ["no return URL", { accept_types: [] }, "claim-missing"],
-        ["no accepted types", { deep_link_return_url: RETURN_URL }, "claim-missing"],
+        ["no return URL", { accept_types: [], ...TARGETS }, "claim-missing"],
+        ["no accepted types", { deep_link_return_url: RETURN_URL, ...TARGETS }, "claim-missing"],
+        ["no document targets", { deep_link_return_url: RETURN_URL, accept_types: [] }, "claim-missing"],
         [
           "multiple as a string",
-          { deep_link_return_url: RETURN_URL, accept_types: [], accept_multiple: "yes" },
+          { deep_link_return_url: RETURN_URL, accept_types: [], ...TARGETS, accept_multiple: "yes" },
           "claim-invalid",
         ],
       ];
@@ -1209,7 +1209,7 @@ describe("ltiLaunch", () => {
       const launch = launchOf(await ltiLaunch(verificationPost(auth, storage), ctx.options));
       expect(launch).toMatchObject({
         messageType: "LtiResourceLinkRequest",
-        subject: "a6d5c443-1f51-4783-ba1a-7686ffe3b54a",
+        user: { subject: "a6d5c443-1f51-4783-ba1a-7686ffe3b54a" },
       });
       expect(ctx.store.records.size).toBe(0);
     });

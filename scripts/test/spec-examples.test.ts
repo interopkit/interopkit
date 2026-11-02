@@ -91,9 +91,10 @@ describe("the lock", () => {
     const lock = loadLock(join(import.meta.dirname, "../.."));
     expect(lock.length).toBeGreaterThan(0);
     for (const { url, file, sha256 } of lock) {
-      // The examples of Open Badges 2.0 are a page of its final release, which 1EdTech keeps among its files.
+      // The examples of Open Badges 2.0 are a page of its final release, which 1EdTech keeps among its files. The open portal
+      // of 1EdTech has the text of LTI Core and Deep Linking, which is newer than the copies at imsglobal.org.
       expect(url).toMatch(
-        /^https:\/\/(?:www\.(?:imsglobal\.org\/spec|imsglobal\.org\/sites\/default\/files\/Badges|w3\.org\/TR)\/|opensource\.ieee\.org\/xapi\/|w3c-ccg\.github\.io\/did-key-spec\/)/u,
+        /^https:\/\/(?:www\.(?:imsglobal\.org\/spec|imsglobal\.org\/sites\/default\/files\/(?:Badges|spec)|w3\.org\/TR)\/|standards\.1edtech\.org\/lti\/|opensource\.ieee\.org\/xapi\/|w3c-ccg\.github\.io\/did-key-spec\/)/u,
       );
       expect(file).toMatch(/^[a-z0-9-]+\.json$/);
       expect(sha256).toMatch(/^[0-9a-f]{64}$/);

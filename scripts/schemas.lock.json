@@ -338,5 +338,10 @@
     "url": "https://w3id.org/openbadges/v2",
     "file": "openbadges-v2-context.json",
     "sha256": "393a890d7d95eb3a86f5f12309648a64c2d0676e5270e2967b5341a2dcea13d2"
+  },
+  {
+    "url": "https://standards.1edtech.org/lti/specifications/core/lti-spec",
+    "file": "lti-core-portal.html",
+    "sha256": "c7c08a50ce15e139b8a5a86b1138bca3480f55f2443f90723525df1439ca38ff"
   }
 ]

@@ -5,7 +5,9 @@ import { LtiError } from "@interopkit/tool-integration";
 import { generateSigningKeys } from "./src/keys.ts";
 import { connect, plainRequest, textOf } from "./src/network.ts";
 import { createPlatform } from "./src/platform.ts";
+import { setupPlatform } from "./src/platform-setup.ts";
 import { createTool } from "./src/tool.ts";
+import { setupTool } from "./src/tool-setup.ts";
 
 const TOOL_ORIGIN = "https://tool.example";
 const CLIENT_ID = "962fa4d8-bcbf-49a0-94b2-2de05ad274af";
@@ -56,30 +58,34 @@ function formOf(page: string): { action: string; idToken: string; state: string 
 export async function runScenario(): Promise<Outcome> {
   const clock: Clock = { now: () => NOW };
   const toolKeys = await generateSigningKeys();
-  const platform = await createPlatform(clock, {
-    clientId: CLIENT_ID,
-    deploymentId: DEPLOYMENT_ID,
-    loginUrl: `${TOOL_ORIGIN}/lti/login`,
-    redirectUri: `${TOOL_ORIGIN}/lti/launch`,
-    keyId: KEY_ID,
-    publicKey: toolKeys.publicKey,
-  });
+  const platform = createPlatform(
+    await setupPlatform(clock, {
+      clientId: CLIENT_ID,
+      deploymentId: DEPLOYMENT_ID,
+      loginUrl: `${TOOL_ORIGIN}/lti/login`,
+      redirectUri: `${TOOL_ORIGIN}/lti/launch`,
+      keyId: KEY_ID,
+      publicKey: toolKeys.publicKey,
+    }),
+  );
   // The two systems reach each other through one network; the tool's calls to the platform are made through it.
   const systems: Parameters<typeof connect>[0] = { [platform.origin]: platform.handle };
   const network = connect(systems);
   const tool = createTool(
-    clock,
-    network,
-    TOOL_ORIGIN,
-    {
-      issuer: platform.issuer,
-      clientId: CLIENT_ID,
-      deploymentId: DEPLOYMENT_ID,
-      authenticationUrl: platform.endpoints.authorization,
-      jwksUrl: platform.endpoints.jwks,
-      accessTokenUrl: platform.endpoints.token,
-    },
-    { keyId: KEY_ID, signingKey: toolKeys.privateKey },
+    setupTool(
+      clock,
+      network,
+      TOOL_ORIGIN,
+      {
+        issuer: platform.issuer,
+        clientId: CLIENT_ID,
+        deploymentId: DEPLOYMENT_ID,
+        authenticationUrl: platform.endpoints.authorization,
+        jwksUrl: platform.endpoints.jwks,
+        accessTokenUrl: platform.endpoints.token,
+      },
+      { keyId: KEY_ID, signingKey: toolKeys.privateKey },
+    ),
   );
   Object.assign(systems, { [TOOL_ORIGIN]: tool.handle });
 

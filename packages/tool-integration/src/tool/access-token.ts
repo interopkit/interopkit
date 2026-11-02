@@ -15,6 +15,7 @@ import {
 } from "@interopkit/core/checks";
 import { SignJWT } from "jose";
 import * as v from "valibot";
+import type { LtiDeployment } from "../protocol/index.js";
 import {
   CLAIM,
   CLIENT_CREDENTIALS_GRANT,
@@ -24,7 +25,6 @@ import {
   rs256Header,
   toSeconds,
 } from "../protocol/internal.js";
-import type { LtiDeployment } from "./launch-model.js";
 import { type AccessTokenOptions, checkToolOptions, findDeployment } from "./options.js";
 
 // Security Framework section 4.1.1: the assertion expires "typically five minutes after the iat timestamp".

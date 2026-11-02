@@ -2,7 +2,6 @@ import { readClock } from "@interopkit/core";
 import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse, readForm } from "@interopkit/core/http";
 import { LtiError } from "../errors.js";
 import {
-  AGS_SCOPE,
   CLIENT_CREDENTIALS_GRANT,
   CLOCK_SKEW_SECONDS,
   callOptionsOf,
@@ -12,6 +11,7 @@ import {
   NON_EMPTY_STRING,
   NUMBER,
   required,
+  SCOPES,
   STRING,
   toSeconds,
   unverifiedClaims,
@@ -28,7 +28,7 @@ const ACCESS_TOKEN_TTL_SECONDS = 3600;
 // `jti` until then, and the leeway after it. Security Framework section 4.1.1 has the assertion expire "typically five minutes" after `iat`.
 const MAX_ASSERTION_LIFETIME_SECONDS = 3600;
 /** The scopes that a launch offers, and so the only ones a token can have (LTI AGS 2.0 section 3.1). */
-const OFFERED_SCOPES: readonly string[] = [AGS_SCOPE.lineitemReadonly, AGS_SCOPE.score];
+const OFFERED_SCOPES: readonly string[] = [SCOPES.lineitemReadonly, SCOPES.score];
 const OWNER = "The client assertion";
 
 /** The error codes of RFC 6749 section 5.2 that the endpoint answers with, by the reason of the check that failed. */

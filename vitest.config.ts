@@ -42,7 +42,7 @@ const nodeProject = (name: string): TestProjectInlineConfiguration => ({
   test: {
     name,
     include: [`packages/${name}/test/**/*.test.ts`],
-    exclude: ["**/*.browser.test.ts", "**/*.corpus.test.ts", "**/spec-examples.test.ts", "**/*.spec.test.ts"],
+    exclude: ["**/*.browser.test.ts", "**/*.corpus.test.ts", "**/*.spec.test.ts"],
     testTimeout: HANG_LIMIT,
   },
 });
@@ -303,7 +303,7 @@ export default defineConfig({
         resolve: { alias: SOURCES },
         test: {
           name: "tool-integration-spec",
-          include: ["packages/tool-integration/test/spec-examples.test.ts"],
+          include: ["packages/tool-integration/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
         },
       },

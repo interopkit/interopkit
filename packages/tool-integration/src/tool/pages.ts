@@ -1,5 +1,5 @@
 import type { HttpResponse } from "@interopkit/core/http";
-import { escapeHtml, pagePolicy } from "../protocol/internal.js";
+import { escapeHtml, renderPage } from "../protocol/internal.js";
 
 // How long a page waits for the platform to answer a storage message before it tells the user. A storage message is a
 // local call between two frames of one browser, so a few seconds mean that the platform does not answer.
@@ -103,31 +103,11 @@ const FAILURE =
   "The launch could not continue: the platform did not store or return the launch state. Close this window and start the launch again.";
 
 /** Builds a page with one script, for the browser to run in the frame of the platform. */
-async function respond(script: string, config: object, body: string): Promise<HttpResponse> {
-  const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>LTI launch</title>
-</head>
-<body>
-<div id="lti" data-config="${escapeHtml(JSON.stringify({ ...config, timeoutMs: STORAGE_TIMEOUT_MS }))}"></div>
+function respond(script: string, config: object, body: string): Promise<HttpResponse> {
+  const page = `<div id="lti" data-config="${escapeHtml(JSON.stringify({ ...config, timeoutMs: STORAGE_TIMEOUT_MS }))}"></div>
 ${body}<p id="failure" role="alert" hidden>${FAILURE}</p>
-<script>${script}</script>
-</body>
-</html>
 `;
-  return {
-    status: 200,
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      "cache-control": "no-store",
-      "x-content-type-options": "nosniff",
-      "referrer-policy": "no-referrer",
-      "content-security-policy": await pagePolicy(script, "'self'"),
-    },
-    body: html,
-  };
+  return renderPage({ body: page, script, formAction: "'self'" });
 }
 
 /** The values of a login that the page stores in the platform. */

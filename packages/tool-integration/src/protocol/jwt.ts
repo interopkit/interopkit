@@ -1,29 +1,54 @@
 import { DataError, InteropkitError } from "@interopkit/core";
-import { describe } from "@interopkit/core/checks";
-import { base64url, decodeJwt, errors, type JWTVerifyGetKey, jwtVerify } from "jose";
+import { describe, hasMoreTokensThan, isRecord, MAX_JSON_TOKENS } from "@interopkit/core/checks";
+import { base64url, errors, type JWTVerifyGetKey, jwtVerify } from "jose";
 import { LtiError } from "../errors.js";
-import type { Claims } from "./claims.js";
+import { APPROVED_ALGORITHMS, type Claims, type JwsAlgorithm } from "./claims/index.js";
 import { CLOCK_SKEW_SECONDS } from "./clock-skew.js";
 
-// The only algorithm the tool and the platform sign and accept: `none` and the HMAC algorithms are refused, so that a token
-// cannot choose a weaker check than the public key (Security Framework sections 5.1.3 and 5.4).
-const ALGORITHM = "RS256";
+// The algorithm the tool and the platform sign with until their keys are signers: a token that either accepts is verified
+// against `algorithms`, which never holds `none` or an HMAC algorithm, so that a token cannot choose a weaker check than the
+// public key (Security Framework sections 5.1.3, 5.4 and 7.2).
+const SIGNING_ALGORITHM = "RS256";
 
 /** The protected header of a token that the tool or the platform signs with an RSA key: RS256 and the `kid` of the key set. */
 export function rs256Header(keyId: string): { readonly alg: "RS256"; readonly typ: "JWT"; readonly kid: string } {
-  return { alg: ALGORITHM, typ: "JWT", kid: keyId };
+  return { alg: SIGNING_ALGORITHM, typ: "JWT", kid: keyId };
 }
 
 /** What a verified token must say about itself. */
 interface JwtExpectation {
   /** The `iss` claim. */
   readonly issuer: string;
-  /** The `aud` claim: the one party the token is for. */
+  /** The party the token is for: the `aud` claim must hold it. */
   readonly audience: string;
+  /**
+   * The parties besides `audience` that the `aud` claim may hold. Any other member is `audience-untrusted`.
+   *
+   * @defaultValue none
+   */
+  readonly trustedAudiences?: readonly string[];
+  /**
+   * The party that the `azp` claim must name when it is present. When set, a token with several audiences must have `azp`.
+   *
+   * @defaultValue not checked
+   */
+  readonly authorizedParty?: string;
   /** The `sub` claim, when the token must have one. */
   readonly subject?: string;
   /** The claims that must be present besides `iss`, `aud` and `sub`, such as `exp`. */
   readonly requiredClaims: string[];
+  /**
+   * The algorithms that the header may name.
+   *
+   * @defaultValue `APPROVED_ALGORITHMS`
+   */
+  readonly algorithms?: readonly JwsAlgorithm[];
+  /**
+   * The most JSON tokens of the payload, which is counted before it is parsed.
+   *
+   * @defaultValue `MAX_JSON_TOKENS`
+   */
+  readonly maxTokens?: number;
 }
 
 /** Returns whether text is the one canonical base64url of some bytes: decoding and encoding it again gives the same text. */
@@ -48,26 +73,40 @@ export function hasCanonicalParts(token: string): boolean {
 
 /**
  * Reads the claims of a token whose signature has not been verified, after it has the shape of a token: three canonical
- * base64url parts and a payload that is a JSON object. The tool uses them to find the key that verifies the token, and they
- * decide nothing until `verifyJwt` has accepted it.
+ * base64url parts and a payload that is a JSON object of at most `maxTokens` JSON tokens. The tool uses them to find the key
+ * that verifies the token, and they decide nothing until `verifyJwt` has accepted it.
  *
+ * @param token - The compact JWS.
+ * @param maxTokens - The most JSON tokens of the payload; the count comes before the parse, so that a payload of a million
+ * small members does not cost the memory of its syntax tree.
  * @throws `LtiError` (`token-malformed`) when the token does not have the shape.
  */
-export function unverifiedClaims(token: string): Claims {
+export function unverifiedClaims(token: string, maxTokens: number = MAX_JSON_TOKENS): Claims {
   if (!hasCanonicalParts(token)) {
     throw new LtiError(
       "The token must have three parts separated by dots, each in base64url without padding (RFC 7515 sections 2 and 7.1).",
       "token-malformed",
     );
   }
+  let text: string;
   try {
-    return decodeJwt(token);
+    text = new TextDecoder("utf-8", { fatal: true }).decode(base64url.decode(token.split(".")[1] ?? ""));
   } catch {
-    throw new LtiError(
-      "The payload of the token must be a JSON object in UTF-8 (RFC 7519 section 7.2).",
-      "token-malformed",
-    );
+    throw new LtiError("The payload of the token must be in UTF-8 (RFC 7519 section 7.2).", "token-malformed");
   }
+  if (hasMoreTokensThan(text, maxTokens)) {
+    throw new LtiError(`The payload of the token has more than ${maxTokens} JSON tokens.`, "token-malformed");
+  }
+  let claims: unknown;
+  try {
+    claims = JSON.parse(text);
+  } catch {
+    throw new LtiError("The payload of the token must be a JSON object (RFC 7519 section 7.2).", "token-malformed");
+  }
+  if (!isRecord(claims)) {
+    throw new LtiError("The payload of the token must be a JSON object (RFC 7519 section 7.2).", "token-malformed");
+  }
+  return claims;
 }
 
 /** Says what is wrong with a claim that jose rejected, as an `LtiError` with the reason of the failed check. */
@@ -116,14 +155,15 @@ function refuse(error: unknown, expected: JwtExpectation): never {
   }
   if (error instanceof errors.JOSEAlgNotAllowed) {
     throw new LtiError(
-      `The token must be signed with ${ALGORITHM} (Security Framework sections 5.1.3 and 5.4).`,
+      `The token must be signed with one of ${(expected.algorithms ?? APPROVED_ALGORITHMS).join(", ")} (Security Framework sections 5.1.3 and 7.2).`,
       "algorithm-unsupported",
     );
   }
   if (error instanceof errors.JWSSignatureVerificationFailed) {
     throw new LtiError("The signature of the token is not valid for the key of its issuer.", "signature-invalid");
   }
-  // jose throws a TypeError for a key that cannot verify with RS256, such as one of fewer than 2,048 bits (RFC 7518 section 3.3).
+  // jose throws a TypeError for a key that cannot verify with the algorithm of the header, such as an RSA key of fewer than
+  // 2,048 bits (RFC 7518 section 3.3) or an elliptic curve key on another curve than the algorithm names (RFC 7518 section 3.4).
   if (
     error instanceof errors.JWKSNoMatchingKey ||
     error instanceof errors.JWKSMultipleMatchingKeys ||
@@ -148,17 +188,17 @@ function refuse(error: unknown, expected: JwtExpectation): never {
 }
 
 /**
- * Verifies a compact JWS as the JWT of an LTI message or a client assertion: RS256 only, a `kid` that the key function
- * resolves, the signature, the parties that `expected` names, the times with the leeway for clock skew, and the audience
- * as the one party (Security Framework sections 5.1.3 and 4.1.1; RFC 7523 section 3).
+ * Verifies a compact JWS as the JWT of an LTI message or a client assertion: an approved algorithm, a `kid` that the key
+ * function resolves, the signature, the parties that `expected` names, the times with the leeway for clock skew, and the
+ * audiences (Security Framework sections 5.1.3, 5.2.3 and 4.1.1; RFC 7523 section 3).
  *
  * @param keys - Resolves the public key from the header of the token, such as a key set of `createJwksCache`.
  * @param expected - What the token must say about itself. A present `exp` or `iat` must be a number.
  * @param nowMilliseconds - The time in milliseconds since 1970-01-01T00:00:00Z.
  * @returns The claims.
  * @throws `LtiError` with the reason of the failed check: `token-malformed`, `algorithm-unsupported`, `key-unknown`,
- * `signature-invalid`, `issuer-mismatch`, `audience-mismatch`, `subject-mismatch`, `token-expired`, `issued-in-future`,
- * `claim-missing` or `claim-invalid`.
+ * `signature-invalid`, `issuer-mismatch`, `audience-mismatch`, `audience-untrusted`, `authorized-party-missing`,
+ * `authorized-party-mismatch`, `subject-mismatch`, `token-expired`, `issued-in-future`, `claim-missing` or `claim-invalid`.
  * @throws `ServiceError` when the key set cannot be fetched, and `DataError` when what the platform serves is not a JWK Set.
  */
 export async function verifyJwt(
@@ -168,7 +208,7 @@ export async function verifyJwt(
   nowMilliseconds: number,
 ): Promise<Claims> {
   // A token that is not one is refused before any key is fetched.
-  unverifiedClaims(token);
+  unverifiedClaims(token, expected.maxTokens);
   // Security Framework section 6.3: every key of a key set has a `kid`, and a token names the one it is signed with.
   const keyOf: JWTVerifyGetKey = (header, jws) => {
     if (typeof header.kid !== "string" || header.kid === "") {
@@ -182,26 +222,55 @@ export async function verifyJwt(
   let claims: Claims;
   try {
     ({ payload: claims } = await jwtVerify(token, keyOf, {
-      ...expected,
-      algorithms: [ALGORITHM],
+      issuer: expected.issuer,
+      audience: expected.audience,
+      subject: expected.subject,
+      requiredClaims: expected.requiredClaims,
+      algorithms: [...(expected.algorithms ?? APPROVED_ALGORITHMS)],
       clockTolerance: CLOCK_SKEW_SECONDS,
       currentDate: new Date(nowMilliseconds),
     }));
   } catch (error) {
     return refuse(error, expected);
   }
-  checkSoleAudience(claims, expected.audience);
+  checkAudiences(claims, expected);
   checkIssuedAt(claims, nowMilliseconds / 1000);
   return claims;
 }
 
-/** Checks that the audience is the one party: the token is for it alone, and no other party the tool does not trust is named. */
-function checkSoleAudience(claims: Claims, audience: JwtExpectation["audience"]): void {
+/**
+ * Checks the audiences and the authorized party of a token (Security Framework sections 5.1.3 and 5.2.3): the audience that
+ * `expected` names is one member, every other member is trusted, and a token with several audiences names its authorized
+ * party. jose has checked that `aud` holds the audience.
+ */
+function checkAudiences(claims: Claims, expected: JwtExpectation): void {
+  const { audience, trustedAudiences = [], authorizedParty } = expected;
   const audiences: readonly unknown[] = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-  if (!audiences.every((item) => item === audience)) {
+  const untrusted = audiences.find((item) => item !== audience && !trustedAudiences.includes(String(item)));
+  if (untrusted !== undefined) {
     throw new LtiError(
-      `The audience of the token must be ${describe(audience)} alone, found ${describe(claims.aud)}.`,
-      "audience-mismatch",
+      `The audience of the token names ${describe(untrusted)}, which is neither ${describe(audience)} nor a trusted audience.`,
+      "audience-untrusted",
+    );
+  }
+  if (authorizedParty === undefined) return;
+  const { azp } = claims;
+  if (azp === undefined) {
+    if (new Set(audiences).size > 1) {
+      throw new LtiError(
+        "A token with several audiences must name its authorized party in azp.",
+        "authorized-party-missing",
+      );
+    }
+    return;
+  }
+  if (typeof azp !== "string") {
+    throw new LtiError(`The azp claim of the token must be a string, found ${describe(azp)}.`, "claim-invalid");
+  }
+  if (azp !== authorizedParty) {
+    throw new LtiError(
+      `The authorized party of the token must be ${describe(authorizedParty)}, found ${describe(azp)}.`,
+      "authorized-party-mismatch",
     );
   }
 }

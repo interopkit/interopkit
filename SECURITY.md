@@ -329,8 +329,11 @@ platform's key, to the tool's client and deployment, and to one use.
 - **Open redirect.** `targetLinkUri` is the signed claim of the launch, returned to the host. Check it against the host's own
   routes before redirecting to it.
 - The platform's key set is fetched from the URL of a registration, over HTTPS, through `callService`. A token cannot choose the
-  URL, and only RS256 with an RSA key of 2,048 bits or more verifies. Past `ttlSeconds` a failed fetch fails the launch, and a
+  URL, and only the six algorithms of Security Framework 7.2 verify, each with a key of its kind: RSA of 2,048 bits or more, or EC on P-256, P-384 or P-521. Past `ttlSeconds` a failed fetch fails the launch, and a
   stale key is never used.
+- **Audiences and payloads.** A token's `aud` holds the tool and nothing else unless the registration trusts the other member, and a
+  token with several audiences names its authorized party in `azp`. The payload of a token is counted in JSON tokens, at most
+  1,000,000, before it is parsed, so a small hostile payload cannot cost the memory of its syntax tree.
 - **Server-side requests.** The key set, the token endpoint and the line item URL come from a registration or from a claim of a
   registered platform. Each must be `https`, and a redirect is refused, yet an `https` URL may still name an internal host: in a
   multi-tenant tool a platform administrator could point the tool's server, with a bearer token, at one. Pass a `fetch` that
@@ -366,7 +369,7 @@ them ([platform role](docs/tool-integration/platform.md)).
   and a redirect is refused, yet in a multi-tenant platform a tool's administrator could name an internal host. Pass a `fetch` that
   refuses loopback, private and link-local addresses, checked on the address that the connection resolves to and not on the host
   name, because of DNS rebinding (see the tool role). Give a tool its public key in the registration, which needs no fetch.
-- **Client assertions.** RS256 only, the audience is the token endpoint, the lifetime is at most 3,600 seconds, and a `jti` is
+- **Client assertions.** The six approved algorithms (a key given in the registration is RS256 only), the audience is the token endpoint and no other, the lifetime is at most 3,600 seconds, and a `jti` is
   accepted once and remembered through the clock-skew leeway after the assertion's expiry. A `once` that rejects fails closed.
 - **Scores.** A tool reads and posts only to its own line item, only for the user of the launch, with the scopes the token holds.
   The platform does not order scores: the receiver keeps a score unless a later one is kept (AGS 3.4.9).

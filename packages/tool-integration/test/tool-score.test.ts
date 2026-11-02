@@ -2,14 +2,8 @@
 
 import { DataError, type Fetch, ServiceError } from "@interopkit/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  type AccessTokenOptions,
-  type AgsScoreInput,
-  type LtiLaunch,
-  ltiLaunch,
-  publishAgsScore,
-  type ResourceLinkLaunch,
-} from "../src/tool/index.js";
+import type { GradesClaim, LtiMessage, ResourceLinkMessage } from "../src/index.js";
+import { type AccessTokenOptions, type AgsScoreInput, ltiLaunch, publishAgsScore } from "../src/tool/index.js";
 import { readScoreMaximum } from "../src/tool/internal.js";
 import { FakeLms, LINE_ITEM_URL, SUBJECT } from "./fake-lms.js";
 import { ACCESS_TOKEN_URL } from "./fake-platform.js";
@@ -39,13 +33,13 @@ const final: AgsScoreInput = {
 async function launched(issue: Parameters<typeof cookieLogin>[1] = { claims: { sub: SUBJECT } }): Promise<{
   readonly ctx: Setup;
   readonly lms: FakeLms;
-  readonly launch: ResourceLinkLaunch;
+  readonly launch: ResourceLinkMessage;
   readonly options: AccessTokenOptions;
 }> {
   const ctx = setup();
   const lms = new FakeLms(ctx.platform);
   const { request: post } = await cookieLogin(ctx, issue);
-  const launch: LtiLaunch = (await ltiLaunch(post, ctx.options)) as LtiLaunch;
+  const launch: LtiMessage = (await ltiLaunch(post, ctx.options)) as LtiMessage;
   if (launch.messageType !== "LtiResourceLinkRequest") throw new Error("Not a resource link launch.");
   return { ctx, lms, launch, options: { ...ctx.options, fetch: lms.fetch } };
 }
@@ -71,7 +65,13 @@ describe("publishAgsScore", () => {
     const { lms, launch, options } = await launched();
     const slashed = {
       ...launch,
-      ags: { ...launch.ags, scopes: launch.ags?.scopes ?? [], lineitem: `${LINE_ITEM_URL}/` },
+      services: {
+        grades: {
+          ...launch.services.grades,
+          scopes: launch.services.grades?.scopes ?? [],
+          lineitem: `${LINE_ITEM_URL}/`,
+        },
+      },
     };
     await publishAgsScore(final, slashed, options);
     expect(lms.calls).toStrictEqual([`POST ${LINE_ITEM_URL}/scores`]);
@@ -81,7 +81,13 @@ describe("publishAgsScore", () => {
     const { lms, launch, options } = await launched();
     const plain = {
       ...launch,
-      ags: { ...launch.ags, scopes: launch.ags?.scopes ?? [], lineitem: "http://lms.example.edu/li/1" },
+      services: {
+        grades: {
+          ...launch.services.grades,
+          scopes: launch.services.grades?.scopes ?? [],
+          lineitem: "http://lms.example.edu/li/1",
+        },
+      },
     };
     await expect(publishAgsScore(final, plain, options)).rejects.toThrow(DataError);
     expect(lms.calls).toStrictEqual([]);
@@ -216,7 +222,7 @@ describe("a launch that cannot publish", () => {
   it("is refused when it is a Deep Linking request", async () => {
     const ctx = setup();
     const { request: post } = await cookieLogin(ctx, { message: "deep-linking" });
-    const launch = (await ltiLaunch(post, ctx.options)) as LtiLaunch;
+    const launch = (await ltiLaunch(post, ctx.options)) as LtiMessage;
     await expect(publishAgsScore(final, launch, ctx.options)).rejects.toThrow(
       'A score is published for a resource link launch, found the message type "LtiDeepLinkingRequest".',
     );
@@ -224,9 +230,11 @@ describe("a launch that cannot publish", () => {
 
   it("has no line item, no scope for the score, no user, or no scope to read the line item", async () => {
     const { launch, options } = await launched();
-    const without = (ags: Partial<NonNullable<ResourceLinkLaunch["ags"]>> | undefined): ResourceLinkLaunch => ({
+    const without = (grades: Partial<GradesClaim> | undefined): ResourceLinkMessage => ({
       ...launch,
-      ags: ags === undefined ? undefined : { ...(launch.ags ?? { scopes: [] }), ...ags },
+      services: {
+        grades: grades === undefined ? undefined : { ...(launch.services.grades ?? { scopes: [] }), ...grades },
+      },
     });
     await expect(publishAgsScore(final, without(undefined), options)).rejects.toMatchObject({
       reason: "line-item-unavailable",
@@ -237,7 +245,9 @@ describe("a launch that cannot publish", () => {
     await expect(publishAgsScore(final, without({ scopes: [`${AGS}lineitem`] }), options)).rejects.toMatchObject({
       reason: "scope-unavailable",
     });
-    await expect(publishAgsScore(final, { ...launch, subject: undefined }, options)).rejects.toMatchObject({
+    await expect(
+      publishAgsScore(final, { ...launch, user: { ...launch.user, subject: undefined } }, options),
+    ).rejects.toMatchObject({
       reason: "subject-unavailable",
     });
     await expect(

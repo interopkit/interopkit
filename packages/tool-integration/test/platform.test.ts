@@ -1841,15 +1841,15 @@ describe("the tool role and the platform role together", () => {
       clientId: TOOL_CLIENT_ID,
       deploymentId: TOOL_DEPLOYMENT_ID,
       targetLinkUri: TOOL_LAUNCH_URL,
-      subject: "candidate-7",
+      user: { subject: "candidate-7" },
       roles: ["http://purl.imsglobal.org/vocab/lis/v2/membership#Learner"],
       resourceLink: { title: "Drawing tool" },
-      ags: { scopes: [LINEITEM_READONLY, SCORE] },
+      services: { grades: { scopes: [LINEITEM_READONLY, SCORE] } },
     });
     expect(launched.custom).toEqual(new Map([["exam", "tryout-1"]]));
 
-    const lineitem = launched.ags?.lineitem ?? "";
-    const granted = await ltiAccessToken(launched, launched.ags?.scopes ?? [], tool);
+    const lineitem = launched.services.grades?.lineitem ?? "";
+    const granted = await ltiAccessToken(launched, launched.services.grades?.scopes ?? [], tool);
     expect(granted.scopes).toEqual([LINEITEM_READONLY, SCORE]);
     const read = await agsLineItem(service(lineitem, granted.value), ctx.token);
     expect(JSON.parse(textOf(read.body))).toMatchObject({
@@ -1857,7 +1857,7 @@ describe("the tool role and the platform role together", () => {
       label: "Drawing tool",
       scoreMaximum: SCORE_MAXIMUM,
     });
-    const body = scoreBody({ userId: launched.subject });
+    const body = scoreBody({ userId: launched.user.subject });
     const posted = await agsScores(
       service(`${lineitem}/scores`, granted.value, { method: "POST", headers: { "content-type": SCORE_TYPE }, body }),
       ctx.scoring,

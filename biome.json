@@ -393,6 +393,26 @@
       }
     },
     {
+      "includes": ["packages/tool-integration/src/protocol/claims/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["../message", "../message/**", "../jwt.js", "../key-set.js", "../page.js"],
+                    "message": "claims/ imports no other folder of protocol/: the message model and the token rules build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["packages/tool-integration/src/tool/**"],
       "linter": {
         "rules": {

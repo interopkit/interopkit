@@ -173,7 +173,7 @@ only `frameOrigin` may frame it.
 
 `platformToken` accepts the client-credentials grant with a JWT assertion (Security Framework 4.1.1). The assertion has `iss`
 and `sub` equal to the client, `aud` equal to the token endpoint, and a non-empty `jti`. It is verified against the tool's key
-set (RS256 only) or its keys, and must expire within 3,600 seconds. Its `jti` is remembered through `once` until its expiry
+set (the six approved algorithms of Security Framework 7.2; a key given in `keys` is an RS256 key) or its keys, and must expire within 3,600 seconds. Its `jti` is remembered through `once` until its expiry
 plus the clock-skew leeway of 60 seconds (the expiry rounded up to a whole second when it has a fraction), because the assertion
 still verifies until then. The scopes
 asked must be among `lineitem.readonly` and `score`. The token is a sealed `access` token that lasts one hour. A refusal is an

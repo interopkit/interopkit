@@ -1,23 +1,18 @@
-import type { Clock } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
-import { createJwksCache } from "@interopkit/tool-integration";
 import {
   type AgsScore,
   agsLineItem,
   agsScores,
   ltiPlatformAuthorize,
   ltiPlatformFrame,
-  type PlatformConfig,
   type PlatformFrame,
-  type PlatformOptions,
-  platformEndpoints,
+  type platformEndpoints,
   platformJwks,
   platformToken,
   type ToolLaunch,
-  type ToolRegistration,
 } from "@interopkit/tool-integration/platform";
-import { generateHintKey, generateSigningKeys } from "./keys.ts";
 import type { Handler } from "./network.ts";
+import { ISSUER, type PlatformSetup } from "./platform-setup.ts";
 
 /** A score that the tool posted, with the resource of the launch it belongs to. */
 interface ReceivedScore {
@@ -39,50 +34,9 @@ export interface Platform {
   readonly scores: readonly ReceivedScore[];
 }
 
-/** What the platform knows of the tool: the tool's side of the registration. */
-export interface ToolSide {
-  readonly clientId: string;
-  readonly deploymentId: string;
-  readonly loginUrl: string;
-  readonly redirectUri: string;
-  /** The tool's public key, which the platform has instead of a URL of the tool's key set. */
-  readonly keyId: string;
-  readonly publicKey: CryptoKey;
-}
-
-const ISSUER = "https://lms.example";
-const ORIGIN = ISSUER;
-const FRAME_ORIGIN = "https://app.lms.example";
-
-/** Creates a platform with the keys it generates and the one tool that it launches. */
-export async function createPlatform(clock: Clock, side: ToolSide): Promise<Platform> {
-  const config: PlatformConfig = {
-    issuer: ISSUER,
-    origin: ORIGIN,
-    frameOrigin: FRAME_ORIGIN,
-    reservedOrigins: [],
-    keys: await generateSigningKeys(),
-    hintKey: await generateHintKey(),
-  };
-  const endpoints = platformEndpoints(config);
-  const registration: ToolRegistration = {
-    clientId: side.clientId,
-    deploymentId: side.deploymentId,
-    loginUrl: side.loginUrl,
-    redirectUris: [side.redirectUri],
-    keys: new Map([[side.keyId, side.publicKey]]),
-  };
-  // The ledger of single-use identifiers: hints and assertions are accepted once.
-  const used = new Set<string>();
-  const once = async (id: string): Promise<boolean> => {
-    if (used.has(id)) return false;
-    used.add(id);
-    return true;
-  };
+/** Creates the platform that a setup configures. */
+export function createPlatform({ base, endpoints, registration, once, jwks }: PlatformSetup): Platform {
   const scores: ReceivedScore[] = [];
-  const base: PlatformOptions = { config, clock };
-  // The tool gave its key, so the platform never fetches a key set of the tool.
-  const jwks = createJwksCache({ fetch: () => Promise.reject(new Error("The tool gave its key.")) });
   const handle: Handler = (request: HttpRequest): Promise<HttpResponse> => {
     const { pathname } = new URL(request.url);
     if (pathname === "/authorize") {
@@ -102,7 +56,7 @@ export async function createPlatform(clock: Clock, side: ToolSide): Promise<Plat
   };
   return {
     issuer: ISSUER,
-    origin: ORIGIN,
+    origin: ISSUER,
     endpoints,
     handle,
     frame: (launch) =>

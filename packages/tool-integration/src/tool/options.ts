@@ -1,8 +1,8 @@
 import { type CallOptions, type Clock, checkClock, type Fetch } from "@interopkit/core";
 import { checkAbortSignal, checkFunction, checkRecord, describe } from "@interopkit/core/checks";
 import { LtiError } from "../errors.js";
+import type { LtiDeployment } from "../protocol/index.js";
 import { callOptionsOf, checkJwksCache, type JwksCache } from "../protocol/internal.js";
-import type { LtiDeployment } from "./launch-model.js";
 import { checkPlatformRegistration, type PlatformRegistration } from "./registration.js";
 import { checkLtiStore, type LtiStore } from "./store.js";
 

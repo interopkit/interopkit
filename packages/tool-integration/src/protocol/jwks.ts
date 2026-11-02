@@ -37,7 +37,7 @@ export interface JwksCache {
   /**
    * Returns the key set at a URL as the function that resolves the public key of a token from its header, for `jwtVerify`
    * of jose. The cache fetches the set when it holds none or an old one, and again when the set lacks the `kid` and the
-   * refresh time has passed. It uses the key that has the `kid` and is for signing with RS256, and refuses a `kid` that
+   * refresh time has passed. It uses the key that has the `kid` and is for signing with the algorithm of the token, and refuses a `kid` that
    * two keys share.
    *
    * @remarks

@@ -1,7 +1,4 @@
-import { describe } from "@interopkit/core/checks";
-import { LtiError } from "../errors.js";
-import type { JwksCache } from "../protocol/internal.js";
-import { type Claims, optional, required, STRING, verifyJwt } from "../protocol/internal.js";
+import { type Claims, type JwksCache, required, STRING, verifyJwt } from "../protocol/internal.js";
 import type { PlatformRegistration } from "./registration.js";
 
 /**
@@ -25,16 +22,9 @@ export async function verifyIdToken(
   const claims = await verifyJwt(
     token,
     jwks.keySet(registration.jwksUrl, { signal }),
-    { issuer, audience: clientId, requiredClaims: ["exp", "iat"] },
+    { issuer, audience: clientId, authorizedParty: clientId, requiredClaims: ["exp", "iat"] },
     nowMilliseconds,
   );
-  const azp = optional(claims, "azp", "The id_token", STRING);
-  if (azp !== undefined && azp !== clientId) {
-    throw new LtiError(
-      `The authorized party of the token must be ${describe(clientId)}, found ${describe(azp)}.`,
-      "authorized-party-mismatch",
-    );
-  }
   required(claims, "nonce", "The id_token", STRING);
   return claims;
 }
