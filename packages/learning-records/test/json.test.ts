@@ -279,12 +279,19 @@ describe("readStatementJson", () => {
     });
 
     it("reads the most tokens by default, 1,000,000, and refuses one more", () => {
+      // Two brackets, two tokens for each "0,", and the two of the inner []: 2 + 2 * 499,998 + 2 = 1,000,000.
       const atTheLimit = `[${"0,".repeat(499_998)}[]]`;
-      expect(tokenize(atTheLimit, { mode: "json" })).toHaveLength(1_000_000);
       expect(readStatementJson(atTheLimit)).toHaveLength(499_999);
+      // Two brackets, two tokens for each "0,", and the last 0: 2 + 2 * 499,999 + 1 = 1,000,001.
       const oneMore = `[${"0,".repeat(499_999)}0]`;
-      expect(tokenize(oneMore, { mode: "json" })).toHaveLength(1_000_001);
       expect(() => readStatementJson(oneMore)).toThrow("The text has more than 1000000 tokens");
+    });
+
+    it("counts the tokens as a tokenizer does", () => {
+      const text = '[0,{"a":[true,null,-1.5e+2,"x\\"y"]},[], "z" ]';
+      const count = tokenize(text, { mode: "json" }).length;
+      expect(readStatementJson(text, { maxTokens: count })).toStrictEqual(JSON.parse(text));
+      expect(() => readStatementJson(text, { maxTokens: count - 1 })).toThrow(`more than ${count - 1} tokens`);
     });
 
     it("refuses the text of 10 MiB that has the most tokens, the worst for memory, before it parses anything", () => {

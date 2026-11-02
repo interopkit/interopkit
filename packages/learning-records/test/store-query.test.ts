@@ -290,7 +290,8 @@ describe("matchesStatementQuery: the authority of a credential that reads its ow
 
 describe("matchesStatementQuery: a long chain of references", () => {
   it("walks a chain longer than the stack could hold", () => {
-    const length = 200_000;
+    // A recursion of 10,000 calls overflows the stack of Node.js.
+    const length = 20_000;
     const held = new Map<string, Statement>();
     for (let n = 0; n < length; n += 1) {
       held.set(uuid(n), statement(n, { object: { objectType: "StatementRef", id: uuid(n + 1) } }));

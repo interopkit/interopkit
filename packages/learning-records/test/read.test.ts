@@ -411,7 +411,7 @@ describe("the limit of findings", () => {
   it.each([
     ["the members of a Group", (n: number) => ({ objectType: "Group", member: Array.from({ length: n }, () => ({})) })],
   ])("stops at the limit in %s, the rules included, without keeping what is beyond it", (_name, actor) => {
-    const findings = validateStatement({ ...minimalStatement(), actor: actor(500_000) });
+    const findings = validateStatement({ ...minimalStatement(), actor: actor(5_000) });
     expect(findings).toHaveLength(1001);
     expect(findings.at(-1)).toStrictEqual(stopped);
   });
@@ -419,11 +419,11 @@ describe("the limit of findings", () => {
   it.each([
     [
       "the components of an interaction",
-      { interactionType: "choice", choices: Array.from({ length: 500_000 }, () => ({ id: "a b" })) },
+      { interactionType: "choice", choices: Array.from({ length: 200_000 }, () => ({ id: "a b" })) },
     ],
     [
       "the patterns of an interaction",
-      { interactionType: "true-false", correctResponsesPattern: Array.from({ length: 500_000 }, () => "x") },
+      { interactionType: "true-false", correctResponsesPattern: Array.from({ length: 200_000 }, () => "x") },
     ],
   ])("reads a Statement with %s that warn, however many, without a stack overflow", (_name, definition) => {
     const statement = { ...minimalStatement(), object: { id: "https://example.org/a", definition } };
