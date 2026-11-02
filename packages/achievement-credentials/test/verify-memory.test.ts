@@ -7,10 +7,14 @@ import { badge, jwsOf } from "./verify-fixtures.js";
 const MIB = 1024 * 1024;
 /**
  * The bytes that one verification may raise the peak of the process by. The CLR below holds 600 credentials that each name a
- * refresh service answering a credential of 300,000 characters: refreshing every one raises the peak by about 220 MiB on
- * Node.js 22 and 24, and the bound of 16 refreshes by about 32 MiB.
+ * refresh service answering a credential of 600,000 characters, which the service signs when it is asked: refreshing every
+ * one raised the peak by 174 to 218 MiB on Node.js 22 and by 246 to 264 MiB on Node.js 24, and the bound of 16 refreshes by 47
+ * to 60 MiB and 73 to 89 MiB. The signing of the services falls in the measure, and the young generation of Node.js 24 holds
+ * more before it is collected, so the bounded peak is far above the bytes that the 16 answers take.
  */
-const BUDGET = 80 * MIB;
+const BUDGET = 128 * MIB;
+/** The characters of the name of each refreshed credential, which a JWS of less than the 1 MiB that a fetch reads holds. */
+const NAME_CHARACTERS = 600_000;
 /** The credentials that the CLR holds. */
 const HELD = 600;
 
@@ -33,7 +37,7 @@ describe("the peak memory of a verification of a hostile CLR", () => {
     const fetch: typeof options.fetch = async (url, init) => {
       const index = /\/refresh\/(\d+)$/u.exec(url)?.[1];
       if (index === undefined) return await options.fetch(url, init);
-      return new Response(await jwsOf(refreshing(Number(index), "x".repeat(300_000))), { status: 200 });
+      return new Response(await jwsOf(refreshing(Number(index), "x".repeat(NAME_CHARACTERS))), { status: 200 });
     };
     const clr = await jwsOf({
       ...clrCredential(),

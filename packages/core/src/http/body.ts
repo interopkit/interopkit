@@ -1,6 +1,6 @@
 import { checkPositiveInteger, checkRecord } from "../checks.js";
 import { DataError } from "../errors.js";
-import { hasMoreTokensThan, MAX_JSON_DEPTH, MAX_JSON_TOKENS, nestsDeeperThan } from "../json.js";
+import { firstExcess, MAX_JSON_DEPTH, MAX_JSON_TOKENS, nestsDeeperThan } from "../json.js";
 import type { HttpRequest } from "./request.js";
 
 /** The most bytes of a JSON body that `readJson` reads unless the caller says otherwise. */
@@ -79,10 +79,13 @@ export function readJson(request: HttpRequest, options: ReadJsonOptions = {}): u
     );
   }
   const text = readText(request);
-  if (nestsDeeperThan(text, maxDepth)) {
+  // One reading finds the first limit that the text passes. The depth is refused before the tokens, so a text that passes the
+  // tokens first is read on for its depth.
+  const excess = firstExcess(text, maxDepth, maxTokens);
+  if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
     throw new DataError(`The JSON of the request nests deeper than the limit of ${maxDepth} levels.`);
   }
-  if (hasMoreTokensThan(text, maxTokens)) {
+  if (excess === "tokens") {
     throw new DataError(
       `The JSON of the request has more than ${maxTokens} tokens, above the limit of the option maxTokens.`,
     );

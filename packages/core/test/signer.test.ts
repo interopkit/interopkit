@@ -207,6 +207,18 @@ describe("signCompactJws", () => {
     };
   };
 
+  it("writes the payload and the signature as base64url without padding, as RFC 4648 does, for bytes of any length", async () => {
+    const { signer } = await signing("EdDSA");
+    await fc.assert(
+      fc.asyncProperty(fc.uint8Array({ maxLength: 3000 }), async (payload) => {
+        const [, written, signature] = (await signCompactJws({}, payload, signer)).split(".");
+        expect(written).toBe(Buffer.from(payload).toString("base64url"));
+        expect(Buffer.from(String(signature), "base64url").toString("base64url")).toBe(signature);
+      }),
+      { seed: 20_261_102, numRuns: 200 },
+    );
+  });
+
   it("puts the algorithm and the key id of the signer first in the header, and keeps the other fields of the header", async () => {
     const { signer } = await signing();
     const jws = await signCompactJws({ typ: "vc+jwt", cty: "vc" }, PAYLOAD, signer);

@@ -300,6 +300,13 @@ describe("readJson", () => {
     );
   });
 
+  it("refuses a body that passes both limits for its depth, wherever the tokens pass theirs", () => {
+    const deepLate = `[${"1,".repeat(20)}[[[[1]]]]]`;
+    expect(() => json(deepLate, { maxDepth: 3, maxTokens: 10 })).toThrow("nests deeper than the limit of 3 levels");
+    expect(() => json(`[[[[${"1,".repeat(20)}1]]]]`, { maxDepth: 3, maxTokens: 10 })).toThrow("nests deeper");
+    expect(() => json(deepLate, { maxDepth: 5, maxTokens: 10 })).toThrow("has more than 10 tokens");
+  });
+
   it("limits the tokens to 1,000,000 unless told otherwise, and refuses a body of empty arrays before parsing it", () => {
     const text = `[${"[],".repeat(400_000)}[]]`;
     expect(() => json(text, { maxBytes: 2_000_000 })).toThrow("has more than 1000000 tokens");

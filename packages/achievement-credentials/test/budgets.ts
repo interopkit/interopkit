@@ -40,8 +40,8 @@ export const RATIOS = {
   verifyProofSelective: 5,
   /** `readCredentialJwt`, against `verifyCredential` of `did-jwt-vc`. Measured 0.12 to 0.13. */
   readCredentialJwt: 0.7,
-  /** `signCredentialJwt` with EdDSA, against `createVerifiableCredentialJwt` of `did-jwt-vc`. Measured 0.16 to 0.17. */
-  signCredentialJwt: 0.9,
+  /** `signCredentialJwt` with EdDSA, against `createVerifiableCredentialJwt` of `did-jwt-vc`. Measured 0.11. */
+  signCredentialJwt: 0.6,
   /** `issueStatusListCredential` of 131,072 entries with a Data Integrity proof, against `@interop/vc-bitstring-status-list` and `jsigs.sign`. Measured 0.88 to 0.90. */
   issueStatusList: 5,
   /** `verifyCredentialStatus` against such a list, fetched and verified each time, against `checkStatus` of `@interop/vc-bitstring-status-list`. Measured 1.29 to 1.37. */
@@ -50,18 +50,18 @@ export const RATIOS = {
   readCredential: 0.9,
   /** `validateCredential` of the same CLR, against the same schema. Measured 0.17. */
   validateCredential: 0.9,
-  /** `bakePng` of the CLR into an image of 256 KiB, against `JSON.stringify` of the CLR. Measured 54 to 55. */
-  bakePng: 300,
-  /** `readPng` of that image, against `JSON.parse` of the CLR. Measured 10.3 to 11.8. */
-  readPng: 60,
-  /** `bakeSvg` of the CLR into an SVG of 140,000 characters, against saxes over the SVG. Measured 1.56 to 1.74. */
-  bakeSvg: 9,
+  /** `bakePng` of the CLR into an image of 256 KiB, against `JSON.stringify` of the CLR. Measured 29.9 to 30.3. */
+  bakePng: 200,
+  /** `readPng` of that image, against `JSON.parse` of the CLR. Measured 4.06 to 4.08. */
+  readPng: 30,
+  /** `bakeSvg` of the CLR into an SVG of 140,000 characters, against saxes over the SVG. Measured 1.56 to 1.81. */
+  bakeSvg: 10,
   /** `readSvg` of that SVG, which stops at the credential, against saxes over all of it. Measured 0.61 to 0.66. */
   readSvg: 4,
   /** `handleCredentialsRequest` of a page of 100 credentials, against `JSON.stringify` of the page. Measured 1.35 to 1.44. */
   listCredentials: 8,
-  /** `handleCredentialsRequest` of the upsert of a CLR of 20 credentials, against `JSON.parse` of its body. Measured 6.2 to 6.4. */
-  upsertCredential: 40,
+  /** `handleCredentialsRequest` of the upsert of a CLR of 20 credentials, against `JSON.parse` of its body. Measured 5.7 to 5.8. */
+  upsertCredential: 30,
   /** `handleRefreshRequest` of a CLR of 20 credentials, against `JSON.stringify` of it. Measured 1.01 to 1.08. */
   refresh: 6,
 } as const;

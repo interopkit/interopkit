@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
+import { crc32 as zlibCrc32 } from "node:zlib";
 import { DataError } from "@interopkit/core";
+import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { bakePng, bakeSvg, readPng, readSvg } from "../src/baking/index.js";
 import { crc32, DEFAULT_MAX_BYTES, MAX_SVG_ATTRIBUTES, MAX_SVG_DEPTH } from "../src/baking/internal.js";
@@ -92,6 +94,15 @@ describe("the checksum of a chunk", () => {
     // The check value of CRC-32 (ISO 3309, as PNG annex D): the checksum of the digits 1 to 9.
     expect(crc32(new TextEncoder().encode("123456789"))).toBe(0xcbf43926);
     expect(crc32(new Uint8Array(0))).toBe(0);
+  });
+
+  it("agrees with the CRC-32 of zlib for any bytes", () => {
+    fc.assert(
+      fc.property(fc.uint8Array({ maxLength: 4096 }), (bytes) => {
+        expect(crc32(bytes)).toBe(zlibCrc32(bytes));
+      }),
+      { seed: 20_261_102, numRuns: 300 },
+    );
   });
 });
 

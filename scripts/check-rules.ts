@@ -170,15 +170,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A JSON body that nests deeper than the limit is refused before it is parsed.",
     file: "packages/core/src/http/body.ts",
-    find: "if (nestsDeeperThan(text, maxDepth)) {",
+    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {',
     replace: "if (false) {",
     test: "packages/core/test/http.test.ts",
   },
   {
     rule: "A quote that a backslash escapes does not end a string, so that brackets inside it are not counted.",
     file: "packages/core/src/json.ts",
-    find: "if (unit === BACKSLASH) index += 1;\n    else if (unit === QUOTE) return index;",
-    replace: "if (unit === QUOTE) return index;",
+    find: "if (backslashes % 2 === 0) return quote;",
+    replace: "return quote;",
     test: "packages/core/test/http.test.ts",
   },
   {
@@ -3003,22 +3003,22 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The payload of a 2.0 JWS is canonical base64url.",
     file: "packages/achievement-credentials/src/base64url.ts",
-    find: "if ((ALPHABET.indexOf(text.charAt(text.length - 1)) & unused) !== 0) return undefined;",
-    replace: "",
+    find: "return (bits & unused) === 0 ? bytes : undefined;",
+    replace: "return bytes;",
     test: "packages/achievement-credentials/test/v2-read.test.ts",
   },
   {
     rule: "Base64url is decoded only when it is the one canonical spelling of its bytes.",
     file: "packages/achievement-credentials/src/base64url.ts",
-    find: "if ((ALPHABET.indexOf(text.charAt(text.length - 1)) & unused) !== 0) return undefined;",
-    replace: "",
+    find: "return (bits & unused) === 0 ? bytes : undefined;",
+    replace: "return bytes;",
     test: "packages/achievement-credentials/test/base64url.test.ts",
   },
   {
     rule: "Base64url is decoded only when it is of the alphabet of base64url, without padding.",
     file: "packages/achievement-credentials/src/base64url.ts",
-    find: "if (rest === 1 || !BASE64URL.test(text)) return undefined;",
-    replace: "if (rest === 1) return undefined;",
+    find: "if (value === NOT_OF_THE_ALPHABET) return undefined;",
+    replace: "",
     test: "packages/achievement-credentials/test/base64url.test.ts",
   },
   {
@@ -4461,7 +4461,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The body of a request with more tokens than the limit is refused before it is parsed.",
     file: "packages/core/src/http/body.ts",
-    find: "if (hasMoreTokensThan(text, maxTokens)) {",
+    find: 'if (excess === "tokens") {',
     replace: "if (false) {",
     test: "packages/core/test/http.test.ts",
   },
@@ -4888,8 +4888,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The parts of a JWS are canonical base64url, so that one signature has one spelling.",
     file: "packages/achievement-credentials/src/base64url.ts",
-    find: "if ((ALPHABET.indexOf(text.charAt(text.length - 1)) & unused) !== 0) return undefined;",
-    replace: "",
+    find: "return (bits & unused) === 0 ? bytes : undefined;",
+    replace: "return bytes;",
     test: "packages/achievement-credentials/test/jwt.test.ts",
   },
   {

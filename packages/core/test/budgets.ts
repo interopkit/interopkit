@@ -15,14 +15,14 @@ export const RATIOS = {
   keyedCacheHit: 6,
   /** `get` of one key by 100 callers while it loads once, against 100 waits on one promise. Measured 0.71 to 1.33. */
   keyedCacheShared: 7,
-  /** `readJson` of a body of 1 MiB, against `TextDecoder` and `JSON.parse`. Measured 2.79 to 2.94. */
-  readJson: 20,
+  /** `readJson` of a body of 1 MiB, against `TextDecoder` and `JSON.parse`. Measured 1.81 to 1.84. */
+  readJson: 10,
   /** `readForm` of 2,000 parameters, against `URLSearchParams`. Measured 0.86 to 0.90. */
   readForm: 5,
   /** `requestService` of an answer of 1 MiB in chunks of 16 KiB, against `Response.arrayBuffer`. Measured 1.02 to 1.14. */
   requestService: 6,
-  /** `signCompactJws` with EdDSA, against `crypto.subtle.sign` of its signing input. Measured 2.08 to 2.34. */
-  signCompactJws: 20,
+  /** `signCompactJws` with EdDSA, against `crypto.subtle.sign` of its signing input. Measured 1.07 to 1.17. */
+  signCompactJws: 6,
 } as const;
 
 /**
