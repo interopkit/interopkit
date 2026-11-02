@@ -1,4 +1,6 @@
+import { looseRecord } from "@interopkit/core/checks";
 import { assessmentSchemas } from "./assessment-schemas.js";
+import { contextSchema } from "./context.js";
 import { peopleSchemas } from "./people-schemas.js";
 import { questionnaireSchemas } from "./questionnaire-schemas.js";
 import { createEntitySchema, createRanges, type EntitySchemas } from "./range.js";
@@ -19,3 +21,6 @@ export const ENTITY_SCHEMAS = {
 
 /** The schema of an entity written as an object, of any class, chosen by its `type`. */
 export const entitySchema = createEntitySchema(() => ENTITY_SCHEMAS);
+
+/** The schema of an entity describe as a whole, before its class is read: it has the `@context` of Caliper. */
+export const entityDocumentSchema = looseRecord({ "@context": contextSchema });

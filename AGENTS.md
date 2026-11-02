@@ -55,7 +55,7 @@ Use these words with these meanings in code, comments and docs.
 | endpoint     | The service that receives the envelopes                                                                                         |
 | deadline     | The time a call to a service may take, `timeoutMs`                                                                              |
 | framework    | A CASE competency framework, held as a package: one document with its items, associations, definitions and rubrics              |
-| finding      | A `CaseIssue`, `CredentialIssue` or `StatementIssue` of a reader: where, which rule, what is wrong, and its severity
+| finding      | A `CaseIssue`, `CredentialIssue`, `StatementIssue` or `CaliperFinding` of a reader or a validator: where, which rule, what is wrong, and its severity
 | Statement    | An xAPI Statement, with a capital S: an Actor, a verb and an Object, with a result and a context when there are any
 | LRS          | The Learning Record Store: the service that receives Statements and shall reject those that break the rules
 | LRP          | A Learning Record Provider: the system that makes Statements and sends them to an LRS
@@ -86,7 +86,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                              |
 | `packages/core/src/call-port.ts`     | `callPort`, which turns the failure of a port into a value for a handler                            |
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/` (`claims/`, `message/`, one folder for each service body), `tool/`, `platform/` |
-| `packages/learning-analytics/`       | Caliper 1.2: `model/`, `read/`, `build/`, `send/`                                                   |
+| `packages/learning-analytics/`       | Caliper 1.2: `model/`, `read/`, `validate/`, `build/`, `send/`                                      |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
@@ -189,7 +189,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
   `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
   `model/`, `read/`, `compare/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. In `learning-analytics`, `model/`
-  imports no other module, `read/` builds on `model/`, `build/` on both, and `send/` on `model/`. Imports never form cycles.
+  imports no other module, `read/` builds on `model/`, `validate/` on both, `build/` on all three, and `send/` on `model/` and `build/`. Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.

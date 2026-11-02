@@ -547,8 +547,19 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/build", "**/build/**", "**/read", "**/read/**", "**/send", "**/send/**"],
-                    "message": "model/ holds the terms and imports none of build/, read/ and send/: they build on it."
+                    "group": [
+                      "**/build",
+                      "**/build/**",
+                      "**/read",
+                      "**/read/**",
+                      "**/send",
+                      "**/send/**",
+                      "**/validate",
+                      "**/validate/**",
+                      "**/endpoint",
+                      "**/endpoint/**"
+                    ],
+                    "message": "model/ holds the terms and imports none of build/, read/, send/, validate/ and endpoint/: they build on it."
                   }
                 ]
               }
@@ -567,8 +578,37 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/build", "**/build/**", "**/send", "**/send/**"],
-                    "message": "read/ builds on model/ and @interopkit/core only: build/ and send/ build on it."
+                    "group": [
+                      "**/build",
+                      "**/build/**",
+                      "**/send",
+                      "**/send/**",
+                      "**/validate",
+                      "**/validate/**",
+                      "**/endpoint",
+                      "**/endpoint/**"
+                    ],
+                    "message": "read/ builds on model/ and @interopkit/core only: build/, send/, validate/ and endpoint/ build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-analytics/src/validate/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/build", "**/build/**", "**/send", "**/send/**", "**/endpoint", "**/endpoint/**"],
+                    "message": "validate/ builds on model/, read/ and @interopkit/core only: build/ and endpoint/ build on it, and send/ never imports it."
                   }
                 ]
               }
@@ -587,8 +627,55 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/send", "**/send/**"],
-                    "message": "build/ builds on model/ and @interopkit/core only: send/ builds on it."
+                    "group": ["**/send", "**/send/**", "**/endpoint", "**/endpoint/**"],
+                    "message": "build/ builds on model/, read/, validate/ and @interopkit/core only: send/ and endpoint/ never import it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-analytics/src/send/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/read",
+                      "**/read/**",
+                      "**/validate",
+                      "**/validate/**",
+                      "**/endpoint",
+                      "**/endpoint/**"
+                    ],
+                    "message": "send/ builds on model/, build/ and @interopkit/core only: it never imports endpoint/, which is the other side of the wire."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-analytics/src/endpoint/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/build", "**/build/**", "**/send", "**/send/**"],
+                    "message": "endpoint/ builds on model/, read/, validate/ and @interopkit/core only: it never imports send/, which is the other side of the wire, nor build/."
                   }
                 ]
               }

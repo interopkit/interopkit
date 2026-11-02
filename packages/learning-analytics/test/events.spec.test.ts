@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readSpecPage } from "../../../scripts/spec-examples.js";
-import {
-  ACTIONS,
-  CALIPER_CONTEXT,
-  ENTITY_TYPES,
-  EVENT_TYPES,
-  LIBRARY_PROFILE_CONTEXT,
-  readEvent,
-} from "../src/index.js";
+import { ACTIONS, ENTITY_TYPES, EVENT_TYPES, readEvent } from "../src/index.js";
 import { EVENT_SCHEMAS } from "../src/read/internal.js";
 import {
   CLASSES,
@@ -16,6 +9,8 @@ import {
   EVENT_TERMS,
   inheritedRows,
   LIBRARY_TABLES,
+  minimal,
+  minimalEvent,
   ROOT,
   spelled,
   TABLES,
@@ -44,35 +39,6 @@ const schemaOf = (term: string): unknown => Reflect.get(EVENT_SCHEMAS, term);
 const BEYOND_THE_TABLES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   AssessmentItemEvent: { generated: "Attempt" },
 };
-
-/** An entity of a class with the properties that the class requires, and no more. */
-function minimal(term: string): Record<string, unknown> {
-  const required: Record<string, Record<string, unknown>> = {
-    AggregateMeasure: { metric: "UnitsCompleted", metricValue: 1 },
-    Questionnaire: { items: [] },
-  };
-  return { id: `https://example.edu/${term}`, type: term, ...required[term] };
-}
-
-/** An event of a class with the actor and the object that its table names first, and the first action it allows. */
-function minimalEvent(term: string, changes: Record<string, unknown> = {}): Record<string, unknown> {
-  const rows = inheritedRows(term, TABLES.eventProperties);
-  const first = (name: string): string => {
-    const types = rows.get(name)?.types ?? ["Entity"];
-    return types.find((type) => type === "Entity" || ENTITY_TERMS.includes(type)) ?? "Entity";
-  };
-  const action = rows.get("action")?.actions?.[0] ?? "Created";
-  return {
-    "@context": term.startsWith("Library") ? LIBRARY_PROFILE_CONTEXT : CALIPER_CONTEXT,
-    id: "urn:uuid:3a648e68-f00d-4c08-aa59-8738e1884f2c",
-    type: term,
-    actor: minimal(first("actor")),
-    action: spelled(action),
-    object: minimal(first("object")),
-    eventTime: "2016-11-15T10:15:00.000Z",
-    ...changes,
-  };
-}
 
 /** Tells whether the reader takes an event. */
 function reads(value: unknown): boolean {

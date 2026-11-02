@@ -12,7 +12,8 @@ flowchart LR
   have --> eventNode["Events: all 24, and the generic Event, read and built"]
   have --> vocab["Vocabularies: actions, profiles, roles, statuses,<br/>LTI message types, identifier types, metrics"]
   have --> ctx["Contexts: one, a list that ends with Caliper's,<br/>and inline"]
-  next --> prof["Profile rules, the endpoint, version 1.1"]
+  have --> prof["Profile rules: 91 rows, the General Profile,<br/>the certification guide, findings"]
+  next --> later["The endpoint, version 1.1"]
 ```
 
 | Construct                                                  | Built | Where                                           |
@@ -29,6 +30,9 @@ flowchart LR
 | The actions, the actors and the objects that each event allows | Yes  | Same                                            |
 | Event properties `target`, `referrer`, `group`, `membership`, `session`, `federatedSession`, `extensions` | Yes | Same        |
 | `@context` as a list in `buildEvent`, and as terms defined inline | Yes | `buildEvent`, `buildEntity`              |
+| The 91 rows of the profile tables, the General Profile, the Library Use Profile | Yes | `validateEvent`, `buildEvent`; [judging events](./validate.md) |
+| The event conformance tables of the certification guide    | Yes      | Same                                            |
+| The recommendations of the profiles (generated entity, properties of an attempt, a score, a result and a timeout session) | Yes | Same |
 | Sensor: one envelope of events with a bearer token         | Yes      | `sendCaliper`; [sending events](./send.md)      |
 
 ```ts
@@ -44,7 +48,6 @@ PROFILES.length; // => 16
 
 | What                                                                                                       | Why                                                              |
 | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| The 91 rows of the profile tables and the General Profile                                                  | Built after the events                                           |
 | Entity describes and a mix of events and entities in `data` of an envelope                                 | Built with the transport                                         |
 | Reading the configuration of an endpoint (section 6.2), `caliperMaximumPayloadSize`, splitting an envelope | Built with the transport                                         |
 | The endpoint role: reading an envelope and answering 2xx, 400, 401, 415 and 422 (section 6)                | Built with the transport                                         |

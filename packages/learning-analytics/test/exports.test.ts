@@ -38,6 +38,8 @@ describe("the public API", () => {
         "STATUSES",
         "SYNCHRONICITIES",
         "SYSTEM_IDENTIFIER_TYPES",
+        "validateEntity",
+        "validateEvent",
       ].sort(),
     );
   });

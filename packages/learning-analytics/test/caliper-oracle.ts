@@ -9,6 +9,7 @@ import {
 } from "../../../scripts/caliper-tables.js";
 import { schemaArbitrary } from "../../../scripts/schema-arbitrary.js";
 import { readSchemaSet, type SchemaSet, schemaSetValidator } from "../../../scripts/schema-oracle.js";
+import { CALIPER_CONTEXT, LIBRARY_PROFILE_CONTEXT } from "../src/index.js";
 
 /** The repository, whose `.cache/` holds the downloads that these helpers read. */
 export const ROOT = resolve(import.meta.dirname, "../../..");
@@ -69,6 +70,9 @@ export function fixtures(prefix: string, negative = false): ReadonlyMap<string, 
       .map((name) => [name, readFileSync(join(directory, name), "utf8")]),
   );
 }
+
+/** The pinned tables of the certification guide of Caliper 1.2, which `pnpm caliper-tables` downloads. */
+export const CERTIFICATION_TABLES: CaliperTables = readCaliperTables(ROOT, "caliper-cert-1p2.json");
 
 /** What the schemas and the tables each say that the other does not, for the generated values: see the guide `spec-gaps.md`. */
 const BASE = "#/$defs/";
@@ -214,4 +218,33 @@ export function documentArbitrary(
     "@context": "http://purl.imsglobal.org/ctx/caliper/v1p2",
     ...entity,
   }));
+}
+
+/** An entity of a class with the properties that the class requires, and no more. */
+export function minimal(term: string): Record<string, unknown> {
+  const required: Record<string, Record<string, unknown>> = {
+    AggregateMeasure: { metric: "UnitsCompleted", metricValue: 1 },
+    Questionnaire: { items: [] },
+  };
+  return { id: `https://example.edu/${term}`, type: term, ...required[term] };
+}
+
+/** An event of a class with the actor and the object that its table names first, and the first action it allows. */
+export function minimalEvent(term: string, changes: Record<string, unknown> = {}): Record<string, unknown> {
+  const rows = inheritedRows(term, TABLES.eventProperties);
+  const first = (name: string): string => {
+    const types = rows.get(name)?.types ?? ["Entity"];
+    return types.find((type) => type === "Entity" || ENTITY_TERMS.includes(type)) ?? "Entity";
+  };
+  const action = rows.get("action")?.actions?.[0] ?? "Created";
+  return {
+    "@context": term.startsWith("Library") ? LIBRARY_PROFILE_CONTEXT : CALIPER_CONTEXT,
+    id: "urn:uuid:3a648e68-f00d-4c08-aa59-8738e1884f2c",
+    type: term,
+    actor: minimal(first("actor")),
+    action: spelled(action),
+    object: minimal(first("object")),
+    eventTime: "2016-11-15T10:15:00.000Z",
+    ...changes,
+  };
 }

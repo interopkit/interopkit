@@ -9,3 +9,4 @@ export { type BuildOptions, buildEntity, buildEvent, caliperTime, checkIri, mint
 export * from "./model/index.js";
 export { readEntity, readEvent } from "./read/index.js";
 export { type CaliperSender, DEFAULT_CALIPER_TIMEOUT_MS, type SendCaliperOptions, sendCaliper } from "./send/index.js";
+export { type CaliperFinding, type ValidateOptions, validateEntity, validateEvent } from "./validate/index.js";

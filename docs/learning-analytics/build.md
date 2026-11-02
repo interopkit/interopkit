@@ -63,8 +63,9 @@ event are checked by the classes of the [model](./model.md): an object of a clas
 | Actions      | The actions that the event type allows, of `ACTIONS`                                                   |
 | Entity types | Any of `ENTITY_TYPES`, as the [model](./model.md) describes them, each as an object or as its IRI     |
 
-The profile is checked as a term, and not against the rows of the profile tables: `buildEvent` accepts a `GradeEvent` with the
-`AssessmentProfile`. The caller builds the combinations that the profile tables list.
+The profile is checked against the rows of its tables as well: `buildEvent` refuses a `GradeEvent` with the `AssessmentProfile`,
+because that profile has no such event, and a `SessionEvent` that logs in an application as the actor. It refuses what
+[`validateEvent`](./validate.md) finds an error in, and builds an event that has warnings only, such as one with no `profile`.
 
 ## Identifiers
 
@@ -109,6 +110,7 @@ milliseconds. A fraction of a millisecond is cut. `label` names the time in the 
 | Error       | When                                                                                                                                                                           | What to do                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | `DataError` | The input is not an event: `The event is invalid at action: expected an action of Caliper, found "Graded".`, an entity of a class the property does not take, a relative IRI, a time not in the form, an input with an `@context` | Fix the input. Nothing was built                                       |
+| `DataError` | The event breaks a rule of its profile: `The event is invalid at profile: expected a profile that has GradeEvent, found AssessmentProfile; GradeEvent is in GradingProfile.` The message counts the other errors | Fix the event, or call `validateEvent` to see every finding |
 | `DataError` | The options are not an object with a list of contexts: `The options is invalid at contexts: ...`                                                                                | Give `contexts` as a list of addresses and objects                     |
 | `DataError` | A part of an identifier is not a string or a finite number, or a time is not epoch milliseconds in range                                                                         | Fix the argument                                                       |
 

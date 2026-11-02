@@ -1,10 +1,7 @@
-import { looseRecord, parseWith } from "@interopkit/core/checks";
+import { parseWith } from "@interopkit/core/checks";
 import type { EntityDocument } from "../model/index.js";
-import { contextSchema } from "./context.js";
-import { entitySchema } from "./entity-schemas.js";
+import { entityDocumentSchema, entitySchema } from "./entity-schemas.js";
 import { copyDocument } from "./json-copy.js";
-
-const documentSchema = looseRecord({ "@context": contextSchema });
 
 /**
  * Reads an entity describe into the model: checks that it names a context of Caliper, that its `type` is a class of Caliper, and
@@ -23,6 +20,10 @@ const documentSchema = looseRecord({ "@context": contextSchema });
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2 | Caliper Analytics 1.2}
  */
 export function readEntity(value: unknown): EntityDocument {
-  const { "@context": context, ...entity } = parseWith(documentSchema, copyDocument(value, "The entity"), "The entity");
+  const { "@context": context, ...entity } = parseWith(
+    entityDocumentSchema,
+    copyDocument(value, "The entity"),
+    "The entity",
+  );
   return { "@context": context, ...parseWith(entitySchema, entity, "The entity") };
 }

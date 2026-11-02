@@ -9,18 +9,25 @@ flowchart BT
   core["@interopkit/core<br/>errors, checks, findings, callService"]
   model["model<br/>vocabularies, contexts, one interface for each<br/>entity and event"]
   read["read<br/>one schema for each class, readEntity"]
+  validate["validate<br/>validateEvent, validateEntity,<br/>the tables of the profiles"]
   build["build<br/>buildEvent, mintUrn, caliperTime, checkIri"]
   send["send<br/>sendCaliper"]
   read --> model
+  validate --> model
+  validate --> read
   build --> model
   build --> read
+  build --> validate
   send --> model
+  send --> build
   model --> core
   read --> core
+  validate --> core
   build --> core
   send --> core
   host["Host<br/>its records, fetch, tokens"] --> build
   host --> read
+  host --> validate
   host --> send
   send -->|"POST, bearer token"| endpoint[("Caliper endpoint")]
 ```
@@ -29,10 +36,11 @@ flowchart BT
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `model` | The contexts, the vocabularies, and an interface for each entity of Caliper 1.2 and of the Library Use Profile ([model](./model.md))                    |
 | `read`  | A schema for each class, and `readEntity`, which takes an entity describe from outside into the model                                                |
+| `validate` | `validateEvent`, `validateEntity` and the tables of the profiles of section 3 and of the certification guide ([judging events](./validate.md))     |
 | `build` | `buildEvent`, `mintUrn`, `caliperTime`, `checkIri` ([building events](./build.md))                                                                    |
 | `send`  | `sendCaliper`, `CaliperSender`, `SendCaliperOptions`, `DEFAULT_CALIPER_TIMEOUT_MS` ([sending events](./send.md))                                      |
 
-`model` imports no other module, `read` builds on `model`, `build` on both, and `send` on `model`. Biome keeps the rules. All of
+`model` imports no other module, `read` builds on `model`, `validate` on both, `build` on all three, and `send` on `model` and `build`. Biome keeps the rules. All of
 the exports come from `@interopkit/learning-analytics`. The package depends on `@interopkit/core` for errors, checks, findings
 and the call to the service, on `uuid` for name-based UUIDs and on `valibot` for the schemas.
 

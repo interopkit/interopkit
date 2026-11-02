@@ -2,11 +2,16 @@
   {
     "url": "https://www.imsglobal.org/spec/caliper/v1p2",
     "file": "caliper-1p2.json",
-    "sha256": "be1b7ceea14190515c0095e2440c4c3df77afc347644a8dce6e643e9e0ef97dd"
+    "sha256": "dd66f2f51874cc9df947b5868b2d2887f1b2f2255db786b92a8251d666033784"
   },
   {
     "url": "https://www.imsglobal.org/spec/caliper-library/v1p2",
     "file": "caliper-library-1p2.json",
-    "sha256": "9ffeee02d509cdb511a13c84f9776cb6d616d52977e427153793b0333f88e91f"
+    "sha256": "a394ddb8ffa138491f24cd6ec45de3e52cb657c121af5ab1b278238f77c338fe"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/caliper/v1p2/cert",
+    "file": "caliper-cert-1p2.json",
+    "sha256": "fad5c7ce3ffaa98d0d0eed47b22ee32d3fb151ee53453cf4103211d5f257e158"
   }
 ]

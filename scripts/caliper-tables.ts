@@ -38,12 +38,41 @@ export interface ClassTable {
   readonly properties: readonly PropertyRow[];
 }
 
+/**
+ * One row of a table of a profile: an event, an action and the classes that the profile allows for what the action involves.
+ * Section 3 of the specification prints the table as event, actor, action, object and the generated entity or the target; the
+ * certification guide prints it as event, action, actor, object, a recommended generated entity and whether certification
+ * requires the row.
+ */
+export interface ProfileRow {
+  /** The term of the profile that the table belongs to, such as `AssessmentProfile`. */
+  readonly profile: string;
+  /** The term of the event. */
+  readonly event: string;
+  /** The action in the spelling of the page. */
+  readonly action: string;
+  /** The classes of the actor, as the cell prints them. */
+  readonly actor: readonly string[];
+  /** The classes of the object, as the cell prints them. */
+  readonly object: readonly string[];
+  /** The classes of the generated entity; empty when the table has none for the row. */
+  readonly generated: readonly string[];
+  /** The classes of the target; empty when the table has none for the row. */
+  readonly target: readonly string[];
+  /** The `Required or Optional` cell of the certification guide. Absent in section 3. */
+  readonly disposition?: string;
+}
+
 /** What tests read of a page of Caliper: the classes, the actions and the vocabularies, by the order of the page. */
 export interface CaliperTables {
   /** The base properties of an event (section 2.1). Empty on a page that defines none. */
   readonly eventProperties: readonly PropertyRow[];
   /** The base properties of an entity (section 2.2). Empty on a page that defines none. */
   readonly entityProperties: readonly PropertyRow[];
+  /** The rows of the tables of the profiles in section 3 of the specification. Empty on a page that has none. */
+  readonly profileRows: readonly ProfileRow[];
+  /** The rows of the event conformance tables of the certification guide. Empty on a page that has none. */
+  readonly certificationRows: readonly ProfileRow[];
   /** The events of the appendix of events, or of the section of events of an extension. */
   readonly events: readonly ClassTable[];
   /** The entities of the appendix of entities and of the entities that have no id. */
@@ -123,7 +152,13 @@ function chunksOf(html: string): Chunk[] {
 /** Returns the title of a section: the text of its heading, without the number. */
 function titleOf(chunk: Chunk): string {
   const end = chunk.body.indexOf("</h");
-  return textOf(chunk.body.slice(0, end < 0 ? 0 : end).replace(/<bdi[^>]*>[\s\S]*?<\/bdi>/gu, ""));
+  // A heading of the certification guide holds the anchor of a broken link whose title quotes a tag, which would end the tag early.
+  return textOf(
+    chunk.body
+      .slice(0, end < 0 ? 0 : end)
+      .replace(/<bdi[^>]*>[\s\S]*?<\/bdi>/gu, "")
+      .replace(/<a [^>]*respec-offending-element[\s\S]*?<\/a>/gu, ""),
+  );
 }
 
 /** Reads the definition list of a section as terms and what they define. */
@@ -156,6 +191,91 @@ function rowsOf(body: string): PropertyRow[] {
     });
   }
   return rows;
+}
+
+/** The cells of a row in the order of the table: the text of each, with the cells that the row spans left out. */
+function cellsOf(row: string): string[] {
+  return [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gu)].map(([, cell = ""]) => textOf(cell));
+}
+
+/**
+ * The classes that a cell of a profile table names: `Link | LtiLink` gives two, `Agent or subtype` gives the one class, and
+ * `Entity (AggregateMeasureCollection)` gives the class in the parentheses, which narrows the entity.
+ */
+function classesIn(cell: string | undefined): string[] {
+  return (cell ?? "").split("|").flatMap((part) => {
+    const narrowed = /\(\s*([A-Z]\w*)\s*\)/u.exec(part)?.[1];
+    const named = narrowed ?? /[A-Z]\w*/u.exec(part)?.[0];
+    return named === undefined ? [] : [named];
+  });
+}
+
+/** The key of a column of a profile table, by its heading in section 3 and in the certification guide. */
+const PROFILE_COLUMNS: Readonly<
+  Record<string, "event" | "action" | "actor" | "object" | "generated" | "target" | "disposition">
+> = {
+  event: "event",
+  action: "action",
+  actor: "actor",
+  object: "object",
+  generated: "generated",
+  "recommended generated entity": "generated",
+  target: "target",
+  "required or optional": "disposition",
+};
+
+/**
+ * Reads the first table of a section as rows of a profile. A row that names an action and no event belongs to the event of
+ * the row before it, as the certification guide prints them; a row that names an event alone only opens that event.
+ */
+function profileRowsIn(body: string, profile: string, withDisposition: boolean): ProfileRow[] {
+  const table = /<table[\s\S]*?<\/table>/u.exec(body)?.[0] ?? "";
+  const heads = [...table.matchAll(/<th[^>]*>([\s\S]*?)<\/th>/gu)].map(([, cell = ""]) => textOf(cell).toLowerCase());
+  const columns = heads.map((head) => PROFILE_COLUMNS[head]);
+  const rows: ProfileRow[] = [];
+  let event = "";
+  for (const [, markup = ""] of table.matchAll(/<tr>([\s\S]*?)<\/tr>/gu)) {
+    const cells = cellsOf(markup);
+    if (cells.length === 0) continue;
+    const at = (key: (typeof columns)[number]): string | undefined => cells[columns.indexOf(key)];
+    event = at("event") || event;
+    const action = at("action") ?? "";
+    // The row of the certification guide that opens an event has no action; section 3 has an action in every row.
+    if (action === "") continue;
+    rows.push({
+      profile,
+      event,
+      action,
+      actor: classesIn(at("actor")),
+      object: classesIn(at("object")),
+      generated: classesIn(at("generated")),
+      target: classesIn(at("target")),
+      ...(withDisposition ? { disposition: at("disposition") ?? "" } : {}),
+    });
+  }
+  return rows;
+}
+
+/** The term of a profile from the title of its section: `Tool launch Profile` is `ToolLaunchProfile`. */
+function profileTerm(title: string): string {
+  return title
+    .replace(/^[\d.\s]+/u, "")
+    .split(/\s+/u)
+    .map((word) => word.slice(0, 1).toUpperCase() + word.slice(1))
+    .join("");
+}
+
+/**
+ * Reads the profile tables of a section: the table of each profile in section 3, which sits under the heading of the profile, or
+ * the event conformance table of each profile in the certification guide, which sits under a heading of its own.
+ */
+function profileRowsOf(chunks: readonly Chunk[], withDisposition: boolean): ProfileRow[] {
+  let profile = "";
+  return chunks.flatMap((chunk) => {
+    if (chunk.level === 3) profile = profileTerm(titleOf(chunk));
+    const isTable = withDisposition ? chunk.id.startsWith("event-conformance-table") : chunk.level === 3;
+    return isTable && profile !== "" ? profileRowsIn(chunk.body, profile, withDisposition) : [];
+  });
 }
 
 /** Splits a list of terms: `A, B and C`. */
@@ -209,6 +329,8 @@ const SECTIONS: Readonly<Record<string, keyof CaliperTables | "ignored">> = {
   "lti-message-types": "ltiMessageTypes",
   "system-identifier-types": "systemIdentifierTypes",
   "use-metrics": "metrics",
+  "profiles-0": "profileRows",
+  "metric-profile-certification": "certificationRows",
   // The sections of an extension, which names its events, actions and entities in the numbered sections 3 to 5.
   "events-extension": "events",
   "actions-extension": "actions",
@@ -258,6 +380,8 @@ export function parseCaliperPage(html: string): CaliperTables {
   return {
     eventProperties: base("event"),
     entityProperties: base("entity"),
+    profileRows: profileRowsOf(groups.get("profileRows") ?? [], false),
+    certificationRows: profileRowsOf(groups.get("certificationRows") ?? [], true),
     events: lists.events as ClassTable[],
     entities: lists.entities as ClassTable[],
     actions: lists.actions as string[],

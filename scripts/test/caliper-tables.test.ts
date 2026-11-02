@@ -39,6 +39,13 @@ function section(id: string, term: string, supertype: string | undefined, rows: 
   return `<h3 id="${id}"><bdi>B.1 </bdi>${term}</h3><dl><dt>Term</dt><dd>${term}</dd>${supertypes}</dl>${rows}`;
 }
 
+/** A table of a profile: a heading row, and a row of cells for each row of the page. */
+function profileTable(heads: readonly string[], ...rows: readonly (readonly string[])[]): string {
+  const head = heads.map((cell) => `<th>${cell}</th>`).join("");
+  const body = rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("");
+  return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
 const PAGE = [
   '<h3 id="event">2.1 Event</h3>',
   table(["id", "UUID", "The id.", "Required"], ["actor", "Agent | IRI", "The actor.", "Required"]),
@@ -66,6 +73,20 @@ const PAGE = [
   section("c1", "TextPositionSelector", undefined, ""),
   '<h4 id="properties-0">Properties</h4>',
   table(["start", "integer", "The start.", "Required"]),
+  '<h2 id="profiles-0">3. Profiles</h2>',
+  '<h3 id="assessment-profile"><bdi>3.2 </bdi>Assessment Profile</h3>',
+  profileTable(
+    ["Event", "actor", "action", "object", "generated"],
+    ['<a href="#e">AssessmentEvent</a>', "Person", "Started", "Assessment", "Attempt"],
+    ["NavigationEvent", "Person", "NavigatedTo", '<a href="#a">Assessment</a> | <a href="#i">AssessmentItem</a>', ""],
+  ),
+  '<h3 id="tool-use-profile"><bdi>3.14 </bdi>Tool Use Profile</h3>',
+  profileTable(
+    ["Event", "actor", "action", "object", "generated"],
+    ["ToolUseEvent", "Person", "Used", "SoftwareApplication", "Entity (AggregateMeasureCollection)"],
+  ),
+  '<h3 id="general-profile"><bdi>3.15 </bdi>General Profile</h3>',
+  profileTable(["Event", "actor", "action", "object"], ["Event", "Agent", "any Caliper action", "Entity"]),
   '<h2 id="actions-0">D. Actions</h2>',
   section("d1", "Started", undefined, ""),
   section("d2", "Paused", undefined, ""),
@@ -125,6 +146,94 @@ describe("parseCaliperPage", () => {
   });
 });
 
+/** The certification guide: a heading for each profile, and under it the table of its events, whose rows hang under the event. */
+const CERTIFICATION_PAGE = [
+  '<h2 id="metric-profile-certification">3. Metric Profile Certification</h2>',
+  '<h3 id="general-requirements">3.1 General Requirements</h3>',
+  '<h3 id="x3-14-tool-launch-profile"><bdi>3.15 </bdi><a name="x" class="respec-offending-element" title="Linking error: not matching `<dfn>`" id="r"></a>3.14 Tool launch Profile</h3>',
+  '<h4 id="event-conformance-table-12"><bdi>3.15.2 </bdi>Event Conformance Table</h4>',
+  profileTable(
+    ["Event", "Action", "Actor", "Object", "Recommended Generated Entity", "Required or Optional"],
+    ["ToolLaunchEvent", "", "", "", "", ""],
+    ["", "Launched", "Person", "SoftwareApplication", "", "Required"],
+    ["", "Returned", "Agent or subtype", "SoftwareApplication", "DigitalResource", "Optional"],
+  ),
+].join("\n");
+
+describe("the profile tables", () => {
+  it("reads the rows of section 3 with the classes of each cell, and the profile from the title of its heading", () => {
+    expect(parseCaliperPage(PAGE).profileRows).toStrictEqual([
+      {
+        profile: "AssessmentProfile",
+        event: "AssessmentEvent",
+        action: "Started",
+        actor: ["Person"],
+        object: ["Assessment"],
+        generated: ["Attempt"],
+        target: [],
+      },
+      {
+        profile: "AssessmentProfile",
+        event: "NavigationEvent",
+        action: "NavigatedTo",
+        actor: ["Person"],
+        object: ["Assessment", "AssessmentItem"],
+        generated: [],
+        target: [],
+      },
+      {
+        profile: "ToolUseProfile",
+        event: "ToolUseEvent",
+        action: "Used",
+        actor: ["Person"],
+        object: ["SoftwareApplication"],
+        generated: ["AggregateMeasureCollection"],
+        target: [],
+      },
+      {
+        profile: "GeneralProfile",
+        event: "Event",
+        action: "any Caliper action",
+        actor: ["Agent"],
+        object: ["Entity"],
+        generated: [],
+        target: [],
+      },
+    ]);
+  });
+
+  it("reads the rows of the certification guide under the event that opens them, with their disposition", () => {
+    const { certificationRows, profileRows } = parseCaliperPage(CERTIFICATION_PAGE);
+    expect(profileRows).toStrictEqual([]);
+    expect(certificationRows).toStrictEqual([
+      {
+        profile: "ToolLaunchProfile",
+        event: "ToolLaunchEvent",
+        action: "Launched",
+        actor: ["Person"],
+        object: ["SoftwareApplication"],
+        generated: [],
+        target: [],
+        disposition: "Required",
+      },
+      {
+        profile: "ToolLaunchProfile",
+        event: "ToolLaunchEvent",
+        action: "Returned",
+        actor: ["Agent"],
+        object: ["SoftwareApplication"],
+        generated: ["DigitalResource"],
+        target: [],
+        disposition: "Optional",
+      },
+    ]);
+  });
+
+  it("leaves a page without profile tables with none", () => {
+    expect(parseCaliperPage("<html></html>")).toMatchObject({ profileRows: [], certificationRows: [] });
+  });
+});
+
 describe("tablesHash", () => {
   it("is the SHA-256 of the tables as JSON, changes when a table changes, and not when only a description does", () => {
     const hash = tablesHash(parseCaliperPage(PAGE));
@@ -137,7 +246,7 @@ describe("tablesHash", () => {
 describe("the lock", () => {
   it("pins every page to an https address of the specifications, a file name and the hash of its tables", () => {
     const lock = loadLock(join(import.meta.dirname, "../.."));
-    expect(lock.length).toBe(2);
+    expect(lock.length).toBe(3);
     for (const { url, file, sha256 } of lock) {
       expect(url).toMatch(/^https:\/\/www\.imsglobal\.org\/spec\/caliper/u);
       expect(file).toMatch(/^[a-z0-9-]+\.json$/);

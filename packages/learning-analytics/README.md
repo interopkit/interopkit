@@ -12,6 +12,7 @@ flowchart LR
   subgraph pkg["@interopkit/learning-analytics"]
     model["model: 76 entity and 25 event types,<br/>vocabularies, contexts"]
     read["readEntity, readEvent"]
+    validate["validateEvent, validateEntity:<br/>the rules of the profiles"]
     build["buildEvent, buildEntity, mintUrn,<br/>caliperTime, checkIri"]
     send["sendCaliper"]
   end
@@ -19,8 +20,10 @@ flowchart LR
   endpoint[("Caliper endpoint")]
   host -->|"events as plain data"| build
   host -->|"entities from elsewhere"| read
+  host -->|"what to send, or what arrived"| validate
   read --> model
-  build --> model
+  validate --> read
+  build --> validate
   build --> send
   host -.->|"fetch, signal, time"| send
   send --> core
@@ -40,7 +43,8 @@ npm install @interopkit/learning-analytics
 | Subpath                          | Exports                                                                                                                                       |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@interopkit/learning-analytics` | `readEntity`, `readEvent`: an entity describe or an event from outside, checked against its class and returned as a copy                      |
-|                                  | `buildEvent`, `buildEntity`, `BuildOptions`: a checked event or entity with its `@context`                                                    |
+|                                  | `validateEvent`, `validateEntity`, `CaliperFinding`, `ValidateOptions`: what is wrong with a value, and where it departs from the rules of its profile, as findings |
+|                                  | `buildEvent`, `buildEntity`, `BuildOptions`: a checked event or entity with its `@context`; `buildEvent` also checks the rules of the event's profile |
 |                                  | `mintUrn`: the identifier of an event from the parts that identify it. `caliperTime`: epoch milliseconds as Caliper writes a time. `checkIri` |
 |                                  | `sendCaliper`, `SendCaliperOptions`, `CaliperSender`, `DEFAULT_CALIPER_TIMEOUT_MS`: the sensor                                                |
 |                                  | An interface for each of the 76 entity types (`Person`, `CourseSection`, `AssessmentItem`, `Score` and the rest), `CaliperEntity`, `EntityDocument`, `Ref`, `Context`, an interface for each of the 25 event types, `CaliperEvent`, `EventInput` |
@@ -86,7 +90,7 @@ resend sends the same events, so with the same identifiers, and a new `sendTime`
 | Entities                     | All 69 of Appendix B, the 2 of Appendix C and the 4 of the Library Use Profile, read and built      |
 | Vocabularies                 | The 82 actions, the 16 profile terms, 57 roles, statuses, LTI message types, identifier types, metrics |
 | Event types                  | All 21 of Appendix A and the 3 of the Library Use Profile, with their actions, actors and objects    |
-| Profiles                     | Their terms; the rules of their tables that go across events are not checked yet                    |
+| Profiles                     | Their terms, the 91 rows of section 3 and the conformance tables of the certification guide, as findings |
 | Sensor                       | One envelope of events, `POST` with a bearer token, as in section 5                                 |
 
 The guides say what each part holds: the [architecture](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/architecture.md),
