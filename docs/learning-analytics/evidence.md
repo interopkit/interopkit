@@ -1,8 +1,8 @@
 # Evidence for learning-analytics
 
 What shows that the package does what it says: the tables of the specifications, the published contexts, schemas and fixtures of
-`caliper-spec`, the rules of the profiles, a sensor and an endpoint that run against each other, the speed of reading, the peak
-memory of every reader, and four runtimes. Each layer answers a question that the one before cannot. Caliper has no public
+`caliper-spec`, the rules of the profiles, a sensor and an endpoint that run against each other, the speed of every hot path, the
+size of each entry point, the peak memory of every reader, and four runtimes. Each layer answers a question that the one before cannot. Caliper has no public
 conformance suite for an endpoint and no open sensor or endpoint of 1.2 to run against, so the oracles are the 1EdTech documents.
 
 ```mermaid
@@ -14,7 +14,8 @@ flowchart LR
   model --> roundtrip["Sensor to endpoint in process<br/>pnpm test, pnpm test:corpus"]
   roundtrip --> example["Example: a sensor, an endpoint,<br/>an older sensor<br/>pnpm test"]
   example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
-  model --> speed["1,000 events against the schemas<br/>pnpm bench"]
+  model --> speed["1,000 events and entities<br/>against the schemas<br/>pnpm bench"]
+  model --> size["Each entry point alone<br/>pnpm test"]
   model --> memory["Peak memory of each reader<br/>pnpm test"]
   model --> rules["Mutation rules<br/>pnpm check:rules"]
 ```
@@ -31,7 +32,8 @@ flowchart LR
 | Round trip    | Does what a sensor sends reach `accept` equal, in 1.2 and in 1.1?                                    | `endpoint.test.ts`, `roundtrip.corpus.test.ts`, `versions.corpus.test.ts`, `examples/learning-analytics/test`          | `pnpm test`, `pnpm test:corpus` |
 | Memory        | Does each reader of untrusted input stay under its budget on its worst input?                        | `read-event-memory`, `read-entity-memory`, `validate-memory`, `read-envelope-memory`, `endpoint-memory`, and the two of 1.1 | `pnpm test`     |
 | Rules         | Does a test fail when a rule that keeps the endpoint safe is removed from the code?                  | `scripts/check-rules.ts`                                                                                               | `pnpm check:rules`    |
-| Speed         | How long does reading 1,000 events take, against `JSON.parse` and the schemas?                      | `packages/learning-analytics/test/read.bench.ts`                                                                       | `pnpm bench`          |
+| Speed         | How long do reading, judging, building, sending and receiving take, against the schemas and the JSON? | `read.bench.ts`, `build.bench.ts`, `endpoint.bench.ts` in `packages/learning-analytics/test/`                        | `pnpm bench`          |
+| Size          | Does each entry point hold only what it uses, within its budget?                                    | `packages/learning-analytics/test/size.test.ts`                                                                        | `pnpm test`           |
 | Runtimes      | Does the example give the same results everywhere?                                                   | `compat/`                                                                                                              | `pnpm compat`         |
 
 The model that the tables, the contexts and the fixtures are compared with has these counts, and a test fails when a table prints a
@@ -97,35 +99,59 @@ scenario show:
 
 ## Speed
 
-`readEnvelope` reads an envelope of 1,000 events of Caliper 1.2 (1,469,236 bytes) in 13 to 17 ms on a laptop at a load of 13 to 24,
-and the draft 4 schemas of `caliper-spec` check the same events in 300 to 525 ms: a ratio of 0.03 to 0.06, where the design asks for
-parity or better. `validateEvent` over the same events, which also judges the rules of their profiles, takes about the time of the
-reader. `JSON.parse` of the text takes 2 to 2.5 ms; the reader takes 6.3 to 7.3 times that in `vitest bench`, and up to 11.9 times
-in a plain loop at a load of 9. The schemas of 1.1 try the `oneOf` of every class at each level, so one `Message` event takes about
-90 ms, and 1,000 events of 1.1 take 5 to 6 s: the reader takes 15 to 18 ms, a ratio of 0.003.
+`pnpm bench` times the build that ships on 1,000 events and on 1,000 entity describes of the fixtures of `caliper-spec` that the
+draft 4 schemas take (an envelope of 1.2 has 1,469,236 bytes), against those schemas and `JSON.parse` in the same run. The table
+gives the fastest samples of three runs on a laptop at a load of 10 to 28; each budget is a ratio between two samples of one run,
+so it holds on any machine.
 
-| Budget                                                                  | Value | How it was set                                                                                             |
-| ----------------------------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------- |
-| `readEnvelope` of 1.2 against `JSON.parse`                              | 60    | Five times the highest ratio measured, 11.9, rounded up to one significant digit                           |
-| `readEnvelope` of 1.2 against the draft 4 schemas                       | 1     | Parity, as the design asks; the ratio holds on any machine                                                 |
-| `validateEvent` over the events against the draft 4 schemas             | 1     | Parity                                                                                                     |
-| `readEnvelope` of 1.1 against `JSON.parse`                              | 60    | The same budget; the highest ratio measured was 7.7                                                        |
-| `readEnvelope` of 1.1 against `schema_1_1`                              | 1     | Parity                                                                                                     |
-| `buildEvent` of 1,000 events, in milliseconds                           | none  | Pending: the runners of CI have not sampled it. The benchmark reports the fastest sample (18 to 20 ms on the laptop) and asserts nothing |
+| Benchmark                                   | Time         | Reference                                 | Ratio          | Budget |
+| ------------------------------------------- | -----------: | ----------------------------------------- | -------------: | -----: |
+| `readEnvelope` of 1.2                       | 11.3–12.4 ms | the draft 4 schemas, 318–460 ms           | 0.025–0.039    | 1      |
+| `readEnvelope` of 1.2                       |              | `JSON.parse` of the text, 2.0–2.3 ms      | 5.4–5.7        | 30     |
+| `validateEvent` over the events             | 10.8–13.1 ms | the draft 4 schemas                       | 0.024–0.041    | 1      |
+| `readEntity` over 1,000 entities of 71 classes | 3.5–4.3 ms | the draft 4 schemas, 76–118 ms           | 0.030–0.050    | 1      |
+| `validateEntity` over the same              | 4.0–5.0 ms   | the draft 4 schemas                       | 0.034–0.059    | 1      |
+| `readEnvelope` of 1.1                       | 10.6–12.0 ms | `schema_1_1`, 4.9–6.9 s                   | 0.002          | 1      |
+| `readEnvelope` of 1.1                       |              | `JSON.parse` of the text                  | 5.3–5.9        | 30     |
+| `buildEvent` of 1,000 events                | 10.7–11.8 ms | the draft 4 schemas over what it builds   | 0.024–0.032    | 1      |
+| `buildEntity` of 1,000 entities             | 4.1–4.3 ms   | the same                                  | 0.026–0.047    | 1      |
+| `sendCaliper` of the envelope               | 0.67 ms      | `JSON.stringify` of the envelope          | 1.08–1.23      | 7      |
+| `handleCaliperRequest` of the envelope      | 14.3–18.7 ms | `JSON.parse` of the text, 2.1 ms          | 6.9–8.8        | 50     |
+| `handleCaliperRequest` of the envelope      |              | the draft 4 schemas                       | 0.033–0.053    | 1      |
 
-Every ratio is between two samples of one run, so it holds on any machine; a budget in time holds for the class of machine it was
-measured on, and none is stated until CI has sampled it.
+A ratio to a schema is parity or better, as the design asks; a ratio to the JSON is five times the highest measured, rounded up to
+one significant digit. The schemas of 1.1 try the `oneOf` of every class at each level, so one `Message` event takes about 90 ms.
+The reader of a time reads the fields of `YYYY-MM-DDTHH:mm:ss.SSSZ` by their places and the days of the month, and the endpoint
+reads the items that `JSON.parse` made of the body without copying them again: against the build before, alternated in one
+process, `readEnvelope` takes 0.71 to 0.78 of its time, `handleCaliperRequest` 0.65 to 0.70, `buildEvent` 0.70 to 0.95,
+`readEntity` 0.82 to 0.92, and every fixture of `caliper-spec`, in both versions, reads to the same value and the same findings.
+What remains is the schemas of valibot, the copy of a host's value, and the counts of the text in `@interopkit/core`.
+
+## Size
+
+`size.test.ts` bundles each entry point alone with `scripts/entry-size.ts`: esbuild, minified, with every dependency inside. It
+fails above the budget after gzip, or when an entry point holds a module that its budget does not list.
+
+| Entry point                               | Bytes  | Gzip   | Budget | Holds, besides `@interopkit/core` and valibot              |
+| ----------------------------------------- | -----: | -----: | -----: | ---------------------------------------------------------- |
+| `@interopkit/learning-analytics`          | 69,388 | 20,415 | 26,000 | `build`, `model`, `read`, `send`, `v1p1`, `validate`, uuid |
+| `@interopkit/learning-analytics/endpoint` | 64,996 | 18,248 | 23,000 | `model`, `read`, `v1p1`, `validate`; no sensor and no builder |
 
 ## Memory
 
-Each reader of untrusted input has a test of its peak memory, in a file of its own because the peak of a process only grows. The
-budget is 256 MiB above the peak before the reading, which a reading that kept an issue for each wrong value would pass by far.
+Each reader of untrusted input has a test of its peak memory, in a file of its own because the peak of a process only grows; the
+test reports the rise. The budget is 256 MiB above the peak before the reading, which a reading that kept an issue for each wrong
+value would pass by far.
 
-| Reader                                     | Worst input                                                           |
-| ------------------------------------------ | --------------------------------------------------------------------- |
-| `readEvent`, `readEntity`, `validateEvent` | An object that holds a list of a million wrong values                 |
-| The same, as Caliper 1.1                   | The same list                                                         |
-| `readEnvelope`, `handleCaliperRequest`     | An envelope of 1 MiB of events, of 1.2 and of 1.1                     |
+| Reader                                     | Worst input                                                | Peak rose by |
+| ------------------------------------------ | ---------------------------------------------------------- | -----------: |
+| `readEvent`, `readEntity`, `validateEvent` | An object that holds a list of a million wrong values      | 87–88 MiB    |
+| The same, as Caliper 1.1                   | The same list                                              | 89 MiB       |
+| `readEnvelope`                             | An envelope whose event holds the same list                | 90 MiB       |
+| `handleCaliperRequest`                     | An envelope of 1 MiB of events, of 1.2 and of 1.1          | 1 and 17 MiB |
+
+The copy of a host's value is what the million values cost: `copyJson` of `@interopkit/core` writes the path of each value it
+copies. The endpoint reads what it parsed without that copy.
 
 ## Runtimes
 
@@ -139,4 +165,4 @@ envelope, the versions it announces and its two refusals.
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | Certification of a sensor                  | 1EdTech certifies sensors per profile for members. The tables of the guide are read, and the docs say "implements"              |
 | An open Caliper 1.2 endpoint or sensor     | None exists. The collector in `CaliperBootcamp` validates with the same schemas and needs Neo4j, so it would add no evidence      |
-| A budget in time                           | The runners of CI have not sampled the benchmark yet                                                                             |
+| A budget in time                           | The runners of CI have not sampled the benchmarks yet; the ratios hold on any machine                                            |

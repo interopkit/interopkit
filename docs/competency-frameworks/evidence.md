@@ -1,7 +1,8 @@
 # Evidence for competency-frameworks
 
 What shows that the package does what it says: the official schemas, real frameworks of public providers, an example provider
-and consumer, OpenSALT as a counterparty, the speed of reading, and four runtimes. Each layer answers a question that the
+and consumer, OpenSALT as a counterparty, the speed of every hot path, the size of each entry point, the peak memory of every
+reader, and four runtimes. Each layer answers a question that the
 one before cannot.
 
 ```mermaid
@@ -10,7 +11,9 @@ flowchart LR
   frameworks --> example["Example provider<br/>and consumer<br/>every endpoint, every property"]
   example --> opensalt["OpenSALT in containers<br/>import, read, synchronize<br/>pnpm opensalt"]
   example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
-  frameworks --> speed["10,000 items<br/>pnpm bench"]
+  frameworks --> speed["10,000 items against<br/>the official schemas<br/>pnpm bench"]
+  frameworks --> size["Each entry point alone<br/>pnpm test"]
+  frameworks --> memory["Peak memory of each reader<br/>pnpm test"]
 ```
 
 | Layer             | Question                                                                       | Where                                                                          | Runs                           |
@@ -20,7 +23,9 @@ flowchart LR
 | Example provider  | Does a host serve all twelve endpoints and every property, in both versions?   | `examples/competency-frameworks/test/conformance.corpus.test.ts`               | `pnpm test:corpus`             |
 | Example consumer  | Does a consumer keep fresh copies, outline, align and diff with the graph?     | `examples/competency-frameworks/test/*.test.ts`                                | `pnpm test`                    |
 | Counterparty      | Does another implementation take in what the provider serves, and vice versa? | `examples/competency-frameworks/test/opensalt.corpus.test.ts`                  | `pnpm opensalt`                |
-| Speed             | How long does reading take, and does it stay there?                            | `packages/competency-frameworks/test/read.bench.ts`                            | `pnpm bench`                   |
+| Speed             | How long does each hot path take, against the official schemas and the JSON?   | `packages/competency-frameworks/test/*.bench.ts`                               | `pnpm bench`                   |
+| Size              | Does each entry point hold only what it uses, within its budget?               | `packages/competency-frameworks/test/size.test.ts`                             | `pnpm test`                    |
+| Memory            | Does each reader of untrusted input stay under its budget on its worst input?  | `packages/competency-frameworks/test/*-memory.test.ts`                         | `pnpm test`                    |
 | Runtimes          | Does the scenario give the same results everywhere?                            | `compat/`                                                                      | `pnpm compat`                  |
 
 ## Real frameworks
@@ -110,17 +115,66 @@ warm-up, and the gate is the fastest sample.
 | Benchmark                          | What it times                                                    | Fastest on the CI runner |   Budget | Holds on                                    |
 | ---------------------------------- | ---------------------------------------------------------------- | -----------------------: | -------: | ------------------------------------------- |
 | `readPackage`                      | Reading and checking the parsed framework                        |                  75.6 ms |   400 ms | A machine of the class of the CI runner     |
-| `readPackage` against `JSON.parse` | The same sample as a multiple of the parse of the same framework |     2.1 to 3.4 times that | 20 times | Any machine: both samples come from one run |
 | `validatePackage`                  | The findings of the framework                                    |                  74.9 ms |   400 ms | A machine of the class of the CI runner     |
 | `frameworkTree`                    | The tree of 10,000 items                                         |                  58.9 ms |   300 ms | A machine of the class of the CI runner     |
 | `queryEntities`                    | A filter and a sort over 10,000 documents                        |                   6.5 ms |    40 ms | A machine of the class of the CI runner     |
 
-The rule of the family sets a time to five times the fastest sample, rounded up to one significant digit, and a ratio the same
-way from the largest ratio measured. The times are the fastest samples of the runner of CI (`ubuntu-latest`, Node.js 22) over
-the first four runs of the `bench` job, whose fastest samples of one benchmark differ by up to 2.2 times from run to run; a
-laptop with an Apple processor and Node.js 26.8 is 3 to 5 times faster. The ratio to `JSON.parse` holds on any machine. A
-budget changes only with the reason in the commit that changes it. No other library reads CASE packages, so there is no
-reference to time against.
+The other benchmarks are ratios to a reference in the same run, so they hold on any machine. The ratios are the fastest samples
+of seven runs on a laptop at a load of 10 to 28; the official schemas are applied by `@cfworker/json-schema`.
+
+| Benchmark                                   | Reference                                       |     Ratio | Budget |
+| ------------------------------------------- | ----------------------------------------------- | --------: | -----: |
+| `readPackage` of the framework              | the package schema of CASE 1.1, 144 to 237 ms   | 0.20–0.38 |      1 |
+| `readEntity` of each item alone             | the item schema of CASE 1.1, 76 to 112 ms       | 0.25–0.45 |      1 |
+| `readPackage` of the framework              | `JSON.parse` of its text; 2.1 to 3.4 on CI      |   3.7–5.3 |     20 |
+| `frameworkTree`                             | the same                                        |   2.4–3.1 |     20 |
+| `toCaseVersion` to 1.0                      | the same                                        |   1.5–2.0 |     10 |
+| `diffPackages` of the framework and an edition | the same                                     |   2.3–3.3 |     20 |
+| `crosswalk` to the framework it matches     | the same                                        |   0.7–1.2 |      7 |
+| `associationsOf` an item                    | the same                                        |   0.6–1.2 |      6 |
+| `handleCaseRequest` for the package in 1.1  | `JSON.stringify` of the package                 |   1.0–1.1 |      6 |
+| `handleCaseRequest` for the package in 1.0  | the same                                        |  8.5–11.8 |     60 |
+| `package` of a client                       | `JSON.parse` of the answer                      |  6.1–11.0 |     60 |
+
+A ratio to an official schema is parity or better; another is five times the highest measured, rounded up to one significant
+digit, and a time five times the fastest sample of the runner of CI (`ubuntu-latest`, Node.js 22) over the first four runs of the
+`bench` job, whose fastest samples of one benchmark differ by up to 2.2 times from run to run. A budget changes only with the
+reason in the commit that changes it. No other library reads CASE packages, so the references are the schemas and the JSON.
+
+`toCaseVersion` copies a string, a number, a list of them and a node of plain values without the deep copy, and writes the path of
+a member only for a warning or an error, so it takes 0.74 to 0.83 of the time of the build before, alternated in one process, and
+the 1.0 answer of a provider 0.76; the checks of a package write a path only for a finding, about 0.95. The six real frameworks,
+each with an edited copy, read and convert to the same values and findings. `associationsOf` checks the whole package at each
+call, as every function of the graph checks its argument, so a host that asks for the associations of each item walks
+`CFAssociations` once instead.
+
+## Size
+
+`size.test.ts` bundles each entry point alone with `scripts/entry-size.ts`: esbuild, minified, with every dependency inside. It
+fails above the budget after gzip, or when an entry point holds a module that its budget does not list.
+
+| Entry point                                   |  Bytes |   Gzip | Budget | Holds, besides `@interopkit/core`, `model` and valibot |
+| --------------------------------------------- | -----: | -----: | -----: | ------------------------------------------------------ |
+| `@interopkit/competency-frameworks`           | 34,885 | 11,624 | 15,000 | `read`, `version`                                      |
+| `@interopkit/competency-frameworks/client`    | 45,126 | 14,866 | 19,000 | `read`                                                 |
+| `@interopkit/competency-frameworks/graph`     | 21,013 |  7,315 |  9,500 | nothing else                                           |
+| `@interopkit/competency-frameworks/provider`  | 43,730 | 14,158 | 18,000 | `read`, `version`                                      |
+
+## Memory
+
+Each reader of untrusted input has a test of its peak memory on its worst input, in a file of its own because the peak of a
+process only grows; the test reports the rise.
+
+| Reader                       | Worst input                                                                 | Peak rose by | Budget  |
+| ---------------------------- | --------------------------------------------------------------------------- | -----------: | ------: |
+| `readPackage`                | A package whose `CFItems` are a million wrong values                        | 1–4 MiB      | 64 MiB  |
+| `validatePackage`            | The same                                                                    | 2–4 MiB      | 64 MiB  |
+| `readEntity`                 | The associations of an item, a million wrong ones                           | 1–2 MiB      | 64 MiB  |
+| `package` of a client        | The largest framework of the bank that the 16 MiB of an answer hold, 15,000 items | 76–92 MiB on Node.js 22, 163–185 on 24 | 256 MiB |
+| `handleCaseRequest`          | A request for the list with a `fields` list of 10 MiB                        | 16–20 MiB    | 64 MiB  |
+
+A `fields` list had no limit, and one of 10 MiB raised the peak by 629 MiB; it holds 2,048 characters, as a filter does, and the
+rest is the URL that the host gave.
 
 ## Runtimes
 
@@ -142,7 +196,7 @@ results must equal those of Node.js.
 | Frameworks that a provider may change, as live tests | A test of a live provider fails when the provider is down or edits a framework; the downloads are pinned instead          |
 | OpenSALT 3.x                                        | The 4.x line is where the project works, and its images are the ones tested                                              |
 | A bearer token or the Security Framework in the flows against OpenSALT | OpenSALT's token is made in its web interface for a user; the authorization port is tested with the example provider |
-| A timing against another library                    | None reads or writes CASE packages in any language                                                                       |
+| A timing against another library                    | None reads or writes CASE packages in any language; the official schemas are the reference of the readers                 |
 
 ## Differences from the references
 

@@ -127,7 +127,8 @@ differences from the references. The guides of [building](https://github.com/int
 [The comparators](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/comparators.md) map what other LRSs and
 clients do against the package. [The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/evidence.md) shows what the
 package was checked against: the rules of both versions, both ADL conformance suites, SQL LRS and the validator of Learning
-Locker as oracles, an example LRS with a platform and a dashboard, the speed of checking and four runtimes.
+Locker as oracles, an example LRS with a platform and a dashboard, the speed of every hot path, the size of each entry point, the
+peak memory of each reader and four runtimes.
 
 ## License
 
