@@ -1,7 +1,19 @@
 import { DataError } from "@interopkit/core";
+import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import { deepFreeze } from "../../../scripts/json-mutation.js";
 import { readStatement, validateStatement, validateStatements } from "../src/index.js";
+import {
+  aboutSchema,
+  activitySchema,
+  attachmentDataSchema,
+  authoritySchema,
+  personSchema,
+  STATEMENT_SCHEMAS,
+  scopeSchema,
+  statementQuerySchema,
+  targetSchema,
+} from "../src/read/internal.js";
 import { copyOf, sharesNothing, summary } from "./fixture.js";
 import { fullStatement, minimalStatement, providerStatement, subStatementStatement, uuid } from "./full-statement.js";
 
@@ -470,5 +482,73 @@ describe("the limit of findings", () => {
     expect(() => readStatement(withAgents(50), { maxFindings: 1 })).toThrow("There may be more errors");
     const provider = { ...providerStatement(), version: "1.0.0" };
     expect(readStatement(provider, { role: "lrs", maxFindings: 1 })).toStrictEqual(provider);
+  });
+});
+
+/** Lists every schema of valibot that a schema holds, itself included, the branches of a lazy one for a list and an object. */
+function schemasIn(schema: unknown, seen = new Set<unknown>()): Readonly<Record<string, unknown>>[] {
+  if (typeof schema !== "object" || schema === null || seen.has(schema)) return [];
+  seen.add(schema);
+  const node = schema as Readonly<Record<string, unknown>>;
+  const lists = [node.options, node.pipe, node.items].flatMap((list) => (Array.isArray(list) ? list : []));
+  const entries = typeof node.entries === "object" && node.entries !== null ? Object.values(node.entries) : [];
+  const lazy = node.type === "lazy" && typeof node.getter === "function" ? [node.getter([]), node.getter({})] : [];
+  const children = [node.wrapped, node.item, node.key, node.value, node.rest, ...lists, ...entries, ...lazy];
+  return [...(node.kind === "schema" ? [node] : []), ...children.flatMap((child) => schemasIn(child, seen))];
+}
+
+/** Lists the unions and intersections of a schema, which try their members and throw away the issues of those that fail. */
+function discardingIn(schema: unknown): string[] {
+  return schemasIn(schema)
+    .map(({ type }) => String(type))
+    .filter((type) => type === "union" || type === "intersect");
+}
+
+describe("the schemas of the readers and safeParseBounded", () => {
+  // safeParseBounded counts the issues that a parse makes, and parses again without a limit when it stopped on issues that a
+  // union threw away: a reader whose schema has none keeps its limit on any input.
+  it.each([
+    ["a Statement of 2.0", STATEMENT_SCHEMAS["2.0.0"]],
+    ["a Statement of 1.0.3", STATEMENT_SCHEMAS["1.0.3"]],
+    ["a target of a document", targetSchema],
+    ["a scope of documents", scopeSchema],
+    ["a query of Statements", statementQuerySchema],
+    ["an authority", authoritySchema],
+    ["a Person", personSchema],
+    ["About", aboutSchema],
+    ["an Activity", activitySchema],
+    ["the data of an Attachment", attachmentDataSchema],
+  ])("hold no union in %s", (_name, schema) => {
+    expect(discardingIn(schema)).toStrictEqual([]);
+  });
+
+  it("finds a union where one is, and reaches the depths of a Statement", () => {
+    expect(discardingIn(v.object({ a: v.optional(v.union([v.string(), v.number()])) }))).toStrictEqual(["union"]);
+    const literals = schemasIn(STATEMENT_SCHEMAS["2.0.0"]).map(({ literal }) => literal);
+    expect(literals).toContain("contextGroup");
+    expect(literals).toContain("SubStatement");
+  });
+
+  it("makes no issue that it throws away, on every kind of Object and Actor", () => {
+    let made = 0;
+    const counting = {
+      get lang() {
+        made += 1;
+        return undefined;
+      },
+    };
+    const objects = [
+      { objectType: "Agent", mbox: "mailto:b@example.org" },
+      { objectType: "Group", member: [{ mbox: "mailto:b@example.org" }] },
+      { objectType: "StatementRef", id: uuid(1) },
+      { ...subStatementStatement().object },
+      { objectType: "Nothing", id: "https://example.org/a" },
+    ];
+    for (const object of objects) {
+      made = 0;
+      const statement = { ...minimalStatement(), actor: { objectType: "Group", mbox: "mailto:g@example.org" }, object };
+      const dataset = STATEMENT_SCHEMAS["2.0.0"]["~run"]({ value: statement }, counting);
+      expect(made).toBe(dataset.issues?.length ?? 0);
+    }
   });
 });
