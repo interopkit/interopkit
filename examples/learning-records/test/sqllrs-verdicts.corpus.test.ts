@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { readStatement } from "@interopkit/learning-records";
 import { describe, expect, it } from "vitest";
-import { ACCEPTANCES, ADVISORIES, type Json, REFUSALS, type XapiRule } from "../../../scripts/xapi-rules.js";
-import { readStatement } from "../src/index.js";
-import { providerStatement } from "./full-statement.js";
+import { providerStatement } from "../../../packages/learning-records/test/full-statement.ts";
+import { ACCEPTANCES, ADVISORIES, type Json, REFUSALS, type XapiRule } from "../../../scripts/xapi-rules.ts";
 
 const LRS = process.env.SQLLRS_URL;
 const AUTHORIZATION = `Basic ${btoa(`${process.env.SQLLRS_USER}:${process.env.SQLLRS_PASSWORD}`)}`;

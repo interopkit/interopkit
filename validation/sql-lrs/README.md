@@ -17,7 +17,7 @@ flowchart LR
 | File                                                   | Holds                                                                                                           |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
 | `run.ts`                                               | Starts the container, waits until it is healthy, runs the tests, and always stops and removes its own container |
-| `packages/learning-records/test/sqllrs.corpus.test.ts` | The verdict of SQL LRS on the fixture of each of the 153 rules, against the verdict of the reader of an LRS     |
+| `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts` | The verdict of SQL LRS on the fixture of each of the 153 rules, against the verdict of the reader of an LRS     |
 | `examples/learning-records/test/sqllrs.corpus.test.ts` | The platform and the dashboard of the example, and the client of 1.0.3, against SQL LRS                         |
 
 ## Running it

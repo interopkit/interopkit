@@ -19,7 +19,7 @@ flowchart LR
 | Rules        | Does each sentence of the standard make the reader find what it says?             | `scripts/xapi-rules.ts`, `packages/learning-records/test/rules.test.ts` | `pnpm test`    |
 | Example      | Does a host serve, send and read all seven resources with the package?            | `examples/learning-records/test/*.test.ts`                              | `pnpm test`    |
 | Conformance  | Does an LRS built on the handler pass the suite that ADL publishes?               | `validation/adl-lrs/`                                                   | `pnpm adl-lrs` |
-| Oracle       | Does another LRS take and refuse the same Statements as the reader?               | `packages/learning-records/test/sqllrs.corpus.test.ts`                  | `pnpm sql-lrs` |
+| Oracle       | Does another LRS take and refuse the same Statements as the reader?               | `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts`                  | `pnpm sql-lrs` |
 | Counterparty | Does the client work against another LRS, in both versions, with what it answers? | `examples/learning-records/test/sqllrs.corpus.test.ts`                  | `pnpm sql-lrs` |
 | Speed        | How long does checking take, against the validator that Learning Locker ships?    | `packages/learning-records/test/validate.bench.ts`                      | `pnpm bench`   |
 | Runtimes     | Does the example give the same results everywhere?                                | `compat/`                                                               | `pnpm compat`  |

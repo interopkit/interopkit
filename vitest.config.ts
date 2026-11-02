@@ -229,7 +229,7 @@ export default defineConfig({
         test: {
           name: "example-learning-records-sqllrs",
           include: [
-            "packages/learning-records/test/sqllrs.corpus.test.ts",
+            "examples/learning-records/test/sqllrs-verdicts.corpus.test.ts",
             "examples/learning-records/test/sqllrs.corpus.test.ts",
           ],
           testTimeout: HANG_LIMIT,
