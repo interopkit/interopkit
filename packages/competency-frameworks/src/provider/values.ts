@@ -42,17 +42,30 @@ export function valuesAt(entity: object, path: string): Found {
   return { values: nodes.filter(isScalar), several };
 }
 
+/** A value that a sort compares, with the instant it names when it is a date and time of RFC 3339, read once. */
+export interface OrderKey {
+  readonly value: Scalar;
+  readonly instant: number | undefined;
+}
+
+/** Makes the key that orders a value, so that a sort reads the date and time of a value once and not at each comparison. */
+export function orderKey(value: Scalar): OrderKey {
+  return { value, instant: typeof value === "string" ? parseDateTime(value) : undefined };
+}
+
 /**
- * Orders two values: numbers by size, date-times of RFC 3339 by the instant they name, and anything else as text by the
+ * Orders two keys: numbers by size, date-times of RFC 3339 by the instant they name, and anything else as text by the
  * collator. A value that is not text is compared as the text it prints as.
  */
+export function compareKeys(left: OrderKey, right: OrderKey, collator: Intl.Collator): number {
+  if (typeof left.value === "number" && typeof right.value === "number") return left.value - right.value;
+  if (left.instant !== undefined && right.instant !== undefined) return left.instant - right.instant;
+  return collator.compare(String(left.value), String(right.value));
+}
+
+/** Orders two values as `compareKeys` orders their keys. */
 export function order(left: Scalar, right: Scalar, collator: Intl.Collator): number {
-  if (typeof left === "number" && typeof right === "number") return left - right;
-  if (typeof left === "string" && typeof right === "string") {
-    const [leftInstant, rightInstant] = [parseDateTime(left), parseDateTime(right)];
-    if (leftInstant !== undefined && rightInstant !== undefined) return leftInstant - rightInstant;
-  }
-  return collator.compare(String(left), String(right));
+  return compareKeys(orderKey(left), orderKey(right), collator);
 }
 
 /** Reads the text of a filter as the type of the value it is compared with: a number for a number, text otherwise. */

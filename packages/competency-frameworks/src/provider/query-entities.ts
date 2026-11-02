@@ -3,7 +3,7 @@ import { checkArray, checkRecord, parseWith, strictRecord } from "@interopkit/co
 import * as v from "valibot";
 import { type CaseCondition, type CaseFilter, FILTER_PREDICATES, SORT_ORDERS } from "../model/index.js";
 import type { ParsedCaseQuery } from "./parse-query.js";
-import { type Found, likeValue, order, type Scalar, valuesAt } from "./values.js";
+import { compareKeys, type Found, likeValue, order, orderKey, type Scalar, valuesAt } from "./values.js";
 
 /** The root locale of CLDR, the collation that a provider uses unless it is told another. */
 export const DEFAULT_COLLATION = "und";
@@ -153,11 +153,14 @@ export function queryEntities<T extends object>(
   if (sort === undefined) return kept;
   const collator = new Intl.Collator(locale);
   const direction = orderBy === "desc" ? -1 : 1;
-  const keyed = kept.map((entity) => ({ entity, key: valuesAt(entity, sort).values[0] }));
+  const keyed = kept.map((entity) => {
+    const [first] = valuesAt(entity, sort).values;
+    return { entity, key: first === undefined ? undefined : orderKey(first) };
+  });
   keyed.sort((left, right) => {
     if (left.key === undefined) return right.key === undefined ? 0 : 1;
     if (right.key === undefined) return -1;
-    return direction * order(left.key, right.key, collator);
+    return direction * compareKeys(left.key, right.key, collator);
   });
   return keyed.map(({ entity }) => entity);
 }
