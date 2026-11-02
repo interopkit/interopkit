@@ -119,24 +119,8 @@
         "reason": "Open Badges narrows the data model: an Evidence has the type Evidence (OB B.1.9)."
       },
       {
-        "title": "Advanced Concepts interopkit The value of the relatedResource property MUST be one or more objects",
-        "reason": "relatedResource is a property of the data model that Open Badges does not define, so the package carries it as an extension and checks neither its form nor its digests."
-      },
-      {
-        "title": "Advanced Concepts interopkit The identifier for the resource is REQUIRED",
-        "reason": "relatedResource is a property of the data model that Open Badges does not define, so the package carries it as an extension and checks neither its form nor its digests."
-      },
-      {
-        "title": "Advanced Concepts interopkit The value MUST be unique among the list of related resource objects.",
-        "reason": "relatedResource is a property of the data model that Open Badges does not define, so the package carries it as an extension and checks neither its form nor its digests."
-      },
-      {
-        "title": "Advanced Concepts interopkit Each object associated with relatedResource MUST contain at least a digestSRI",
-        "reason": "relatedResource is a property of the data model that Open Badges does not define, so the package carries it as an extension and checks neither its form nor its digests."
-      },
-      {
         "title": "Advanced Concepts interopkit If the digest provided by the issuer does not match",
-        "reason": "relatedResource is a property of the data model that Open Badges does not define, so the package carries it as an extension and checks neither its form nor its digests."
+        "reason": "The test asks the issuer to compare the digest of a related resource with the resource. The package fetches no resource that a credential names, and a context comes only from its pin, which hashes the parsed document and not the bytes that a digest covers; the form of each related resource is checked."
       }
     ]
   }

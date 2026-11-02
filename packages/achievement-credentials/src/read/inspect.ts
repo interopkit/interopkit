@@ -21,7 +21,14 @@ import {
 } from "../model/index.js";
 import { clrCredentialJwtPayloadSchema } from "./clr-schemas.js";
 import { CREDENTIAL_SCHEMAS, ENTITY_SCHEMAS } from "./registry.js";
-import { emptySubjectIssues, periodIssues, subjectIssues } from "./rules.js";
+import {
+  criteriaIssues,
+  emptySubjectIssues,
+  periodIssues,
+  relatedResourceIssues,
+  resultIssues,
+  subjectIssues,
+} from "./rules.js";
 
 /**
  * Makes the list of findings of a call that stops at a limit. A reader keeps the errors alone, because it does not report
@@ -153,15 +160,24 @@ export function credentialOrReason(
 
 /**
  * Judges what the schemas leave to the specifications: the subject of a credential, or of a CLR in a JWT, which the specification
- * wants identified or to say something, and the validity period.
+ * wants identified or to say something, the results and the criteria of its achievement, the validity period and the related
+ * resources. An achievement on its own is judged for its criteria.
  */
-export function ruleIssues(value: AnyVerifiableCredential | Entity): CredentialIssue[] {
-  if ("verifiableCredential" in value) return subjectIssues(value, "");
-  if (!("credentialSubject" in value)) return [];
+export function* ruleIssues(value: AnyVerifiableCredential | Entity): Generator<CredentialIssue> {
+  if ("verifiableCredential" in value) {
+    yield* subjectIssues(value, "");
+    return;
+  }
+  if ("criteria" in value) yield* criteriaIssues(value, "");
+  if (!("credentialSubject" in value)) return;
+  yield* periodIssues(value);
   const subject = value.credentialSubject;
-  const subjectRules =
-    "achievement" in subject || "verifiableCredential" in subject
-      ? subjectIssues(subject, "credentialSubject")
-      : emptySubjectIssues(subject);
-  return [...periodIssues(value), ...subjectRules];
+  if ("achievement" in subject || "verifiableCredential" in subject) {
+    yield* subjectIssues(subject, "credentialSubject");
+    yield* resultIssues(subject, "credentialSubject");
+    if ("achievement" in subject) yield* criteriaIssues(subject.achievement, "credentialSubject.achievement");
+  } else {
+    yield* emptySubjectIssues(subject);
+  }
+  yield* relatedResourceIssues(value);
 }

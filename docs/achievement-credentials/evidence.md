@@ -52,7 +52,7 @@ verifies with `verifyProof` and `verifyCredentialStatus`, derives with `deriveDi
 | `vc-di-eddsa-test-suite`              | `1e86cc4` |    44 |   44 |                    0 |              0 |
 | `vc-di-ecdsa-test-suite`              | `94dca21` |    59 |   55 |                    1 |              3 |
 | `vc-bitstring-status-list-test-suite` | `960ab9a` |    56 |   40 |                   16 |              0 |
-| `vc-data-model-2.0-test-suite`        | `6283645` |    59 |   40 |                    0 |             19 |
+| `vc-data-model-2.0-test-suite`        | `6283645` |    59 |   44 |                    0 |             15 |
 
 Every test that fails is listed in `validation/w3c-suites/suites.lock.json` with its reason, the run fails when a listed test
 passes, and a suite of another size fails it. A test that the package could fail on a credential of Open Badges or CLR is a
@@ -62,12 +62,13 @@ fault of the package and is fixed there; the first runs found these:
 | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | An `ecdsa-sd-2023` base proof of a credential whose subject holds only its `id` failed                       | The default mandatory pointers name the subject and an `issuer` that is an address as wholes                         |
 | A credential with an empty `credentialSubject` was issued                                                    | `subject-empty` is an error of the readers                                                                           |
+| Related resources of another form than the data model gives them were issued                                  | `related-resource-form`, `-id`, `-duplicate` and `-digest` are errors of the readers                                  |
 | A credential that ends before it begins was issued and verified                                              | `validity-period` is an error of the readers, under both data models                                                 |
 | A proof that names a `previousProof` verified as if it named none, and then a proof chain was refused         | A proof of a chain is checked over the credential with the proofs that it names, and counts only when they do      |
 
-The 23 tests that do not apply, and the reason of each group, are in [the README of the suites](../../validation/w3c-suites/README.md#what-the-suites-ask-that-open-badges-does-not):
-Verifiable Presentations (7), credentials that Open Badges itself narrows (7), `relatedResource` (5), a proof chain (1) and three
-vectors of `ecdsa-sd-2023` that cannot take a `validFrom` (3). `vc-jose-cose-test-suite` is not run: its implementations are Docker
+The 18 tests that do not apply, and the reason of each group, are in [the README of the suites](../../validation/w3c-suites/README.md#what-the-suites-ask-that-open-badges-does-not):
+Verifiable Presentations (7), credentials that Open Badges itself narrows (7), the digest of a related resource (1) and three
+vectors of `ecdsa-sd-2023` that cannot take a `validFrom` (3). Proof chains and the form of related resources are verified. `vc-jose-cose-test-suite` is not run: its implementations are Docker
 images with a command line, not services over HTTP.
 
 ## The public validator
@@ -135,7 +136,8 @@ Data Integrity libraries, which uses Web Crypto and imports no module of Node.js
 | Certification by 1EdTech                               | It needs membership and the suite of 1EdTech; the docs say that the package implements Open Badges and CLR, and never that it is certified |
 | `vc-jose-cose-test-suite`                              | Its implementations are Docker images with a command line, and the package secures nothing with COSE or SD-JWT              |
 | The inspector of Open Badges 2.0 of the validator      | It fetches the documents of a badge from the public Internet; the package is compared with `openbadges-validator-core` instead |
-| Verifiable Presentations, `relatedResource`, proof chains | Open Badges and CLR do not define or use them (the README of the suites says which tests ask for them)                   |
+| Verifiable Presentations                               | The envelope of a protocol of delivery, which the host speaks; it passes each credential to `verifyCredential`             |
+| The digests of related resources                       | The package fetches no resource that a credential names; contexts come only from their pins                              |
 | A timing in seconds                                    | It waits for the samples of the runner of CI                                                                              |
 
 ## Differences from the references
@@ -147,4 +149,4 @@ it is the library itself at its pinned version, not a claim about its other rele
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | A credential of the generic Data Model | The suites send credentials with an `id`, a type and a subject                                           | Open Badges requires `validFrom`, a `type` of a Profile issuer, one subject and at most one refresh service |
 | The key of a proof                     | The validator reads it from the method, and Digital Bazaar's `vc` from the document of the method          | It must be a key that the issuer publishes                                                          |
-| `relatedResource`                      | The Data Model 2.0 asks a verifier to check its form and the digest of what it names                      | A term of an extension that the package carries and does not check                                  |
+| `relatedResource`                      | The Data Model 2.0 asks a verifier to check its form and the digest of what it names                      | Its form is checked; the digests are not, since no resource that it names is fetched                |

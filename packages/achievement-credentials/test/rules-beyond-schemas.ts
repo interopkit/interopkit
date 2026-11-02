@@ -6,4 +6,8 @@ export const RULES_BEYOND_SCHEMAS: ReadonlySet<string> = new Set([
   "subject-unidentified",
   "subject-empty",
   "validity-period",
+  "related-resource-form",
+  "related-resource-id",
+  "related-resource-duplicate",
+  "related-resource-digest",
 ]);

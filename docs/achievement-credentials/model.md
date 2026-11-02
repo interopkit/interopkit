@@ -130,9 +130,20 @@ usable and departs from what the specification asks for.
 | `subject-unidentified` | error    | An `AchievementSubject` or a `ClrSubject` has neither an `id` nor an `identifier` (OB B.1.3, CLR B.1.2)                               |
 | `subject-empty`        | error    | The `credentialSubject` of a credential of no class of Open Badges or CLR has no property, so it is the subject of no claim (Verifiable Credentials Data Model 2.0, 4.8) |
 | `validity-period`      | error    | `validUntil` is earlier than `validFrom`, or `expirationDate` than `issuanceDate`, compared as instants (Verifiable Credentials Data Model 2.0, 4.9) |
+| `related-resource-form` | error   | `relatedResource` is empty, or a member is not an object (Verifiable Credentials Data Model 2.0, 5.3)                                 |
+| `related-resource-id`  | error    | A related resource has no `id` that is an absolute URI (Data Model 2.0, 5.3)                                                          |
+| `related-resource-duplicate` | error | Two related resources have the same `id` (Data Model 2.0, 5.3)                                                                   |
+| `related-resource-digest` | error | A related resource has neither a `digestSRI` nor a `digestMultibase` (Data Model 2.0, 5.3)                                              |
 | `identity-hash-form`   | warning  | An `IdentityObject` that says it is hashed holds no `sha256$` and 64 hexadecimal digits, and no `md5$` and 32 (OB B.7, `IdentityHash`) |
+| `result-description-unknown` | warning | A `Result` names a `resultDescription` that is the `id` of no `ResultDescription` of the achievement (OB B.1.16)                 |
+| `achieved-level-unknown` | warning | The `achievedLevel` of a `Result` is the `id` of no `RubricCriterionLevel` of the `ResultDescription` that it names (OB B.1.16)        |
+| `result-status-missing` | warning | A `Result` of a `ResultDescription` of the `resultType` `Status` has no `status`, which OB B.1.16 requires                               |
+| `criteria-undescribed` | warning  | The `criteria` of an achievement have neither an `id` nor a `narrative`, so nothing says how to earn it                                 |
 
-The rules of the subject and of the period look at the credential as a whole, so they run only when its shape is right.
+The rules of the subject, the results, the criteria, the period and the related resources look at the credential as a whole, so
+they run only when its shape is right. The rules of the results and of the criteria are warnings: the schemas do not check them,
+and the verifiers in use report them and verify the credential. The related resources of a credential under the Data Model 1.1 are
+an extension, and are not judged.
 
 ## Limits
 
@@ -178,5 +189,7 @@ pins.
 | A subject with no `id` and no `identifier`          | Valid: only `type` and `achievement` are required                                                                                    | An error, `subject-unidentified`: the specification says that one of them MUST be supplied          |
 | A subject with no property, in a credential of no class of Open Badges or CLR | Valid: `id` is optional | An error, `subject-empty`: the data model says that a subject is the subject of one or more claims |
 | A validity period that ends before it begins        | Valid: both are dates and times                                                                                                      | An error, `validity-period`: the data model says that `validFrom` MUST NOT be later than `validUntil` |
+| `relatedResource` of any form                       | Valid: the schemas do not name it                                                                                                    | Errors of the form that the data model gives it; the digests are not compared, since the package fetches no resource that it names |
+| A result linked to another description, or criteria with neither `id` nor `narrative` | Valid                                                                               | Warnings. The validator of 1EdTech refuses criteria with neither, and Open Badges 3.0 leaves both optional |
 | Several properties that a closed class does not have | A validator reports every one                                                                                                        | One is reported for each object; the verdict is the same                                              |
 | A member named `__proto__`, `constructor` or `prototype` of an open class | Valid                                                                                                           | Not carried: it would change the prototype. Inside a property that no class lists it stays data     |

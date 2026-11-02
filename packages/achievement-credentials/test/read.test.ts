@@ -277,6 +277,88 @@ describe("judging a credential", () => {
     expect(errorsOf(old)).toStrictEqual(["expirationDate validity-period"]);
   });
 
+  it("finds an error in related resources that are not objects with an absolute id, unique, and a digest", () => {
+    const related = (value: unknown) => ({ ...achievementCredential(), relatedResource: value });
+    const resource = { id: CONTEXTS.credentialsV2, digestSRI: "sha384-abc" };
+    expect(errorsOf(related(resource))).toStrictEqual([]);
+    expect(errorsOf(related([resource, { id: CONTEXTS.openBadges, digestMultibase: "uEiA" }]))).toStrictEqual([]);
+    expect(errorsOf(related([CONTEXTS.credentialsV2]))).toStrictEqual(["relatedResource[0] related-resource-form"]);
+    expect(errorsOf(related([]))).toStrictEqual(["relatedResource related-resource-form"]);
+    expect(errorsOf(related([{ digestSRI: "sha384-abc" }]))).toStrictEqual([
+      "relatedResource[0].id related-resource-id",
+    ]);
+    expect(errorsOf(related({ id: "not a uri", digestSRI: "sha384-abc" }))).toStrictEqual([
+      "relatedResource.id related-resource-id",
+    ]);
+    expect(errorsOf(related([resource, { ...resource, digestSRI: "sha384-def" }]))).toStrictEqual([
+      "relatedResource[1].id related-resource-duplicate",
+    ]);
+    expect(errorsOf(related([{ id: CONTEXTS.credentialsV2 }]))).toStrictEqual([
+      "relatedResource[0] related-resource-digest",
+    ]);
+    // The Data Model 1.1 has no related resources: the property is an extension there.
+    expect(errorsOf({ ...achievementCredentialV1p1(), relatedResource: [7] })).toStrictEqual([]);
+  });
+
+  it("warns of a result that names no description of the achievement, a level outside it, or a status it lacks", () => {
+    const levels = [{ id: "urn:level:1", type: ["RubricCriterionLevel"], name: "Mastered" }];
+    const descriptions = [
+      {
+        id: "urn:rd:grade",
+        type: ["ResultDescription"],
+        name: "Grade",
+        resultType: "RubricCriterionLevel",
+        rubricCriterionLevel: levels,
+      },
+      { id: "urn:rd:status", type: ["ResultDescription"], name: "Status", resultType: "Status" },
+    ];
+    const resulting = (...result: Record<string, unknown>[]) => {
+      const credential = achievementCredential();
+      const { credentialSubject } = credential;
+      return {
+        ...credential,
+        credentialSubject: {
+          ...credentialSubject,
+          achievement: { ...credentialSubject.achievement, resultDescription: descriptions },
+          result: result.map((each) => ({ type: ["Result"], ...each })),
+        },
+      };
+    };
+    const warningsOf = (value: unknown) =>
+      validateCredential(value)
+        .filter(({ severity }) => severity === "warning")
+        .map(({ path, rule }) => `${path} ${rule}`);
+    const sound = resulting(
+      { resultDescription: "urn:rd:grade", achievedLevel: "urn:level:1" },
+      { resultDescription: "urn:rd:status", status: "Completed" },
+      { value: "A" },
+    );
+    expect(validateCredential(sound)).toStrictEqual([]);
+    const unsound = resulting(
+      { resultDescription: "urn:rd:other" },
+      { resultDescription: "urn:rd:grade", achievedLevel: "urn:level:9" },
+      { resultDescription: "urn:rd:status" },
+    );
+    expect(warningsOf(unsound)).toStrictEqual([
+      "credentialSubject.result[0].resultDescription result-description-unknown",
+      "credentialSubject.result[1].achievedLevel achieved-level-unknown",
+      "credentialSubject.result[2] result-status-missing",
+    ]);
+    expect(readVerifiable(unsound)).toMatchObject({ id: unsound.id });
+  });
+
+  it("warns of criteria that say nothing, of the achievement of a credential and of an achievement on its own", () => {
+    const credential = achievementCredential();
+    const achievement = { ...credential.credentialSubject.achievement, criteria: {} };
+    const vague = { ...credential, credentialSubject: { ...credential.credentialSubject, achievement } };
+    expect(validateCredential(vague).map(({ path, rule, severity }) => `${path} ${rule} ${severity}`)).toStrictEqual([
+      "credentialSubject.achievement.criteria criteria-undescribed warning",
+    ]);
+    expect(validateEntity("Achievement", achievement).map(({ path, rule }) => `${path} ${rule}`)).toStrictEqual([
+      "criteria criteria-undescribed",
+    ]);
+  });
+
   it("finds an error in a credential of no class of Open Badges whose subject says nothing", () => {
     const plain = (subject: object) => ({
       "@context": ["https://www.w3.org/ns/credentials/v2"],

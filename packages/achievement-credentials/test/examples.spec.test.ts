@@ -43,8 +43,19 @@ describe("the examples of Open Badges 3.0", () => {
     expect(examples.filter((example) => !isCredential(example))).toHaveLength(1);
   });
 
-  it("are conformant credentials: they have no finding", () => {
-    for (const example of credentials) expect(validateCredential(example)).toStrictEqual([]);
+  it("are conformant credentials: they have no finding but one, of a result that names the wrong description", () => {
+    const findings = credentials.flatMap((example) =>
+      validateCredential(example).map(
+        ({ path, rule, severity }) => `${String(example.id)} ${path} ${rule} ${severity}`,
+      ),
+    );
+    // The complete example, which the page prints twice, links a result to its letter grade and gives it a level of the rubric
+    // of another description.
+    expect(new Set(findings)).toStrictEqual(
+      new Set([
+        "http://1edtech.edu/credentials/3732 credentialSubject.result[1].achievedLevel achieved-level-unknown warning",
+      ]),
+    );
   });
 
   it("are read into the model, a credential that names one type or many alike", () => {

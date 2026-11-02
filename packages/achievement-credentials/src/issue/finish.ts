@@ -34,7 +34,7 @@ export function finish<TValue>(
   schema: Schema<TValue>,
   written: unknown,
   label: string,
-  judge: (value: TValue) => readonly CredentialIssue[] = () => [],
+  judge: (value: TValue) => Iterable<CredentialIssue> = () => [],
 ): TValue {
   const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
   const value = parseJson(schema, written, sink);

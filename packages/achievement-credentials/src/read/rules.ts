@@ -1,4 +1,4 @@
-import { parseDateTime } from "@interopkit/core/checks";
+import { isAbsoluteUri, isRecord, parseDateTime } from "@interopkit/core/checks";
 import type { CredentialIssue, IdentityObject } from "../model/index.js";
 
 /** The form of an `IdentityHash` that the specification names: `sha256$` and 64 hexadecimal digits, or `md5$` and 32 (OB B.7). */
@@ -81,4 +81,127 @@ export function emptySubjectIssues(subject: object): CredentialIssue[] {
           severity: "error",
         },
       ];
+}
+
+/** Reads what a property holds as a list: its members, or none when it is absent. */
+function listOf(value: unknown): readonly unknown[] {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+/** Reads the `id` of each object of a list that has one. */
+function idsOf(values: readonly unknown[]): ReadonlySet<unknown> {
+  return new Set(values.filter(isRecord).map(({ id }) => id));
+}
+
+/**
+ * Judges the results of the subject of an achievement against the achievement (OB B.1.16): each result names a
+ * ResultDescription of the achievement, its achieved level is a RubricCriterionLevel of that description, and a result of a
+ * description of the type `Status` has a status. They are warnings: the official schemas do not check them, and the verifiers
+ * in use report them without refusing the credential.
+ *
+ * @param subject - The subject, as the schemas read it.
+ * @param path - Where the subject is.
+ */
+export function* resultIssues(subject: object, path: string): Generator<CredentialIssue> {
+  const achievement: unknown = Reflect.get(subject, "achievement");
+  const descriptions = isRecord(achievement) ? listOf(achievement.resultDescription).filter(isRecord) : [];
+  for (const [index, result] of listOf(Reflect.get(subject, "result")).entries()) {
+    if (!isRecord(result) || typeof result.resultDescription !== "string") continue;
+    const at = `${path}.result[${index}]`;
+    const linked = descriptions.find(({ id }) => id === result.resultDescription);
+    if (linked === undefined) {
+      yield {
+        path: `${at}.resultDescription`,
+        rule: "result-description-unknown",
+        message: "is the id of no ResultDescription of the achievement, which the result must name.",
+        severity: "warning",
+      };
+      continue;
+    }
+    if (
+      typeof result.achievedLevel === "string" &&
+      !idsOf(listOf(linked.rubricCriterionLevel)).has(result.achievedLevel)
+    ) {
+      yield {
+        path: `${at}.achievedLevel`,
+        rule: "achieved-level-unknown",
+        message: "is the id of no RubricCriterionLevel of the ResultDescription that the result names.",
+        severity: "warning",
+      };
+    }
+    if (linked.resultType === "Status" && result.status === undefined) {
+      yield {
+        path: at,
+        rule: "result-status-missing",
+        message: "has no status, which a result of a ResultDescription of the type Status requires.",
+        severity: "warning",
+      };
+    }
+  }
+}
+
+/**
+ * Judges the criteria of an achievement: they say what earns it, by the address of a page or a narrative. Open Badges 3.0
+ * leaves both optional and the validator of 1EdTech refuses criteria that have neither, so it is a warning.
+ *
+ * @param achievement - The achievement, as the schemas read it.
+ * @param path - Where the achievement is.
+ */
+export function* criteriaIssues(achievement: unknown, path: string): Generator<CredentialIssue> {
+  const criteria = isRecord(achievement) ? achievement.criteria : undefined;
+  if (!isRecord(criteria) || criteria.id !== undefined || criteria.narrative !== undefined) return;
+  yield {
+    path: path === "" ? "criteria" : `${path}.criteria`,
+    rule: "criteria-undescribed",
+    message: "has neither an id nor a narrative, so nothing says how to earn the achievement: give it one of them.",
+    severity: "warning",
+  };
+}
+
+/** Makes an error of a related resource. */
+function relatedError(path: string, rule: string, message: string): CredentialIssue {
+  return { path, rule, message, severity: "error" };
+}
+
+/** Judges one related resource: an object with an `id` that is an absolute URI and not that of another, and a digest. */
+function* relatedEntryIssues(entry: unknown, at: string, seen: Set<string>): Generator<CredentialIssue> {
+  if (!isRecord(entry)) {
+    yield relatedError(at, "related-resource-form", "is not an object with the id and the digest of a resource.");
+    return;
+  }
+  if (typeof entry.id !== "string" || !isAbsoluteUri(entry.id)) {
+    yield relatedError(`${at}.id`, "related-resource-id", "must be the absolute URI of the resource.");
+  } else if (seen.has(entry.id)) {
+    yield relatedError(
+      `${at}.id`,
+      "related-resource-duplicate",
+      "names a resource that another related resource names.",
+    );
+  } else {
+    seen.add(entry.id);
+  }
+  if (typeof entry.digestSRI !== "string" && typeof entry.digestMultibase !== "string") {
+    yield relatedError(at, "related-resource-digest", "has neither a digestSRI nor a digestMultibase of the resource.");
+  }
+}
+
+/**
+ * Judges the related resources of a credential of the Data Model 2.0 (5.3): one or more objects, each with an `id` that is an
+ * absolute URI and is not that of another, and a `digestSRI` or a `digestMultibase` of the resource. The package carries the
+ * property and fetches no resource that it names, so the digests themselves are not compared.
+ *
+ * @param credential - The credential, as the schemas read it.
+ */
+export function* relatedResourceIssues(credential: object): Generator<CredentialIssue> {
+  const related: unknown = Reflect.get(credential, "relatedResource");
+  if (related === undefined || "issuanceDate" in credential) return;
+  const entries = listOf(related);
+  if (entries.length === 0) {
+    yield relatedError("relatedResource", "related-resource-form", "is empty, and it must hold one or more objects.");
+  }
+  const seen = new Set<string>();
+  for (const [index, entry] of entries.entries()) {
+    yield* relatedEntryIssues(entry, Array.isArray(related) ? `relatedResource[${index}]` : "relatedResource", seen);
+  }
 }
