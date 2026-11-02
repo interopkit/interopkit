@@ -1,9 +1,17 @@
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
-import { type DeepLinkingRequestMessage, type LtiMessage, type Result, SCOPES } from "@interopkit/tool-integration";
+import {
+  type ControlStatus,
+  type DeepLinkingRequestMessage,
+  type LtiMessage,
+  type Result,
+  SCOPES,
+  type StartProctoringMessage,
+} from "@interopkit/tool-integration";
 import {
   advanceScoreTimestamp,
   createDeepLinkResponse,
   createServiceClient,
+  createStartAssessmentPage,
   ltiLaunch,
   ltiLogin,
 } from "@interopkit/tool-integration/tool";
@@ -45,6 +53,8 @@ export interface Tool {
   grade(launch: LtiMessage, scoreGiven: number): Promise<Graded>;
   /** Reads the members of the course of a launch with their groups, the groups and group sets, and the record of needs of its user. */
   readRoster(launch: LtiMessage): Promise<Roster>;
+  /** Pauses the attempt of a Start Proctoring message through the Assessment Control Service, as a proctor who sees an incident. */
+  pause(launch: LtiMessage): Promise<ControlStatus>;
 }
 
 /** Creates the tool that a setup configures. */
@@ -58,6 +68,7 @@ export function createTool({ options }: ToolSetup): Tool {
     if ("status" in launch) return launch;
     launches.push(launch);
     if (launch.messageType === "LtiDeepLinkingRequest") return chooseContent(launch);
+    if (launch.messageType === "LtiStartProctoring") return proctor(launch);
     return {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -83,6 +94,34 @@ export function createTool({ options }: ToolSetup): Tool {
       },
       options,
     );
+  // A real proctoring tool checks the room and the candidate first; here it verified the name against an identity document and
+  // sends the candidate back to start. The answer is a page that posts the signed message to the start assessment URL.
+  const proctor = (launch: StartProctoringMessage): Promise<HttpResponse> =>
+    createStartAssessmentPage(
+      launch,
+      { verifiedUser: launch.user.name === undefined ? {} : { name: launch.user.name } },
+      options,
+    );
+  const pause = async (launch: LtiMessage): Promise<ControlStatus> => {
+    const subject = launch.user.subject;
+    if (
+      launch.messageType !== "LtiStartProctoring" ||
+      launch.assessmentControl === undefined ||
+      subject === undefined
+    ) {
+      throw new Error("The launch offers no control of an attempt.");
+    }
+    // The claim of the service has no scopes: Proctoring Services fixes its one scope.
+    const client = createServiceClient(launch, { ...options, scopes: [SCOPES.assessmentControl] });
+    return client.control(launch.assessmentControl.url, {
+      user: { issuer: launch.issuer, subject },
+      resourceLink: { id: launch.resourceLink.id },
+      attemptNumber: launch.attemptNumber,
+      action: "pause",
+      incidentSeverity: 0.8,
+      reasonMessage: "A second person is in view.",
+    });
+  };
   const grade = async (launch: LtiMessage, scoreGiven: number): Promise<Graded> => {
     const grades = launch.services.grades;
     const userId = launch.user.subject;
@@ -129,7 +168,7 @@ export function createTool({ options }: ToolSetup): Tool {
       needs: await client.preferences(preferences, userId, activityId),
     };
   };
-  return { launches, handle, grade, readRoster };
+  return { launches, handle, grade, readRoster, pause };
 }
 
 /** What the route of the launch tells the browser: enough for the scenario to check the launch, and nothing secret. */

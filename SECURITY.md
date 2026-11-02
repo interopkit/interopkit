@@ -443,6 +443,11 @@ platform's key, to the tool's client and deployment, and to one use.
 - **Deep Linking responses.** `createDeepLinkResponse` returns a page that posts the signed response to the `deep_link_return_url`
   of the verified request, and nowhere else: its policy allows one script by hash and a form to that origin alone, it is not cached,
   and every value is HTML-encoded. The items are checked against the request's settings before they are signed.
+- **Start Assessment messages.** `createStartAssessmentPage` posts the signed message to the `start_assessment_url` of the
+  verified Start Proctoring message, and nowhere else, as a Deep Linking response is posted. It returns the session data
+  unchanged, and a claim that the tool says it verified must be one that the platform sent, with the same value; a `picture` must
+  be one that the tool took. The control requests of `control` are read back against Proctoring Services 5.1 before the token goes
+  with them, to the same origins as every service token.
 - **LTI 1.1 secrets.** `legacySecret` gives the secret of a consumer key for one HMAC of the migration claim; the package keeps it
   nowhere. Trust the 1.1 identifiers of a launch only when `migration.verified` is `true`.
 - **Service tokens.** `createServiceClient` keeps one access token for each scope in memory until it is about to expire, asks for
@@ -493,7 +498,13 @@ them ([platform role](docs/tool-integration/platform.md)).
   spent only by a message of the type that the route reads. The `data` claim must be the data this platform sealed into the
   request, for that tool and deployment and unexpired, and the items are held to the settings sealed in it and not to anything the
   tool says. The platform renders nothing of an item: the host fetches the `url` of a file through its guarded `fetch` and
-  sanitizes `html`.
+  sanitizes `html`. `readStartAssessment` reads a Start Assessment message the same way, within its own `maxFormBytes` of 65,536
+  bytes; its `session_data` must be the data this platform sealed into the Start Proctoring message, for that tool, deployment,
+  resource link and attempt and unexpired. The session data is the anti-CSRF token of Proctoring Services: the host starts an
+  attempt only when its own session of the browser is of the `subject` that the reader returns.
+- **Assessment Control Service.** `/assessment-control` exists only with `services.control`, and takes a token of `control.all`
+  that the registration still grants. A request for a user of another issuer is 404 without asking the store, and the store
+  decides whether the attempt is one that the calling tool proctors, so that a tool cannot pause another tool's attempt.
 - **Access tokens are stateless.** A token holds the client, the deployment, the granted scopes and the expiry, sealed with the
   hint key, and grants only the scopes that the request asks for, the registration grants and a service of the platform offers.
 - **Keys.** The `id_token`s are signed through the `Signer` of `config.keys`, so the private key may stay in a KMS or an HSM; the
@@ -637,13 +648,14 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `tool-integration`        | `pageSize` and `maxPageSize` of `handlePlatformRequest`                  | 100 and 1,000                     | items                  | A page of a service of the platform: without a `limit`, and at most                                                                                      |
 | `tool-integration`        | `maxFormBytes` of `ltiLaunch`                                            | 65,536                            | bytes                  | The form that the platform posts, measured before it is decoded; `form-too-large` above it                                                               |
 | `tool-integration`        | `maxFormBytes` of `readDeepLinkingResponse`                              | 1,048,576                         | bytes                  | The form that a tool posts, measured before it is decoded; `form-too-large` above it                                                                     |
+| `tool-integration`        | `maxFormBytes` of `readStartAssessment`                                  | 65,536                            | bytes                  | The form that a proctoring tool posts, measured before it is decoded; `form-too-large` above it                                                          |
 | `tool-integration`        | `maxTokens` of `readDeepLinkingResponse`                                 | 1,000,000                         | tokens                 | The JSON of the tool's message, counted before it is parsed; `token-malformed` above it                                                                  |
 | `tool-integration`        | `maxContentItems` of `readDeepLinkingResponse`                           | 100                               | items                  | The items of a response, counted before one is read; `content-items-limit` above it                                                                      |
 | `tool-integration`        | Most bytes of a login initiation form                                    | 65,536                            | bytes                  | A POST to the login URL; `DataError` above it; not replaceable                                                                                           |
 | `tool-integration`        | `maxAgeSeconds` of `serveToolJwks`                                       | 3,600                             | seconds                | The `max-age` of the tool's key set                                                                                                                      |
 | `tool-integration`        | Wait for the answer to `lti.capabilities`                                | 100                               | milliseconds           | The pages of the storage path; then `lti_storage_target`; not replaceable                                                                                |
 | `tool-integration`        | Lifetime of a login                                                      | 600                               | seconds                | The time in which a launch must answer a login; not replaceable                                                                                           |
-| `tool-integration`        | Lifetime of a client assertion and of a Deep Linking response            | 300                               | seconds                | `exp` after `iat`; not replaceable                                                                                                                        |
+| `tool-integration`        | Lifetime of a client assertion, a Deep Linking response and a Start Assessment message | 300                 | seconds                | `exp` after `iat`; not replaceable                                                                                                                        |
 | `tool-integration`        | Leeway for clock skew                                                    | 60                                | seconds                | `exp`, `nbf` and `iat` of an `id_token` and of a client assertion; not replaceable                                                                        |
 | `tool-integration`        | Lifetime of a kept launch, a hint and an `id_token`                      | 300                               | seconds                | `put` of the `LaunchStore`, and `exp` after `iat`; not replaceable                                                                                       |
 | `tool-integration`        | `maxBodyBytes` of `handlePlatformRequest`                                | 65,536                            | bytes                  | The body of a request to the platform, measured before it is parsed: 413 at `/authorize`, `invalid_request` at `/token`                                 |

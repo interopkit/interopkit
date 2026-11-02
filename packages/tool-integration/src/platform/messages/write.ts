@@ -1,6 +1,17 @@
-import type { MessageServices, MigrationClaim, PlatformInstance } from "../../protocol/index.js";
+import type {
+  AssessmentControlClaim,
+  MessageServices,
+  MigrationClaim,
+  PlatformInstance,
+} from "../../protocol/index.js";
 import { LTI_VERSION, type MessageToWrite } from "../../protocol/internal.js";
 import type { MessageInput } from "./input.js";
+
+/** The claims that the services write into a message: those of `services`, and the Assessment Control Service of a Start Proctoring message. */
+export interface ServiceClaims extends MessageServices {
+  /** The Assessment Control Service (Proctoring Services 1.0 section 4.2.2.6). */
+  readonly assessmentControl?: AssessmentControlClaim;
+}
 
 /** What the platform adds to a message of the host when it issues it. */
 export interface Issued {
@@ -13,7 +24,7 @@ export interface Issued {
   /** The migration claim with the signature of its consumer key, when the host gave the secret. */
   readonly migration?: MigrationClaim | undefined;
   /** The claims of the services that the message offers. */
-  readonly services?: MessageServices | undefined;
+  readonly services?: ServiceClaims | undefined;
   /** The sealed `data` of a Deep Linking request, or the sealed `session_data` of a Start Proctoring message. */
   readonly sealed?: string | undefined;
 }
@@ -23,6 +34,7 @@ export interface Issued {
  * the instance, the substituted custom properties, the signed migration claim and the sealed data.
  */
 export function toWrite(message: MessageInput, issued: Issued): MessageToWrite {
+  const { assessmentControl, ...services } = issued.services ?? {};
   const base = {
     issuer: issued.issuer,
     clientId: message.clientId,
@@ -41,7 +53,7 @@ export function toWrite(message: MessageInput, issued: Issued): MessageToWrite {
     custom: issued.custom,
     migration: issued.migration ?? message.migration,
     extensions: message.extensions,
-    services: issued.services,
+    services,
   };
   switch (message.messageType) {
     case "LtiResourceLinkRequest":
@@ -63,6 +75,7 @@ export function toWrite(message: MessageInput, issued: Issued): MessageToWrite {
         attemptNumber: message.attemptNumber,
         startAssessmentUrl: message.startAssessmentUrl,
         sessionData: issued.sealed ?? "",
+        assessmentControl,
         proctoringSettings: message.proctoringSettings,
       };
     case "LtiEndAssessment":

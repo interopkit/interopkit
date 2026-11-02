@@ -5,8 +5,9 @@
  * The tool starts the OpenID Connect login (with a cookie, or with the platform's browser storage in an iframe), validates
  * the launch of every message type, serves its key set, answers a Deep Linking request with `createDeepLinkResponse`, and calls
  * the services of the platform with `createServiceClient`: the line items, results and scores of the Assignment and Grade
- * Services, the members of a context, its groups and the preferences record of a user, with access tokens that its signer asks for
- * and that it reuses.
+ * Services, the members of a context, its groups, the preferences record of a user and the Assessment Control Service of a
+ * proctored attempt, with access tokens that its signer asks for and that it reuses. A proctoring tool sends the candidate back to
+ * start the assessment with `createStartAssessmentPage`.
  *
  * @module @interopkit/tool-integration/tool
  */
@@ -15,8 +16,10 @@ export { type ServeToolJwksOptions, serveToolJwks } from "./jwks.js";
 export { ltiLaunch } from "./launch.js";
 export { ltiLogin } from "./login.js";
 export type { LtiLaunchOptions, LtiLoginOptions, ToolOptions } from "./options.js";
+export { createStartAssessmentPage, type StartAssessmentInput } from "./proctoring/start-assessment.js";
 export type { PlatformRegistration } from "./registration.js";
 export type { Page } from "./services/access.js";
+export type { ControlClient } from "./services/control.js";
 export { advanceScoreTimestamp, type GradesClient } from "./services/grades.js";
 export type { GroupsClient } from "./services/groups.js";
 export type { MemberPage, MembersClient } from "./services/members.js";

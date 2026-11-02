@@ -31,11 +31,15 @@ export const AGS_SCOPES = [
   "https://purl.imsglobal.org/spec/lti-ags/scope/score",
 ];
 
-/** The scopes of the other services of the platform: Names and Role Provisioning, Context Groups and the AfA PNP Connector. */
-const ROSTER_SCOPES = [
+/**
+ * The scopes of the other services of the platform: Names and Role Provisioning, Context Groups, the AfA PNP Connector and the
+ * Assessment Control Service of Proctoring Services.
+ */
+const OTHER_SCOPES = [
   "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly",
   "https://purl.imsglobal.org/spec/lti-gs/scope/contextgroup.readonly",
   "https://purl.imsglobal.org/spec/afapnp/v1p0/scope/afapnprecord.lti.readonly",
+  "https://purl.imsglobal.org/spec/lti-ap/scope/control.all",
 ];
 
 const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";
@@ -278,7 +282,7 @@ export class FakePlatform {
     this.usedJti.add(jti);
     const scope = form.get("scope") ?? "";
     this.grants.push({ header, payload, scope });
-    const granted = scope.split(" ").filter((item) => AGS_SCOPES.includes(item) || ROSTER_SCOPES.includes(item));
+    const granted = scope.split(" ").filter((item) => AGS_SCOPES.includes(item) || OTHER_SCOPES.includes(item));
     if (granted.length === 0) return Response.json({ error: "invalid_scope" }, { status: 400 });
     return Response.json({
       access_token: "access-token-1",

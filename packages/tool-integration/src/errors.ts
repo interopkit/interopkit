@@ -20,6 +20,7 @@ const STATUS_OF_REASON: ReadonlyMap<string, number> = new Map([
   ["nonce-mismatch", 401],
   ["nonce-replayed", 403],
   ["deep-linking-data-invalid", 403],
+  ["session-data-invalid", 403],
   ["hint-missing", 403],
   ["hint-invalid", 403],
   ["hint-expired", 403],

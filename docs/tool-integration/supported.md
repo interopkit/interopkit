@@ -9,7 +9,8 @@ flowchart LR
   launch --> dl["Deep Linking<br/>createDeepLinkResponse,<br/>readDeepLinkingResponse"]
   launch --> ags["AGS<br/>createServiceClient: line items,<br/>results, scores, cached tokens"]
   launch --> roster["Roster services<br/>members, groups, preferences record"]
-  launch -.-> missing["Not yet:<br/>registration, proctoring"]
+  launch --> proctoring["Proctoring<br/>createStartAssessmentPage, control"]
+  launch -.-> missing["Not yet:<br/>registration"]
 ```
 
 | Area                                | Specification              | Tool role                                                                 | Not yet                                                                                                                                                                                |
@@ -42,7 +43,7 @@ flowchart LR
 | Names and Role Provisioning         | NRPS 2.0                   | `services.roster`, the claim; `members`: role, limit, resource link with its message section, groups, differences, `next` and `differences` links |  |
 | Dynamic Registration                | DR 1.0                     |                                                                           | All                                                                                                                                                                                    |
 | Submission Review                   | SR 1.0                     | The request, as `SubmissionReviewMessage`; `submissionReview` of a line item | |
-| Proctoring                          | Proctoring 1.0             | `LtiStartProctoring` and `LtiEndAssessment`, as messages                  | The Start Assessment message and the Assessment Control Service                                                                                                                        |
+| Proctoring | Proctoring 1.0 | `LtiStartProctoring` and `LtiEndAssessment`, as messages; `createStartAssessmentPage`: the Start Assessment message with the session data, the resource link and the attempt copied, the verified claims held to the values that the platform sent; `control` of the Assessment Control Service |  |
 | Context Groups                      | Groups 1.0                 | `services.groups`, the claim; `groups` with the user filter, `groupSets`, paging |  |
 | AfA PNP connector                   | PNP Connector 1.0          | `services.preferences`, the claim; `preferences`: the record of a user for an activity, the `fields` filter |  |
 
@@ -55,7 +56,8 @@ flowchart LR
   login -.-> storage["/storage<br/>buildCapabilitiesScript"]
   token --> ags["/contexts/.../line-items<br/>GradebookStore"]
   token --> roster["/contexts/.../memberships, groups<br/>/ims/afapnp/...<br/>RosterStore, GroupStore, PreferencesStore"]
-  token -.-> missing["Not yet:<br/>control, the reader of the<br/>Start Assessment message, registration"]
+  token --> control["/assessment-control<br/>AssessmentControl;<br/>readStartAssessment"]
+  token -.-> missing["Not yet:<br/>registration"]
 ```
 
 | Area                                | Specification              | Platform role                                                                                                   | Not yet                                                    |
@@ -78,7 +80,7 @@ flowchart LR
 | Service tokens                      | Core 6.2, Security 4.1     | `/token`: the scopes that the request asks for, the registration grants and a service offers; the deployment of the assertion; replay check of the `jti` | |
 | Deep Linking request                | DL 4.4                     | The ten settings; `data` seals the settings and the host's data                                                |                                                            |
 | Deep Linking response               | DL 4.5                     | `readDeepLinkingResponse`: the tool, the signature, the `nonce` once, the sealed `data`, each item by its type, held to the settings of the request |                                                            |
-| Proctoring                          | Proctoring 4               | `LtiStartProctoring` with sealed session data, `LtiEndAssessment`                                              | The Start Assessment reader, the Assessment Control Service |
+| Proctoring                          | Proctoring 4, 5            | `LtiStartProctoring` with sealed session data and the `acs` claim, `LtiEndAssessment`; `readStartAssessment`: the tool, the signature, the `nonce` once, the session data for this tool, deployment, resource link and attempt; the Assessment Control Service over an `AssessmentControl` | |
 | Client-side login                   | OIDC with postMessages 0.1 | `/storage`                                                                                                      |                                                            |
 | postMessage Storage                 | PM Storage 0.1             | The minimum limits, and `storage_exhaustion`                                                                    |                                                            |
 | Capabilities                        | postMessages 0.1           | `buildCapabilitiesScript` for the host's frame page                                                             |                                                            |
@@ -95,8 +97,8 @@ Rubric Service and others) are not assessed.
 ## Models of the service bodies
 
 Both roles share the models of [the bodies of the services](services.md). The reader and the writer of each are built and
-tested; the client of the tool role and the handler of the platform role use those of the grade services
-([grade services](grades.md)), and the others are not yet.
+tested, and the client of the tool role and the handler of the platform role use them, but for the configurations of Dynamic
+Registration.
 
 | Service                    | Specification     | Modeled                                                                                          | Not yet                    |
 | -------------------------- | ----------------- | ------------------------------------------------------------------------------------------------ | -------------------------- |
@@ -107,5 +109,5 @@ tested; the client of the tool role and the handler of the platform role use tho
 | Groups                     | Groups 1.0        | Groups, group sets, filters                                                                      | |
 | Content items              | DL 3              | The five types, their extensions and other types; the check against the settings of the request | |
 | Configurations             | DR 2              | Platform, tool, acknowledgment, translations, extensions                                         | Steps, routes              |
-| Assessment Control Service | Proctoring 5      | Control request and status                                                                       | Client, handler            |
+| Assessment Control Service | Proctoring 5      | Control request and status                                                                       | |
 | Preferences                | PNP Connector 1.0 | The record as JSON, the `fields` filter                                                          | |

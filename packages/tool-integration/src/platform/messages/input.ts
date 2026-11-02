@@ -13,17 +13,19 @@ import {
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
-import type {
-  ActualUser,
-  ContextClaim,
-  DeepLinkingSettings,
-  ForUser,
-  LaunchPresentation,
-  MigrationClaim,
-  OrganizationClaim,
-  ProctoringSettings,
-  ResourceLink,
-  UserIdentity,
+import {
+  type ActualUser,
+  CONTROL_ACTIONS,
+  type ContextClaim,
+  type ControlAction,
+  type DeepLinkingSettings,
+  type ForUser,
+  type LaunchPresentation,
+  type MigrationClaim,
+  type OrganizationClaim,
+  type ProctoringSettings,
+  type ResourceLink,
+  type UserIdentity,
 } from "../../protocol/index.js";
 import { HTTPS_URL, IDENTIFIER, STRING_ARRAY } from "../../protocol/internal.js";
 
@@ -148,6 +150,16 @@ export interface MessageServicesInput {
   readonly preferences?: {
     /** The identifiers of the activities that have a record, such as the resource link or the line item. At least one. */
     readonly activityIds: readonly string[];
+  };
+  /**
+   * The Assessment Control Service (Proctoring Services 1.0 section 4.2.2.6), which only a Start Proctoring message offers: the
+   * claim names the service and the actions that the platform supports for the attempt. It needs no context.
+   *
+   * @defaultValue none
+   */
+  readonly control?: {
+    /** The actions that the platform supports for the attempt, at least one, such as `["pause", "resume", "terminate"]`. */
+    readonly actions: readonly ControlAction[];
   };
 }
 
@@ -288,6 +300,7 @@ const otherServicesEntries = {
   roster: v.optional(v.literal(true)),
   groups: v.optional(strictRecord({ sets: v.boolean() })),
   preferences: v.optional(strictRecord({ activityIds: v.pipe(v.array(nonEmptyStringSchema), v.minLength(1)) })),
+  control: v.optional(strictRecord({ actions: v.pipe(v.array(v.picklist(CONTROL_ACTIONS)), v.minLength(1)) })),
 };
 
 const baseEntries = {
@@ -406,7 +419,7 @@ const CONTEXT_SERVICES = [
  * @param value - The message.
  * @param label - Names the message in the error, such as `The message`.
  * @throws `DataError` that names the path of the first invalid member, or when the message offers a service without its
- * context.
+ * context, or the Assessment Control Service in a message that is not a Start Proctoring message.
  */
 export function readMessageInput(value: unknown, label: string): MessageInput {
   const message = parseWith(messageInputSchema, value, label);
@@ -414,6 +427,11 @@ export function readMessageInput(value: unknown, label: string): MessageInput {
   const names = CONTEXT_SERVICES.filter(([key]) => services?.[key] !== undefined).map(([, name]) => name);
   if (names.length > 0 && message.context === undefined) {
     throw new DataError(`${label} offers the ${names.join(" and ")} services, which need its context.`);
+  }
+  if (services?.control !== undefined && message.messageType !== "LtiStartProctoring") {
+    throw new DataError(
+      `${label} offers the Assessment Control Service, which only a Start Proctoring message carries, in a message of the type ${message.messageType}.`,
+    );
   }
   return message;
 }

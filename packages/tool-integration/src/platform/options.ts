@@ -14,6 +14,7 @@ import type { JwksCache } from "../protocol/index.js";
 import { checkPlatformConfig, type PlatformConfig } from "./config.js";
 import type { MessageInput } from "./messages/input.js";
 import type {
+  AssessmentControl,
   GradebookStore,
   GroupStore,
   LaunchStore,
@@ -152,7 +153,10 @@ export interface PlatformSettings
   readonly signal?: AbortSignal;
 }
 
-/** The options of `readDeepLinkingResponse`: the platform, and the ports and limits that checking a message of a tool needs. */
+/**
+ * The options of `readDeepLinkingResponse` and `readStartAssessment`: the platform, and the ports and limits that checking a
+ * message of a tool needs.
+ */
 export interface ToolMessageOptions extends PlatformOptions, CallOptions {
   /**
    * Looks up the registration of a tool by its client identifier, or returns `undefined` when there is none. It is called for
@@ -170,7 +174,7 @@ export interface ToolMessageOptions extends PlatformOptions, CallOptions {
   /**
    * The most bytes of the form that the tool posts, measured before it is decoded.
    *
-   * @defaultValue `1048576` for a Deep Linking response, which may list many items
+   * @defaultValue `1048576` for a Deep Linking response, which may list many items, and `65536` for a Start Assessment message
    */
   readonly maxFormBytes?: number;
   /**
@@ -187,7 +191,7 @@ export interface ToolMessageOptions extends PlatformOptions, CallOptions {
   readonly maxContentItems?: number;
 }
 
-/** The options of `readDeepLinkingResponse` with their defaults filled in. */
+/** The options of `readDeepLinkingResponse` and `readStartAssessment` with their defaults filled in. */
 export interface ToolMessageSettings extends Required<Omit<ToolMessageOptions, "signal">> {
   readonly signal?: AbortSignal;
 }
@@ -264,6 +268,7 @@ const requestOptionsSchema = strictRecord({
       roster: v.optional(methodsSchema<RosterStore>("members")),
       groups: v.optional(methodsSchema<GroupStore>("groups", "groupSets")),
       preferences: v.optional(methodsSchema<PreferencesStore>("record")),
+      control: v.optional(methodsSchema<AssessmentControl>("control")),
     }),
   ),
   pageSize: v.optional(positiveIntegerSchema),
@@ -315,7 +320,7 @@ const toolMessageOptionsSchema = strictRecord({
 });
 
 /**
- * Checks the options of `readDeepLinkingResponse` and fills in their defaults.
+ * Checks the options of `readDeepLinkingResponse` and `readStartAssessment`, and fills in their defaults.
  *
  * @param defaultMaxFormBytes - The `maxFormBytes` of the message that is read, when the host names none.
  * @throws `DataError` that names the option and what it must be.

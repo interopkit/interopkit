@@ -83,6 +83,19 @@ describe("the scenario", () => {
     });
   });
 
+  it("starts the proctored attempt that the proctoring tool sends back, which the tool then pauses as a proctor", async () => {
+    const { proctored } = await runScenario();
+    expect(proctored).toStrictEqual({
+      posted: { to: "https://lms.example/proctoring/start", fields: ["JWT"] },
+      status: 200,
+      subject: "candidate-7",
+      attemptNumber: 1,
+      verifiedName: "Ana Candidate",
+      paused: "paused",
+      kept: { status: "paused" },
+    });
+  });
+
   it("answers the same authentication request a second time with the authentication error response", async () => {
     expect((await runScenario()).replay).toStrictEqual({ status: 403, error: "login_required" });
   });

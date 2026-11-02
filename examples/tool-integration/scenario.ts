@@ -6,7 +6,7 @@ import type { MessageInput, PlatformFrame } from "@interopkit/tool-integration/p
 import { generateSigningKeys } from "./src/keys.ts";
 import { connect, type Handler, plainRequest, textOf } from "./src/network.ts";
 import { createPlatform, type Platform } from "./src/platform.ts";
-import { DEEP_LINKING_PATH, setupPlatform } from "./src/platform-setup.ts";
+import { DEEP_LINKING_PATH, START_ASSESSMENT_PATH, setupPlatform } from "./src/platform-setup.ts";
 import { createTool } from "./src/tool.ts";
 import { setupTool } from "./src/tool-setup.ts";
 
@@ -18,7 +18,10 @@ const NOW = 1_700_000_000_000;
 const LEARNER = "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner";
 const INSTRUCTOR = "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor";
 
-/** What the scenario shows: the launch the tool accepted, the grading, the content the tool placed, and the replay the platform refused. */
+/**
+ * What the scenario shows: the launch the tool accepted, the grading, the roster, the content the tool placed, the proctored
+ * attempt, and the replay the platform refused.
+ */
 export interface Outcome {
   readonly login: { readonly toolHost: string; readonly storageUrl: string };
   readonly launch: Readonly<Record<string, unknown>>;
@@ -26,6 +29,7 @@ export interface Outcome {
   readonly kept: readonly Readonly<Record<string, unknown>>[];
   readonly roster: Readonly<Record<string, unknown>>;
   readonly deepLinked: Readonly<Record<string, unknown>>;
+  readonly proctored: Readonly<Record<string, unknown>>;
   readonly replay: { readonly status: number; readonly error: string };
 }
 
@@ -99,7 +103,8 @@ async function browse(platform: Platform, tool: Handler, message: MessageInput):
  * an in-memory network. The steps are those of the browser: the platform keeps the message and prepares the login URL, the
  * browser asks the tool, then the platform to authenticate, then posts the `id_token` to the tool. The tool then reads its line
  * item, posts the score and reads the results back through the grade services. A Deep Linking request goes the same way, and
- * the tool answers it with a page that posts the signed response to the platform, which reads it.
+ * the tool answers it with a page that posts the signed response to the platform, which reads it. A Start Proctoring message too:
+ * the proctoring tool sends the candidate back with a signed Start Assessment message, then pauses the attempt as a proctor.
  *
  * @returns What each side saw.
  */
@@ -195,6 +200,28 @@ export async function runScenario(): Promise<Outcome> {
   );
   const [placed] = platform.deepLinked;
 
+  // The candidate starts a proctored exam: the platform sends them to the proctoring tool with sealed session data, the tool
+  // sends them back with a page that posts the signed Start Assessment message, and the platform starts the attempt. A proctor
+  // then pauses it through the Assessment Control Service.
+  const proctoring = await browse(platform, tool.handle, {
+    ...base,
+    messageType: "LtiStartProctoring",
+    user: { subject: "candidate-7", name: "Ana Candidate" },
+    roles: [LEARNER],
+    resourceLink: { id: "exam-1", title: "Final exam" },
+    attemptNumber: 1,
+    startAssessmentUrl: `${platform.origin}${START_ASSESSMENT_PATH}`,
+    services: { control: { actions: ["pause", "resume", "terminate", "update"] } },
+  });
+  const back = postOf(textOf(proctoring.launched));
+  const startedAnswer = await platform.handle(
+    plainRequest("POST", back.action, FORM_TYPE, new URLSearchParams([...back.fields]).toString()),
+  );
+  const proctoredLaunch = tool.launches.at(-1);
+  if (proctoredLaunch === undefined) throw new Error("The tool did not accept the Start Proctoring message.");
+  const paused = await tool.pause(proctoredLaunch);
+  const [started] = platform.started;
+
   return {
     login: { toolHost: new URL(frame.url).host, storageUrl: frame.storageUrl },
     launch: JSON.parse(textOf(launched)),
@@ -226,6 +253,15 @@ export async function runScenario(): Promise<Outcome> {
               },
             },
       ),
+    },
+    proctored: {
+      posted: { to: back.action, fields: [...back.fields.keys()] },
+      status: startedAnswer.status,
+      subject: started?.subject,
+      attemptNumber: started?.attemptNumber,
+      verifiedName: started?.verifiedUser?.name,
+      paused: paused.status,
+      kept: platform.attempts.statusOf("candidate-7", "exam-1", 1),
     },
     replay,
   };

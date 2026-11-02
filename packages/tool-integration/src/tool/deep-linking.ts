@@ -1,4 +1,4 @@
-import { DataError, readClock, signCompactJws } from "@interopkit/core";
+import { DataError } from "@interopkit/core";
 import {
   checkArray,
   checkHttpsUrl,
@@ -11,25 +11,11 @@ import {
 } from "@interopkit/core/checks";
 import type { HttpResponse } from "@interopkit/core/http";
 import type { ContentItem, DeepLinkingRequestMessage } from "../protocol/index.js";
-import {
-  callOptionsOf,
-  findRefusal,
-  LTI_VERSION,
-  randomToken,
-  readContentItem,
-  renderPostPage,
-  toSeconds,
-  writeContentItem,
-  writeToolMessage,
-} from "../protocol/internal.js";
+import { findRefusal, LTI_VERSION, readContentItem, writeContentItem } from "../protocol/internal.js";
 import { checkToolOptions, findDeployment, type ToolOptions } from "./options.js";
+import { postToolMessage } from "./tool-message.js";
 
-// Security Framework section 4.1.1: a message of the tool expires "typically five minutes after the iat timestamp".
-const MESSAGE_TTL_SECONDS = 300;
 const MESSAGE_TYPE = "LtiDeepLinkingRequest";
-/** The form parameter that carries the signed response (Security Framework section 5.2.2). */
-const RESPONSE_PARAMETER = "JWT";
-const encoder = new TextEncoder();
 
 /** What the tool answers a Deep Linking request with. */
 export interface DeepLinkingResponseInput {
@@ -167,32 +153,18 @@ export async function createDeepLinkResponse(
   );
   if (refusal !== undefined) throw new DataError(refusal);
   const registration = await findDeployment(options, launch);
-  const iat = toSeconds(readClock(options.clock));
-  const claims = {
-    ...writeToolMessage({
-      messageType: "LtiDeepLinkingResponse",
-      issuer: launch.issuer,
-      clientId: launch.clientId,
-      deploymentId: launch.deploymentId,
-      version: LTI_VERSION,
-      data: launch.settings.data,
-      items: items.map(({ written }) => written),
-      message: response.message,
-      log: response.log,
-      errorMessage: response.errorMessage,
-      errorLog: response.errorLog,
-    }),
-    iss: registration.clientId,
-    aud: registration.issuer,
-    iat,
-    exp: iat + MESSAGE_TTL_SECONDS,
-    nonce: randomToken(),
-  };
-  const jwt = await signCompactJws(
-    { typ: "JWT" },
-    encoder.encode(JSON.stringify(claims)),
-    registration.signer,
-    callOptionsOf(options),
-  );
-  return renderPostPage({ action: launch.settings.returnUrl, fields: [[RESPONSE_PARAMETER, jwt]] });
+  const message = {
+    messageType: "LtiDeepLinkingResponse",
+    issuer: launch.issuer,
+    clientId: launch.clientId,
+    deploymentId: launch.deploymentId,
+    version: LTI_VERSION,
+    data: launch.settings.data,
+    items: items.map(({ written }) => written),
+    message: response.message,
+    log: response.log,
+    errorMessage: response.errorMessage,
+    errorLog: response.errorLog,
+  } as const;
+  return postToolMessage(message, registration, launch.settings.returnUrl, options);
 }

@@ -31,6 +31,7 @@ const KEY_SET_MAX_AGE_SECONDS = 3600;
  * | `/contexts/{context}/groups` | GET | The groups of a context, or of a user in it (Context Groups 1.0), over `services.groups` |
  * | `/contexts/{context}/group-sets` | GET | The group sets of a context (Context Groups 1.0) |
  * | `/ims/afapnp/v1p0/users/{user}/activities/{activity}/afapnprecords` | GET | The preferences record of a user for an activity (AfA PNP Connector 1.0), over `services.preferences` |
+ * | `/assessment-control` | POST | An action on a proctored attempt and its status (Proctoring Services 1.0 section 5), over `services.control` |
  *
  * A route of a service exists only when its store is given. A request to it needs a bearer token of `/token` with one of the
  * scopes of the method among those that the registration still grants: 401 with `WWW-Authenticate: Bearer` without one, 403

@@ -1,7 +1,7 @@
 # A platform and a tool
 
-A platform that launches a tool, and the tool that validates the launch, publishes a score through the grade services, reads the roster of the course and answers
-a Deep Linking request, in one process. The platform uses
+A platform that launches a tool, and the tool that validates the launch, publishes a score through the grade services, reads the roster of the course, answers
+a Deep Linking request and proctors an attempt, in one process. The platform uses
 the platform role of `@interopkit/tool-integration`, the tool uses the tool role, and both use `@interopkit/core`. They reach each
 other through an in-memory network, so the example needs no server, and each handler is the one a host would route a request to.
 
@@ -29,16 +29,24 @@ sequenceDiagram
   T-->>B: createDeepLinkResponse: page that posts the signed JWT to the return URL
   B->>H: POST JWT to the host's route
   H->>P: readDeepLinkingResponse: the items and the data of the host
+  H->>P: ltiPlatformFrame(LtiStartProctoring), with the Assessment Control Service
+  B->>T: the same login and launch
+  T-->>B: createStartAssessmentPage: page that posts the signed JWT to the start assessment URL
+  B->>H: POST JWT to the host's route
+  H->>P: readStartAssessment: the attempt starts
+  T->>P: control: pause (handlePlatformRequest)
+  P->>H: AssessmentControl.control
 ```
 
 | File              | Holds                                                                                                                                     |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/platform.ts` | `createPlatform`: one handler for the platform's origin, with the route at the return URL of Deep Linking, and the frame of a message     |
-| `src/tool.ts`     | `createTool`: one handler for the tool's routes, which answers a Deep Linking request, and the grading of a launch through `createServiceClient` |
+| `src/platform.ts` | `createPlatform`: one handler for the platform's origin, with the routes at the return URL of Deep Linking and at the start assessment URL, and the frame of a message |
+| `src/tool.ts`     | `createTool`: one handler for the tool's routes, which answers a Deep Linking request and a Start Proctoring message, and the grading of a launch and the pause of an attempt through `createServiceClient` |
 | `src/network.ts`  | `connect`: a `fetch` that reaches the handler of an origin, and `plainRequest`                                                            |
 | `src/platform-setup.ts` | The platform's keys, its registration of the tool, its store of launches, its ledger of single-use identifiers and its gradebook   |
 | `src/gradebook.ts` | A `GradebookStore` in memory, which keeps a score unless a later one is kept                                                            |
 | `src/roster.ts`   | A `RosterStore`, a `GroupStore` and a `PreferencesStore` in memory, over one course                                                       |
+| `src/proctoring.ts` | An `AssessmentControl` in memory over the attempts of proctored assessments                                                             |
 | `src/tool-setup.ts` | The tool's registration of the platform, its store of logins and its key set cache                                                      |
 | `src/keys.ts`     | The keys that each side generates for itself: RS256 for the tool, ES256 and HMAC for the platform                                         |
 | `scenario.ts`     | `runScenario`: the steps of the browser, and what each side saw                                                                           |

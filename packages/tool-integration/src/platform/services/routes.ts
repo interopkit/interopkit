@@ -1,11 +1,12 @@
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
-import type { MessageServices } from "../../protocol/index.js";
 import { methodNotAllowed, serverError } from "../answers.js";
 import type { MessageInput } from "../messages/input.js";
+import type { ServiceClaims } from "../messages/write.js";
 import type { PlatformSettings } from "../options.js";
 import type { PlatformServices } from "../ports.js";
 import type { ToolRegistration } from "../registration.js";
 import { authorizeService } from "./access.js";
+import { CONTROL } from "./control.js";
 import { GRADES } from "./grades.js";
 import { GROUPS } from "./groups.js";
 import { ROSTER } from "./members.js";
@@ -23,7 +24,7 @@ interface BoundRoute {
 /** A service whose store the host gave. */
 interface BoundService {
   readonly scopes: readonly string[];
-  readonly claim: (request: ClaimRequest) => MessageServices;
+  readonly claim: (request: ClaimRequest) => ServiceClaims;
   readonly routes: readonly BoundRoute[];
 }
 
@@ -58,7 +59,13 @@ function listed<TName extends keyof PlatformServices>(service: Service<TName>): 
 }
 
 /** The services of the platform, one line each. */
-const SERVICES: readonly ListedService[] = [listed(GRADES), listed(ROSTER), listed(GROUPS), listed(PREFERENCES)];
+const SERVICES: readonly ListedService[] = [
+  listed(GRADES),
+  listed(ROSTER),
+  listed(GROUPS),
+  listed(PREFERENCES),
+  listed(CONTROL),
+];
 
 /** Returns the services whose store the host gave. */
 function boundServices(settings: PlatformSettings): BoundService[] {
@@ -78,7 +85,7 @@ export function serviceClaims(
   message: MessageInput,
   tool: ToolRegistration,
   settings: PlatformSettings,
-): MessageServices {
+): ServiceClaims {
   const claims = boundServices(settings).map((service) => {
     const granted = service.scopes.filter((scope) => tool.scopes.includes(scope));
     return service.claim({ message, granted, origin: settings.config.origin });
@@ -90,7 +97,7 @@ export function serviceClaims(
  * Returns the claims of the services that a message asks for, whichever stores the host gives, with no scope: what the rules
  * of the sender are checked against before the message is kept.
  */
-export function requestedClaims(message: MessageInput, origin: string): MessageServices {
+export function requestedClaims(message: MessageInput, origin: string): ServiceClaims {
   return Object.assign({}, ...SERVICES.map((service) => service.claim({ message, granted: [], origin })));
 }
 

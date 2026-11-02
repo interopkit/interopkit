@@ -8,14 +8,17 @@ validates the launch of every message type, with the versions, the message types
 host accepts, binds it to the deployment and the target of its login, refuses the platform's authentication error and a form
 above `maxFormBytes`, and verifies the LTI 1.1 migration claim with the host's secret. It signs with the `Signer` of each
 registration, serves its key set with every key of a rotation (`serveToolJwks`), answers a Deep Linking request with the page that posts
-the signed response (`createDeepLinkResponse`, which holds the items of the five types and of others to what the request accepts), and calls the Assignment and
+the signed response (`createDeepLinkResponse`, which holds the items of the five types and of others to what the request accepts),
+sends a proctored candidate back with the page that posts the signed Start Assessment message (`createStartAssessmentPage`, which
+returns the session data and holds the verified claims to the values that the platform sent), and calls the Assignment and
 Grade Services with `createServiceClient`: the line items of a context in pages, created, read, replaced and deleted, their
 results, and scores, with `advanceScoreTimestamp` for strictly later timestamps. It asks for the narrowest scope that a call
 needs, keeps one access token of `@interopkit/core/oauth` for each scope until it is about to expire, sends it only to the
 registration's service origins or to a public host, follows only `next` links of the same origin, and reads every answer within
 `maxBytes` and `maxTokens` into its model; the same client reads the members of a context or a resource link in pages, with
 their group enrollments, the message of the link and the link to the differences (Names and Role Provisioning 2.0), the groups
-and group sets of a context (Context Groups 1.0), and the record of a user for an activity (AfA PNP Connector 1.0). The platform role launches tools: `ltiPlatformLogin` keeps a message of five types (a resource link
+and group sets of a context (Context Groups 1.0), the record of a user for an activity (AfA PNP Connector 1.0), and the Assessment
+Control Service of a proctored attempt, whose request it reads back against Proctoring Services 5.1 before it sends it. The platform role launches tools: `ltiPlatformLogin` keeps a message of five types (a resource link
 launch, a submission review request, a Deep Linking request whose data seals its settings and the host's data, a Start Proctoring message whose session data
 seals the attempt, and an End Assessment message) in the host's `LaunchStore` for 300 seconds and starts the tool's login, and
 `handlePlatformRequest` answers every request to the platform's origin: the tool's authentication request, with the `id_token`
@@ -27,9 +30,14 @@ tool and its scopes checked again on every request, pages with `next` links, and
 keep the latest. The members of a context over a `RosterStore`, its groups and group sets over a `GroupStore` and the preferences records over a
 `PreferencesStore` are served and offered in the same way, each store checked as the gradebook is, and the platform shares only what a
 request asked for: the enrollments with `groups=true`, the message with a resource link, and the members of a record that `fields` names.
+The Assessment Control Service over an `AssessmentControl` is offered in a Start Proctoring message with the actions that the host
+names, and answers 404 for an attempt that the store does not give the tool or a user of another issuer.
 `readDeepLinkingResponse` reads the form that a tool posts to the return URL of a Deep Linking request: it verifies the
 tool's token as an assertion is verified, accepts its `nonce` once, opens the `data` that the request sealed with its settings and
-the host's own data, and holds the items, each read by its type, to those settings and to `maxContentItems`. It substitutes the variables of LTI
+the host's own data, and holds the items, each read by its type, to those settings and to `maxContentItems`.
+`readStartAssessment` reads the Start Assessment message that a proctoring tool posts in the same way, opens the session data that
+the Start Proctoring message sealed, holds the resource link and the attempt to it, and returns the subject that the host compares
+with its session. It substitutes the variables of LTI
 Core Appendix B that the message answers and those that the host resolves, signs the LTI 1.1 migration claim with a secret that
 it does not keep, opens what an earlier hint key sealed, and refuses an algorithm that the tool's registration does not list.
 `buildCapabilitiesScript` answers `lti.capabilities` on the host's frame page. Handlers take an `HttpRequest` and return

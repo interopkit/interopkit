@@ -1,5 +1,7 @@
 import type { CallOptions } from "@interopkit/core";
 import type {
+  ControlRequest,
+  ControlStatus,
   Group,
   GroupSet,
   LineItemInput,
@@ -299,6 +301,25 @@ export interface PreferencesStore {
   ): Promise<PreferencesRecord | undefined>;
 }
 
+/**
+ * The attempts of the platform behind the Assessment Control Service of Proctoring Services: what a proctoring tool asks of an
+ * attempt, such as to pause it, and the status of the attempt. The library checks the token, reads the request and answers 404 for
+ * a user of another issuer; the store decides whether the attempt is one that the caller proctors.
+ */
+export interface AssessmentControl {
+  /**
+   * Applies an action to the attempt that the request names, by its user, its resource link and its attempt number, and returns
+   * the status of the attempt after it (Proctoring Services 1.0 section 5). An action that the state of the attempt does not
+   * allow, or that the platform does not support, leaves the attempt as it is and answers its status, as section 5.1.4 says;
+   * `update` changes only the extra time and the reason, and so answers the status to a tool that polls. A request may come after
+   * the attempt has ended, to flag it.
+   *
+   * @returns The status, or `undefined` when there is no such attempt or the caller does not proctor it, which the route answers
+   * with 404.
+   */
+  control(caller: ServiceCaller, request: ControlRequest, options?: CallOptions): Promise<ControlStatus | undefined>;
+}
+
 /** The stores of the services of the platform. A service whose store is absent is neither offered in a claim nor routed. */
 export interface PlatformServices {
   /**
@@ -325,4 +346,10 @@ export interface PlatformServices {
    * @defaultValue none
    */
   readonly preferences?: PreferencesStore;
+  /**
+   * The attempts behind the Assessment Control Service of Proctoring Services.
+   *
+   * @defaultValue none
+   */
+  readonly control?: AssessmentControl;
 }

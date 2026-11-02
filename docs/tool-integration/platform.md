@@ -5,7 +5,7 @@
 `ltiPlatformLogin` keeps it in the host's `LaunchStore` and returns the URL of the tool's login; one handler,
 `handlePlatformRequest`, answers every request to the platform's origin: the tool's authentication request with the `id_token`
 of the kept message, the key set, the token requests, the storage page and the routes of the services whose stores the host
-gives ([grade services](grades.md), [roster services](roster.md)). It runs on a server or an edge runtime, signs with a
+gives ([grade services](grades.md), [roster services](roster.md), [proctoring](proctoring.md)). It runs on a server or an edge runtime, signs with a
 `Signer` of [`@interopkit/core`](../core/signer.md), and verifies the tools' tokens with [jose](https://github.com/panva/jose).
 
 ```mermaid
@@ -37,6 +37,7 @@ sequenceDiagram
 | `buildPlatformEndpoints(config)`           | Returns the URLs of the endpoints, which the tool's administrator registers with the tool                 |
 | `buildCapabilitiesScript(options)`         | Returns the inline script, with its CSP hash, that answers `lti.capabilities` on the host's frame page     |
 | `readDeepLinkingResponse(request, options)` | Reads and verifies the form that a tool posts to the return URL of a Deep Linking request ([Deep Linking](deep-linking.md)) |
+| `readStartAssessment(request, options)`    | Reads and verifies the form that a proctoring tool posts to the start assessment URL ([proctoring](proctoring.md)) |
 
 Handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md). The host owns the
 routes, the sessions and the stores: `check` confirms that a message is the caller's, `launches` keeps the messages, `once` records
@@ -139,6 +140,7 @@ refuses a tool whose `targetLinkUri`, login URL or redirect URIs are on any of t
 | Storage page  | `/storage`          | GET       |
 | Grade services | `/contexts/{context}/line-items`, and below it | With `services.gradebook`: see [grade services](grades.md) |
 | Roster services | `/contexts/{context}/memberships`, `/groups`, `/group-sets`, and `/ims/afapnp/v1p0/users/{user}/activities/{activity}/afapnprecords` | With `services.roster`, `groups` and `preferences`: see [roster services](roster.md) |
+| Assessment Control Service | `/assessment-control` | POST, with `services.control`: see [proctoring](proctoring.md) |
 
 A path that names nothing is 404, and a method that a route does not serve is 405 with `Allow`.
 
@@ -173,7 +175,7 @@ of the tool's), `targetLinkUri`, `user` (without a `subject` the launch is anony
 | `LtiResourceLinkRequest` | `resourceLink`                                                                                                                                               |
 | `LtiSubmissionReviewRequest` | `forUser`, and `resourceLink` when the line item has one; `services.grades.lineItemId` names the line item of the review, which needs `services.gradebook` |
 | `LtiDeepLinkingRequest`  | `settings`: the settings of DL 4.4.1, and the host's `data`, an object that the platform seals into the `data` claim with the settings for 86,400 seconds |
-| `LtiStartProctoring`     | `resourceLink`, `attemptNumber`, `startAssessmentUrl`, `proctoringSettings`; the platform seals the client, deployment, resource link, attempt and user into `session_data` for 3,600 seconds |
+| `LtiStartProctoring`     | `resourceLink`, `attemptNumber`, `startAssessmentUrl`, `proctoringSettings`; the platform seals the client, deployment, resource link, attempt and user into `session_data` for 3,600 seconds. `services.control`, which no other message may carry, offers the Assessment Control Service with its `actions` |
 | `LtiEndAssessment`       | `attemptNumber`, and `resourceLink`, `proctoringSettings`, `errorMessage`, `errorLog` when there are any                                                      |
 
 The login checks a message twice before it keeps it: its shape, and the rules of the sender that a tool does not enforce: the
@@ -282,14 +284,18 @@ cannot be fetched.
 
 ## The messages of tools
 
-A tool sends the platform a message the other way too: a Deep Linking response posted to the `deep_link_return_url` of a request. The
-route is the host's, and `readDeepLinkingResponse(request, options)` reads the form: it verifies the tool's token as `/token` does
+A tool sends the platform a message the other way too: a Deep Linking response posted to the `deep_link_return_url` of a request,
+and a Start Assessment message posted to the `start_assessment_url` of a Start Proctoring message. The route is the host's, and
+`readDeepLinkingResponse(request, options)` reads the form: it verifies the tool's token as `/token` does
 (the algorithms of the registration, the key set, the times, an expiry within 3,600 seconds), with the platform's issuer as the
 audience and as the authorized party when the token names one, and requires an `iat` and a `nonce`. The `nonce` is the
 single-use identifier here, recorded in `once` until the token stops verifying. The `data` claim of the response must be the data
 that the platform sealed into the request, for that tool and deployment and not expired. The [Deep Linking
 guide](deep-linking.md) has the checks and the options (`config`, `clock`, `client`, `jwks`, `once`, `maxFormBytes`, `maxTokens` and
-`maxContentItems`).
+`maxContentItems`). `readStartAssessment(request, options)` takes the same options and checks the token the same way; the
+`session_data` must be the data that the platform sealed into the Start Proctoring message, for that tool, deployment, resource link
+and attempt and not expired, and the host starts the attempt only when its own session is of the `subject` that it returns
+([proctoring](proctoring.md)).
 
 ## The frame page and the storage page
 
@@ -318,7 +324,7 @@ the origin that asked.
 | `checkLaunch(launch, options)`        | none                   | A last check of `{ clientId, deploymentId, principal }` before the message is taken      |
 | `substitution`                        | none                   | `names` and `resolve` of the variables the host resolves                                 |
 | `migrationSecret(consumerKey, options)` | none                 | The LTI 1.1 secret that signs the migration claim                                        |
-| `services`                            | none                   | The stores of the services: `gradebook` ([grade services](grades.md)), `roster`, `groups` and `preferences` ([roster services](roster.md)) |
+| `services`                            | none                   | The stores of the services: `gradebook` ([grade services](grades.md)), `roster`, `groups` and `preferences` ([roster services](roster.md)), `control` ([proctoring](proctoring.md)) |
 | `pageSize`                            | 100                    | The items of a page of a service when the request names no `limit`                       |
 | `maxPageSize`                         | 1,000                  | The most items of a page of a service                                                    |
 | `toolFrame`                           | `"lti-tool"`           | The frame of the tool that the storage page answers                                      |
@@ -357,7 +363,7 @@ in the registration needs no fetch.
 | `launches.take`          | 500; `undefined`: `login_required`                                        | `signal`; after `take` an abort fails closed and the tool starts again | Atomic: of two, one gets the message                    | Nothing                               |
 | `substitution.resolve`, `migrationSecret` | 500, nothing signed; the launch is spent                 | `signal`                                                           | Each launch                                                 | Read-only calls                       |
 | `config.keys.signer`     | 500, nothing half-signed                                                  | `signal`                                                           | ECDSA signatures differ between calls; both verify          | Nothing                               |
-| `once`                   | 500, no token; `readDeepLinkingResponse` rejects with its error          | `signal`                                                           | `false`: `invalid_client` for a replayed assertion, `nonce-replayed` for a replayed response | Nothing |
+| `once`                   | 500, no token; `readDeepLinkingResponse` and `readStartAssessment` reject with its error | `signal`                                             | `false`: `invalid_client` for a replayed assertion, `nonce-replayed` for a replayed message | Nothing |
 
 A port that answers with something other than its contract (a registration that is not one, a message of another launch, a
 `checkLaunch` or `once` that does not give a boolean, a variable that is not a string) is a `DataError` that the handler throws.
@@ -373,6 +379,7 @@ A port that answers with something other than its contract (a registration that 
 | `/token`, after `once`                                       | Rejects with `signal.reason`; the assertion is spent, so the tool asks again  |
 | `readDeepLinkingResponse`, before `once`                     | Rejects with `signal.reason`; the response is unspent                         |
 | `readDeepLinkingResponse`, after `once`                      | Rejects with `signal.reason`; the response is spent, so the tool sends a new one |
+| `readStartAssessment`, before and after `once`               | As `readDeepLinkingResponse`: a spent message is sent again with a new nonce  |
 
 ## Errors
 
@@ -381,6 +388,7 @@ A port that answers with something other than its contract (a registration that 
 | `LtiError` `tool-unknown`, `deployment-unknown`         | `ltiPlatformLogin`: the tool or its deployment is not the platform's                  | Register the tool, or launch one of its deployments               |
 | `LtiError` `origin-refused`                             | `ltiPlatformLogin`: the target or the tool is on an origin of the platform            | Move the tool, or the platform's handler, to another origin       |
 | `LtiError` of `readDeepLinkingResponse`                 | A response fails a check: see [Deep Linking](deep-linking.md)                         | Answer with its `status`                                          |
+| `LtiError` of `readStartAssessment`                     | A Start Assessment message fails a check: see [proctoring](proctoring.md)             | Answer with its `status`                                          |
 | `DataError`                                             | An argument, a message, a request or an option has the wrong shape, or a port broke its contract | Fix the caller or the port                              |
 | The error of a port                                     | `check`, `registration` or `launches.put` rejected during the login                  | The host's                                                        |
 
@@ -397,6 +405,8 @@ signal.
 | The hints, access tokens, session data, Deep Linking data    | Sealed with the hint key      | The tool, which can read them; the host's `data` holds no secret and no personal data | No |
 | The Deep Linking response: items, titles, texts, addresses   | The tool, in a form the browser posts | The host, from `readDeepLinkingResponse`                | No                  |
 | The members of a context, their groups, the needs of a user  | The host's `RosterStore`, `GroupStore`, `PreferencesStore` | The tool, for the tool's token, as the store gives them | No      |
+| A control request: the candidate, the attempt, the incident  | The proctoring tool           | The host's `AssessmentControl`                                | No                  |
+| The verified claims of a candidate                           | The proctoring tool, in a form the browser posts | The host, from `readStartAssessment`              | No                  |
 | The nonce of a message of a tool                             | The tool                      | The host's `once`                                             | No                  |
 
 ## Differences from the references
@@ -409,6 +419,5 @@ package. Where a specification disagrees with an example, see [spec-gaps](spec-g
 
 | What                                                                                         | Reason                                                       |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| The Assessment Control Service, Dynamic Registration | Not yet: see [supported](supported.md) |
-| The reader of the Start Assessment message                                                   | Not yet: see [supported](supported.md)                       |
+| Dynamic Registration                                                                         | Not yet: see [supported](supported.md)                       |
 | Sessions, routes beyond the handler, a database, the page that frames the tool, a picker     | The host's                                                   |

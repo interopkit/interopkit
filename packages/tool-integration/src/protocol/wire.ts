@@ -1,7 +1,7 @@
 /**
  * What the tool role and the platform role must spell the same, because each is the other's counterpart: the media types and
- * the path of the grade services (LTI AGS 2.0), and the grant and the assertion type of the token endpoint (RFC 6749 section
- * 4.4, RFC 7523 section 2.2).
+ * the paths of the services, and the grant and the assertion type of the token endpoint (RFC 6749 section 4.4, RFC 7523 section
+ * 2.2).
  */
 
 /** The media type of a score (LTI AGS 2.0 section 3.4.1). */
@@ -22,6 +22,8 @@ export const GROUP_SET_CONTAINER_MEDIA_TYPE = "application/vnd.ims.lti-gs.v1.con
 export const PREFERENCES_MEDIA_TYPE = "application/json";
 /** The path below the host of the claim at which the paths of the AfA PNP Connector lie (AfA PNP Connector 1.0, overview). */
 export const PREFERENCES_BASE_PATH = "/ims/afapnp/v1p0";
+/** The media type of a request to the Assessment Control Service and of its answer (Proctoring Services 1.0 section 5). */
+export const CONTROL_MEDIA_TYPE = "application/vnd.ims.lti-ap.v1.control+json";
 /** The path that follows a line item URL to make the URL of its scores (LTI AGS 2.0 section 3.4). */
 export const SCORES_SUFFIX = "/scores";
 /** The path that follows a line item URL to make the URL of its results (LTI AGS 2.0 section 3.3). */

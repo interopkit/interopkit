@@ -2,8 +2,8 @@ import { type CallOptions, callPort, DataError } from "@interopkit/core";
 import { nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import * as v from "valibot";
-import type { MessageServices } from "../../protocol/index.js";
 import type { MessageInput } from "../messages/input.js";
+import type { ServiceClaims } from "../messages/write.js";
 import type { PlatformSettings } from "../options.js";
 import type { PlatformServices, ServiceCaller, StorePage } from "../ports.js";
 
@@ -58,8 +58,8 @@ export interface Service<TName extends keyof PlatformServices> {
   readonly store: TName;
   /** Every scope of the service, which the token endpoint grants when the registration does. */
   readonly scopes: readonly string[];
-  /** Writes the claim of the service into the services of a message, or nothing when the message does not ask for it. */
-  readonly claim: (request: ClaimRequest) => MessageServices;
+  /** Writes the claim of the service into the claims of a message, or nothing when the message does not ask for it. */
+  readonly claim: (request: ClaimRequest) => ServiceClaims;
   /** The routes. */
   readonly routes: readonly ServiceRoute<NonNullable<PlatformServices[TName]>>[];
 }

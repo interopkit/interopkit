@@ -76,6 +76,15 @@ const accessSchema = v.object({
   exp: NUMBER,
 });
 
+const sessionDataSchema = v.object({
+  client: STRING,
+  deployment: STRING,
+  resourceLink: STRING,
+  attempt: NUMBER,
+  subject: v.optional(IDENTIFIER),
+  exp: NUMBER,
+});
+
 const deepLinkingDataSchema = v.object({
   client: STRING,
   deployment: STRING,
@@ -122,6 +131,13 @@ export async function openAccess(token: string, keys: readonly CryptoKey[]): Pro
 /** Seals the session data of a Start Proctoring message (Proctoring Services 1.0 section 4.2.2.5). */
 export function sealSessionData(session: SessionData, key: CryptoKey): Promise<string> {
   return sealToken("session-data", { ...session }, key);
+}
+
+/** Opens the session data of a Start Proctoring message, or returns `undefined` when it is not session data that this platform sealed. */
+export async function openSessionData(token: string, keys: readonly CryptoKey[]): Promise<SessionData | undefined> {
+  const claims = await openToken(token, "session-data", keys);
+  const parsed = v.safeParse(sessionDataSchema, claims);
+  return parsed.success ? parsed.output : undefined;
 }
 
 /** Seals the data of a Deep Linking request (Deep Linking 2.0 section 4.4.1), which the tool's response returns. */

@@ -13,6 +13,7 @@ import {
 } from "@interopkit/tool-integration/platform";
 import { createGradebook, type Gradebook } from "./gradebook.ts";
 import { generateHintKey, generatePlatformKeys } from "./keys.ts";
+import { type Attempts, createAttempts } from "./proctoring.ts";
 import { courseOf, createRosterStores } from "./roster.ts";
 
 /** What the platform knows of the tool: the tool's side of the registration. */
@@ -42,10 +43,14 @@ export interface PlatformSetup {
   readonly toolMessage: ToolMessageOptions;
   /** The gradebook behind the grade services. */
   readonly gradebook: Gradebook;
+  /** The attempts of proctored assessments behind the Assessment Control Service. */
+  readonly attempts: Attempts;
 }
 
 /** The path of the platform's route that reads the response of a Deep Linking request, on the platform's origin. */
 export const DEEP_LINKING_PATH = "/deep-linking";
+/** The path of the platform's route that reads the Start Assessment message of a proctoring tool, on the platform's origin. */
+export const START_ASSESSMENT_PATH = "/proctoring/start";
 
 /** The launches in progress, in memory: a real host keeps them where every process can reach them, for 300 seconds. */
 function launchStore(): LaunchStore {
@@ -77,7 +82,7 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
     redirectUris: [side.redirectUri],
     keys: new Map([[side.keyId, side.publicKey]]),
     // The tool may read the line items and the results, and post scores; it may not change the line items. It may read the
-    // members of the course, its groups and the record of needs of a user.
+    // members of the course, its groups and the record of needs of a user, and control the attempts that it proctors.
     scopes: [
       SCOPES.lineitemReadonly,
       SCOPES.resultReadonly,
@@ -85,6 +90,7 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
       SCOPES.contextMembershipReadonly,
       SCOPES.contextGroupReadonly,
       SCOPES.preferencesRecordReadonly,
+      SCOPES.assessmentControl,
     ],
   };
   const tools = async (clientId: string) => (clientId === registration.clientId ? registration : undefined);
@@ -98,6 +104,7 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
   const launches = launchStore();
   const gradebook = createGradebook();
   const { roster, groups, preferences } = createRosterStores(courseOf(side.clientId));
+  const attempts = createAttempts();
   // The tool gave its key, so the platform never fetches a key set of the tool.
   const jwks = createJwksCache({ fetch: () => Promise.reject(new Error("The tool gave its key.")) });
   return {
@@ -109,10 +116,11 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
       launches,
       once,
       jwks,
-      services: { gradebook: gradebook.store, roster, groups, preferences },
+      services: { gradebook: gradebook.store, roster, groups, preferences, control: attempts.store },
     },
     toolMessage: { config, clock, client: tools, jwks, once },
     endpoints: buildPlatformEndpoints(config),
     gradebook,
+    attempts,
   };
 }

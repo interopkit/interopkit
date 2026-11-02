@@ -37,7 +37,8 @@ sequenceDiagram
 | `ltiLaunch(request, options)`                 | Validates the `id_token` and returns the launch, or the verification page of the storage path |
 | `serveToolJwks(request, keys, options)`       | Answers the request for the tool's key set: the public keys of its `KeySet`                   |
 | `createDeepLinkResponse(launch, response, options)` | Checks the items, signs the response to a Deep Linking request and returns the page that posts it ([Deep Linking](deep-linking.md)) |
-| `createServiceClient(deployment, options)`    | Returns the client of the services of a platform: grades ([grade services](grades.md)), members, groups and preferences ([roster services](roster.md)) |
+| `createStartAssessmentPage(launch, input, options)` | Signs the Start Assessment message of a proctored attempt and returns the page that posts it ([proctoring](proctoring.md)) |
+| `createServiceClient(deployment, options)`    | Returns the client of the services of a platform: grades ([grade services](grades.md)), members, groups and preferences ([roster services](roster.md)), and the control of an attempt ([proctoring](proctoring.md)) |
 | `advanceScoreTimestamp(lastSent, now)`        | Returns a timestamp of a score strictly later than the last one sent                          |
 | `createJwksCache(options)`                    | Creates the cache of the platforms' key sets that `ltiLaunch` verifies signatures with        |
 
@@ -268,6 +269,14 @@ response, options)`: the items are checked against what the request accepts, the
 `signer`, and the result is the page that posts it to `launch.settings.returnUrl`, also when no item was chosen (Deep Linking 2.0
 section 2.3). The [Deep Linking guide](deep-linking.md) has the five item types, the checks and the platform's reader.
 
+## Proctoring
+
+When `ltiLaunch` returns a Start Proctoring message, the proctoring tool checks the candidate and the room, then sends the browser
+back with `createStartAssessmentPage(launch, input, options)`: the page posts the signed Start Assessment message, which returns the
+session data, the resource link and the attempt of the launch, to `launch.startAssessmentUrl`. During and after the attempt the tool
+calls the Assessment Control Service of `launch.assessmentControl` with `control` of `createServiceClient`. The
+[proctoring guide](proctoring.md) has the verified claims, the actions and the platform's side.
+
 ## The tool's key set
 
 The platform verifies the tool's client assertions and Deep Linking responses with the tool's public keys. `serveToolJwks(request,
@@ -301,7 +310,7 @@ The client of the services, `createServiceClient`, asks the platform for access 
 `iss` and `sub` the client identifier, `aud` the token endpoint (or the `audience` of the registration), `iat`, `exp` (300
 seconds later), a new `jti`, and the deployment claim (LTI 1.3 Core section 6.2.1). It keeps a token for each scope until it
 is about to expire, and sends it only to the registration's `serviceOrigins`, or to an `https` URL that names a public host. The
-[grade services](grades.md) guide has the methods, the options, the timestamps of scores and the errors; the [roster services](roster.md) guide has the members, the groups and the preferences record.
+[grade services](grades.md) guide has the methods, the options, the timestamps of scores and the errors; the [roster services](roster.md) guide has the members, the groups and the preferences record; the [proctoring](proctoring.md) guide has the Assessment Control Service.
 
 ## The key set cache
 
@@ -447,5 +456,5 @@ an example disagree.
 | What                                                                                                            | Reason                                                                       |
 | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | LTI 1.0 to 1.2, Basic Outcomes                                                                                  | 1EdTech retired them; a launch of that form is refused                       |
-| Names and Role Provisioning, Dynamic Registration, Submission Review, Proctoring, Context Groups                | See [supported](supported.md)                                                |
+| Dynamic Registration                                                                                            | See [supported](supported.md)                                                |
 | Sessions, routes, a database, a UI for Deep Linking                                                             | The host's                                                                   |
