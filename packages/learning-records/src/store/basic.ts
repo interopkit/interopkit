@@ -30,7 +30,10 @@ export function readBasicAuthorization(request: Pick<HttpRequest, "headers">): B
   if (credentials === undefined) return undefined;
   let text: string;
   try {
-    text = decoder.decode(Uint8Array.from(atob(credentials), (character) => character.charCodeAt(0)));
+    const binary = atob(credentials);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    text = decoder.decode(bytes);
   } catch {
     return undefined;
   }

@@ -113,6 +113,11 @@ describe("the parameters of a query and a form", () => {
         ["state", "b"],
       ],
     );
+    expect([...readForm(post("application/x-www-form-urlencoded", "a=b+c&d=e%2Bf&g%2B=+"))]).toStrictEqual([
+      ["a", "b c"],
+      ["d", "e+f"],
+      ["g+", " "],
+    ]);
     expect(() => readForm(post("application/json", "{}"))).toThrow(
       'The content type of the request must be application/x-www-form-urlencoded, found "application/json".',
     );

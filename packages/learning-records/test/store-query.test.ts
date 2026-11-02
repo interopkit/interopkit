@@ -286,6 +286,11 @@ describe("matchesStatementQuery: a long chain of references", () => {
 });
 
 describe("readBasicAuthorization", () => {
+  it("reads a header of many megabytes without a copy for each byte", () => {
+    const value = btoa(`user:${"p".repeat(3_000_000)}`);
+    expect(readBasicAuthorization({ headers: { authorization: `Basic ${value}` } })?.password).toHaveLength(3_000_000);
+  });
+
   const headerOf = (credentials: string) => ({ headers: { authorization: `Basic ${btoa(credentials)}` } });
 
   it("reads the user and the password", () => {

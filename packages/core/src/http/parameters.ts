@@ -40,5 +40,6 @@ export function readForm(request: HttpRequest): ReadonlyMap<string, string> {
   if (type !== FORM_TYPE) {
     throw new DataError(`The content type of the request must be ${FORM_TYPE}, found ${describe(type)}.`);
   }
-  return collect(new URLSearchParams(readText(request)), "The form of the request");
+  // URLSearchParams joins a string of ropes, a node of 40 bytes for each `+` in Node.js, where `%20` costs nothing of the kind.
+  return collect(new URLSearchParams(readText(request).replaceAll("+", "%20")), "The form of the request");
 }
