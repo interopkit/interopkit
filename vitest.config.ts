@@ -256,6 +256,17 @@ export default defineConfig({
         },
       },
       {
+        // The credentials of the example through the public validator of 1EdTech in a container: `pnpm validator` builds it,
+        // starts it and runs them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "example-achievement-credentials-validator",
+          include: ["examples/achievement-credentials/test/validator.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
+        },
+      },
+      {
         // The ministry and the school platform: the scenario and the tests of the example run against the sources.
         resolve: { alias: SOURCES },
         test: {

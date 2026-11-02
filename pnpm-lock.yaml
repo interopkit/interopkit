@@ -223,6 +223,9 @@ importers:
 
   compat:
     devDependencies:
+      '@interopkit/achievement-credentials':
+        specifier: workspace:^
+        version: link:../packages/achievement-credentials
       '@interopkit/core':
         specifier: workspace:^
         version: link:../packages/core

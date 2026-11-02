@@ -28,19 +28,30 @@ const SIZE_OVER_LIMIT = 70_000;
 
 type Results = Readonly<Record<string, unknown>>;
 
-/** Bundles the entries into one file each, which every runtime then runs as it is: the packages as they ship, no more. */
+/** The options that both bundles share: one ES module, and the examples start themselves when they are the main module. */
+const SHARED = {
+  outdir: DIST,
+  bundle: true,
+  format: "esm",
+  target: "es2022",
+  define: { "import.meta.main": "false" },
+  logLevel: "warning",
+} as const;
+
+/**
+ * Bundles the entries into one file each, which every runtime then runs as it is: the packages as they ship, no more. The
+ * libraries of Data Integrity ship a build for Node.js and a build for browsers. Node.js, Deno and Bun run the first, whose
+ * `node:` modules they all provide. A Worker has no `node:crypto`, so workerd runs the second, which uses Web Crypto alone.
+ */
 async function bundle(): Promise<void> {
   await build({
-    entryPoints: { run: join(import.meta.dirname, "run.ts"), worker: join(import.meta.dirname, "worker.ts") },
-    outdir: DIST,
-    bundle: true,
-    format: "esm",
-    platform: "neutral",
-    target: "es2022",
-    // The examples start themselves when they are the main module, and the bundle is.
-    define: { "import.meta.main": "false" },
-    logLevel: "warning",
+    ...SHARED,
+    entryPoints: { run: join(import.meta.dirname, "run.ts") },
+    platform: "node",
+    // A library of CommonJS that requires a module of Node.js needs a `require` in a module of ES.
+    banner: { js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' },
   });
+  await build({ ...SHARED, entryPoints: { worker: join(import.meta.dirname, "worker.ts") }, platform: "browser" });
 }
 
 /** Starts the server of the check: it answers the paths that the checks of the service call ask for. */
@@ -176,7 +187,8 @@ const RUNTIMES: Readonly<Record<string, Runtime>> = {
   },
   deno: {
     version: async () => (await execute("deno", ["--version"])).split("\n")[0]?.trim() ?? "deno",
-    run: (base) => fromCommand("deno", ["run", `--allow-net=${new URL(base).host}`, script, base]),
+    // The Node.js build of the JSON-LD libraries loads undici, which reads environment variables when it loads.
+    run: (base) => fromCommand("deno", ["run", "--allow-env", `--allow-net=${new URL(base).host}`, script, base]),
   },
   bun: {
     version: async () => `bun ${(await execute("bun", ["--version"])).trim()}`,

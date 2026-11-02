@@ -1,4 +1,5 @@
 import { callService, type Fetch, ServiceError } from "@interopkit/core";
+import { runScenario as runCredentials } from "../examples/achievement-credentials/scenario.ts";
 import { runScenario as runFrameworks } from "../examples/competency-frameworks/scenario.ts";
 import { runScenario as runAnalytics } from "../examples/learning-analytics/scenario.ts";
 import { runScenario as runRecords } from "../examples/learning-records/scenario.ts";
@@ -10,6 +11,8 @@ export interface Results {
   readonly analytics: readonly { readonly status: number; readonly events: readonly string[] }[];
   /** The platform and the tool of the tool-integration example, as the example reports them. */
   readonly tool: Awaited<ReturnType<typeof runTool>>;
+  /** The university, the wallet, the employer, the guild and the VC-API service of the credentials example, as the example reports them. */
+  readonly credentials: Awaited<ReturnType<typeof runCredentials>>;
   /** The ministry and the school platform of the CASE example, as the example reports them. */
   readonly frameworks: Awaited<ReturnType<typeof runFrameworks>>;
   /** The campus LRS, its platform and its dashboard of the xAPI example, as the example reports them. */
@@ -72,6 +75,7 @@ export async function runAll(base: string): Promise<Results> {
       events: (JSON.parse(body).data as readonly { readonly id: string }[]).map((event) => event.id),
     })),
     tool: await runTool(),
+    credentials: await runCredentials(),
     frameworks: await runFrameworks(),
     records: await runRecords(),
     service: await serviceChecks(base),
