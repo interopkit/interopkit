@@ -1,0 +1,60 @@
+{
+  "name": "@interopkit/course-launch",
+  "version": "0.0.0",
+  "description": "ADL cmi5 course launch: the course structure and its reader, validator and writer, course packages in ZIP or XML, the rules of the statements of a session, an LMS role and an assignable unit runtime.",
+  "keywords": [
+    "interopkit",
+    "course-launch",
+    "cmi5",
+    "xapi",
+    "course-structure",
+    "assignable-unit"
+  ],
+  "author": "Fariz Wakan",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/interopkit/interopkit.git",
+    "directory": "packages/course-launch"
+  },
+  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/course-launch#readme",
+  "bugs": "https://github.com/interopkit/interopkit/issues",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package": {
+      "types": "./dist/package/index.d.ts",
+      "default": "./dist/package/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "node --eval \"for (const path of ['dist', 'tsconfig.build.tsbuildinfo']) fs.rmSync(path, { recursive: true, force: true })\"",
+    "build": "pnpm clean && tsc -b tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:packages": "pnpm build && publint --pack pnpm --strict && attw --pack . --profile esm-only"
+  },
+  "devDependencies": {
+    "fast-check": "^4.10.2"
+  },
+  "dependencies": {
+    "@interopkit/core": "workspace:^",
+    "@zip.js/zip.js": "2.24.0",
+    "saxes": "6.0.0",
+    "valibot": "1.5.0"
+  }
+}

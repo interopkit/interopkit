@@ -9,7 +9,8 @@
     "packages/competency-frameworks",
     "packages/learning-records",
     "packages/selective-disclosure",
-    "packages/achievement-credentials"
+    "packages/achievement-credentials",
+    "packages/course-launch"
   ],
   "readme": "README.md",
   "out": "docs/api",

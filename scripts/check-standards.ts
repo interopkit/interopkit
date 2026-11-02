@@ -24,7 +24,7 @@ const FOREIGN_SCOPES = ["@assesskit/", "@measurekit/"];
 /** Where the foreign scopes are allowed: an example adapts one family to the other. */
 const FOREIGN_ALLOWED = /^examples\//;
 /** Names of the specifications that interopkit implements, which no package, folder or brand may carry. */
-const SPECIFICATION_NAMES = new Set(["lti", "caliper"]);
+const SPECIFICATION_NAMES = new Set(["lti", "caliper", "cmi5"]);
 /** File names, without extension, that say nothing about the concept they hold. */
 const VAGUE_FILE_NAMES = new Set(["utils", "util", "helpers", "helper", "misc"]);
 

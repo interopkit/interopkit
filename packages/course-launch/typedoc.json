@@ -1,0 +1,15 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/package/index.ts"],
+  "tsconfig": "tsconfig.build.json",
+  "sourceLinkTemplate": "https://github.com/interopkit/interopkit/blob/{gitRevision}/packages/course-launch/{path}#L{line}",
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": true
+  },
+  "readme": "README.md",
+  "excludePrivate": true,
+  "projectDocuments": ["../../docs/course-launch/*.md"],
+  "treatWarningsAsErrors": true
+}

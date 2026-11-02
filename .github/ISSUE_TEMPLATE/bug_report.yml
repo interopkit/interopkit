@@ -18,6 +18,7 @@ body:
         - "@interopkit/competency-frameworks"
         - "@interopkit/learning-records"
         - "@interopkit/selective-disclosure"
+        - "@interopkit/course-launch"
     validations:
       required: true
   - type: input

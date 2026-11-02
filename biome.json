@@ -1654,6 +1654,46 @@
       }
     },
     {
+      "includes": ["packages/course-launch/src/model/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/structure", "**/structure/**", "**/package", "**/package/**"],
+                    "message": "model/ holds the vocabularies and the types of cmi5 and imports no module that builds on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/course-launch/src/structure/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/package", "**/package/**", "@zip.js/zip.js", "@zip.js/zip.js/**"],
+                    "message": "structure/ builds on model/ and @interopkit/core only: a host that reads a structure from elsewhere never loads the ZIP code."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": [
         "packages/competency-frameworks/src/model/**",
         "packages/competency-frameworks/src/provider/handle-request.ts",

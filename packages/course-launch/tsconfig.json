@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "paths": {
+      "@interopkit/core": ["../core/src/index.ts"],
+      "@interopkit/core/checks": ["../core/src/checks.ts"],
+      "@interopkit/course-launch": ["./src/index.ts"],
+      "@interopkit/course-launch/package": ["./src/package/index.ts"]
+    }
+  },
+  "include": ["src", "test"]
+}

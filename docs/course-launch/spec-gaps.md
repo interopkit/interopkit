@@ -1,0 +1,43 @@
+# Gaps in the specification
+
+Where the text of cmi5, its schema, libxml2, the player of CATAPULT and its list of requirements differ, or say nothing, the
+package follows the rule below and a test pins the choice. The text and the schema are those of `AICC/CMI-5_Spec_Current` at
+`0ff5b30`, and CATAPULT is `adlnet/CATAPULT` at `806c0ba`, both of which `pnpm corpus` downloads.
+
+```mermaid
+flowchart LR
+  text["The text of cmi5"] --> gap{"Silent, or the text, the schema,<br/>libxml2 and CATAPULT differ?"}
+  gap -->|"no"| follow["The code follows the text"]
+  gap -->|"yes"| rule["The code follows the rule below;<br/>this page records the difference;<br/>a test reads the case"]
+```
+
+## The course structure
+
+| Case                                                       | The sources                                                                                                                         | The package                                                                                                                                          |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| An `id`, `idref` or `activityType` that is not fully qualified | The text asks every IRI to be fully qualified (3.0) and types `activityType` as an IRI (13.1.4); the schema types them `xs:anyURI` and `xs:string`, which libxml2 takes with spaces or no scheme | Refused (`iri`); CATAPULT refuses the ids too (LMS suite 201)                                                                       |
+| Two members of one kind with one id                        | The text asks each id to be unique "within the course structure"; the schema says nothing; CATAPULT compares blocks, objectives and assignable units each among their own kind | Each kind apart, as CATAPULT does (`duplicate-id`); a block and an assignable unit may share an id                       |
+| An objective reference without `idref`, or one that names no objective | The schema leaves `idref` optional; CATAPULT refuses a reference to an objective that the structure does not declare | Both refused (`missing-attribute`, `objective-reference`)                                                                      |
+| Elements or attributes in `launchParameters` and `entitlementKey` | The schema leaves both untyped (`xs:anyType`), so libxml2 takes even a `<au>` of cmi5 there; the text types both as strings (13.1.4) | Refused (`unexpected-element`, `unexpected-attribute`)                                                                          |
+| A DOCTYPE                                                  | XML allows one, and libxml2 takes it                                                                                                | Refused (`doctype`), so that no entity is declared or expanded                                                                                      |
+| A `masteryScore` of more than 4 decimal places             | The text gives it "up to 4 decimal places of precision"; the schema types it `xs:decimal` from 0 to 1, which libxml2 takes with any number of places | Refused (`mastery-score`) when more than 4 places are not trailing zeros: `0.80000` is 0.8                                      |
+| White space around `moveOn` and `launchMethod`             | The text asks the LMS to remove the white space around every value (13.1); the schema types both as enumerations of `xs:string`, which keep it, and libxml2 refuses ` Passed ` | Compared as written, as the schema does: ` Passed ` is refused (`enumeration`). Every other value is trimmed                     |
+| The characters of the url of an assignable unit            | The text asks for RFC 1738 (13.1.4), which calls `~`, space, `{`, `}`, `\|`, `\`, `^`, `[`, `]` and `` ` `` unsafe and puts `#` outside the URL; CATAPULT parses the url with `URL`, which encodes a space silently | The characters of RFC 1738 on the text as written (`url-characters`), and one fragment after `#` in the same characters        |
+| The scheme of the url                                      | The text allows an "application specific protocol" followed by `://` (13.1.4)                                                       | `https` and `http` unless the host names others in `launchSchemes`; a scheme always followed by `//`, so that `javascript://%0a...` is refused         |
+| A `langstring` or an `objective` after an extension in a title, a description or a list of objectives | The sequence of the schema puts the extensions last; libxml2 takes the element where a particle that may repeat precedes the wildcard, and refuses it everywhere else | Refused (`unexpected-element`), as the schema says                                                                  |
+| White space in an objective reference                      | The schema gives the element empty content, and libxml2 refuses even white space in it                                              | Refused (`unexpected-text`), as libxml2 does                                                                                 |
+| Extensions of a title, a description or a list of objectives, and attributes of other namespaces | The schema allows them; the text names extensions as elements and lets an LMS ignore them (13.1.5)                 | Checked and dropped: the model keeps the extensions of the structure, the course, blocks and assignable units                  |
+
+## The course package
+
+| Case                                                        | The sources                                                                                                          | The package                                                                                                    |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| An absolute URL in a ZIP package                            | The current text says an entry point in the package SHOULD be named by a relative URL (14.1); `requirements.json` lists it as a MUST (14.1.0.0-3) | Taken: undecidable, since an absolute URL may name anything                                                   |
+| How a relative URL names a file                             | The text says nothing; CATAPULT looks up the text before `?`                                                         | The path without its query and fragment, its escapes decoded and its `.` and `..` resolved, as a browser reads it |
+| Links, encrypted entries, names that fold to one, data around the archive | The APPNOTE allows each; CATAPULT's `node-stream-zip` takes them                                      | Refused: an extractor could serve another file than the one judged                                             |
+
+## The list of requirements
+
+`requirements.json` of CATAPULT dates from 2021 and lags the text in places: its ids of 13.2 follow an older numbering, and
+14.1.0.0-3 is a MUST where the text says SHOULD. The map of `scripts/cmi5-requirements.ts` keeps the ids of the list and
+follows the text.

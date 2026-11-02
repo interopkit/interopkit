@@ -207,6 +207,7 @@ describe("package names", () => {
       "packages/lti-tool/test/a.test.ts": "",
       "docs/caliper/guide.md": "",
       "examples/lti/README.md": "",
+      "docs/cmi5-player/guide.md": "",
       "packages/core/package.json": '{ "name": "@interopkit/lti" }',
       "packages/tool-integration/package.json": '{ "name": "@interopkit/tool-integration" }',
       "packages/tool-integration/src/lti-launch.ts": "",
@@ -215,6 +216,7 @@ describe("package names", () => {
       "packages/lti-tool",
       "docs/caliper",
       "examples/lti",
+      "docs/cmi5-player",
       "packages/core/package.json",
     ]);
   });

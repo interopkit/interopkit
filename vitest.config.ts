@@ -57,6 +57,7 @@ export default defineConfig({
       nodeProject("learning-records"),
       nodeProject("learning-analytics"),
       nodeProject("selective-disclosure"),
+      nodeProject("course-launch"),
       {
         // The tests that read the files `pnpm schemas`, `pnpm corpus` and `pnpm caliper-tables` download. `pnpm test` leaves them
         // out and `pnpm test:corpus` runs them.
@@ -118,6 +119,25 @@ export default defineConfig({
         test: {
           name: "learning-records-corpus",
           include: ["packages/learning-records/test/**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The tests that read the repositories that `pnpm corpus` downloads: CATAPULT's course examples and packages, compared
+        // with libxml2 and the schema of cmi5.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "course-launch-corpus",
+          include: ["packages/course-launch/test/**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The examples, the schema and the requirements of cmi5, in the repositories that `pnpm corpus` downloads.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "course-launch-spec",
+          include: ["packages/course-launch/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
         },
       },
@@ -493,6 +513,7 @@ export default defineConfig({
         "packages/learning-analytics/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/learning-records/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/selective-disclosure/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
+        "packages/course-launch/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
         "packages/tool-integration/src/**": { statements: 98, branches: 95, functions: 100, lines: 99 },
       },
     },

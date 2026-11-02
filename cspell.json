@@ -269,6 +269,17 @@
     "logintoken",
     "startltiadvregistration",
     "toolurl",
-    "reqs"
+    "reqs",
+    "AICC",
+    "APPNOTE",
+    "formedness",
+    "idref",
+    "langstring",
+    "langstrings",
+    "mebibyte",
+    "xmldecl",
+    "activityid",
+    "dotdot",
+    "vbscript"
   ]
 }

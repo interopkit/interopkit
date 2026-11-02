@@ -3,7 +3,8 @@
 TypeScript packages for learning-platform interoperability: the launches, grades and other messages that pass between a
 learning platform and a tool (LTI 1.3), the learning analytics events that a system reports (Caliper Analytics 1.2), the
 competency frameworks that a provider publishes (CASE 1.1), the learning records that a system keeps (xAPI 2.0 and 1.0.3), the achievement credentials that an issuer awards (Open Badges
-3.0 and CLR 2.0), and the credentials that a holder shows in part (the `ecdsa-sd-2023` cryptosuite). The packages know
+3.0 and CLR 2.0), the credentials that a holder shows in part (the `ecdsa-sd-2023` cryptosuite), and the courses that a
+learning platform imports and launches (cmi5). The packages know
 nothing of QTI or of any product. A host passes in its storage, its `fetch`
 and its clock.
 
@@ -20,12 +21,14 @@ flowchart LR
     records["@interopkit/learning-records<br/>xAPI model, readers"]
     disclosure["@interopkit/selective-disclosure<br/>ecdsa-sd-2023"]
     credentials["@interopkit/achievement-credentials<br/>Open Badges and CLR model, readers, builders"]
+    courses["@interopkit/course-launch<br/>cmi5 course structure, packages"]
     tool --> core
     analytics --> core
     frameworks --> core
     records --> core
     disclosure --> core
     credentials --> core
+    courses --> core
   end
   platform["A learning platform<br/>or a tool"]
   endpoint["A Caliper endpoint"]
@@ -35,6 +38,7 @@ flowchart LR
   host --> records
   host --> disclosure
   host --> credentials
+  host --> courses
   tool <-->|"launches, grades"| platform
   analytics -->|"events"| endpoint
 ```
@@ -48,6 +52,7 @@ flowchart LR
 | [`@interopkit/learning-records`](packages/learning-records/README.md)               | xAPI 2.0 and 1.0.3: the model of a Statement, readers that check it against the rules of an LRS and of a provider, the message and signature of Attachments, a client of an LRS, and the handler of its requests |
 | [`@interopkit/achievement-credentials`](packages/achievement-credentials/README.md) | Open Badges 3.0 and CLR 2.0: the model of an achievement credential and of the APIs, and readers that check them, builders, identity hashes, comparison, baking in images, a client of the Open Badges and CLR APIs, keys, proofs, status lists, refresh and verification |
 | [`@interopkit/selective-disclosure`](packages/selective-disclosure/README.md)       | The `ecdsa-sd-2023` cryptosuite: a base proof for the issuer, a derived proof for the holder and its verification                                                         |
+| [`@interopkit/course-launch`](packages/course-launch/README.md)                     | cmi5: the course structure with a reader that enforces its schema and the rules of cmi5, a validator and a writer, and course packages in ZIP or XML read within limits and written |
 
 To launch tools from your platform, or to be launched by one, use `tool-integration`. To report learning events, use
 `learning-analytics`. Neither needs the other.
@@ -106,8 +111,10 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `packages/learning-records/`                                                                                                                                     | xAPI 2.0 and 1.0.3                                                                               |
 | `packages/achievement-credentials/`                                                                                                                              | Open Badges 3.0 and CLR 2.0                                                                      |
 | `packages/selective-disclosure/`                                                                                                                                 | `ecdsa-sd-2023`: base proof, derived proof, verification                                         |
+| `packages/course-launch/`                                                                                                                                        | cmi5: course structure, course packages                                                          |
 | `docs/core/`, `docs/tool-integration/`, `docs/learning-analytics/`, `docs/competency-frameworks/`, `docs/achievement-credentials/`, `docs/selective-disclosure/` | Guides of each package                                                                           |
 | `docs/learning-records/`                                                                                                                                         | Guides of learning-records                                                                       |
+| `docs/course-launch/`                                                                                                                                            | Guides of course-launch                                                                          |
 | `examples/`                                                                                                                                                      | Runnable examples, each a package of its own, run by a test                                      |
 | `compat/`                                                                                                                                                        | The scenarios of the examples on each runtime                                                    |
 | `scripts/`                                                                                                                                                       | The standards check, the mutation check of the security rules, and the downloads of pinned files |

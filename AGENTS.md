@@ -11,6 +11,8 @@ CASE model, its readers, what a consumer asks of a framework, and a client and a
 `@interopkit/learning-records` implements the xAPI Statement of 2.0 and 1.0.3 and its readers, the message of its Attachments, its signature, a client of an LRS and the handler of its requests,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
 implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client and the provider of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists, their refresh and their verification, and it reads and verifies Open Badges 2.0.
+`@interopkit/course-launch` implements cmi5: its vocabularies, the course structure with its reader, validator and writer, and
+course packages in ZIP or XML.
 
 ```mermaid
 flowchart BT
@@ -23,6 +25,7 @@ flowchart BT
   lr["learning-records<br/>model, read, build, compare, format,<br/>attachments, signing, client, store"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
   ac["achievement-credentials<br/>model, read, issue, compare, baking, client,<br/>keys, jwt, data-integrity,<br/>status, refresh, verify, provider"]
+  cl["course-launch<br/>model, structure, package"]
   proto --> core
   tool --> proto
   plat --> proto
@@ -32,6 +35,7 @@ flowchart BT
   sd --> core
   ac --> core
   ac --> sd
+  cl --> core
   gates["pnpm lint, check:standards, check:rules,<br/>typecheck, test, knip"] --> merge["Merge"]
 ```
 
@@ -64,6 +68,9 @@ Use these words with these meanings in code, comments and docs.
 | base proof   | The proof an issuer gives a holder: an HMAC key, the public key of the proof and a signature for each statement to hide         |
 | disclosure   | A document with only the parts a holder reveals and a derived proof, the signatures of the statements that stay                 |
 | statement    | One canonical N-Quad of a document. A mandatory statement is always revealed; the key of the proof signs each of the others     |
+| course structure | The `cmi5.xml` of cmi5: a course, its objectives, and its assignable units in blocks, held as a `CourseStructure`          |
+| assignable unit | The content of cmi5 that an LMS launches, an `au` of the course structure; AU in prose that already says cmi5              |
+| course package | A course structure in a ZIP archive with its files, or its XML alone                                                         |
 
 ## Layout
 
@@ -93,6 +100,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
 | `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading and verification of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/`, `verify/`, `provider/` |
+| `packages/course-launch/`            | cmi5: `model/`, `structure/` (the course structure, its schema enforced by the reader), `package/` (ZIP and XML packages through zip.js) |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -196,7 +204,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
   `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
   `model/`, `read/`, `compare/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. In `learning-analytics`, `model/`
-  imports no other module, `v1p1/` builds on `model/` alone, `read/` on both, `validate/` on those and `read/`, `build/` on `model/`, `read/` and `validate/`, `send/` on `model/` and `build/`, and `endpoint/` on `model/`, `v1p1/`, `read/` and `validate/`; `send/` and `endpoint/` never import each other, and `build/` and `send/` never import `v1p1/`, since 1.1 is read and never written. Imports never form cycles.
+  imports no other module, `v1p1/` builds on `model/` alone, `read/` on both, `validate/` on those and `read/`, `build/` on `model/`, `read/` and `validate/`, `send/` on `model/` and `build/`, and `endpoint/` on `model/`, `v1p1/`, `read/` and `validate/`; `send/` and `endpoint/` never import each other, and `build/` and `send/` never import `v1p1/`, since 1.1 is read and never written. In `course-launch`, `model/` imports no other module, `structure/` imports `model/` alone and never zip.js, so that a host that reads a structure from elsewhere never loads the ZIP code, and `package/` builds on both. Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -208,7 +216,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   packages and the Data Integrity packages of the Interop Alliance (`@interop/jsonld-signatures`, `data-integrity-proof`,
   `ed25519-signature`, `ecdsa-signature`, `jsonld`) for DIDs, Multikeys and the cryptosuites, `valibot` for schemas, `uuid` for name-based UUIDs, `@noble/hashes` for the hashes of an identity and of an address, `oauth4webapi` for
   OAuth 2.0 clients,
-  `@remix-run/multipart-parser` for `multipart/mixed` messages, `saxes` for the XML of an SVG. Hand-written
+  `@remix-run/multipart-parser` for `multipart/mixed` messages, `saxes` for the XML of an SVG and of a course structure,
+  `@zip.js/zip.js` for ZIP archives, through `lib/zip-core-native.js` and never with workers. Hand-written
   code is for domain logic that no library does correctly, with the reason in the guide of the module; the scan of `learning-records`
   for a property given twice is such code, since a parser that sees one builds a tree at seventeen times the time of `JSON.parse`.
 - Candidates that were compared and not adopted may be development dependencies, as counterparties in tests: Digital Bazaar's
@@ -221,6 +230,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   against `verifyProof` of a disclosure, and `@interop/vc-bitstring-status-list`, timed against the status lists; `pnpm-workspace.yaml` overrides the `zod` of `@interop/verifier-core`, which
   asks for a version that has a known vulnerability and no repair.
   `esbuild` is a development dependency of the repository, for `scripts/entry-size.ts`, and of `compat`, which bundles the scenarios.
+  `libxml2-wasm` is a development dependency of the repository, for `scripts/xsd-oracle.ts`: libxml2, the validator that the
+  tests run a published XML schema through, as the oracle of a reader that enforces the schema itself.
   `@cfworker/json-schema` is a development dependency of the repository, for `scripts/schema-oracle.ts`: the validator that
   tests run the published JSON schemas of a standard through, and a dependency of `achievement-credentials` for the schemas that a
   credential names beyond those of 1EdTech. `oidc-provider` is a development dependency of `core` and of
@@ -249,8 +260,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - Values and functions: camelCase. Module-level constant data: SCREAMING_SNAKE. Types: PascalCase. Type parameters: `T` or `T`
   plus a name.
 - No package, folder or brand name holds a specification name: the packages are `tool-integration`, `learning-analytics`,
-  `competency-frameworks`, `selective-disclosure`, `achievement-credentials` and `learning-records`, and `pnpm check:standards` fails on `lti` or
-  `caliper` in one. Modules and functions use the names descriptively (`ltiLaunch`, `CaliperEvent`).
+  `competency-frameworks`, `selective-disclosure`, `achievement-credentials`, `learning-records` and `course-launch`, and
+  `pnpm check:standards` fails on `lti`, `caliper` or `cmi5` in one. Modules and functions use the names descriptively (`ltiLaunch`, `CaliperEvent`).
 - Function options are `<Name>Options`. Labels are string unions in kebab-case (`"key-unknown"`).
 - An error has a kebab-case `reason` where a caller must branch on it, and a `status` where it maps to HTTP.
 - The names of the properties of a specification (`CFItems`, `imsx_codeMajor`) are kept as it writes them: the folders and
@@ -339,6 +350,12 @@ Where the code departs from `STANDARDS.md`, with the reason.
   `*.spec.test.ts` (`scripts/caliper-tables.ts` reads the pages and pins the tables, not the bytes of the page). Where the JSON schemas
   are looser than the tables, the generator of a `*.corpus.test.ts` narrows the schema by the tables, and each difference is in
   `spec-gaps.md`.
+- A reader of XML whose schema a specification publishes enforces the schema itself and is compared with libxml2 through
+  `scripts/xsd-oracle.ts`: the examples and the schema are files of `scripts/corpus.lock.json`, and generated documents with one
+  change each get the verdict of libxml2 in a `*.corpus.test.ts`, or a stricter one that a rule of the specification gives. Each
+  difference is in `spec-gaps.md`.
+- The requirements of cmi5 that CATAPULT lists are mapped in `scripts/cmi5-requirements.ts`, one row for each with its ids and
+  the test files that prove it, and `requirements.spec.test.ts` fails on an id without a row.
 - The examples that a specification prints are read in a `*.spec.test.ts` with `readSpecPage`, from a page or, when the address
   ends in `.md`, from the fenced blocks of a Markdown file; one that is not conformant is pinned with its findings and
   recorded in `spec-gaps.md`.

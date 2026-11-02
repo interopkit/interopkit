@@ -8,5 +8,30 @@
       "json_schema/",
       "contexts/"
     ]
+  },
+  "cmi5-spec": {
+    "repository": "AICC/CMI-5_Spec_Current",
+    "commit": "0ff5b3058778035acdb604aedc1f672083970f67",
+    "sha256": "9a2101dcd36709f108bacb216015c9e05c9ff1f2d7d9962cfb94edf4f0f892da",
+    "include": [
+      "cmi5_spec.md",
+      "v1/"
+    ]
+  },
+  "catapult": {
+    "repository": "adlnet/CATAPULT",
+    "commit": "806c0baaa0fa99c9cb4f398ad7eb21fc5461c6e4",
+    "sha256": "cee65f47265cb18226b6604ba136f4f64268492c3c59bee483e9cb67b3270257",
+    "include": [
+      "course_examples/packages/",
+      "course_examples/masteryscore_framed/cmi5.xml",
+      "course_examples/masteryscore_responsive/cmi5.xml",
+      "course_examples/multi_au_framed/cmi5.xml",
+      "course_examples/pre_post_test_framed/cmi5.xml",
+      "course_examples/single_au_basic_framed/cmi5.xml",
+      "course_examples/single_au_basic_responsive/cmi5.xml",
+      "lts/pkg/src/",
+      "requirements/requirements.json"
+    ]
   }
 }
