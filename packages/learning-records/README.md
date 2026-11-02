@@ -121,6 +121,10 @@ differences from the references. The guides of [building](https://github.com/int
 [the client](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/client.md) and
 [the LRS handler](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/store.md) do the same.
 
+[The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/evidence.md) shows what the
+package was checked against: the rules of the standard, the ADL conformance suite, SQL LRS as an oracle and a counterparty,
+an example LRS with a platform and a dashboard, the speed of checking and four runtimes.
+
 ## License
 
 [Apache-2.0](LICENSE). Copyright Fariz Wakan. xAPI is the standard IEEE 9274.1.1; see [NOTICE](NOTICE). This package implements

@@ -1,6 +1,7 @@
 import { callService, type Fetch, ServiceError } from "@interopkit/core";
 import { runScenario as runFrameworks } from "../examples/competency-frameworks/scenario.ts";
 import { runScenario as runAnalytics } from "../examples/learning-analytics/scenario.ts";
+import { runScenario as runRecords } from "../examples/learning-records/scenario.ts";
 import { runScenario as runTool } from "../examples/tool-integration/scenario.ts";
 
 /** What every runtime must give: plain data, the same on each. */
@@ -11,6 +12,8 @@ export interface Results {
   readonly tool: Awaited<ReturnType<typeof runTool>>;
   /** The ministry and the school platform of the CASE example, as the example reports them. */
   readonly frameworks: Awaited<ReturnType<typeof runFrameworks>>;
+  /** The campus LRS, its platform and its dashboard of the xAPI example, as the example reports them. */
+  readonly records: Awaited<ReturnType<typeof runRecords>>;
   /** What `callService` does with the global `fetch` of the runtime, against the server of the check. */
   readonly service: Readonly<Record<string, unknown>>;
 }
@@ -57,7 +60,7 @@ async function serviceChecks(base: string): Promise<Record<string, unknown>> {
 }
 
 /**
- * Runs the scenarios of the three examples and the checks of the service call.
+ * Runs the scenarios of the four examples and the checks of the service call.
  *
  * @param base - The address of the server of the check.
  */
@@ -70,6 +73,7 @@ export async function runAll(base: string): Promise<Results> {
     })),
     tool: await runTool(),
     frameworks: await runFrameworks(),
+    records: await runRecords(),
     service: await serviceChecks(base),
   };
 }

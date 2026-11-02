@@ -141,6 +141,6 @@ export async function runScenario(): Promise<ScenarioResult> {
   };
 }
 
-if (process.argv[1] === import.meta.filename) {
+if (import.meta.main) {
   console.log(JSON.stringify(await runScenario(), undefined, 2));
 }

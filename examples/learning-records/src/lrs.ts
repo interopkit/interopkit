@@ -1,4 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
 import { type CallOptions, type Clock, type Fetch, SYSTEM_CLOCK } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import type { Actor } from "@interopkit/learning-records";
@@ -47,11 +46,12 @@ export interface Lrs {
 /** The authority that About is answered with: it stores no Statement. */
 const ANONYMOUS: Actor = { account: { homePage: "https://lrs.campus.example", name: "anonymous" } };
 
-/** Whether two secrets are equal, in time that does not depend on where they differ. */
+/** Whether two secrets are equal, in time that does not depend on where they differ, with web standards alone. */
 function sameSecret(given: string, expected: string): boolean {
-  const a = Buffer.from(given);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const [a, b] = [new TextEncoder().encode(given), new TextEncoder().encode(expected)];
+  let difference = a.length ^ b.length;
+  for (const [index, byte] of b.entries()) difference |= byte ^ (a[index] ?? 0);
+  return difference === 0;
 }
 
 /** Builds a plain request from the arguments of a `fetch`, with header names in lower case as the handlers read them. */

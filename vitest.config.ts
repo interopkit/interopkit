@@ -141,6 +141,32 @@ export default defineConfig({
         },
       },
       {
+        // The benchmarks of learning-records: `pnpm bench` runs them with `vitest bench`, against the build that ships.
+        resolve: {
+          alias: [
+            {
+              find: /^@interopkit\/learning-records$/,
+              replacement: resolve(import.meta.dirname, "packages/learning-records/dist/index.js"),
+            },
+            {
+              find: /^@interopkit\/learning-records\/(.+)$/,
+              replacement: resolve(import.meta.dirname, "packages/learning-records/dist/$1/index.js"),
+            },
+          ],
+        },
+        test: {
+          name: "learning-records-bench",
+          include: [],
+          server: { deps: { external: [/\/packages\/learning-records\/dist\//] } },
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
+          benchmark: {
+            include: ["packages/learning-records/test/**/*.bench.ts"],
+            suppressExportGetterWarnings: true,
+          },
+        },
+      },
+      {
         // The examples are packages of their own, and a test of each runs its scenario against the sources.
         resolve: { alias: SOURCES },
         test: {

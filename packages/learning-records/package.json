@@ -58,9 +58,11 @@
     "clean": "node --eval \"for (const path of ['dist', 'tsconfig.build.tsbuildinfo']) fs.rmSync(path, { recursive: true, force: true })\"",
     "build": "pnpm clean && tsc -b tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
+    "bench": "pnpm build && vitest bench --run --root ../.. --project 'learning-records-bench*' --reporter verbose",
     "check:packages": "pnpm build && publint --pack pnpm --strict && attw --pack . --profile esm-only"
   },
   "devDependencies": {
+    "@learninglocker/xapi-validation": "4.0.0",
     "fast-check": "^4.10.2"
   },
   "dependencies": {
