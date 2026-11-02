@@ -1,5 +1,5 @@
 /**
- * The model of xAPI 2.0: a Statement and the objects it holds, the vocabularies, and the findings of the readers.
+ * The model of xAPI 2.0 and 1.0.3: a Statement and the objects it holds, the vocabularies, and the findings of the readers.
  *
  * @module
  */

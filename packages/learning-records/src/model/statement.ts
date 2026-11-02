@@ -39,7 +39,10 @@ export interface StatementProperties<TObject> {
   readonly result?: Result;
   /** Context that gives the Statement more meaning. */
   readonly context?: Context;
-  /** When the events described occurred, as an RFC 3339 date and time. The LRS sets it from `stored` when it is absent. */
+  /**
+   * When the events described occurred, as an RFC 3339 date and time, or ISO 8601 with a time zone in 1.0.3. The LRS sets it from
+   * `stored` when it is absent.
+   */
   readonly timestamp?: string;
   /** Headers of the Attachments of the Statement. */
   readonly attachments?: readonly Attachment[];

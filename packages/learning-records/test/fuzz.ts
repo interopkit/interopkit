@@ -2,7 +2,7 @@ import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { expect } from "vitest";
 import { BAD_STRINGS, mutate, mutations } from "../../../scripts/json-mutation.js";
-import { type RuleRole, readStatement, validateStatement } from "../src/index.js";
+import { type ReadOptions, type RuleRole, readStatement, validateStatement } from "../src/index.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
 export const RUNS = { seed: 20_241_102, numRuns: 300 };
@@ -49,11 +49,11 @@ export function returnsOrRefuses(run: () => unknown): void {
 }
 
 /** Checks that the findings of a Statement with two changes have a path, a kebab-case rule and a sentence that is not the path's. */
-export function findingsAreWellFormed(statements: fc.Arbitrary<Record<string, unknown>>, role: RuleRole): void {
+export function findingsAreWellFormed(statements: fc.Arbitrary<Record<string, unknown>>, options: ReadOptions): void {
   fc.assert(
     fc.property(statements, mutations, mutations, (statement, first, second) => {
       const changed = mutate(Object(mutate(statement, first, STRINGS)), second, STRINGS);
-      for (const finding of validateStatement(changed, { role })) {
+      for (const finding of validateStatement(changed, options)) {
         expect(finding.path).toBeTypeOf("string");
         expect(finding.rule).toMatch(/^[a-z0-9-]+$/u);
         expect(finding.message.length).toBeGreaterThan(0);
@@ -66,17 +66,17 @@ export function findingsAreWellFormed(statements: fc.Arbitrary<Record<string, un
 }
 
 /** Checks that a Statement with a change is refused exactly when the validator finds an error, and that the refusal names it. */
-export function refusesExactlyOnError(statements: fc.Arbitrary<Record<string, unknown>>, role: RuleRole): void {
+export function refusesExactlyOnError(statements: fc.Arbitrary<Record<string, unknown>>, options: ReadOptions): void {
   fc.assert(
     fc.property(statements, mutations, (statement, mutation) => {
       const changed = mutate(statement, mutation, STRINGS);
-      const errors = validateStatement(changed, { role }).filter(({ severity }) => severity === "error");
+      const errors = validateStatement(changed, options).filter(({ severity }) => severity === "error");
       if (errors.length === 0) {
-        expect(() => readStatement(changed, { role })).not.toThrow();
+        expect(() => readStatement(changed, options)).not.toThrow();
         return;
       }
-      expect(() => readStatement(changed, { role })).toThrow(DataError);
-      expect(() => readStatement(changed, { role })).toThrow(
+      expect(() => readStatement(changed, options)).toThrow(DataError);
+      expect(() => readStatement(changed, options)).toThrow(
         `The statement is invalid${errors[0]?.path === "" ? "" : " at "}`,
       );
     }),
@@ -85,19 +85,19 @@ export function refusesExactlyOnError(statements: fc.Arbitrary<Record<string, un
 }
 
 /** Checks that a Statement that is read is read again as itself, and judged by the same errors. */
-export function readsAgainAsItself(statements: fc.Arbitrary<Record<string, unknown>>, role: RuleRole): void {
+export function readsAgainAsItself(statements: fc.Arbitrary<Record<string, unknown>>, options: ReadOptions): void {
   fc.assert(
     fc.property(statements, mutations, (generated, mutation) => {
       // The text of JSON is what a host reads, and it has no negative zero.
       const statement = JSON.parse(JSON.stringify(mutate(generated, mutation, STRINGS)));
-      const errors = validateStatement(statement, { role }).filter(({ severity }) => severity === "error");
+      const errors = validateStatement(statement, options).filter(({ severity }) => severity === "error");
       if (errors.length > 0) {
-        expect(() => readStatement(statement, { role })).toThrow(DataError);
+        expect(() => readStatement(statement, options)).toThrow(DataError);
         return;
       }
-      const first = readStatement(statement, { role });
-      expect(readStatement(first, { role })).toStrictEqual(first);
-      expect(validateStatement(first, { role }).filter(({ severity }) => severity === "error")).toStrictEqual([]);
+      const first = readStatement(statement, options);
+      expect(readStatement(first, options)).toStrictEqual(first);
+      expect(validateStatement(first, options).filter(({ severity }) => severity === "error")).toStrictEqual([]);
     }),
     RUNS,
   );

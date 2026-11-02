@@ -31,15 +31,15 @@ describe("the readers and the validators on any value", () => {
   });
 
   it("give findings with a path, a kebab-case rule, a sentence that does not start with the path, and a severity", () => {
-    for (const role of ["lrs", "provider"] as const) findingsAreWellFormed(STATEMENTS, role);
+    for (const role of ["lrs", "provider"] as const) findingsAreWellFormed(STATEMENTS, { role });
   });
 
   it("refuse a Statement with a change exactly when it has an error, and then name the first error", () => {
-    for (const role of ["lrs", "provider"] as const) refusesExactlyOnError(STATEMENTS, role);
+    for (const role of ["lrs", "provider"] as const) refusesExactlyOnError(STATEMENTS, { role });
   });
 
   it("read a Statement that is read again as itself, and find no error in it", () => {
-    for (const role of ["lrs", "provider"] as const) readsAgainAsItself(STATEMENTS, role);
+    for (const role of ["lrs", "provider"] as const) readsAgainAsItself(STATEMENTS, { role });
   });
 
   it("stop a hostile depth of the extensions at the limit with a finding, whatever the depth is", () => {
