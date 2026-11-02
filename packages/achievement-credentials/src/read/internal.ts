@@ -16,6 +16,7 @@ export { parseDateTimeV2 } from "./formats-v2.js";
 export { credentialOrReason, issueSink, parseJson, ruleIssues } from "./inspect.js";
 export { DOCUMENT_PLACES, inspectBadgeV2, inspectDocumentV2, isBadgeAssertionV2, isDocumentV2 } from "./inspect-v2.js";
 export { readJwsPayload } from "./jws-payload.js";
+export { type VerifiedKind, verifiedKindOf } from "./kinds.js";
 export { identityObjectV2Schema } from "./open-badges-v2-schemas.js";
 export { jws } from "./primitives.js";
 

@@ -10,11 +10,10 @@ import {
   checkString,
   describe,
   MAX_JSON_TOKENS,
-  methodsSchema,
   parseWith,
 } from "@interopkit/core/checks";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
-import { checkFlag } from "../option-checks.js";
+import { checkFlag, keyResolverSchema, readSuites } from "../option-checks.js";
 import type { StatusList } from "./bitstring.js";
 import type { StatusListCache } from "./status-list-cache.js";
 
@@ -140,9 +139,6 @@ export interface StatusCheckOptions extends CallOptions {
   readonly suites?: readonly DataIntegritySuite[];
 }
 
-const keyResolverSchema = methodsSchema<KeyResolver>("resolve", "issuerKeys");
-const suiteSchema = methodsSchema<DataIntegritySuite>("verify");
-
 /** The checked options of a status check. */
 export interface CheckSettings {
   readonly fetch: Fetch;
@@ -188,8 +184,7 @@ export function checkSettings(options: unknown): CheckSettings {
   if (clockSkewSeconds !== undefined) checkNonNegativeInteger(clockSkewSeconds, "The option clockSkewSeconds");
   checkFlag(allowUnboundKeys, "The option allowUnboundKeys");
   checkFlag(legacyProofs, "The option legacyProofs");
-  checkArray(suites, "The option suites must be an array");
-  const checkedSuites = suites.map((suite, index) => parseWith(suiteSchema, suite, `The option suites[${index}]`));
+  const checkedSuites = readSuites(suites);
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   return {
     fetch: fetch as Fetch,

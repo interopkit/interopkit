@@ -20,6 +20,7 @@ import {
   type EntityKind,
 } from "../model/index.js";
 import { clrCredentialJwtPayloadSchema } from "./clr-schemas.js";
+import { kindOfType } from "./kinds.js";
 import { CREDENTIAL_SCHEMAS, ENTITY_SCHEMAS } from "./registry.js";
 import {
   criteriaIssues,
@@ -40,20 +41,6 @@ export function issueSink(maxFindings: number, errorsOnly: boolean): FindingSink
     (finding) => ({ ...finding, severity: "error" }),
     errorsOnly ? ({ severity }) => severity === "error" : undefined,
   );
-}
-
-/** The classes whose name in `type` says what kind of credential a value is, strongest first. */
-const KIND_TYPES: readonly (readonly [CredentialKind, readonly string[]])[] = [
-  ["ClrCredential", ["ClrCredential"]],
-  ["EndorsementCredential", ["EndorsementCredential"]],
-  ["AchievementCredential", ["AchievementCredential", "OpenBadgeCredential"]],
-];
-
-/** Reads the kind of credential that the `type` of a value names; a value that names none is a `VerifiableCredential`. */
-function detectKind(value: unknown): CredentialKind {
-  const type = isRecord(value) ? value.type : undefined;
-  const names = Array.isArray(type) ? type : [type];
-  return KIND_TYPES.find(([, classes]) => classes.some((name) => names.includes(name)))?.[0] ?? "VerifiableCredential";
 }
 
 /** Tells whether the first context of a value is that of the Verifiable Credentials Data Model 1.1. */
@@ -108,7 +95,7 @@ export function inspectCredential(
   kind: CredentialKind | undefined,
   sink: FindingSink<CredentialIssue>,
 ): AnyVerifiableCredential | undefined {
-  const schemas = CREDENTIAL_SCHEMAS[kind ?? detectKind(value)];
+  const schemas = CREDENTIAL_SCHEMAS[kind ?? kindOfType(isRecord(value) ? value.type : undefined)];
   const schema: Schema<AnyVerifiableCredential> = isV1p1(value) ? schemas.v1p1 : schemas.v2;
   const credential = parseJson(schema, value, sink);
   if (credential !== undefined) sink.add(ruleIssues(credential));

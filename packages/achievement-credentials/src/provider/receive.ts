@@ -6,8 +6,7 @@ import { parseJsonText } from "../json-text.js";
 import { credentialInJws } from "../jwt/internal.js";
 import type { AnyVerifiableCredential, CredentialApi, CredentialKind, VerificationResult } from "../model/index.js";
 import { readCredential } from "../read/index.js";
-import { jws } from "../read/internal.js";
-import { kindOf } from "../verify/internal.js";
+import { jws, verifiedKindOf } from "../read/internal.js";
 import { bodyTypeOf } from "./body.js";
 import type { ProviderSettings } from "./options.js";
 import { invalidData, unreadable } from "./status.js";
@@ -25,7 +24,7 @@ const KINDS: Readonly<Record<CredentialApi, CredentialKind>> = {
   clr: "ClrCredential",
 };
 
-/** The kind of credential, as `kindOf` names it, that each API exchanges. */
+/** The kind of credential, as `verifiedKindOf` names it, that each API exchanges. */
 const VERIFIED_KINDS = { badges: "badge", clr: "clr" } as const;
 
 /** What the body of a request to upsert a credential gave: the credential with the answer that repeats it, or a refusal. */
@@ -140,7 +139,7 @@ export async function receiveCredential(request: HttpRequest, settings: Provider
   if ("refusal" in body) return body;
   const read = credentialOfBody(request, body.type, settings);
   if ("refusal" in read) return read;
-  const kind = kindOf(read.credential);
+  const kind = verifiedKindOf(read.credential.type);
   if (kind !== VERIFIED_KINDS[settings.api]) {
     const name =
       settings.api === "badges"

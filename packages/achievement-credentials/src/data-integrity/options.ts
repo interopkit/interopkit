@@ -9,12 +9,11 @@ import {
   describe,
   MAX_JSON_DEPTH,
   MAX_JSON_TOKENS,
-  methodsSchema,
   parseWith,
 } from "@interopkit/core/checks";
 import { DEFAULT_MAX_JSON_LD_TOKENS } from "../json-text.js";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
-import { checkFlag } from "../option-checks.js";
+import { checkFlag, keyResolverSchema, readSuites } from "../option-checks.js";
 
 /** A cryptosuite that `addProof` signs with: `eddsa-rdfc-2022` or `ecdsa-sd-2023`. */
 export type SigningCryptosuite = "eddsa-rdfc-2022" | "ecdsa-sd-2023";
@@ -134,9 +133,6 @@ const DEFAULT_CLOCK_SKEW_SECONDS = 60;
 /** The most bytes of a credential as JSON unless the host says otherwise. */
 const DEFAULT_MAX_INPUT_BYTES = 1_048_576;
 
-const keyResolverSchema = methodsSchema<KeyResolver>("resolve", "issuerKeys");
-const suiteSchema = methodsSchema<DataIntegritySuite>("verify");
-
 /** The options of a signature, checked. */
 export interface ProofSettings {
   readonly cryptosuite: SigningCryptosuite;
@@ -236,14 +232,7 @@ export function verifySettings(options: unknown): VerifySettings {
   checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
   checkFlag(allowUnboundKeys, "The option allowUnboundKeys");
   checkFlag(legacyProofs, "The option legacyProofs");
-  checkArray(suites, "The option suites must be an array");
-  const checked = suites.map((suite, index) => {
-    const read = parseWith(suiteSchema, suite, `The option suites[${index}]`);
-    if (typeof read.cryptosuite !== "string" || read.cryptosuite === "") {
-      throw new DataError(`The option suites[${index}] must name its cryptosuite.`);
-    }
-    return read;
-  });
+  const checked = readSuites(suites);
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   return {
     keys,

@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, readClock } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
 import type { DocumentTarget, LrsDocument, LrsDocumentInput } from "../../model/index.js";
 import { isMediaType, mediaTypeOf } from "../../model/internal.js";
@@ -99,7 +99,11 @@ async function change(
     if (isRefusal(condition)) return context.refuse(condition.status, condition.message);
     const made = make(current.value);
     if (isRefusal(made)) return context.refuse(made.status, made.message);
-    const document = { ...made.value, etag: etagOf(made.value.body), updated: new Date(clock.now()).toISOString() };
+    const document = {
+      ...made.value,
+      etag: etagOf(made.value.body),
+      updated: new Date(readClock(clock)).toISOString(),
+    };
     const outcome = await storeDocument(context, target, document, condition.value);
     if (isRefusal(outcome)) return context.refuse(outcome.status, outcome.message);
     if (outcome.value === "written") return { status: 204, headers: { etag: document.etag }, body: "" };

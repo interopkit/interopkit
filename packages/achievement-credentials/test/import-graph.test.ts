@@ -111,7 +111,7 @@ describe("the import graph of a verifier of JWTs", () => {
         .filter((file) => file.includes(`${join("src", "verify")}`))
         .map((file) => file.split("/").at(-1))
         .sort(),
-    ).toStrictEqual(["internal.ts", "kind.ts", "options.ts"]);
+    ).toStrictEqual(["internal.ts", "options.ts"]);
   });
 
   it("holds them in the static imports of data-integrity, which is why status loads it on demand", () => {

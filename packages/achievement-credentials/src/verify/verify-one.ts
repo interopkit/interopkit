@@ -1,3 +1,4 @@
+import { readClock } from "@interopkit/core";
 import type { VerificationResult } from "../model/index.js";
 import { type Authentic, authenticate } from "./authenticate.js";
 import { checkRecipient } from "./check-recipient.js";
@@ -70,7 +71,7 @@ async function followUp(authentic: Authentic, role: Role, context: Context): Pro
   return {
     schema: await checkSchema(authentic, context),
     status: await checkStatus(authentic, context),
-    validity: checkValidity(authentic.credential, authentic.timeFault, clock.now(), clockSkewSeconds),
+    validity: checkValidity(authentic.credential, authentic.timeFault, readClock(clock), clockSkewSeconds),
     recipient: recipientOf(authentic, role, context),
   };
 }

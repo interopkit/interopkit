@@ -3,10 +3,9 @@ import { textWithinLimits } from "../json-text.js";
 import { inspectJwt } from "../jwt/internal.js";
 import { verifyIssuerKey } from "../keys/index.js";
 import type { AnyVerifiableCredential, VerificationCheck, VerificationKey } from "../model/index.js";
-import { credentialOrReason } from "../read/internal.js";
+import { credentialOrReason, type VerifiedKind, verifiedKindOf } from "../read/internal.js";
 import type { Context } from "./context.js";
 import type { Prepared } from "./input.js";
-import { kindOf, type VerifiedKind } from "./kind.js";
 import { type Checks, checkOf } from "./result.js";
 
 /** What a proof secures, once it is valid and its key is not another issuer's. */
@@ -87,7 +86,7 @@ async function jwsProof(jws: string, context: Context): Promise<ProofStep> {
     return { checks: { format: formatPassed(), proof: checkOf("proof", "unavailable", detail) } };
   }
   if (inspected.valid) {
-    const kind = kindOf(inspected.credential);
+    const kind = verifiedKindOf(inspected.credential.type);
     return kind === undefined ? { checks: unknownKind() } : { secured: { ...inspected, kind } };
   }
   return {
@@ -163,7 +162,7 @@ export async function authenticate(prepared: Prepared, context: Context): Promis
   } else {
     const read = readObject(prepared.value, context);
     if ("reason" in read) return { checks: { format: checkOf("format", "failed", read.reason) } };
-    const kind = kindOf(read.credential);
+    const kind = verifiedKindOf(read.credential.type);
     if (kind === undefined) return { checks: unknownKind() };
     step = await dataIntegrityProof(prepared.value, read.credential, kind, context);
   }

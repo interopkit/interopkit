@@ -77,7 +77,7 @@ flowchart BT
 |           | `vocabularies.ts`, `context.ts`, `kinds.ts`, `issue.ts`                                          | The vocabularies as tuples with their types, `CONTEXTS`, `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CredentialIssue`                 |
 | `read`    | `credential-schemas.ts`, `v1p1-schemas.ts`, `clr-schemas.ts`, `api-schemas.ts`, `key-schemas.ts` | The valibot schema of each class, built once, typed by the interface of the class                                              |
 |           | `primitives.ts`                                                                                  | The parts the schemas share: a list that may be one member, the `type` of a class, an extensible term, contexts                |
-|           | `registry.ts`, `inspect.ts`, `rules.ts`, `options.ts`                                            | Which schema reads which kind, the parse and its findings, the rules of the subject, the check of the options                  |
+|           | `registry.ts`, `kinds.ts`, `inspect.ts`, `rules.ts`, `options.ts`                                | Which schema reads which kind, the kind that a `type` names, the parse and its findings, the rules beyond the schemas, the check of the options |
 |           | `read-credential.ts`, `read-entity.ts`                                                           | The readers and the validators                                                                                                 |
 |           | `context-v2.ts`, `formats-v2.ts`, `open-badges-v2-schemas.ts`, `rules-v2.ts`, `inspect-v2.ts`    | Open Badges 2.0: the terms and aliases of its context, its formats, the schema of each class, its rules, and the reading of the three documents of a badge |
 |           | `jws-payload.ts`                                                                                 | The payload of a compact JWS, read without its signature under a limit of tokens, for a verifier                               |
@@ -101,9 +101,9 @@ flowchart BT
 | `status`  | `bitstring.ts`, `encoded-list.ts`, `issue-status-list-credential.ts`, `verify-credential-status.ts`, `status-list-cache.ts`, `options.ts` | The list as plain data, its encoding under a limit, the issue of its credential, the validate algorithm and the cache |
 | `refresh` | `refresh-credential.ts`, `handle-refresh-request.ts`                                             | Getting a credential from its refresh service, and answering as that service              |
 | `verify`  | `verify-credential.ts`, `verify-one.ts`                                                          | The entry point, and the checks of one credential in order, with its endorsements and the credentials of a CLR             |
-|           | `input.ts`, `options.ts`, `context.ts`, `kind.ts`, `result.ts`                                   | What the input is, the options and their limits, what a call shares, the kind of a credential, the result of the checks     |
+|           | `input.ts`, `options.ts`, `context.ts`, `result.ts`                                              | What the input is, the options and their limits, what a call shares, the result of the checks                                |
 |           | `authenticate.ts`                                                                                | The form, the proof and the issuer's hold on the key: the checks that fetch nothing that the credential names               |
-|           | `check-schema.ts`, `check-refresh.ts`, `check-status.ts`, `check-validity.ts`, `check-recipient.ts`, `held.ts` | The other checks, and where the endorsements and the held credentials of a credential are                       |
+|           | `check-schema.ts`, `work-meter.ts`, `check-refresh.ts`, `check-status.ts`, `check-validity.ts`, `check-recipient.ts`, `held.ts` | The other checks, the meter that bounds the work of a schema, and where the endorsements and the held credentials of a credential are |
 |           | `verify-badge-v2.ts`, `fetch-v2.ts`, `policy-v2.ts`, `signature-v2.ts`, `revocation-v2.ts`, `checks-v2.ts` | An Open Badges 2.0 badge: hosted or signed, the fetch of its documents, the policy of its issuer, its signature, the revocation list, its validity and recipient |
 | `provider` | `handle-request.ts`, `routes.ts`, `options.ts`, `status.ts`                                     | The router, the endpoints with their operations, the options, the `imsx_StatusInfo` of each failure                      |
 |           | `credentials.ts`, `receive.ts`, `body.ts`, `profile.ts`, `store.ts`                              | The list and the upsert, the reading and the verification of a credential that comes, the checks of a body, the profile, the ports |
@@ -116,8 +116,9 @@ Each module has an `index.ts`, its public API. `baking` and `client` are entry p
 needs no images should not load an XML parser, and one that calls no server should not load a client. `read`, `keys`, `jwt` and
 `verify` have an `internal.ts` for what the other modules and the tests share and the package does not export: the schemas of
 `read`, which the tests compare with the schemas of 1EdTech and the builders write with, the public JWK and thumbprint of `keys`,
-the credential that a JWS carries, and what the provider checks before it loads the verifier. Two files
-directly in `src/` serve several modules: the cache of documents and the check of a flag. `pnpm check:standards` and Biome keep modules from
+the credential that a JWS carries, and what the provider checks before it loads the verifier. Files directly in `src/` serve
+several modules: the text of JSON under its limits, base64url, and the checks of a flag, of a key resolver and of the suites. The
+cache of shared loads behind the key resolver and the status lists is `createKeyedCache` of `@interopkit/core`. `pnpm check:standards` and Biome keep modules from
 importing by a deep path or against the layers.
 
 ## Reading

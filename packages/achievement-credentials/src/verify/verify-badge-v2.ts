@@ -1,3 +1,4 @@
+import { readClock } from "@interopkit/core";
 import { isRecord, refusalOf } from "@interopkit/core/checks";
 import type { BadgeAssertionV2, VerificationCheck, VerificationResult } from "../model/index.js";
 import {
@@ -145,7 +146,7 @@ function standingOf(badge: BadgeAssertionV2, context: Context): Checks {
       "Open Badges 2.0 names no JSON schema of a badge; the readers check its vocabulary.",
     ),
     refresh: checkOf("refresh", "skipped", "Open Badges 2.0 has no refresh service."),
-    validity: checkValidityV2(badge.assertion, clock.now(), clockSkewSeconds),
+    validity: checkValidityV2(badge.assertion, readClock(clock), clockSkewSeconds),
     recipient: checkRecipientV2(badge.assertion, context.settings.recipient),
   };
 }

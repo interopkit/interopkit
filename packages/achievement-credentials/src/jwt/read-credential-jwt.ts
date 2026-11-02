@@ -1,4 +1,4 @@
-import { DataError, untilAborted } from "@interopkit/core";
+import { DataError, readClock, untilAborted } from "@interopkit/core";
 import { describe, isRecord } from "@interopkit/core/checks";
 import { compactVerify, importJWK } from "jose";
 import { decodeBase64url } from "../base64url.js";
@@ -67,7 +67,7 @@ function timeProblem(payload: Readonly<Record<string, unknown>>, settings: ReadS
       return `The claim ${claim} must be a number of seconds, found ${describe(value)}.`;
     }
   }
-  const now = settings.clock.now() / MILLISECONDS_PER_SECOND;
+  const now = readClock(settings.clock) / MILLISECONDS_PER_SECOND;
   const { exp, nbf } = payload;
   if (typeof exp === "number" && exp + settings.clockSkewSeconds <= now)
     return `The JWT expired at ${dateTimeOf(exp)}.`;

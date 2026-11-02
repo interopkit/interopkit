@@ -106,6 +106,15 @@ describe("the input", () => {
     await expect(verifyCredential(await jwsOf(), { ...options, [name]: value } as never)).rejects.toThrow(DataError);
   });
 
+  it("is refused with a clock that tells no time, rather than judged valid at no time", async () => {
+    const { options } = world();
+    for (const now of [Number.NaN, -1, "now"]) {
+      await expect(
+        verifyCredential(await jwsOf(), { ...options, clock: { now: () => now as number } }),
+      ).rejects.toThrow(DataError);
+    }
+  });
+
   it("is refused when a string is neither a compact JWS nor an address, without running a regular expression over it", async () => {
     const { options } = world();
     const result = await verifyCredential("not a credential", options);

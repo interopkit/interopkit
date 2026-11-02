@@ -1,4 +1,4 @@
-import { callPort, DataError } from "@interopkit/core";
+import { callPort, DataError, readClock } from "@interopkit/core";
 import { isUuid, refusalOf } from "@interopkit/core/checks";
 import { type AttachmentData, formatTimestamp, type Statement, type StatementIssue } from "../../model/index.js";
 import { mediaTypeOf, STATEMENT_VERSIONS, VERSION_PATTERNS } from "../../model/internal.js";
@@ -194,7 +194,7 @@ export async function prepare(
   if (errors.length > 0) return refused(400, refusalOf("The batch of Statements", errors, "validateStatements"));
   const refusal = checkIdentity(read, single);
   if (refusal !== undefined) return refusal;
-  const stored = formatTimestamp(context.settings.clock.now());
+  const stored = formatTimestamp(readClock(context.settings.clock));
   const statements = read.map((statement, index) =>
     completed(index === 0 && single !== undefined ? { ...statement, id: single.id } : statement, stored, context),
   );

@@ -7,14 +7,12 @@ import {
   checkRecord,
   describe,
   isRecord,
-  methodsSchema,
-  parseWith,
 } from "@interopkit/core/checks";
 import type { KnownIdentity } from "../issue/index.js";
 import { DEFAULT_MAX_JSON_LD_TOKENS } from "../json-text.js";
 import { type ReadSettings, readSettings } from "../jwt/internal.js";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
-import { checkFlag } from "../option-checks.js";
+import { checkFlag, readSuites } from "../option-checks.js";
 import type { StatusListCache } from "../status/index.js";
 
 /** The recipient that a verifier knows, to be matched with the subject of a credential. */
@@ -164,8 +162,6 @@ const DEFAULT_MAX_NESTED_CREDENTIALS = 1000;
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_BYTES = 1_048_576;
 
-const suiteSchema = methodsSchema<DataIntegritySuite>("verify");
-
 /** A `fetch` that fetches nothing, for a verification that was given none: each use is a service that did not answer. */
 const NO_FETCH: Fetch = () => Promise.reject(new ServiceError("No fetch was given to verify with.", 0, ""));
 
@@ -242,14 +238,7 @@ export function verifySettings(options: unknown): VerifySettings {
   checkPositiveInteger(maxNestedCredentials, "The option maxNestedCredentials");
   checkPositiveInteger(timeoutMs, "The option timeoutMs");
   checkPositiveInteger(maxBytes, "The option maxBytes");
-  checkArray(suites, "The option suites must be an array");
-  const checkedSuites = suites.map((suite, index) => {
-    const read = parseWith(suiteSchema, suite, `The option suites[${index}]`);
-    if (typeof read.cryptosuite !== "string" || read.cryptosuite === "") {
-      throw new DataError(`The option suites[${index}] must name its cryptosuite.`);
-    }
-    return read;
-  });
+  const checkedSuites = readSuites(suites);
   return {
     jwt,
     contexts: contexts as ContextLoader | undefined,

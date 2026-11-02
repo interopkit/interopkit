@@ -5,5 +5,4 @@
  * @module
  */
 
-export { kindOf } from "./kind.js";
 export { type VerifyOptions, verifySettings } from "./options.js";

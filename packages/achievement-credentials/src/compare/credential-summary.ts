@@ -1,6 +1,7 @@
 import { DataError } from "@interopkit/core";
 import type { Achievement, AnyCredential, AnyVerifiableCredential, BadgeAssertionV2 } from "../model/index.js";
 import { readCredential } from "../read/index.js";
+import { verifiedKindOf } from "../read/internal.js";
 
 /** What a summary takes from the achievement of a credential, in either data model. */
 type Shown = Pick<Achievement, "name" | "description" | "image">;
@@ -81,7 +82,7 @@ export function credentialSummary(credential: AnyCredential): CredentialSummary 
 
 /** Summarizes a verifiable credential of Open Badges 3.0 or CLR 2.0, under either data model. */
 function summaryOf(read: AnyVerifiableCredential): CredentialSummary {
-  const kind = kindOf(read.type);
+  const kind = verifiedKindOf(read.type);
   if (kind === undefined) {
     throw new DataError(
       "The credential is a VerifiableCredential of no class that Open Badges or CLR defines, so there is nothing to show.",
@@ -105,12 +106,4 @@ function summaryOf(read: AnyVerifiableCredential): CredentialSummary {
     validFrom,
     ...(validUntil === undefined ? {} : { validUntil }),
   };
-}
-
-/** Tells what a credential is from its types. */
-function kindOf(types: readonly string[]): CredentialSummary["kind"] | undefined {
-  if (types.includes("ClrCredential")) return "clr";
-  if (types.includes("EndorsementCredential")) return "endorsement";
-  if (types.includes("AchievementCredential") || types.includes("OpenBadgeCredential")) return "badge";
-  return undefined;
 }

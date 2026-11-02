@@ -10,12 +10,11 @@ import {
   isRecord,
   MAX_JSON_DEPTH,
   MAX_JSON_TOKENS,
-  methodsSchema,
   parseWith,
 } from "@interopkit/core/checks";
 import { publicJwk } from "../keys/internal.js";
 import type { KeyResolver } from "../model/index.js";
-import { checkFlag } from "../option-checks.js";
+import { checkFlag, keyResolverSchema } from "../option-checks.js";
 
 /** The JOSE algorithms that a credential may be verified with: the RSA, ECDSA and EdDSA algorithms that Web Crypto runs (Open Badges 8.2.1). */
 const VERIFICATION_ALGORITHMS = [
@@ -126,8 +125,6 @@ export interface ReadSettings {
   readonly maxTokens: number;
   readonly signal: AbortSignal | undefined;
 }
-
-const keyResolverSchema = methodsSchema<KeyResolver>("resolve", "issuerKeys");
 
 /** Checks the options of a read as a host passes them from JavaScript, and fills in the defaults. */
 export function readSettings(options: unknown): ReadSettings {
