@@ -809,11 +809,11 @@ describe("the bounds of what a request makes the LRS hold", () => {
   it("refuses a body of more tokens than limits.maxTokens, a million by default, before it parses it", async () => {
     const million = `[${"0,".repeat(600_000)}0]`;
     const over = await send("POST", million);
-    expect(over.response.status).toBe(400);
+    expect(over.response.status).toBe(413);
     expect(reasonOf(over.response)).toContain("The text has more than 1000000 tokens");
     expect(over.store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
     const few = await send("POST", statementOf(1), { changes: { limits: { maxTokens: 20 } } });
-    expect(few.response.status).toBe(400);
+    expect(few.response.status).toBe(413);
     expect(reasonOf(few.response)).toContain("The text has more than 20 tokens");
     expect((await send("POST", statementOf(1), { changes: { limits: { maxTokens: 2000 } } })).response.status).toBe(
       200,
@@ -828,7 +828,7 @@ describe("the bounds of what a request makes the LRS hold", () => {
         optionsOf(memory(), { limits: { maxTokens } }),
       );
     const over = await refuse(20);
-    expect(over.status).toBe(400);
+    expect(over.status).toBe(413);
     expect(reasonOf(over)).toContain("The text has more than 20 tokens");
     expect((await refuse(2000)).status).toBe(200);
   });

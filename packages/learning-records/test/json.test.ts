@@ -2,7 +2,7 @@ import { type AnyNode, evaluate, parse, tokenize } from "@humanwhocodes/momoa";
 import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
-import { readStatement, readStatementJson, validateStatements } from "../src/index.js";
+import { JsonLimitError, readStatement, readStatementJson, validateStatements } from "../src/index.js";
 import { fullStatement, minimalStatement } from "./full-statement.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
@@ -302,6 +302,21 @@ describe("readStatementJson", () => {
     it("refuses a hundred thousand opening brackets before it parses anything", () => {
       expect(() => readStatementJson("[".repeat(100_000))).toThrow("deeper than the limit of 64");
       expect(() => readStatementJson('{"a":'.repeat(50_000))).toThrow("deeper than the limit of 64");
+    });
+
+    it("names the limit of size that a text went over, so that a handler can answer 413", () => {
+      const over = (text: string, options: object) => {
+        try {
+          readStatementJson(text, options);
+        } catch (error) {
+          return error;
+        }
+        return undefined;
+      };
+      expect(over("[1,2,3]", { maxTokens: 2 })).toMatchObject({ name: "JsonLimitError", limit: "tokens" });
+      expect(over("[1,2,3]", { maxBytes: 2 })).toMatchObject({ name: "JsonLimitError", limit: "bytes" });
+      expect(over("[1,2,3]", { maxBytes: 2 })).toBeInstanceOf(DataError);
+      expect(over("[[1]]", { maxDepth: 1 })).not.toBeInstanceOf(JsonLimitError);
     });
 
     it("reads a depth above the stack when the caller allows it, since the search for a repeat does not recurse", () => {

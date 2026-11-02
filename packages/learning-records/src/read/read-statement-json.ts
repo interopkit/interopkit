@@ -17,6 +17,26 @@ const DEFAULT_MAX_BYTES = 10_485_760;
 /** The deepest nesting of arrays and objects that `readStatementJson` reads unless the caller says otherwise. */
 const DEFAULT_MAX_DEPTH = 64;
 
+/** The limit of a text of JSON that it went over. */
+export type JsonLimit = "bytes" | "tokens";
+
+/** The error for a text of JSON over a limit of its size, which a handler answers with 413 and not with 400. */
+export class JsonLimitError extends DataError {
+  /** Error class name. */
+  override name = "JsonLimitError";
+  /** The limit that the text went over. */
+  readonly limit: JsonLimit;
+
+  /**
+   * @param message - Says which limit the text went over.
+   * @param limit - The limit.
+   */
+  constructor(message: string, limit: JsonLimit) {
+    super(message);
+    this.limit = limit;
+  }
+}
+
 /** The options of `readStatementJson`. */
 export interface ReadStatementJsonOptions {
   /**
@@ -61,8 +81,9 @@ const optionsSchema = strictRecord({
  * @param text - The text of a request or a file.
  * @param options - The limits.
  * @returns The parsed value, which `readStatement` or `validateStatements` reads.
- * @throws `DataError` when the text is longer, deeper or has more tokens than the limits, is not JSON, or has a property
- * twice, or when the options are not valid.
+ * @throws `JsonLimitError`, a `DataError`, when the text is longer or has more tokens than the limits.
+ * @throws `DataError` when the text is deeper than the limit, is not JSON, or has a property twice, or when the options are not
+ * valid.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
 export function readStatementJson(text: string, options?: ReadStatementJsonOptions): unknown {
@@ -75,13 +96,16 @@ export function readStatementJson(text: string, options?: ReadStatementJsonOptio
   // A string of more units than the limit has more bytes than it, so the longer ones need no encoding.
   const bytes = text.length > maxBytes ? text.length : new TextEncoder().encode(text).byteLength;
   if (bytes > maxBytes) {
-    throw new DataError(`The text has ${bytes} bytes or more, above the limit of ${maxBytes} bytes.`);
+    throw new JsonLimitError(`The text has ${bytes} bytes or more, above the limit of ${maxBytes} bytes.`, "bytes");
   }
   if (nestsDeeperThan(text, maxDepth)) {
     throw new DataError(`The text nests arrays and objects deeper than the limit of ${maxDepth} levels.`);
   }
   if (hasMoreTokensThan(text, maxTokens)) {
-    throw new DataError(`The text has more than ${maxTokens} tokens, above the limit of the option maxTokens.`);
+    throw new JsonLimitError(
+      `The text has more than ${maxTokens} tokens, above the limit of the option maxTokens.`,
+      "tokens",
+    );
   }
   let value: unknown;
   try {

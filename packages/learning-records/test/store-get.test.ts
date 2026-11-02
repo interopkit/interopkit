@@ -486,7 +486,7 @@ describe("the bounds of the JSON in a parameter", () => {
       // The Agent has five tokens: the braces, the name, the colon and the value.
       expect((await ask(agent, { maxTokens: 5 })).status).not.toBe(400);
       const tokens = await ask(agent, { maxTokens: 4 });
-      expect(tokens.status).toBe(400);
+      expect(tokens.status).toBe(413);
       expect(reasonOf(tokens)).toContain("The text has more than 4 tokens");
       const nested = await ask('{"mbox":"mailto:a@example.org","member":[{}]}', { maxDepth: 2 });
       expect(nested.status).toBe(400);
@@ -497,15 +497,15 @@ describe("the bounds of the JSON in a parameter", () => {
   it("refuses an agent of more tokens than the default, a million, before it parses it", async () => {
     const wide = `{"mbox":"mailto:a@example.org","member":[${"0,".repeat(600_000)}0]}`;
     const response = await get(memory(), { agent: wide });
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(413);
     expect(reasonOf(response)).toContain("The text has more than 1000000 tokens");
     const agents = await handleLrsRequest(requestOf("GET", "/agents", { query: { agent: wide } }), optionsOf(memory()));
-    expect(agents.status).toBe(400);
+    expect(agents.status).toBe(413);
   });
 
   it("refuses an agent larger than limits.maxBodyBytes", async () => {
     const response = await get(memory(), { agent }, {}, { limits: { maxBodyBytes: 10 } });
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(413);
     expect(reasonOf(response)).toContain("The text has");
   });
 });

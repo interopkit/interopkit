@@ -622,12 +622,12 @@ describe("handleLrsRequest: POST of a document", () => {
     };
     // {"a":1} has 5 tokens, and {"b":[1,2,3]} has 11.
     const posted = await merge('{"a":1}', '{"b":[1,2,3]}', 8);
-    expect(posted.status).toBe(400);
+    expect(posted.status).toBe(413);
     expect(reasonOf(posted)).toBe(
       "The body of the POST must be a JSON object, and it has more than 8 tokens, the limit.",
     );
     const held = await merge('{"b":[1,2,3]}', '{"a":1}', 8);
-    expect(held.status).toBe(400);
+    expect(held.status).toBe(413);
     expect(reasonOf(held)).toBe(
       "The document that exists must be a JSON object, and it has more than 8 tokens, the limit.",
     );
@@ -637,7 +637,7 @@ describe("handleLrsRequest: POST of a document", () => {
       headers: { "content-type": JSON_TYPE, "if-none-match": "*" },
       body: `[${"0,".repeat(524_000)}0]`,
     });
-    expect(absent.status).toBe(400);
+    expect(absent.status).toBe(413);
     expect(reasonOf(absent)).toContain("has more than 1000000 tokens");
   });
 

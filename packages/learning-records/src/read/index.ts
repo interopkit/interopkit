@@ -6,4 +6,9 @@
  */
 export type { ReadOptions } from "./options.js";
 export { readStatement, validateStatement, validateStatements } from "./read-statement.js";
-export { type ReadStatementJsonOptions, readStatementJson } from "./read-statement-json.js";
+export {
+  type JsonLimit,
+  JsonLimitError,
+  type ReadStatementJsonOptions,
+  readStatementJson,
+} from "./read-statement-json.js";
