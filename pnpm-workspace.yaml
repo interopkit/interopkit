@@ -7,6 +7,7 @@ packages:
 minimumReleaseAge: 20160
 
 allowBuilds:
+  core-js: false
   esbuild: false
   lefthook: false
   workerd: false

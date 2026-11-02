@@ -110,11 +110,11 @@ describe("newerCredential", () => {
   });
 
   it("compares the issuanceDate of a credential under the Verifiable Credentials Data Model 1.1", () => {
-    const old = { ...achievementCredentialV1p1(), issuanceDate: "2024-06-13T10:00:00Z" };
-    const recent = { ...achievementCredentialV1p1(), issuanceDate: "2024-06-14T10:00:00Z" };
+    const at = (issuanceDate: string) => ({ ...achievementCredentialV1p1(), issuanceDate }) as unknown as Credential;
+    const [old, recent] = [at("2024-06-13T10:00:00Z"), at("2024-06-14T10:00:00Z")];
     expect(newerCredential(old, recent)).toBe(recent);
     expect(newerCredential(recent, old)).toBe(recent);
-    expect(() => newerCredential(old, { ...recent, issuanceDate: "2024-06-14" })).toThrow(
+    expect(() => newerCredential(old, at("2024-06-14"))).toThrow(
       "has no validFrom that is a date and time of RFC 3339 with an offset",
     );
   });

@@ -1,7 +1,4 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadList, schemaDirectory } from "../../../scripts/schemas.js";
 import {
   addProof,
   createContextLoader,
@@ -14,19 +11,11 @@ import { contextHash } from "../src/data-integrity/internal.js";
 import type { IssuableCredential } from "../src/index.js";
 import { buildAchievementCredential, buildClrCredential, buildEndorsementCredential } from "../src/index.js";
 import { createKeyResolver } from "../src/keys/index.js";
+import { downloadedContexts } from "./downloaded-contexts.js";
 import { clockAt, KEYS, signerOf, type TestKey } from "./key-fixtures.js";
 
-const ROOT = resolve(import.meta.dirname, "../../..");
-const FILES = new Map(loadList(ROOT).map(({ url, file }) => [url, file]));
-
 /** The contexts as the downloaded files hold them. */
-const DOCUMENTS = new Map(
-  [...KNOWN_CONTEXTS.keys()].map((url) => {
-    const file = FILES.get(url);
-    if (file === undefined) throw new Error(`${url} is not in the list of downloads.`);
-    return [url, JSON.parse(readFileSync(resolve(schemaDirectory(ROOT), file), "utf8"))] as const;
-  }),
-);
+const DOCUMENTS = downloadedContexts();
 
 describe("the pins of the known contexts", () => {
   it.each([...KNOWN_CONTEXTS])("hold for %s", (url, pin) => {
