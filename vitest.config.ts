@@ -167,6 +167,29 @@ export default defineConfig({
         },
       },
       {
+        // The same for the three roles of `ecdsa-sd-2023`, timed against Digital Bazaar's suite in the same run. They read the
+        // contexts that `pnpm schemas` downloads.
+        resolve: {
+          alias: [
+            {
+              find: /^@interopkit\/selective-disclosure$/,
+              replacement: resolve(import.meta.dirname, "packages/selective-disclosure/dist/index.js"),
+            },
+          ],
+        },
+        test: {
+          name: "selective-disclosure-bench",
+          include: [],
+          server: { deps: { external: [/\/packages\/selective-disclosure\/dist\//] } },
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
+          benchmark: {
+            include: ["packages/selective-disclosure/test/**/*.bench.ts"],
+            suppressExportGetterWarnings: true,
+          },
+        },
+      },
+      {
         // The examples are packages of their own, and a test of each runs its scenario against the sources.
         resolve: { alias: SOURCES },
         test: {

@@ -123,7 +123,8 @@ jobs:
       - run: pnpm compat
 
   # The time to read, check and walk a framework of 10,000 items, against the budgets of
-  # packages/competency-frameworks/test/budgets.ts (docs/competency-frameworks/evidence.md). It builds first.
+  # packages/competency-frameworks/test/budgets.ts (docs/competency-frameworks/evidence.md), and the time of the three roles of
+  # ecdsa-sd-2023 against Digital Bazaar's suite (docs/selective-disclosure/proofs.md). It builds first.
   bench:
     runs-on: ubuntu-latest
     steps:
@@ -134,6 +135,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The benchmarks of selective-disclosure read the contexts that pnpm schemas downloads at their pinned hashes.
+      - run: pnpm schemas
       - run: pnpm bench
 
   # OpenSALT in containers as a counterparty of the CASE client and provider (validation/opensalt/README.md).

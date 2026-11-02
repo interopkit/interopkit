@@ -218,6 +218,22 @@ anywhere, so there is nothing to undo.
 | Digital Bazaar                                   | Mandatory positions must ascend and name a statement; signatures, keys and labels are checked for their lengths; pointers are checked; `maxBytes`, `maxTokens` and a fixed count of deep iterations bound a call, where Digital Bazaar's suite has no limit of its own |
 | Digital Bazaar and the primitives                | Statements are sorted by UTF-16 code unit, as `Array.prototype.sort` does, and not by code point: they differ only for a statement that compares a character outside the BMP with one in U+E000 to U+FFFF |
 
+## Speed
+
+`pnpm bench` times the build that ships against Digital Bazaar's suite 3.4.1 in the same run, on a credential of
+Verifiable Credentials 2.0 with 12 achievements, each a blank node, of which a disclosure reveals 8
+(`packages/selective-disclosure/test/proofs.bench.ts`). A role takes at least 20 samples after a warm-up, and the gate is its
+fastest sample as a multiple of the fastest sample of Digital Bazaar's suite: five times the measured ratio, rounded up to one
+significant digit. Both samples come from one run, so the ratio holds on any machine.
+
+| Role           | Measured ratio | Budget | Where the time goes                                                                         |
+| -------------- | -------------: | -----: | ------------------------------------------------------------------------------------------- |
+| `addBaseProof` |           1.06 |      6 | Canonicalization in the primitives; Web Crypto signs the statements, as in Digital Bazaar's |
+| `deriveProof`  |           1.10 |      6 | Canonicalization in the primitives, and the copy and the limits of the input                |
+| `verify`       |           0.95 |      5 | Canonicalization in the primitives; Web Crypto checks the signatures at once                |
+
+The measured ratios are the largest of three runs on a laptop with an Apple processor and Node.js 26.8.
+
 ## Runtimes and dependencies
 
 The tests run on Node.js 22 and 24, and the built package runs on Deno. The package uses Web Crypto and no other platform API.
