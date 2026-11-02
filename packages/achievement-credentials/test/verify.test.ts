@@ -119,10 +119,12 @@ describe("the input", () => {
     expect(detailOf(result, "format")).toContain("20 characters");
   });
 
-  it("is refused when it is the address of a hosted assertion, which this verifier does not read", async () => {
-    const result = await verifyCredential("https://example.org/assertions/1", world().options);
-    expect(outcomes(result).format).toBe("failed");
-    expect(detailOf(result, "format")).toContain("Open Badges 2.0");
+  it("takes an address as a hosted Open Badges 2.0 assertion, which it fetches", async () => {
+    const { options, requests } = world();
+    const result = await verifyCredential("https://example.org/assertions/1", options);
+    expect(outcomes(result).proof).toBe("unavailable");
+    expect(detailOf(result, "proof")).toContain("The hosted assertion");
+    expect(requests).toContain("https://example.org/assertions/1");
   });
 
   it("is refused when a JWS is longer than maxInputBytes, before it is looked at", async () => {
@@ -173,7 +175,7 @@ describe("the inputs of Open Badges 2.0", () => {
     readonly cases: readonly { readonly name: string; readonly input: unknown }[];
   } = JSON.parse(readFileSync(new URL("./fixtures/open-badges-2/badges.json", import.meta.url), "utf8"));
 
-  it("are refused as values, which this verifier does not read: an address, an assertion and a JWS alike", async () => {
+  it("are verified as Open Badges 2.0, which fetches their documents: an address, an assertion and a JWS alike", async () => {
     const { options, requests } = world();
     const inputs = [
       ...fixture.cases.map(({ input }) => input),
@@ -181,12 +183,14 @@ describe("the inputs of Open Badges 2.0", () => {
     ];
     expect(inputs.length).toBeGreaterThan(5);
     for (const input of inputs) {
+      // The host of these options serves none of the documents of the badges, so none can be had.
       const result = await verifyCredential(input as string | object, options);
       expect(result.verified).toBe(false);
       expect(result.credential).toBeUndefined();
       expect(result.checks).toHaveLength(VERIFICATION_CHECKS.length);
+      expect(outcomes(result).proof).toBe("unavailable");
     }
-    expect(requests.filter((url) => url.startsWith("https://badges.example.org"))).toStrictEqual([]);
+    expect(requests.some((url) => url.startsWith("https://badges.example.org"))).toBe(true);
   });
 });
 

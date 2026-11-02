@@ -38,9 +38,10 @@ export interface VerifyOptions extends CallOptions {
    */
   readonly contexts?: ContextLoader;
   /**
-   * The `fetch` for status lists, refresh services and schemas that the credential names.
+   * The `fetch` for status lists, refresh services and schemas that the credential names, and the documents of an Open Badges
+   * 2.0 badge. One for addresses that counterparties choose refuses loopback, private and link-local addresses.
    *
-   * @defaultValue none: those checks are `unavailable`
+   * @defaultValue none: those checks are `unavailable`, and a 2.0 badge cannot be verified
    */
   readonly fetch?: Fetch;
   /**
@@ -88,7 +89,7 @@ export interface VerifyOptions extends CallOptions {
    */
   readonly legacyProofs?: boolean;
   /**
-   * The algorithms that may sign a credential as a JWT.
+   * The algorithms that may sign a credential as a JWT, or an Open Badges 2.0 assertion as a JWS.
    *
    * @defaultValue `["RS256", "RS384", "RS512", "ES256", "ES384", "EdDSA"]`
    */
@@ -118,13 +119,14 @@ export interface VerifyOptions extends CallOptions {
    */
   readonly maxInputBytes?: number;
   /**
-   * The most levels that the JSON of the input nests.
+   * The most levels that the JSON of the input nests, and of each document of an Open Badges 2.0 badge.
    *
    * @defaultValue `64`
    */
   readonly maxDepth?: number;
   /**
-   * The most tokens of JSON in the input: the memory of a parse grows with the tokens and not with the bytes.
+   * The most tokens of JSON in the input, and in each document of an Open Badges 2.0 badge: the memory of a parse grows with the
+   * tokens and not with the bytes.
    *
    * @defaultValue `1000000`
    */

@@ -74,7 +74,7 @@ or in a list of contexts as the validator of 1EdTech reads it, that embeds its B
 `readPng` and `readSvg` find a 2.0 assertion as Open Badges 2.0 Baking writes it, kind `badge-v2`: JSON or a compact JWS in an
 `iTXt` chunk `openbadges`, the address of a hosted assertion in a legacy `tEXt` chunk, or an `assertion` element of
 `http://openbadges.org`; the bakers refuse a 2.0 assertion. `credentialSummary` shows a 2.0 assertion as `badge-v2`, and `matchesIdentifier` matches its recipient of `IDENTITY_TYPES_V2`
-in `sha256$` and `md5$`. A 2.0 badge is read and never written.
+in `sha256$` and `md5$`. A 2.0 badge is read and verified, and never written.
 
 `@interopkit/achievement-credentials/verify` is `verifyCredential`: it verifies a credential, an endorsement or a CLR (as an object, a
 compact JWS, or what `readPng` and `readSvg` return) as Open Badges 9 and CLR 8 say, and returns every check (`format`,
@@ -85,6 +85,14 @@ refused when it runs a regular expression; a refreshed credential must be authen
 whether a status list, a refresh, a schema or an issuer's keys that cannot be read fail the verification, and a proof that cannot
 be checked always does. A credential has at most `maxEndorsements` (32) endorsements and a CLR `maxNestedCredentials` (1,000)
 credentials, and the input is limited in characters, tokens and levels before it is parsed.
+
+`verifyCredential` also verifies an Open Badges 2.0 badge as its Verification section says, from the address of a hosted assertion,
+an assertion or a `BadgeAssertionV2`, a compact JWS or what `readPng` and `readSvg` return. A hosted assertion is fetched at its
+`id`, revoked when its host answers 410 Gone or `revoked: true`, and must be within the `startsWith` and `allowedOrigins` of its
+issuer. A signed assertion is verified with its `creator`, or the first 8 keys of its issuer, which must list the key and own it,
+and then checked against the issuer's `revocationList`. The BadgeClass and the issuer are fetched from their HTTPS `id`; every fetch
+is HTTPS to a public host name (`checkRemoteUrl`) through the host's `fetch`, with no redirect and within `timeoutMs`, `maxBytes`, `maxTokens` and `maxDepth`; an issuer
+that is not at an HTTPS address fails the `issuer` check; and the revocation list is fetched only once the signature verifies.
 
 A credential with a Data Integrity proof is also limited for what a JSON-LD processor reads, because the work of a processor grows
 with the square of the values of one property: `addProof`, `deriveDisclosure`, `verifyProof`, `validateJsonLd` and

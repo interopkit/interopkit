@@ -10,7 +10,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
 `@interopkit/learning-records` implements the xAPI Statement of 2.0 and 1.0.3 and its readers, the message of its Attachments, its signature, a client of an LRS and the handler of its requests,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
-implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists, their refresh and their verification, and it reads Open Badges 2.0.
+implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists, their refresh and their verification, and it reads and verifies Open Badges 2.0.
 
 ```mermaid
 flowchart BT
@@ -90,7 +90,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
-| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/`, `verify/` |
+| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading and verification of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/`, `verify/` |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -158,11 +158,11 @@ current behavior only, and never how it came to be. A package's changeset is wri
 - `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders, the comparison of
   credentials, baking in PNG and SVG images, the client of the Open Badges and CLR APIs, the keys that verify credentials with
   their binding to the issuer, the JWT and Data Integrity proofs with the loader of contexts and their pins, the status lists
-  and the refresh, the verification of a credential with its endorsements and the credentials of a CLR, and the model and the reader of Open Badges 2.0,
-  which it never writes. It does not own JSON-LD processing and the cryptosuites (the Interop Alliance libraries do them),
-  the provider of the APIs, the OAuth 2.0 clients (those of `core/oauth`) or the fetching, verification and baking of Open Badges 2.0 (those arrive
-  in later modules), nor wallets,
-  issuing platforms and storage. It reaches the network only through a `Fetch` that the caller passes.
+  and the refresh, the verification of a credential with its endorsements and the credentials of a CLR, and the model, the
+  reader and the verification of Open Badges 2.0, with its baked images. It does not own JSON-LD processing and the
+  cryptosuites (the Interop Alliance libraries do them), the provider of the APIs, the OAuth 2.0 clients (those of
+  `core/oauth`), the issuing, signing and baking of Open Badges 2.0 (Open Badges 3.0 supersedes it), nor wallets, issuing
+  platforms and storage. It reaches the network only through a `Fetch` that the caller passes.
 - `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
   canonicalization (the primitives of `@digitalbazaar/di-sd-primitives` do them), the resolution and binding of keys, the
   loader of contexts and their pins, other suites, or a verifiable credential data model: the caller passes a key and a loader.

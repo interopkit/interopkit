@@ -51,7 +51,7 @@
         "id": "https://badges.example.org/keys/1",
         "type": "CryptographicKey",
         "owner": "https://badges.example.org/issuer",
-        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4vqxrJUPKEIpZ6MsbS2+\n2lrEZkUlZSIhZRcAM0hToI3I0JgsmMH672UsZ7ikQlRq+Utf8I/nzOmVvU9+uhqU\nn858O58e2LNRL1jQulPsfkH7i5zwkz85KBdX9g86wUAoHEyGaV8YZGKecuUV0wQI\nMo8Yf87N5GoV/oITqGtKky6sagPcejXPlLBAVgf8GHmL52XbqKyOsspK5MsIMZoK\nmcWd3c7phyY8RANw/fAzF77HLrxzVZLfdmYV2o+lVWAaVHDsd1i5gRKrtWSj8RQA\nyLyBuAT+WEkPly9zSe1k2+3YJpm5NMaCjUJ9FTea7jHTG6eHct+IkgjKbnd4Mlne\ntQIDAQAB\n-----END PUBLIC KEY-----\n"
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2lfr0KWM4rymbEl/pOB+\n5KBUAKoD3fT0Ntbf4A+4O4gFkDKJKvb/HspjjVZ74z5yS0+JxF+a++34yTFQMvQ7\nA8m6LTDomgE83WLhq28WxWMsn/lmWcZn/bd8MJWNrsDQE6aAjv4GbE/XiFKPQFYD\nZE4hS4F+py/FgdBnv3PFHlo/t7NF5pn6ffn7LjFULMrf0qvc75qZfbxYVDg2z9Ek\nMNoh23127Wpwto8jeDJpXKWj0/NFRQWHWumLJmvZlv2+YEeThc3YWOYOYEXb2nom\nmizgtjTADlZcPOagWcAxuu42j83aK+PbVXDk4EFDFAWkxylxoQwiCax2DGg5f7uV\nBQIDAQAB\n-----END PUBLIC KEY-----\n"
       }
     },
     "https://platform.example.com/issuers/acme": {
@@ -112,6 +112,59 @@
         },
         "issuedOn": "2025-11-02T09:00:00+00:00",
         "expires": "2027-11-02T09:00:00Z"
+      }
+    },
+    "https://badges.example.org/assertions/2": {
+      "status": 200,
+      "body": {
+        "@context": "https://w3id.org/openbadges/v2",
+        "id": "https://badges.example.org/assertions/2",
+        "type": "Assertion",
+        "recipient": {
+          "type": "email",
+          "hashed": true,
+          "salt": "deadsea",
+          "identity": "sha256$795c303fa919b53c66f88d3fb8b9c689283d248739042645d436c0c94e7fbd4d"
+        },
+        "badge": {
+          "id": "https://badges.example.org/badges/printmaster",
+          "type": "BadgeClass",
+          "name": "3-D Printmaster",
+          "description": "Awarded for passing the 3-D printing knowledge and safety test.",
+          "image": "https://badges.example.org/badges/printmaster/image",
+          "criteria": {
+            "narrative": "Pass a paper test and a supervised evaluation on live equipment."
+          },
+          "alignment": [
+            {
+              "targetName": "Additive manufacturing",
+              "targetUrl": "https://standards.example.org/am/1"
+            }
+          ],
+          "tags": [
+            "making",
+            "safety"
+          ],
+          "issuer": {
+            "id": "https://badges.example.org/issuer",
+            "type": "Issuer",
+            "name": "Example Maker Society",
+            "url": "https://example.org",
+            "email": "badges@example.org",
+            "publicKey": "https://badges.example.org/keys/1",
+            "revocationList": "https://badges.example.org/revocations"
+          }
+        },
+        "verification": {
+          "type": "HostedBadge"
+        },
+        "issuedOn": "2025-11-02T09:00:00+00:00",
+        "evidence": [
+          {
+            "id": "https://badges.example.org/evidence/2",
+            "narrative": "Printed a calibration cube."
+          }
+        ]
       }
     },
     "https://badges.example.org/assertions/3": {
@@ -248,7 +301,7 @@
         "id": "https://badges.example.org/keys/2",
         "type": "CryptographicKey",
         "owner": "https://badges.example.org/issuer",
-        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0PRO4kEkGnDri5Xbs1pL\nibZrtlqjWK3zsl0UuI8V4Cn6oHS5AtUZMwRZaOGAwYMgESI9bLsaWCfKBoGOvAT3\n+h3qW+FYMhbxCLNX6EsYQNROXd3pHkNF+DWVU2T+alfMmA4HDpQFo7QbazkOxIWI\nX/jMw6GMqHCqhAADwk+aRhz87tM0t5JYr/qwOSSrcFc7TA5BN4o8H1NglrzV99pg\nWzq7vF2zwOYWZq/FThoLBgF9Oaz0/Io+SZ9DmJH0aa89696IbuNK7+bkuoPNWFws\nNitY7IfGYz1WJXCTHtPI1MFPMy29yDQJTE7z6Us4jDRN4J05/UxO7yBn2XxgxEQC\nJQIDAQAB\n-----END PUBLIC KEY-----\n"
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApt9Fxc51CKA9NXxGZjdk\nDn+8bxNeNCjJCy8X8aSA3edaTAZYi23pPfC0a9l3FPZrNE7POQKccYWkwS8CClgR\nQSu/C0T96Rk9muwEs7bwoR6uSgWuDYVTJiqV4dKiy96pM8j6KryPpD+bo29nXQiw\nkqGJbkkJGlje1N44qZn6pKI2Yo7QkupWJA80+R5/rxrAyj1tNb+DA9B1X6s8GBLQ\nldSVUusBCNTOgs1ooKc46jfK2rS8OOI4yRgQtpfz0rh03UUnwRrBJZRjOvPxNNU6\nEkhcLjjD0zj6f45Y3a3BW8rTB3Xx/ViHAxXQcIU1KK+04V5kUCU83njZj6y9x2bg\nWQIDAQAB\n-----END PUBLIC KEY-----\n"
       }
     },
     "https://badges.example.org/revocations": {
@@ -512,7 +565,7 @@
       "name": "a signed assertion",
       "verification": "signed",
       "outcome": "valid",
-      "input": "eyJhbGciOiJSUzI1NiJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6MmY5ZDFjOWUtMGQzNi00YzRmLTlhNDMtN2YxZTZlMWMwYTAxIiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOnRydWUsInNhbHQiOiJkZWFkc2VhIiwiaWRlbnRpdHkiOiJzaGEyNTYkNzk1YzMwM2ZhOTE5YjUzYzY2Zjg4ZDNmYjhiOWM2ODkyODNkMjQ4NzM5MDQyNjQ1ZDQzNmMwYzk0ZTdmYmQ0ZCJ9LCJiYWRnZSI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2JhZGdlcy9wcmludG1hc3RlciIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoiU2lnbmVkQmFkZ2UiLCJjcmVhdG9yIjoiaHR0cHM6Ly9iYWRnZXMuZXhhbXBsZS5vcmcva2V5cy8xIn0sImlzc3VlZE9uIjoiMjAyNS0xMS0wMlQwOTowMDowMCswMDowMCJ9.u3OLNsqqKSVl708Z2gTSKZhnP3ypvRIkfjo5rEfjxzsugY4HNsFtFAMy877_utc8UyQ56A9PYIf7__5tDLiZvIbnYVwcOfJfvY81hUNMjSKVOyOjKMtFpoX_xg7P3UdcWTxk_X89BKzmn0DtESiHo_ECXhf70CAdZQoyl8Gl3jDHvflzHPav0yxscEGgbDEYGIMn2qa60y1jzdTPaNmm9vvbppDuiHtaABrmuj5UEWCzi8iwfHQbreHD-pTS3bFOlJ1P0E1IV5QZ2uTbCIDW0elNBi-q3neHCmVHjNUL0b_w-z_rbJ7lGjG9RAhg1SXDZRzuiecIF5dw_04hlyWPQw",
+      "input": "eyJhbGciOiJSUzI1NiJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6MmY5ZDFjOWUtMGQzNi00YzRmLTlhNDMtN2YxZTZlMWMwYTAxIiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOnRydWUsInNhbHQiOiJkZWFkc2VhIiwiaWRlbnRpdHkiOiJzaGEyNTYkNzk1YzMwM2ZhOTE5YjUzYzY2Zjg4ZDNmYjhiOWM2ODkyODNkMjQ4NzM5MDQyNjQ1ZDQzNmMwYzk0ZTdmYmQ0ZCJ9LCJiYWRnZSI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2JhZGdlcy9wcmludG1hc3RlciIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoiU2lnbmVkQmFkZ2UiLCJjcmVhdG9yIjoiaHR0cHM6Ly9iYWRnZXMuZXhhbXBsZS5vcmcva2V5cy8xIn0sImlzc3VlZE9uIjoiMjAyNS0xMS0wMlQwOTowMDowMCswMDowMCJ9.P8L4w2agRIy8AlF8WkgZnwLp_X2yMNWS58vgjsFhKOJ56UXZJQ4ePZQWWQ3spctEe9WcxjLJwbcoWLIYwsabyNHpi-vlLat7qQeR9FSuMTdVIuZKHPSqodmwbZesEH_le8m98lRwm3Wea_Rp-lDThElysA0WoSUQ2sBCHD6EpFGSQjRmCZCTDVDOVnYQGa5LyPTw-TdJSQjMybqXCmf1GSS6fKgXxcSSZOdgRCLrZT-UjF8B6iSqapgdvhhK9DUjhKFyGAsZy8cpAQ9NDM7zgkVRoGAMUq0TEY41oQK4EQPzwC_oUmouWbgTjBJgAoxqJh4oStErD7JqMGAC8mfAoA",
       "payload": {
         "@context": "https://w3id.org/openbadges/v2",
         "id": "urn:uuid:2f9d1c9e-0d36-4c4f-9a43-7f1e6e1c0a01",
@@ -535,7 +588,7 @@
       "name": "a signed assertion that names its verification with the aliases verify and signed",
       "verification": "signed",
       "outcome": "valid",
-      "input": "eyJhbGciOiJSUzI1NiJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6MmY5ZDFjOWUtMGQzNi00YzRmLTlhNDMtN2YxZTZlMWMwYTAyIiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOnRydWUsInNhbHQiOiJkZWFkc2VhIiwiaWRlbnRpdHkiOiJzaGEyNTYkNzk1YzMwM2ZhOTE5YjUzYzY2Zjg4ZDNmYjhiOWM2ODkyODNkMjQ4NzM5MDQyNjQ1ZDQzNmMwYzk0ZTdmYmQ0ZCJ9LCJiYWRnZSI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2JhZGdlcy9wcmludG1hc3RlciIsImlzc3VlZE9uIjoiMjAyNS0xMS0wMlQwOTowMDowMCswMDowMCIsInZlcmlmeSI6eyJ0eXBlIjoic2lnbmVkIiwiY3JlYXRvciI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2tleXMvMSJ9fQ.sNBafvAilz9XE3OPqSnosMHCtd8mpm3T_WTSPdnZ96_qvyQCBrj_58RAvZxHdoAPwB2-0TE0jUapqliAE5KZM2tV2jcg2fL4zo3MekSS68oyfglML7IVGYFvq59Tx0UgUD5ecbmtD2YY0hGshEMSC_apbTuhcPptD6Iex3S1Ejjq3umpj_H7L0SSIeK19koDaVBsX_RJMmuvPASl60cQ619PJrbA4-diyqXw1R2B0kOcLIiMRPXWDmwLPsD2ZXZKDVjs-UJghjoHhe-kYGPjheJOLvTI6nmwwZqTccreo7pxHTM0iX6xQUBqzqjeOJGcnWUyi-Mt22drRbdxoHW5YA",
+      "input": "eyJhbGciOiJSUzI1NiJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6MmY5ZDFjOWUtMGQzNi00YzRmLTlhNDMtN2YxZTZlMWMwYTAyIiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOnRydWUsInNhbHQiOiJkZWFkc2VhIiwiaWRlbnRpdHkiOiJzaGEyNTYkNzk1YzMwM2ZhOTE5YjUzYzY2Zjg4ZDNmYjhiOWM2ODkyODNkMjQ4NzM5MDQyNjQ1ZDQzNmMwYzk0ZTdmYmQ0ZCJ9LCJiYWRnZSI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2JhZGdlcy9wcmludG1hc3RlciIsImlzc3VlZE9uIjoiMjAyNS0xMS0wMlQwOTowMDowMCswMDowMCIsInZlcmlmeSI6eyJ0eXBlIjoic2lnbmVkIiwiY3JlYXRvciI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2tleXMvMSJ9fQ.xUqZtvCohYff7YZto7C4AOwOawbt7H6M1Qu24a6WXIk1t8bYGbnZVL2B0rc1qX_2FGgJGtHiaWUrr3-DbCJTsmSu1K2i_xlFhjNyumbNYUQz15hKFe6nquvf-8cSEVT-V3rdhLeCpW40uGZlsVDlQscb61QkQn7wK8Y1XoH96NynVNwYTRVA7ypgBrYNiD2ALvof9Ol0dkW9ZuFWChsD-wtG2OSCUPmNhy6Zis8q_8lG0S5QE0KJFbq-1s28xkVmkpfTgE6a2phDFNLF56akFTpfLdCnrokGM0aMyTqPyLNrdhOvaw2_9n3qCBYrysu7PDrIQxdNeFkSW3eA1mLa9A",
       "payload": {
         "@context": "https://w3id.org/openbadges/v2",
         "id": "urn:uuid:2f9d1c9e-0d36-4c4f-9a43-7f1e6e1c0a02",
@@ -558,7 +611,7 @@
       "name": "a signed assertion in the revocation list of its issuer",
       "verification": "signed",
       "outcome": "revoked",
-      "input": "eyJhbGciOiJSUzI1NiJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6MmY5ZDFjOWUtMGQzNi00YzRmLTlhNDMtN2YxZTZlMWMwYTAzIiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOnRydWUsInNhbHQiOiJkZWFkc2VhIiwiaWRlbnRpdHkiOiJzaGEyNTYkNzk1YzMwM2ZhOTE5YjUzYzY2Zjg4ZDNmYjhiOWM2ODkyODNkMjQ4NzM5MDQyNjQ1ZDQzNmMwYzk0ZTdmYmQ0ZCJ9LCJiYWRnZSI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2JhZGdlcy9wcmludG1hc3RlciIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoiU2lnbmVkQmFkZ2UiLCJjcmVhdG9yIjoiaHR0cHM6Ly9iYWRnZXMuZXhhbXBsZS5vcmcva2V5cy8xIn0sImlzc3VlZE9uIjoiMjAyNS0xMS0wMlQwOTowMDowMCswMDowMCJ9.HlogkijIu-Xz4GqNYXsu38m0FjVkRQlZsZclWffUHOIbsSAZuPHiDF3HLAt0xAETeMwT7VlhrEynxDBjtNLeOKSfwuKp55KdE6lzc0HS1UbA90tm36O959PVk8kd4_aezI2omuXmsjfkF32WBC1W7t0vGg40Zj12ATfajBXttwy60-QcHJuDq8lIpS-9PIHZXBXqg7NLJ0WAlvl2YbCfNzuuX4gsOK_N_0P-PsCAs4aGsSUlMSsq7CDU471TN4fYFF915-qS1ZJbYPHdqQGfyi1Kqy0GZCFZh9m_i948WyQPbAxjqiAahS71jFUOnI9Cug0YdrnDw2O04IVDVCNicg",
+      "input": "eyJhbGciOiJSUzI1NiJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6MmY5ZDFjOWUtMGQzNi00YzRmLTlhNDMtN2YxZTZlMWMwYTAzIiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOnRydWUsInNhbHQiOiJkZWFkc2VhIiwiaWRlbnRpdHkiOiJzaGEyNTYkNzk1YzMwM2ZhOTE5YjUzYzY2Zjg4ZDNmYjhiOWM2ODkyODNkMjQ4NzM5MDQyNjQ1ZDQzNmMwYzk0ZTdmYmQ0ZCJ9LCJiYWRnZSI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2JhZGdlcy9wcmludG1hc3RlciIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoiU2lnbmVkQmFkZ2UiLCJjcmVhdG9yIjoiaHR0cHM6Ly9iYWRnZXMuZXhhbXBsZS5vcmcva2V5cy8xIn0sImlzc3VlZE9uIjoiMjAyNS0xMS0wMlQwOTowMDowMCswMDowMCJ9.rhxmA_v2natmBrFUvm1Ez8eCd6AApXhhJ7y6dlF4e7O3uQMD0oum_cXhgIGJQ5sw5fUWlMSZSJZ2CzyEJBjxG0ZAhl37-lIChGq1I3diW7JRaXgAgC-Mr2tAZh4cBZrrhIPgHQcqpn-KDtC8WhP-38c09esNkMH2-b8vnGfKDJ5nvhGi8OxjmsgX76z3rRFEwhLBMsHDm_8iFEvfPqAmTI-o8RgkUKxV4ttfGt0h0UgupowzTWMdY3DeExMXTZcB4UIwU7Rz7nEZ9GvmoTAcZCE7EWZaNF7bnVEjECzrwpRLoVo9boy5uLoGoqYXTyQWFzh1YctQoDGcw_RU0523yw",
       "payload": {
         "@context": "https://w3id.org/openbadges/v2",
         "id": "urn:uuid:2f9d1c9e-0d36-4c4f-9a43-7f1e6e1c0a03",
@@ -581,7 +634,7 @@
       "name": "a signed assertion whose payload changed under the signature",
       "verification": "signed",
       "outcome": "bad-signature",
-      "input": "eyJhbGciOiJSUzI1NiJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6MmY5ZDFjOWUtMGQzNi00YzRmLTlhNDMtN2YxZTZlMWMwYTAxIiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOnRydWUsInNhbHQiOiJkZWFkc2VhIiwiaWRlbnRpdHkiOiJzaGEyNTYkNzk1YzMwM2ZhOTE5YjUzYzY2Zjg4ZDNmYjhiOWM2ODkyODNkMjQ4NzM5MDQyNjQ1ZDQzNmMwYzk0ZTdmYmQ0ZCJ9LCJiYWRnZSI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2JhZGdlcy9wcmludG1hc3RlciIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoiU2lnbmVkQmFkZ2UiLCJjcmVhdG9yIjoiaHR0cHM6Ly9iYWRnZXMuZXhhbXBsZS5vcmcva2V5cy8xIn0sImlzc3VlZE9uIjoiMjAyNS0xMi0yNFQwOTowMDowMCswMDowMCJ9.u3OLNsqqKSVl708Z2gTSKZhnP3ypvRIkfjo5rEfjxzsugY4HNsFtFAMy877_utc8UyQ56A9PYIf7__5tDLiZvIbnYVwcOfJfvY81hUNMjSKVOyOjKMtFpoX_xg7P3UdcWTxk_X89BKzmn0DtESiHo_ECXhf70CAdZQoyl8Gl3jDHvflzHPav0yxscEGgbDEYGIMn2qa60y1jzdTPaNmm9vvbppDuiHtaABrmuj5UEWCzi8iwfHQbreHD-pTS3bFOlJ1P0E1IV5QZ2uTbCIDW0elNBi-q3neHCmVHjNUL0b_w-z_rbJ7lGjG9RAhg1SXDZRzuiecIF5dw_04hlyWPQw",
+      "input": "eyJhbGciOiJSUzI1NiJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6MmY5ZDFjOWUtMGQzNi00YzRmLTlhNDMtN2YxZTZlMWMwYTAxIiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOnRydWUsInNhbHQiOiJkZWFkc2VhIiwiaWRlbnRpdHkiOiJzaGEyNTYkNzk1YzMwM2ZhOTE5YjUzYzY2Zjg4ZDNmYjhiOWM2ODkyODNkMjQ4NzM5MDQyNjQ1ZDQzNmMwYzk0ZTdmYmQ0ZCJ9LCJiYWRnZSI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2JhZGdlcy9wcmludG1hc3RlciIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoiU2lnbmVkQmFkZ2UiLCJjcmVhdG9yIjoiaHR0cHM6Ly9iYWRnZXMuZXhhbXBsZS5vcmcva2V5cy8xIn0sImlzc3VlZE9uIjoiMjAyNS0xMi0yNFQwOTowMDowMCswMDowMCJ9.P8L4w2agRIy8AlF8WkgZnwLp_X2yMNWS58vgjsFhKOJ56UXZJQ4ePZQWWQ3spctEe9WcxjLJwbcoWLIYwsabyNHpi-vlLat7qQeR9FSuMTdVIuZKHPSqodmwbZesEH_le8m98lRwm3Wea_Rp-lDThElysA0WoSUQ2sBCHD6EpFGSQjRmCZCTDVDOVnYQGa5LyPTw-TdJSQjMybqXCmf1GSS6fKgXxcSSZOdgRCLrZT-UjF8B6iSqapgdvhhK9DUjhKFyGAsZy8cpAQ9NDM7zgkVRoGAMUq0TEY41oQK4EQPzwC_oUmouWbgTjBJgAoxqJh4oStErD7JqMGAC8mfAoA",
       "payload": {
         "@context": "https://w3id.org/openbadges/v2",
         "id": "urn:uuid:2f9d1c9e-0d36-4c4f-9a43-7f1e6e1c0a01",
@@ -604,7 +657,7 @@
       "name": "a signed assertion by a key that the issuer does not list",
       "verification": "signed",
       "outcome": "unlisted-key",
-      "input": "eyJhbGciOiJSUzI1NiJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6MmY5ZDFjOWUtMGQzNi00YzRmLTlhNDMtN2YxZTZlMWMwYTA0IiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOnRydWUsInNhbHQiOiJkZWFkc2VhIiwiaWRlbnRpdHkiOiJzaGEyNTYkNzk1YzMwM2ZhOTE5YjUzYzY2Zjg4ZDNmYjhiOWM2ODkyODNkMjQ4NzM5MDQyNjQ1ZDQzNmMwYzk0ZTdmYmQ0ZCJ9LCJiYWRnZSI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2JhZGdlcy9wcmludG1hc3RlciIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoiU2lnbmVkQmFkZ2UiLCJjcmVhdG9yIjoiaHR0cHM6Ly9iYWRnZXMuZXhhbXBsZS5vcmcva2V5cy8yIn0sImlzc3VlZE9uIjoiMjAyNS0xMS0wMlQwOTowMDowMCswMDowMCJ9.NZ4h_8F5feSLqLwNUaETIis_K38YJLVQThJ9pnHKga27tXmZuxHYbeIPj-k_HeuGXnLFF-na-EFsYOKHaSqBHARBTznIGVPks7KMJjK3bIwynDAlFg321rUMjM6oYnftFQsCe2cU20YXYOjqNAp01EJTLNgyQVF6f3L8wRBm_WSOuBH4WRJ1LJlx_-P8C_Fe0exMw-d2xKsokgav8f8H1spn2uLg5tXqMaSKWTY45DtTsJDHC_enzCpiUBXzQO6nK347So5FWyIL0WEnO7iLm1iA6TAzbzC4IKbB6YnOFlWTT1exOeQ_FRbhqw60qxrNt_vE38bx9hWfUF4rtgQZ8A",
+      "input": "eyJhbGciOiJSUzI1NiJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6MmY5ZDFjOWUtMGQzNi00YzRmLTlhNDMtN2YxZTZlMWMwYTA0IiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOnRydWUsInNhbHQiOiJkZWFkc2VhIiwiaWRlbnRpdHkiOiJzaGEyNTYkNzk1YzMwM2ZhOTE5YjUzYzY2Zjg4ZDNmYjhiOWM2ODkyODNkMjQ4NzM5MDQyNjQ1ZDQzNmMwYzk0ZTdmYmQ0ZCJ9LCJiYWRnZSI6Imh0dHBzOi8vYmFkZ2VzLmV4YW1wbGUub3JnL2JhZGdlcy9wcmludG1hc3RlciIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoiU2lnbmVkQmFkZ2UiLCJjcmVhdG9yIjoiaHR0cHM6Ly9iYWRnZXMuZXhhbXBsZS5vcmcva2V5cy8yIn0sImlzc3VlZE9uIjoiMjAyNS0xMS0wMlQwOTowMDowMCswMDowMCJ9.pgdaZ6eIzR3qp1cwWJ0k4u_ZKxDbjCGbLr2aLVm7XJLijrpCI8DzdTyifpCjwG3GW6faz-XLw5YJyNwU4hIljYVkaqDEwaFSUW2K5TsnRkjqvXgEFlhVCqfo2ffSxajwEfVyBgY94io5jua4Lwzy_q4uXZ3X2VscP0fnClft7rTIXFfYHAJBXn_Bz_IUCSLNnnIox5bSSmcSkPjoR2zkDb1Sr09HrIxhD1LMVist2hRFJDv-7tOvYT78Yx5f4Ck6DURGTTVrmErXGF0xPGewOcg9ScJxd4K-Y-fH2kWp-Z271E75ebgyfw7Ogjj1yERa7BNsiTSyTUhitTtAEJUAZg",
       "payload": {
         "@context": "https://w3id.org/openbadges/v2",
         "id": "urn:uuid:2f9d1c9e-0d36-4c4f-9a43-7f1e6e1c0a04",

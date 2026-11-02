@@ -168,8 +168,8 @@ its findings stop at the limit.
 
 | Not included                                                                 | Why                                                                                                                       |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Fetching a hosted assertion, its BadgeClass, its issuer, a key or a revocation list | Verification fetches them under the verification policy of the issuer; reading makes no request                    |
-| Checking a signature, a revocation, an expiry against the clock, or the scope of a hosted assertion | Verification                                                                                     |
+| Fetching a hosted assertion, its BadgeClass, its issuer, a key or a revocation list | `verifyCredential` fetches them ([verification guide](verify.md#open-badges-20)); reading makes no request |
+| Checking a signature, a revocation, an expiry against the clock, or the scope of a hosted assertion | `verifyCredential`                                                                    |
 | Issuing, signing or baking a 2.0 badge                                       | Open Badges 3.0 supersedes 2.0; a 2.0 badge is read and verified only                                                     |
 | A document under another context                                            | Its terms may differ from the table; reading it needs a JSON-LD processor, so it is read as Open Badges 3.0 and refused |
 | The expanded form, and a property written as an IRI or a compact IRI of a term | The reader reads the compacted form; such a property is kept as one that no class lists                                 |

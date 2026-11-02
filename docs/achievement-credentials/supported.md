@@ -12,8 +12,9 @@ flowchart LR
   model --> client["Client of the APIs:<br/>discovery, credentials, profile"]
   model --> keys["Keys, issuer binding,<br/>JWT and Data Integrity proofs"]
   spec2["Open Badges 2.0"] --> read2["Reader of 2.0<br/>documents, aliases, rules"]
+  read2 --> verify2["Verification of 2.0:<br/>hosted and signed badges"]
   model --> verify["Verification: every check of Open Badges 9<br/>and CLR 8, endorsements, held credentials"]
-  spec -.-> outside["Not included here:<br/>the provider of the APIs,<br/>verifying Open Badges 2.0"]
+  spec -.-> outside["Not included here:<br/>the provider of the APIs,<br/>issuing Open Badges 2.0"]
 ```
 
 | Area                    | Specification              | Included                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -50,6 +51,7 @@ flowchart LR
 | Status lists            | OB 9.1, Bitstring Status List 2.1, 3.2 | `createStatusList`, `allocateStatusIndex` (a free index at random), `setCredentialStatus`, `issueStatusListCredential` (a JWS or a Data Integrity proof), `verifyCredentialStatus` (the validate algorithm with its codes), `createStatusListCache` (`ttl` and `validUntil`); entries of the `message` purpose or wider than 1 bit are `skipped` |
 | Refresh                 | OB 9.1, VCCR               | `refreshCredential` (`1EdTechCredentialRefresh` and `ImsCredentialRefresh`), `handleRefreshRequest` for the issuer                                                                                |
 | Examples of 2.0         | OB 2.0 and its examples    | Every document that the pages print is read; the first example lacks `hashed`, and a revoked endorsement holds only what revocation requires: both are pinned with their findings                                                                                                                                                                                                                                                                             |
+| Open Badges 2.0 verification | OB 2.0 Verification   | `verifyCredential`: a hosted assertion fetched at its `id`, revoked by 410 Gone or `revoked`, within the `startsWith` and `allowedOrigins` of its issuer; a signed assertion as a compact JWS, by its `creator` or a key of its issuer's `publicKey` and that key's `owner`, and not in its issuer's `revocationList`; `issuedOn` and `expires`; the recipient |
 | Verification            | OB 9, CLR 8                | `verifyCredential`: the form, the schema (1EdTech's, and any other that is fetched and has no regular expression), the proof, the issuer's hold on the key, the refresh, the status, the validity and the recipient; the endorsements of the credential, of its issuer and of its achievements; the credentials that a CLR holds |
 
 ## Not included
@@ -57,5 +59,6 @@ flowchart LR
 | Not included                                                         | Why                                                                                                         |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | The provider side of the APIs of Open Badges and CLR                 | A server over requests, with the host's storage and authorization                                            |
-| Fetching, verifying and baking Open Badges 2.0, and issuing it       | Verification fetches and verifies 2.0 badges and reads baked ones; 2.0 is never issued                       |
+| Issuing, signing and baking Open Badges 2.0                          | Open Badges 3.0 supersedes it: a 2.0 badge is read, verified and found in an image only                      |
+| The endorsements of a 2.0 badge                                      | They are read and not verified: the verification of Open Badges 2.0 is that of an assertion                  |
 | JSON-LD processing, a map of languages for a text, a single context | The compacted form is read as JSON; the contexts give no language container and a credential needs both contexts |

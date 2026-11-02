@@ -1,16 +1,19 @@
 import { isRecord } from "@interopkit/core/checks";
 import type { VerifySettings } from "./options.js";
 
-/** What a verification starts from: a compact JWS, or a credential as an object. */
+/** What the verification of a credential starts from: a compact JWS, or a credential as an object. */
 export type Prepared =
   | { readonly form: "jws"; readonly jws: string }
   | { readonly form: "object"; readonly value: Readonly<Record<string, unknown>> };
 
+/** What a verification starts from: a credential, or the address of a hosted Open Badges 2.0 assertion. */
+export type Input = Prepared | { readonly form: "address"; readonly url: string };
+
 /** The shape of a compact JWS: three parts of base64url, which `inspectJwt` checks further. */
 const COMPACT_JWS = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u;
 
-/** The kinds of what `readPng` and `readSvg` return that hold a credential of Open Badges 3.0 or CLR 2.0. */
-const BAKED_KINDS: readonly string[] = ["badge", "clr"];
+/** The kinds of what `readPng` and `readSvg` return: a credential of Open Badges 3.0 or CLR 2.0, or an Open Badges 2.0 assertion. */
+const BAKED_KINDS: readonly string[] = ["badge", "clr", "badge-v2"];
 
 /** Unwraps what `readPng` and `readSvg` return: an object with the `kind` of the image and the `credential` in it. */
 function unwrapped(input: unknown): unknown {
@@ -20,15 +23,15 @@ function unwrapped(input: unknown): unknown {
 }
 
 /**
- * Tells what a value is to verify: a credential in a compact JWS or as an object, also inside what `readPng` and `readSvg`
- * return. The size of a string is checked before anything reads it.
+ * Tells what a value is to verify: a credential in a compact JWS or as an object, or the address of a hosted Open Badges 2.0
+ * assertion, also inside what `readPng` and `readSvg` return. The size of a string is checked before anything reads it.
  *
  * @returns The input as it is verified, or the sentence that says why it is no input.
  */
 export function preparedOf(
   input: unknown,
   settings: VerifySettings,
-): { readonly prepared: Prepared } | { readonly reason: string } {
+): { readonly prepared: Input } | { readonly reason: string } {
   const value = unwrapped(input);
   if (typeof value === "string") {
     const { maxInputBytes } = settings.jwt;
@@ -36,10 +39,10 @@ export function preparedOf(
       return { reason: `The input has ${value.length} characters, more than the ${maxInputBytes} that it may have.` };
     }
     if (COMPACT_JWS.test(value)) return { prepared: { form: "jws", jws: value } };
+    if (/^https?:\/\//u.test(value)) return { prepared: { form: "address", url: value } };
     return {
-      reason: /^https?:\/\//u.test(value)
-        ? "The input is an address, which would name a hosted Open Badges 2.0 assertion; this verifier reads credentials of Open Badges 3.0 and CLR 2.0."
-        : "The input is a string that is not a compact JWS: parse JSON text into an object first.",
+      reason:
+        "The input is a string that is neither a compact JWS nor an address: parse JSON text into an object first.",
     };
   }
   return isRecord(value)

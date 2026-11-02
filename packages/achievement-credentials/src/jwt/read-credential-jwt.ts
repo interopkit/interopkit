@@ -10,7 +10,7 @@ import { ADDED_CLAIMS, dateTimeOf, disagreement, valuesOf } from "./claims.js";
 import { type JwtReadOptions, type ReadSettings, readSettings } from "./options.js";
 
 /** The most characters of the protected header: it names an algorithm and a key, and a key of 8,192 bits is under 1,500 characters. */
-const MAX_HEADER_CHARS = 16_384;
+export const MAX_HEADER_CHARS = 16_384;
 
 const MILLISECONDS_PER_SECOND = 1000;
 

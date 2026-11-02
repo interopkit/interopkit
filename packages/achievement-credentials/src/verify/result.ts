@@ -1,5 +1,5 @@
 import {
-  type AnyVerifiableCredential,
+  type AnyCredential,
   type CheckOutcome,
   VERIFICATION_CHECKS,
   type VerificationCheck,
@@ -18,7 +18,7 @@ export function checkOf(check: VerificationCheckName, outcome: CheckOutcome, det
 /** What a credential came to, besides its own checks. */
 export interface Parts {
   /** What the proof secures, when the proof is valid and the issuer check did not fail. */
-  readonly credential?: AnyVerifiableCredential | undefined;
+  readonly credential?: AnyCredential | undefined;
   readonly endorsements?: readonly VerificationResult[];
   readonly nested?: readonly VerificationResult[];
 }

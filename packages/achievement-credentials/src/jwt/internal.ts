@@ -5,4 +5,4 @@
  */
 
 export { type ReadSettings, readSettings } from "./options.js";
-export { inspectJwt } from "./read-credential-jwt.js";
+export { inspectJwt, MAX_HEADER_CHARS } from "./read-credential-jwt.js";

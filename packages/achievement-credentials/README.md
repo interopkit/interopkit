@@ -9,7 +9,7 @@ can be baked into a PNG or an SVG image and read out of one, and a client talks 
 resolve from DIDs and HTTPS documents, a key is bound to the issuer that publishes it, and a credential is signed and read as a
 JSON Web Token. A credential, its endorsements and the credentials of a CLR are verified as Open Badges and CLR say: the proof,
 the issuer's hold on the key, the status, the validity and the recipient. The readers also read [Open Badges 2.0](https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html)
-assertions with their BadgeClass and issuer, which are read and never written. It knows nothing of any product: the host says where a credential comes from and what it is for.
+assertions with their BadgeClass and issuer, which are read, found in images and verified, hosted or signed, and never written. It knows nothing of any product: the host says where a credential comes from and what it is for.
 
 ```mermaid
 flowchart LR
@@ -41,7 +41,7 @@ flowchart LR
   host -->|"a credential, a signer"| jwt
   jwt -->|"a compact JWS, or a credential with its key"| host
   jwt --> keys
-  host -->|"a credential, keys, a clock"| verify
+  host -->|"a credential or a 2.0 badge,<br/>keys, a clock, a fetch"| verify
   verify -->|"every check, and what the proof secures"| host
   verify --> jwt
   keys -->|"your fetch"| docs["Key documents:<br/>DID, JWK, key set"]
@@ -93,7 +93,7 @@ npm install @interopkit/achievement-credentials
 |                                       | `verifyCredentialStatus`, `StatusCheckOptions`, `createStatusListCache`, `StatusListCache`: the validate algorithm with its codes, and list credentials kept across verifications          |
 | `@interopkit/achievement-credentials/refresh` | `refreshCredential`, `RefreshOptions`: get the newer version of a credential from its refresh service                                                                              |
 |                                       | `handleRefreshRequest`, `RefreshHandlerOptions`: answer a request to refresh, for the issuer                                                                                                        |
-| `@interopkit/achievement-credentials/verify` | `verifyCredential`, `VerifyOptions`, `KnownRecipient`: verify a credential, an endorsement or a CLR as Open Badges 9 and CLR 8 say, and return every check as data |
+| `@interopkit/achievement-credentials/verify` | `verifyCredential`, `VerifyOptions`, `KnownRecipient`: verify a credential, an endorsement or a CLR as Open Badges 9 and CLR 8 say, or a 2.0 badge as Open Badges 2.0 says, and return every check as data |
 
 ```ts
 import { readCredential, validateCredential } from "@interopkit/achievement-credentials";
@@ -145,7 +145,7 @@ that the compacted form of JSON-LD writes as its only member is a list in it.
 | Recipients and comparison             | `sha256$` hashes, `sha256$` and `md5$` matching, credential equality and the newer credential, a summary for display                                   |
 | Baking                                | A compact JWS or a credential with an embedded proof in an `iTXt` chunk of a PNG or an element of an SVG, for both kinds                                |
 | API client                            | Service discovery, `getCredentials` with paging, `upsertCredential`, `getProfile` and `putProfile`, of the Open Badges API and the CLR Standard API        |
-| Open Badges 2.0                       | An assertion with its BadgeClass and issuer, embedded or as a `BadgeAssertionV2`; the aliases of its context; its rules; `sha256$` and `md5$` recipients; summaries |
+| Open Badges 2.0                       | An assertion with its BadgeClass and issuer, embedded or as a `BadgeAssertionV2`; the aliases of its context; its rules; `sha256$` and `md5$` recipients; summaries; baked images; hosted and signed verification with the issuer's policy, keys and revocation list |
 
 [The model guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/model.md) and
 [the builders guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/issue.md) and
@@ -158,4 +158,4 @@ why, and the differences from the references.
 ## License
 
 [Apache-2.0](LICENSE). Copyright Fariz Wakan. Open Badges, CLR and 1EdTech are trademarks of 1EdTech Consortium, Inc.; see
-[NOTICE](NOTICE). This package implements Open Badges 3.0 and CLR 2.0, reads Open Badges 2.0, and is not certified by 1EdTech.
+[NOTICE](NOTICE). This package implements Open Badges 3.0 and CLR 2.0, reads and verifies Open Badges 2.0, and is not certified by 1EdTech.

@@ -2,11 +2,14 @@
 
 `@interopkit/achievement-credentials/verify` verifies an Open Badges 3.0 credential, an endorsement or a CLR as Open Badges 9 and
 CLR 8 say: the form and the schema, the proof, the issuer's hold on the key, the refresh, the status, the validity and, when the
-recipient is known, the recipient, then the endorsements and, for a CLR, the credentials that it holds. The result is a value.
+recipient is known, the recipient, then the endorsements and, for a CLR, the credentials that it holds. It verifies an Open
+Badges 2.0 badge as Open Badges 2.0 says: a hosted assertion at its `id` and within the verification policy of its issuer, or a
+signed one by a key that its issuer lists and not on the issuer's revocation list. The result is a value.
 
 ```mermaid
 flowchart TD
-  input["A JWS, an object,<br/>or what readPng returns"] --> format{"format<br/>size, tokens, levels,<br/>the model, the kind"}
+  input["A JWS, an object, an address,<br/>or what readPng returns"] --> format{"format<br/>size, tokens, levels,<br/>the model, the kind"}
+  format -->|"Open Badges 2.0"| v2["Open Badges 2.0:<br/>see its section"]
   format -->|"no"| stop["verified: false<br/>the rest is skipped"]
   format --> proof{"proof<br/>JWS or Data Integrity"}
   proof -->|"failed or unavailable"| stop
@@ -140,6 +143,111 @@ is withheld. The status lists of one call are fetched once, and so is each schem
 | A forged endorsement or held credential   | Its result is `verified: false` with `issuer` `failed`, the credential that holds it keeps its own checks, and `verified` of the credential is false                |
 | Limits                                    | `maxEndorsements` for one credential and `maxNestedCredentials` for one CLR: more is `format` `failed`, counted before any of them is verified                   |
 
+## Open Badges 2.0
+
+A 2.0 badge is verified from the documents that its issuer hosts, which are the source of truth: the input only names them.
+
+```mermaid
+flowchart TD
+  input["An address, an assertion,<br/>a BadgeAssertionV2 or a JWS"] --> how{"What does the<br/>assertion say?"}
+  how -->|"JSON that says signed,<br/>a JWS that says hosted"| refused["format failed"]
+  how -->|"hosted"| hosted["Fetch the assertion at its id"]
+  hosted -->|"410 Gone, or revoked: true"| revoked["status failed"]
+  hosted -->|"another id, or it says signed"| wrong["proof or format failed"]
+  hosted --> documents["Fetch the BadgeClass and the issuer<br/>from their HTTPS ids, read the three"]
+  how -->|"a JWS that says signed"| documents
+  documents -->|"hosted"| policy["issuer: the policy of the issuer<br/>startsWith, allowedOrigins"]
+  documents -->|"signed"| key["proof and issuer: a key that the<br/>issuer lists and owns, fetched"]
+  key --> list["status: the revocation list,<br/>fetched once the signature verifies"]
+  policy --> rest["validity, recipient"]
+  list --> rest
+```
+
+```ts
+import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
+import { verifyCredential } from "@interopkit/achievement-credentials/verify";
+
+// What the issuer hosts: the assertion, its BadgeClass and the issuer's profile, each at its id.
+const documents = new Map(
+  Object.entries({
+    "https://badges.example.org/assertions/1": {
+      "@context": "https://w3id.org/openbadges/v2",
+      id: "https://badges.example.org/assertions/1",
+      type: "Assertion",
+      recipient: { type: "email", hashed: false, identity: "learner@example.org" },
+      badge: "https://badges.example.org/badges/welding",
+      verification: { type: "HostedBadge" },
+      issuedOn: "2025-11-02T09:00:00Z",
+    },
+    "https://badges.example.org/badges/welding": {
+      "@context": "https://w3id.org/openbadges/v2",
+      id: "https://badges.example.org/badges/welding",
+      type: "BadgeClass",
+      name: "Welding",
+      description: "Welds a joint to the standard of the guild.",
+      image: "https://badges.example.org/badges/welding.png",
+      criteria: { narrative: "Pass the practical test." },
+      issuer: "https://badges.example.org/issuer",
+    },
+    "https://badges.example.org/issuer": {
+      "@context": "https://w3id.org/openbadges/v2",
+      id: "https://badges.example.org/issuer",
+      type: "Issuer",
+      name: "Example Guild",
+      url: "https://badges.example.org",
+      email: "badges@example.org",
+    },
+  }),
+);
+const clock = { now: () => Date.UTC(2026, 0, 15) };
+
+const result = await verifyCredential("https://badges.example.org/assertions/1", {
+  keys: createKeyResolver({ clock }),
+  clock,
+  fetch: async (url) => {
+    const document = documents.get(url);
+    return document === undefined ? new Response("", { status: 404 }) : new Response(JSON.stringify(document));
+  },
+  recipient: { identifier: { type: "email", value: "learner@example.org" } },
+});
+result.verified; // => true
+result.checks.map(({ check, outcome }) => `${check} ${outcome}`).join(", "); // => "format passed, schema skipped, proof passed, issuer passed, refresh skipped, status passed, validity passed, recipient passed"
+```
+
+| Input                                                                         | Verified as                                                                                       |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| An address: a string that starts with `https://`                               | The hosted assertion at that address                                                              |
+| An assertion or a `BadgeAssertionV2` as an object, whose verification is hosted | The hosted assertion at its `id`: nothing else of the object is read                              |
+| A compact JWS whose payload is under the context of 2.0 and says it is signed | A signed assertion                                                                                |
+| What `readPng` and `readSvg` return with the kind `badge-v2`                   | Any of the above                                                                                  |
+| An assertion as an object that says it is signed, or a JWS that says it is hosted | `format` `failed`: a signed badge is verified from its JWS, and a hosted one at its address    |
+
+| Check       | A hosted assertion                                                                                                                  | A signed assertion                                                                                                                      |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `format`    | The assertion, its BadgeClass and its issuer are documents that the readers accept                                                    | The same                                                                                                                                |
+| `schema`    | `skipped`: Open Badges 2.0 names no JSON schema of a badge                                                                           | `skipped`                                                                                                                               |
+| `proof`     | The document at the address declares that address as its `id`                                                                       | The signature verifies with the `publicKeyPem` of the `creator`, or, without one, of one of the first 8 keys that the issuer lists       |
+| `issuer`    | The issuer is at an HTTPS address, and the assertion's `id` starts with one of `startsWith` and is on one of `allowedOrigins`, by default the host of the issuer's `id`; `verificationProperty` is `id` | The issuer is at an HTTPS address and lists the key in `publicKey`, and the key's `owner`, when it names one, is the issuer |
+| `refresh`   | `skipped`: Open Badges 2.0 has no refresh service                                                                                   | `skipped`                                                                                                                               |
+| `status`    | `failed` when the host answers 410 Gone or the document says `revoked: true`, both read before the rest of the document             | The issuer's `revocationList` does not name the `id` of the assertion, or the `uid` of a badge before 1.1; an issuer without one revoked nothing |
+| `validity`  | `issuedOn` is not after now and `expires` has not passed, within `clockSkewSeconds`                                                 | The same                                                                                                                                |
+| `recipient` | The known identifier, of the kind of the recipient, is its plain value or matches its hash; a known `id` is a recipient of the kind `id`; `emailAddress` and `phoneNumber` count as `email` and `telephone` | The same |
+
+`credential` is the `BadgeAssertionV2` read from the documents fetched, and `endorsements` is empty.
+
+| Document        | Fetched                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| The assertion   | For a hosted badge, first                                                                       |
+| The BadgeClass  | From its `id` when it is HTTPS; one that the assertion embeds with another `id` is read as it is |
+| The issuer      | The same, from what the BadgeClass names                                                         |
+| A key           | For a signed badge, before its signature is checked, unless the issuer embeds it                |
+| The revocation list | For a signed badge, once its signature verifies and its key belongs to the issuer           |
+
+Each fetch is HTTPS to a host that a public name names, as `checkRemoteUrl` of `@interopkit/core/checks` checks: not an IP
+address, a single label or a name of a private network. It goes through `fetch`, with no redirect, within `timeoutMs` and
+`maxBytes`, and its tokens and levels are counted before it is parsed. A document that cannot be fetched makes the `proof` `unavailable`, which never verifies, and the
+revocation list the `status` `unavailable`, which `unavailable: "warn"` accepts.
+
 ## Options
 
 | Option                 | Meaning                                                                                                   | Default                                              |
@@ -147,7 +255,7 @@ is withheld. The status lists of one call are fetched once, and so is each schem
 | `keys`                 | The `KeyResolver` from `createKeyResolver`                                                                | Required                                             |
 | `clock`                | The `Clock` that validity is judged at                                                                    | Required                                             |
 | `contexts`             | The loader of JSON-LD contexts, for a Data Integrity proof                                                | None: such a proof is `unavailable`                  |
-| `fetch`                | The `Fetch` for status lists, refresh services and schemas                                                | None: those checks are `unavailable`                 |
+| `fetch`                | The `Fetch` for status lists, refresh services, schemas and the documents of a 2.0 badge                 | None: those checks are `unavailable`, and a 2.0 badge is not verified |
 | `statusLists`          | A `StatusListCache` that keeps list credentials across calls                                              | None: a list is fetched once for each call           |
 | `statusIssuers`        | Issuers other than a credential's that may publish its status list                                        | None                                                 |
 | `recipient`            | The known recipient: `{ id }`, `{ identifier: { type, value } }` or both; either is a match               | None: the check is `skipped`                         |
@@ -156,13 +264,13 @@ is withheld. The status lists of one call are fetched once, and so is each schem
 | `allowUnboundKeys`     | Accept keys that the issuer does not publish, for the credential and its status lists                      | `false`                                              |
 | `legacyProofs`         | Accept `Ed25519Signature2020` proofs                                                                      | `false`                                              |
 | `suites`               | More Data Integrity suites beside `eddsa-rdfc-2022`, `ecdsa-rdfc-2019` and `ecdsa-sd-2023`                | None                                                 |
-| `algorithms`           | The algorithms that may sign a JWT                                                                        | `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `EdDSA` |
+| `algorithms`           | The algorithms that may sign a JWT or a 2.0 JWS                                                           | `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `EdDSA` |
 | `clockSkewSeconds`     | The skew of a time claim, a validity period and a proof's expiry                                           | `60`                                                 |
 | `maxEndorsements`      | The most endorsements of one credential                                                                   | `32`                                                 |
 | `maxNestedCredentials` | The most credentials of one CLR                                                                           | `1000`                                               |
 | `maxInputBytes`        | The most characters of the input, and of each JWS that it holds                                           | `1048576`                                            |
-| `maxDepth`             | The most levels that the JSON of the input nests                                                          | `64`                                                 |
-| `maxTokens`            | The most tokens of JSON of the input, counted before it is parsed                                         | `1000000`                                            |
+| `maxDepth`             | The most levels that the JSON of the input, and of each document of a 2.0 badge, nests                    | `64`                                                 |
+| `maxTokens`            | The most tokens of JSON of the input, and of each document of a 2.0 badge, counted before it is parsed    | `1000000`                                            |
 | `maxJsonLdTokens`      | The most tokens of JSON in a credential with a Data Integrity proof, which a JSON-LD processor reads to check it; a CLR that holds many credentials as objects can need more | `20000` |
 | `timeoutMs`            | The time of each fetch                                                                                    | `10000`                                              |
 | `maxBytes`             | The most bytes of each fetch                                                                              | `1048576`                                            |
@@ -183,6 +291,11 @@ is withheld. The status lists of one call are fetched once, and so is each schem
 | Bytes of a schema, a status list or a refresh      | `maxBytes`             | `schema`, `status` or `refresh` `unavailable`      |
 | Time of each fetch                                 | `timeoutMs`            | `unavailable`                                     |
 | Tokens and levels of a schema                      | `maxTokens`, `maxDepth` | `schema` `unavailable`                           |
+| Bytes of a document of a 2.0 badge                 | `maxBytes`             | `proof` `unavailable`, or `status` for the revocation list |
+| Tokens and levels of a document of a 2.0 badge     | `maxTokens`, `maxDepth` | `format` `failed`, `proof` `failed` for a key, or `status` `unavailable` for the revocation list |
+| Keys of an issuer tried for a 2.0 badge without a `creator` | 8, fixed      | The others are not tried                          |
+| Bits of an RSA key of a 2.0 badge                  | 8,192, fixed           | `proof` `failed`, before the signature is checked |
+| Characters of the header of a 2.0 JWS              | 16,384, fixed          | `proof` `failed`                                  |
 
 ## Errors
 
@@ -198,7 +311,8 @@ A service that fails is never an error of the call: it makes its check `unavaila
 
 | Not included                                                    | Why                                                                                                             |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Open Badges 2.0                                                 | The address of a hosted assertion, and a baked image of that kind, are `format` `failed`: this verifier reads Open Badges 3.0 and CLR 2.0 |
+| The endorsements of a 2.0 badge                                 | They are read with the badge and not verified: the verification of Open Badges 2.0 is that of an assertion       |
+| A `verificationProperty` other than `id`                         | Open Badges 2.0 supports `id` only: the `issuer` check fails                                                     |
 | Validation: whether an issuer is trusted                        | Open Badges 9 leaves it outside verification                                                                    |
 | Verifiable presentations                                        | Open Badges and CLR define none                                                                                 |
 | JSON text as input                                              | Parse it into an object first; a string is a compact JWS                                                        |
@@ -216,3 +330,18 @@ A service that fails is never an error of the call: it makes its check `unavaila
 | The recipient of a held credential         | Open Badges 9.1 lists the recipient check for every credential                                                     | Checked on the credential that was passed: the credentials of a CLR need not name the learner as the CLR does        |
 | The endorsements of an endorsement         | Open Badges 9.2 has no step for them                                                                              | Not followed                                                                                                      |
 | Which endorsements                         | Open Badges 9.1 says "any EndorsementCredentials" the credential contains                                          | Those of the credential, of its issuer's profile and of the achievements of its subject                           |
+
+The references of a 2.0 badge are the Verification section of Open Badges 2.0 and the tasks of `openbadges-validator-core` at
+commit `0a66b52` (`verification.py`, `crypto.py`).
+
+| Case                                                     | The validator                                                                     | This package                                                                                              |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| The address of a document                                | `http` or `https`, following redirects                                             | `https` to a public host name only, with no redirect                                                                           |
+| A hosted document that declares another `id`             | Fetches the declared `id`                                                          | `proof` `failed`: a hosted assertion is at its `id`                                                       |
+| A host that answers 410 Gone or `revoked: true`          | Reads neither                                                                      | `status` `failed`, before the document is read, as Open Badges 2.0 says                                    |
+| An address that serves an assertion that says it is signed | Reads it and checks no signature                                                 | `format` `failed`: a signed badge is verified from its JWS                                                |
+| A signed assertion without a `creator`                   | Cannot check it                                                                    | Tries the first 8 keys that the issuer lists, as Open Badges 2.0 allows                                    |
+| The `owner` of a key                                     | Not compared                                                                       | When it names one, it must be the issuer: `issuer` `failed` otherwise                                      |
+| An issuer that is not at an HTTPS address                | Its hosted assertions pass the policy with a warning                               | `issuer` `failed`: nothing ties its keys or its policy to it                                              |
+| When the revocation list is fetched                      | With the signature check, whatever its outcome                                     | Once the signature verifies and its key belongs to the issuer, so that a forged badge causes no request    |
+| The algorithm of a signed assertion                      | RS256                                                                              | Those of `algorithms`, which hold RS256 by default                                                        |

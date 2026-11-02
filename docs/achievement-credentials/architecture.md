@@ -6,7 +6,7 @@ findings and the terms of verification. `read` turns untrusted JSON into the mod
 server. `keys` resolves the keys that verify a proof and checks that a key belongs to an issuer, `jwt` signs and reads a
 credential as a JSON Web Token, and `data-integrity` secures a credential with a Data Integrity proof and loads contexts at their
 pins. `status` keeps and checks the status lists of credentials, `refresh` gets and answers the refresh of a credential, and `verify`
-joins the checks of Open Badges 9 and CLR 8.
+joins the checks of Open Badges 9 and CLR 8, and those of Open Badges 2.0.
 `read` imports only `model` and `@interopkit/core`, `issue`, `compare`, `baking` and `client` import those and `read` and never
 each other, `keys` imports `model` and `core`, `jwt` imports those and `read` and `keys`, `data-integrity` imports those three as
 well and never `jwt`, `status` builds on those and loads `data-integrity` only when a Data Integrity proof is asked for, `refresh`
@@ -27,7 +27,7 @@ flowchart BT
   di["data-integrity<br/>proofs, contexts, safe mode"]
   status["status<br/>lists, validate algorithm, cache"]
   refresh["refresh<br/>get and answer a refresh"]
-  verify["verify<br/>the checks of a credential, its endorsements,<br/>the credentials of a CLR"]
+  verify["verify<br/>the checks of a credential, its endorsements,<br/>the credentials of a CLR; a 2.0 badge"]
   root["index.ts<br/>the public API"]
   read --> model
   read --> core
@@ -98,6 +98,7 @@ flowchart BT
 |           | `input.ts`, `options.ts`, `context.ts`, `kind.ts`, `result.ts`                                   | What the input is, the options and their limits, what a call shares, the kind of a credential, the result of the checks     |
 |           | `authenticate.ts`                                                                                | The form, the proof and the issuer's hold on the key: the checks that fetch nothing that the credential names               |
 |           | `check-schema.ts`, `check-refresh.ts`, `check-status.ts`, `check-validity.ts`, `check-recipient.ts`, `held.ts` | The other checks, and where the endorsements and the held credentials of a credential are                       |
+|           | `verify-badge-v2.ts`, `fetch-v2.ts`, `policy-v2.ts`, `signature-v2.ts`, `revocation-v2.ts`, `checks-v2.ts` | An Open Badges 2.0 badge: hosted or signed, the fetch of its documents, the policy of its issuer, its signature, the revocation list, its validity and recipient |
 
 `@interopkit/core/checks` holds what other standards need as much: records that refuse or keep unknown properties, the formats
 of a date and a date and time, the copy of JSON within a depth limit, and the conversion of the issues of a parse to findings
@@ -153,5 +154,5 @@ or a property differs.
 | The package owns                                                                    | The package does not own                                                                      |
 | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | The model of Open Badges 3.0 and CLR 2.0, the readers, the builders, the comparison, baking, the client of the APIs, keys and their binding, JWT and Data Integrity proofs, status lists, refresh, verification | The provider of the APIs: a later module; JSON-LD processing and the cryptosuites: the adopted libraries |
-| The model of Open Badges 2.0 and its reader, from documents and without the network | Fetching, verifying and baking Open Badges 2.0: verification; issuing it: never |
+| The model of Open Badges 2.0, its reader, its baked images and its verification, which fetches its documents | Issuing, signing and baking Open Badges 2.0: never, since Open Badges 3.0 supersedes it |
 | The classes under both Verifiable Credentials data models                           | Wallets, issuer platforms, storage                                                            |

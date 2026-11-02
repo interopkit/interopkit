@@ -115,7 +115,7 @@ A reader accepts any prefix: it matches the namespace and the local name `creden
 
 The readers find an Open Badges 2.0 assertion as Open Badges 2.0 Baking writes it, with the kind `badge-v2`; the bakers refuse
 one, as an object, as a `BadgeAssertionV2` or in a compact JWS. Pass what they find to `verifyCredential`, which verifies a 2.0
-assertion ([Reading Open Badges 2.0](open-badges-2.md)).
+assertion ([Verifying a credential](verify.md#open-badges-20)).
 
 | Image | Where                                                            | Holds                                                                                                        |
 | ----- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |

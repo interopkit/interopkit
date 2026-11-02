@@ -192,6 +192,14 @@ describe("the refresh of a credential", () => {
     expect(outcomes(result).refresh).toBe("unavailable");
   });
 
+  it("goes on with the original when the answer names a hosted 2.0 assertion and holds no credential", async () => {
+    const address = "https://example.edu/assertions/1";
+    const { options, requests } = world({ [REFRESH_URL]: { kind: "badge-v2", credential: address } });
+    const result = await verifyCredential(await jwsOf(refreshing()), options);
+    expect(outcomes(result).refresh).toBe("unavailable");
+    expect(requests).not.toContain(address);
+  });
+
   it("goes on with the original when the answer is longer than a credential may be", async () => {
     const original = await jwsOf(refreshing());
     const refreshed = await jwsOf({ ...badge(), name: "A refreshed credential with a much longer name".repeat(10) });

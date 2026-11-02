@@ -189,7 +189,7 @@ def main():
     outside = assertion("https://elsewhere.example.net/assertions/8", badge_url, hosted)
     in_scope = assertion(f"{PLATFORM}/assertions/acme/9", platform_badge_url, hosted)
     out_of_scope = assertion(f"{PLATFORM}/assertions/other/10", platform_badge_url, hosted)
-    for value in [valid, md5_recipient, plain_recipient, gone, expired, outside, in_scope, out_of_scope]:
+    for value in [valid, embedded, md5_recipient, plain_recipient, gone, expired, outside, in_scope, out_of_scope]:
         documents[value["id"]] = served(value)
     documents[f"{HOST}/assertions/5"] = served(revoked_body)
     documents[f"{HOST}/assertions/6"] = served(None, 410)
