@@ -11,7 +11,7 @@
     "expected": [
       {
         "title": "An OPTIONAL string value (proof.previousProof) or unordered list of string values",
-        "reason": "A proof chain is optional in Data Integrity, and verifyProof checks each proof of a set on its own, so a proof that names a previousProof does not verify."
+        "reason": "The test verifies a proof chain, which the suite marks optional (optionalTests.proofChain) and Open Badges does not use. A proof that names a previousProof is refused and never read as a plain proof, so the chain is not verified."
       }
     ]
   },
@@ -32,22 +32,21 @@
     "pending": 1,
     "expected": [
       {
-        "title": "Algorithms - Verify Proof (ecdsa-rdfc-2019) interopkit The following algorithm specifies how to verify a data integrity proof",
-        "reason": "The test posts the example credential of the specification, signed by its authors. It has no validFrom, which Open Badges requires, and adding one would break the signature."
-      },
-      {
         "title": "Algorithms - Verify Derived Proof (ecdsa-sd-2023) interopkit If the length of signatures does not match the length of nonMandatory",
-        "reason": "The test posts the example credential of the specification, signed by its authors. It has no validFrom, which Open Badges requires, and adding one would break the signature."
+        "reason": "The test posts a derived proof of the specification's vector, signed by its authors for an issuer at https://vc.example and with no validFrom, which Open Badges requires of a credential; adding one would break the signature."
       },
       {
         "title": "Functions - ecdsa-sd-2023 interopkit If the proofValue string does not start with u",
-        "reason": "The test posts the example credential of the specification, signed by its authors. It has no validFrom, which Open Badges requires, and adding one would break the signature."
+        "reason": "The test posts a derived proof of the specification's vector, signed by its authors for an issuer at https://vc.example and with no validFrom, which Open Badges requires of a credential; adding one would break the signature."
       },
       {
         "title": "Functions - ecdsa-sd-2023 interopkit If the decodedProofValue does not start with the ECDSA-SD disclosure proof header bytes",
-        "reason": "The test posts the example credential of the specification, signed by its authors. It has no validFrom, which Open Badges requires, and adding one would break the signature."
+        "reason": "The test posts a derived proof of the specification's vector, signed by its authors for an issuer at https://vc.example and with no validFrom, which Open Badges requires of a credential; adding one would break the signature."
       }
-    ]
+    ],
+    "allowUnboundKeys": {
+      "reason": "The test vector of ecdsa-rdfc-2019 is signed by a did:key for the issuer https://vc.example/issuers/5678, which publishes nothing."
+    }
   },
   {
     "name": "status",

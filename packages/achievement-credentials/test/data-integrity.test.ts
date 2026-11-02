@@ -1,5 +1,6 @@
 import { DataIntegrityProof } from "@interop/data-integrity-proof";
 import { ecdsaRdfc2019 } from "@interop/ecdsa-signature";
+import { eddsaRdfc2022 } from "@interop/ed25519-signature";
 import jsigs from "@interop/jsonld-signatures";
 import { DataError, ServiceError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
@@ -573,6 +574,39 @@ describe("an ecdsa-rdfc-2019 proof", () => {
     expect(await verifyProof(signed, read)).toMatchObject({ valid: true, bound: true });
     const changed = { ...signed, name: "Another badge" } as unknown as IssuableCredential;
     expect((await verifyProof(changed, read)).valid).toBe(false);
+  });
+});
+
+describe("a proof that names a previous proof", () => {
+  it("is refused with the reason, since a proof chain is not verified and the proof is not secured until the proofs it names are", async () => {
+    const issuer = issuerOf(KEYS.ed25519);
+    const w = world();
+    const signature = new DataIntegrityProof({
+      cryptosuite: eddsaRdfc2022,
+      date: NOW,
+      signer: {
+        id: issuer.method,
+        algorithm: "Ed25519",
+        sign: ({ data }: { data: Uint8Array }) => issuer.signer.sign(data),
+      } as never,
+    });
+    // A proof that names a previousProof signs it with the rest of its options, as the algorithm of a proof chain does.
+    signature.proof = { previousProof: "urn:uuid:26329423-bec9-4b2e-88cb-a7c7d9dc4544" };
+    const signed = (await jsigs.sign(structuredClone(credentialOf(issuer.did)), {
+      suite: signature,
+      purpose: new jsigs.purposes.AssertionProofPurpose(),
+      documentLoader: async (url: string) => ({
+        contextUrl: null,
+        documentUrl: url,
+        document: await w.contexts.load(url),
+      }),
+    } as never)) as unknown as IssuableCredential;
+    expect(proofOf(signed)).toMatchObject({ previousProof: "urn:uuid:26329423-bec9-4b2e-88cb-a7c7d9dc4544" });
+    const read = { keys: w.keys, clock: w.clock, contexts: w.contexts.load };
+    expect(await verifyProof(signed, read)).toMatchObject({
+      valid: false,
+      reason: expect.stringContaining("previousProof"),
+    });
   });
 });
 

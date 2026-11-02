@@ -33,6 +33,11 @@ interface SuiteLock extends Pin {
   readonly patch?: string;
   /** A repository that the suite downloads on install, and where it puts it. */
   readonly vectors?: Pin & { readonly into: string };
+  /**
+   * Verify with keys that the issuer does not publish. The suite posts credentials that the specification signed for an issuer at
+   * an address that nobody hosts, so no key is published for it. The reason is in the lock.
+   */
+  readonly allowUnboundKeys?: { readonly reason: string };
   readonly tests: number;
   readonly pending: number;
   readonly expected: readonly Expected[];
@@ -269,7 +274,12 @@ function problemsOf(lock: SuiteLock, report: Report): string[] {
 /** Runs one suite against a fresh service, and fails on any test that is not expected to fail or on an expected test that passes. */
 async function runSuite(lock: SuiteLock, tls: { key: string; cert: string }, contexts: string): Promise<boolean> {
   const directory = await install(lock);
-  const service = await startService({ VC_API_TLS_KEY: tls.key, VC_API_TLS_CERT: tls.cert, VC_API_CONTEXTS: contexts });
+  const service = await startService({
+    VC_API_TLS_KEY: tls.key,
+    VC_API_TLS_CERT: tls.cert,
+    VC_API_CONTEXTS: contexts,
+    VC_API_ALLOW_UNBOUND_KEYS: String(lock.allowUnboundKeys !== undefined),
+  });
   try {
     const manifest = {
       settings: { enableInteropTests: false, testAllImplementations: false },

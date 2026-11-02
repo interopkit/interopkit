@@ -269,7 +269,7 @@ canonicalized once for all of them. Bounded as it is, a credential at the token 
 | Signing with `ecdsa-rdfc-2019`, `eddsa-jcs-2022` and `ecdsa-jcs-2019`; verifying the two JCS suites | Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023` for issuers; `ecdsa-rdfc-2019` is verified |
 | Presentations                                          | Open Badges and CLR define none                                                                                                    |
 | Other cryptosuites                                     | A host passes a `DataIntegritySuite` in `suites`                                                                                   |
-| Proof chains and `previousProof`                       | A credential has proofs that each secure it                                                                                         |
+| Proof chains and `previousProof`                       | A credential has proofs that each secure it, and Open Badges chains none: a proof that names a `previousProof` is not valid, with the reason, and is never read as a plain proof |
 | Where a request goes                                   | The host's `fetch` refuses private addresses                                                                                       |
 
 ## Differences from the references

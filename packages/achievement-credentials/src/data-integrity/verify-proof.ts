@@ -64,6 +64,11 @@ function proofProblem(proof: Readonly<Record<string, unknown>>, settings: Verify
   if (typeof proof.verificationMethod !== "string" || proof.verificationMethod === "") {
     return "The proof names no verificationMethod.";
   }
+  // A proof with a previousProof is verified only if the proofs that it names are, and signs them with the document (Data
+  // Integrity 4.5). No credential of Open Badges chains proofs, so such a proof is refused and never read as a plain one.
+  if (proof.previousProof !== undefined) {
+    return "The proof names a previousProof, and proof chains are not verified: the proofs of a credential each secure it.";
+  }
   if (typeof proof.expires === "string") {
     const expires = Date.parse(proof.expires);
     const now = settings.clock.now();

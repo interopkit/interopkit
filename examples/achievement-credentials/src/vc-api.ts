@@ -148,11 +148,16 @@ async function checksOf(
   credential: Record<string, unknown>,
   names: readonly unknown[],
 ): Promise<{ passed: string[]; errors: { name: string; message: string }[] }> {
-  const { keys, clock, contexts, fetch } = service.config.verify;
+  const { keys, clock, contexts, fetch, allowUnboundKeys = false } = service.config.verify;
   const passed: string[] = [];
   const errors: { name: string; message: string }[] = [];
   if (names.includes("proof")) {
-    const proof = await verifyProof(credential as unknown as IssuableCredential, { keys, clock, contexts });
+    const proof = await verifyProof(credential as unknown as IssuableCredential, {
+      keys,
+      clock,
+      contexts,
+      allowUnboundKeys,
+    });
     if (proof.valid) passed.push("proof");
     else errors.push({ name: "proof", message: proof.reason });
   }
@@ -162,6 +167,7 @@ async function checksOf(
       keys,
       clock,
       contexts,
+      allowUnboundKeys,
     });
     // A credential that names no status list has nothing to check, which is no failure.
     if (status.outcome === "passed" || status.outcome === "skipped") passed.push("credentialStatus");

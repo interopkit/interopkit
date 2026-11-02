@@ -1901,6 +1901,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {
+    rule: "A proof that names a previousProof is refused, since a proof chain is not verified.",
+    file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
+    find: "if (proof.previousProof !== undefined) {",
+    replace: "if (false) {",
+    test: "packages/achievement-credentials/test/data-integrity.test.ts",
+  },
+  {
     rule: "The since of a list is a date and time with an offset, or the request is refused.",
     file: "packages/achievement-credentials/src/provider/credentials.ts",
     find: "if (!isDateTime(since)) {",

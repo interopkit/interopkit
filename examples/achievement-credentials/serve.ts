@@ -12,7 +12,9 @@ import { createVcApi, type VcApiIssuer } from "./src/vc-api.ts";
  * Starts the VC-API service on the loopback address with TLS, for a conformance suite of the W3C or a person with `curl`, and
  * prints one line of JSON: its address and the issuers it serves. The environment says where it listens and what it trusts:
  * `VC_API_PORT` (a free port by default), `VC_API_TLS_KEY` and `VC_API_TLS_CERT` (the paths of a key and a self-signed
- * certificate for 127.0.0.1) and `VC_API_CONTEXTS` (the path of a JSON file that maps the address of each context to its document).
+ * certificate for 127.0.0.1) and `VC_API_CONTEXTS` (the path of a JSON file that maps the address of each context to its document), and `VC_API_ALLOW_UNBOUND_KEYS`
+ * (`true` verifies with keys that their issuer does not publish, which a run of a conformance suite needs for credentials that name an
+ * issuer nobody hosts).
  */
 function required(name: string): string {
   const value = process.env[name];
@@ -82,7 +84,13 @@ const api = createVcApi({
   origin: url,
   issuers,
   random: SYSTEM_RANDOM,
-  verify: { keys: createKeyResolver({ clock: SYSTEM_CLOCK }), clock: SYSTEM_CLOCK, contexts, fetch: fetchTrusting },
+  verify: {
+    keys: createKeyResolver({ clock: SYSTEM_CLOCK }),
+    clock: SYSTEM_CLOCK,
+    contexts,
+    fetch: fetchTrusting,
+    allowUnboundKeys: process.env.VC_API_ALLOW_UNBOUND_KEYS === "true",
+  },
 });
 console.log(
   JSON.stringify({
