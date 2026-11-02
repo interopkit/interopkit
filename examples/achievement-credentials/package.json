@@ -1,0 +1,17 @@
+{
+  "name": "@interopkit/example-achievement-credentials",
+  "private": true,
+  "type": "module",
+  "description": "A university that awards Open Badges as JWTs and Data Integrity credentials with status lists and refresh, a wallet that serves the Open Badges API, an employer that verifies what the wallet holds, and a VC-API service over the same functions.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node scenario.ts",
+    "serve": "node serve.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@interopkit/achievement-credentials": "workspace:^",
+    "@interopkit/core": "workspace:^",
+    "@scure/base": "2.4.0"
+  }
+}

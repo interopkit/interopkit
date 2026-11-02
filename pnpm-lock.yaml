@@ -233,6 +233,18 @@ importers:
         specifier: 1.20261016.1
         version: 1.20261016.1
 
+  examples/achievement-credentials:
+    devDependencies:
+      '@interopkit/achievement-credentials':
+        specifier: workspace:^
+        version: link:../../packages/achievement-credentials
+      '@interopkit/core':
+        specifier: workspace:^
+        version: link:../../packages/core
+      '@scure/base':
+        specifier: 2.4.0
+        version: 2.4.0
+
   examples/competency-frameworks:
     devDependencies:
       '@interopkit/competency-frameworks':

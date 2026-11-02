@@ -218,6 +218,17 @@ export default defineConfig({
         },
       },
       {
+        // The university, the wallet, the employer and the VC-API service: the scenario and the tests of the example run against
+        // the sources.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "example-achievement-credentials",
+          include: ["examples/achievement-credentials/test/**/*.test.ts"],
+          exclude: ["**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
         // The ministry and the school platform: the scenario and the tests of the example run against the sources.
         resolve: { alias: SOURCES },
         test: {

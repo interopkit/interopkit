@@ -1627,6 +1627,7 @@
         "packages/competency-frameworks/src/graph/package-view.ts",
         "packages/competency-frameworks/test/**",
         "examples/competency-frameworks/**",
+        "examples/achievement-credentials/**",
         "packages/selective-disclosure/src/document/primitives.ts",
         "packages/selective-disclosure/test/**",
         "packages/achievement-credentials/src/model/**",
