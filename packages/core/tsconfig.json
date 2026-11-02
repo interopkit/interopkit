@@ -3,7 +3,11 @@
   "compilerOptions": {
     "noEmit": true,
     "allowImportingTsExtensions": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@interopkit/core": ["./src/index.ts"],
+      "@interopkit/core/http": ["./src/http/index.ts"]
+    }
   },
   "include": ["src", "test"]
 }

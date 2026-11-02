@@ -257,6 +257,30 @@ export default defineConfig({
         },
       },
       {
+        // The benchmarks of core: the keyed cache, the readers of a body, the call to a service and the signing of a JWS, against
+        // the build that ships.
+        resolve: {
+          alias: [
+            { find: /^@interopkit\/core$/, replacement: resolve(import.meta.dirname, "packages/core/dist/index.js") },
+            {
+              find: /^@interopkit\/core\/http$/,
+              replacement: resolve(import.meta.dirname, "packages/core/dist/http/index.js"),
+            },
+          ],
+        },
+        test: {
+          name: "core-bench",
+          include: [],
+          server: { deps: { external: [/\/packages\/core\/dist\//] } },
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
+          benchmark: {
+            include: ["packages/core/test/**/*.bench.ts"],
+            suppressExportGetterWarnings: true,
+          },
+        },
+      },
+      {
         // The same for the three roles of `ecdsa-sd-2023`, timed against Digital Bazaar's suite in the same run. They read the
         // contexts that `pnpm schemas` downloads.
         resolve: {
