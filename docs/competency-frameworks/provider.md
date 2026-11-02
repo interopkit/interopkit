@@ -242,7 +242,7 @@ which a consumer reads to learn how to authenticate.
 | Status | When                                                                                                                                                                                       | `imsx_codeMinor`                                              |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
 | 200    | The object, or the set of a page, in the form of the version of the path                                                                                                                   |                                                               |
-| 400    | A `filter` that cannot be read or names an unknown property; a `fields` with a blank name; a `limit` or `offset` that is not a whole number in range; a parameter that occurs twice        | `invalid_filter_field`, `invalid_selection_field`, none, none |
+| 400    | A `filter` that cannot be read or names an unknown property; a `fields` with a blank name or of more than 2,048 characters; a `limit` or `offset` that is not a whole number in range; a parameter that occurs twice        | `invalid_filter_field`, `invalid_selection_field`, none, none |
 | 401    | `authorize` refuses: the request is not authenticated                                                                                                                                      | `unauthorised_request`                                        |
 | 403    | `authorize` refuses: the request is not allowed                                                                                                                                            | `forbidden`                                                   |
 | 429    | `authorize` refuses: the consumer asks too often, with `Retry-After` when `retryAfterSeconds` gives it | `server_busy` |
@@ -278,6 +278,7 @@ for 1.0, because the document describes 1.1.
 | Limit                               | Value | Refused with                       |
 | ----------------------------------- | ----- | ---------------------------------- |
 | Characters of a `filter`            | 2,048 | 400 `invalid_filter_field`         |
+| Characters of a `fields` list       | 2,048 | 400 `invalid_selection_field`      |
 | Logical operators in a `filter`     | 1     | 400 `invalid_filter_field`         |
 | Documents in a page (`maxPageSize`) | 1,000 | Lowered to the limit               |
 | Levels the discovery document nests | 64    | `DataError` from `localizeOpenApi` |

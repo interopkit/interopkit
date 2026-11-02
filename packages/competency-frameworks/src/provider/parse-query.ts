@@ -24,6 +24,12 @@ export interface QueryRefusal {
 
 const FIELD_SEPARATOR = ",";
 
+/**
+ * The most characters of a `fields` list, as of a filter, so that a request cannot make the reader split an unbounded text: the
+ * names of every property of a CFDocument take about 250.
+ */
+const MAX_FIELDS_LENGTH = 2048;
+
 /** Lists the conditions of a filter. */
 function conditionsOf(filter: CaseFilter): readonly CaseCondition[] {
   if ("and" in filter) return filter.and;
@@ -49,6 +55,12 @@ function readFilter(text: string, version: CaseVersion): CaseFilter | QueryRefus
  * empty when no name is one, and then the answer holds every field.
  */
 function readSelection(text: string, version: CaseVersion): readonly string[] | QueryRefusal {
+  if (text.length > MAX_FIELDS_LENGTH) {
+    return {
+      refused: "invalid_selection_field",
+      detail: `The fields list has ${text.length} characters; the most is ${MAX_FIELDS_LENGTH}.`,
+    };
+  }
   const names = text.split(FIELD_SEPARATOR).map((name) => name.trim());
   if (names.includes("")) {
     return {

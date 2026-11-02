@@ -10,11 +10,13 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures one reading.
 describe("the peak memory of reading a Basic header", () => {
-  it("reads a header of 10 MiB within the budget", () => {
+  it("reads a header of 10 MiB within the budget", async ({ annotate }) => {
     // The base64 of "ABC" again and again: a header of no colon.
     const authorization = `Basic ${btoa("ABC").repeat(2_621_440)}`;
     const before = peak();
     expect(readBasicAuthorization({ headers: { authorization } })).toBeUndefined();
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

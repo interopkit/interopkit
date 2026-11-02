@@ -1866,6 +1866,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/competency-frameworks/test/query.test.ts",
   },
   {
+    rule: "A fields list longer than 2,048 characters is refused before it is split.",
+    file: "packages/competency-frameworks/src/provider/parse-query.ts",
+    find: "if (text.length > MAX_FIELDS_LENGTH) {",
+    replace: "if (false) {",
+    test: "packages/competency-frameworks/test/query.test.ts",
+  },
+  {
     rule: "A filter with more than one logical operator is refused.",
     file: "packages/competency-frameworks/src/provider/filter-text.ts",
     find: "if (logicalAt(text, second.end) !== null) {",

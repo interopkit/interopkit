@@ -43,7 +43,9 @@ function hostileForm(): Uint8Array {
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures one reading.
 describe("the peak memory of reading a hostile form", () => {
-  it("refuses a form of a million and a half distinct names by their number, within the budget, without reading it", async () => {
+  it("refuses a form of a million and a half distinct names by their number, within the budget, without reading it", async ({
+    annotate,
+  }) => {
     const request = requestOf("POST", "/statements", {
       query: { method: "GET" },
       headers: { "content-type": "application/x-www-form-urlencoded", "x-experience-api-version": "1.0.3" },
@@ -52,6 +54,8 @@ describe("the peak memory of reading a hostile form", () => {
     const before = peak();
     const answer = await handleLrsRequest(request, optionsOf(memory()));
     expect(answer.status).toBe(400);
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

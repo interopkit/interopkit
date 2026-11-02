@@ -11,11 +11,13 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures one reading.
 describe("the peak memory of reading a hostile event", () => {
-  it("stays within the budget for an object that holds a list of a million wrong values", () => {
+  it("stays within the budget for an object that holds a list of a million wrong values", async ({ annotate }) => {
     const items = new Array(1_000_000).fill(0);
     const value = { ...STARTED_DOCUMENT, object: { id: "https://exam.example/tests/42", type: "Assessment", items } };
     const before = peak();
     expect(() => readEvent(value)).toThrow("The event is invalid at object.items[0]");
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

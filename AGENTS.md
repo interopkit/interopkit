@@ -386,7 +386,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
   the secrets of a run are random, the containers bind to loopback and with at most 2 CPUs, and `docker compose down
   --volumes` always runs. What it does differently from the references is pinned by the flows. A counterparty that calls the machine, as PyLTI1p3 calls the platform role, reaches the process of the tests through `host.docker.internal` over `https` on all interfaces for the run (on Linux the bridge is not the loopback address), with a certificate of an authority that the run makes and gives the container.
 - A reader of untrusted input has a test of its peak memory on its worst input: `process.resourceUsage().maxRSS` before and after the
-  reading, under a budget that the unbounded reading would pass by far. A process's peak only grows and Vitest runs each file in a
+  reading, reported with `annotate` and under a budget that the unbounded reading would pass by far. A process's peak only grows and Vitest runs each file in a
   process of its own, so each such test is a file of its own.
 - Baked images are written by `validation/baked_images.py` (`struct` and `zlib` for the PNG chunks, string edits for the SVG, ElementTree to
   parse every SVG), and `test/baking.test.ts` compares the bytes and the text with the fixture. A reader of images has a test of the

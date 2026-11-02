@@ -33,10 +33,12 @@ function largestMessage(): Uint8Array {
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures one reading.
 describe("the peak memory of reading a multipart message", () => {
-  it("reads the most parts and bytes that the limits take, within the budget", () => {
+  it("reads the most parts and bytes that the limits take, within the budget", async ({ annotate }) => {
     const body = largestMessage();
     const before = peak();
     expect(readMultipart("multipart/mixed; boundary=b", body).parts.size).toBe(99);
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

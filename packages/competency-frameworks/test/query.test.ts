@@ -139,6 +139,15 @@ describe("the filter of a request", () => {
     expect(filterOf("fullStatement='x'")).toHaveProperty("refused", "invalid_filter_field");
   });
 
+  it("takes a fields list of 2,048 characters and refuses one of 2,049", () => {
+    const at = (length: number) => `title,${" ".repeat(length - "title,identifier".length)}identifier`;
+    expect(parse(["fields", at(2048)])).toStrictEqual({ fields: ["title", "identifier"] });
+    expect(parse(["fields", at(2049)])).toStrictEqual({
+      refused: "invalid_selection_field",
+      detail: "The fields list has 2049 characters; the most is 2048.",
+    });
+  });
+
   it("takes a filter of 2,048 characters and refuses one of 2,049", () => {
     const at = (length: number) => `title='${"x".repeat(length - "title=''".length)}'`;
     expect(filterOf(at(2048))).toHaveProperty("filter.predicate", "=");

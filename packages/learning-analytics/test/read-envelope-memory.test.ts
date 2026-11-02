@@ -12,7 +12,9 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures one reading.
 describe("the peak memory of reading an envelope with a million wrong values", () => {
-  it("stays within the budget, and lists the findings of the limit and one that says it stopped", () => {
+  it("stays within the budget, and lists the findings of the limit and one that says it stopped", async ({
+    annotate,
+  }) => {
     const items = new Array(1_000_000).fill(0);
     const event = { ...STARTED_DOCUMENT, object: { id: "https://exam.example/tests/42", type: "Assessment", items } };
     const envelope = envelopeOf([event]);
@@ -21,6 +23,8 @@ describe("the peak memory of reading an envelope with a million wrong values", (
     expect(read.data).toStrictEqual([]);
     expect(read.findings).toHaveLength(1_001);
     expect(read.findings.at(-1)?.rule).toBe("findings-stopped");
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

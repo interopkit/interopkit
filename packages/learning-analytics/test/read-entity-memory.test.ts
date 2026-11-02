@@ -10,11 +10,15 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures one reading.
 describe("the peak memory of reading a hostile entity", () => {
-  it("stays within the budget for a list of a million wrong values, which the reader refuses at the first", () => {
+  it("stays within the budget for a list of a million wrong values, which the reader refuses at the first", async ({
+    annotate,
+  }) => {
     const members = new Array(1_000_000).fill(0);
     const value = { "@context": CALIPER_CONTEXT, id: "https://example.edu/sections/1", type: "CourseSection", members };
     const before = peak();
     expect(() => readEntity(value)).toThrow("The entity is invalid at members[0]");
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

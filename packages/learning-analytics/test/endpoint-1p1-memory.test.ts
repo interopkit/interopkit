@@ -37,7 +37,7 @@ function fullEnvelope(): Record<string, unknown> {
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures one request.
 describe("the peak memory of receiving an envelope of Caliper 1.1 with 1 MiB of events", () => {
-  it("stays within the budget, and hands every event to accept", async () => {
+  it("stays within the budget, and hands every event to accept", async ({ annotate }) => {
     const request = post(fullEnvelope());
     const endpoint = recorder();
     const before = peak();
@@ -46,6 +46,8 @@ describe("the peak memory of receiving an envelope of Caliper 1.1 with 1 MiB of 
     expect(endpoint.received[0]?.dataVersion).toBe(CALIPER_1_1_CONTEXT);
     expect(endpoint.received[0]?.data.length).toBeGreaterThan(1_000);
     expect(endpoint.received[0]?.findings).toStrictEqual([]);
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

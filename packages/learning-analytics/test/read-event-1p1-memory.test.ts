@@ -11,7 +11,7 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures one check.
 describe("the peak memory of judging a hostile event of Caliper 1.1", () => {
-  it("stays within the budget for an object that holds a list of a million wrong values", () => {
+  it("stays within the budget for an object that holds a list of a million wrong values", async ({ annotate }) => {
     const items = new Array(1_000_000).fill(0);
     const { profile: _profile, ...rest } = STARTED_DOCUMENT;
     const value = {
@@ -23,6 +23,8 @@ describe("the peak memory of judging a hostile event of Caliper 1.1", () => {
     const findings = validateEvent(value, { version: "1.1" });
     expect(findings).toHaveLength(1_001);
     expect(findings.at(-1)?.rule).toBe("findings-stopped");
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });

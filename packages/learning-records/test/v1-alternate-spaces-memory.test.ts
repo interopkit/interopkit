@@ -11,7 +11,9 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures one reading.
 describe("the peak memory of reading a form of spaces", () => {
-  it("reads a form of 10 MiB written as + within the budget, before the request is authenticated", async () => {
+  it("reads a form of 10 MiB written as + within the budget, before the request is authenticated", async ({
+    annotate,
+  }) => {
     const request = requestOf("POST", "/statements", {
       query: { method: "POST" },
       headers: { "content-type": "application/x-www-form-urlencoded", "x-experience-api-version": "1.0.3" },
@@ -20,6 +22,8 @@ describe("the peak memory of reading a form of spaces", () => {
     const before = peak();
     const answer = await handleLrsRequest(request, optionsOf(memory()));
     expect(answer.status).toBe(400);
-    expect(peak() - before).toBeLessThan(BUDGET);
+    const rise = peak() - before;
+    await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
+    expect(rise).toBeLessThan(BUDGET);
   });
 });
