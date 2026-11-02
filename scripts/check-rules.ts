@@ -1719,10 +1719,10 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A limit above the largest page is lowered to it.",
-    file: "packages/competency-frameworks/src/provider/paging.ts",
+    file: "packages/core/src/http/paging.ts",
     find: "Math.min(limit, sizes.maxPageSize)",
     replace: "limit",
-    test: "packages/competency-frameworks/test/paging.test.ts",
+    test: "packages/core/test/http.test.ts",
   },
   {
     rule: "A filter of more than 2,048 characters is refused.",

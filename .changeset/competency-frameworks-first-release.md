@@ -19,5 +19,6 @@ headers, the filter, sort and field selection of a request, the discovery file, 
 `imsx_StatusInfo` and the `Retry-After` of a refusal.
 `@interopkit/competency-frameworks/provider` serves a store of frameworks over the CASE REST binding: `handleCaseRequest`
 answers the twelve endpoints in 1.1 and in 1.0 with paging, sorting, filtering, field selection and the `imsx_StatusInfo` of a
-failure, refuses what `authorize` refuses with 401, 403 or 429, and serves the discovery file that `localizeOpenApi` makes. `parseCaseQuery` reads the query grammar, and
+failure, refuses what `authorize` refuses with 401, 403 or 429 (an `AccessDecision` of `@interopkit/core/http`), passes the store the
+page as an `OffsetPage` of `@interopkit/core/http`, and serves the discovery file that `localizeOpenApi` makes. `parseCaseQuery` reads the query grammar, and
 `queryEntities` filters and sorts documents in memory.

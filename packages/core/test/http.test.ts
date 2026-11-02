@@ -1,15 +1,20 @@
 import fc from "fast-check";
+import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import {
   checkHttpRequest,
   type HttpRequest,
   jsonResponse,
   negotiate,
+  offsetPageLinks,
   type ReadJsonOptions,
+  readAccessDecision,
   readForm,
   readJson,
+  readOffsetPage,
   readQuery,
   readText,
+  statusInfoResponse,
 } from "../src/http/index.js";
 import { DataError } from "../src/index.js";
 
@@ -514,5 +519,202 @@ describe("negotiate", () => {
       }),
       FUZZ,
     );
+  });
+});
+
+describe("readOffsetPage", () => {
+  const sizes = { pageSize: 100, maxPageSize: 1000 };
+  const query = (text: string) => readQuery(request({ url: `https://provider.example/list?${text}` }));
+
+  it("reads the limit and the offset, and fills in the page size and the start", () => {
+    expect(readOffsetPage(query("limit=10&offset=20"), sizes)).toStrictEqual({ limit: 10, offset: 20 });
+    expect(readOffsetPage(query(""), sizes)).toStrictEqual({ limit: 100, offset: 0 });
+    expect(readOffsetPage(query("offset=0"), sizes)).toStrictEqual({ limit: 100, offset: 0 });
+  });
+
+  it("lowers a limit and a page size above the largest page to it", () => {
+    expect(readOffsetPage(query("limit=5000"), sizes)).toStrictEqual({ limit: 1000, offset: 0 });
+    expect(readOffsetPage(query(""), { pageSize: 50, maxPageSize: 20 })).toStrictEqual({ limit: 20, offset: 0 });
+  });
+
+  it("refuses a limit below 1 and an offset below 0, as the PositiveInteger and NonNegativeInteger of the getCredentials request of Open Badges say", () => {
+    const cases: readonly [string, string][] = [
+      ["limit=0", 'The parameter limit must be a whole number of at least 1, found "0".'],
+      ["offset=-1", 'The parameter offset must be a whole number of at least 0, found "-1".'],
+      ["limit=1e3", 'The parameter limit must be a whole number of at least 1, found "1e3".'],
+      ["limit=%205", 'The parameter limit must be a whole number of at least 1, found " 5".'],
+      ["offset=1.5", 'The parameter offset must be a whole number of at least 0, found "1.5".'],
+      [
+        "limit=99999999999999999999",
+        'The parameter limit must be a whole number of at least 1, found "99999999999999999999".',
+      ],
+    ];
+    for (const [text, message] of cases)
+      expect(() => readOffsetPage(query(text), sizes), text).toThrow(new DataError(message));
+  });
+
+  it("names the argument of another type, as JavaScript passes it", () => {
+    expect(() => readOffsetPage(JSON.parse("{}"), sizes)).toThrow(
+      new DataError("The parameters must be a Map of names to values, found an object."),
+    );
+    expect(() => readOffsetPage(new Map(), JSON.parse("null"))).toThrow(
+      new DataError("The sizes of a page must be an object, found null."),
+    );
+    expect(() => readOffsetPage(new Map(), JSON.parse('{"pageSize":"100","maxPageSize":1000}'))).toThrow(DataError);
+  });
+
+  it("returns a page in range, or throws a DataError, for any limit and offset", () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 20 }), fc.string({ maxLength: 20 }), (limit, offset) => {
+        let page: ReturnType<typeof readOffsetPage> | undefined;
+        try {
+          page = readOffsetPage(
+            new Map([
+              ["limit", limit],
+              ["offset", offset],
+            ]),
+            sizes,
+          );
+        } catch (error) {
+          expect(error).toBeInstanceOf(DataError);
+          return;
+        }
+        expect(page.limit).toBeGreaterThanOrEqual(1);
+        expect(page.limit).toBeLessThanOrEqual(1000);
+        expect(page.offset).toBeGreaterThanOrEqual(0);
+      }),
+      FUZZ,
+    );
+  });
+});
+
+describe("offsetPageLinks", () => {
+  const url = "https://provider.example/ims/case/v1p1/CFDocuments?sort=title";
+  const at = (offset: number) =>
+    `https://provider.example/ims/case/v1p1/CFDocuments?sort=title&limit=10&offset=${offset}`;
+
+  it("gives the first, previous, next and last pages of 503 items, as the example of the CASE binding pages them", () => {
+    expect(offsetPageLinks(url, { limit: 10, offset: 10 }, { total: 503 })).toBe(
+      [`<${at(0)}>; rel="first"`, `<${at(0)}>; rel="prev"`, `<${at(20)}>; rel="next"`, `<${at(500)}>; rel="last"`].join(
+        ", ",
+      ),
+    );
+  });
+
+  it("leaves out prev on the first page and next on the last, which the paging of Open Badges asks for only then", () => {
+    expect(offsetPageLinks(url, { limit: 10, offset: 0 }, { total: 10 })).toBe(
+      `<${at(0)}>; rel="first", <${at(0)}>; rel="last"`,
+    );
+    expect(offsetPageLinks(url, { limit: 10, offset: 0 }, { total: 0 })).toBe(
+      `<${at(0)}>; rel="first", <${at(0)}>; rel="last"`,
+    );
+  });
+
+  it("gives no last page when the total is unknown, and a next page when more may follow", () => {
+    expect(offsetPageLinks(url, { limit: 10, offset: 20 }, { more: true })).toBe(
+      `<${at(0)}>; rel="first", <${at(10)}>; rel="prev", <${at(30)}>; rel="next"`,
+    );
+    expect(offsetPageLinks(url, { limit: 10, offset: 20 }, { more: false })).toBe(
+      `<${at(0)}>; rel="first", <${at(10)}>; rel="prev"`,
+    );
+  });
+
+  it("replaces the limit and the offset of the request and keeps its other parameters", () => {
+    const links = offsetPageLinks(
+      "https://p.example/c?since=2024-01-01T00%3A00%3A00Z&limit=3&offset=3",
+      {
+        limit: 3,
+        offset: 3,
+      },
+      { total: 4 },
+    );
+    expect(links).toBe(
+      [
+        '<https://p.example/c?since=2024-01-01T00%3A00%3A00Z&limit=3&offset=0>; rel="first"',
+        '<https://p.example/c?since=2024-01-01T00%3A00%3A00Z&limit=3&offset=0>; rel="prev"',
+        '<https://p.example/c?since=2024-01-01T00%3A00%3A00Z&limit=3&offset=3>; rel="last"',
+      ].join(", "),
+    );
+  });
+
+  it("names the argument of another type", () => {
+    expect(() => offsetPageLinks("/c", { limit: 1, offset: 0 }, { total: 1 })).toThrow(
+      new DataError('The URL must be an absolute URL, found "/c".'),
+    );
+    expect(() => offsetPageLinks(url, JSON.parse('{"limit":0,"offset":0}'), { total: 1 })).toThrow(DataError);
+    expect(() => offsetPageLinks(url, { limit: 1, offset: 0 }, JSON.parse('{"total":"5"}'))).toThrow(DataError);
+    expect(() => offsetPageLinks(url, { limit: 1, offset: 0 }, JSON.parse("{}"))).toThrow(
+      new DataError("The extent of the list must have a whole total or a boolean more, found an object."),
+    );
+  });
+});
+
+describe("statusInfoResponse", () => {
+  it("writes the imsx_StatusInfo of a failure with the detail of TargetEndSystem, as the REST bindings print it", () => {
+    expect(statusInfoResponse(429, "Busy.", { minor: "server_busy", headers: { "retry-after": "30" } })).toStrictEqual({
+      status: 429,
+      headers: { "content-type": "application/json;charset=UTF-8", "retry-after": "30" },
+      body: JSON.stringify({
+        imsx_codeMajor: "failure",
+        imsx_severity: "error",
+        imsx_description: "Busy.",
+        imsx_codeMinor: {
+          imsx_codeMinorField: [
+            { imsx_codeMinorFieldName: "TargetEndSystem", imsx_codeMinorFieldValue: "server_busy" },
+          ],
+        },
+      }),
+    });
+  });
+
+  it("leaves out the detail when there is no code, and takes the severity status", () => {
+    expect(JSON.parse(String(statusInfoResponse(404, "Gone.", { severity: "status" }).body))).toStrictEqual({
+      imsx_codeMajor: "failure",
+      imsx_severity: "status",
+      imsx_description: "Gone.",
+    });
+    expect(statusInfoResponse(405, "No.").headers).toStrictEqual({ "content-type": "application/json;charset=UTF-8" });
+  });
+
+  it("refuses a status that reports no failure, and options of another type", () => {
+    expect(() => statusInfoResponse(304, "Same.")).toThrow(
+      new DataError("The status must be a whole number from 400 to 599, found 304."),
+    );
+    expect(() => statusInfoResponse(JSON.parse('"500"'), "x")).toThrow(DataError);
+    expect(() => statusInfoResponse(500, "")).toThrow(DataError);
+    expect(() => statusInfoResponse(500, "x", JSON.parse('{"severity":"warning"}'))).toThrow(DataError);
+    expect(() => statusInfoResponse(500, "x", JSON.parse('{"headers":{"allow":5}}'))).toThrow(DataError);
+    expect(() => statusInfoResponse(500, "x", JSON.parse("null"))).toThrow(DataError);
+  });
+});
+
+describe("readAccessDecision", () => {
+  const grant = { grant: v.object({ owner: v.pipe(v.string(), v.nonEmpty()) }) };
+  const read = (value: unknown) => readAccessDecision(value, "The decision", grant);
+
+  it("reads an allowed decision with what it grants, and a refusal with its status and delay", () => {
+    expect(read({ allowed: true, owner: "learner-1", extra: 1 })).toStrictEqual({ allowed: true, owner: "learner-1" });
+    expect(read({ allowed: false, status: 429, retryAfterSeconds: 30 })).toStrictEqual({
+      allowed: false,
+      status: 429,
+      retryAfterSeconds: 30,
+    });
+    expect(readAccessDecision({ allowed: true, owner: "x" }, "The decision")).toStrictEqual({ allowed: true });
+  });
+
+  it("refuses another shape: a status outside 401, 403 and 429, a delay that is not whole, an allowed one without its grant", () => {
+    const bad = [
+      { allowed: false, status: 500 },
+      { allowed: false, status: 429, retryAfterSeconds: 1.5 },
+      { allowed: true },
+      { allowed: true, owner: "" },
+      { allowed: "yes", owner: "x" },
+      JSON.parse("null"),
+    ];
+    for (const value of bad) {
+      expect(() => read(value), JSON.stringify(value)).toThrow(
+        expect.objectContaining({ name: "DataError", message: expect.stringContaining("The decision") }),
+      );
+    }
   });
 });

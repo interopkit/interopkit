@@ -1,33 +1,11 @@
 import type { CallOptions } from "@interopkit/core";
 import { guardSchema, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
-import type { HttpRequest } from "@interopkit/core/http";
+import type { AccessDecision, HttpRequest } from "@interopkit/core/http";
 import * as v from "valibot";
 import { CASE_VERSIONS, type CaseVersion, type OpenApiDocument } from "../model/index.js";
 import { openApiSchema } from "../read/internal.js";
 import { canonicalLocale, DEFAULT_COLLATION } from "./query-entities.js";
 import { type FrameworkStore, storeSchema } from "./store.js";
-
-/**
- * The decision of `authorize`: the request may go on, or it is refused as unauthenticated (401), as forbidden (403), or as one
- * request too many (429).
- */
-export type AccessDecision =
-  | {
-      /** The request may be served. */
-      readonly allowed: true;
-    }
-  | {
-      /** The request is refused. */
-      readonly allowed: false;
-      /** 401 when the request is not authenticated, 403 when it is not allowed, 429 when the consumer asks too often. */
-      readonly status: 401 | 403 | 429;
-      /**
-       * The seconds that a refused consumer should wait, sent as `Retry-After` with 429.
-       *
-       * @defaultValue none: no `Retry-After`
-       */
-      readonly retryAfterSeconds?: number;
-    };
 
 /** The options of `handleCaseRequest`. */
 export interface CaseProviderOptions extends CallOptions {

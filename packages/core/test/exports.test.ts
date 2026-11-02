@@ -92,7 +92,19 @@ describe("the public API", () => {
 
   it("exports from the http subpath only what the package documents", () => {
     expect(Object.keys(http).sort()).toStrictEqual(
-      ["checkHttpRequest", "jsonResponse", "negotiate", "readForm", "readJson", "readQuery", "readText"].sort(),
+      [
+        "checkHttpRequest",
+        "jsonResponse",
+        "negotiate",
+        "offsetPageLinks",
+        "readAccessDecision",
+        "readForm",
+        "readJson",
+        "readOffsetPage",
+        "readQuery",
+        "readText",
+        "statusInfoResponse",
+      ].sort(),
     );
   });
 

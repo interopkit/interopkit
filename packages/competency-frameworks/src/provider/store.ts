@@ -1,5 +1,6 @@
 import type { CallOptions } from "@interopkit/core";
 import { guardSchema, isRecord, methodsSchema, nonNegativeIntegerSchema, strictRecord } from "@interopkit/core/checks";
+import type { OffsetPage } from "@interopkit/core/http";
 import * as v from "valibot";
 import type {
   CaseEntity,
@@ -16,14 +17,6 @@ import type {
   CFSubjectSet,
 } from "../model/index.js";
 import type { ParsedCaseQuery } from "./parse-query.js";
-
-/** The slice of the list of documents that a request asks for. */
-export interface CasePage {
-  /** The most documents to return. */
-  readonly limit: number;
-  /** The number of documents to skip. */
-  readonly offset: number;
-}
 
 /** A page of the list of documents, and the number of documents that match the query, whatever the page. */
 export interface DocumentPage {
@@ -51,7 +44,7 @@ export interface FrameworkStore {
    * `queryEntities` does it for a store that holds the documents in memory. `query.fields` is for stores that read less when
    * they can: the provider selects the fields of the page itself.
    */
-  documents(query: ParsedCaseQuery, page: CasePage, options?: CallOptions): Promise<DocumentPage>;
+  documents(query: ParsedCaseQuery, page: OffsetPage, options?: CallOptions): Promise<DocumentPage>;
   /** Returns the document with the identifier, or `undefined`. */
   document(id: string, options?: CallOptions): Promise<CFDocument | undefined>;
   /** Returns the package of the document with the identifier, or `undefined`. */

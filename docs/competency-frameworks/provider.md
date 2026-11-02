@@ -29,15 +29,16 @@ flowchart TD
 | Part                                                | Holds                                                                                    |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `handleCaseRequest`, `CaseProviderOptions`          | The router and the twelve endpoints of the binding, over a store                         |
-| `FrameworkStore`, `CasePage`, `DocumentPage`        | What the provider needs from the host: one object by identifier, and a page of documents |
-| `AccessDecision`                                    | What `authorize` answers: allowed, or refused with 401, 403 or 429                       |
+| `FrameworkStore`, `DocumentPage`                    | What the provider needs from the host: one object by identifier, and a page of documents |
 | `parseCaseQuery`, `ParsedCaseQuery`, `QueryRefusal` | The query grammar of the list of documents, for a host that writes its own handler       |
 | `queryEntities`, `QueryEntitiesOptions`             | The filter and the sort in memory, for a store that holds its documents in a list        |
 | `localizeOpenApi`, `LocalizeOpenApiOptions`         | The OpenAPI file of 1EdTech made into the localized file that the provider serves        |
 
 The query types `CaseQuery`, `CaseFilter`, `CaseCondition` and `OpenApiDocument` are in the root of the package, because the
 client shares them. The package imports `@interopkit/core` for the request, the response and the checks, and keeps nothing between
-requests.
+requests. `@interopkit/core/http` holds what the providers of the 1EdTech services share: `AccessDecision`, what `authorize`
+answers (allowed, or refused with 401, 403 or 429), the page that the store receives (`OffsetPage`: `limit` and `offset`), the
+`Link` header and the `imsx_StatusInfo` of a failure.
 
 ## Quick start
 

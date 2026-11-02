@@ -1497,7 +1497,8 @@
       "includes": [
         "packages/competency-frameworks/src/model/**",
         "packages/competency-frameworks/src/provider/handle-request.ts",
-        "packages/competency-frameworks/src/provider/status.ts",
+        "packages/core/src/http/status-info.ts",
+        "packages/core/test/http.test.ts",
         "packages/competency-frameworks/src/read/schemas.ts",
         "packages/competency-frameworks/src/graph/package-view.ts",
         "packages/competency-frameworks/test/**",

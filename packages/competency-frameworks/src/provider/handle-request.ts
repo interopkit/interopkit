@@ -1,12 +1,20 @@
 import { callPort, DataError } from "@interopkit/core";
-import { isUuid, nonNegativeIntegerSchema, parseWith } from "@interopkit/core/checks";
-import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse, readQuery } from "@interopkit/core/http";
-import * as v from "valibot";
+import { isUuid, parseWith } from "@interopkit/core/checks";
+import {
+  checkHttpRequest,
+  type HttpRequest,
+  type HttpResponse,
+  jsonResponse,
+  type OffsetPage,
+  offsetPageLinks,
+  readAccessDecision,
+  readOffsetPage,
+  readQuery,
+} from "@interopkit/core/http";
 import type { CaseEntity, CasePackage, CaseVersion, CFDocumentSet } from "../model/index.js";
 import { toCaseVersion } from "../version/index.js";
 import { selectFields } from "./fields.js";
 import { type CaseProviderOptions, type ProviderSettings, readProviderOptions } from "./options.js";
-import { pageLinks, readPage } from "./paging.js";
 import { parseQuery } from "./parse-query.js";
 import { type Route, routeOf } from "./routes.js";
 import {
@@ -21,20 +29,18 @@ import {
 } from "./status.js";
 import { lookupSchema, pageSchema } from "./store.js";
 
-const decisionSchema = v.variant("allowed", [
-  v.object({ allowed: v.literal(true) }),
-  v.object({
-    allowed: v.literal(false),
-    status: v.picklist([401, 403, 429]),
-    retryAfterSeconds: v.optional(nonNegativeIntegerSchema),
-  }),
-]);
-
 /** Returns an object of the model in the form of a version of CASE. It is `undefined` when 1.0 has no form for it. */
 function inVersion(value: CaseEntity | CasePackage, version: CaseVersion): CaseEntity | CasePackage | undefined {
   if (version === "1.1") return value;
   return toCaseVersion(value, "1.0").value;
 }
+
+/**
+ * The sentence of the `DataError` that `readQuery` throws for a parameter that occurs twice, or `readOffsetPage` for a `limit`
+ * or an `offset` that is not a whole number in range: each names the parameter, and nothing else of the request.
+ */
+const messageOf = (error: unknown): string =>
+  error instanceof Error ? error.message : "The query of the request cannot be read.";
 
 /** Asks `authorize` about a request, and returns the answer to send when the request may not go on. */
 async function refusalOf(request: HttpRequest, settings: ProviderSettings): Promise<HttpResponse | undefined> {
@@ -42,7 +48,7 @@ async function refusalOf(request: HttpRequest, settings: ProviderSettings): Prom
   if (authorize === undefined) return undefined;
   const asked = await callPort(() => authorize(request, { signal }), signal);
   if (asked === undefined) return internalError();
-  const decision = parseWith(decisionSchema, asked.value, "The decision of authorize");
+  const decision = readAccessDecision(asked.value, "The decision of authorize");
   if (decision.allowed) return undefined;
   if (decision.status === 429) return serverBusy(decision.retryAfterSeconds);
   return decision.status === 401 ? unauthorized() : forbidden();
@@ -58,13 +64,16 @@ async function answerDocuments(
   try {
     parameters = readQuery(request);
   } catch (error) {
-    // `readQuery` throws a `DataError` that names the parameter that occurs twice, and nothing else.
-    return failure(400, error instanceof Error ? error.message : "The query of the request cannot be read.");
+    return failure(400, messageOf(error));
   }
   const query = parseQuery(parameters, version);
   if ("refused" in query) return failure(400, query.detail, query.refused);
-  const page = readPage(parameters, settings);
-  if (typeof page === "string") return failure(400, page);
+  let page: OffsetPage;
+  try {
+    page = readOffsetPage(parameters, settings);
+  } catch (error) {
+    return failure(400, messageOf(error));
+  }
   const { signal } = settings;
   const asked = await callPort(
     () => settings.store.documents({ ...query, collation: settings.collation }, page, { signal }),
@@ -84,7 +93,7 @@ async function answerDocuments(
   return jsonResponse(
     200,
     { CFDocuments: documents },
-    { "x-total-count": String(answer.total), link: pageLinks(request.url, page, answer.total) },
+    { "x-total-count": String(answer.total), link: offsetPageLinks(request.url, page, { total: answer.total }) },
   );
 }
 

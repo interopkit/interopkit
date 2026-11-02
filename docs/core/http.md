@@ -1,17 +1,19 @@
 # Requests and answers
 
 `@interopkit/core/http` holds the request and the answer that the handlers of the packages take and return, as plain data that
-does not depend on a web framework, and the helpers that a handler uses to read a request and build an answer. A host builds an
-`HttpRequest` from the request type of its framework and sends the `HttpResponse` that a handler returns. The module does no
-I/O, holds no state and imports no platform API.
+does not depend on a web framework, and the helpers that a handler uses to read a request and build an answer: among them the
+paging by `limit` and `offset`, the `imsx_StatusInfo` of a failure and the decision of a host's `authorize` port, which the
+providers of the 1EdTech services share. A host builds an `HttpRequest` from the request type of its framework and sends the
+`HttpResponse` that a handler returns. The module does no I/O, holds no state and imports no platform API.
 
 ```mermaid
 flowchart LR
   framework["The host's web framework"] -->|"method, url, headers, body bytes"| request["HttpRequest"]
   request --> check["checkHttpRequest<br/>the shape, at the entry"]
-  check --> read["readText, readJson,<br/>readQuery, readForm"]
+  check --> read["readText, readJson,<br/>readQuery, readForm, readOffsetPage"]
   read --> handler["A handler of a package"]
-  handler --> build["jsonResponse, negotiate"]
+  decision["readAccessDecision<br/>the host's decision"] --> handler
+  handler --> build["jsonResponse, negotiate,<br/>offsetPageLinks, statusInfoResponse"]
   build --> response["HttpResponse"]
   response -->|"status, headers, body"| framework
 ```
@@ -68,11 +70,20 @@ that has no body, such as 204, takes `null`.
 | `readForm(request, options)`                | Reads the parameters of an `application/x-www-form-urlencoded` body into a map         |
 | `jsonResponse(status, body, headers, type)` | Builds an answer with a JSON body                                                      |
 | `negotiate(accept, offered)`                | Chooses a media type from the `Accept` header                                          |
+| `readOffsetPage(parameters, sizes)`         | Reads the `limit` and `offset` of a query into the page it asks for                    |
+| `offsetPageLinks(url, page, extent)`        | Builds the `Link` header of a page: first, prev, next, and last when the total is known |
+| `statusInfoResponse(status, description, options)` | Builds the answer of a failure of a 1EdTech service, with its `imsx_StatusInfo` |
+| `readAccessDecision(value, label, options)` | Reads what a host's `authorize` port decided: allowed, with what it grants, or refused  |
 
 | Type           | Fields                                                                                                                                       |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `HttpRequest`  | `method`, in upper case; `url`, absolute, with its query; `headers`, by name in lower case; `body`, a `Uint8Array`, empty when there is none |
 | `HttpResponse` | `status`; `headers`, by name; `body`, text sent as UTF-8 or a `Uint8Array` over an `ArrayBuffer`, the empty string when there is none        |
+| `OffsetPage`   | `limit`, at least 1; `offset`, from 0                                                                                                        |
+| `PageSizes`    | `pageSize`, the items of a page without a `limit`; `maxPageSize`, the most items of a page                                                   |
+| `ListExtent`   | `{ total }`, the number of items in the list; or `{ more }`, whether items may follow the page when the store cannot count them               |
+| `AccessDecision` | `{ allowed: true }` with what the host grants, or an `AccessRefusal`: `{ allowed: false, status, retryAfterSeconds? }`, with 401, 403 or 429 |
+| `ReadAccessDecisionOptions` | `grant`: the schema of what an allowed decision carries besides `allowed` |
 
 ## Options and limits
 
@@ -84,6 +95,11 @@ that has no body, such as 204, takes `null`.
 | `readForm` `options.maxBytes` | none                             | bytes  | `DataError`  | The size of the body, counted before anything is decoded            |
 | `jsonResponse` `headers`      | none                             |        |              | Win over the `content-type` that it sets                            |
 | `jsonResponse` `type`         | `application/json;charset=UTF-8` |        |              | The media type of the answer                                        |
+| `readOffsetPage` `limit`      | `sizes.pageSize`, at most `sizes.maxPageSize` | items | `DataError` | A whole number of at least 1 in digits; a larger one is lowered to `maxPageSize` |
+| `readOffsetPage` `offset`     | 0                                | items  | `DataError`  | A whole number of at least 0 in digits                              |
+| `statusInfoResponse` `options.minor` | none                      |        |              | The code of the detail, from the vocabulary of the specification    |
+| `statusInfoResponse` `options.severity` | `"error"`              |        |              | `"error"`, or `"status"` where the specification pairs the code with it |
+| `statusInfoResponse` `options.headers` | none                    |        |              | More headers, such as `Retry-After` or `Allow`                      |
 
 `readText` and `readQuery` set no limit, nor does `readForm` without `maxBytes`: the host caps the size of a body before it
 builds the request, as the handlers of the packages document. A handler that reads a form passes its own limit, so that a
@@ -99,6 +115,36 @@ form is measured before it is decoded.
 | JSON keys                     | `__proto__` becomes an own property of the result and changes no prototype                                                     |
 | A parameter that occurs twice | Refused in a query and in a form (RFC 6749 section 3.1)                                                                        |
 | Form media type               | `application/x-www-form-urlencoded`, in any case and with parameters such as `charset`; any other type is refused              |
+
+## Paging, failures and decisions
+
+The REST bindings of CASE, Open Badges and CLR page a list with `limit` and `offset`, answer a page with `X-Total-Count` and a
+`Link` header, and answer every failure with an `imsx_StatusInfo`. A provider asks the host's `authorize` port whether a request
+may go on, and the port allows it, with what it grants such as the owner of the resources, or refuses it with 401, 403 or 429.
+
+```ts
+import { offsetPageLinks, readOffsetPage, readQuery, statusInfoResponse } from "@interopkit/core/http";
+
+const list = {
+  method: "GET",
+  url: "https://badges.example.org/ims/ob/v3p0/credentials?limit=2&offset=2",
+  headers: {},
+  body: new Uint8Array(),
+};
+const page = readOffsetPage(readQuery(list), { pageSize: 100, maxPageSize: 1000 }); // => { limit: 2, offset: 2 }
+offsetPageLinks(list.url, page, { more: true }); // => '<https://badges.example.org/ims/ob/v3p0/credentials?limit=2&offset=0>; rel="first", <https://badges.example.org/ims/ob/v3p0/credentials?limit=2&offset=0>; rel="prev", <https://badges.example.org/ims/ob/v3p0/credentials?limit=2&offset=4>; rel="next"'
+const busy = statusInfoResponse(429, "Retry later.", { minor: "server_busy", headers: { "retry-after": "60" } });
+busy.headers; // => { "content-type": "application/json;charset=UTF-8", "retry-after": "60" }
+JSON.parse(String(busy.body)); // => { imsx_codeMajor: "failure", imsx_severity: "error", imsx_description: "Retry later.", imsx_codeMinor: { imsx_codeMinorField: [{ imsx_codeMinorFieldName: "TargetEndSystem", imsx_codeMinorFieldValue: "server_busy" }] } }
+```
+
+| Rule                    | Value                                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `Link` addresses        | The URL of the request with `limit` and `offset` set, so that the other parameters stay                                       |
+| `Link` relations        | `first` always; `prev` when the offset is above 0; `next` when items follow; `last` when the total is known (Open Badges 6.4) |
+| The last page           | Starts at the last multiple of `limit` below the total; for an empty list, the first page                                     |
+| `imsx_StatusInfo`       | `imsx_codeMajor` `failure`, the severity, the description, and a detail of `TargetEndSystem` with the code when there is one  |
+| A decision of the port  | Read with `readAccessDecision(value, label, { grant })`, so that another shape is a `DataError` that names its path; the grant reads what an allowed decision carries, such as an owner |
 
 ## Choosing a media type
 
@@ -130,6 +176,9 @@ negotiate(ranges, ["text/html", "image/jpeg", "text/plain"]); // => "text/plain"
 | `DataError` | `readJson`: an option is not a positive integer                                                                                                                    | Fix the option                                                   |
 | `DataError` | `readQuery`, `readForm`: a parameter occurs twice, or a form has another media type                                                                                | Answer 400, or 415 for the media type                            |
 | `DataError` | `negotiate`: `accept` is not a string, or `offered` is not a list of at least one `type/subtype` without parameters                                                | Fix the call                                                     |
+| `DataError` | `readOffsetPage`: `limit` is not a whole number of at least 1, or `offset` one of at least 0, in digits                                                            | Answer 400 with the message, which names the parameter           |
+| `DataError` | `readOffsetPage`, `offsetPageLinks`, `statusInfoResponse`: an argument of another type, a status outside 400 to 599, an empty description                          | Fix the call                                                     |
+| `DataError` | `readAccessDecision`: the port answered another shape: a status other than 401, 403 or 429, a delay that is not whole, an allowed decision without its grant           | Fix the port: a broken contract is a bug of the host             |
 
 The message of a `DataError` names the offending value, except for a text body, which it does not repeat, since a body may
 hold a token.

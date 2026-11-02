@@ -12,7 +12,11 @@ body of the answer, and a `signal` that ends the caller's wait, and
 `retryAfterSeconds` read the paging and retry headers of an answer, and `linkTarget` gives the address of a link only on the
 origin of the request. `@interopkit/core/http` holds the request
 and the answer of a handler as plain data with bodies as bytes, `readText`, `readJson`, `readQuery` and `readForm` with a limit on its bytes,
-`jsonResponse`, and `negotiate`, which chooses a media type from `Accept`. A `Signer` signs with a key that the host holds,
+`jsonResponse`, and `negotiate`, which chooses a media type from `Accept`. For the providers of the 1EdTech services it reads
+the `limit` and `offset` of a query (`readOffsetPage`), builds the `Link` header of a page with or without a known total
+(`offsetPageLinks`) and the `imsx_StatusInfo` answer of a failure (`statusInfoResponse`), and reads the decision of a host's
+`authorize` port, allowed with what it grants or refused with 401, 403 or 429 and `Retry-After` (`AccessDecision`,
+`readAccessDecision`). A `Signer` signs with a key that the host holds,
 in the process or in a KMS or an HSM, `signerFromCryptoKey` makes one from a `CryptoKey`, and `signCompactJws` assembles a
 compact JWS and refuses a signature of the wrong form. `Random` and `SYSTEM_RANDOM` are the source of random picks.
 `@interopkit/core/oauth` has the OAuth 2.0 clients on `oauth4webapi`: client credentials, authorization code with PKCE,

@@ -1,8 +1,5 @@
-import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
-import type { ImsxStatusInfo, StatusCodeMinorValue } from "../model/index.js";
-
-/** The `imsx_codeMinorFieldName` of every detail: the identity of the system that produced the code, which is this provider. */
-const STATUS_SOURCE = "TargetEndSystem";
+import { type HttpResponse, statusInfoResponse } from "@interopkit/core/http";
+import type { StatusCodeMinorValue } from "../model/index.js";
 
 /**
  * Builds the answer of a failed request: the HTTP status and an `imsx_StatusInfo` with `failure` and `error`, as the REST
@@ -19,19 +16,7 @@ export function failure(
   minor?: StatusCodeMinorValue,
   headers: Readonly<Record<string, string>> = {},
 ): HttpResponse {
-  const body: ImsxStatusInfo = {
-    imsx_codeMajor: "failure",
-    imsx_severity: "error",
-    imsx_description: description,
-    ...(minor === undefined
-      ? {}
-      : {
-          imsx_codeMinor: {
-            imsx_codeMinorField: [{ imsx_codeMinorFieldName: STATUS_SOURCE, imsx_codeMinorFieldValue: minor }],
-          },
-        }),
-  };
-  return jsonResponse(status, body, headers);
+  return statusInfoResponse(status, description, { headers, ...(minor === undefined ? {} : { minor }) });
 }
 
 /** The answer for an object, or a path, that this provider does not have: 404 with the statement that the binding gives. */
