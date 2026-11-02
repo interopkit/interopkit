@@ -82,7 +82,9 @@ describe("the equality and comparison examples of Open Badges 3.0", () => {
   /** Reads an example into a credential under the Verifiable Credentials Data Model 2.0, which the comparisons take. */
   const credential = (example: Example | undefined): IssuableCredential => {
     const read = readCredential(example ?? {});
-    if ("issuanceDate" in read) throw new Error("The example is under the Verifiable Credentials Data Model 1.1.");
+    if (!("@context" in read) || "issuanceDate" in read) {
+      throw new Error("The example is not under the Verifiable Credentials Data Model 2.0.");
+    }
     return read;
   };
 

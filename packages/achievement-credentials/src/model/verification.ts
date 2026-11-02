@@ -5,7 +5,7 @@
  * @module
  */
 import type { CallOptions } from "@interopkit/core";
-import type { AnyCredential } from "./kinds.js";
+import type { AnyVerifiableCredential } from "./kinds.js";
 
 /** The verification relationships of a DID document or controller document that a key can sit under (Controlled Identifiers 1.0 section 2.3). */
 export const KEY_RELATIONSHIPS = [
@@ -140,7 +140,7 @@ export type ProofResult =
       /** The proof is valid. */
       readonly valid: true;
       /** The credential that the proof secures. */
-      readonly credential: AnyCredential;
+      readonly credential: AnyVerifiableCredential;
       /** The key that verified the proof. */
       readonly key: VerificationKey;
       /** Whether the key is bound to the issuer of the credential. */

@@ -3,20 +3,8 @@ import { md5 } from "@noble/hashes/legacy.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
 import * as v from "valibot";
-import type { IdentityObject } from "../model/index.js";
-import { CLASS_SCHEMAS } from "../read/internal.js";
-
-/** The recipient of an Open Badges 2.0 assertion: `identity` is the plain value, or a `sha256$` or `md5$` hash of it. */
-export interface IdentityObjectV2 {
-  /** The plain value, or the hash of it. */
-  readonly identity: string;
-  /** The kind of identity, such as `email`. */
-  readonly type: string;
-  /** Whether `identity` is a hash. */
-  readonly hashed: boolean;
-  /** The text appended to the value before it was hashed. */
-  readonly salt?: string;
-}
+import type { IdentityObject, IdentityObjectV2 } from "../model/index.js";
+import { CLASS_SCHEMAS, identityObjectV2Schema } from "../read/internal.js";
 
 /** The identity that a caller knows, to be matched with the recipient of a credential. */
 export interface KnownIdentity {
@@ -26,17 +14,10 @@ export interface KnownIdentity {
   readonly value: string;
 }
 
-const identityV2Schema: Schema<IdentityObjectV2> = strictRecord({
-  identity: v.string(),
-  type: v.string(),
-  hashed: v.boolean(),
-  salt: v.optional(v.string()),
-});
-
 const identitySchema: Schema<IdentityObject | IdentityObjectV2> = v.lazy((input) =>
   typeof input === "object" && input !== null && "identityHash" in input
     ? CLASS_SCHEMAS.identityObjectSchema
-    : identityV2Schema,
+    : identityObjectV2Schema,
 );
 
 const knownSchema: Schema<KnownIdentity> = strictRecord({ type: v.string(), value: v.string() });
@@ -76,9 +57,10 @@ function hashWith(algorithm: keyof typeof HASHES, value: string): string {
  * known value, hashed with the salt of the recipient when it is hashed, equals what the credential holds.
  *
  * @remarks
- * A hash is compared as the algorithm it names (`sha256$` or `md5$`) and in either case of hexadecimal digits. A plain value
- * is compared as it is, so that `A@example.com` does not match `a@example.com`. A hash that names another algorithm matches
- * nothing. The function is synchronous.
+ * A hash is compared as the algorithm it names (`sha256$` or `md5$`, the two that Open Badges 2.0 and 3.0 name) and in either
+ * case of hexadecimal digits. `md5$` is read and never written: `hashIdentifier` writes `sha256$`. A plain value is compared
+ * as it is, so that `A@example.com` does not match `a@example.com`. A hash that names another algorithm matches nothing. The
+ * function is synchronous.
  *
  * @param identity - The recipient: an `IdentityObject` of Open Badges 3.0 or CLR 2.0, or an `IdentityObjectV2` of an Open
  * Badges 2.0 assertion.
@@ -86,6 +68,7 @@ function hashWith(algorithm: keyof typeof HASHES, value: string): string {
  * @returns Whether the recipient is the known identity.
  * @throws `DataError` when an argument is not an identity of one of the two forms.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#verify-the-recipient-using-an-identifier | Open Badges 3.0, 9.3}
+ * @see {@link https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html | Open Badges 2.0, IdentityObject}
  */
 export function matchesIdentifier(identity: IdentityObject | IdentityObjectV2, known: KnownIdentity): boolean {
   const recipient = parseWith(identitySchema, identity, "The identity");

@@ -19,6 +19,7 @@ import type {
   VerifiableCredentialV1p1,
 } from "./credentials-v1p1.js";
 import type { JWK, JWKS, Multikey } from "./keys.js";
+import type { BadgeAssertionV2 } from "./open-badges-v2.js";
 
 /**
  * The kinds of credential that the readers tell apart, by the class that the `type` of a credential names. A credential of
@@ -44,8 +45,14 @@ export type CredentialV1p1 =
   | ClrCredentialV1p1
   | VerifiableCredentialV1p1;
 
-/** A credential of either data model. */
-export type AnyCredential = IssuableCredential | CredentialV1p1;
+/** A verifiable credential of Open Badges 3.0 or CLR 2.0, under either data model. */
+export type AnyVerifiableCredential = IssuableCredential | CredentialV1p1;
+
+/**
+ * What the package reads, verifies and summarizes: a verifiable credential of either data model, or an Open Badges 2.0
+ * assertion with its BadgeClass and issuer.
+ */
+export type AnyCredential = AnyVerifiableCredential | BadgeAssertionV2;
 
 /**
  * The objects besides credentials that the readers read by the name of their class: the ones that are published or exchanged

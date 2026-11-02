@@ -18,6 +18,7 @@ flowchart LR
 | `baked_images.py` | PNG images with a credential in an `iTXt` chunk, written with `struct` and `zlib`; SVG images with a credential element, parsed back with ElementTree; and the images that a reader must refuse | The standard library of Python |
 | `xapi_signatures.py` | Statements that jwcrypto signs with RS256, RS384 and RS512 and an X.509 chain, and thirty-odd signatures that `verifyStatementSignature` must refuse, each with the reason | `jwcrypto` and `cryptography`, pinned in `requirements.txt` |
 | `caliper_ids.py`     | The name-based UUIDs of version 5 that Python's `uuid` computes, which `mintUrn` must equal, with the worked example of RFC 9562                                           | The standard library of Python                              |
+| `ob2_badges.py`      | Open Badges 2.0 badges as a server hosts them: hosted assertions, assertions that jwcrypto signs in RS256 with the key in PEM, their BadgeClasses, issuers, keys and revocation list, recipients hashed by the standard library of Python, and the outcome that each was built for (valid, revoked, expired, outside the policy of its issuer, a changed payload, a key the issuer does not list) | `jwcrypto` and `cryptography`, pinned in `requirements.txt` |
 
 Run it from the repository root in a virtual environment:
 
@@ -28,6 +29,7 @@ validation/.venv/bin/python validation/lti_tokens.py
 validation/.venv/bin/python validation/caliper_ids.py
 validation/.venv/bin/python validation/xapi_signatures.py
 validation/.venv/bin/python validation/baked_images.py
+validation/.venv/bin/python validation/ob2_badges.py
 ```
 
 A script generates its RSA keys at each run, so the signatures differ between runs; the cases and the reasons do not. Commit

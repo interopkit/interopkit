@@ -215,6 +215,23 @@ the address that the connection resolves to.
 | A verifier of JWTs that loads a processor of JSON-LD through the status module               | `status` loads `data-integrity` only for a Data Integrity proof; a test checks that no static import of `jwt`, `keys`, `status` or `refresh`, or of their dependencies, reaches a processor of JSON-LD |
 | A refresh service that answers with a huge or hostile document                               | HTTPS only, no redirects, time and size limits and a count of tokens and levels before parsing; the answer is a candidate that the caller verifies like any credential; a failed refresh is not a reason to refuse the credential |
 
+### Open Badges 2.0
+
+`readCredential` and `validateCredential` read Open Badges 2.0 assertions with their BadgeClass and issuer
+([guide](docs/achievement-credentials/open-badges-2.md)). They make no request and read the documents as the compacted form of
+the context of Open Badges 2.0, from a fixed table of its terms and aliases. A badge that they read is not verified.
+
+| Threat                                                                                  | Control                                                                                                                                                                                                                                       |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A document whose context gives the terms other meanings than the reader knows           | A value is read as 2.0 only when its only context is `https://w3id.org/openbadges/v2`, and a document embedded in it names that context or none; an object with a context of its own is kept as it is and never read as a class, and a property written as an IRI is not taken for a term |
+| A second verification smuggled in under an alias                                        | An object that holds both `verify` and `verification` is refused with `duplicate-term`                                                                                                                                                        |
+| A badge that makes the reader fetch its BadgeClass or its issuer                        | Reading makes no request: a document named by its address is `not-embedded`. Verification fetches it under the verification policy of the issuer                                                                                              |
+| A BadgeAssertionV2 whose documents do not belong together                               | Each document must have the `id` that names it, and a document is embedded or given apart, never both: `unlinked-document`                                                                                                                    |
+| A document built to exhaust memory                                                      | It nests at most 64 levels, checked before the schemas read it, and the findings stop at `maxFindings`. Measured, a list of a million wrong values is read in 90 MiB, where an unbounded list of findings took 1 GB                             |
+| The payload of a JWS built to exhaust memory, which a verifier reads before the signature | The payload must be canonical base64url, and its tokens and levels are counted before it is parsed. Measured, a JWS of 15 MiB that holds four million empty arrays is refused in 44 MiB, where parsing it took 354 MiB                     |
+| A recipient hashed with MD5                                                             | `matchesIdentifier` reads `md5$`, which Open Badges 2.0 and 3.0 name, to match a recipient; nothing writes it                                                                                                                                  |
+| A badge that was read, taken for one that was verified                                  | Reading checks the shape and the rules; it does not check a signature, a revocation, an expiry against the clock or the scope of a hosted assertion                                                                                         |
+
 ## Selective disclosure
 
 `addBaseProof`, `deriveProof` and `selectiveDisclosureSuite.verify` sign, reveal part of, and check a credential with

@@ -333,5 +333,10 @@
     "url": "https://www.w3.org/ns/credentials/examples/v2",
     "file": "credentials-examples-v2",
     "sha256": "57393fbc69d6efb9b9b5dc9cb6b9880b0944360abfe2eaf459c9e58cf2279d7c"
+  },
+  {
+    "url": "https://w3id.org/openbadges/v2",
+    "file": "openbadges-v2-context.json",
+    "sha256": "393a890d7d95eb3a86f5f12309648a64c2d0676e5270e2967b5341a2dcea13d2"
   }
 ]

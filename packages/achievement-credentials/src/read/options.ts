@@ -5,11 +5,12 @@ import { CREDENTIAL_KINDS, type CredentialKind, ENTITY_KINDS, type EntityKind } 
 /** The options of `readCredential` and `validateCredential`. */
 export interface ReadOptions {
   /**
-   * The kind of credential that the value must be. The default reads the kind from the `type` of the value: a type that
-   * includes `ClrCredential`, `EndorsementCredential`, `AchievementCredential` or `OpenBadgeCredential` (in that order) names
-   * that kind, and any other type a `VerifiableCredential`.
+   * The kind of credential of Open Badges 3.0 or CLR 2.0 that the value must be. The default reads an Open Badges 2.0
+   * assertion as one, and reads the kind of any other value from its `type`: a type that includes `ClrCredential`,
+   * `EndorsementCredential`, `AchievementCredential` or `OpenBadgeCredential` (in that order) names that kind, and any other
+   * type a `VerifiableCredential`.
    *
-   * @defaultValue the kind that the `type` names
+   * @defaultValue an Open Badges 2.0 assertion, or the kind that the `type` names
    */
   readonly kind?: CredentialKind;
   /**

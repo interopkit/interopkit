@@ -11,7 +11,7 @@ import {
 } from "@interopkit/core/checks";
 import type * as v from "valibot";
 import {
-  type AnyCredential,
+  type AnyVerifiableCredential,
   type ClrCredentialJwtPayload,
   CONTEXTS,
   type CredentialIssue,
@@ -76,7 +76,20 @@ export function parseJson<TOutput>(
     sink.add([{ path: "", rule: "invalid-value", message: `${copy.problem}.`, severity: "error" }]);
     return undefined;
   }
-  const result = safeParseBounded(schema, copy.value, sink.room);
+  return parseInto(schema, copy.value, sink);
+}
+
+/**
+ * Parses a value with a schema into a sink of findings, and stops once the sink is full.
+ *
+ * @returns The value as the schema reads it when its shape is right.
+ */
+export function parseInto<TOutput>(
+  schema: Schema<TOutput>,
+  value: unknown,
+  sink: FindingSink<CredentialIssue>,
+): TOutput | undefined {
+  const result = safeParseBounded(schema, value, sink.room);
   if (result.success) return result.output;
   sink.add(toIssues(result.issues));
   return undefined;
@@ -87,9 +100,9 @@ export function inspectCredential(
   value: unknown,
   kind: CredentialKind | undefined,
   sink: FindingSink<CredentialIssue>,
-): AnyCredential | undefined {
+): AnyVerifiableCredential | undefined {
   const schemas = CREDENTIAL_SCHEMAS[kind ?? detectKind(value)];
-  const schema: Schema<AnyCredential> = isV1p1(value) ? schemas.v1p1 : schemas.v2;
+  const schema: Schema<AnyVerifiableCredential> = isV1p1(value) ? schemas.v1p1 : schemas.v2;
   const credential = parseJson(schema, value, sink);
   if (credential !== undefined) sink.add(ruleIssues(credential));
   return credential;
@@ -129,7 +142,7 @@ export function credentialOrReason(
   value: unknown,
   label: string,
   payload = false,
-): { readonly value: AnyCredential } | { readonly reason: string } {
+): { readonly value: AnyVerifiableCredential } | { readonly reason: string } {
   const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
   const credential = payload ? inspectClrPayload(value, sink) : inspectCredential(value, undefined, sink);
   const errors = sink.list();
@@ -139,7 +152,7 @@ export function credentialOrReason(
 }
 
 /** Judges the subject of a credential, or the subject of a CLR in a JWT, that the specification wants identified. */
-export function ruleIssues(value: AnyCredential | Entity): CredentialIssue[] {
+export function ruleIssues(value: AnyVerifiableCredential | Entity): CredentialIssue[] {
   if ("verifiableCredential" in value) return subjectIssues(value, "");
   if (!("credentialSubject" in value)) return [];
   const subject = value.credentialSubject;

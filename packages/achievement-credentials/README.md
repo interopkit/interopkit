@@ -7,7 +7,8 @@ schemas of 1EdTech and the rules of the specifications. Validators list every fi
 issuer awards, and functions hash the identity of a recipient, compare two credentials and summarize one for display. A credential
 can be baked into a PNG or an SVG image and read out of one, and a client talks to the Open Badges and CLR APIs of a server. Keys
 resolve from DIDs and HTTPS documents, a key is bound to the issuer that publishes it, and a credential is signed and read as a
-JSON Web Token. It knows nothing of any product: the host says where a credential comes from and what it is for.
+JSON Web Token. The readers also read [Open Badges 2.0](https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html)
+assertions with their BadgeClass and issuer, which are read and never written. It knows nothing of any product: the host says where a credential comes from and what it is for.
 
 ```mermaid
 flowchart LR
@@ -22,7 +23,7 @@ flowchart LR
     jwt["signCredentialJwt, readCredentialJwt"]
     keys["createKeyResolver, verifyIssuerKey"]
   end
-  model["AchievementCredential, ClrCredential, Profile, ...<br/>the model of Open Badges 3.0 and CLR 2.0"]
+  model["AchievementCredential, ClrCredential, Profile, ...<br/>the model of Open Badges 3.0 and CLR 2.0;<br/>BadgeAssertionV2 of Open Badges 2.0"]
   host -->|"JSON as parsed"| read
   read --> model
   host -->|"JSON as parsed"| validate
@@ -60,14 +61,15 @@ npm install @interopkit/achievement-credentials
 |                                       | `validateCredential`, `validateEntity`, `CredentialIssue`: judge a value and return every finding, errors and warnings, as data                                                                                    |
 |                                       | `buildAchievementCredential`, `buildEndorsementCredential`, `buildClrCredential`, `AchievementCredentialInput`, `EndorsementCredentialInput`, `ClrCredentialInput`: write a credential from its parts and check it |
 |                                       | `caseAlignment`, `CaseItem`: the `Alignment` of an achievement to an item of a CASE framework                                                                                                                      |
-|                                       | `hashIdentifier`, `matchesIdentifier`, `IdentityObjectV2`, `KnownIdentity`: the `sha256$` hash of a recipient's identity, and whether a recipient is a known identity                                              |
+|                                       | `hashIdentifier`, `matchesIdentifier`, `KnownIdentity`: the `sha256$` hash of a recipient's identity, and whether a recipient of 3.0 or 2.0 is a known identity                                                    |
 |                                       | `sameCredential`, `newerCredential`, `credentialSummary`, `CredentialSummary`: equality and replacement as Open Badges 10, and what a wallet shows                                                                 |
 |                                       | `AchievementCredential`, `EndorsementCredential`, `ClrCredential`, `VerifiableCredential`, `Achievement`, `Profile` and the other classes of Open Badges and CLR: the model                                        |
 |                                       | `AchievementCredentialV1p1`, `EndorsementCredentialV1p1`, `ClrCredentialV1p1`, `VerifiableCredentialV1p1`: the credentials under the Verifiable Credentials Data Model 1.1                                         |
+|                                       | `BadgeAssertionV2`, `AssertionV2`, `BadgeClassV2`, `ProfileV2`, `IdentityObjectV2`, `VerificationObjectV2` and the other classes of Open Badges 2.0, which the readers read and nothing writes                       |
 |                                       | `GetOpenBadgeCredentialsResponse`, `GetClrCredentialsResponse`, `ImsxStatusInfo`, `ServiceDescriptionDocument`, `Multikey`, `JWK`, `JWKS`: the models of the APIs and of keys                                      |
 |                                       | `KeyResolver`, `VerificationKey`, `VerificationCheck`, `ProofResult`, `ContextLoader`, `DataIntegritySuite`, `JsonLdIssue`, `KEY_RELATIONSHIPS`, `VERIFICATION_CHECKS`, `CHECK_OUTCOMES`: the terms of verification |
-|                                       | `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CONTEXTS`, `ACHIEVEMENT_TYPES`, `ALIGNMENT_TARGET_TYPES`, `IDENTIFIER_TYPES`, `RESULT_TYPES`, `AUTHORIZATION_ERRORS` and the other vocabularies                               |
-|                                       | `IssuableCredential`, `CredentialV1p1`, `AnyCredential`, `Entity`, `CredentialKind`, `EntityKind`, `ExtensionTerm` and the types of the vocabularies                                                               |
+|                                       | `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CONTEXTS`, `ACHIEVEMENT_TYPES`, `ALIGNMENT_TARGET_TYPES`, `IDENTIFIER_TYPES`, `RESULT_TYPES`, `AUTHORIZATION_ERRORS`, `IDENTITY_TYPES_V2`, `VERIFICATION_TYPES_V2` and the other vocabularies |
+|                                       | `IssuableCredential`, `CredentialV1p1`, `AnyVerifiableCredential`, `AnyCredential`, `Entity`, `CredentialKind`, `EntityKind`, `ExtensionTerm` and the types of the vocabularies                                      |
 |                                       | `BakedCredential`, `BakedKind`: a credential read from an image, and its kind                                                                                                                                      |
 |                                       | `CredentialApi`, `CREDENTIAL_APIS`, `CredentialsClient`, `CredentialsClientConfig`, `ServiceDescription`, `DiscoverOptions`: the types of the client                                                               |
 | `@interopkit/achievement-credentials/client` | `discoverService`, `createCredentialsClient`, `readStatusInfo`: find the OAuth endpoints of an Open Badges or CLR server, list, add and replace its credentials, and read and replace the profile |
@@ -111,7 +113,7 @@ const input = {
   },
   evidence: { type: ["Evidence"], narrative: "A portfolio of worked problems." },
 };
-const credential = readCredential(input);
+const credential = readCredential(input, { kind: "AchievementCredential" });
 credential.evidence?.length; // => 1
 Object.is(credential, input); // => false
 
@@ -137,15 +139,17 @@ that the compacted form of JSON-LD writes as its only member is a list in it.
 | Recipients and comparison             | `sha256$` hashes, `sha256$` and `md5$` matching, credential equality and the newer credential, a summary for display                                   |
 | Baking                                | A compact JWS or a credential with an embedded proof in an `iTXt` chunk of a PNG or an element of an SVG, for both kinds                                |
 | API client                            | Service discovery, `getCredentials` with paging, `upsertCredential`, `getProfile` and `putProfile`, of the Open Badges API and the CLR Standard API        |
+| Open Badges 2.0                       | An assertion with its BadgeClass and issuer, embedded or as a `BadgeAssertionV2`; the aliases of its context; its rules; `sha256$` and `md5$` recipients; summaries |
 
 [The model guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/model.md) and
 [the builders guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/issue.md) and
 [the baking guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/baking.md) and
-[the client guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/client.md) have the options with
+[the client guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/client.md) and
+[the guide of Open Badges 2.0](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/open-badges-2.md) have the options with
 their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
 why, and the differences from the references.
 
 ## License
 
 [Apache-2.0](LICENSE). Copyright Fariz Wakan. Open Badges, CLR and 1EdTech are trademarks of 1EdTech Consortium, Inc.; see
-[NOTICE](NOTICE). This package implements Open Badges 3.0 and CLR 2.0 and is not certified by 1EdTech.
+[NOTICE](NOTICE). This package implements Open Badges 3.0 and CLR 2.0, reads Open Badges 2.0, and is not certified by 1EdTech.

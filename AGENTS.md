@@ -10,7 +10,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
 `@interopkit/learning-records` implements the xAPI Statement and its readers, the message of its Attachments, its signature, a client of an LRS and the handler of its requests,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
-implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists and their refresh.
+implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists and their refresh, and it reads Open Badges 2.0.
 
 ```mermaid
 flowchart BT
@@ -59,7 +59,7 @@ Use these words with these meanings in code, comments and docs.
 | Statement    | An xAPI Statement, with a capital S: an Actor, a verb and an Object, with a result and a context when there are any
 | LRS          | The Learning Record Store: the service that receives Statements and shall reject those that break the rules
 | LRP          | A Learning Record Provider: the system that makes Statements and sends them to an LRS
-| credential   | An Open Badges or CLR verifiable credential, held as a value of the model: an achievement, an endorsement or a CLR              |
+| credential   | An Open Badges or CLR verifiable credential, held as a value of the model: an achievement, an endorsement or a CLR; an Open Badges 2.0 assertion with its BadgeClass and issuer is a `BadgeAssertionV2` |
 | provider     | The service that publishes frameworks to consumers over the CASE REST binding: `handleCaseRequest` over a `FrameworkStore`      |
 | base proof   | The proof an issuer gives a holder: an HMAC key, the public key of the proof and a signature for each statement to hide         |
 | disclosure   | A document with only the parts a holder reveals and a derived proof, the signatures of the statements that stay                 |
@@ -89,7 +89,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/learning-records/`         | xAPI 2.0: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
-| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/` |
+| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/` |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -148,9 +148,9 @@ current behavior only, and never how it came to be. A package's changeset is wri
 - `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders, the comparison of
   credentials, baking in PNG and SVG images, the client of the Open Badges and CLR APIs, the keys that verify credentials with
   their binding to the issuer, the JWT and Data Integrity proofs with the loader of contexts and their pins, the status lists
-  and the refresh. It does not own JSON-LD processing and the cryptosuites (the Interop Alliance libraries do them),
-  verification, the provider of the APIs, the OAuth 2.0 clients (those of `core/oauth`) or Open Badges 2.0 (those arrive in
-  later modules), nor wallets,
+  and the refresh, and the model and the reader of Open Badges 2.0, which it never writes. It does not own JSON-LD processing and the cryptosuites (the Interop Alliance libraries do them),
+  verification, the provider of the APIs, the OAuth 2.0 clients (those of `core/oauth`) or the fetching, verification and baking of Open Badges 2.0 (those arrive
+  in later modules), nor wallets,
   issuing platforms and storage. It reaches the network only through a `Fetch` that the caller passes.
 - `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
   canonicalization (the primitives of `@digitalbazaar/di-sd-primitives` do them), the resolution and binding of keys, the
@@ -307,7 +307,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - The examples that a specification prints are read in a `*.spec.test.ts` with `readSpecPage`, from a page or, when the address
   ends in `.md`, from the fenced blocks of a Markdown file; one that is not conformant is pinned with its findings and
   recorded in `spec-gaps.md`.
-- The rules of a standard that has no JSON schema are a table in `scripts/` (`scripts/xapi-rules.ts`): one entry for each
+- The rules of a standard that has no JSON schema are a table in `scripts/` (`scripts/xapi-rules.ts`, `scripts/open-badges-v2-rules.ts`): one entry for each
   sentence of the standard, a value that breaks it, and what a reader of each role finds. A test runs the table against the
   readers, and the table is written from the standard and not from the code.
 - The test vectors of a cryptosuite are reproduced byte for byte in a `*.spec.test.ts`: a base proof from the fixed secrets of the
@@ -345,6 +345,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   and never by `pnpm test`. Its flows are a `*.corpus.test.ts` in a project named `*-<name>`, which the test scripts leave out;
   the secrets of a run are random, the containers bind to loopback and with at most 2 CPUs, and `docker compose down
   --volumes` always runs. What it does differently from the references is pinned by the flows.
+- A reader of untrusted input has a test of its peak memory on its worst input: `process.resourceUsage().maxRSS` before and after the
+  reading, under a budget that the unbounded reading would pass by far. A process's peak only grows and Vitest runs each file in a
+  process of its own, so each such test is a file of its own.
 - Baked images are written by `validation/baked_images.py` (`struct` and `zlib` for the PNG chunks, string edits for the SVG, ElementTree to
   parse every SVG), and `test/baking.test.ts` compares the bytes and the text with the fixture. A reader of images has a test of the
   worst input of each limit.

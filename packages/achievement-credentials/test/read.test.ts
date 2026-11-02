@@ -11,6 +11,13 @@ import {
   verifiableCredential,
 } from "./fixtures.js";
 
+/** Reads a verifiable credential, which every value that this file reads is, and not an Open Badges 2.0 badge. */
+const readVerifiable = (value: unknown) => {
+  const read = readCredential(value);
+  if (!("@context" in read)) throw new Error("The value was read as an Open Badges 2.0 badge.");
+  return read;
+};
+
 /** The rules and paths of the errors of a value, in order. */
 const errorsOf = (value: unknown, options?: Parameters<typeof validateCredential>[1]) =>
   validateCredential(value, options)
@@ -27,7 +34,7 @@ describe("reading a credential", () => {
       verifiableCredential,
     ]) {
       const input = make();
-      const credential = readCredential(input);
+      const credential = readVerifiable(input);
       expect(credential).toStrictEqual(input);
       expect(credential).not.toBe(input);
       expect(credential["@context"]).not.toBe(input["@context"]);
@@ -99,7 +106,7 @@ describe("reading a credential", () => {
         { ex: "https://example.edu/ns#" },
       ],
     };
-    expect(readCredential(value)["@context"]).toStrictEqual(value["@context"]);
+    expect(readVerifiable(value)["@context"]).toStrictEqual(value["@context"]);
     expect(errorsOf({ ...value, "@context": [...value["@context"], 5] })).toStrictEqual(['["@context"][4] wrong-type']);
   });
 

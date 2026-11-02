@@ -64,8 +64,22 @@ export function many<TOutput>(item: Schema<TOutput>, least = 0): Schema<readonly
  * @param required - The terms that the types must include, such as `"Achievement"`.
  */
 export function types(...required: readonly (string | readonly string[])[]): Schema<readonly string[]> {
+  return typesOf(text, ...required);
+}
+
+/**
+ * The schema of the `type` of a class whose terms have a form of their own: a list of terms of that form, or one term, that
+ * includes every term the class requires.
+ *
+ * @param term - The schema of one term.
+ * @param required - The terms that the types must include; a list stands for any one of them.
+ */
+export function typesOf(
+  term: Schema<string>,
+  ...required: readonly (string | readonly string[])[]
+): Schema<readonly string[]> {
   return v.pipe(
-    many(text, 1),
+    many(term, 1),
     v.rawTransform(({ dataset, addIssue, NEVER }) => {
       const missing = required.find((term) =>
         typeof term === "string" ? !dataset.value.includes(term) : !term.some((name) => dataset.value.includes(name)),

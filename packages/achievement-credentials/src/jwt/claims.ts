@@ -1,5 +1,5 @@
 import { isRecord } from "@interopkit/core/checks";
-import type { AnyCredential } from "../model/index.js";
+import type { AnyVerifiableCredential } from "../model/index.js";
 
 /** The claims of a JWT that carry a credential's `issuer`, `id`, start, end and subject (Open Badges 8.2.2, VC-JWT). */
 const CREDENTIAL_CLAIMS = ["iss", "jti", "nbf", "exp", "sub"] as const;
@@ -29,7 +29,7 @@ export interface CredentialValues {
 }
 
 /** Reads from a credential of either data model the values that the claims of its JWT repeat. */
-export function valuesOf(credential: AnyCredential): CredentialValues {
+export function valuesOf(credential: AnyVerifiableCredential): CredentialValues {
   const { issuer, id, credentialSubject } = credential;
   const subject: unknown = credentialSubject;
   return {
@@ -42,7 +42,7 @@ export function valuesOf(credential: AnyCredential): CredentialValues {
 }
 
 /** Builds the claims that Open Badges 8.2.2 asks a JWT to repeat from the credential it carries. */
-export function claimsOf(credential: AnyCredential): Readonly<Record<string, string | number>> {
+export function claimsOf(credential: AnyVerifiableCredential): Readonly<Record<string, string | number>> {
   const { issuer, id, start, end, subject } = valuesOf(credential);
   return {
     iss: issuer,
@@ -60,7 +60,7 @@ export function claimsOf(credential: AnyCredential): Readonly<Record<string, str
  */
 export function disagreement(
   payload: Readonly<Record<string, unknown>>,
-  credential: AnyCredential,
+  credential: AnyVerifiableCredential,
 ): string | undefined {
   const values = valuesOf(credential);
   const expected: Readonly<Record<string, string | number | undefined>> = {

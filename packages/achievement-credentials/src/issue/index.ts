@@ -8,5 +8,5 @@ export { buildAchievementCredential } from "./build-achievement-credential.js";
 export { buildClrCredential } from "./build-clr-credential.js";
 export { buildEndorsementCredential } from "./build-endorsement-credential.js";
 export { type CaseItem, caseAlignment } from "./case-alignment.js";
-export { hashIdentifier, type IdentityObjectV2, type KnownIdentity, matchesIdentifier } from "./identity.js";
+export { hashIdentifier, type KnownIdentity, matchesIdentifier } from "./identity.js";
 export type { AchievementCredentialInput, ClrCredentialInput, EndorsementCredentialInput } from "./inputs.js";

@@ -82,7 +82,7 @@ describe("matchesIdentifier", () => {
   });
 
   it("matches the recipient of an Open Badges 2.0 assertion, by its own fields", () => {
-    const type = "email";
+    const type = "email" as const;
     const v2 = { identity: oracle("sha256", "a@example.comKosher"), type, hashed: true, salt: "Kosher" };
     expect(matchesIdentifier(v2, { type, value: email.value })).toBe(true);
     expect(
@@ -104,7 +104,7 @@ describe("matchesIdentifier", () => {
       "[]",
       '{"identity":5}',
       '{"identityHash":"x"}',
-      '{"identity":"x","type":"email","hashed":true,"extra":1}',
+      '{"identity":"x","type":"name","hashed":false}',
     ]) {
       expect(() => matchesIdentifier(parse(identity), email)).toThrow(DataError);
     }

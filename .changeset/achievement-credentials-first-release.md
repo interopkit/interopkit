@@ -63,3 +63,12 @@ Every function that parses text that a source chose (a key document, a JWS, a co
 baked credential) counts its tokens and levels first and takes `maxTokens`, 1,000,000 by default, so that a text of megabytes is
 refused before `JSON.parse` builds anything. The vectors of the EdDSA and ECDSA Recommendations and of `did:key` are run through the
 functions: the proof of `eddsa-rdfc-2022` equals the published one byte for byte.
+
+`readCredential` and `validateCredential` also read Open Badges 2.0: an assertion under `https://w3id.org/openbadges/v2` that
+embeds its BadgeClass and issuer, or the three documents as a `BadgeAssertionV2`, with the aliases `verify`, `hosted` and
+`signed` of the context written as their terms, the classes of 2.0 (`AssertionV2`, `BadgeClassV2`, `ProfileV2`,
+`IdentityObjectV2`, `VerificationObjectV2`, `CryptographicKeyV2`, `RevocationListV2` and the rest) and their rules, among them
+`not-embedded`, `unlinked-document`, `duplicate-term`, `identity-hash-form` and `expiry-before-issue`. `AnyCredential` holds
+`BadgeAssertionV2` beside `AnyVerifiableCredential`, and `readCredential` with a `kind` returns an `AnyVerifiableCredential`.
+`credentialSummary` shows a 2.0 assertion as `badge-v2`, and `matchesIdentifier` matches its recipient of `IDENTITY_TYPES_V2`
+in `sha256$` and `md5$`. A 2.0 badge is read and never written.

@@ -16,7 +16,7 @@ import {
   parseWith,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
-import type { AnyCredential, Profile } from "../model/index.js";
+import type { AnyVerifiableCredential, Profile } from "../model/index.js";
 import { readCredential, readEntity } from "../read/index.js";
 import { jws } from "../read/internal.js";
 import { type CredentialsClientConfig, type Settings, settingsOf } from "./config.js";
@@ -101,7 +101,7 @@ function membersOf(value: unknown): unknown[] {
  * `limit` that the request asked for (OB 6.2.2), checked before the readers see it, and the tokens of its JSON were counted
  * before it was parsed, so no credential costs the readers more memory than the tokens that the whole answer may have.
  */
-function readPage(settings: Settings, json: unknown, what: string): (string | AnyCredential)[] {
+function readPage(settings: Settings, json: unknown, what: string): (string | AnyVerifiableCredential)[] {
   if (!isRecord(json))
     throw new DataError(`${what} answered with ${describe(json)}, not an object with a list of credentials.`);
   const credentials = membersOf(json.credential);

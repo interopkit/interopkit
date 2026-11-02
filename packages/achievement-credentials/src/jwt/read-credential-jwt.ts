@@ -3,7 +3,7 @@ import { describe, isRecord } from "@interopkit/core/checks";
 import { base64url, compactVerify, importJWK } from "jose";
 import { type JsonLimits, parseJsonText } from "../json-text.js";
 import { bindKey, publicJwk, thumbprintOf, thumbprintUri } from "../keys/internal.js";
-import type { AnyCredential, ProofResult, VerificationKey } from "../model/index.js";
+import type { AnyVerifiableCredential, ProofResult, VerificationKey } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
 import { ADDED_CLAIMS, dateTimeOf, disagreement, valuesOf } from "./claims.js";
 import { type JwtReadOptions, type ReadSettings, readSettings } from "./options.js";
@@ -110,7 +110,7 @@ function carriedCredential(payload: Readonly<Record<string, unknown>>): unknown 
 }
 
 /** Reads the credential of a payload, as a CLR whose nested credentials are compact JWS when its type says it is a CLR. */
-function readCarried(candidate: unknown): Step<AnyCredential> {
+function readCarried(candidate: unknown): Step<AnyVerifiableCredential> {
   const types = isRecord(candidate) ? candidate.type : undefined;
   const isClr = Array.isArray(types) && types.includes("ClrCredential");
   return credentialOrReason(candidate, "The credential in the JWT", isClr);
@@ -182,7 +182,7 @@ async function verifiedKey(
 }
 
 /** Reads the payload of a JWS whose signature verified into a credential, and checks its time claims and its other claims against it. */
-function credentialOf(bytes: Uint8Array, settings: ReadSettings): Step<AnyCredential> {
+function credentialOf(bytes: Uint8Array, settings: ReadSettings): Step<AnyVerifiableCredential> {
   const payload = readObject(bytes, "payload", settings);
   if ("reason" in payload) return payload;
   const timeFault = timeProblem(payload.value, settings);

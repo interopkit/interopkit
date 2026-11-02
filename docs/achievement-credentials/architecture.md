@@ -58,12 +58,14 @@ flowchart BT
 
 | Module    | Files                                                                                            | Holds                                                                                                                          |
 | --------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `model`   | `credentials.ts`, `credentials-v1p1.ts`, `clr.ts`, `api.ts`, `keys.ts`                           | The types of every class, by the part of the specifications that defines it                                                    |
+| `model`   | `credentials.ts`, `credentials-v1p1.ts`, `clr.ts`, `api.ts`, `keys.ts`, `open-badges-v2.ts`      | The types of every class, by the part of the specifications that defines it, and the classes of Open Badges 2.0               |
 |           | `vocabularies.ts`, `context.ts`, `kinds.ts`, `issue.ts`                                          | The vocabularies as tuples with their types, `CONTEXTS`, `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CredentialIssue`                 |
 | `read`    | `credential-schemas.ts`, `v1p1-schemas.ts`, `clr-schemas.ts`, `api-schemas.ts`, `key-schemas.ts` | The valibot schema of each class, built once, typed by the interface of the class                                              |
 |           | `primitives.ts`                                                                                  | The parts the schemas share: a list that may be one member, the `type` of a class, an extensible term, contexts                |
 |           | `registry.ts`, `inspect.ts`, `rules.ts`, `options.ts`                                            | Which schema reads which kind, the parse and its findings, the rules of the subject, the check of the options                  |
 |           | `read-credential.ts`, `read-entity.ts`                                                           | The readers and the validators                                                                                                 |
+|           | `context-v2.ts`, `formats-v2.ts`, `open-badges-v2-schemas.ts`, `rules-v2.ts`, `inspect-v2.ts`    | Open Badges 2.0: the terms and aliases of its context, its formats, the schema of each class, its rules, and the reading of the three documents of a badge |
+|           | `jws-payload.ts`                                                                                 | The payload of a compact JWS, read without its signature under a limit of tokens, for a verifier                               |
 | `issue`   | `build-achievement-credential.ts`, `build-endorsement-credential.ts`, `build-clr-credential.ts`  | The builders, each a few lines that write the credential around the checked input                                              |
 |           | `inputs.ts`, `input-schemas.ts`, `finish.ts`, `refusal.ts`, `schema-urls.ts`                     | The input types, the schemas that read an input, the check of what was written, the error of every fault, the official schemas |
 |           | `case-alignment.ts`, `identity.ts`                                                               | The alignment to a CASE item, and the hash and the matching of an identity                                                     |
@@ -125,7 +127,10 @@ sequenceDiagram
 ```
 
 The schemas are written once for each class, with the classes that refer to each other joined by a reference that is read when
-the first value is. The kind of credential comes from its `type`, and the data model from its first context. A list of the
+the first value is. The kind of credential comes from its `type`, and the data model from its first context. A value whose only
+context is that of Open Badges 2.0, or a `BadgeAssertionV2`, is read by the reader of 2.0 instead: each of its three documents is
+copied, its aliases written as their terms, and read at its place, and an embedded document is read from the copy of the one that
+holds it ([Reading Open Badges 2.0](open-badges-2.md)). A list of the
 properties of each class is kept with its schema, so that the tests compare it with the schemas of 1EdTech and fail when a class
 or a property differs.
 
@@ -133,5 +138,6 @@ or a property differs.
 
 | The package owns                                                                    | The package does not own                                                                      |
 | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| The model of Open Badges 3.0 and CLR 2.0, the readers, the builders, the comparison, baking, the client of the APIs | Proofs and keys, status lists, verification, the provider of the APIs, Open Badges 2.0: later modules |
+| The model of Open Badges 3.0 and CLR 2.0, the readers, the builders, the comparison, baking, the client of the APIs, keys and their binding, JWT and Data Integrity proofs, status lists, refresh | Verification and the provider of the APIs: later modules; JSON-LD processing and the cryptosuites: the adopted libraries |
+| The model of Open Badges 2.0 and its reader, from documents and without the network | Fetching, verifying and baking Open Badges 2.0: verification; issuing it: never |
 | The classes under both Verifiable Credentials data models                           | Wallets, issuer platforms, storage                                                            |

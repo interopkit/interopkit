@@ -1,6 +1,6 @@
 /**
  * The model of Open Badges 3.0 and CLR 2.0: the classes of a credential under both data models, the models of the APIs and
- * of keys, the vocabularies, and the findings of the readers.
+ * of keys, the vocabularies, the classes of Open Badges 2.0, and the findings of the readers.
  *
  * @module
  */
@@ -68,6 +68,7 @@ export type { CredentialIssue } from "./issue.js";
 export type { JWK, JWKS, Multikey } from "./keys.js";
 export {
   type AnyCredential,
+  type AnyVerifiableCredential,
   CREDENTIAL_KINDS,
   type CredentialKind,
   type CredentialV1p1,
@@ -77,6 +78,28 @@ export {
   type EntityKind,
   type IssuableCredential,
 } from "./kinds.js";
+export {
+  type AlignmentObjectV2,
+  type AssertionV2,
+  type BadgeAssertionV2,
+  type BadgeClassV2,
+  type CriteriaV2,
+  type CryptographicKeyV2,
+  type EndorsementClaimV2,
+  type EndorsementV2,
+  type EvidenceV2,
+  IDENTITY_TYPES_V2,
+  type IdentityObjectV2,
+  type IdentityTypeV2,
+  type ImageV2,
+  type ProfileV2,
+  type RelatedV2,
+  type RevocationListV2,
+  type RevokedAssertionV2,
+  VERIFICATION_TYPES_V2,
+  type VerificationObjectV2,
+  type VerificationTypeV2,
+} from "./open-badges-v2.js";
 export {
   CHECK_OUTCOMES,
   type CheckOutcome,

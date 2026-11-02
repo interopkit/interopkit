@@ -114,6 +114,9 @@ hexadecimal. `matchesIdentifier(identity, known)` takes the recipient of a crede
 CLR 2.0 or an `IdentityObjectV2` of an Open Badges 2.0 assertion, and the identity that the caller knows. It is true when the
 types are the same and the value matches: a plain value must be equal, and a hashed one is compared with the hash of the known
 value and the salt of the recipient, in the algorithm the hash names (`sha256$` or `md5$`) and in either case of the digits.
+`md5$`, which Open Badges 2.0 and 3.0 both name, is read and never written. The type of a 2.0 recipient is one of
+`IDENTITY_TYPES_V2` (`id`, `email`, `url`, `telephone`), and [Reading Open Badges 2.0](open-badges-2.md) reads the assertion that
+holds it.
 
 ## Comparing
 

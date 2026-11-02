@@ -3,7 +3,7 @@ import { describe, hasMoreTokensThan, isRecord, nestsDeeperThan } from "@interop
 import { isBaseProof } from "@interopkit/selective-disclosure";
 import { bindKey } from "../keys/internal.js";
 import type {
-  AnyCredential,
+  AnyVerifiableCredential,
   DataIntegritySuite,
   IssuableCredential,
   ProofResult,
@@ -88,7 +88,7 @@ async function checkProof(
 function readInput(
   credential: IssuableCredential,
   settings: VerifySettings,
-): { readonly value: AnyCredential } | { readonly reason: string } {
+): { readonly value: AnyVerifiableCredential } | { readonly reason: string } {
   const text = JSON.stringify(credential);
   if (text.length > settings.maxInputBytes) {
     return {

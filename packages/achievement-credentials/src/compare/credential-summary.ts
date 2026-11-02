@@ -1,33 +1,56 @@
 import { DataError } from "@interopkit/core";
-import type { Achievement, AnyCredential } from "../model/index.js";
+import type { Achievement, AnyCredential, AnyVerifiableCredential, BadgeAssertionV2 } from "../model/index.js";
+import { readCredential } from "../read/index.js";
 
 /** What a summary takes from the achievement of a credential, in either data model. */
 type Shown = Pick<Achievement, "name" | "description" | "image">;
 
-import { readCredential } from "../read/index.js";
-
-/** What a wallet shows of a credential (OB conformance 4): the same for an Open Badges credential, a CLR and an endorsement. */
+/**
+ * What a wallet shows of a credential (OB conformance 4): the same for an Open Badges credential, a CLR, an endorsement and an
+ * Open Badges 2.0 assertion.
+ */
 export interface CredentialSummary {
-  /** What the credential is: an achievement (`badge`), a CLR (`clr`) or an endorsement (`endorsement`). */
-  readonly kind: "badge" | "clr" | "endorsement";
-  /** The name of the credential, or for an achievement credential with none, the name of its achievement. */
+  /**
+   * What the credential is: an achievement (`badge`), a CLR (`clr`), an endorsement (`endorsement`) or an Open Badges 2.0
+   * assertion (`badge-v2`).
+   */
+  readonly kind: "badge" | "clr" | "endorsement" | "badge-v2";
+  /** The name of the credential, or for an achievement credential with none, the name of its achievement or BadgeClass. */
   readonly name: string;
-  /** The description of the credential, or of its achievement. */
+  /** The description of the credential, or of its achievement or BadgeClass. */
   readonly description?: string;
-  /** The address of the image of the credential, or of its achievement. */
+  /** The address of the image of the credential, or of its achievement or BadgeClass. */
   readonly image?: string;
   /** The name of the issuer, when the credential holds the profile of the issuer. */
   readonly issuerName?: string;
   /** The address of the issuer. */
   readonly issuer: string;
-  /** When the credential became valid: `validFrom`, or `issuanceDate` under the Verifiable Credentials Data Model 1.1. */
+  /**
+   * When the credential became valid: `validFrom`, `issuanceDate` under the Verifiable Credentials Data Model 1.1, or the
+   * `issuedOn` of a 2.0 assertion.
+   */
   readonly validFrom: string;
-  /** When the credential stops being valid: `validUntil`, or `expirationDate`. */
+  /** When the credential stops being valid: `validUntil`, `expirationDate`, or the `expires` of a 2.0 assertion. */
   readonly validUntil?: string;
 }
 
+/** Summarizes an Open Badges 2.0 assertion: the image of the assertion, else that of its BadgeClass. */
+function summaryV2({ assertion, badge, issuer }: BadgeAssertionV2): CredentialSummary {
+  const image = assertion.image ?? badge.image;
+  return {
+    kind: "badge-v2",
+    name: badge.name,
+    description: badge.description,
+    image: typeof image === "string" ? image : image.id,
+    issuerName: issuer.name,
+    issuer: issuer.id,
+    validFrom: assertion.issuedOn,
+    ...(assertion.expires === undefined ? {} : { validUntil: assertion.expires }),
+  };
+}
+
 /** The achievement of an achievement credential, when the subject holds one. */
-function achievementOf(credential: AnyCredential): Shown | undefined {
+function achievementOf(credential: AnyVerifiableCredential): Shown | undefined {
   const subject = credential.credentialSubject;
   if (!("achievement" in subject)) return undefined;
   const { achievement } = subject;
@@ -37,11 +60,12 @@ function achievementOf(credential: AnyCredential): Shown | undefined {
 
 /**
  * Summarizes a credential for display: its name, description, image, issuer and dates, for an Open Badges credential, a CLR
- * or an endorsement, under either Verifiable Credentials data model.
+ * or an endorsement under either Verifiable Credentials data model, or an Open Badges 2.0 assertion.
  *
  * @remarks
  * The credential is read as `readCredential` reads it, so a value that is not a credential is refused. An achievement
- * credential with no `name`, `description` or `image` of its own is shown by those of its achievement.
+ * credential with no `name`, `description` or `image` of its own is shown by those of its achievement. A 2.0 assertion is
+ * shown by its BadgeClass, with the image of the assertion when it has one, and its dates are `issuedOn` and `expires`.
  *
  * @param credential - The credential.
  * @returns The summary.
@@ -51,6 +75,12 @@ function achievementOf(credential: AnyCredential): Shown | undefined {
  */
 export function credentialSummary(credential: AnyCredential): CredentialSummary {
   const read = readCredential(credential);
+  // Every verifiable credential has a context, and a 2.0 badge has none.
+  return "@context" in read ? summaryOf(read) : summaryV2(read);
+}
+
+/** Summarizes a verifiable credential of Open Badges 3.0 or CLR 2.0, under either data model. */
+function summaryOf(read: AnyVerifiableCredential): CredentialSummary {
   const kind = kindOf(read.type);
   if (kind === undefined) {
     throw new DataError(

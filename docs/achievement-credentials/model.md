@@ -61,7 +61,7 @@ const credential = {
 validateCredential(credential).map((finding) => `${finding.severity} ${finding.rule} at ${finding.path}`); // => ["error subject-unidentified at credentialSubject"]
 
 const named = { ...credential, credentialSubject: { ...credential.credentialSubject, id: "did:example:learner" } };
-const read = readCredential(named);
+const read = readCredential(named, { kind: "AchievementCredential" });
 read.type; // => ["VerifiableCredential", "OpenBadgeCredential"]
 "issuanceDate" in read; // => false
 
@@ -75,7 +75,8 @@ validateCredential(old).map((finding) => `${finding.path} ${finding.rule}`); // 
 | Group                   | Classes                                                                                                                                                                                                                       |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Credentials             | `AchievementCredential`, `EndorsementCredential`, `ClrCredential`, `VerifiableCredential`, the type `IssuableCredential` that holds them                                                                                      |
-| Credentials, VC 1.1     | `AchievementCredentialV1p1`, `EndorsementCredentialV1p1`, `ClrCredentialV1p1`, `VerifiableCredentialV1p1`, the type `CredentialV1p1` that holds them; `AnyCredential` holds both groups                                      |
+| Credentials, VC 1.1     | `AchievementCredentialV1p1`, `EndorsementCredentialV1p1`, `ClrCredentialV1p1`, `VerifiableCredentialV1p1`, the type `CredentialV1p1` that holds them; `AnyVerifiableCredential` holds both groups                            |
+| Open Badges 2.0         | `BadgeAssertionV2`, `AssertionV2`, `BadgeClassV2`, `ProfileV2` and the other classes of 2.0, read and never written: see [Reading Open Badges 2.0](open-badges-2.md); `AnyCredential` holds the three groups                  |
 | Subjects and claims     | `AchievementSubject`, `EndorsementSubject`, `ClrSubject`, `CredentialSubject`, `Achievement`, `Result`, `ResultDescription`, `RubricCriterionLevel`, `Association`, `Alignment`, `Criteria`, `Evidence`, `Related`            |
 | People and things       | `Profile`, `ProfileRef`, `Address`, `GeoCoordinates`, `IdentityObject`, `IdentifierEntry`, `Image`                                                                                                                            |
 | Parts of a credential   | `CredentialSchema`, `CredentialStatus`, `Proof`, `RefreshService`, `TermsOfUse`                                                                                                                                               |
@@ -100,7 +101,7 @@ parsed text, or a value that is already in the model.
 
 | Option | Meaning                                                                                                                                                                                                                      | Default             |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `kind` | The kind of credential that the value must be, one of `CREDENTIAL_KINDS`. The default is the kind that the `type` names: `ClrCredential`, then `EndorsementCredential`, then `AchievementCredential` or `OpenBadgeCredential` (`readCredential` and `validateCredential` only) | The kind of `type`  |
+| `kind` | The kind of credential that the value must be, one of `CREDENTIAL_KINDS`. The default reads an Open Badges 2.0 assertion as one ([Reading Open Badges 2.0](open-badges-2.md)), and any other value as the kind that its `type` names: `ClrCredential`, then `EndorsementCredential`, then `AchievementCredential` or `OpenBadgeCredential` (`readCredential` and `validateCredential` only). With a `kind`, `readCredential` returns an `AnyVerifiableCredential` | 2.0, or the kind of `type`  |
 | `maxFindings` | The most findings that a validator lists, or that a reader counts errors up to. The check stops at the first one beyond the limit and ends the list with a finding of the rule `findings-stopped`, so that a value that is wrong in a million places costs the memory of the limit. A reader counts errors and not warnings | 1,000 |
 
 | Function                                | Result                                                                                                                    |
@@ -157,7 +158,6 @@ the text that it parses. The depth limit keeps a hostile chain of `parentOrg` or
 | JSON-LD processing                                                 | The readers read the compacted form as JSON, as the specification allows                               |
 | A text as a map of languages, or a context as a single value       | See the differences below                                                                              |
 | Reading a value that is wrong, to recover what is right in it      | A value with an error is not returned; `validateCredential` says where to look                         |
-| Open Badges 2.0                                                    | A model of its own                                                                                     |
 
 ## Differences from the references
 

@@ -53,5 +53,15 @@
     "url": "https://w3c-ccg.github.io/did-key-spec/",
     "file": "did-key-0p9.json",
     "sha256": "2e29d8a6610c1bb48edd625ed3d7fb210571ca9781977deb0fd3afa02fc8b5a1"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/ob/v2p0/",
+    "file": "open-badges-2p0.json",
+    "sha256": "4b707ea2aa39570da5af1fae38d05f64c99a5162fc3acb3c50ce834a0e357f4f"
+  },
+  {
+    "url": "https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/examples/index.html",
+    "file": "open-badges-2p0-examples.json",
+    "sha256": "2671218ba136384b64486148894f64d4bcefd55797f08e4b5ec3484716fea05a"
   }
 ]
