@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
-import { copyJson, describe, isRecord, MAX_JSON_DEPTH, nestsDeeperThan } from "@interopkit/core/checks";
+import { copyJson, describe, hasMoreTokensThan, isRecord, MAX_JSON_DEPTH } from "@interopkit/core/checks";
 import * as v from "valibot";
-import { MAX_CREDENTIAL_CHARACTERS } from "../model/internal.js";
+import { parseJsonText } from "../json-text.js";
 import { readCredential } from "../read/index.js";
 import { jws } from "../read/internal.js";
 import type { BakedKind } from "./formats.js";
@@ -15,15 +15,6 @@ export interface CredentialText {
   readonly text: string;
   /** Whether the text is a compact JWS. */
   readonly signed: boolean;
-}
-
-/** Refuses a credential of more characters than an image may hold of it. */
-function checkLength(text: string): void {
-  if (text.length > MAX_CREDENTIAL_CHARACTERS) {
-    throw new DataError(
-      `The credential has ${text.length} characters, more than the ${MAX_CREDENTIAL_CHARACTERS} that an image may hold of it.`,
-    );
-  }
 }
 
 /** Decodes the base64url text of a part of a compact JWS to the text it holds. */
@@ -46,18 +37,13 @@ function typeNames(value: unknown): readonly unknown[] {
  * Tells which kind a compact JWS holds from the `type` in its payload: the claims of the credential (Open Badges 3.0 section
  * 8.2.4), or its `vc` claim under the Verifiable Credentials Data Model 1.1. Nothing else of the JWS is read or checked.
  */
-function kindOfJws(compact: string): BakedKind {
+function kindOfJws(compact: string, maxTokens: number): BakedKind {
   // A compact JWS has exactly two dots (the `jws` schema), so what lies between them is the payload.
   const payload = decodePayload(compact.slice(compact.indexOf(".") + 1, compact.lastIndexOf(".")));
-  if (nestsDeeperThan(payload, MAX_JSON_DEPTH)) {
-    throw new DataError(`The payload of the compact JWS nests more than ${MAX_JSON_DEPTH} levels.`);
-  }
-  let claims: unknown;
-  try {
-    claims = JSON.parse(payload);
-  } catch {
-    throw new DataError("The payload of the compact JWS is not JSON.");
-  }
+  // The tokens and the levels are counted before the parser builds anything.
+  const parsed = parseJsonText(payload, { maxDepth: MAX_JSON_DEPTH, maxTokens }, "The payload of the compact JWS");
+  if ("reason" in parsed) throw new DataError(parsed.reason);
+  const claims = parsed.value;
   const names = typeNames(isRecord(claims) && claims.vc !== undefined ? claims.vc : claims);
   if (!names.some((name) => typeof name === "string")) {
     throw new DataError("The payload of the compact JWS has no type, so it is not a credential.");
@@ -70,27 +56,32 @@ function kindOfJws(compact: string): BakedKind {
  * the readers accept. The object is copied first, so that a getter or a `toJSON` cannot change what was checked.
  *
  * @param credential - The credential, as a host passes it from JavaScript.
- * @throws `DataError` when the credential is neither a compact JWS nor a credential that `readCredential` accepts, or is
- * longer than `MAX_CREDENTIAL_CHARACTERS`.
+ * @param maxTokens - The most tokens of JSON that the credential may have.
+ * @throws `DataError` when the credential is neither a compact JWS nor a credential that `readCredential` accepts, or has more
+ * than `maxTokens` tokens of JSON.
  */
-export function textToBake(credential: unknown): CredentialText {
+export function textToBake(credential: unknown, maxTokens: number): CredentialText {
   if (typeof credential === "string") {
-    checkLength(credential);
     if (!v.is(jws, credential)) {
       throw new DataError(
         "The credential given as text must be a compact JWS of three parts of base64url characters. Pass a credential that is not signed as an object.",
       );
     }
-    return { kind: kindOfJws(credential), text: credential, signed: true };
+    return { kind: kindOfJws(credential, maxTokens), text: credential, signed: true };
   }
   if (!isRecord(credential)) {
     throw new DataError(`The credential must be a compact JWS or an object, found ${describe(credential)}.`);
   }
   const copy = copyJson(credential, "The credential");
   if ("problem" in copy) throw new DataError(`${copy.problem}.`);
-  const read = readCredential(copy.value);
   const text = JSON.stringify(copy.value);
-  checkLength(text);
+  // Counted before the readers walk the value, which costs them a copy and the memory of their findings.
+  if (hasMoreTokensThan(text, maxTokens)) {
+    throw new DataError(
+      `The credential has more than the ${maxTokens} tokens of JSON that the option maxTokens allows.`,
+    );
+  }
+  const read = readCredential(copy.value);
   return { kind: typeNames(read).includes("ClrCredential") ? "clr" : "badge", text, signed: false };
 }
 
@@ -98,10 +89,9 @@ export function textToBake(credential: unknown): CredentialText {
  * Reads a compact JWS that an image holds.
  *
  * @param text - The text of the attribute or the chunk.
- * @throws `DataError` when the text is not a compact JWS, or is longer than `MAX_CREDENTIAL_CHARACTERS`.
+ * @throws `DataError` when the text is not a compact JWS.
  */
 export function bakedJws(text: string): string {
-  checkLength(text);
   const trimmed = text.trim();
   if (v.is(jws, trimmed)) return trimmed;
   throw new DataError("The credential in the image is not a compact JWS of three parts of base64url characters.");
@@ -111,22 +101,15 @@ export function bakedJws(text: string): string {
  * Reads the JSON of a credential that an image holds, as an object that nothing has checked yet.
  *
  * @param text - The text of the element or the chunk.
- * @throws `DataError` when the text is not the JSON of an object, nests too deep, or is longer than
- * `MAX_CREDENTIAL_CHARACTERS`.
+ * @param maxTokens - The most tokens of JSON that the credential may have.
+ * @throws `DataError` when the text is not the JSON of an object, nests too deep, or has more than `maxTokens` tokens.
  */
-export function bakedJson(text: string): object {
-  checkLength(text);
-  const trimmed = text.trim();
-  if (nestsDeeperThan(trimmed, MAX_JSON_DEPTH)) {
-    throw new DataError(`The credential in the image nests more than ${MAX_JSON_DEPTH} levels of JSON.`);
+export function bakedJson(text: string, maxTokens: number): object {
+  const parsed = parseJsonText(text.trim(), { maxDepth: MAX_JSON_DEPTH, maxTokens }, "The credential in the image");
+  if ("reason" in parsed) {
+    throw new DataError(parsed.overLimit ? parsed.reason : "The credential in the image is not the JSON of an object.");
   }
-  let value: unknown;
-  try {
-    value = JSON.parse(trimmed);
-  } catch {
-    // Not JSON: the sentence below says so.
-  }
-  if (isRecord(value)) return value;
+  if (isRecord(parsed.value)) return parsed.value;
   throw new DataError("The credential in the image is not the JSON of an object.");
 }
 
@@ -134,8 +117,9 @@ export function bakedJson(text: string): object {
  * Reads what a chunk of a PNG holds: the JSON of a credential if it starts like an object, else a compact JWS.
  *
  * @param text - The text of the chunk.
+ * @param maxTokens - The most tokens of JSON that the credential may have.
  * @throws `DataError` when the text is neither.
  */
-export function bakedValue(text: string): string | object {
-  return text.trimStart().startsWith("{") ? bakedJson(text) : bakedJws(text);
+export function bakedValue(text: string, maxTokens: number): string | object {
+  return text.trimStart().startsWith("{") ? bakedJson(text, maxTokens) : bakedJws(text);
 }

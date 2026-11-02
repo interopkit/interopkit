@@ -70,6 +70,7 @@ credential, and refreshes it once, not again when it names a refresh service of 
 | `fetch`     | The `Fetch` that gets the credential     | Required    |
 | `timeoutMs` | The time the fetch may take              | `10000`     |
 | `maxBytes`  | The most bytes of the answer             | `1048576`   |
+| `maxTokens` | The most tokens of JSON in the answer, counted before it is parsed | `1000000` |
 | `signal`    | Ends the caller's wait                   | None        |
 
 ## Answering
@@ -92,6 +93,7 @@ host routes the requests that reach it.
 | ---------------------------------- | ----------------------- | ---------------- |
 | Bytes of the answer                | `maxBytes`, 1,048,576   | `ServiceError`   |
 | Levels that the answer nests       | 64                      | `DataError`      |
+| Tokens of JSON in the answer       | `maxTokens`, 1,000,000  | `DataError`      |
 
 ## Errors
 

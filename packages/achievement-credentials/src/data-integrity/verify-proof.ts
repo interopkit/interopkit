@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { describe, isRecord, nestsDeeperThan } from "@interopkit/core/checks";
+import { describe, hasMoreTokensThan, isRecord, nestsDeeperThan } from "@interopkit/core/checks";
 import { isBaseProof } from "@interopkit/selective-disclosure";
 import { bindKey } from "../keys/internal.js";
 import type {
@@ -94,6 +94,10 @@ function readInput(
     return {
       reason: `The credential has ${text.length} characters, more than the ${settings.maxInputBytes} that it may have.`,
     };
+  }
+  // The tokens and the levels are counted from the text, as for any text that is parsed; the object is read next.
+  if (hasMoreTokensThan(text, settings.maxTokens)) {
+    return { reason: `The credential has more than the ${settings.maxTokens} tokens of JSON that it may have.` };
   }
   if (nestsDeeperThan(text, settings.maxDepth))
     return { reason: `The credential nests more than ${settings.maxDepth} levels.` };

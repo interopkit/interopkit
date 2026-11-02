@@ -71,8 +71,7 @@ export function readCredentialChunk(image: Uint8Array, chunk: Chunk, kind: Baked
  * Writes the `iTXt` chunk that holds a credential: its length, type, keyword, fields, text and CRC-32.
  *
  * @param kind - The kind, which names the keyword.
- * @param text - The compact JWS or the JSON of the credential, which `MAX_CREDENTIAL_CHARACTERS` keeps far below the length that
- * a chunk may hold.
+ * @param text - The compact JWS or the JSON of the credential.
  */
 export function writeCredentialChunk(kind: BakedKind, text: string): Uint8Array {
   const keyword = ENCODER.encode(FORMATS[kind].keyword);

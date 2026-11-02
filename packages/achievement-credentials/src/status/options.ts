@@ -8,6 +8,7 @@ import {
   checkRecord,
   checkString,
   describe,
+  MAX_JSON_TOKENS,
   methodsSchema,
   parseWith,
 } from "@interopkit/core/checks";
@@ -98,6 +99,12 @@ export interface StatusCheckOptions extends CallOptions {
    * @defaultValue `1048576`
    */
   readonly maxBytes?: number;
+  /**
+   * The most tokens of JSON in the list credential: the memory of a parse grows with the tokens and not with the bytes.
+   *
+   * @defaultValue `1000000`
+   */
+  readonly maxTokens?: number;
 }
 
 const keyResolverSchema = methodsSchema<KeyResolver>("resolve", "issuerKeys");
@@ -112,6 +119,7 @@ export interface CheckSettings {
   readonly statusIssuers: readonly string[];
   readonly timeoutMs: number | undefined;
   readonly maxBytes: number | undefined;
+  readonly maxTokens: number;
   readonly signal: AbortSignal | undefined;
 }
 
@@ -119,6 +127,7 @@ export interface CheckSettings {
 export function checkSettings(options: unknown): CheckSettings {
   checkRecord(options, "The options of verifyCredentialStatus must be an object");
   const { fetch, clock, contexts, cache, timeoutMs, maxBytes, signal, statusIssuers = [] } = options;
+  const { maxTokens = MAX_JSON_TOKENS } = options;
   checkFunction(fetch, "The option fetch must be a function");
   const keys = parseWith(keyResolverSchema, options.keys, "The option keys");
   checkClock(clock);
@@ -131,6 +140,7 @@ export function checkSettings(options: unknown): CheckSettings {
   for (const issuer of statusIssuers) checkString(issuer, "An issuer of the option statusIssuers");
   if (timeoutMs !== undefined) checkPositiveInteger(timeoutMs, "The option timeoutMs");
   if (maxBytes !== undefined) checkPositiveInteger(maxBytes, "The option maxBytes");
+  checkPositiveInteger(maxTokens, "The option maxTokens");
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   return {
     fetch: fetch as Fetch,
@@ -141,6 +151,7 @@ export function checkSettings(options: unknown): CheckSettings {
     statusIssuers: statusIssuers as readonly string[],
     timeoutMs,
     maxBytes,
+    maxTokens,
     signal,
   };
 }

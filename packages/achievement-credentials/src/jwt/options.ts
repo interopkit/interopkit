@@ -9,6 +9,7 @@ import {
   describe,
   isRecord,
   MAX_JSON_DEPTH,
+  MAX_JSON_TOKENS,
   methodsSchema,
   parseWith,
 } from "@interopkit/core/checks";
@@ -75,6 +76,13 @@ export interface JwtReadOptions extends CallOptions {
    * @defaultValue `64`
    */
   readonly maxDepth?: number;
+  /**
+   * The most tokens of JSON in the header and in the payload: the memory of a parse grows with the tokens and not with the
+   * bytes. A longer one is refused before it is parsed.
+   *
+   * @defaultValue `1000000`
+   */
+  readonly maxTokens?: number;
 }
 
 /** The options of `signCredentialJwt`. */
@@ -115,6 +123,7 @@ export interface ReadSettings {
   readonly allowUnboundKeys: boolean;
   readonly maxInputBytes: number;
   readonly maxDepth: number;
+  readonly maxTokens: number;
   readonly signal: AbortSignal | undefined;
 }
 
@@ -128,6 +137,7 @@ export function readSettings(options: unknown): ReadSettings {
   checkClock(clock);
   const { algorithms = DEFAULT_ALGORITHMS, clockSkewSeconds = DEFAULT_CLOCK_SKEW_SECONDS } = options;
   const { allowUnboundKeys = false, maxInputBytes = DEFAULT_MAX_INPUT_BYTES, maxDepth = MAX_JSON_DEPTH } = options;
+  const { maxTokens = MAX_JSON_TOKENS } = options;
   checkArray(algorithms, "The option algorithms must be an array");
   const known: readonly unknown[] = VERIFICATION_ALGORITHMS;
   const accepted = algorithms.filter(
@@ -142,9 +152,20 @@ export function readSettings(options: unknown): ReadSettings {
   checkNonNegativeInteger(clockSkewSeconds, "The option clockSkewSeconds");
   checkPositiveInteger(maxInputBytes, "The option maxInputBytes");
   checkPositiveInteger(maxDepth, "The option maxDepth");
+  checkPositiveInteger(maxTokens, "The option maxTokens");
   checkFlag(allowUnboundKeys, "The option allowUnboundKeys");
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
-  return { keys, clock, algorithms: accepted, clockSkewSeconds, allowUnboundKeys, maxInputBytes, maxDepth, signal };
+  return {
+    keys,
+    clock,
+    algorithms: accepted,
+    clockSkewSeconds,
+    allowUnboundKeys,
+    maxInputBytes,
+    maxDepth,
+    maxTokens,
+    signal,
+  };
 }
 
 /** The options of a signature, checked: the header that names the key, whether to sign nested credentials, and the signal. */

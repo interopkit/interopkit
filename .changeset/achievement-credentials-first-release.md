@@ -24,7 +24,7 @@ a wallet shows of a badge, a CLR or an endorsement under either data model.
 namespaces of Open Badges and CLR) from its type, refuse an image that holds a credential unless `replace` is set, and leave
 every other chunk or character as it was. `readPng` and `readSvg` return the kind and the credential of the first chunk or
 element, or `undefined`, and refuse a damaged or compressed chunk, an SVG that nests more than 256 elements or has more than 256
-attributes in one, and a credential of more than 1,048,576 characters.
+attributes in one, and a credential of more than `maxTokens` (1,000,000) tokens of JSON.
 
 `@interopkit/achievement-credentials/client` is the client of the Open Badges API and the CLR Standard API. `discoverService`
 reads the service description of a server into the endpoints of its authorization code flow, its scopes and its policies, for
@@ -32,8 +32,8 @@ the OAuth clients of `@interopkit/core/oauth`. `createCredentialsClient` lists t
 and compact JWS (`listCredentials`, from `X-Total-Count`, `Link` or the size of a page, with `since`), adds or replaces one
 (`upsertCredential`, which says `"created"`, `"replaced"` or `"unchanged"`), and reads and replaces the profile. Its access tokens
 come from a function of the host, it follows no redirect, and it retries nothing: `readStatusInfo` gives the `imsx_StatusInfo`
-and the `Retry-After` of a refusal. A page of more credentials than the request asked for, and a credential or a profile of more
-than 1,048,576 characters, are refused before the readers see them. `readEntity` returns the class of its kind.
+and the `Retry-After` of a refusal. A page of more credentials than the request asked for, and an answer of more than `maxTokens`
+tokens, are refused before they are read. `readEntity` returns the class of its kind.
 
 `createKeyResolver` resolves the key of a `kid` or a verification method from a `did:key`, a `did:web` or an HTTPS address (a
 JWK, a Multikey, a key set, a DID or controller document), caches the documents with a shared load, and reads what an issuer
@@ -58,3 +58,8 @@ and reports each failure by its code, reads an entry of the `message` purpose or
 list through a stream that stops at 16,777,216 bytes, and binds the key of the list credential to its issuer; `createStatusListCache`
 keeps list credentials until their `ttl` or `validUntil`. `refreshCredential` gets the newer version of a credential from its
 `1EdTechCredentialRefresh` service and `handleRefreshRequest` answers as that service for an issuer.
+
+Every function that parses text that a source chose (a key document, a JWS, a context, a status list, a refreshed credential, a
+baked credential) counts its tokens and levels first and takes `maxTokens`, 1,000,000 by default, so that a text of megabytes is
+refused before `JSON.parse` builds anything. The vectors of the EdDSA and ECDSA Recommendations and of `did:key` are run through the
+functions: the proof of `eddsa-rdfc-2022` equals the published one byte for byte.

@@ -16,6 +16,7 @@ import { type IssuableCredential, readCredential } from "../src/index.js";
 import { createKeyResolver } from "../src/keys/index.js";
 import { CLOSED, memoryContexts } from "./context-fixtures.js";
 import { achievementCredential, clrCredential, endorsementCredential } from "./fixtures.js";
+import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { clockAt, KEYS, signerOf, type TestKey } from "./key-fixtures.js";
 
 const NOW = Date.UTC(2024, 5, 14, 12, 0, 0);
@@ -244,6 +245,21 @@ describe("verifying an eddsa-rdfc-2022 proof", () => {
     expect(calls).toStrictEqual(["host-2030"]);
   });
 
+  it("is not valid for a credential with more tokens of JSON than maxTokens, counted before the readers walk it", async () => {
+    const { credential, read } = await signed();
+    expect(await verifyProof(credential, { ...read, maxTokens: 50 })).toMatchObject({
+      valid: false,
+      reason: expect.stringContaining("more than the 50 tokens"),
+    });
+    const hostile = {
+      ...credential,
+      evidence: JSON.parse(`[${"[],".repeat(400_000)}[]]`),
+    } as unknown as IssuableCredential;
+    const result = await neverParsesLarge(() => verifyProof(hostile, { ...read, maxInputBytes: 5_000_000 }));
+    expect(result).toMatchObject({ valid: false, reason: expect.stringContaining("more than the 1000000 tokens") });
+    expect(HOSTILE.length).toBeGreaterThan(1_000_000);
+  });
+
   it("is not valid for a credential too large or too deep, or one the model refuses", async () => {
     const { credential, read } = await signed();
     expect(await verifyProof(credential, { ...read, maxInputBytes: 100 })).toMatchObject({
@@ -281,6 +297,7 @@ describe("verifying an eddsa-rdfc-2022 proof", () => {
       clockSkewSeconds: '{"clockSkewSeconds":-1}',
       maxInputBytes: '{"maxInputBytes":0}',
       maxDepth: '{"maxDepth":1.5}',
+      maxTokens: '{"maxTokens":0}',
       allowUnboundKeys: '{"allowUnboundKeys":"yes"}',
       legacyProofs: '{"legacyProofs":1}',
       suites: '{"suites":"x"}',

@@ -135,6 +135,7 @@ verified and its key is bound to the issuer of the list, who must be the issuer 
 | `cache`         | A `StatusListCache`                                                                                                    | None: fetched for each verification |
 | `statusIssuers` | Issuers other than the credential's that may publish its list                                                         | None                             |
 | `timeoutMs`     | The time a fetch may take                                                                                              | `10000`                          |
+| `maxTokens`     | The most tokens of JSON in the list credential, counted before it is parsed                                             | `1000000`       |
 | `maxBytes`      | The most bytes of the list credential                                                                                  | `1048576`                        |
 | `signal`        | Ends the caller's wait                                                                                                 | None                             |
 
@@ -171,6 +172,7 @@ the same chance; the indexes of credentials then say nothing of when they were i
 | Bytes that a list inflates to                           | 16,777,216                 | `failed`, and the stream is cancelled |
 | Bytes of the list credential                            | `maxBytes`, 1,048,576      | `unavailable`                         |
 | Levels that a JSON list credential nests                | 64                         | `failed`                              |
+| Tokens of JSON in a list credential                     | `maxTokens`, 1,000,000     | `failed`, before it is parsed         |
 | List credentials in the cache                           | `maxEntries`, 1,000        | The oldest goes first                 |
 
 The list is inflated through a `DecompressionStream` and the library's own decoder is never called, because it inflates with no

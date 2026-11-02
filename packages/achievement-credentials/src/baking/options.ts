@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { checkPositiveInteger, checkProperties, checkRecord, describe } from "@interopkit/core/checks";
+import { checkPositiveInteger, checkProperties, checkRecord, describe, MAX_JSON_TOKENS } from "@interopkit/core/checks";
 
 /**
  * The most bytes of an image that the functions read or write unless the host says otherwise: the largest baked image that
@@ -15,6 +15,13 @@ export interface ReadImageOptions {
    * @defaultValue 10,485,760
    */
   readonly maxBytes?: number;
+  /**
+   * The most tokens of JSON in the credential that the image holds, or that is baked: the memory of a parse grows with the
+   * tokens and not with the bytes. A credential over the limit is refused before it is parsed.
+   *
+   * @defaultValue 1,000,000
+   */
+  readonly maxTokens?: number;
 }
 
 /** The options of `bakePng` and `bakeSvg`. */
@@ -30,6 +37,7 @@ export interface BakeImageOptions extends ReadImageOptions {
 /** What a function takes from the options of a call, with the defaults. */
 export interface ImageLimits {
   readonly maxBytes: number;
+  readonly maxTokens: number;
   readonly replace: boolean;
 }
 
@@ -40,16 +48,17 @@ export interface ImageLimits {
  * @param names - The options that the function takes.
  * @throws `DataError` that names the option and what it must be.
  */
-export function limitsOf(options: unknown, names: readonly ("maxBytes" | "replace")[]): ImageLimits {
-  if (options === undefined) return { maxBytes: DEFAULT_MAX_BYTES, replace: false };
+export function limitsOf(options: unknown, names: readonly ("maxBytes" | "maxTokens" | "replace")[]): ImageLimits {
+  if (options === undefined) return { maxBytes: DEFAULT_MAX_BYTES, maxTokens: MAX_JSON_TOKENS, replace: false };
   checkRecord(options, "The options must be an object");
   checkProperties(options, "The options", names);
-  const { maxBytes = DEFAULT_MAX_BYTES, replace = false } = options;
+  const { maxBytes = DEFAULT_MAX_BYTES, maxTokens = MAX_JSON_TOKENS, replace = false } = options;
   checkPositiveInteger(maxBytes, "The option maxBytes");
+  checkPositiveInteger(maxTokens, "The option maxTokens");
   if (typeof replace !== "boolean") {
     throw new DataError(`The option replace must be true or false, found ${describe(replace)}.`);
   }
-  return { maxBytes, replace };
+  return { maxBytes, maxTokens, replace };
 }
 
 /** Refuses an image of more bytes than the limit; `what` names it in the message, such as `The image`. */

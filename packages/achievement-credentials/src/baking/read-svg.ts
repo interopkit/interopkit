@@ -27,7 +27,7 @@ import { scanSvg } from "./svg-scan.js";
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/#image-format | CLR 2.0, Image Format}
  */
 export function readSvg(svg: string, options?: ReadImageOptions): BakedCredential | undefined {
-  const { maxBytes } = limitsOf(options, ["maxBytes"]);
+  const { maxBytes, maxTokens } = limitsOf(options, ["maxBytes", "maxTokens"]);
   if (typeof svg !== "string") throw new DataError(`The image must be a string, found ${describe(svg)}.`);
   checkTextSize(svg, maxBytes, "The image");
   const [element] = scanSvg(svg, false).credentials;
@@ -39,5 +39,5 @@ export function readSvg(svg: string, options?: ReadImageOptions): BakedCredentia
     return { kind: element.kind, credential: bakedJws(element.verify) };
   }
   if (body === "") throw new DataError("The credential element of the SVG holds no credential.");
-  return { kind: element.kind, credential: bakedJson(body) };
+  return { kind: element.kind, credential: bakedJson(body, maxTokens) };
 }

@@ -1,14 +1,9 @@
 import { readFileSync } from "node:fs";
 import { DataError } from "@interopkit/core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { bakePng, bakeSvg, readPng, readSvg } from "../src/baking/index.js";
-import {
-  crc32,
-  DEFAULT_MAX_BYTES,
-  MAX_CREDENTIAL_CHARACTERS,
-  MAX_SVG_ATTRIBUTES,
-  MAX_SVG_DEPTH,
-} from "../src/baking/internal.js";
+import { crc32, DEFAULT_MAX_BYTES, MAX_SVG_ATTRIBUTES, MAX_SVG_DEPTH } from "../src/baking/internal.js";
+import { HOSTILE } from "./hostile.js";
 
 interface Case {
   readonly kind: "badge" | "clr";
@@ -47,6 +42,26 @@ const CASES = Object.entries(FIXTURE.png.cases);
 const SVG_CASES = Object.entries(FIXTURE.svg.cases);
 const SVG_ROOT = '<svg xmlns="http://www.w3.org/2000/svg">';
 const PARAMETERS = { badge: FIXTURE.credentials.badge, clr: FIXTURE.credentials.clr };
+
+const TOKENS_REFUSAL = "more than the 1000000 tokens of JSON";
+
+/**
+ * Runs a call that must refuse a credential for its tokens, and shows that it did so before the only step that costs memory
+ * out of proportion to the text: `JSON.parse` takes about forty times the text of small objects, and is never called.
+ *
+ * @returns The message of the refusal.
+ */
+function refusedBeforeParse(call: () => unknown): string {
+  const parse = vi.spyOn(JSON, "parse");
+  try {
+    const error = failureOf(call);
+    expect(error).toBeInstanceOf(DataError);
+    expect(parse).not.toHaveBeenCalled();
+    return (error as DataError).message;
+  } finally {
+    parse.mockRestore();
+  }
+}
 
 /** Runs a call and returns what it throws. */
 function failureOf(call: () => unknown): unknown {
@@ -137,16 +152,25 @@ describe("bakePng", () => {
     );
   });
 
-  it("refuses a credential of more characters than an image may hold of it, before it checks the credential", () => {
+  it("refuses a credential with more tokens of JSON than maxTokens, as text or as an object, before it parses or reads it", () => {
     const image = bytes(FIXTURE.png.base);
-    const long = `a.${"b".repeat(MAX_CREDENTIAL_CHARACTERS)}.c`;
-    expect((failureOf(() => bakePng(image, long)) as DataError).message).toContain(
-      `more than the ${MAX_CREDENTIAL_CHARACTERS}`,
+    const signed = `e30.${Buffer.from(HOSTILE).toString("base64url")}.c2ln`;
+    expect(refusedBeforeParse(() => bakePng(image, signed))).toContain(TOKENS_REFUSAL);
+    // A property that no class has would be the first finding of the readers, so this is the refusal of the count.
+    const object = { ...PARAMETERS.badge, evidence: Array.from({ length: 400_000 }, () => []) };
+    expect(refusedBeforeParse(() => bakePng(image, object))).toContain(TOKENS_REFUSAL);
+    expect(refusedBeforeParse(() => bakePng(image, PARAMETERS.badge, { maxTokens: 20 }))).toContain(
+      "more than the 20 tokens",
     );
-    const big = { ...PARAMETERS.badge, name: "x".repeat(MAX_CREDENTIAL_CHARACTERS) };
-    expect(
-      (failureOf(() => bakePng(image, big, { maxBytes: 4 * MAX_CREDENTIAL_CHARACTERS })) as DataError).message,
-    ).toContain("characters");
+    expect(bakePng(image, PARAMETERS.badge).length).toBeGreaterThan(image.length);
+  });
+
+  it("takes a long credential that stays within the limits of tokens and bytes: there is no limit of characters", () => {
+    const image = bytes(FIXTURE.png.base);
+    const long = { ...PARAMETERS.badge, name: "x".repeat(2_000_000) };
+    const baked = bakePng(image, long);
+    expect(readPng(baked)?.credential).toMatchObject({ name: long.name });
+    expect(() => bakePng(image, long, { maxBytes: 1_000_000 })).toThrow("The baked image has");
   });
 
   it("refuses what is not a credential", () => {
@@ -202,6 +226,7 @@ describe("bakePng", () => {
       [],
       { maxBytes: "10" },
       { maxBytes: 0 },
+      { maxTokens: 0 },
       { replace: "yes" },
       { other: 1 },
     ]) {
@@ -259,11 +284,12 @@ describe("readPng", () => {
     expect(message("no language tag")).toContain("language tag");
   });
 
-  it("refuses a credential chunk of more characters than an image may hold of it", () => {
+  it("refuses a credential chunk with more tokens of JSON than maxTokens before it parses it", () => {
     const keyword = new TextEncoder().encode("openbadgecredential");
-    const text = new Uint8Array(keyword.length + 5 + MAX_CREDENTIAL_CHARACTERS + 1).fill(0x20);
+    const json = new TextEncoder().encode(`{"a":${HOSTILE}}`);
+    const text = new Uint8Array(keyword.length + 5 + json.length);
     text.set(keyword);
-    text.fill(0, keyword.length, keyword.length + 5);
+    text.set(json, keyword.length + 5);
     const chunk = new Uint8Array(12 + text.length);
     const view = new DataView(chunk.buffer);
     view.setUint32(0, text.length);
@@ -272,9 +298,10 @@ describe("readPng", () => {
     view.setUint32(8 + text.length, crc32(chunk.subarray(4, 8 + text.length)));
     const base = bytes(FIXTURE.png.base);
     const image = new Uint8Array([...base.subarray(0, 33), ...chunk, ...base.subarray(33)]);
-    expect((failureOf(() => readPng(image)) as DataError).message).toContain(
-      `more than the ${MAX_CREDENTIAL_CHARACTERS}`,
-    );
+    expect(refusedBeforeParse(() => readPng(image))).toContain(TOKENS_REFUSAL);
+    expect(refusedBeforeParse(() => readPng(image, { maxTokens: 100 }))).toContain("more than the 100 tokens");
+    // The option raises the limit, and what the image holds is then parsed as it is.
+    expect(readPng(image, { maxTokens: 2_000_000 })).toMatchObject({ kind: "badge" });
   });
 
   it("refuses an image larger than the limit before it reads any of it", () => {
@@ -287,7 +314,7 @@ describe("readPng", () => {
   });
 
   it("refuses options and images of other types", () => {
-    for (const options of [null, 1, { maxBytes: -1 }, { replace: true }]) {
+    for (const options of [null, 1, { maxBytes: -1 }, { maxTokens: 1.5 }, { replace: true }]) {
       expect(failureOf(() => readPng(bytes(FIXTURE.png.base), options as never))).toBeInstanceOf(DataError);
     }
     for (const image of [null, "png", [], new ArrayBuffer(8)]) {
@@ -438,6 +465,10 @@ describe("readSvg", () => {
     ["holds a JWS and not JSON", `<o:credential xmlns:o="https://purl.imsglobal.org/ob/v3p0">a.b.c</o:credential>`],
     ["holds JSON that is not valid", `<o:credential xmlns:o="https://purl.imsglobal.org/ob/v3p0">{"a":</o:credential>`],
     [
+      "holds JSON that is not an object",
+      `<o:credential xmlns:o="https://purl.imsglobal.org/ob/v3p0">[1,2]</o:credential>`,
+    ],
+    [
       "holds JSON that nests too deep",
       `<o:credential xmlns:o="https://purl.imsglobal.org/ob/v3p0">${"[".repeat(100)}</o:credential>`,
     ],
@@ -463,15 +494,31 @@ describe("readSvg", () => {
     ).toBeInstanceOf(DataError);
   });
 
-  it("refuses a credential element of more characters than an image may hold of it, as the text arrives", () => {
+  it("refuses a credential element with more tokens of JSON than maxTokens before it parses it", () => {
     const element = (body: string) =>
       `${SVG_ROOT}<o:credential xmlns:o="https://purl.imsglobal.org/ob/v3p0">${body}</o:credential></svg>`;
-    const long = "x".repeat(MAX_CREDENTIAL_CHARACTERS + 1);
-    const refusal = "The credential element of the SVG has more than";
-    expect((failureOf(() => readSvg(element(`<![CDATA[${long}]]>`))) as DataError).message).toContain(refusal);
-    expect((failureOf(() => readSvg(element(long))) as DataError).message).toContain(refusal);
-    const attribute = `${SVG_ROOT}<o:credential xmlns:o="https://purl.imsglobal.org/ob/v3p0" verify="${"a".repeat(MAX_CREDENTIAL_CHARACTERS)}"/></svg>`;
-    expect((failureOf(() => readSvg(attribute)) as DataError).message).toContain("characters");
+    const json = `{"a":${HOSTILE}}`;
+    expect(refusedBeforeParse(() => readSvg(element(`<![CDATA[${json}]]>`)))).toContain(TOKENS_REFUSAL);
+    expect(refusedBeforeParse(() => readSvg(element(json)))).toContain(TOKENS_REFUSAL);
+    expect(refusedBeforeParse(() => readSvg(element(json), { maxTokens: 100 }))).toContain("more than the 100 tokens");
+  });
+
+  it("refuses a credential element that nests deeper than the limit before it parses it", () => {
+    const deep = `{"a":${"[".repeat(150_000)}${"]".repeat(150_000)}}`;
+    const svg = `${SVG_ROOT}<o:credential xmlns:o="https://purl.imsglobal.org/ob/v3p0">${deep}</o:credential></svg>`;
+    const parse = vi.spyOn(JSON, "parse");
+    try {
+      expect((failureOf(() => readSvg(svg)) as DataError).message).toContain("nests more than 64 levels");
+      expect(parse).not.toHaveBeenCalled();
+    } finally {
+      parse.mockRestore();
+    }
+  });
+
+  it("does not parse the compact JWS of a verify attribute, so that only the bytes of the image bound it", () => {
+    const attribute = `${SVG_ROOT}<o:credential xmlns:o="https://purl.imsglobal.org/ob/v3p0" verify="a.${"b".repeat(3_000_000)}.c"/></svg>`;
+    expect(readSvg(attribute)).toMatchObject({ kind: "badge" });
+    expect((failureOf(() => readSvg(attribute, { maxBytes: 1_000_000 })) as DataError).message).toContain("maxBytes");
   });
 
   it("refuses an image larger than the limit before it parses any of it", () => {
@@ -482,7 +529,7 @@ describe("readSvg", () => {
   });
 
   it("refuses options and images of other types", () => {
-    for (const options of [null, 1, { maxBytes: "1" }, { replace: true }]) {
+    for (const options of [null, 1, { maxBytes: "1" }, { maxTokens: 0 }, { maxTokens: "9" }, { replace: true }]) {
       expect(failureOf(() => readSvg(FIXTURE.svg.base, options as never))).toBeInstanceOf(DataError);
     }
     for (const svg of [null, 1, [], new Uint8Array(4)]) {

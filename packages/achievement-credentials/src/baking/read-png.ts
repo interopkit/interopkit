@@ -25,12 +25,12 @@ import { kindOfChunk, readCredentialChunk, TEXT_CHUNK } from "./png-text.js";
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/#image-format | CLR 2.0, Image Format}
  */
 export function readPng(image: Uint8Array, options?: ReadImageOptions): BakedCredential | undefined {
-  const { maxBytes } = limitsOf(options, ["maxBytes"]);
+  const { maxBytes, maxTokens } = limitsOf(options, ["maxBytes", "maxTokens"]);
   if (!(image instanceof Uint8Array)) throw new DataError(`The image must be a Uint8Array, found ${describe(image)}.`);
   checkImageSize(image.length, maxBytes, "The image");
   for (const chunk of chunksOf(image)) {
     const kind = chunk.type === TEXT_CHUNK ? kindOfChunk(image, chunk) : undefined;
-    if (kind !== undefined) return { kind, credential: bakedValue(readCredentialChunk(image, chunk, kind)) };
+    if (kind !== undefined) return { kind, credential: bakedValue(readCredentialChunk(image, chunk, kind), maxTokens) };
   }
   return undefined;
 }

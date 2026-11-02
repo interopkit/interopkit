@@ -14,10 +14,11 @@ import {
   checkRecord,
   describe,
   MAX_JSON_DEPTH,
-  nestsDeeperThan,
+  MAX_JSON_TOKENS,
 } from "@interopkit/core/checks";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
+import { parseJsonText } from "../json-text.js";
 import type { ContextLoader } from "../model/index.js";
 import { canonicalJson } from "./canonical-json.js";
 
@@ -124,6 +125,12 @@ export interface ContextLoaderOptions {
    * @defaultValue `262144`
    */
   readonly maxBytes?: number;
+  /**
+   * The most tokens of JSON in a context: the memory of a parse grows with the tokens and not with the bytes.
+   *
+   * @defaultValue `1000000`
+   */
+  readonly maxTokens?: number;
 }
 
 /** The most bytes of a context unless the host says otherwise: the largest, Open Badges, is under 15,000. */
@@ -157,6 +164,7 @@ function checkOptions(options: unknown): asserts options is ContextLoaderOptions
   }
   if (options.timeoutMs !== undefined) checkPositiveInteger(options.timeoutMs, "The option timeoutMs");
   if (options.maxBytes !== undefined) checkPositiveInteger(options.maxBytes, "The option maxBytes");
+  if (options.maxTokens !== undefined) checkPositiveInteger(options.maxTokens, "The option maxTokens");
 }
 
 /**
@@ -182,6 +190,7 @@ export function createContextLoader(options: ContextLoaderOptions): ContextLoade
   const { fetch, documents, pins, cache: hostCache, allowUnknown = false } = options;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
+  const maxTokens = options.maxTokens ?? MAX_JSON_TOKENS;
   // A context at a pinned address is the same document for the life of the loader, so a load is kept as it is, and shared.
   const kept = new Map<string, Promise<unknown>>();
 
@@ -219,17 +228,14 @@ export function createContextLoader(options: ContextLoaderOptions): ContextLoade
       { method: "GET", headers: { accept: "application/ld+json, application/json" } },
       { maxBytes },
     );
-    if (nestsDeeperThan(text, MAX_JSON_DEPTH))
-      throw new DataError(`The context ${url} nests more than ${MAX_JSON_DEPTH} levels.`);
-    let document: unknown;
-    try {
-      document = JSON.parse(text);
-    } catch {
-      throw new ServiceError(`The context ${url} is not JSON.`, 200, text.slice(0, 256));
+    const parsed = parseJsonText(text, { maxDepth: MAX_JSON_DEPTH, maxTokens }, `The context ${url}`);
+    if ("reason" in parsed) {
+      if (parsed.overLimit) throw new DataError(parsed.reason);
+      throw new ServiceError(parsed.reason, 200, text.slice(0, 256));
     }
-    check(url, document);
-    await hostCache?.put(url, document);
-    return document;
+    check(url, parsed.value);
+    await hostCache?.put(url, parsed.value);
+    return parsed.value;
   };
 
   /** Returns the load of a context: the kept one, or a new one that is forgotten if it fails. */

@@ -11,6 +11,7 @@ import {
   endorsementCredential,
   verifiableCredential,
 } from "./fixtures.js";
+import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { clockAt, KEYS, serve, signerOf, type TestKey } from "./key-fixtures.js";
 
 const ISSUER = "https://example.edu/issuers/1";
@@ -448,6 +449,30 @@ describe("reading a JWT", () => {
       expect((await readCredentialJwt(await sign(65), { ...options, maxDepth: 70 })).valid).toBe(true);
     });
 
+    it("refuses a header or a payload with more tokens of JSON than maxTokens before it parses it", async () => {
+      const { options } = world();
+      const kid = `${ISSUER}#es256`;
+      const good = await signCredentialJwt(badge(), signerOf(KEYS.es256), { kid });
+      // The header is at most 16,384 characters, so it is the payload that can hold a million tokens; a lower limit holds both.
+      expect(await readCredentialJwt(good, { ...options, maxTokens: 5 })).toMatchObject({
+        valid: false,
+        reason: expect.stringContaining("The header of the JWS has more than the 5 tokens"),
+      });
+      expect(await readCredentialJwt(good, { ...options, maxTokens: 20 })).toMatchObject({
+        valid: false,
+        reason: expect.stringContaining("The payload of the JWS has more than the 20 tokens"),
+      });
+      expect((await readCredentialJwt(good, options)).valid).toBe(true);
+      const hostile = await signCompactJws({ kid }, new TextEncoder().encode(`{"x":${HOSTILE}}`), signerOf(KEYS.es256));
+      const payload = await neverParsesLarge(() =>
+        readCredentialJwt(hostile, { ...options, maxInputBytes: 2_000_000 }),
+      );
+      expect(payload).toMatchObject({
+        valid: false,
+        reason: expect.stringContaining("The payload of the JWS has more than the 1000000 tokens"),
+      });
+    });
+
     it("refuses a header or payload that nests too deep, without parsing it", async () => {
       const deep = `${"[".repeat(200_000)}${"]".repeat(200_000)}`;
       const header = base64url.encode(encoder.encode(`{"alg":"ES256","x":${deep}}`));
@@ -613,6 +638,7 @@ describe("reading a JWT", () => {
       ["a skew that is a string", { clockSkewSeconds: "60" }],
       ["a size limit of 0", { maxInputBytes: 0 }],
       ["a depth that is a fraction", { maxDepth: 1.5 }],
+      ["a limit of tokens of 0", { maxTokens: 0 }],
       ["allowUnboundKeys that is a string", { allowUnboundKeys: "yes" }],
       ["a signal that is a string", { signal: "stop" }],
     ])("are refused for %s", async (_name, extra) => {

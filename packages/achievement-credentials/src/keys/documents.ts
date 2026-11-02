@@ -1,5 +1,6 @@
 import { callService, type Fetch, ServiceError } from "@interopkit/core";
-import { isRecord, nestsDeeperThan } from "@interopkit/core/checks";
+import { isRecord } from "@interopkit/core/checks";
+import { parseJsonText } from "../json-text.js";
 import { KEY_RELATIONSHIPS, type KeyRelationship, type VerificationKey } from "../model/index.js";
 import { publicJwk, thumbprintOf } from "./jwk.js";
 import { jwkOfMultibase } from "./multibase.js";
@@ -12,6 +13,8 @@ export interface DocumentSettings {
   readonly timeoutMs: number;
   /** The most bytes of a document. */
   readonly maxBytes: number;
+  /** The most tokens of JSON in a document. */
+  readonly maxTokens: number;
 }
 
 /** The most levels that a document nests: a DID document or a key set is a few levels deep. */
@@ -25,16 +28,11 @@ const ABSENT_STATUSES: readonly number[] = [404, 410];
 
 const ACCEPT = "application/json, application/did+json;q=0.9, application/ld+json;q=0.8";
 
-/** Parses the text of a document, or returns `undefined` when it is not a JSON object that nests within the limit. */
-function parseDocument(text: string): Readonly<Record<string, unknown>> | undefined {
-  // The depth is counted before the parser builds anything.
-  if (nestsDeeperThan(text, MAX_DOCUMENT_DEPTH)) return undefined;
-  try {
-    const parsed: unknown = JSON.parse(text);
-    return isRecord(parsed) ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
+/** Parses the text of a document, or returns `undefined` when it is not a JSON object within the limits of levels and tokens. */
+function parseDocument(text: string, maxTokens: number): Readonly<Record<string, unknown>> | undefined {
+  // The tokens and the levels are counted before the parser builds anything.
+  const parsed = parseJsonText(text, { maxDepth: MAX_DOCUMENT_DEPTH, maxTokens }, "The document");
+  return "value" in parsed && isRecord(parsed.value) ? parsed.value : undefined;
 }
 
 /** Returns the address of a document with no fragment, or `undefined` when it is not an HTTPS address that names a host and no user. */
@@ -73,7 +71,7 @@ export async function fetchDocument(
       { method: "GET", headers: { accept: ACCEPT } },
       { maxBytes: settings.maxBytes },
     );
-    return parseDocument(text);
+    return parseDocument(text, settings.maxTokens);
   } catch (error) {
     if (error instanceof ServiceError && ABSENT_STATUSES.includes(error.status)) return undefined;
     throw error;

@@ -123,6 +123,7 @@ hosts several issuers writes the `iss` of each key.
 | `resolve`    | Resolves a verification method of a DID method that is not in `methods`                                                | None                                     |
 | `ttlSeconds` | How long a document stays in the cache                                                                                | `3600`                                   |
 | `timeoutMs`  | The time a fetch may take                                                                                             | `10000`                                  |
+| `maxTokens`  | The most tokens of JSON in a document, counted before it is parsed; a document over it holds nothing                  | `1000000`             |
 | `maxBytes`   | The most bytes of a document                                                                                          | `65536`                                  |
 
 Every call takes the `signal` of `CallOptions`, which ends that caller's wait. A fetch is shared work: callers that ask for a
@@ -134,6 +135,7 @@ document while it loads share one fetch, which runs to its own timeout.
 | -------------------------------------------------------------------------------- | -------------------- | ---------------------------------------------- |
 | Bytes of a document                                                              | `maxBytes`, 65,536   | `ServiceError`                                 |
 | Levels that a document nests                                                     | 16                   | The document holds nothing                     |
+| Tokens of JSON in a document                                                     | `maxTokens`, 1,000,000 | The document holds nothing                   |
 | Keys that a document lists                                                       | 100                  | The document publishes nothing                 |
 | Bits of an RSA modulus                                                           | 8,192                | The key is left out                            |
 | Characters of a `did:jwk`                                                        | 4,096                | The issuer publishes nothing                   |

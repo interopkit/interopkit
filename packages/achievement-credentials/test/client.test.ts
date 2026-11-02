@@ -9,7 +9,6 @@ import {
   readStatusInfo,
 } from "../src/client/index.js";
 import { readAnswer } from "../src/client/internal.js";
-import { MAX_CREDENTIAL_CHARACTERS } from "../src/model/internal.js";
 import { BASE, fakeServer, JWS, json, text } from "./fake-server.js";
 import { achievementCredential, clrCredential, PROFILE } from "./fixtures.js";
 
@@ -357,24 +356,32 @@ describe("listCredentials", () => {
     ).toHaveProperty("message", expect.stringContaining("more than the 2"));
   });
 
-  it("refuses a credential, a compact JWS and a profile of more characters than the package reads", async () => {
-    const big = "x".repeat(MAX_CREDENTIAL_CHARACTERS);
+  it("refuses a page and a profile with more tokens of JSON than maxTokens before it parses them", async () => {
+    const hostile = `[${"[],".repeat(400_000)}[]]`;
+    const refusal = "more than 1000000 tokens of JSON, above the limit of the option maxTokens";
+    const parse = vi.spyOn(JSON, "parse");
+    try {
+      const page = fakeServer(() => text(`{"credential":${hostile}}`));
+      expect(((await rejection(all(clientOf(page.fetch).listCredentials()))) as DataError).message).toContain(refusal);
+      const profile = fakeServer(() => text(`{"name":${hostile}}`));
+      expect(((await rejection(clientOf(profile.fetch).getProfile())) as DataError).message).toContain(refusal);
+      expect(parse).not.toHaveBeenCalled();
+    } finally {
+      parse.mockRestore();
+    }
+  });
+
+  it("reads a long credential and a long profile that stay within the limits of tokens and bytes: no limit of characters", async () => {
+    const big = "x".repeat(2_000_000);
     const credentials = fakeServer(() => json({ credential: [{ ...credential(1), name: big }] }));
-    expect(((await rejection(all(clientOf(credentials.fetch).listCredentials()))) as DataError).message).toContain(
-      "a credential of",
-    );
-    const signed = fakeServer(() => json({ compactJwsString: [`a.${big}.c`] }));
-    expect(((await rejection(all(clientOf(signed.fetch).listCredentials()))) as DataError).message).toContain(
-      "a compact JWS of",
-    );
+    const [read] = await all(clientOf(credentials.fetch).listCredentials());
+    expect(read).toMatchObject({ name: big });
     const profile = fakeServer(() => json({ ...PROFILE, name: big }));
-    expect(
-      (
-        (await rejection(
-          clientOf(profile.fetch, { maxBytes: 4 * MAX_CREDENTIAL_CHARACTERS }).getProfile(),
-        )) as DataError
-      ).message,
-    ).toContain("a profile of");
+    expect(await clientOf(profile.fetch).getProfile()).toMatchObject({ name: big });
+    const signed = fakeServer(() => json({ compactJwsString: [`a.${big}.c`] }));
+    expect(await all(clientOf(signed.fetch).listCredentials())).toStrictEqual([`a.${big}.c`]);
+    const limited = fakeServer(() => json({ ...PROFILE, name: big }));
+    expect(await rejection(clientOf(limited.fetch, { maxBytes: 1_000_000 }).getProfile())).toBeInstanceOf(ServiceError);
   });
 
   it("gives nothing for an empty page", async () => {

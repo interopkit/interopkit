@@ -7,6 +7,7 @@ import {
   checkPositiveInteger,
   checkRecord,
   describe,
+  MAX_JSON_TOKENS,
 } from "@interopkit/core/checks";
 import { createKeyedCache } from "../keyed-cache.js";
 import { KEY_RELATIONSHIPS, type KeyResolver, type VerificationKey } from "../model/index.js";
@@ -60,6 +61,13 @@ export interface KeyResolverOptions {
    * @defaultValue `65536`
    */
   readonly maxBytes?: number;
+  /**
+   * The most tokens of JSON in a document: the memory of a parse grows with the tokens and not with the bytes. A document over
+   * the limit holds no key.
+   *
+   * @defaultValue `1000000`
+   */
+  readonly maxTokens?: number;
 }
 
 /** How long a document stays in the cache unless the host says otherwise, in seconds. */
@@ -96,6 +104,7 @@ function checkOptions(options: unknown): asserts options is KeyResolverOptions {
   if (options.ttlSeconds !== undefined) checkPositiveInteger(options.ttlSeconds, "The option ttlSeconds");
   if (options.timeoutMs !== undefined) checkPositiveInteger(options.timeoutMs, "The option timeoutMs");
   if (options.maxBytes !== undefined) checkPositiveInteger(options.maxBytes, "The option maxBytes");
+  if (options.maxTokens !== undefined) checkPositiveInteger(options.maxTokens, "The option maxTokens");
 }
 
 /** Checks the options of a call. */
@@ -135,7 +144,12 @@ export function createKeyResolver(options: KeyResolverOptions): KeyResolver {
   const settings: DocumentSettings | undefined =
     fetch === undefined
       ? undefined
-      : { fetch, timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS, maxBytes: options.maxBytes ?? DEFAULT_MAX_BYTES };
+      : {
+          fetch,
+          timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+          maxBytes: options.maxBytes ?? DEFAULT_MAX_BYTES,
+          maxTokens: options.maxTokens ?? MAX_JSON_TOKENS,
+        };
   const resolvers = new Map<string, DidResolver>();
   if (methods.includes("key")) resolvers.set("key", didKeyResolver());
   if (methods.includes("web") && settings !== undefined) resolvers.set("web", didWebResolver(settings));

@@ -134,6 +134,7 @@ credentials are not compact JWS is not valid.
 | `clockSkewSeconds` | The seconds by which `exp` and `nbf` may differ from the clock                                                         | `60`                                                 |
 | `allowUnboundKeys` | Accept a key that the issuer does not publish. The binding is not looked up, and the result has `bound: false`         | `false`                                              |
 | `maxInputBytes`    | The most characters of the JWS                                                                                         | `1048576`                                            |
+| `maxTokens`        | The most tokens of JSON in the header and in the payload, counted before they are parsed                               | `1000000`       |
 | `maxDepth`         | The most levels that the header and the payload nest                                                                   | `64`                                                 |
 | `signal`           | Ends the caller's wait                                                                                                 | None                                                 |
 
@@ -149,6 +150,7 @@ lookup and the result says `bound: false`.
 | Characters of the JWS                              | `maxInputBytes`, 1,048,576 | `valid: false`, before anything is decoded |
 | Characters of the header                           | 16,384               | `valid: false`                |
 | Levels that the header and payload nest            | `maxDepth`, 64       | `valid: false`, before they are parsed |
+| Tokens of JSON in the header and in the payload    | `maxTokens`, 1,000,000 | `valid: false`, before they are parsed |
 | Bits of an RSA modulus of a key                    | 8,192                | The key is not a key          |
 
 The size is checked first, then the shape, and the depth of each part is counted from its text before a parser builds anything.

@@ -25,10 +25,10 @@ import { kindOfChunk, TEXT_CHUNK, writeCredentialChunk } from "./png-text.js";
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/#image-format | CLR 2.0, Image Format}
  */
 export function bakePng(image: Uint8Array, credential: string | object, options?: BakeImageOptions): Uint8Array {
-  const { maxBytes, replace } = limitsOf(options, ["maxBytes", "replace"]);
+  const { maxBytes, maxTokens, replace } = limitsOf(options, ["maxBytes", "maxTokens", "replace"]);
   if (!(image instanceof Uint8Array)) throw new DataError(`The image must be a Uint8Array, found ${describe(image)}.`);
   checkImageSize(image.length, maxBytes, "The image");
-  const { kind, text } = textToBake(credential);
+  const { kind, text } = textToBake(credential, maxTokens);
   let insertAt = 0;
   const held: Chunk[] = [];
   for (const chunk of chunksOf(image)) {

@@ -1,5 +1,6 @@
 import { callService, ServiceError } from "@interopkit/core";
-import { checkRecord, describe, isRecord, nestsDeeperThan } from "@interopkit/core/checks";
+import { checkRecord, describe, isRecord } from "@interopkit/core/checks";
+import { parseJsonText } from "../json-text.js";
 import { readCredentialJwt } from "../jwt/index.js";
 import type { IssuableCredential, VerifiableCredential, VerificationCheck } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
@@ -96,6 +97,7 @@ async function verifiedList(text: string, settings: CheckSettings): Promise<Veri
   const keyed = {
     keys: settings.keys,
     clock: settings.clock,
+    maxTokens: settings.maxTokens,
     ...(settings.signal === undefined ? {} : { signal: settings.signal }),
   };
   if (!text.trimStart().startsWith("{")) {
@@ -103,15 +105,13 @@ async function verifiedList(text: string, settings: CheckSettings): Promise<Veri
     if (!result.valid) throw new ListFailure(result.reason);
     return asList(result.credential);
   }
-  if (nestsDeeperThan(text, MAX_DEPTH))
-    throw new ListFailure(`The status list credential nests more than ${MAX_DEPTH} levels.`);
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new ListFailure("The status list credential is not JSON.");
-  }
-  const checked = credentialOrReason(parsed, "The status list credential");
+  const parsed = parseJsonText(
+    text,
+    { maxDepth: MAX_DEPTH, maxTokens: settings.maxTokens },
+    "The status list credential",
+  );
+  if ("reason" in parsed) throw new ListFailure(parsed.reason);
+  const checked = credentialOrReason(parsed.value, "The status list credential");
   if ("reason" in checked) throw new ListFailure(checked.reason);
   if (settings.contexts === undefined) {
     throw new ListUnavailable(
@@ -120,7 +120,7 @@ async function verifiedList(text: string, settings: CheckSettings): Promise<Veri
   }
   // Loaded when a list credential with a Data Integrity proof is checked, so that a verifier of JWTs never loads JSON-LD.
   const { verifyProof } = await import("../data-integrity/index.js");
-  const result = await verifyProof(parsed as IssuableCredential, { ...keyed, contexts: settings.contexts });
+  const result = await verifyProof(parsed.value as IssuableCredential, { ...keyed, contexts: settings.contexts });
   if (!result.valid) throw new ListFailure(result.reason);
   return asList(result.credential);
 }

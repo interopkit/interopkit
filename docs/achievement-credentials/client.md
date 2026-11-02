@@ -220,7 +220,6 @@ replaces the whole profile.
 | `maxBytes` of an answer                            | 16,777,216 | `ServiceError`                                                                    |
 | Bytes of a service description                     | 1,048,576  | `ServiceError`                                                                    |
 | `pageSize`                                         | 100        | `DataError` when a page holds more                                                |
-| Characters of a credential or a profile in an answer | 1,048,576  | `DataError`, before the readers see it                                            |
 | Levels of JSON in an answer                        | 64         | `DataError`, before the text is parsed                                            |
 | `maxTokens` of an answer                           | 1,000,000  | `DataError`, before the text is parsed                                            |
 | Redirects                                          | 0          | `ServiceError`                                                                    |

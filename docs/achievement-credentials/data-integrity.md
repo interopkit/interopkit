@@ -150,6 +150,7 @@ check a credential. Each proof is looked at in order, and the result is the firs
 | `legacyProofs`     | Accept `Ed25519Signature2020` proofs, which Open Badges 3.0.0 to 3.0.2 used                                            | `false`       |
 | `suites`           | More `DataIntegritySuite`s beside the built-in ones; a suite only checks the proof, the glue resolves and binds the key | None          |
 | `maxInputBytes`    | The most characters of the credential as JSON                                                                         | `1048576`     |
+| `maxTokens`        | The most tokens of JSON in the credential, counted before the readers walk it                                          | `1000000`     |
 | `maxDepth`         | The most levels that the credential nests                                                                             | `64`          |
 | `signal`           | Ends the caller's wait                                                                                                | None          |
 
@@ -169,6 +170,7 @@ of JSON-LD call the loader and no other.
 | `cache`        | `get(url)` and `put(url, document)` of the host, for verified contexts; a context read from it is checked again   | None                                     |
 | `allowUnknown` | Serve a context that has no pin                                                                                    | `false`                                  |
 | `timeoutMs`    | The time a fetch may take                                                                                         | `10000`                                  |
+| `maxTokens`    | The most tokens of JSON in a context, counted before it is parsed                                                  | `1000000`    |
 | `maxBytes`     | The most bytes of a context                                                                                        | `262144`                                 |
 
 W3C asks that its context addresses are not fetched on every request: a host passes the W3C and 1EdTech contexts in `documents`,
@@ -187,8 +189,10 @@ credential survive safe mode. The builders write the context of the 1EdTech exte
 | ------------------------------------------------------- | -------------------- | --------------------------------------- |
 | Characters of the credential as JSON                    | `maxInputBytes`, 1,048,576 | `valid: false`, before it is read |
 | Levels that the credential nests                        | `maxDepth`, 64       | `valid: false`, before it is read       |
+| Tokens of JSON in the credential                        | `maxTokens`, 1,000,000 | `valid: false`, before it is read     |
 | RDF canonicalization work factor (`rdf-canonize` default) | 1                  | The signature does not verify; signing is refused with a `DataError` |
 | Bytes of a context, levels of a context                 | `maxBytes`, 64       | `ServiceError`, `DataError`             |
+| Tokens of JSON in a context                             | `maxTokens`, 1,000,000 | `DataError`, before it is parsed      |
 | Contexts kept in memory                                 | 100                  | The oldest goes first                   |
 | Findings of `validateJsonLd`                            | 100                  | The rest are not reported               |
 

@@ -3,6 +3,7 @@ import { base64url, calculateJwkThumbprint } from "jose";
 import { describe, expect, it } from "vitest";
 import { createKeyResolver } from "../src/keys/index.js";
 import { publicJwk } from "../src/keys/internal.js";
+import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { clockAt, KEYS, multibase, serve } from "./key-fixtures.js";
 
 const ISSUER = "https://example.edu/issuers/1";
@@ -483,6 +484,25 @@ describe("the cache of documents", () => {
   });
 });
 
+describe("the tokens of a document", () => {
+  const clock = clockAt(0);
+  const keys = JSON.stringify([{ ...KEYS.es256.publicJwk, kid: "a" }]);
+
+  it("are counted before the document is parsed: a document over maxTokens holds nothing", async () => {
+    const { fetch } = serve({ [SET_URL]: `{"keys":${keys},"note":${HOSTILE}}` });
+    const published = await neverParsesLarge(() =>
+      createKeyResolver({ clock, fetch, maxBytes: 2_000_000 }).issuerKeys(ISSUER),
+    );
+    expect(published).toStrictEqual([]);
+  });
+
+  it("are limited by the option maxTokens, and a document within the limit is read", async () => {
+    const { fetch } = serve({ [SET_URL]: `{"keys":${keys}}` });
+    expect(await createKeyResolver({ clock, fetch, maxTokens: 10 }).issuerKeys(ISSUER)).toStrictEqual([]);
+    expect(await createKeyResolver({ clock, fetch, maxTokens: 1000 }).issuerKeys(ISSUER)).toHaveLength(1);
+  });
+});
+
 describe("the arguments", () => {
   const clock = clockAt(0);
 
@@ -499,6 +519,7 @@ describe("the arguments", () => {
     ["a time to live of 0", { ttlSeconds: 0 }],
     ["a timeout that is a string", { timeoutMs: "10" }],
     ["a size limit of 1.5", { maxBytes: 1.5 }],
+    ["a limit of tokens of 0", { maxTokens: 0 }],
   ])("are refused for %s", (_name, extra) => {
     expect(() => createKeyResolver({ clock, ...JSON.parse(JSON.stringify(extra)) })).toThrow(DataError);
   });

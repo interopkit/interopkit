@@ -4,6 +4,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createContextLoader, KNOWN_CONTEXTS } from "../src/data-integrity/index.js";
 import { canonicalJson, contextHash } from "../src/data-integrity/internal.js";
+import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { serve } from "./key-fixtures.js";
 
 const ADDRESS = "https://example.test/contexts/a/v1";
@@ -131,6 +132,20 @@ describe("a context that is fetched", () => {
     await expect(open("https://example.test/contexts/c/v1")).rejects.toThrow("nests more than");
   });
 
+  it("is refused with more tokens of JSON than maxTokens, before it is parsed", async () => {
+    const { fetch } = serve({ [ADDRESS]: `{"@context":${HOSTILE}}` });
+    const open = createContextLoader({ fetch, allowUnknown: true, maxBytes: 2_000_000 });
+    const error = await neverParsesLarge(() => open(ADDRESS).catch((reason: unknown) => reason));
+    expect(error).toBeInstanceOf(DataError);
+    expect((error as DataError).message).toContain("more than the 1000000 tokens");
+    const small = createContextLoader({
+      fetch: serve({ [ADDRESS]: JSON.stringify(DOCUMENT) }).fetch,
+      pins: PINS,
+      maxTokens: 3,
+    });
+    await expect(small(ADDRESS)).rejects.toThrow("more than the 3 tokens");
+  });
+
   it("is kept in memory up to a bound, the oldest first", async () => {
     const { fetch, requests } = serve({});
     const documents = new Map(Array.from({ length: 101 }, (_, index) => [`https://example.test/c/${index}`, DOCUMENT]));
@@ -165,6 +180,7 @@ describe("the arguments", () => {
     ["allowUnknown that is a string", '{"allowUnknown":"yes"}'],
     ["a timeout of 0", '{"timeoutMs":0}'],
     ["a size limit of 1.5", '{"maxBytes":1.5}'],
+    ["a limit of tokens of 0", '{"maxTokens":0}'],
   ])("are refused for %s", (_name, text) => {
     expect(() => createContextLoader(JSON.parse(text))).toThrow(DataError);
   });

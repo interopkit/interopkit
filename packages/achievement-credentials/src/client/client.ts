@@ -17,7 +17,6 @@ import {
 } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type { AnyCredential, Profile } from "../model/index.js";
-import { MAX_CREDENTIAL_CHARACTERS } from "../model/internal.js";
 import { readCredential, readEntity } from "../read/index.js";
 import { jws } from "../read/internal.js";
 import { type CredentialsClientConfig, type Settings, settingsOf } from "./config.js";
@@ -97,21 +96,10 @@ function membersOf(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [value];
 }
 
-/** Refuses a value of more characters than the package reads from a source it does not trust, before a reader sees it. */
-function checkSize(value: unknown, what: string, subject: string): void {
-  const characters = typeof value === "string" ? value.length : JSON.stringify(value).length;
-  if (characters > MAX_CREDENTIAL_CHARACTERS) {
-    throw new DataError(
-      `${what} answered with ${subject} of ${characters} characters, more than the ${MAX_CREDENTIAL_CHARACTERS} that the package reads.`,
-    );
-  }
-}
-
 /**
  * Reads the credentials of a page: a credential as the model has it, and a compact JWS as text. The page may hold at most the
- * `limit` that the request asked for (OB 6.2.2), and each credential at most `MAX_CREDENTIAL_CHARACTERS`, both checked before the
- * readers see them: a page of millions of small objects, or one credential of megabytes, would cost them far more memory than
- * its text.
+ * `limit` that the request asked for (OB 6.2.2), checked before the readers see it, and the tokens of its JSON were counted
+ * before it was parsed, so no credential costs the readers more memory than the tokens that the whole answer may have.
  */
 function readPage(settings: Settings, json: unknown, what: string): (string | AnyCredential)[] {
   if (!isRecord(json))
@@ -125,11 +113,9 @@ function readPage(settings: Settings, json: unknown, what: string): (string | An
   }
   return readAnswer(settings, what, () => [
     ...credentials.map((credential) => {
-      checkSize(credential, what, "a credential");
       return readCredential(credential, { kind: KINDS[settings.api] });
     }),
     ...signed.map((compact) => {
-      checkSize(compact, what, "a compact JWS");
       return parseWith(jws, compact, "A compact JWS of the page");
     }),
   ]);
@@ -216,7 +202,6 @@ export function createCredentialsClient(config: CredentialsClientConfig): Creden
   function profileOf(response: ServiceResponse, url: string): Profile {
     const name = what(url);
     const json = jsonOf(textOf(response, name), name, settings.maxTokens);
-    checkSize(json, name, "a profile");
     return readAnswer(settings, name, () => readEntity("Profile", json));
   }
 

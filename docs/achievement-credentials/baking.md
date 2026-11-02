@@ -116,6 +116,7 @@ A reader accepts any prefix: it matches the namespace and the local name `creden
 | ---------- | ------------ | ----------------------------------------------------------------------------------------------------------- | ---------- |
 | `replace`  | `bakePng`, `bakeSvg` | Replace the credential that the image holds, of either kind. When it is `false`, such an image is refused | `false`    |
 | `maxBytes` | all four     | The most bytes of the image, and of the baked image                                                         | 10,485,760 |
+| `maxTokens` | all four    | The most tokens of JSON in the credential that is read or baked, counted before it is parsed                | 1,000,000  |
 
 An image holds one credential: the specifications forbid a second chunk or element, and let the baker choose between an error and
 an overwrite. `replace` removes every chunk or element of either kind before it writes the new one.
@@ -125,7 +126,7 @@ an overwrite. `replace` removes every chunk or element of either kind before it 
 | Limit                                                  | Value             | Refused with                                                  |
 | ------------------------------------------------------ | ----------------- | ------------------------------------------------------------- |
 | Bytes of an image, and of a baked image                | 10,485,760        | `DataError`, before any of the image is read                  |
-| Characters of the credential in an image               | 1,048,576         | `DataError`, before the text is parsed or joined              |
+| Tokens of JSON in a credential (`maxTokens`)           | 1,000,000         | `DataError`, before the text is parsed                        |
 | Levels of JSON in a credential                         | 64                | `DataError`, before the text is parsed                        |
 | Elements open at once in an SVG                        | 256               | `DataError`, when the parser meets the 257th                  |
 | Attributes of one element of an SVG                    | 256               | `DataError`, when the parser meets the 257th                  |
@@ -139,10 +140,12 @@ The limits are set so that no image costs much more than its size to read. Measu
 | 2.6 million empty elements, one after the other               | 1.2 s                          | 40 MiB                 |
 | 2 million entity references in one text                       | 0.5 s                          | 110 MiB                |
 | 870,000 empty chunks in a PNG                                 | 0.1 s                          | 20 MiB                 |
+| A credential element of 10 MiB of empty arrays (10 million tokens) | 0.2 s (refused)           | 20 MiB                 |
 
 The SVG parser keeps an object for each open element and keeps the attributes of a tag until it ends, which is why those two
 limits exist. `JSON.parse` takes about forty times the text of small objects in memory, which is why the credential has a limit of
-its own: a credential longer than 1,048,576 characters is more than `verifyCredential` takes by default.
+tokens, counted from its text before the parse. It has no limit of characters: the bytes of the image bound its text, and a
+credential of 2 MB of text that is one string is read.
 
 ## Errors
 
@@ -150,7 +153,8 @@ Every error is a `DataError` with a sentence that names the fault.
 
 | Case                                                                                          | What to do                                                                             |
 | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| The options are not an object, `maxBytes` is not a positive integer, `replace` is not a boolean | Pass the documented options                                                            |
+| The options are not an object, `maxBytes` or `maxTokens` is not a positive integer, `replace` is not a boolean | Pass the documented options                                             |
+| The credential has more tokens of JSON than `maxTokens`                                       | Raise `maxTokens` for a source that you trust, or refuse the image                     |
 | The image is not a `Uint8Array` (PNG) or a string (SVG)                                       | Read the file as bytes for a PNG and as text for an SVG                                |
 | The image has more bytes than `maxBytes`, or the baked image would                           | Raise `maxBytes`, or shrink the image                                                  |
 | The PNG lacks the signature, starts with a chunk other than `IHDR`, is truncated, or has no `IEND` | The file is not a whole PNG                                                       |

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { IssuableCredential } from "../src/index.js";
 import { handleRefreshRequest, refreshCredential } from "../src/refresh/index.js";
 import { achievementCredential } from "./fixtures.js";
+import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { serve } from "./key-fixtures.js";
 
 const SERVICE = "https://example.edu/refresh/3732";
@@ -66,6 +67,20 @@ describe("refreshing a credential", () => {
     ).rejects.toBeInstanceOf(DataError);
   });
 
+  it("refuses an answer with more tokens of JSON than maxTokens before it parses it", async () => {
+    const hostile = serve({ [SERVICE]: `{"a":${HOSTILE}}` }).fetch;
+    const error = await neverParsesLarge(() =>
+      refreshCredential(withService(), { fetch: hostile, maxBytes: 2_000_000 }).catch((reason: unknown) => reason),
+    );
+    expect(error).toBeInstanceOf(DataError);
+    expect((error as DataError).message).toContain("more than the 1000000 tokens");
+    const small = refreshCredential(withService(), {
+      fetch: serve({ [SERVICE]: '{"a":[1,2,3]}' }).fetch,
+      maxTokens: 5,
+    });
+    await expect(small).rejects.toThrow("more than the 5 tokens");
+  });
+
   it("ends with the reason of the signal, and refuses arguments of the wrong type", async () => {
     const controller = new AbortController();
     controller.abort(new Error("stop"));
@@ -75,7 +90,7 @@ describe("refreshing a credential", () => {
     const { fetch } = serve({});
     await expect(refreshCredential(JSON.parse("null"), { fetch })).rejects.toBeInstanceOf(DataError);
     await expect(refreshCredential(withService(), JSON.parse("null"))).rejects.toBeInstanceOf(DataError);
-    for (const extra of [{ timeoutMs: 0 }, { maxBytes: 1.5 }, { signal: 1 }, { fetch: 5 }]) {
+    for (const extra of [{ timeoutMs: 0 }, { maxBytes: 1.5 }, { maxTokens: 0 }, { signal: 1 }, { fetch: 5 }]) {
       await expect(
         refreshCredential(withService(), { fetch, ...JSON.parse(JSON.stringify(extra)) }),
       ).rejects.toBeInstanceOf(DataError);

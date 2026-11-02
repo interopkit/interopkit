@@ -1,6 +1,5 @@
 import { DataError } from "@interopkit/core";
 import { SaxesParser, type SaxesTagNS } from "saxes";
-import { MAX_CREDENTIAL_CHARACTERS } from "../model/internal.js";
 import { BAKED_KINDS, type BakedKind, CREDENTIAL_ELEMENT, FORMATS, VERIFY_ATTRIBUTE } from "./formats.js";
 
 /**
@@ -118,20 +117,11 @@ export function scanSvg(svg: string, all: boolean): SvgScan {
     }
     const kind = kindOfElement(tag);
     if (kind !== undefined) {
-      collected = 0;
       open = { kind, start: tagStart, depth, verify: tag.attributes[VERIFY_ATTRIBUTE]?.value, text: [] };
     }
   });
-  let collected = 0;
   const collect = (text: string): void => {
     if (done || open === undefined) return;
-    collected += text.length;
-    // Checked as the text arrives, so that a credential element of 10 MiB is never joined into a string.
-    if (collected > MAX_CREDENTIAL_CHARACTERS) {
-      throw new DataError(
-        `The credential element of the SVG has more than ${MAX_CREDENTIAL_CHARACTERS} characters, the most that an image may hold of it.`,
-      );
-    }
     open.text.push(text);
   };
   parser.on("text", collect);

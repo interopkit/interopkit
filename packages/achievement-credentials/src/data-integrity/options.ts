@@ -8,6 +8,7 @@ import {
   checkRecord,
   describe,
   MAX_JSON_DEPTH,
+  MAX_JSON_TOKENS,
   methodsSchema,
   parseWith,
 } from "@interopkit/core/checks";
@@ -94,6 +95,12 @@ export interface DataIntegrityVerifyOptions extends CallOptions {
    * @defaultValue `64`
    */
   readonly maxDepth?: number;
+  /**
+   * The most tokens of JSON in the credential: the memory of a read grows with the tokens and not with the bytes.
+   *
+   * @defaultValue `1000000`
+   */
+  readonly maxTokens?: number;
 }
 
 /** The seconds by which the time of a proof may differ from the clock of the verifier. */
@@ -176,6 +183,7 @@ export interface VerifySettings {
   readonly suites: readonly DataIntegritySuite[];
   readonly maxInputBytes: number;
   readonly maxDepth: number;
+  readonly maxTokens: number;
   readonly signal: AbortSignal | undefined;
 }
 
@@ -187,10 +195,11 @@ export function verifySettings(options: unknown): VerifySettings {
   checkClock(clock);
   checkFunction(contexts, "The option contexts must be a function");
   const { clockSkewSeconds = DEFAULT_CLOCK_SKEW_SECONDS, allowUnboundKeys = false, legacyProofs = false } = options;
-  const { maxInputBytes = DEFAULT_MAX_INPUT_BYTES, maxDepth = MAX_JSON_DEPTH } = options;
+  const { maxInputBytes = DEFAULT_MAX_INPUT_BYTES, maxDepth = MAX_JSON_DEPTH, maxTokens = MAX_JSON_TOKENS } = options;
   checkNonNegativeInteger(clockSkewSeconds, "The option clockSkewSeconds");
   checkPositiveInteger(maxInputBytes, "The option maxInputBytes");
   checkPositiveInteger(maxDepth, "The option maxDepth");
+  checkPositiveInteger(maxTokens, "The option maxTokens");
   checkFlag(allowUnboundKeys, "The option allowUnboundKeys");
   checkFlag(legacyProofs, "The option legacyProofs");
   checkArray(suites, "The option suites must be an array");
@@ -212,6 +221,7 @@ export function verifySettings(options: unknown): VerifySettings {
     suites: checked,
     maxInputBytes,
     maxDepth,
+    maxTokens,
     signal,
   };
 }

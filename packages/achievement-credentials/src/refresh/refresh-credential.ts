@@ -5,8 +5,9 @@ import {
   checkPositiveInteger,
   checkRecord,
   isRecord,
-  nestsDeeperThan,
+  MAX_JSON_TOKENS,
 } from "@interopkit/core/checks";
+import { parseJsonText } from "../json-text.js";
 import type { IssuableCredential } from "../model/index.js";
 
 /** The types of a refresh service: `1EdTechCredentialRefresh` of Open Badges 9.1, and `ImsCredentialRefresh` that CLR 8.1 writes. */
@@ -32,6 +33,12 @@ export interface RefreshOptions extends CallOptions {
    * @defaultValue `1048576`
    */
   readonly maxBytes?: number;
+  /**
+   * The most tokens of JSON in the refreshed credential: the memory of a parse grows with the tokens and not with the bytes.
+   *
+   * @defaultValue `1000000`
+   */
+  readonly maxTokens?: number;
 }
 
 /**
@@ -59,9 +66,11 @@ export async function refreshCredential(
   checkRecord(credential, "The credential must be an object");
   checkRecord(options, "The options of refreshCredential must be an object");
   const { fetch, timeoutMs = DEFAULT_TIMEOUT_MS, maxBytes = DEFAULT_MAX_BYTES, signal } = options;
+  const { maxTokens = MAX_JSON_TOKENS } = options;
   checkFunction(fetch, "The option fetch must be a function");
   checkPositiveInteger(timeoutMs, "The option timeoutMs");
   checkPositiveInteger(maxBytes, "The option maxBytes");
+  checkPositiveInteger(maxTokens, "The option maxTokens");
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   signal?.throwIfAborted();
   const service: unknown = credential.refreshService;
@@ -85,12 +94,8 @@ export async function refreshCredential(
     }
     return body;
   }
-  if (nestsDeeperThan(body, MAX_DEPTH))
-    throw new DataError(`The refreshed credential nests more than ${MAX_DEPTH} levels.`);
-  try {
-    // A text that starts with a brace and parses is an object.
-    return JSON.parse(body) as Readonly<Record<string, unknown>>;
-  } catch {
-    throw new DataError("The refresh service answered JSON that cannot be parsed.");
-  }
+  const parsed = parseJsonText(body, { maxDepth: MAX_DEPTH, maxTokens }, "The refreshed credential");
+  if ("reason" in parsed) throw new DataError(parsed.reason);
+  // A text that starts with a brace and parses is an object.
+  return parsed.value as Readonly<Record<string, unknown>>;
 }

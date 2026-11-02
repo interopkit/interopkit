@@ -1,6 +1,7 @@
 import { DataError } from "@interopkit/core";
-import { describe, isRecord, nestsDeeperThan } from "@interopkit/core/checks";
+import { describe, isRecord } from "@interopkit/core/checks";
 import { base64url, compactVerify, importJWK } from "jose";
+import { type JsonLimits, parseJsonText } from "../json-text.js";
 import { bindKey, publicJwk, thumbprintOf, thumbprintUri } from "../keys/internal.js";
 import type { AnyCredential, ProofResult, VerificationKey } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
@@ -30,21 +31,17 @@ function decodeCanonical(part: string): Uint8Array | undefined {
 }
 
 /** Reads the bytes of a part of the JWS as a JSON object: UTF-8, within the depth limit, and an object. */
-function readObject(bytes: Uint8Array, name: string, maxDepth: number): Step<Readonly<Record<string, unknown>>> {
+function readObject(bytes: Uint8Array, name: string, limits: JsonLimits): Step<Readonly<Record<string, unknown>>> {
   let text: string;
   try {
     text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {
     return { reason: `The ${name} of the JWS is not UTF-8.` };
   }
-  // The depth is counted before the parser builds anything.
-  if (nestsDeeperThan(text, maxDepth)) return { reason: `The ${name} of the JWS nests more than ${maxDepth} levels.` };
-  try {
-    const parsed: unknown = JSON.parse(text);
-    return isRecord(parsed) ? { value: parsed } : { reason: `The ${name} of the JWS is not a JSON object.` };
-  } catch {
-    return { reason: `The ${name} of the JWS is not JSON.` };
-  }
+  // The tokens and the levels are counted before the parser builds anything.
+  const parsed = parseJsonText(text, limits, `The ${name} of the JWS`);
+  if ("reason" in parsed) return parsed;
+  return isRecord(parsed.value) ? { value: parsed.value } : { reason: `The ${name} of the JWS is not a JSON object.` };
 }
 
 /** Finds the key that verifies the JWS, from its header: the resolved `kid`, or the embedded `jwk`. */
@@ -145,7 +142,7 @@ function shapeOf(jws: string, settings: ReadSettings): Step<Shape> {
   if (headerBytes === undefined || payload === undefined || decodeCanonical(encodedSignature) === undefined) {
     return { reason: "The parts of the JWS must be canonical base64url without padding (RFC 7515 section 2)." };
   }
-  const header = readObject(headerBytes, "header", settings.maxDepth);
+  const header = readObject(headerBytes, "header", settings);
   return "reason" in header ? header : { value: { header: header.value, payload } };
 }
 
@@ -186,7 +183,7 @@ async function verifiedKey(
 
 /** Reads the payload of a JWS whose signature verified into a credential, and checks its time claims and its other claims against it. */
 function credentialOf(bytes: Uint8Array, settings: ReadSettings): Step<AnyCredential> {
-  const payload = readObject(bytes, "payload", settings.maxDepth);
+  const payload = readObject(bytes, "payload", settings);
   if ("reason" in payload) return payload;
   const timeFault = timeProblem(payload.value, settings);
   if (timeFault !== undefined) return { reason: timeFault };

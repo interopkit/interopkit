@@ -11,6 +11,7 @@ import {
 } from "../src/status/index.js";
 import { decodeList, encodeList, isSet } from "../src/status/internal.js";
 import { memoryContexts } from "./context-fixtures.js";
+import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { clockAt, KEYS, signerOf } from "./key-fixtures.js";
 import {
   attacker,
@@ -468,6 +469,30 @@ describe("checking the status of a credential", () => {
     });
   });
 
+  it("fails a list credential with more tokens of JSON than maxTokens before it parses it, as JSON or as a JWS", async () => {
+    const w = world({ [LIST_URL]: `{"a":${HOSTILE}}` });
+    const hostile = await neverParsesLarge(() =>
+      verifyCredentialStatus(credentialWithStatus(), { ...w.options, maxBytes: 2_000_000 }),
+    );
+    expect(hostile).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("more than the 1000000 tokens"),
+    });
+    const signed = status({}, { [LIST_URL]: await listJws(listWith()) });
+    expect(await signed.run({ maxTokens: 20 })).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("more than the 20 tokens"),
+    });
+    expect(await signed.run()).toMatchObject({ outcome: "passed" });
+  });
+
+  it("fails a list credential that nests deeper than the limit before it parses it", async () => {
+    const deep = `{"a":${"[".repeat(150_000)}${"]".repeat(150_000)}}`;
+    const w = world({ [LIST_URL]: deep });
+    const result = await neverParsesLarge(() => verifyCredentialStatus(credentialWithStatus(), w.options));
+    expect(result).toMatchObject({ outcome: "failed", detail: expect.stringContaining("nests more than 64 levels") });
+  });
+
   it("fails a Data Integrity status list credential that is not valid at this time", async () => {
     const edKey = KEYS.ed25519;
     const did = `did:key:${edKey.multikey}`;
@@ -515,6 +540,7 @@ describe("checking the status of a credential", () => {
       { statusIssuers: [5] },
       { timeoutMs: 0 },
       { maxBytes: 1.5 },
+      { maxTokens: 0 },
       { signal: 1 },
       { clock: 5 },
     ]) {

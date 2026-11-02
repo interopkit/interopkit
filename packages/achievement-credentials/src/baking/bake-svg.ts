@@ -44,10 +44,10 @@ function cdata(json: string): string {
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/#image-format | CLR 2.0, Image Format}
  */
 export function bakeSvg(svg: string, credential: string | object, options?: BakeImageOptions): string {
-  const { maxBytes, replace } = limitsOf(options, ["maxBytes", "replace"]);
+  const { maxBytes, maxTokens, replace } = limitsOf(options, ["maxBytes", "maxTokens", "replace"]);
   if (typeof svg !== "string") throw new DataError(`The image must be a string, found ${describe(svg)}.`);
   checkTextSize(svg, maxBytes, "The image");
-  const { kind, text, signed } = textToBake(credential);
+  const { kind, text, signed } = textToBake(credential, maxTokens);
   const { root, credentials } = scanSvg(svg, true);
   if (root.uri !== SVG_NAMESPACE || root.local !== "svg") {
     throw new DataError(
