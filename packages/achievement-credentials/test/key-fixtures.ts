@@ -99,3 +99,20 @@ export function serve(routes: Readonly<Record<string, Route>>): { readonly fetch
   };
   return { fetch, requests };
 }
+
+/** Reads a base58btc multibase string (`z` and the digits of base 58) into its bytes: the inverse of `multibase`. */
+export function fromMultibase(text: string): Uint8Array {
+  let value = 0n;
+  for (const char of text.slice(1)) {
+    const digit = BASE58.indexOf(char);
+    if (digit === -1) throw new Error(`${char} is not a digit of base 58.`);
+    value = value * 58n + BigInt(digit);
+  }
+  const bytes: number[] = [];
+  while (value > 0n) {
+    bytes.unshift(Number(value % 256n));
+    value /= 256n;
+  }
+  const zeros = [...text.slice(1)].findIndex((char) => char !== BASE58[0]);
+  return Uint8Array.from([...new Array(zeros === -1 ? text.length - 1 : zeros).fill(0), ...bytes]);
+}

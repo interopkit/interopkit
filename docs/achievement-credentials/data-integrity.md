@@ -183,6 +183,28 @@ event: a property that no context defines, a relative `id` or `type`. At most 10
 credential survive safe mode. The builders write the context of the 1EdTech extensions, which defines the type of the
 `credentialSchema`, so that a built credential loses no term.
 
+## Test vectors
+
+The vectors of the Recommendations and of the `did:key` specification run through the functions above, in
+`vectors.spec.test.ts`. The pages are downloaded at pinned hashes (`pnpm spec-examples`) and were read on 2026-11-02:
+[EdDSA Cryptosuites](https://www.w3.org/TR/2025/REC-vc-di-eddsa-20250515/) (appendix B),
+[ECDSA Cryptosuites](https://www.w3.org/TR/2025/REC-vc-di-ecdsa-20250515/) (appendix A) and
+[the did:key Method v0.9](https://w3c-ccg.github.io/did-key-spec/). What a vector can show depends on the cryptosuite:
+
+| Vector                                              | Through                                  | Result                                                                                                              |
+| --------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `eddsa-rdfc-2022`, the alumni credential            | `addProof`, then `verifyProof`           | The proof equals the printed one byte for byte: EdDSA is deterministic. The signature verifies, with `bound: false` |
+| `Ed25519Signature2020`                              | `verifyProof` with `legacyProofs`        | The signature verifies; without the option it is refused                                                             |
+| `ecdsa-rdfc-2019`, the alumni credential, P-256 and P-384 | `verifyProof`                      | The signature verifies, and a changed credential does not. Not compared byte for byte: Web Crypto signs with a random nonce, and `addProof` writes no `ecdsa-rdfc-2019` proof |
+| `did:key` of Ed25519                                | `createKeyResolver`                      | The method, the controller, the four relationships and the key equal the document that the specification prints; its key agreement key is not a key for a signature and is not resolved |
+| `did:key` of P-256 and P-384                        | `createKeyResolver`                      | The key equals the point that an independent decompression of the compressed key gives                              |
+| `eddsa-jcs-2022`, `ecdsa-jcs-2019`                  | `verifyProof`                            | No suite verifies them: Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023`. A host adds a suite in `suites`     |
+| The employment authorization and permanent resident card of the EdDSA and ECDSA pages, including both examples of `ecdsa-sd-2023` | `addProof`, `verifyProof`, `deriveDisclosure` | Refused: the `issuer` of these credentials is an object with an `id` and an `image` and no `type`, and the Profile of Open Badges requires a type. They are no credentials of the model, and the glue does not bypass the check |
+
+The two examples of `ecdsa-sd-2023` are reproduced byte for byte by the tests of `@interopkit/selective-disclosure`, which knows no
+model. Through this module they cannot run, for the reason in the last row, and no example of the page has an issuer that is
+a Profile or an address.
+
 ## Limits
 
 | Limit                                                   | Value                | Refused with                            |
@@ -215,7 +237,7 @@ the default with such a graph.
 
 | Not included                                           | Why                                                                                                                                |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Signing with `ecdsa-rdfc-2019`, `eddsa-jcs-2022` and `ecdsa-jcs-2019` | Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023` for issuers; `ecdsa-rdfc-2019` is verified                    |
+| Signing with `ecdsa-rdfc-2019`, `eddsa-jcs-2022` and `ecdsa-jcs-2019`; verifying the two JCS suites | Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023` for issuers; `ecdsa-rdfc-2019` is verified |
 | Presentations                                          | Open Badges and CLR define none                                                                                                    |
 | Other cryptosuites                                     | A host passes a `DataIntegritySuite` in `suites`                                                                                   |
 | Proof chains and `previousProof`                       | A credential has proofs that each secure it                                                                                         |

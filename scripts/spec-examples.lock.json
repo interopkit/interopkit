@@ -43,5 +43,15 @@
     "url": "https://opensource.ieee.org/xapi/xapi-base-standard-examples/-/raw/efb2ebbc449fb8a476f7ddf88b48d0ba6effc999/PUT%20and%20POST%20requests%20Examples.md",
     "file": "xapi-put-and-post-examples.json",
     "sha256": "6af3b2040825489e08be90a7e325c3b13a80925f868f0678ad08e1e566c3f28e"
+  },
+  {
+    "url": "https://www.w3.org/TR/2025/REC-vc-di-eddsa-20250515/",
+    "file": "vc-di-eddsa-1p0.json",
+    "sha256": "0abbed4eef18dcfdbea97c7ef245765c744482095c8d8018e815be2e86fbea8b"
+  },
+  {
+    "url": "https://w3c-ccg.github.io/did-key-spec/",
+    "file": "did-key-0p9.json",
+    "sha256": "2e29d8a6610c1bb48edd625ed3d7fb210571ca9781977deb0fd3afa02fc8b5a1"
   }
 ]

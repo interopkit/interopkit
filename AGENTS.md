@@ -314,6 +314,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   specification through the `internal.ts` of its module, which the package does not export and a host cannot reach, and a
   derived proof from that base proof. A counterparty suite signs, derives and verifies beside the package in every order, in a
   `*.corpus.test.ts`. The contexts they need are files of `scripts/schemas.lock.json`.
+- The vectors of the Data Integrity cryptosuites and of `did:key` run through the functions of `achievement-credentials` in
+  `vectors.spec.test.ts`, each page with its address and the date it was read: byte for byte where the suite is deterministic,
+  by verification where it is not, and a vector that the functions refuse is pinned as a refusal and listed in the guide.
 - Expected values come from an oracle, never from the code under test: the specification's own statements and worked
   examples, an independent implementation, or a script in `validation/`. Typed by hand only for edge cases small enough to
   derive exactly.
@@ -363,4 +366,5 @@ Where the code departs from `STANDARDS.md`, with the reason.
   a test, and a mention in the guide of the module.
 - A finding rule of a reader: a check in `read/`, a row of the rules table of the model guide, and a test; a rule that keeps a
   value from being returned also has an entry in `scripts/check-rules.ts`.
-- A pinned file: an entry in `scripts/schemas.lock.json`, or in `scripts/corpus.lock.json` for a repository, with its hash.
+- A pinned file: an entry in `scripts/schemas.lock.json`, or in `scripts/corpus.lock.json` for a repository, with its hash. A
+  file name is unique in the lock and need not end the address, since the contexts of different standards end in `v1`.
