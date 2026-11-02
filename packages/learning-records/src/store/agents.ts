@@ -25,7 +25,7 @@ export async function handleAgents(context: Context): Promise<HttpResponse> {
   const asked = attempt(() => {
     const parameters = readQuery(request);
     checkNames(parameters, new Set(["agent"]));
-    return readAgent(parameters.get("agent"));
+    return readAgent(parameters.get("agent"), settings.limits);
   });
   if (isRefusal(asked)) return context.refuse(asked.status, asked.message);
   const { agents, signal } = settings;

@@ -76,9 +76,10 @@ in memory.
 | `maxPartBytes`  | 10,485,760 | The most bytes of the content of one part, the Statements included                            |
 | `maxTotalBytes` | 10,485,760 | The most bytes of the content of all parts together; the headers of the parts are not counted |
 | `maxDepth`      | 64         | The deepest nesting of arrays and objects in the JSON of the first part; `[]` has depth 1     |
+| `maxTokens`     | 1,000,000  | The most tokens of JSON in the first part, counted before it is parsed                        |
 
 The headers of a part are at most 8,192 bytes, which the parser fixes. The first part is also read within the limits of
-`readStatementJson`: 10,485,760 bytes (`maxPartBytes` if less), `maxDepth` levels and 1,000,000 tokens.
+`readStatementJson`: `maxPartBytes` bytes, `maxDepth` levels and `maxTokens` tokens.
 
 ## Errors
 

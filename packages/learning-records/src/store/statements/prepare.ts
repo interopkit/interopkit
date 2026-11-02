@@ -8,7 +8,7 @@ import {
   type StatementIssue,
 } from "../../model/index.js";
 import { mediaTypeOf } from "../../model/internal.js";
-import { readStatement, validateStatements } from "../../read/index.js";
+import { inspectBatch, issueSink } from "../../read/internal.js";
 import { SIGNATURE_USAGE_TYPE, verifyStatementSignature } from "../../signing/index.js";
 import { type Context, isRefusal, refused, type Verdict } from "../verdict.js";
 import type { StatementsBody } from "./body.js";
@@ -144,16 +144,17 @@ export async function prepare(
   single: { readonly id: string } | undefined,
 ): Promise<Verdict<Prepared>> {
   const list = Array.isArray(body.json) ? body.json : [body.json];
-  const { maxBatch } = context.settings.limits;
+  const { maxBatch, maxFindings } = context.settings.limits;
   if (single !== undefined && Array.isArray(body.json)) {
     return refused(400, "A PUT stores one Statement, and the body is a list.");
   }
   if (list.length > maxBatch) {
     return refused(413, `The request has ${list.length} Statements, above the limit of ${maxBatch} for one request.`);
   }
-  const errors = validateStatements(list).filter(({ severity }) => severity === "error");
+  const sink = issueSink(maxFindings, true);
+  const read = inspectBatch(list, "lrs", sink);
+  const errors = sink.list();
   if (errors.length > 0) return refused(400, refusalOf("The batch of Statements", errors, "validateStatements"));
-  const read = list.map((entry) => readStatement(entry));
   if (single !== undefined) {
     const [only] = read;
     if (only?.id !== undefined && only.id.toLowerCase() !== single.id) {

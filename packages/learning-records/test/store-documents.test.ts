@@ -573,6 +573,33 @@ describe("handleLrsRequest: POST of a document", () => {
     expect(response.status).toBe(400);
   });
 
+  it("refuses a body or a document of more tokens than limits.maxTokens, a million by default, before it parses it", async () => {
+    const merge = async (held: string, body: string, maxTokens: number) => {
+      const store = memory();
+      await putState(store, held);
+      return post(store, body, { "if-match": "*" }, { limits: { maxTokens } });
+    };
+    // {"a":1} has 5 tokens, and {"b":[1,2,3]} has 11.
+    const posted = await merge('{"a":1}', '{"b":[1,2,3]}', 8);
+    expect(posted.status).toBe(400);
+    expect(reasonOf(posted)).toBe(
+      "The body of the POST must be a JSON object, and it has more than 8 tokens, the limit.",
+    );
+    const held = await merge('{"b":[1,2,3]}', '{"a":1}', 8);
+    expect(held.status).toBe(400);
+    expect(reasonOf(held)).toBe(
+      "The document that exists must be a JSON object, and it has more than 8 tokens, the limit.",
+    );
+    expect((await merge('{"a":1}', '{"b":[1,2,3]}', 11)).status).toBe(204);
+    const absent = await send(memory(), "POST", "/activities/state", {
+      query: STATE,
+      headers: { "content-type": JSON_TYPE, "if-none-match": "*" },
+      body: `[${"0,".repeat(524_000)}0]`,
+    });
+    expect(absent.status).toBe(400);
+    expect(reasonOf(absent)).toContain("has more than 1000000 tokens");
+  });
+
   it("refuses with 413 a merge whose result is over the limit of a document", async () => {
     const store = memory();
     const changes = { limits: { maxDocumentBytes: 20 } };

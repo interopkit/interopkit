@@ -26,6 +26,7 @@ export function readBody(request: HttpRequest, limits: LrsSettingsLimits): Verdi
         maxPartBytes: limits.maxPartBytes,
         maxTotalBytes: limits.maxBodyBytes,
         maxDepth: limits.maxDepth,
+        maxTokens: limits.maxTokens,
       }),
     );
     return isRefusal(read) ? read : { value: { json: read.value.statements, parts: read.value.parts } };
@@ -37,7 +38,11 @@ export function readBody(request: HttpRequest, limits: LrsSettingsLimits): Verdi
     );
   }
   const read = attempt(() =>
-    readStatementJson(readText(request), { maxBytes: limits.maxBodyBytes, maxDepth: limits.maxDepth }),
+    readStatementJson(readText(request), {
+      maxBytes: limits.maxBodyBytes,
+      maxDepth: limits.maxDepth,
+      maxTokens: limits.maxTokens,
+    }),
   );
   return isRefusal(read) ? read : { value: { json: read.value, parts: new Map() } };
 }

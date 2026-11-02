@@ -94,7 +94,11 @@ function readStatementsPart(part: MultipartPart, limits: Required<MultipartLimit
   } catch {
     throw new DataError("The first part is not valid UTF-8 text, which JSON must be.");
   }
-  return readStatementJson(text, { maxBytes: limits.maxPartBytes, maxDepth: limits.maxDepth });
+  return readStatementJson(text, {
+    maxBytes: limits.maxPartBytes,
+    maxDepth: limits.maxDepth,
+    maxTokens: limits.maxTokens,
+  });
 }
 
 /** Reads a part after the first as the data of an Attachment, and checks them against the hash that the part declares. */

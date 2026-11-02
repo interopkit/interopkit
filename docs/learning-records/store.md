@@ -288,20 +288,25 @@ method is in the table of [the resources](#the-resources).
 
 ## Limits
 
-| Limit              | Default    | Refused with | Applies to                                                      |
-| ------------------ | ---------- | ------------ | --------------------------------------------------------------- |
-| `maxBodyBytes`     | 10,485,760 | 413          | The body of a request, before the store is called               |
-| `maxBatch`         | 1,000      | 413          | The Statements of one request                                   |
-| `maxParts`         | 100        | 413          | The parts of a multipart request, the Statements included       |
-| `maxPartBytes`     | 10,485,760 | 413          | One part of a multipart request                                 |
-| `maxDocumentBytes` | 1,048,576  | 413          | A State or profile document, and the result of a merge          |
-| `maxDepth`         | 64         | 400          | The nesting of the JSON of a request, a document included       |
-| `mergeRetries`     | 3          | 409          | The tries of a write or removal of a document that loses a race |
-| `pageSize`         | 100        | Capped       | The Statements of a page when the request has no `limit`        |
-| `maxPageSize`      | 1,000      | Capped       | The largest page: a `limit` of 0 or above it is lowered to it   |
+| Limit              | Default    | Refused with | Applies to                                                                         |
+| ------------------ | ---------- | ------------ | ---------------------------------------------------------------------------------- |
+| `maxBodyBytes`     | 10,485,760 | 413          | The body of a request, before the store is called                                  |
+| `maxBatch`         | 1,000      | 413          | The Statements of one request                                                      |
+| `maxParts`         | 100        | 413          | The parts of a multipart request, the Statements included                          |
+| `maxPartBytes`     | 10,485,760 | 413          | One part of a multipart request                                                    |
+| `maxDocumentBytes` | 1,048,576  | 413          | A State or profile document, and the result of a merge                             |
+| `maxDepth`         | 64         | 400          | The nesting of the JSON of a request, a document and an `agent` parameter included |
+| `maxTokens`        | 1,000,000  | 400          | The tokens of the JSON of a request, a document and an `agent` parameter included  |
+| `maxFindings`      | 1,000      | 400          | The errors counted in the Statements of a request                                  |
+| `mergeRetries`     | 3          | 409          | The tries of a write or removal of a document that loses a race                    |
+| `pageSize`         | 100        | Capped       | The Statements of a page when the request has no `limit`                           |
+| `maxPageSize`      | 1,000      | Capped       | The largest page: a `limit` of 0 or above it is lowered to it                      |
 
-The JSON of a request for Statements is also read within the 1,000,000 tokens of `readStatementJson`, and a message over it is
-400. The headers of a part of a multipart request are at most 8,192 bytes, which is 413.
+The tokens of a body are counted before it is parsed, since the memory of a parse grows with the tokens and not with the bytes:
+a text of 10 MiB can have ten million of them. The check of the Statements of a request stops at the first error beyond
+`maxFindings` and refuses the request with a message that says that there may be more, so a batch that is wrong in a million
+places costs the memory of the limit. Warnings do not count. The headers of a part of a multipart request are at most 8,192
+bytes, which is 413.
 
 ## The ports
 

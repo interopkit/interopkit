@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { describe, type FindingSink, isRecord, refusalOf } from "@interopkit/core/checks";
-import type { Statement, StatementIssue } from "../model/index.js";
+import type { RuleRole, Statement, StatementIssue } from "../model/index.js";
 import { error } from "./finding.js";
 import { inspectStatement, issueSink } from "./inspect.js";
 import { type ReadOptions, readSettings } from "./options.js";
@@ -87,6 +87,29 @@ function duplicateIds(batch: readonly unknown[], sink: FindingSink<StatementIssu
 }
 
 /**
+ * Judges a batch of Statements into a sink, and returns the Statements whose shape is right, in order: when the sink holds no
+ * error, one for each entry. The batch is read once, whether the caller wants every finding or the errors alone.
+ */
+export function inspectBatch(value: unknown, role: RuleRole, sink: FindingSink<StatementIssue>): readonly Statement[] {
+  if (!Array.isArray(value)) {
+    sink.add([error("", "wrong-type", `expected an array of Statements, found ${describe(value)}.`)]);
+    return [];
+  }
+  const statements: Statement[] = [];
+  for (const [index, entry] of value.entries()) {
+    if (sink.stopped) break;
+    const read = inspectStatement(
+      entry,
+      role,
+      sink.within((issue) => ({ ...issue, path: inBatch(index, issue.path) })),
+    );
+    if (read !== undefined) statements.push(read);
+  }
+  duplicateIds(value, sink);
+  return statements;
+}
+
+/**
  * Judges a batch of Statements: each one as `validateStatement` does, and the batch as a whole, which an LRS rejects when two
  * Statements have the same id (4.1.6.1).
  *
@@ -103,18 +126,7 @@ function duplicateIds(batch: readonly unknown[], sink: FindingSink<StatementIssu
  */
 export function validateStatements(value: unknown, options?: ReadOptions): readonly StatementIssue[] {
   const { role, maxFindings } = readSettings(options);
-  if (!Array.isArray(value)) {
-    return [error("", "wrong-type", `expected an array of Statements, found ${describe(value)}.`)];
-  }
   const sink = issueSink(maxFindings, false);
-  for (const [index, entry] of value.entries()) {
-    if (sink.stopped) break;
-    inspectStatement(
-      entry,
-      role,
-      sink.within((issue) => ({ ...issue, path: inBatch(index, issue.path) })),
-    );
-  }
-  duplicateIds(value, sink);
+  inspectBatch(value, role, sink);
   return sink.list();
 }

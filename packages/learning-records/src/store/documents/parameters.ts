@@ -3,6 +3,7 @@ import { dateTimeSchema, parseWith } from "@interopkit/core/checks";
 import { type HttpRequest, readQuery } from "@interopkit/core/http";
 import type { Agent, DocumentScope, DocumentTarget, StateScope } from "../../model/index.js";
 import { scopeSchema, stateScopeSchema, targetSchema } from "../../read/internal.js";
+import type { LrsSettingsLimits } from "../options.js";
 import { checkNames, readAgent } from "../parameters.js";
 import { attempt, type Verdict } from "../verdict.js";
 
@@ -51,12 +52,17 @@ function identifying(agent: Agent): Agent {
 }
 
 /** Builds the raw place that the parameters name, for the schema of a target or a scope to check. */
-function placeOf(resource: DocumentResource, parameters: ReadonlyMap<string, string>, withId: boolean) {
+function placeOf(
+  resource: DocumentResource,
+  parameters: ReadonlyMap<string, string>,
+  withId: boolean,
+  limits: LrsSettingsLimits,
+) {
   const place: Record<string, unknown> = { resource };
   for (const name of CONTEXT[resource]) {
     const text = parameters.get(name);
     if (text !== undefined || name !== "registration") {
-      place[name] = name === "agent" ? readAgent(text) : text;
+      place[name] = name === "agent" ? readAgent(text, limits) : text;
     }
   }
   if (withId) place[ID[resource]] = parameters.get(ID[resource]);
@@ -74,11 +80,15 @@ function normalized<TPlace extends DocumentTarget | DocumentScope>(place: TPlace
 }
 
 /** Reads the parameters of a request that names one document. */
-function readOne(resource: DocumentResource, parameters: ReadonlyMap<string, string>): DocumentsRequest {
+function readOne(
+  resource: DocumentResource,
+  parameters: ReadonlyMap<string, string>,
+  limits: LrsSettingsLimits,
+): DocumentsRequest {
   if (parameters.has("since")) {
     throw new DataError("The parameter since goes with a request for the ids, not with one for a document.");
   }
-  const target = parseWith(targetSchema, placeOf(resource, parameters, true), "The parameters");
+  const target = parseWith(targetSchema, placeOf(resource, parameters, true, limits), "The parameters");
   return { kind: "one", target: normalized(target) };
 }
 
@@ -87,15 +97,16 @@ function readContext(
   method: string,
   resource: DocumentResource,
   parameters: ReadonlyMap<string, string>,
+  limits: LrsSettingsLimits,
 ): DocumentsRequest {
   if (method === "PUT" || method === "POST" || (method === "DELETE" && resource !== "state")) {
     throw new DataError(`A ${method} needs the parameter ${ID[resource]}, the id of the document.`);
   }
   if (method === "DELETE") {
-    const scope = parseWith(stateScopeSchema, placeOf("state", parameters, false), "The parameters");
+    const scope = parseWith(stateScopeSchema, placeOf("state", parameters, false, limits), "The parameters");
     return { kind: "all", scope: normalized(scope) };
   }
-  const scope = parseWith(scopeSchema, placeOf(resource, parameters, false), "The parameters");
+  const scope = parseWith(scopeSchema, placeOf(resource, parameters, false, limits), "The parameters");
   const text = parameters.get("since");
   const since =
     text === undefined ? undefined : new Date(parseWith(dateTimeSchema, text, "The parameter since")).toISOString();
@@ -106,13 +117,19 @@ function readContext(
  * Reads the parameters of a request to a document resource (4.1.6.2, 4.1.6.5, 4.1.6.6): a GET or HEAD names one document with
  * its id or lists the ids of a context, a PUT or POST names one, and a DELETE names one, or all the States of a context.
  */
-export function readDocumentsRequest(request: HttpRequest, resource: DocumentResource): Verdict<DocumentsRequest> {
+export function readDocumentsRequest(
+  request: HttpRequest,
+  resource: DocumentResource,
+  limits: LrsSettingsLimits,
+): Verdict<DocumentsRequest> {
   return attempt(() => {
     const parameters = readQuery(request);
     const { method } = request;
     const id = ID[resource];
     const since = method === "GET" || method === "HEAD" ? ["since"] : [];
     checkNames(parameters, new Set([...CONTEXT[resource], id, ...since]));
-    return parameters.has(id) ? readOne(resource, parameters) : readContext(method, resource, parameters);
+    return parameters.has(id)
+      ? readOne(resource, parameters, limits)
+      : readContext(method, resource, parameters, limits);
   });
 }

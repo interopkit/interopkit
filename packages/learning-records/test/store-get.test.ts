@@ -468,3 +468,44 @@ describe("GET of a page of Statements", () => {
     expect(textOf(response)).not.toContain("down");
   });
 });
+
+describe("the bounds of the JSON in a parameter", () => {
+  const agent = JSON.stringify({ mbox: "mailto:learner@example.org" });
+  const ACTIVITY = "https://example.org/activities/course-1";
+
+  it.each([
+    ["the agent of a query of Statements", "/statements", {}],
+    ["the agent of the Agents resource", "/agents", {}],
+    ["the agent of a State", "/activities/state", { activityId: ACTIVITY, stateId: "bookmark" }],
+  ] as const)(
+    "refuses %s of more tokens than limits.maxTokens, or deeper than limits.maxDepth",
+    async (_name, path, rest) => {
+      const store = memory();
+      const ask = (text: string, limits: LrsOptions["limits"]) =>
+        handleLrsRequest(requestOf("GET", path, { query: { ...rest, agent: text } }), optionsOf(store, { limits }));
+      // The Agent has five tokens: the braces, the name, the colon and the value.
+      expect((await ask(agent, { maxTokens: 5 })).status).not.toBe(400);
+      const tokens = await ask(agent, { maxTokens: 4 });
+      expect(tokens.status).toBe(400);
+      expect(reasonOf(tokens)).toContain("The text has more than 4 tokens");
+      const nested = await ask('{"mbox":"mailto:a@example.org","member":[{}]}', { maxDepth: 2 });
+      expect(nested.status).toBe(400);
+      expect(reasonOf(nested)).toContain("nests arrays and objects deeper than the limit of 2 levels");
+    },
+  );
+
+  it("refuses an agent of more tokens than the default, a million, before it parses it", async () => {
+    const wide = `{"mbox":"mailto:a@example.org","member":[${"0,".repeat(600_000)}0]}`;
+    const response = await get(memory(), { agent: wide });
+    expect(response.status).toBe(400);
+    expect(reasonOf(response)).toContain("The text has more than 1000000 tokens");
+    const agents = await handleLrsRequest(requestOf("GET", "/agents", { query: { agent: wide } }), optionsOf(memory()));
+    expect(agents.status).toBe(400);
+  });
+
+  it("refuses an agent larger than limits.maxBodyBytes", async () => {
+    const response = await get(memory(), { agent }, {}, { limits: { maxBodyBytes: 10 } });
+    expect(response.status).toBe(400);
+    expect(reasonOf(response)).toContain("The text has");
+  });
+});

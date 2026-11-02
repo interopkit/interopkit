@@ -183,6 +183,7 @@ function readBody(
     maxParts: MAX_PAGE_PARTS,
     maxPartBytes: settings.maxBytes,
     maxTotalBytes: settings.maxBytes,
+    maxTokens: settings.maxTokens,
   });
   return { json: message.statements, attachments: message.parts };
 }

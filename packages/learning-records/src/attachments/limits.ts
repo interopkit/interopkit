@@ -1,4 +1,4 @@
-import { parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
+import { MAX_JSON_TOKENS, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 
 /** The most parts of a multipart message that `readMultipart` reads unless the caller says otherwise: the Statements and 99 Attachments. */
@@ -12,6 +12,9 @@ const DEFAULT_MAX_TOTAL_BYTES = 10_485_760;
 
 /** The deepest nesting of the JSON of the first part that `readMultipart` reads unless the caller says otherwise. */
 const DEFAULT_MAX_DEPTH = 64;
+
+/** The most tokens of JSON in the first part that `readMultipart` reads unless the caller says otherwise. */
+const DEFAULT_MAX_TOKENS = MAX_JSON_TOKENS;
 
 /** The limits of `readMultipart`. */
 export interface MultipartLimits {
@@ -39,6 +42,13 @@ export interface MultipartLimits {
    * @defaultValue 64
    */
   readonly maxDepth?: number;
+  /**
+   * The most tokens of JSON in the first part: each bracket, brace, colon and comma, each string, each number, and each of
+   * `true`, `false` and `null`. The memory of a parse grows with the tokens and not with the bytes.
+   *
+   * @defaultValue 1,000,000
+   */
+  readonly maxTokens?: number;
 }
 
 const limitsSchema = strictRecord({
@@ -46,6 +56,7 @@ const limitsSchema = strictRecord({
   maxPartBytes: v.optional(positiveIntegerSchema),
   maxTotalBytes: v.optional(positiveIntegerSchema),
   maxDepth: v.optional(positiveIntegerSchema),
+  maxTokens: v.optional(positiveIntegerSchema),
 });
 
 /** Checks the limits of a read and returns each with its default. */
@@ -56,5 +67,6 @@ export function readLimits(options: unknown): Required<MultipartLimits> {
     maxPartBytes: limits.maxPartBytes ?? DEFAULT_MAX_PART_BYTES,
     maxTotalBytes: limits.maxTotalBytes ?? DEFAULT_MAX_TOTAL_BYTES,
     maxDepth: limits.maxDepth ?? DEFAULT_MAX_DEPTH,
+    maxTokens: limits.maxTokens ?? DEFAULT_MAX_TOKENS,
   };
 }

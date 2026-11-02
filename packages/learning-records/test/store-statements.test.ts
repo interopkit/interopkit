@@ -692,3 +692,90 @@ describe("Attachments", () => {
     });
   });
 });
+
+describe("the bounds of what a request makes the LRS hold", () => {
+  const bare = (index: number) => ({ id: uuid(index) });
+  const wrongBatch = (count: number) => Array.from({ length: count }, (_value, index) => bare(index + 1));
+
+  it("refuses a body of more tokens than limits.maxTokens, a million by default, before it parses it", async () => {
+    const million = `[${"0,".repeat(600_000)}0]`;
+    const over = await send("POST", million);
+    expect(over.response.status).toBe(400);
+    expect(reasonOf(over.response)).toContain("The text has more than 1000000 tokens");
+    expect(over.store.calls).toStrictEqual([]);
+    const few = await send("POST", statementOf(1), { changes: { limits: { maxTokens: 20 } } });
+    expect(few.response.status).toBe(400);
+    expect(reasonOf(few.response)).toContain("The text has more than 20 tokens");
+    expect((await send("POST", statementOf(1), { changes: { limits: { maxTokens: 2000 } } })).response.status).toBe(
+      200,
+    );
+  });
+
+  it("refuses the first part of a multipart body of more tokens than limits.maxTokens", async () => {
+    const message = writeMultipart(statementOf(1), []);
+    const refuse = (maxTokens: number) =>
+      handleLrsRequest(
+        requestOf("POST", "/statements", { headers: { "content-type": message.contentType }, body: message.body }),
+        optionsOf(memory(), { limits: { maxTokens } }),
+      );
+    const over = await refuse(20);
+    expect(over.status).toBe(400);
+    expect(reasonOf(over)).toContain("The text has more than 20 tokens");
+    expect((await refuse(2000)).status).toBe(200);
+  });
+
+  it("stops counting the errors of a batch at limits.maxFindings, and says that there may be more", async () => {
+    const batch = wrongBatch(40);
+    const stopped = await send("POST", batch, { changes: { limits: { maxFindings: 3 } } });
+    expect(stopped.response.status).toBe(400);
+    const message = reasonOf(stopped.response);
+    expect(message).toMatch(/^The batch of Statements is invalid at \[0\]/u);
+    expect(message).toContain(
+      "At least 2 more errors: the check stopped at its limit, and validateStatements with a higher maxFindings lists more.",
+    );
+    expect(stopped.store.calls).toStrictEqual([]);
+    const counted = await send("POST", wrongBatch(2));
+    expect(reasonOf(counted.response)).toMatch(
+      /^The batch of Statements is invalid at \[0\]\.actor: .* 5 more errors: validateStatements lists every finding\.$/u,
+    );
+  });
+
+  it("stops counting at 1,000 errors by default", async () => {
+    const { response } = await send("POST", wrongBatch(500));
+    expect(response.status).toBe(400);
+    expect(reasonOf(response)).toContain("At least 999 more errors: the check stopped at its limit");
+  });
+
+  it("counts errors alone toward limits.maxFindings, so that warnings do not refuse a batch", async () => {
+    const warned = (index: number) => ({
+      ...statementOf(index),
+      object: {
+        id: "https://example.org/activities/choice",
+        definition: {
+          type: "http://adlnet.gov/expapi/activities/cmi.interaction",
+          interactionType: "choice",
+          correctResponsesPattern: ["a"],
+          choices: [{ id: "a b", description: { "en-US": "A" } }],
+        },
+      },
+    });
+    const { response, store } = await send("POST", [warned(1), warned(2), warned(3)], {
+      changes: { limits: { maxFindings: 1 } },
+    });
+    expect(response.status).toBe(200);
+    expect(store.held.size).toBe(3);
+  });
+
+  it("reads each Statement of an accepted batch once", async () => {
+    const { response, store } = await send("POST", [statementOf(1), statementOf(2)]);
+    expect(response.status).toBe(200);
+    expect([...store.held.keys()]).toStrictEqual([uuid(1), uuid(2)]);
+  });
+
+  it("throws a DataError for limits that are no positive whole numbers", async () => {
+    await expect(send("POST", statementOf(1), { changes: { limits: { maxTokens: 0 } } })).rejects.toThrow("maxTokens");
+    await expect(send("POST", statementOf(1), { changes: { limits: { maxFindings: 1.5 } } })).rejects.toThrow(
+      "maxFindings",
+    );
+  });
+});

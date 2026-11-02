@@ -1,7 +1,9 @@
 import type { CallOptions, Clock } from "@interopkit/core";
 import {
+  DEFAULT_MAX_FINDINGS,
   guardSchema,
   jsonObjectSchema,
+  MAX_JSON_TOKENS,
   methodsSchema,
   parseWith,
   positiveIntegerSchema,
@@ -69,6 +71,22 @@ export interface LrsLimits {
    * @defaultValue 3
    */
   readonly mergeRetries?: number;
+  /**
+   * The most tokens of JSON in a request: each bracket, brace, colon and comma, each string, each number, and each of `true`,
+   * `false` and `null`. The memory of a parse grows with the tokens and not with the bytes, so a body over the limit is
+   * refused with 400 before it is parsed.
+   *
+   * @defaultValue 1,000,000
+   */
+  readonly maxTokens?: number;
+  /**
+   * The most errors that the check of the Statements of a request counts. It stops at the first error beyond the limit and
+   * refuses the request with a message that says there may be more, so a batch that is wrong in a million places costs the
+   * memory of the limit.
+   *
+   * @defaultValue 1,000
+   */
+  readonly maxFindings?: number;
 }
 
 /** The options of `handleLrsRequest`. */
@@ -175,6 +193,8 @@ const DEFAULT_LIMITS: LrsSettingsLimits = {
   maxDepth: 64,
   maxDocumentBytes: 1_048_576,
   mergeRetries: 3,
+  maxTokens: MAX_JSON_TOKENS,
+  maxFindings: DEFAULT_MAX_FINDINGS,
 };
 
 const isFunction = <T>(value: unknown): value is T => typeof value === "function";
@@ -211,6 +231,8 @@ const optionsSchema = strictRecord({
       maxDepth: v.optional(positiveIntegerSchema),
       maxDocumentBytes: v.optional(positiveIntegerSchema),
       mergeRetries: v.optional(positiveIntegerSchema),
+      maxTokens: v.optional(positiveIntegerSchema),
+      maxFindings: v.optional(positiveIntegerSchema),
     }),
   ),
   signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),

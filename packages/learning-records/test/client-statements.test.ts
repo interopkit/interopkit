@@ -211,6 +211,17 @@ describe("getStatement", () => {
       expect(lrs.requests[0]?.init.headers.accept).toBe("multipart/mixed, application/json");
     });
 
+    it("refuses a first part of more tokens than maxTokens of the client, before it parses it", async () => {
+      const message = writeMultipart(statement, [data]);
+      const lrs = fakeLrs(() => ({ headers: { "content-type": message.contentType }, body: message.body }));
+      const failure = (await failureOf(
+        clientOf(lrs, { maxTokens: 20 }).getStatement(uuid(1), { attachments: true }),
+      )) as DataError;
+      expect(failure).toBeInstanceOf(DataError);
+      expect(failure.message).toContain("The text has more than 20 tokens");
+      expect((await clientOf(lrs).getStatement(uuid(1), { attachments: true }))?.statement).toStrictEqual(statement);
+    });
+
     it("asks for a voided Statement with its data", async () => {
       const message = writeMultipart(statement, [data]);
       const lrs = fakeLrs(() => ({ headers: { "content-type": message.contentType }, body: message.body }));

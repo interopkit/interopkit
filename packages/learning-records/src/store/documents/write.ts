@@ -45,11 +45,11 @@ function replacement(context: Context, contentType: string): LrsDocumentInput {
  */
 function merged(context: Context, contentType: string, current: LrsDocument | undefined): Verdict<LrsDocumentInput> {
   const { body } = context.request;
-  const { maxDepth } = context.settings.limits;
+  const { limits } = context.settings;
   const posted = mediaTypeOf(contentType) === JSON_TYPE;
   const read = attempt(() => {
     if (current === undefined) {
-      if (posted) readObject(body, "The body of a POST with the type application/json", maxDepth);
+      if (posted) readObject(body, "The body of a POST with the type application/json", limits);
       return { contentType, body };
     }
     if (!posted || mediaTypeOf(current.contentType) !== JSON_TYPE) {
@@ -58,8 +58,8 @@ function merged(context: Context, contentType: string, current: LrsDocument | un
       );
     }
     const sum = merge(
-      readObject(current.body, "The document that exists", maxDepth),
-      readObject(body, "The body of the POST", maxDepth),
+      readObject(current.body, "The document that exists", limits),
+      readObject(body, "The body of the POST", limits),
     );
     return { contentType: JSON_TYPE, body: sum };
   });

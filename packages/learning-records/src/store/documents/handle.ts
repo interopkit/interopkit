@@ -7,7 +7,7 @@ import { writeDocument } from "./write.js";
 
 /** Answers a request for one of the resources that hold documents. */
 async function handleDocuments(context: Context, resource: DocumentResource): Promise<HttpResponse> {
-  const asked = readDocumentsRequest(context.request, resource);
+  const asked = readDocumentsRequest(context.request, resource, context.settings.limits);
   if (isRefusal(asked)) return context.refuse(asked.status, asked.message);
   const { method } = context.request;
   const request = asked.value;

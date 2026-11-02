@@ -253,6 +253,7 @@ describe("readMultipart", () => {
       [{ maxPartBytes: "10" }, 'The options object is invalid at maxPartBytes: expected a number, found "10".'],
       [{ maxTotalBytes: 1.5 }, "The options object is invalid at maxTotalBytes: expected a safe integer, found 1.5."],
       [{ maxDepth: 0 }, "The options object is invalid at maxDepth: expected a value of at least 1, found 0."],
+      [{ maxTokens: 0 }, "The options object is invalid at maxTokens: expected a value of at least 1, found 0."],
       [{ limit: 1 }, 'The options object is invalid: unexpected property "limit".'],
     ])("refuses the limits %j", (limits, sentence) => {
       expect(() => readMultipart(CONTENT_TYPE, ok, JSON.parse(JSON.stringify(limits)))).toThrow(
@@ -339,6 +340,17 @@ describe("readMultipart", () => {
       expect(() => readMultipart(CONTENT_TYPE, messageOf(BOUNDARY, nested(5), []), { maxDepth: 4 })).toThrow(
         "deeper than the limit of 4",
       );
+    });
+
+    it("refuses JSON of more tokens than maxTokens in the first part, a million by default, before it parses it", () => {
+      // An array of n zeros has 2n + 1 tokens: the brackets, the zeros, and the commas between them.
+      const zeros = (count: number) => `[${new Array<number>(count).fill(0).join(",")}]`;
+      const read = (count: number, limits = {}) =>
+        readMultipart(CONTENT_TYPE, messageOf(BOUNDARY, zeros(count), []), limits);
+      expect(read(499_999).statements).toBeInstanceOf(Array);
+      expect(() => read(500_000)).toThrow("The text has more than 1000000 tokens");
+      expect(read(4, { maxTokens: 9 }).statements).toBeInstanceOf(Array);
+      expect(() => read(5, { maxTokens: 9 })).toThrow("The text has more than 9 tokens");
     });
 
     it("refuses 10 MiB and one more byte in a part by default", () => {

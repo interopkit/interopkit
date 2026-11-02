@@ -2,9 +2,9 @@ import { DataError } from "@interopkit/core";
 import { describe, isUuid, parseWith } from "@interopkit/core/checks";
 import { type HttpRequest, readQuery } from "@interopkit/core/http";
 import type { StatementFormat, StatementQuery } from "../../model/index.js";
-import { readStatementJson } from "../../read/index.js";
 import { statementQuerySchema } from "../../read/internal.js";
-import { checkNames } from "../parameters.js";
+import type { LrsSettingsLimits } from "../options.js";
+import { checkNames, readJsonParameter } from "../parameters.js";
 import { attempt, type Verdict } from "../verdict.js";
 
 /** What a GET on the Statements resource asks for. */
@@ -66,20 +66,20 @@ function readCount(name: string, text: string): number {
 }
 
 /** Turns the text of the parameters into the filters of a query, and checks each. */
-function readFilters(parameters: ReadonlyMap<string, string>): StatementQuery {
+function readFilters(parameters: ReadonlyMap<string, string>, limits: LrsSettingsLimits): StatementQuery {
   const raw: Record<string, unknown> = {};
   for (const [name, text] of parameters) {
     const property = FILTERS.get(name);
     if (property === undefined) continue;
     if (BOOLEANS.has(name)) raw[property] = readBoolean(name, text);
     else if (name === "limit") raw[property] = readCount(name, text);
-    else raw[property] = name === "agent" ? readStatementJson(text) : text;
+    else raw[property] = name === "agent" ? readJsonParameter(text, limits) : text;
   }
   return parseWith(statementQuerySchema, raw, "The query");
 }
 
 /** Reads a GET on the Statements resource: one Statement, or a page of them. */
-export function readGet(request: HttpRequest): Verdict<StatementsGet> {
+export function readGet(request: HttpRequest, limits: LrsSettingsLimits): Verdict<StatementsGet> {
   return attempt(() => {
     const parameters = readQuery(request);
     checkNames(parameters, KNOWN);
@@ -91,7 +91,7 @@ export function readGet(request: HttpRequest): Verdict<StatementsGet> {
     const one = wanted ?? voidedWanted;
     if (one === undefined) {
       const carried = [...parameters].filter(([name]) => name !== CURSOR);
-      return { kind: "many", query: readFilters(parameters), carried, cursor: parameters.get(CURSOR) } as const;
+      return { kind: "many", query: readFilters(parameters, limits), carried, cursor: parameters.get(CURSOR) } as const;
     }
     for (const name of parameters.keys()) {
       if (!SINGLE.has(name)) {
@@ -101,7 +101,7 @@ export function readGet(request: HttpRequest): Verdict<StatementsGet> {
       }
     }
     if (!isUuid(one)) throw new DataError(`The Statement id must be a UUID, found ${describe(one)}.`);
-    const filters = readFilters(parameters);
+    const filters = readFilters(parameters, limits);
     return {
       kind: "one",
       id: one.toLowerCase(),

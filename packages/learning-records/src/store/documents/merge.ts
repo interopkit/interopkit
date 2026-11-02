@@ -1,17 +1,22 @@
 import { DataError } from "@interopkit/core";
-import { isRecord, nestsDeeperThan } from "@interopkit/core/checks";
+import { hasMoreTokensThan, isRecord, nestsDeeperThan } from "@interopkit/core/checks";
 import type { Extensions } from "../../model/index.js";
 
 /** Throws on bytes that are not UTF-8, where the default decoder would replace them. */
 const DECODER = new TextDecoder("utf-8", { fatal: true });
 
 /**
- * Reads bytes as a JSON object, within a depth.
+ * Reads bytes as a JSON object, within a depth and a number of tokens, which are checked before the text is parsed.
  *
  * @param what - Names the bytes in a sentence, such as `The body`.
- * @throws `DataError` when they are not UTF-8 or JSON, nest too deep, or hold something other than an object.
+ * @throws `DataError` when they are not UTF-8 or JSON, nest too deep, have too many tokens, or hold something other than an
+ * object.
  */
-export function readObject(bytes: Uint8Array, what: string, maxDepth: number): Extensions {
+export function readObject(
+  bytes: Uint8Array,
+  what: string,
+  { maxDepth, maxTokens }: { readonly maxDepth: number; readonly maxTokens: number },
+): Extensions {
   let text: string;
   try {
     text = DECODER.decode(bytes);
@@ -20,6 +25,9 @@ export function readObject(bytes: Uint8Array, what: string, maxDepth: number): E
   }
   if (nestsDeeperThan(text, maxDepth)) {
     throw new DataError(`${what} must be a JSON object, and it nests deeper than the limit of ${maxDepth} levels.`);
+  }
+  if (hasMoreTokensThan(text, maxTokens)) {
+    throw new DataError(`${what} must be a JSON object, and it has more than ${maxTokens} tokens, the limit.`);
   }
   let value: unknown;
   try {
