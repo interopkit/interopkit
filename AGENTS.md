@@ -313,7 +313,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
   sentence of the standard, a value that breaks it, and what a reader of each role finds. A test runs the table against the
   readers, and the table is written from the standard and not from the code.
 - The test vectors of a cryptosuite are reproduced byte for byte in a `*.spec.test.ts`: a base proof from the fixed secrets of the
-  specification through the `internal.ts` of its module, which the package does not export and a host cannot reach, and a
+  specification through the `internal.ts` of its module, which the package does not export, so a host cannot import it by name, and a
   derived proof from that base proof. A counterparty suite signs, derives and verifies beside the package in every order, in a
   `*.corpus.test.ts`. The contexts they need are files of `scripts/schemas.lock.json`.
 - The vectors of the Data Integrity cryptosuites and of `did:key` run through the functions of `achievement-credentials` in

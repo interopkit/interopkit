@@ -81,9 +81,11 @@ JSON.stringify(base.credentialSubject).includes("birthDate"); // => true
 | `selectiveDisclosureSuite.verify(...)` | Verifier | The document, its proof, and a `VerifyProofOptions`      | `true` when the proof is valid for the document under the key, and `false` for any fault        |
 | `isBaseProof(proof)`                   | Any      | Any value                                                | Whether it is a proof of `ecdsa-sd-2023` whose value is the value of a base proof; never throws |
 
-`selectiveDisclosureSuite` also names the cryptosuite, `"ecdsa-sd-2023"`. `verify` takes the key as a JWK that the caller has
-resolved from the verification method of the proof and bound to the issuer. The package does neither: they belong to the
-code that reads the credential.
+`selectiveDisclosureSuite` also names the cryptosuite, `"ecdsa-sd-2023"`. `verify` is the cryptosuite's step of verification,
+Verify Derived Proof: the signatures over the document and the proof options as they are. The rest of the verification of
+Data Integrity belongs to the code that reads the credential, which knows where keys live and what a proof is for: resolving
+the verification method into the JWK that `verify` takes, binding that key to the issuer, and checking the `proofPurpose`, and
+`created` and `expires` against its clock.
 
 ## Options
 
@@ -208,7 +210,7 @@ anywhere, so there is nothing to undo.
 | Resolving a verification method, binding a key to an issuer | The caller reads the credential and knows where keys live; `verify` takes the key it resolved                  |
 | Fetching, pinning and caching JSON-LD contexts              | A loader is a port. It enforces pins and size limits, and decides whether a context may be fetched             |
 | Proof sets and chains                                       | A document has one proof; `deriveProof` refuses a set, and `verify` takes one proof                            |
-| `challenge`, `domain`, `expires` and `previousProof`        | The suite is for credentials. `verify` hashes any property a proof has, but `addBaseProof` writes none of them |
+| `challenge`, `domain`, `expires` and `previousProof` in a base proof | A credential says how long it holds in `validFrom` and `validUntil`, which the proof signs; `challenge` and `domain` bind a presentation and `previousProof` a chain, and a base proof is neither. `verify` hashes any property a proof has |
 | `proofPurpose` other than `assertionMethod`                 | A credential is an assertion by its issuer                                                                     |
 | The data model of a credential                              | The package signs JSON-LD. Checking that a document is a valid credential is for the code that reads it        |
 | Unlinkable disclosure                                       | The suite does not give it; see above                                                                          |
