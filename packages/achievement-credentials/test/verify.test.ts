@@ -2,10 +2,10 @@ import { readFileSync } from "node:fs";
 import { DataError, ServiceError, signCompactJws } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { addProof } from "../src/data-integrity/index.js";
-import { type IssuableCredential, VERIFICATION_CHECKS } from "../src/index.js";
+import { type IssuableCredential, type KeyResolver, VERIFICATION_CHECKS } from "../src/index.js";
 import { signCredentialJwt } from "../src/jwt/index.js";
 import { createKeyResolver } from "../src/keys/index.js";
-import { verifyCredential } from "../src/verify/index.js";
+import { type VerifyOptions, verifyCredential } from "../src/verify/index.js";
 import { memoryContexts } from "./context-fixtures.js";
 import { achievementCredential, achievementCredentialV1p1, PROFILE } from "./fixtures.js";
 import { HOSTILE, neverParsesLarge } from "./hostile.js";
@@ -431,6 +431,63 @@ describe("the options that unavailable and the signal govern", () => {
     controller.abort(new Error("stop"));
     await expect(verifyCredential(await jwsOf(), { ...options, signal: controller.signal })).rejects.toThrow("stop");
     expect(requests).toStrictEqual([]);
+  });
+
+  describe("with a key resolver that never answers", () => {
+    /** A resolver whose methods are the real ones except for the named one, which gets the signal and never settles. */
+    const hangingAt = (real: KeyResolver, method: "resolve" | "issuerKeys") => {
+      const seen: (AbortSignal | undefined)[] = [];
+      const hang = (_name: string, call?: { readonly signal?: AbortSignal }) => {
+        seen.push(call?.signal);
+        return new Promise<never>(() => undefined);
+      };
+      const keys: KeyResolver =
+        method === "resolve"
+          ? { resolve: hang, issuerKeys: real.issuerKeys }
+          : { resolve: real.resolve, issuerKeys: hang };
+      return { keys, seen };
+    };
+
+    /** Aborts once the resolver has been called, and expects the verification to reject with the reason of the signal. */
+    const abortsWhileWaiting = async (
+      input: string | object,
+      options: VerifyOptions,
+      seen: readonly (AbortSignal | undefined)[],
+    ) => {
+      const controller = new AbortController();
+      const pending = verifyCredential(input, { ...options, signal: controller.signal });
+      const rejected = expect(pending).rejects.toThrow("The caller gave up.");
+      await expect.poll(() => seen.length).toBe(1);
+      controller.abort(new Error("The caller gave up."));
+      await rejected;
+      expect(seen[0]?.aborted).toBe(true);
+    };
+
+    it("ends the wait for the key of a JWS when the signal aborts", async () => {
+      const { options } = world();
+      const { keys, seen } = hangingAt(options.keys, "resolve");
+      await abortsWhileWaiting(await jwsOf(), { ...options, keys }, seen);
+    });
+
+    it("ends the wait for the key of a Data Integrity proof when the signal aborts", async () => {
+      const did = `did:key:${KEYS.ed25519.multikey}`;
+      const method = `${did}#${KEYS.ed25519.multikey}`;
+      const contexts = memoryContexts();
+      const clock = clockAt(NOW);
+      const signed = await addProof(
+        { ...achievementCredential(), issuer: { id: did, type: ["Profile"] } } as IssuableCredential,
+        signerOf(KEYS.ed25519, method),
+        { clock, contexts: contexts.load },
+      );
+      const { keys, seen } = hangingAt(createKeyResolver({ clock }), "resolve");
+      await abortsWhileWaiting(signed, { keys, clock, contexts: contexts.load }, seen);
+    });
+
+    it("ends the wait for what the issuer publishes when the signal aborts", async () => {
+      const { options } = world();
+      const { keys, seen } = hangingAt(options.keys, "issuerKeys");
+      await abortsWhileWaiting(await jwsOf(), { ...options, keys }, seen);
+    });
   });
 
   it("serves a call with the routes that the credential needs and no others", async () => {

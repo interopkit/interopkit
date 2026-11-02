@@ -1880,6 +1880,27 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/provider-verify.test.ts",
   },
   {
+    rule: "The wait for the key of a JWS ends when the signal aborts, whatever the resolver does.",
+    file: "packages/achievement-credentials/src/jwt/read-credential-jwt.ts",
+    find: "await untilAborted(settings.keys.resolve(kid, call), settings.signal);",
+    replace: "await settings.keys.resolve(kid, call);",
+    test: "packages/achievement-credentials/test/verify.test.ts",
+  },
+  {
+    rule: "The wait for the key of a Data Integrity proof ends when the signal aborts, whatever the resolver does.",
+    file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
+    find: "await untilAborted(settings.keys.resolve(method, call), settings.signal);",
+    replace: "await settings.keys.resolve(method, call);",
+    test: "packages/achievement-credentials/test/verify.test.ts",
+  },
+  {
+    rule: "The wait for what an issuer publishes ends when the signal aborts, whatever the resolver does.",
+    file: "packages/achievement-credentials/src/keys/verify-issuer-key.ts",
+    find: "await untilAborted(options.keys.issuerKeys(issuer, call), options.signal);",
+    replace: "await options.keys.issuerKeys(issuer, call);",
+    test: "packages/achievement-credentials/test/verify.test.ts",
+  },
+  {
     rule: "The since of a list is a date and time with an offset, or the request is refused.",
     file: "packages/achievement-credentials/src/provider/credentials.ts",
     find: "if (!isDateTime(since)) {",

@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, untilAborted } from "@interopkit/core";
 import { describe, isRecord } from "@interopkit/core/checks";
 import { compactVerify, importJWK } from "jose";
 import { decodeBase64url } from "../base64url.js";
@@ -45,10 +45,9 @@ async function keyOf(
   }
   if (kid !== undefined) {
     if (typeof kid !== "string" || kid === "") return { reason: "The kid of the header must be a non-empty string." };
-    const key = await settings.keys.resolve(
-      kid,
-      settings.signal === undefined ? undefined : { signal: settings.signal },
-    );
+    // A resolver is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
+    const call = settings.signal === undefined ? undefined : { signal: settings.signal };
+    const key = await untilAborted(settings.keys.resolve(kid, call), settings.signal);
     if (key === undefined) return { reason: `No key is named by the kid ${kid}.` };
     const resolved = publicJwk(key.publicKeyJwk);
     return resolved === undefined

@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, untilAborted } from "@interopkit/core";
 import { describe, isRecord } from "@interopkit/core/checks";
 import { isBaseProof } from "@interopkit/selective-disclosure";
 import { textWithinLimits } from "../json-text.js";
@@ -118,10 +118,9 @@ async function checkProof(
   const problem = proofProblem(proof, settings);
   if (problem !== undefined) return { reason: problem, unavailable: false };
   const method = String(proof.verificationMethod);
-  const resolved = await settings.keys.resolve(
-    method,
-    settings.signal === undefined ? undefined : { signal: settings.signal },
-  );
+  // A resolver is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
+  const call = settings.signal === undefined ? undefined : { signal: settings.signal };
+  const resolved = await untilAborted(settings.keys.resolve(method, call), settings.signal);
   if (resolved === undefined)
     return { reason: `No key is named by the verificationMethod ${method}.`, unavailable: false };
   const verdict = await suiteVerdict(suite, unsecured, proof, resolved, settings);
