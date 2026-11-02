@@ -13,7 +13,6 @@ import {
   readJson,
   withoutProof,
 } from "../document/index.js";
-import { signStatement } from "../keys/index.js";
 import { serializeBaseProofValue, signData } from "../proof-value/index.js";
 import { CRYPTOSUITE, PROOF_PURPOSE, PROOF_TYPE, SIGNATURE_BYTES } from "../suite.js";
 import { createSecrets, type Secrets } from "./secrets.js";
@@ -78,9 +77,10 @@ function checkSignature(signature: unknown): Uint8Array {
  * @remarks
  * The proof holds the key of an HMAC that relabels the blank nodes of the document, a signature for every statement that a
  * holder may hide, made with a key that is new to this proof, and the signature of the issuer's key over the public key of the
- * proof and the mandatory statements. The HMAC key and the key of the proof come from `crypto.getRandomValues`, and no option replaces
- * them: a source that could be predicted would let anyone who holds the base proof replace the statements that a holder may
- * hide. A base proof never goes to a verifier; `deriveProof` makes the proof that does.
+ * proof and the mandatory statements. The HMAC key comes from `crypto.getRandomValues` and the key of the proof from Web
+ * Crypto, which does not let it be exported, and no option replaces them: a source that could be predicted would let anyone who
+ * holds the base proof replace the statements that a holder may hide. A base proof never goes to a verifier; `deriveProof`
+ * makes the proof that does.
  *
  * @param document - The document to sign: JSON-LD with an `@context` and no `proof`. It is not changed.
  * @param options - The signer, the mandatory pointers, the `created` of the proof and the loader of contexts.
@@ -102,7 +102,7 @@ export async function addBaseProof(document: JsonDocument, options: BaseProofOpt
 export async function addBaseProofWith(
   document: JsonDocument,
   options: BaseProofOptions,
-  secretsOf: () => Secrets,
+  secretsOf: () => Promise<Secrets>,
 ): Promise<JsonDocument> {
   const limits = readCommonOptions(options, "The options of addBaseProof");
   const { contexts, signal } = limits;
@@ -126,7 +126,7 @@ export async function addBaseProofWith(
   );
   signal?.throwIfAborted();
 
-  const { hmacKey, proofKey } = secretsOf();
+  const { hmacKey, proofKey } = await secretsOf();
   const proofOptions = {
     type: PROOF_TYPE,
     cryptosuite: CRYPTOSUITE,
@@ -154,11 +154,15 @@ export async function addBaseProofWith(
     })(),
   );
 
-  const signatures = nonMandatory.map((statement) => signStatement(proofKey.secretKey, statement));
   const toSign = signData(proofHash, proofKey.publicKey, mandatoryHash);
-  const baseSignature = checkSignature(
-    await untilAborted(options.signer.sign(toSign, signal === undefined ? undefined : { signal }), signal),
+  const [signatures, signed] = await untilAborted(
+    Promise.all([
+      Promise.all(nonMandatory.map((statement) => proofKey.sign(statement))),
+      options.signer.sign(toSign, signal === undefined ? undefined : { signal }),
+    ]),
+    signal,
   );
+  const baseSignature = checkSignature(signed);
   const proofValue = serializeBaseProofValue({
     baseSignature,
     publicKey: proofKey.publicKey,

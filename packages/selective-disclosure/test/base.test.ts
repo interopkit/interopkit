@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import { deepFreeze } from "../../../scripts/json-mutation.js";
 import { addBaseProofWith } from "../src/base/internal.js";
 import { addBaseProof, isBaseProof } from "../src/index.js";
-import { createProofKey } from "../src/keys/index.js";
 import { parseBaseProofValue } from "../src/proof-value/index.js";
 import { CLOSED_CONTEXT, hangingContexts, memoryContexts, OPEN_CONTEXT } from "./contexts.js";
 import { CREATED, MANDATORY_POINTERS, sampleCredential, tokensOf } from "./documents.js";
 import { createIssuer, VERIFICATION_METHOD } from "./keys.js";
+import { deterministicProofKey } from "./multikey.js";
 import { fixRandomBytes } from "./random.js";
 import { signedCredential } from "./setup.js";
 
@@ -100,12 +100,12 @@ describe("addBaseProof", () => {
   it("signs with the secrets that the tests give it, and nowhere else", async () => {
     const issuer = await createIssuer();
     const hmacKey = new Uint8Array(32).fill(5);
-    const proofKey = createProofKey();
+    const proofKey = deterministicProofKey(new Uint8Array(32).fill(7));
     const make = () =>
       addBaseProofWith(
         sampleCredential(),
         { signer: issuer.signer, contexts: memoryContexts().load, created: CREATED },
-        () => ({ hmacKey, proofKey }),
+        async () => ({ hmacKey, proofKey }),
       );
     const first = parseBaseProofValue(proofOf(await make()).proofValue);
     const second = parseBaseProofValue(proofOf(await make()).proofValue);

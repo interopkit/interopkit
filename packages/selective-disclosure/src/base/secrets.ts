@@ -12,7 +12,7 @@ export interface Secrets {
   readonly proofKey: ProofKey;
 }
 
-/** Makes new secrets from `crypto.getRandomValues`. */
-export function createSecrets(): Secrets {
-  return { hmacKey: crypto.getRandomValues(new Uint8Array(HMAC_KEY_BYTES)), proofKey: createProofKey() };
+/** Makes new secrets: the HMAC key from `crypto.getRandomValues`, and the key of the proof from Web Crypto. */
+export async function createSecrets(): Promise<Secrets> {
+  return { hmacKey: crypto.getRandomValues(new Uint8Array(HMAC_KEY_BYTES)), proofKey: await createProofKey() };
 }

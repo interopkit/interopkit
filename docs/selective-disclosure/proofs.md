@@ -11,7 +11,7 @@ sequenceDiagram
   participant H as Holder
   participant V as Verifier
   I->>I: addBaseProof(credential, signer, mandatoryPointers)
-  Note over I: HMAC key and proof key from crypto.getRandomValues<br/>one signature for each statement that is not mandatory
+  Note over I: HMAC key from crypto.getRandomValues, proof key from Web Crypto<br/>one signature for each statement that is not mandatory
   I->>H: credential with a base proof
   H->>H: deriveProof(credential, selectivePointers)
   Note over H: keeps the mandatory statements and the chosen ones<br/>drops the HMAC key and the other signatures
@@ -216,7 +216,6 @@ anywhere, so there is nothing to undo.
 | Digital Bazaar `ecdsa-sd-2023-cryptosuite` 3.4.1 | Every combination of this package and that suite signing, deriving and verifying gives a valid proof (a test). This package is stricter where a proof is malleable or a pointer is loose                  |
 | Digital Bazaar                                   | `verify` takes a JWK, not a verification method, and the three roles are plain functions over plain data, not suites of `jsonld-signatures`                                                               |
 | Digital Bazaar                                   | Mandatory positions must ascend and name a statement; signatures, keys and labels are checked for their lengths; pointers are checked; `maxBytes`, `maxTokens` and a fixed count of deep iterations bound a call, where Digital Bazaar's suite has no limit of its own |
-| Digital Bazaar                                   | Signatures of statements are deterministic (RFC 6979), where Web Crypto signs with a random nonce; both verify the same                                                                                   |
 | Digital Bazaar and the primitives                | Statements are sorted by UTF-16 code unit, as `Array.prototype.sort` does, and not by code point: they differ only for a statement that compares a character outside the BMP with one in U+E000 to U+FFFF |
 
 ## Runtimes and dependencies

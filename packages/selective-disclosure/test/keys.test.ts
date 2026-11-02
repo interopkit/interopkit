@@ -1,75 +1,96 @@
 import { DataError } from "@interopkit/core";
 import { p256 } from "@noble/curves/nist.js";
-import { hex } from "@scure/base";
-import { describe, expect, it } from "vitest";
-import {
-  createProofKey,
-  importIssuerKey,
-  importMultikey,
-  proofKeyOf,
-  signStatement,
-  verifyStatements,
-} from "../src/keys/index.js";
+import { base64urlnopad, hex } from "@scure/base";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createProofKey, importIssuerKey, importMultikey, verifyStatements } from "../src/keys/index.js";
 import { encodeMultikey } from "../src/keys/internal.js";
-import { fixRandomBytes } from "./random.js";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+/** The key pairs that Web Crypto makes while a function runs. */
+async function pairsMadeBy(make: () => Promise<unknown>): Promise<CryptoKeyPair[]> {
+  const generateKey = crypto.subtle.generateKey.bind(crypto.subtle);
+  const pairs: CryptoKeyPair[] = [];
+  vi.spyOn(crypto.subtle, "generateKey").mockImplementation(async (...parameters: Parameters<typeof generateKey>) => {
+    const made = await generateKey(...parameters);
+    if ("privateKey" in made) pairs.push(made);
+    return made;
+  });
+  await make();
+  return pairs;
+}
 
 describe("the key of a proof", () => {
-  it("is made from the bytes of crypto.getRandomValues and from nothing else", () => {
-    const seed = Uint8Array.from({ length: 48 }, (_, index) => index + 1);
-    // The curve library blinds its computations with 16 more random bytes, which this does not touch.
-    const restore = fixRandomBytes(seed);
-    const key = createProofKey();
-    restore();
-    expect(key.secretKey).toStrictEqual(p256.utils.randomSecretKey(seed));
-    expect(key.secretKey).toHaveLength(32);
-    expect(key.publicKey).toHaveLength(35);
-    expect(Array.from(key.publicKey.subarray(0, 2))).toStrictEqual([0x80, 0x24]);
-    expect(createProofKey().secretKey).not.toStrictEqual(key.secretKey);
+  it("is a new P-256 key pair of Web Crypto, whose private key signs and cannot be exported", async () => {
+    let key: Awaited<ReturnType<typeof createProofKey>> | undefined;
+    const [pair] = await pairsMadeBy(async () => {
+      key = await createProofKey();
+    });
+    expect(pair?.privateKey.algorithm).toStrictEqual({ name: "ECDSA", namedCurve: "P-256" });
+    expect(pair?.privateKey.extractable).toBe(false);
+    expect(pair?.privateKey.usages).toStrictEqual(["sign"]);
+    expect(key?.publicKey).not.toStrictEqual((await createProofKey()).publicKey);
   });
 
-  it("has the public key of its private key in multikey form", () => {
-    // The public key of the private key in RFC 6979 appendix A.2.5.
-    const secretKey = hex.decode("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
-    expect(hex.encode(proofKeyOf(secretKey).publicKey)).toBe(
-      "8024" + "0360fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6",
-    );
+  it("carries the public key of the pair as a compressed point in multikey form", async () => {
+    let key: Awaited<ReturnType<typeof createProofKey>> | undefined;
+    const [pair] = await pairsMadeBy(async () => {
+      key = await createProofKey();
+    });
+    if (pair === undefined || key === undefined) throw new Error("No key pair was made.");
+    const { x, y } = await crypto.subtle.exportKey("jwk", pair.publicKey);
+    const yBytes = base64urlnopad.decode(y ?? "");
+    // SEC 1, section 2.3.3: 2 for an even y and 3 for an odd one, then x.
+    const prefix = (yBytes.at(-1) ?? 0) % 2 === 0 ? "02" : "03";
+    expect(hex.encode(key.publicKey)).toBe(`8024${prefix}${hex.encode(base64urlnopad.decode(x ?? ""))}`);
   });
 });
 
 describe("the signature of a statement", () => {
-  it("is the deterministic ECDSA signature of RFC 6979, which is not always the low-S form", () => {
-    // RFC 6979 appendix A.2.5, P-256 with SHA-256, the message "sample": its S is above half the order.
-    const secretKey = hex.decode("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
-    expect(hex.encode(signStatement(secretKey, "sample"))).toBe(
-      "efd48b2aacb6a8fd1140dd9cd45e81d69d2c877b56aaf991c34d0ea84eaf3716" +
-        "f7cb1c942d657c41d436c7a1b6e29f65f3e900dbb9aff4064dc4ab2f843acda8",
-    );
+  it("is the 64 bytes of R and S, and verifies under the public key of the proof", async () => {
+    const key = await createProofKey();
+    const signature = await key.sign("<a> <b> <c> .\n");
+    expect(signature).toHaveLength(64);
+    expect(await verifyStatements(await importMultikey(key.publicKey), ["<a> <b> <c> .\n"], [signature])).toBe(true);
   });
 
   it("is checked against the statement it belongs to, in order", async () => {
-    const key = createProofKey();
+    const key = await createProofKey();
     const statements = ["<a> <b> <c> .\n", "<d> <e> <f> .\n"];
-    const signatures = statements.map((statement) => signStatement(key.secretKey, statement));
+    const signatures = await Promise.all(statements.map((statement) => key.sign(statement)));
     const publicKey = await importMultikey(key.publicKey);
     expect(await verifyStatements(publicKey, statements, signatures)).toBe(true);
     expect(await verifyStatements(publicKey, statements, [...signatures].reverse())).toBe(false);
   });
 
   it("is refused when it does not count one for each statement", async () => {
-    const key = createProofKey();
+    const key = await createProofKey();
     const statements = ["<a> <b> <c> .\n"];
-    const signature = signStatement(key.secretKey, statements[0] ?? "");
+    const signature = await key.sign(statements[0] ?? "");
     const publicKey = await importMultikey(key.publicKey);
     expect(await verifyStatements(publicKey, statements, [signature, signature])).toBe(false);
     expect(await verifyStatements(publicKey, statements, [])).toBe(false);
   });
 
   it("is refused when only one of several is wrong", async () => {
-    const key = createProofKey();
+    const key = await createProofKey();
     const statements = ["<a> <b> <c> .\n", "<d> <e> <f> .\n", "<g> <h> <i> .\n"];
-    const signatures = statements.map((statement) => signStatement(key.secretKey, statement));
-    signatures[1] = signStatement(key.secretKey, "<other> <b> <c> .\n");
+    const signatures = await Promise.all(statements.map((statement) => key.sign(statement)));
+    signatures[1] = await key.sign("<other> <b> <c> .\n");
     expect(await verifyStatements(await importMultikey(key.publicKey), statements, signatures)).toBe(false);
+  });
+
+  it("verifies in the form that is not low-S, as other implementations may sign", async () => {
+    // RFC 6979 appendix A.2.5, P-256 with SHA-256, the message "sample": its S is above half the order.
+    const secretKey = hex.decode("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
+    const signature = hex.decode(
+      "efd48b2aacb6a8fd1140dd9cd45e81d69d2c877b56aaf991c34d0ea84eaf3716" +
+        "f7cb1c942d657c41d436c7a1b6e29f65f3e900dbb9aff4064dc4ab2f843acda8",
+    );
+    const publicKey = await importMultikey(encodeMultikey(p256.getPublicKey(secretKey, true)));
+    expect(await verifyStatements(publicKey, ["sample"], [signature])).toBe(true);
   });
 });
 

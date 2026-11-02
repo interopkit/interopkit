@@ -2,11 +2,10 @@ import { base58, hex } from "@scure/base";
 import { describe, expect, it } from "vitest";
 import { addBaseProofWith } from "../src/base/internal.js";
 import { deriveProof, selectiveDisclosureSuite } from "../src/index.js";
-import { proofKeyOf } from "../src/keys/index.js";
 import { parseBaseProofValue, parseDerivedProofValue } from "../src/proof-value/index.js";
 import { memoryContexts } from "./contexts.js";
 import { downloadedContexts, readVectors, type Vector } from "./downloads.js";
-import { deterministicSigner, jwkOf, secretKeyOf } from "./multikey.js";
+import { deterministicProofKey, deterministicSigner, jwkOf, secretKeyOf } from "./multikey.js";
 
 const VECTORS = readVectors();
 const NAMES = ["the first example", "the additional example"] as const;
@@ -34,9 +33,9 @@ function baseProofOf(vector: Vector) {
       contexts: contexts.load,
       created: String(proofOf(vector.signed).created),
     },
-    () => ({
+    async () => ({
       hmacKey: hex.decode(vector.hmacKeyString.toLowerCase()),
-      proofKey: proofKeyOf(secretKeyOf(vector.proofKeyPair.secretKeyMultibase)),
+      proofKey: deterministicProofKey(secretKeyOf(vector.proofKeyPair.secretKeyMultibase)),
     }),
   );
 }

@@ -41,20 +41,21 @@ flowchart BT
 | ------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `proof-value` | `header.ts`, `cbor.ts`, `fields.ts`, `label-map.ts`         | The headers `0xd9 0x5d 0x00` and `0x01`, the CBOR reader and its options, the checks of each component            |
 |               | `base.ts`, `derived.ts`, `is-base-proof.ts`, `sign-data.ts` | Writing and reading the two proof values, `isBaseProof`, and the bytes that the issuer's key signs                |
-| `keys`        | `proof-key.ts`, `multikey.ts`, `statements.ts`              | The key of a proof from `crypto.getRandomValues`, the multikey form of a public key, the signatures of statements |
+| `keys`        | `proof-key.ts`, `multikey.ts`, `statements.ts`              | The key of a proof, which Web Crypto makes and signs with, the multikey form of a public key, the check of the signatures of statements |
 |               | `issuer-key.ts`, `algorithm.ts`                             | The import of the issuer's JWK, the check of the base signature, and ES256 in the words of Web Crypto             |
 | `document`    | `options.ts`, `read-document.ts`, `pointers.ts`             | The checks every function makes of its options, the copy of a document as JSON, and JSON pointers                 |
-|               | `loader.ts`, `labels.ts`, `primitives.d.ts`                 | The loader of the caller as the loader of `jsonld`, the HMAC labels, and the types of the primitives              |
+|               | `loader.ts`, `labels.ts`, `primitives.ts`                   | The loader of the caller as the loader of `jsonld`, the HMAC labels, and the typed functions of the primitives    |
 | `base`        | `add-base-proof.ts`, `secrets.ts`                           | `addBaseProof`, and the two secrets that make a base proof                                                        |
 | `derive`      | `derive-proof.ts`, `disclosure-data.ts`                     | `deriveProof`, and the statements, signatures and labels that a disclosure keeps                                  |
 | `verify`      | `suite.ts`, `verify-data.ts`                                | `selectiveDisclosureSuite`, and the data that its signatures are checked against                                  |
 
 `suite.ts` and `limits.ts` sit beside the modules: the names and sizes of the suite, and the limits.
 
-Each module has an `index.ts`, its public API, and `proof-value`, `keys` and `base` have an `internal.ts` for what the tests
-share and the package does not export. The one that matters is `base/internal.ts`: it adds a base proof with secrets that the
-caller supplies, which the test vectors of the Recommendation need. The public `addBaseProof` draws the secrets itself from
-`crypto.getRandomValues` and has no option to replace them, so a host cannot make them predictable.
+Each module has an `index.ts`, its public API, and `proof-value`, `keys`, `document` and `base` have an `internal.ts` for what
+the tests share and the package does not export. The one that matters is `base/internal.ts`: it adds a base proof with secrets
+that the caller supplies, which the test vectors of the Recommendation need. The public `addBaseProof` makes the secrets
+itself, the HMAC key from `crypto.getRandomValues` and the key of the proof with Web Crypto, and has no option to replace them,
+so a host cannot make them predictable.
 
 ## Creating a base proof
 
@@ -66,15 +67,18 @@ sequenceDiagram
   participant S as Signer
   H->>A: document, options
   A->>A: check the options, copy the document, check pointers
-  A->>A: HMAC key and proof key from crypto.getRandomValues
+  A->>A: HMAC key from crypto.getRandomValues, proof key from Web Crypto
   par proof options
     A->>P: hash of the canonical proof options
   and statements
     A->>P: canonicalize with HMAC labels, group by mandatory pointers
   end
-  A->>A: one signature for each statement that is not mandatory
-  A->>S: sign(proof hash, proof key, mandatory hash)
-  S-->>A: 64 bytes, R and S
+  par statements
+    A->>A: the proof key signs each statement that is not mandatory
+  and issuer
+    A->>S: sign(proof hash, proof key, mandatory hash)
+    S-->>A: 64 bytes, R and S
+  end
   A-->>H: a copy of the document with the base proof
 ```
 

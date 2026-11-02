@@ -1,19 +1,6 @@
-import { p256 } from "@noble/curves/nist.js";
 import { ES256 } from "./algorithm.js";
 
 const encoder = new TextEncoder();
-
-/**
- * Signs the UTF-8 bytes of a statement with ES256: ECDSA over P-256 and SHA-256, as 64 bytes of R and S.
- *
- * @remarks
- * The nonce follows RFC 6979, so a signature depends on the key and the statement alone and a weak random source cannot leak
- * the key. A signature of the half-order, which noble makes by default, is not asked for: the Recommendation does not ask
- * for it and its test vectors do not have it.
- */
-export function signStatement(secretKey: Uint8Array, statement: string): Uint8Array {
-  return p256.sign(encoder.encode(statement), secretKey, { lowS: false });
-}
 
 /**
  * Tells whether there is one signature for each statement and each is valid under the key.

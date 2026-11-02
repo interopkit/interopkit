@@ -5,5 +5,5 @@
  */
 export { importIssuerKey, verifyBaseSignature } from "./issuer-key.js";
 export { importMultikey } from "./multikey.js";
-export { createProofKey, type ProofKey, proofKeyOf } from "./proof-key.js";
-export { signStatement, verifyStatements } from "./statements.js";
+export { createProofKey, type ProofKey } from "./proof-key.js";
+export { verifyStatements } from "./statements.js";

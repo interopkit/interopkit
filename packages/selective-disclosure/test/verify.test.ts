@@ -2,7 +2,7 @@ import { DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { deepFreeze } from "../../../scripts/json-mutation.js";
 import { selectiveDisclosureSuite } from "../src/index.js";
-import { createProofKey, signStatement } from "../src/keys/index.js";
+import { createProofKey } from "../src/keys/index.js";
 import { parseDerivedProofValue } from "../src/proof-value/index.js";
 import { hangingContexts, memoryContexts } from "./contexts.js";
 import { tokensOf } from "./documents.js";
@@ -177,12 +177,10 @@ describe("selectiveDisclosureSuite, given a forged disclosure", () => {
 
   it("rejects when only one of the signatures of the statements is wrong", async () => {
     const shown = await disclosure();
-    const stranger = createProofKey();
+    const strange = await (await createProofKey()).sign("<a> <b> <c> .\n");
     const forged = proofWith(shown, (components) => ({
       ...components,
-      signatures: components.signatures.map((signature, index) =>
-        index === 0 ? signStatement(stranger.secretKey, "<a> <b> <c> .\n") : signature,
-      ),
+      signatures: components.signatures.map((signature, index) => (index === 0 ? strange : signature)),
     }));
     expect(await check(shown, { proof: forged })).toBe(false);
   });
@@ -192,15 +190,16 @@ describe("selectiveDisclosureSuite, given a forged disclosure", () => {
     const forgedDocument = renamed(shown.document, "Someone Else");
     const { labelMap, statements, mandatoryIndexes } = await forgedLabels(forgedDocument, shown);
     const mandatory = new Set(mandatoryIndexes);
-    const attacker = createProofKey();
+    const attacker = await createProofKey();
+    const signatures = await Promise.all(
+      statements.filter((_, index) => !mandatory.has(index)).map((statement) => attacker.sign(statement)),
+    );
     const resigned = proofWith(shown, (components) => ({
       ...components,
       publicKey: attacker.publicKey,
       labelMap,
       mandatoryIndexes,
-      signatures: statements
-        .filter((_, index) => !mandatory.has(index))
-        .map((statement) => signStatement(attacker.secretKey, statement)),
+      signatures,
     }));
     // The forged statements are signed by the key of the proof, which only the issuer's signature binds to the disclosure.
     expect(statements.some((statement) => statement.includes("Someone Else"))).toBe(true);

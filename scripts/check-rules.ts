@@ -1434,17 +1434,10 @@ export const RULES: readonly Rule[] = [
     test: "packages/selective-disclosure/test/base.test.ts",
   },
   {
-    rule: "The key of the proof comes from crypto.getRandomValues.",
+    rule: "The private key of a proof stays in Web Crypto, which does not let it be exported.",
     file: "packages/selective-disclosure/src/keys/proof-key.ts",
-    find: "const seed = crypto.getRandomValues(new Uint8Array(SEED_BYTES));",
-    replace: "const seed = new Uint8Array(SEED_BYTES).fill(1);",
-    test: "packages/selective-disclosure/test/keys.test.ts",
-  },
-  {
-    rule: "The signature of a statement is the deterministic one of RFC 6979, without a rule for the low half of the order.",
-    file: "packages/selective-disclosure/src/keys/statements.ts",
-    find: "{ lowS: false }",
-    replace: "{}",
+    find: 'crypto.subtle.generateKey(ECDSA_P256, false, ["sign"])',
+    replace: 'crypto.subtle.generateKey(ECDSA_P256, true, ["sign"])',
     test: "packages/selective-disclosure/test/keys.test.ts",
   },
   {
