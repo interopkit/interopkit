@@ -1,0 +1,43 @@
+# Moodle 5.3 and its database for pnpm moodle. Every value that changes between runs comes from run.ts through the environment.
+services:
+  db:
+    image: mariadb:11.8@sha256:c4124d1afa875e47f2892edf26b482fa54f796e2f342d3717a04ca091a22a9bd
+    cpus: 2
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-flush-log-at-trx-commit=2
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MOODLE_DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: moodle
+      MARIADB_USER: moodle
+      MARIADB_PASSWORD: ${MOODLE_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 5s
+      retries: 60
+
+  web:
+    image: moodlehq/moodle-php-apache:8.4-bookworm@sha256:3e910075c08dc73c8e18732f5e80c8fb9a60ae72eaf52b1ee198bb510e4fd9d6
+    cpus: 2
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${MOODLE_HTTP_PORT}:80"
+    # The names that the platform and the tool of the flows answer to are the machine that runs the tests.
+    extra_hosts:
+      - "${MOODLE_HOST}:host-gateway"
+      - "${TOOL_HOST}:host-gateway"
+      - "${PLATFORM_HOST}:host-gateway"
+    environment:
+      APACHE_DOCUMENT_ROOT: /var/www/html/public
+      MOODLE_WWWROOT: ${MOODLE_WWWROOT}
+      MOODLE_DB_PASSWORD: ${MOODLE_DB_PASSWORD}
+    volumes:
+      - ${MOODLE_SOURCE}:/var/www/html:ro
+      - ./setup.php:/opt/setup.php:ro
+      - ./trust-authority.sh:/docker-entrypoint.d/trust-authority.sh:ro
+      - ${MOODLE_AUTHORITY}:/usr/local/share/ca-certificates/interopkit-run.crt:ro
+      - moodledata:/var/www/moodledata
+
+volumes:
+  moodledata:

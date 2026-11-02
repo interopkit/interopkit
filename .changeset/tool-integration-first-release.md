@@ -69,5 +69,5 @@ The bodies of the services have one model too, in both roles. A line item (with 
 the groups and group sets of a context, the five content items of Deep Linking with their extensions, the configuration of a
 platform, the registration that a tool asks for and its acknowledgment, the request and the status of the Assessment Control
 Service, and the record of the AfA PNP Connector, each with the filters of its request. A body that breaks its specification is a
-`DataError` that names the path of the first invalid member.
+`DataError` that names the path of the first invalid member. A date takes its time zone as `Z`, `+hh:mm`, `+hhmm` or `+hh`, and an empty optional address of a registration is read as absent.
 

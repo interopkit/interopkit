@@ -11,6 +11,7 @@
     "scripts",
     "validation/adl-lrs",
     "validation/containers",
+    "validation/moodle",
     "validation/opensalt",
     "validation/pylti1p3",
     "validation/sql-lrs",

@@ -383,6 +383,16 @@ export default defineConfig({
         },
       },
       {
+        // The flows against Moodle in containers: `pnpm moodle` starts it and runs them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "tool-integration-moodle",
+          include: ["packages/tool-integration/test/moodle.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
+        },
+      },
+      {
         // The flows against PyLTI1p3 in a container: `pnpm pylti1p3` starts it and runs them.
         resolve: { alias: SOURCES },
         test: {

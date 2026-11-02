@@ -22,7 +22,7 @@ jobs:
   # files); the lock file, the root configuration, the scripts that the tests share and this workflow reach every job; the
   # Markdown, the changesets and the configuration of the linters reach none but check. A file that no rule names reaches every
   # job. The guides of a package are tests of that package alone. Outputs: test, spec, browsers, bench, runtimes, opensalt,
-  # adl_lrs, sql_lrs, w3c_suites, validator and pylti1p3 say whether the job runs; projects and packages are the Vitest projects and the
+  # adl_lrs, sql_lrs, w3c_suites, validator, pylti1p3 and moodle say whether the job runs; projects and packages are the Vitest projects and the
   # packages whose coverage floors the test job checks. The rules job is in rules.yml.
   changes:
     runs-on: ubuntu-latest
@@ -43,6 +43,7 @@ jobs:
       w3c_suites: ${{ steps.filter.outputs.w3c_suites }}
       validator: ${{ steps.filter.outputs.validator }}
       pylti1p3: ${{ steps.filter.outputs.pylti1p3 }}
+      moodle: ${{ steps.filter.outputs.moodle }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -116,7 +117,7 @@ jobs:
             if ((top === "packages" || top === "examples") && members.has(`${top}/${name}`)) touched.add(`${top}/${name}`);
             else if (top === "compat") touched.add("compat");
             else if (top === "docs" && third !== undefined && members.has(`packages/${name}`)) guides.add(`packages/${name}`);
-            else if (top === "validation" && ["opensalt", "adl-lrs", "sql-lrs", "w3c-suites", "1edtech-validator", "pylti1p3", "containers"].includes(
+            else if (top === "validation" && ["opensalt", "adl-lrs", "sql-lrs", "w3c-suites", "1edtech-validator", "pylti1p3", "moodle", "containers"].includes(
                 name,
               ))
               validation.add(name);
@@ -166,6 +167,8 @@ jobs:
             validator: everything || reached.has("examples/achievement-credentials") || validation.has("1edtech-validator"),
             // The flows of the tool that PyLTI1p3 runs, against the platform role; the helpers of the containers are shared.
             pylti1p3: everything || reached.has("packages/tool-integration") || validation.has("pylti1p3") || validation.has("containers"),
+            // Moodle in both roles against the roles of the package; the helpers of the containers are shared.
+            moodle: everything || reached.has("packages/tool-integration") || validation.has("moodle") || validation.has("containers"),
           };
           for (const [name, value] of Object.entries(outputs)) {
             console.log(`${name}=${value}`);
@@ -351,6 +354,21 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm opensalt
+
+  # Moodle in containers as a counterparty of both roles of tool-integration (validation/moodle/README.md).
+  moodle:
+    needs: changes
+    if: needs.changes.outputs.moodle == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm moodle
 
   # The ADL conformance suites of xAPI 2.0 and 1.0.3 against the example LRS (validation/adl-lrs/README.md). It builds first.
   adl-lrs:

@@ -5,6 +5,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { ACTIVITY_PROGRESS, GRADING_PROGRESS, type LineItem, type Result, type Score } from "../src/index.js";
 import {
+  parseZonedDateTime,
   readLineItem,
   readLineItemInput,
   readLineItemQuery,
@@ -199,6 +200,23 @@ describe("the score", () => {
       expect(readScore({ ...score, timestamp }).timestamp, timestamp).toBe(timestamp);
     }
     for (const timestamp of ["2017-04-16T18:54:36", "2017-04-16", "yesterday", "2017-04-16T18:54:36.736+25"]) {
+      expect(() => readScore({ ...score, timestamp }), timestamp).toThrow(DataError);
+    }
+  });
+
+  // PHP writes `DATE_ISO8601` with an offset of `+hhmm`, and Moodle posts its scores with it: `2026-11-02T14:55:32+0000`. AGS has the
+  // timestamp be ISO 8601 with a time zone, so the offset is read as the instant it names.
+  it("reads an offset of +hhmm as the instant it names, and refuses an offset that is not one", () => {
+    const instant = Date.parse("2017-04-16T18:54:36+05:30");
+    expect(parseZonedDateTime("2017-04-16T18:54:36+0530")).toBe(instant);
+    expect(parseZonedDateTime("2017-04-16T18:54:36.736-0000")).toBe(Date.parse("2017-04-16T18:54:36.736Z"));
+    expect(readScore({ ...score, timestamp: "2026-11-02T14:55:32+0000" }).timestamp).toBe("2026-11-02T14:55:32+0000");
+    for (const timestamp of [
+      "2017-04-16T18:54:36+0099",
+      "2017-04-16T18:54:36+25",
+      "2017-04-16T18:54:36+053",
+      "2017-04-16T185436+0530",
+    ]) {
       expect(() => readScore({ ...score, timestamp }), timestamp).toThrow(DataError);
     }
   });

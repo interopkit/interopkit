@@ -65,12 +65,18 @@ export function writeExtensions(
 
 /**
  * Reads an ISO 8601 date and time with a time zone designator, which LTI requires of every date, into milliseconds since
- * 1970-01-01T00:00:00Z, with an offset of `+hh` read as `+hh:00` (AGS 3.4.9 prints `+00`).
+ * 1970-01-01T00:00:00Z, with an offset of `+hh` read as `+hh:00` (AGS 3.4.9 prints `+00`) and an offset of `+hhmm` read as
+ * `+hh:mm` (PHP writes `DATE_ISO8601` so, and Moodle posts its scores with it).
  *
  * @returns The instant, or `undefined` when the text is not such a date and time.
  */
 export function parseZonedDateTime(text: string): number | undefined {
-  return parseDateTime(/T.*[+-]\d{2}$/u.test(text) ? `${text}:00` : text);
+  return parseDateTime(
+    text.replace(
+      /(T.*[+-]\d{2})(\d{2})?$/u,
+      (_, head: string, minutes: string | undefined) => `${head}:${minutes ?? "00"}`,
+    ),
+  );
 }
 
 /** Returns whether text is an ISO 8601 date and time with a time zone designator. */
@@ -78,7 +84,7 @@ function isZonedDateTime(text: string): boolean {
   return parseZonedDateTime(text) !== undefined;
 }
 
-/** A date and time with a time zone designator: `Z`, `+hh:mm` or `+hh`. */
+/** A date and time with a time zone designator: `Z`, `+hh:mm`, `+hhmm` or `+hh`. */
 export const DATE_TIME = v.pipe(
   v.string(),
   v.check(isZonedDateTime, (issue) => `expected a date and time with a time zone designator, found ${issue.received}`),

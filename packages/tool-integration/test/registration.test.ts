@@ -255,6 +255,20 @@ describe("the acknowledgment of a platform", () => {
     expect(() => readToolConfiguration(echoed)).toThrow(DataError);
   });
 
+  // Dynamic Registration 1.0 section 2.2 makes the addresses of the registration optional and has them be URLs, and Moodle answers a
+  // registration with `"logo_uri": ""`; an empty address says there is none, so both readers take it as absent.
+  it("takes an empty address of a logo, a client, terms or a policy as absent, in an answer and in a request", () => {
+    const empty = { logo_uri: "", client_uri: "", tos_uri: "", policy_uri: "" };
+    for (const read of [readToolRegistrationResult, readToolConfiguration]) {
+      const value = read({ ...result, ...empty });
+      expect(value.logoUri).toBeUndefined();
+      expect(value.clientUri).toBeUndefined();
+      expect(value.tosUri).toBeUndefined();
+      expect(value.policyUri).toBeUndefined();
+      expect(writeToolConfiguration(value)).not.toHaveProperty("logo_uri");
+    }
+  });
+
   it("is refused without a client or with an address that is http", () => {
     expectRefusals(readToolRegistrationResult, result, [
       ["no client_id", { client_id: undefined }],

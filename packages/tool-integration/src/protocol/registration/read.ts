@@ -186,6 +186,17 @@ const toolLtiSchema = v.pipe(
 
 const TOOL_LOCALIZED = ["client_name", "logo_uri", "client_uri", "tos_uri", "policy_uri"];
 
+/**
+ * An optional address of a registration: an `https` URL, or the empty string, which says there is none. The specification has the
+ * address be a URL when it is present, and Moodle answers a registration with `"logo_uri": ""`.
+ */
+const OPTIONAL_URL = v.optional(
+  v.pipe(
+    v.union([v.literal(""), HTTPS_URL]),
+    v.transform((url) => (url === "" ? undefined : url)),
+  ),
+);
+
 /** The properties of a tool's registration, with the rules of section 2.2.1 on the grants and responses applied when `strict`. */
 function toolEntries(strict: boolean) {
   return {
@@ -196,12 +207,12 @@ function toolEntries(strict: boolean) {
     redirect_uris: v.pipe(v.array(HTTPS_URL), v.minLength(1)),
     client_name: NON_EMPTY_STRING,
     jwks_uri: HTTPS_URL,
-    logo_uri: v.optional(HTTPS_URL),
+    logo_uri: OPTIONAL_URL,
     token_endpoint_auth_method: v.literal("private_key_jwt"),
     contacts: v.optional(STRING_ARRAY),
-    client_uri: v.optional(HTTPS_URL),
-    tos_uri: v.optional(HTTPS_URL),
-    policy_uri: v.optional(HTTPS_URL),
+    client_uri: OPTIONAL_URL,
+    tos_uri: OPTIONAL_URL,
+    policy_uri: OPTIONAL_URL,
     scope: v.optional(STRING),
     [TOOL_LTI]: toolLtiSchema,
   };

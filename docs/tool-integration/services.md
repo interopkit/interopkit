@@ -62,7 +62,8 @@ Property names are those of the specifications in camelCase. A claim name that i
 | Ignores a property that the model does not name                                                              | Every body                                    |
 | Keeps a property named by a URL as an extension, copied as JSON                                              | Line item, score, result, content item, the LTI configurations |
 | Keeps a name such as `__proto__` as data                                                                     | `custom` is a `Map`                           |
-| Reads a date with `Z`, `+hh:mm` or `+hh`, and refuses one without a time zone designator                     | Every date                                    |
+| Reads a date with `Z`, `+hh:mm`, `+hhmm` or `+hh`, and refuses one without a time zone designator            | Every date                                    |
+| Reads an empty address of a logo, a client, terms or a policy as absent                                       | The registration of a tool                    |
 | Reads the translations `name#tag` into `localized`                                                           | Configurations of Dynamic Registration        |
 | Does not apply defaults: `status` of a member, `resultMaximum` and `hidden` stay as sent                     | `Member`, `Result`, `Group`                   |
 

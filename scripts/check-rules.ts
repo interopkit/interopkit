@@ -5385,8 +5385,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A date of a body may have an offset of +hh.",
     file: "packages/tool-integration/src/protocol/claims/body.ts",
-    find: "parseDateTime(/T.*[+-]\\d{2}$/u.test(text) ? `${text}:00` : text)",
-    replace: "parseDateTime(text)",
+    find: '`${head}:${minutes ?? "00"}`',
+    replace: '`${head}:${minutes ?? "xx"}`',
+    test: "packages/tool-integration/test/grades.test.ts",
+  },
+  {
+    rule: "A date of a body may have an offset of +hhmm, which is the minutes that it names.",
+    file: "packages/tool-integration/src/protocol/claims/body.ts",
+    find: '`${head}:${minutes ?? "00"}`',
+    replace: "`${head}:00`",
     test: "packages/tool-integration/test/grades.test.ts",
   },
   {
@@ -5535,6 +5542,13 @@ export const RULES: readonly Rule[] = [
     file: "packages/tool-integration/src/protocol/registration/read.ts",
     find: "(list) => required.every((value) => list.includes(value)),",
     replace: "() => true,",
+    test: "packages/tool-integration/test/registration.test.ts",
+  },
+  {
+    rule: "An optional address of a registration is an https URL, or empty for none.",
+    file: "packages/tool-integration/src/protocol/registration/read.ts",
+    find: 'v.union([v.literal(""), HTTPS_URL]),',
+    replace: "HTTPS_URL,",
     test: "packages/tool-integration/test/registration.test.ts",
   },
   {

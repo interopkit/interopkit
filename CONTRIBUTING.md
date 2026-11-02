@@ -66,6 +66,7 @@ A change to a rule of a specification cites its section in the pull request and 
 | `pnpm adl-lrs`                                                                  | A change to the LRS handler, or to the example that runs it; it needs the packages built first                                 |
 | `pnpm sql-lrs`                                                                  | A change to the readers of Statements, the LRS handler or the client; it needs Docker                                          |
 | `pnpm pylti1p3`                                                                 | A change to the platform role of `tool-integration` or to the launch, token or service routes it serves; it needs Docker and `openssl` |
+| `pnpm moodle`                                                                   | A change to the registration, the launch, the services or Deep Linking of either role of `tool-integration`; it needs Docker, `git` and `openssl` |
 | `pnpm w3c-suites`                                                               | A change to the credentials, their proofs, their status lists or their verification, or to the VC-API service of the example; build and `pnpm schemas` first |
 | `pnpm validator`                                                                | A change to the credentials, their baking or their JWTs, or to the example that makes them; it needs Docker and `pnpm schemas` first |
 

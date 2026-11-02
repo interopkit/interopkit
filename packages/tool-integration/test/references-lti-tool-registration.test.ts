@@ -2,17 +2,13 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SCOPES } from "../src/index.js";
-import {
-  createRegistrationInitiation,
-  type RegisteredTool,
-  type RegistrationStore,
-  toToolRegistration,
-} from "../src/platform/index.js";
+import { createRegistrationInitiation, toToolRegistration } from "../src/platform/index.js";
 import { createTool, launch } from "./references-lti-tool.js";
 import {
   CLOCK,
   connect,
   createReferencePlatform,
+  createRegistrations,
   type Handler,
   PLATFORM,
   type ReferencePlatform,
@@ -34,32 +30,11 @@ const REGISTRATION = {
   launchUri: `${TOOL}/lti/launch`,
 };
 
-/** The registrations of the platform, in memory: each is kept with a deployment, as a platform does that registers and deploys at once. */
-function createRegistrations(): {
-  readonly store: RegistrationStore;
-  readonly registered: Map<string, RegisteredTool>;
-} {
-  const registered = new Map<string, RegisteredTool>();
-  const store: RegistrationStore = {
-    register: async (configuration) => {
-      const tool = {
-        clientId: `registered-${registered.size + 1}`,
-        configuration: { ...configuration, lti: { ...configuration.lti, deploymentId: DEPLOYMENT } },
-      };
-      registered.set(tool.clientId, tool);
-      return tool;
-    },
-    get: async (clientId) => registered.get(clientId),
-    update: async (clientId, configuration) => (registered.has(clientId) ? { clientId, configuration } : undefined),
-  };
-  return { store, registered };
-}
-
 /** A platform that serves Dynamic Registration and a tool that knows no platform, which reach each other through the network. */
 async function createWorld() {
   const systems: Record<string, Handler> = {};
   const network = connect(systems);
-  const registrations = createRegistrations();
+  const registrations = createRegistrations(DEPLOYMENT);
   const platform: ReferencePlatform = await createReferencePlatform({
     algorithm: "RS256",
     tool: referenceTool({ clientId: "registered-by-hand" }),

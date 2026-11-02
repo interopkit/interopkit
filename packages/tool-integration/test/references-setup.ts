@@ -13,6 +13,7 @@ import {
   type PlatformConfig,
   type PlatformEndpoints,
   type PlatformRequestOptions,
+  type RegisteredTool,
   type RegistrationStore,
   type ToolMessageOptions,
   type ToolRegistration,
@@ -187,6 +188,27 @@ export function deepLinkingMessage(origin: string = PLATFORM): MessageInput {
       data: { picker: "reference" },
     },
   };
+}
+
+/** The registrations of the platform, in memory: each is kept with the deployment, as a platform does that registers and deploys at once. */
+export function createRegistrations(deploymentId: string): {
+  readonly store: RegistrationStore;
+  readonly registered: Map<string, RegisteredTool>;
+} {
+  const registered = new Map<string, RegisteredTool>();
+  const store: RegistrationStore = {
+    register: async (configuration) => {
+      const tool = {
+        clientId: `registered-${registered.size + 1}`,
+        configuration: { ...configuration, lti: { ...configuration.lti, deploymentId } },
+      };
+      registered.set(tool.clientId, tool);
+      return tool;
+    },
+    get: async (clientId) => registered.get(clientId),
+    update: async (clientId, configuration) => (registered.has(clientId) ? { clientId, configuration } : undefined),
+  };
+  return { store, registered };
 }
 
 /** What `createReferencePlatform` takes. */

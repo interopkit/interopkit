@@ -1,8 +1,8 @@
 # Evidence for tool-integration
 
 What shows that the package does what it says: the vocabularies and examples of the specifications, tokens that another library
-signs, a round trip between the two roles, tools of other authors that launch from the platform role and use its services, the
-speed of the hot paths, and four runtimes. Each layer answers a question that the one before cannot.
+signs, a round trip between the two roles, tools of other authors that launch from the platform role and use its services, Moodle
+in both roles, the speed of the hot paths, and four runtimes. Each layer answers a question that the one before cannot.
 
 ```mermaid
 flowchart LR
@@ -10,6 +10,8 @@ flowchart LR
   tokens["Tokens that PyJWT signs<br/>pnpm test"] --> trip
   trip --> process["Tools of other authors<br/>in the process of the tests<br/>pnpm test:references"]
   process --> py["PyLTI1p3 in a container<br/>pnpm pylti1p3"]
+  py --> moodle["Moodle in containers,<br/>both roles<br/>pnpm moodle"]
+  moodle --> hand["saLTIre and the reference tool<br/>by hand before a release"]
   trip --> rules["Mutation rules<br/>pnpm check:rules"]
   trip --> speed["Launch, authorization, pages<br/>against jose and JSON.parse<br/>pnpm bench"]
   trip --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
@@ -22,6 +24,8 @@ flowchart LR
 | Round trips        | Does each role take what the other gives, for every message and every service?                        | `examples/tool-integration`, `packages/tool-integration/test/*.test.ts`                         | `pnpm test`             |
 | In-process tools   | Do tools of other authors launch from the platform role and use its services and its registration?    | `packages/tool-integration/test/references*.test.ts`                                            | `pnpm test:references`  |
 | PyLTI1p3           | Does a tool with its own HTTP stack, checks and cache launch from the platform over `https`?          | `validation/pylti1p3/`, `packages/tool-integration/test/pylti1p3.corpus.test.ts`                | `pnpm pylti1p3`         |
+| Moodle             | Does Moodle launch a tool built on the package, and does it use a platform built on the package, with registration, launch, services and Deep Linking? | `validation/moodle/`, `packages/tool-integration/test/moodle.corpus.test.ts` | `pnpm moodle` |
+| Online testers     | Do the testers that 1EdTech and saLTIre host pass the platform and the tool?                           | The log below                                                                                   | By hand before a release |
 | Mutation rules     | Does the test of each rule that keeps a request from being forged, replayed or redirected fail without it? | `scripts/check-rules.ts`                                                                   | `pnpm check:rules`      |
 | Speed              | How long do the launch, the authorization and the reading of a page take, against what they build on? | `packages/tool-integration/test/*.bench.ts`, `test/budgets.ts`                                  | `pnpm bench`            |
 | Runtimes           | Does the example give the same results on each runtime?                                               | `compat/`                                                                                       | `pnpm compat`           |
@@ -72,6 +76,42 @@ pins what the reference does with it.
 | `lti-core`       | Verifies RS256 alone                                                                                                 | Security Framework 7.2: an implementation should support all six approved algorithms, and uses one of them               | A platform that launches this tool signs with RS256                                                                      |
 
 Proctoring Services and the AfA PNP Connector have no counterparty: their examples and round trips are the evidence.
+
+## Moodle
+
+[`validation/moodle/`](../../validation/moodle/README.md) starts Moodle 5.3.0 and its database in containers, and runs both roles of
+the package against it, with the tool and the platform of the package in the process of the tests, over `https`, with a certificate
+authority of the run that Moodle trusts. The flows go through the pages and endpoints that a browser and a tool use; the
+preparation that a person does in the interface (users, a course, an activity, a grade) and the reading of the gradebook go
+through a script of Moodle.
+
+| Moodle is | Flows that pass                                                                                                                                                                                                                                                      |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Platform  | Dynamic Registration from the administrator's page to the activation of the tool; the launch of an activity, the login and the launch compared on `target_link_uri`, also when it has a query of its own; the line item, the container, a created line item and a score, which the gradebook shows; the members of the course; a Deep Linking request answered with an item that Moodle verifies |
+| Tool      | Dynamic Registration from "Register a platform" to the activation of the platform; the launch of a published course, which provisions and enrols the learner; the members that Moodle reads from the roster service; the grade that it posts to the line item                    |
+
+The names of the machine are dotted (`moodle.test`, `tool.example.org`, `platform.example.org`), so that every address passes the
+check of a public host; `serviceOrigins` is not needed.
+
+### What Moodle does differently
+
+| Moodle                                                                                                                  | The specification                                                                               | The package                                                                                                                                             |
+| ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Answers a registration with `"logo_uri": ""`                                                                            | Dynamic Registration 2.2: the addresses are URLs when present                                    | **Fixed.** Both readers of a registration take an empty address as absent ([spec-gaps](spec-gaps.md))                                                  |
+| Posts a score with `"timestamp": "2026-11-02T14:55:32+0000"`, the form of PHP's `DATE_ISO8601`                          | AGS 3.4.8: ISO 8601 with a time zone                                                             | **Fixed.** The readers take `+hhmm` as `+hh:mm` ([spec-gaps](spec-gaps.md))                                                                            |
+| Answers a request for results that carries `limit` with 404 and an HTML page: its code for LTI 1.3 calls a method on `null` (`results.php`, line 238 of 5.3.0) | AGS 3.3: `limit` is optional                                                                    | Not changed. The client sends `limit` by default, and the test pins the 404; a tool reads the score of a user from the gradebook of Moodle                |
+| Names a context role in the roster by its simple name (`Instructor`), where its launch has the URI                      | NRPS 2 and LTI Core Appendix A: both forms exist                                                | Not changed. A member keeps the role as sent; `canonicalizeRole` gives the URI                                                                         |
+| As a tool, ends a launch whose context has no `type` in an error page (`tool_launch_service.php`, line 132)             | LTI Core 5.4.1: `type` is optional                                                              | Not changed. The host of a platform that launches Moodle sends the type, and the test pins the error page                                              |
+
+## Online testers, by hand
+
+saLTIre and the reference tool of 1EdTech (`lti-ri.imsglobal.org`) run on the internet and call the platform and the tool back, so
+a person runs them before a release with the example platform and the example tool on public addresses. The log has one row for
+each run, with the date, the commit that was tested, the tester and the result.
+
+| Date | Commit | Tester | Result |
+| ---- | ------ | ------ | ------ |
+|      |        |        | No run has been made yet |
 
 ## Speed
 
