@@ -33,6 +33,8 @@
     "schemas:pin": "node scripts/schemas.ts pin",
     "spec-examples": "node scripts/spec-examples.ts fetch",
     "spec-examples:pin": "node scripts/spec-examples.ts pin",
+    "caliper-tables": "node scripts/caliper-tables.ts fetch",
+    "caliper-tables:pin": "node scripts/caliper-tables.ts pin",
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
     "prepare": "node scripts/prepare.ts",

@@ -1,1 +1,12 @@
-{}
+{
+  "caliper-spec": {
+    "repository": "1EdTech/caliper-spec",
+    "commit": "60f7cb7398eeabe76dd0a916c53280af0e78f9d5",
+    "sha256": "1b0b81fb9dcc58f3362acaeaccb06acf6a655bb34a7b2fb880216fe1fd77df10",
+    "include": [
+      "fixtures/",
+      "json_schema/",
+      "contexts/"
+    ]
+  }
+}

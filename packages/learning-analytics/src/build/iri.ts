@@ -1,6 +1,5 @@
 import { DataError } from "@interopkit/core";
 import { checkString, describe } from "@interopkit/core/checks";
-import * as v from "valibot";
 
 /**
  * Checks that a value is an absolute IRI, which Caliper requires for every entity.
@@ -16,12 +15,3 @@ export function checkIri(value: unknown, label: string): asserts value is string
     throw new DataError(`${label} must be an absolute IRI, found ${describe(value)}.`);
   }
 }
-
-/** The schema of an absolute IRI. */
-export const iriSchema = v.pipe(
-  v.string(),
-  v.check(
-    (text) => URL.canParse(text),
-    (issue) => `expected an absolute IRI, found ${issue.received}`,
-  ),
-);

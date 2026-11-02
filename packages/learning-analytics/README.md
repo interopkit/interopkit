@@ -1,20 +1,26 @@
 # @interopkit/learning-analytics
 
-[Caliper Analytics 1.2](https://www.imsglobal.org/spec/caliper/v1p2) events and a sensor that sends them to an endpoint. It
-builds the events of the Assessment Profile and the Grading Profile, gives them identifiers that stay the same when an event
-is reported again, and posts them in one envelope with a bearer token. It knows nothing of any product: the host says what
-happened, and which of its events becomes which Caliper event is the host's mapping.
+[Caliper Analytics 1.2](https://www.imsglobal.org/spec/caliper/v1p2) events and entities, and a sensor that sends them to an
+endpoint. It has the model of every entity of Caliper 1.2 and of the Library Use Profile, reads entities that arrive from
+elsewhere, builds events, gives them identifiers that stay the same when an event is reported again, and posts them in one
+envelope with a bearer token. It knows nothing of any product: the host says what happened, and which of its events becomes
+which Caliper event is the host's mapping.
 
 ```mermaid
 flowchart LR
   host["Your application<br/>attempts, scores, sessions"]
   subgraph pkg["@interopkit/learning-analytics"]
+    model["model: 76 entity types,<br/>vocabularies, contexts"]
+    read["readEntity"]
     build["buildEvent, mintUrn,<br/>caliperTime, checkIri"]
     send["sendCaliper"]
   end
   core["@interopkit/core<br/>errors, checks, callService"]
   endpoint[("Caliper endpoint")]
   host -->|"events as plain data"| build
+  host -->|"entities from elsewhere"| read
+  read --> model
+  build --> model
   build --> send
   host -.->|"fetch, signal, time"| send
   send --> core
@@ -33,10 +39,12 @@ npm install @interopkit/learning-analytics
 
 | Subpath                          | Exports                                                                                                                                       |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/learning-analytics` | `buildEvent`, `EventInput`: a checked event with its `@context`                                                                               |
+| `@interopkit/learning-analytics` | `readEntity`: an entity describe from outside, checked against its class and returned as a copy                                               |
+|                                  | `buildEvent`, `EventInput`: a checked event with its `@context`                                                                               |
 |                                  | `mintUrn`: the identifier of an event from the parts that identify it. `caliperTime`: epoch milliseconds as Caliper writes a time. `checkIri` |
 |                                  | `sendCaliper`, `SendCaliperOptions`, `CaliperSender`, `DEFAULT_CALIPER_TIMEOUT_MS`: the sensor                                                |
-|                                  | `CALIPER_CONTEXT`, `CaliperEvent`, `CaliperEntity`, `CaliperEventType`, `CaliperProfile`, `CaliperAction`: the model                          |
+|                                  | An interface for each of the 76 entity types (`Person`, `CourseSection`, `AssessmentItem`, `Score` and the rest), `CaliperEntity`, `EntityDocument`, `Ref`, `Context`, `CaliperEvent` |
+|                                  | `CALIPER_CONTEXT`, `LIBRARY_PROFILE_CONTEXT`, and the vocabularies `ACTIONS`, `PROFILES`, `ROLES`, `STATUSES`, `LTI_MESSAGE_TYPES`, `SYSTEM_IDENTIFIER_TYPES`, `METRICS`, `ENTITY_TYPES`, `EVENT_TYPES` and the ranges `AGENT_TYPES`, `ORGANIZATION_TYPES`, `COURSE_OFFERING_TYPES`, `DIGITAL_RESOURCE_TYPES`, `QUESTION_TYPES`, `SCALE_TYPES` |
 
 ```ts
 import { buildEvent, caliperTime, mintUrn, sendCaliper } from "@interopkit/learning-analytics";
@@ -73,17 +81,19 @@ resend sends the same events, so with the same identifiers, and a new `sendTime`
 
 ## What this version builds
 
-| Part of Caliper 1.2 | Built                                                                                                 |
-| ------------------- | ----------------------------------------------------------------------------------------------------- |
-| Event types         | `AssessmentEvent`, `AssessmentItemEvent`, `NavigationEvent`, `GradeEvent`: 4 of 21                    |
-| Actions             | `Started`, `Paused`, `Resumed`, `Submitted`, `Skipped`, `Completed`, `NavigatedTo`, `Graded`: 8 of 80 |
-| Entity types        | `Person`, `SoftwareApplication`, `Assessment`, `AssessmentItem`, `Attempt`, `Score`: 6 of 69          |
-| Profiles            | Assessment and Grading: 2 of 15, and not every row of their tables                                    |
-| Sensor              | One envelope of events, `POST` with a bearer token, as in section 5                                   |
+| Part of Caliper 1.2          | Built                                                                                               |
+| ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| Entities                     | All 69 of Appendix B, the 2 of Appendix C and the 4 of the Library Use Profile, read and built      |
+| Vocabularies                 | The 82 actions, the 16 profile terms, 57 roles, statuses, LTI message types, identifier types, metrics |
+| Event types                  | `AssessmentEvent`, `AssessmentItemEvent`, `NavigationEvent`, `GradeEvent`: 4 of 21                  |
+| Profiles                     | Their terms; the rules of their tables are not checked yet                                          |
+| Sensor                       | One envelope of events, `POST` with a bearer token, as in section 5                                 |
 
-[The guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/guide.md) lists what is not included
-and why, the options with their defaults, the limits, the errors and what to do about them, and the differences from the
-references. A complete sensor, which sends again after a failure, is in the
+The guides say what each part holds: the [architecture](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/architecture.md),
+the [model](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/model.md), what is
+[supported](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/supported.md) and what is not yet, and
+the places where the [specifications disagree](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/spec-gaps.md).
+A complete sensor, which sends again after a failure, is in the
 [example](https://github.com/interopkit/interopkit/tree/main/examples/learning-analytics#readme).
 
 ## License

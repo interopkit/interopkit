@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { describe, parseDateTime } from "@interopkit/core/checks";
+import { describe } from "@interopkit/core/checks";
 
 /**
  * The last millisecond of the year 9999, in epoch milliseconds: the latest time that the form `YYYY-MM-DDTHH:mm:ss.SSSZ`
@@ -23,13 +23,4 @@ export function caliperTime(at: unknown, label: string): string {
     );
   }
   return new Date(at).toISOString();
-}
-
-const TIME_FORM = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u;
-
-/** Tells whether text is a time in the form that {@link caliperTime} writes, and a date that exists. */
-export function isCaliperTime(text: string): boolean {
-  const at = parseDateTime(text);
-  // The comparison also rejects a leap second, which RFC 3339 allows and `caliperTime` never writes.
-  return at !== undefined && TIME_FORM.test(text) && new Date(at).toISOString() === text;
 }

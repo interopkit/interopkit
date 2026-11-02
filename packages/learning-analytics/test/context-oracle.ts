@@ -75,12 +75,16 @@ function propertyProblems(key: string, value: unknown, path: string, nested: (no
 function nodeProblems(node: unknown, path: string): string[] {
   if (!isRecord(node)) return [`${path}: is not an object`];
   const problems: string[] = [];
-  if (typeof node.id !== "string" || !URL.canParse(node.id)) problems.push(`${path}: id is not an absolute IRI`);
+  // The selector and the system identifier are entities with no id (Caliper 1.2 Appendix C).
+  const hasNoId = node.type === "SystemIdentifier" || node.type === "TextPositionSelector";
+  if (!hasNoId && (typeof node.id !== "string" || !URL.canParse(node.id)))
+    problems.push(`${path}: id is not an absolute IRI`);
   const term = node.type;
   if (typeof term !== "string" || TERMS.get(term) !== `caliper:${term}`)
     problems.push(`${path}: type is not a node type`);
   for (const [key, value] of Object.entries(node)) {
-    if (key === "id" || key === "type") continue;
+    // The extensions are the sender's own, and no term of the context describes them.
+    if (key === "id" || key === "type" || key === "extensions") continue;
     problems.push(...propertyProblems(key, value, `${path}.${key}`, nodeProblems));
   }
   return problems;

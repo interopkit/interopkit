@@ -1,16 +1,17 @@
-import { finiteSchema, parseWith } from "@interopkit/core/checks";
+import { parseWith } from "@interopkit/core/checks";
 import * as v from "valibot";
 import {
+  ACTIONS,
   CALIPER_CONTEXT,
   type CaliperAction,
   type CaliperEntity,
   type CaliperEvent,
   type CaliperEventType,
   type CaliperProfile,
+  EVENT_TYPES,
+  PROFILES,
 } from "../model/index.js";
-import { ACTIONS, ENTITY_TYPES, EVENT_TYPES, PROFILES } from "../model/internal.js";
-import { iriSchema } from "./iri.js";
-import { isCaliperTime } from "./time.js";
+import { entitySchema, iri, time } from "../read/internal.js";
 
 /** What one event says: the properties that Caliper 1.2 section 2.1 requires, and the entity that the action made. */
 export interface EventInput {
@@ -46,27 +47,6 @@ const urnSchema = v.pipe(
   ),
 );
 
-const timeSchema = v.pipe(
-  v.string(),
-  v.check(isCaliperTime, (issue) => `expected a time as YYYY-MM-DDTHH:mm:ss.SSSZ, found ${issue.received}`),
-);
-
-const entitySchema = v.strictObject({
-  id: iriSchema,
-  type: v.picklist(ENTITY_TYPES),
-  name: v.optional(v.string()),
-  isPartOf: v.optional(iriSchema),
-  assignee: v.optional(iriSchema),
-  assignable: v.optional(iriSchema),
-  startedAtTime: v.optional(timeSchema),
-  endedAtTime: v.optional(timeSchema),
-  attempt: v.optional(iriSchema),
-  maxScore: v.optional(finiteSchema),
-  scoreGiven: v.optional(finiteSchema),
-  scoredBy: v.optional(iriSchema),
-  dateCreated: v.optional(timeSchema),
-});
-
 const eventInputSchema = v.strictObject({
   id: urnSchema,
   type: v.picklist(EVENT_TYPES),
@@ -75,8 +55,8 @@ const eventInputSchema = v.strictObject({
   action: v.picklist(ACTIONS),
   object: entitySchema,
   generated: v.optional(entitySchema),
-  eventTime: timeSchema,
-  edApp: iriSchema,
+  eventTime: time,
+  edApp: iri,
 });
 
 /**

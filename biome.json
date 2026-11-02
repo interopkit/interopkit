@@ -547,8 +547,28 @@
               "options": {
                 "patterns": [
                   {
+                    "group": ["**/build", "**/build/**", "**/read", "**/read/**", "**/send", "**/send/**"],
+                    "message": "model/ holds the terms and imports none of build/, read/ and send/: they build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-analytics/src/read/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
                     "group": ["**/build", "**/build/**", "**/send", "**/send/**"],
-                    "message": "model/ holds the terms and imports neither build/ nor send/: they build on it."
+                    "message": "read/ builds on model/ and @interopkit/core only: build/ and send/ build on it."
                   }
                 ]
               }
@@ -1489,6 +1509,9 @@
         "packages/achievement-credentials/src/read/registry.ts",
         "packages/achievement-credentials/src/client/discovery.ts",
         "packages/achievement-credentials/test/**",
+        "packages/learning-analytics/src/read/*-schemas.ts",
+        "packages/learning-analytics/src/model/entities/ranges.ts",
+        "packages/learning-analytics/test/**",
         "packages/learning-records/src/model/**",
         "packages/learning-records/src/read/schemas.ts",
         "packages/learning-records/src/compare/canonical.ts",

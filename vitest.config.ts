@@ -58,11 +58,21 @@ export default defineConfig({
       nodeProject("learning-analytics"),
       nodeProject("selective-disclosure"),
       {
-        // The tests that read the files `pnpm schemas` downloads. `pnpm test` leaves them out and `pnpm test:corpus` runs them.
+        // The tests that read the files `pnpm schemas`, `pnpm corpus` and `pnpm caliper-tables` download. `pnpm test` leaves them
+        // out and `pnpm test:corpus` runs them.
         resolve: { alias: SOURCES },
         test: {
           name: "learning-analytics-corpus",
           include: ["packages/learning-analytics/test/**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The tables and the examples of the Caliper pages: `pnpm caliper-tables` and `pnpm spec-examples` download them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "learning-analytics-spec",
+          include: ["packages/learning-analytics/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
         },
       },

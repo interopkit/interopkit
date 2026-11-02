@@ -1,52 +1,39 @@
-// biome-ignore-all lint/style/useNamingConvention: The terms of Caliper are those of its specification.
-
 import { describe, expect, it } from "vitest";
 import {
+  AGENT_TYPES,
   CALIPER_CONTEXT,
-  type CaliperAction,
-  type CaliperEntity,
-  type CaliperEventType,
-  type CaliperProfile,
+  COURSE_OFFERING_TYPES,
+  DIGITAL_RESOURCE_TYPES,
+  ENTITY_TYPES,
+  LIBRARY_PROFILE_CONTEXT,
+  ORGANIZATION_TYPES,
+  QUESTION_TYPES,
+  SCALE_TYPES,
 } from "../src/index.js";
-import { ACTIONS, ENTITY_TYPES, EVENT_TYPES, PROFILES } from "../src/model/internal.js";
-
-// A record over a type must name every member, so that a term added to the type fails the check of the types until the
-// list of terms and this test follow it.
-const EVENT_TYPE_NAMES: Readonly<Record<CaliperEventType, true>> = {
-  AssessmentEvent: true,
-  AssessmentItemEvent: true,
-  NavigationEvent: true,
-  GradeEvent: true,
-};
-const PROFILE_NAMES: Readonly<Record<CaliperProfile, true>> = { AssessmentProfile: true, GradingProfile: true };
-const ACTION_NAMES: Readonly<Record<CaliperAction, true>> = {
-  Started: true,
-  Paused: true,
-  Resumed: true,
-  Submitted: true,
-  Skipped: true,
-  Completed: true,
-  NavigatedTo: true,
-  Graded: true,
-};
-const ENTITY_TYPE_NAMES: Readonly<Record<CaliperEntity["type"], true>> = {
-  Person: true,
-  SoftwareApplication: true,
-  Assessment: true,
-  AssessmentItem: true,
-  Attempt: true,
-  Score: true,
-};
+import { ENTITY_SCHEMAS } from "../src/read/internal.js";
 
 describe("the model", () => {
-  it("names the context of Caliper 1.2", () => {
+  it("names the context of Caliper 1.2 and the context of the Library Use Profile", () => {
     expect(CALIPER_CONTEXT).toBe("http://purl.imsglobal.org/ctx/caliper/v1p2");
+    expect(LIBRARY_PROFILE_CONTEXT).toBe("http://purl.imsglobal.org/ctx/caliper/v1p2/LibraryProfile-extension");
   });
 
-  it("lists as terms exactly the members of the types of events, profiles, actions and entities", () => {
-    expect([...EVENT_TYPES].sort()).toStrictEqual(Object.keys(EVENT_TYPE_NAMES).sort());
-    expect([...PROFILES].sort()).toStrictEqual(Object.keys(PROFILE_NAMES).sort());
-    expect([...ACTIONS].sort()).toStrictEqual(Object.keys(ACTION_NAMES).sort());
-    expect([...ENTITY_TYPES].sort()).toStrictEqual(Object.keys(ENTITY_TYPE_NAMES).sort());
+  it("has a schema for every entity type and for no other term", () => {
+    expect(Object.keys(ENTITY_SCHEMAS).sort()).toStrictEqual([...ENTITY_TYPES].sort());
+  });
+
+  it("lists no term twice in a vocabulary and names only entity types in a range", () => {
+    expect(new Set(ENTITY_TYPES).size).toBe(ENTITY_TYPES.length);
+    for (const range of [
+      AGENT_TYPES,
+      ORGANIZATION_TYPES,
+      COURSE_OFFERING_TYPES,
+      DIGITAL_RESOURCE_TYPES,
+      QUESTION_TYPES,
+      SCALE_TYPES,
+    ]) {
+      expect(new Set(range).size).toBe(range.length);
+      for (const term of range) expect(ENTITY_TYPES).toContain(term);
+    }
   });
 });

@@ -3,7 +3,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Schema } from "@cfworker/json-schema";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { readSchema, schemaClass, schemaDefinitions, schemaValidator } from "../schema-oracle.ts";
+import {
+  readSchema,
+  readSchemaSet,
+  schemaClass,
+  schemaDefinitions,
+  schemaSetValidator,
+  schemaValidator,
+} from "../schema-oracle.ts";
 
 let root = "";
 
@@ -76,5 +83,46 @@ describe("schemaClass and schemaDefinitions", () => {
     expect(classes.get("A")).toStrictEqual({ properties: ["x"], required: [] });
     expect([...schemaDefinitions({ definitions: { C: {} } }).keys()]).toStrictEqual(["C"]);
     expect([...schemaDefinitions({}).keys()]).toStrictEqual([]);
+  });
+});
+
+describe("readSchemaSet and schemaSetValidator", () => {
+  let set: ReturnType<typeof readSchemaSet>;
+
+  beforeAll(() => {
+    const directory = join(root, "set");
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(
+      join(directory, "Pet.json"),
+      JSON.stringify({
+        schema: "http://json-schema.org/draft-04/schema#",
+        id: "Pet",
+        type: "object",
+        properties: { owner: { anyOf: [{ type: "string" }, { $ref: "Person" }] }, age: { type: "number" } },
+        required: ["owner"],
+      }),
+    );
+    writeFileSync(
+      join(directory, "Person.json"),
+      JSON.stringify({ id: "Person", type: "object", properties: { name: { type: "string" } }, required: ["name"] }),
+    );
+    writeFileSync(join(directory, "notes.txt"), "not a schema");
+    set = readSchemaSet(directory);
+  });
+
+  it("reads the schemas of a directory by the name of their file and ignores other files", () => {
+    expect([...set.keys()].sort()).toStrictEqual(["Person", "Pet"]);
+  });
+
+  it("resolves a reference from one file to another by id, in draft 4", () => {
+    const valid = schemaSetValidator(set, "Pet", "4");
+    expect(valid({ owner: "https://example.org/people/1" })).toBe(true);
+    expect(valid({ owner: { name: "Ada" }, age: 3 })).toBe(true);
+    expect(valid({ owner: { name: 7 } })).toBe(false);
+    expect(valid({})).toBe(false);
+  });
+
+  it("names the schema that the set lacks", () => {
+    expect(() => schemaSetValidator(set, "Fish", "4")).toThrow("The set of schemas has no schema Fish.");
   });
 });

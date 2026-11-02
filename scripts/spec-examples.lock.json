@@ -94,5 +94,15 @@
     "file": "lti-proctoring-1p0.json",
     "sha256": "fe1a869f63d33c5a75a6918962649e6153b940ac31d7864df4f494c31e0ef26c",
     "bodies": true
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/caliper/v1p2",
+    "file": "caliper-1p2.json",
+    "sha256": "abdc2ae19021364f0304a63a4b3bc07303a153bcdf5bcc4bdfaca466805d4f0b"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/caliper-library/v1p2",
+    "file": "caliper-library-1p2.json",
+    "sha256": "416ed8b1d0e221448934cb91df0b1a57a5dcf5a49ea1d9d3caee40f1137dfe6e"
   }
 ]

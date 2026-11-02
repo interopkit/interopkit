@@ -1,22 +1,6 @@
 import type { CALIPER_CONTEXT } from "./context.js";
-import type { CaliperEntity } from "./entity.js";
-
-/** The terms of the Caliper events that this version builds (Caliper 1.2 sections 3.2 and 3.6). */
-export type CaliperEventType = "AssessmentEvent" | "AssessmentItemEvent" | "NavigationEvent" | "GradeEvent";
-
-/** The profile that governs an event (Caliper 1.2 section 2.1, Appendix E). */
-export type CaliperProfile = "AssessmentProfile" | "GradingProfile";
-
-/** The actions of the events that this version builds (Caliper 1.2 Appendix D). */
-export type CaliperAction =
-  | "Started"
-  | "Paused"
-  | "Resumed"
-  | "Submitted"
-  | "Skipped"
-  | "Completed"
-  | "NavigatedTo"
-  | "Graded";
+import type { CaliperEntity } from "./entities/index.js";
+import type { CaliperAction, CaliperEventType, CaliperProfile } from "./terms.js";
 
 /** A Caliper event as JSON-LD (Caliper 1.2 section 2.1). */
 export interface CaliperEvent {

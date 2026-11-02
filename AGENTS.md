@@ -86,7 +86,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                              |
 | `packages/core/src/call-port.ts`     | `callPort`, which turns the failure of a port into a value for a handler                            |
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/` (`claims/`, `message/`, one folder for each service body), `tool/`, `platform/` |
-| `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
+| `packages/learning-analytics/`       | Caliper 1.2: `model/`, `read/`, `build/`, `send/`                                                   |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
@@ -121,7 +121,7 @@ Use these words with these meanings in code, comments and docs.
 | `pnpm check:audit`                                  | `pnpm audit` at high severity                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `pnpm compat`                                       | The scenarios of the examples on Node.js, Deno, Bun and workerd; run `pnpm build` first, and install Deno and Bun or name the runtimes: `pnpm compat node workerd`                                                                                                                                                                                                                                                                           |
 | `pnpm docs:api`                                     | Builds, then TypeDoc into `docs/api`, which reads the packages through their `dist`; fails on undocumented exports                                                                                                                                                                                                                                                                                                                           |
-| `pnpm corpus`, `pnpm schemas`, `pnpm spec-examples` | Download the pinned repositories, files and specification examples that tests read into `.cache/`; `pnpm corpus:pin`, `pnpm schemas:pin` and `pnpm spec-examples:pin` write new hashes. `pnpm test:corpus` runs after `pnpm schemas`, and `pnpm test:spec` after `pnpm spec-examples` and `pnpm schemas`                                                                                                                                     |
+| `pnpm corpus`, `pnpm schemas`, `pnpm spec-examples`, `pnpm caliper-tables` | Download the pinned repositories, files, specification examples and the tables of the Caliper pages that tests read into `.cache/`; `pnpm corpus:pin`, `pnpm schemas:pin`, `pnpm spec-examples:pin` and `pnpm caliper-tables:pin` write new hashes. `pnpm test:corpus` runs after `pnpm schemas`, `pnpm corpus` and `pnpm caliper-tables`, and `pnpm test:spec` after `pnpm spec-examples`, `pnpm caliper-tables` and `pnpm schemas`                                                                                                                                     |
 
 Run all of them before finishing a change. CI runs each job of `.github/workflows/ci.yml` on a fresh clone with nothing but
 `pnpm install`, so a gate can pass on a working copy that holds a `dist/` or a `.cache/` that an earlier gate left, and fail in
@@ -188,7 +188,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   a verifier of JWTs free of JSON-LD), and `refresh/` imports `model/` and `core` only, and `verify/` builds on all of them but `baking/` and `client/`, imports `data-integrity/` only dynamically, and is imported by no module. In `learning-records`, `model/` imports no other module,
   `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
   `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
-  `model/`, `read/`, `compare/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. Imports never form cycles.
+  `model/`, `read/`, `compare/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. In `learning-analytics`, `model/`
+  imports no other module, `read/` builds on `model/`, `build/` on both, and `send/` on `model/`. Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -318,6 +319,10 @@ Where the code departs from `STANDARDS.md`, with the reason.
   `scripts/schema-oracle.ts` and `scripts/schema-arbitrary.ts`: its classes and properties are derived from the schemas, and
   generated values and values with one change get the verdict of the schemas. Each difference is in `spec-gaps.md` and pinned
   by a test.
+- The classes, properties and vocabularies of a standard whose pages print them as tables are compared with those tables in a
+  `*.spec.test.ts` (`scripts/caliper-tables.ts` reads the pages and pins the tables, not the bytes of the page). Where the JSON schemas
+  are looser than the tables, the generator of a `*.corpus.test.ts` narrows the schema by the tables, and each difference is in
+  `spec-gaps.md`.
 - The examples that a specification prints are read in a `*.spec.test.ts` with `readSpecPage`, from a page or, when the address
   ends in `.md`, from the fenced blocks of a Markdown file; one that is not conformant is pinned with its findings and
   recorded in `spec-gaps.md`.

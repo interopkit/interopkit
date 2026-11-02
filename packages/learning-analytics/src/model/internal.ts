@@ -3,4 +3,5 @@
  *
  * @module
  */
-export { ACTIONS, ENTITY_TYPES, EVENT_TYPES, PROFILES } from "./terms.js";
+export type { Context } from "./context.js";
+export * from "./terms.js";

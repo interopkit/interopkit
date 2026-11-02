@@ -206,21 +206,20 @@ describe("buildEvent", () => {
     expect(event.generated).not.toBe(input.generated);
   });
 
-  it("builds an event of every type, profile and action that the model names, and every entity property", () => {
+  it("builds an event of every type, profile and action that the build names, and every property of a score", () => {
     const entity: CaliperEntity = {
       id: "https://exam.example/scores/1",
       type: "Score",
       name: "Score 1",
-      isPartOf: ASSESSMENT,
-      assignee: ACTOR,
-      assignable: ASSESSMENT,
-      startedAtTime: "2023-11-14T22:13:20.000Z",
-      endedAtTime: "2023-11-14T22:14:20.000Z",
+      description: "The score of the first attempt",
       attempt: "urn:uuid:3f0c8a8e-7b8e-4b6a-9c1d-2a4f6e8b0c1d",
       maxScore: 10,
       scoreGiven: 7.5,
       scoredBy: "https://exam.example/raters/1",
+      comment: "Well done",
       dateCreated: "2023-11-14T22:15:20.000Z",
+      dateModified: "2023-11-14T22:16:20.000Z",
+      extensions: { rubric: "A" },
     };
     const event = buildEvent({
       ...startedInput(),
@@ -244,11 +243,11 @@ describe("buildEvent", () => {
     ["an id that is not a UUID URN", (i) => ({ ...i, id: "https://exam.example/events/1" }), "at id"],
     ["an id as a number", (i) => ({ ...i, id: 5 }), "at id"],
     ["a type that is not built", (i) => ({ ...i, type: "MediaEvent" }), "at type"],
-    ["a profile that is not built", (i) => ({ ...i, profile: "MediaProfile" }), "at profile"],
+    ["a profile that is not a profile of Caliper", (i) => ({ ...i, profile: "PlayProfile" }), "at profile"],
     ["an action that is not built", (i) => ({ ...i, action: "Began" }), "at action"],
     ["an actor that is an IRI", (i) => ({ ...i, actor: ACTOR }), "at actor"],
     ["an actor whose id is relative", (i) => ({ ...i, actor: { id: "person-1", type: "Person" } }), "at actor.id"],
-    ["an actor of an unknown type", (i) => ({ ...i, actor: { id: ACTOR, type: "Robot" } }), "at actor.type"],
+    ["an actor of an unknown type", (i) => ({ ...i, actor: { id: ACTOR, type: "Robot" } }), "at actor"],
     [
       "an object with a property that is not built",
       (i) => ({ ...i, object: { id: ASSESSMENT, type: "Assessment", dateToSubmit: "x" } }),

@@ -1,32 +1,74 @@
 import { describe, expect, it } from "vitest";
-import { buildEvent, type CaliperEntity, type CaliperEvent, caliperTime, mintUrn, sendCaliper } from "../src/index.js";
-import { ACTIONS, ENTITY_TYPES, EVENT_TYPES, PROFILES } from "../src/model/internal.js";
+import {
+  ACTIONS,
+  buildEvent,
+  type CaliperEvent,
+  caliperTime,
+  ENTITY_TYPES,
+  EVENT_TYPES,
+  LTI_MESSAGE_TYPES,
+  METRICS,
+  mintUrn,
+  PROFILES,
+  ROLES,
+  type Score,
+  STATUSES,
+  SYSTEM_IDENTIFIER_TYPES,
+  sendCaliper,
+} from "../src/index.js";
 import { envelopeProblems, eventProblems, TERMS } from "./context-oracle.js";
 import { ACTOR, ASSESSMENT, eventAt, fakeEndpoint, SENDER, startedInput, urnOf } from "./fixture.js";
 
-/** An entity with every property that the model has: `Required` fails the check of the types when one is missing. */
-const FULL_ENTITY: Required<CaliperEntity> = {
+/** A score with every property that the model has: `Required` fails the check of the types when one is missing. */
+const FULL_ENTITY: Required<Omit<Score, "@context">> = {
   id: "https://exam.example/scores/1",
   type: "Score",
   name: "Score 1",
-  isPartOf: ASSESSMENT,
-  assignee: ACTOR,
-  assignable: ASSESSMENT,
-  startedAtTime: "2023-11-14T22:13:20.000Z",
-  endedAtTime: "2023-11-14T22:14:20.000Z",
+  description: "The score of the first attempt",
   attempt: urnOf("attempt", "s-1"),
   maxScore: 10,
   scoreGiven: 7.5,
   scoredBy: "https://exam.example/raters/1",
+  comment: "Well done",
   dateCreated: "2023-11-14T22:15:20.000Z",
+  dateModified: "2023-11-14T22:16:20.000Z",
+  otherIdentifiers: [{ type: "SystemIdentifier", identifier: "s-1", identifierType: "Other" }],
+  extensions: { rubric: "A" },
 };
 
 describe("the published JSON-LD context of Caliper 1.2", () => {
-  it("defines the term of every event type, profile, action and entity type that the model names", () => {
-    for (const term of EVENT_TYPES) expect(TERMS.get(term), term).toBe(`caliper:${term}`);
-    for (const term of ENTITY_TYPES) expect(TERMS.get(term), term).toBe(`caliper:${term}`);
-    for (const term of PROFILES) expect(TERMS.get(term), term).toBe(`caliper:profiles/${term}`);
-    for (const term of ACTIONS) expect(TERMS.get(term), term).toBe(`caliper:actions/${term}`);
+  it("defines every term of the model, but those that the context and the specification disagree on", () => {
+    const missing = (terms: readonly string[]) => terms.filter((term) => !TERMS.has(term));
+    expect(missing(EVENT_TYPES)).toStrictEqual([]);
+    expect(missing(PROFILES)).toStrictEqual(["LibraryProfile", "SurveyProfile"]);
+    expect(missing(ROLES)).toStrictEqual(["Manager#Manager"]);
+    // The context of the Library Use Profile answers 404, and the context of Caliper 1.2 lacks two actions of Appendix D.
+    expect(missing(ACTIONS)).toStrictEqual([
+      "Accessed",
+      "Attended",
+      "DisabledClosedCaptioning",
+      "EnabledClosedCaptioning",
+    ]);
+    expect(missing(ENTITY_TYPES)).toStrictEqual(["Library", "LibraryActivity", "LibraryResource", "LibrarySpace"]);
+    expect(missing(SYSTEM_IDENTIFIER_TYPES)).toStrictEqual([
+      "Barcode",
+      "DeweyDecimalCallNumber",
+      "DigitalObjectIdentifier",
+      "InternationalStandardBookNumber",
+      "InternationalStandardSerialNumber",
+      "LibGuideID",
+      "LibraryCongressCallNumber",
+      "OCLCNumber",
+      "PubMedID",
+      "SuperintendentDocumentsClassification",
+    ]);
+    expect(missing([...STATUSES, ...LTI_MESSAGE_TYPES, ...METRICS])).toStrictEqual([]);
+    for (const term of PROFILES.filter((name) => TERMS.has(name)))
+      expect(TERMS.get(term), term).toBe(`caliper:profiles/${term}`);
+    for (const term of ENTITY_TYPES.filter((name) => TERMS.has(name)))
+      expect(TERMS.get(term), term).toBe(`caliper:${term}`);
+    for (const term of ACTIONS.filter((name) => TERMS.has(name)))
+      expect(TERMS.get(term), term).toBe(`caliper:actions/${term}`);
   });
 
   it("accepts an event with every property of an entity and every property of an event", () => {

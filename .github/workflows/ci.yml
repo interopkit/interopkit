@@ -226,9 +226,13 @@ jobs:
           else
             pnpm test "${projects[@]}"
           fi
-      # The tests that read the files that pnpm schemas downloads at their pinned hashes.
+      # The tests that read the files that pnpm schemas, pnpm corpus and pnpm caliper-tables download at their pinned hashes.
       - if: needs.changes.outputs.projects != ''
         run: pnpm schemas
+      - if: needs.changes.outputs.projects != ''
+        run: pnpm corpus
+      - if: needs.changes.outputs.projects != ''
+        run: pnpm caliper-tables
       - if: needs.changes.outputs.projects != ''
         run: pnpm test:corpus
 
@@ -246,6 +250,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm spec-examples
+      # The tables of the Caliper pages, which the tests of learning-analytics compare the model with.
+      - run: pnpm caliper-tables
       # The test vectors of the cryptosuite read the contexts that pnpm schemas downloads.
       - run: pnpm schemas
       - run: pnpm test:spec
