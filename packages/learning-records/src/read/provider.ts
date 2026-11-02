@@ -109,17 +109,17 @@ export function providerResultIssues(result: Result, path: string): StatementIss
   ];
 }
 
-/** Collects the properties of a value of JSON whose value is an empty object, leaving the values of extensions alone. */
-function emptyObjects(value: unknown, path: string, issues: StatementIssue[]): void {
+/** Lists the properties of a value of JSON whose value is an empty object, leaving the values of extensions alone. */
+function* emptyObjects(value: unknown, path: string): Generator<StatementIssue> {
   if (Array.isArray(value)) {
-    for (const [index, entry] of value.entries()) emptyObjects(entry, item(path, index), issues);
+    for (const [index, entry] of value.entries()) yield* emptyObjects(entry, item(path, index));
   } else if (isRecord(value)) {
     for (const [name, property] of Object.entries(value)) {
       const at = member(path, name);
-      if (isRecord(property) && !Array.isArray(property) && Object.keys(property).length === 0) {
-        issues.push(warning(at, "empty-object", "expected the property to be left out, found an empty object."));
+      if (isRecord(property) && Object.keys(property).length === 0) {
+        yield warning(at, "empty-object", "expected the property to be left out, found an empty object.");
       } else if (name !== "extensions") {
-        emptyObjects(property, at, issues);
+        yield* emptyObjects(property, at);
       }
     }
   }
@@ -129,10 +129,8 @@ function emptyObjects(value: unknown, path: string, issues: StatementIssue[]): v
  * Judges a Statement for properties whose value is an empty object, which a provider of 2.0 should leave out (5.2.4.1) and a
  * Statement of 1.0.3 should not include (Data 2.2).
  */
-export function emptyObjectIssues(statement: Statement): StatementIssue[] {
-  const issues: StatementIssue[] = [];
-  emptyObjects(statement, "", issues);
-  return issues;
+export function emptyObjectIssues(statement: Statement): Iterable<StatementIssue> {
+  return emptyObjects(statement, "");
 }
 
 /**
@@ -142,20 +140,16 @@ export function emptyObjectIssues(statement: Statement): StatementIssue[] {
  *
  * @param input - A Statement or a SubStatement that has passed the schema.
  */
-export function singleActivityIssues(input: unknown, path: string): StatementIssue[] {
-  if (!isRecord(input)) return [];
-  const issues: StatementIssue[] = [];
+export function* singleActivityIssues(input: unknown, path: string): Generator<StatementIssue> {
+  if (!isRecord(input)) return;
   const base = member(member(path, "context"), "contextActivities");
   const activities = isRecord(input.context) ? input.context.contextActivities : undefined;
   for (const [type, value] of Object.entries(isRecord(activities) ? activities : {})) {
     if (!Array.isArray(value)) {
-      issues.push(
-        warning(member(base, type), "single-activity", "expected a list of Activities, found a single Activity."),
-      );
+      yield warning(member(base, type), "single-activity", "expected a list of Activities, found a single Activity.");
     }
   }
   if (isRecord(input.object) && input.object.objectType === "SubStatement") {
-    issues.push(...singleActivityIssues(input.object, member(path, "object")));
+    yield* singleActivityIssues(input.object, member(path, "object"));
   }
-  return issues;
 }

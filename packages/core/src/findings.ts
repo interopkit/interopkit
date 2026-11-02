@@ -39,6 +39,14 @@ export interface FindingSink<TFinding extends Finding> {
   list(): TFinding[];
 }
 
+/** Changes each finding as it is read, so that a list which stopped reads no further. */
+function* placedFindings<TFinding extends Finding>(
+  findings: Iterable<TFinding>,
+  place: (finding: TFinding) => TFinding,
+): Generator<TFinding> {
+  for (const finding of findings) yield place(finding);
+}
+
 /**
  * Makes a list of findings that stops at a limit, so that a value which is wrong in a million places costs the memory of a
  * limit and not of a million.
@@ -80,11 +88,7 @@ export function createFindingSink<TFinding extends Finding>(
         get stopped() {
           return sink.stopped;
         },
-        add: (findings) => {
-          const placed: TFinding[] = [];
-          for (const finding of findings) placed.push(place(finding));
-          sink.add(placed);
-        },
+        add: (findings) => sink.add(placedFindings(findings, place)),
         within: (inner) => sink.within((finding) => place(inner(finding))),
         list: () => sink.list(),
       };

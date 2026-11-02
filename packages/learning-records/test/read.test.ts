@@ -408,6 +408,36 @@ describe("the limit of findings", () => {
     expect(duplicates[0]?.rule).toBe("duplicate-id");
   });
 
+  it.each([
+    ["the members of a Group", (n: number) => ({ objectType: "Group", member: Array.from({ length: n }, () => ({})) })],
+  ])("stops at the limit in %s, the rules included, without keeping what is beyond it", (_name, actor) => {
+    const findings = validateStatement({ ...minimalStatement(), actor: actor(500_000) });
+    expect(findings).toHaveLength(1001);
+    expect(findings.at(-1)).toStrictEqual(stopped);
+  });
+
+  it.each([
+    [
+      "the components of an interaction",
+      { interactionType: "choice", choices: Array.from({ length: 500_000 }, () => ({ id: "a b" })) },
+    ],
+    [
+      "the patterns of an interaction",
+      { interactionType: "true-false", correctResponsesPattern: Array.from({ length: 500_000 }, () => "x") },
+    ],
+  ])("reads a Statement with %s that warn, however many, without a stack overflow", (_name, definition) => {
+    const statement = { ...minimalStatement(), object: { id: "https://example.org/a", definition } };
+    expect(validateStatement(statement)).toHaveLength(1001);
+    expect(readStatement(statement).verb).toStrictEqual(minimalStatement().verb);
+    expect(validateStatements([statement])).toHaveLength(1001);
+  });
+
+  it("stops at the limit among the empty objects of a Statement of 1.0.3", () => {
+    const empty = Array.from({ length: 5000 }, () => ({ id: "https://example.org/a", definition: {} }));
+    const statement = { ...minimalStatement(), context: { contextActivities: { other: empty } } };
+    expect(validateStatement(statement, { version: "1.0.3" })).toHaveLength(1001);
+  });
+
   it("counts the errors of a reader alone, and makes it refuse when they stopped the check", () => {
     expect(() => readStatement(withAgents(50), { maxFindings: 2 })).toThrow(
       "At least 1 more error: the check stopped at its limit, and validateStatement with a higher maxFindings lists more.",

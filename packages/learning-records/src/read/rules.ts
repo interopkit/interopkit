@@ -1,3 +1,4 @@
+import type { FindingSink } from "@interopkit/core/checks";
 import type { Statement, StatementIssue } from "../model/index.js";
 import { error } from "./finding.js";
 import { identifierIssues } from "./identifiers.js";
@@ -29,38 +30,43 @@ function versionIssues(statement: Statement): StatementIssue[] {
 
 /**
  * Judges a Statement that has the shape of the model against the rules between its properties, for the rules of an LRS or of
- * a Learning Record Provider, in a version.
+ * a Learning Record Provider, in a version. The findings go to the sink as they are found, so that a value wrong in a million
+ * places costs the memory of the limit.
  *
  * @param statement - The Statement, read by the schema of the version.
  * @param rules - Whose rules apply, and of which version.
  * @param input - The Statement as it was given, for the rules that the reading changes: a single Activity of a context becomes a list.
+ * @param sink - Takes the findings.
  */
-export function ruleIssues(statement: Statement, rules: RuleSet, input: unknown): StatementIssue[] {
-  const issues: StatementIssue[] = [];
+export function judgeRules(
+  statement: Statement,
+  rules: RuleSet,
+  input: unknown,
+  sink: FindingSink<StatementIssue>,
+): void {
   const { role, version } = rules;
   const provider = role === "provider";
   walkStatement(statement, {
     statement(node, path) {
-      issues.push(...relationIssues(node, path));
+      sink.add(relationIssues(node, path));
       if (provider) {
-        issues.push(...providerTimeIssues(node, path, version));
-        if (!isSubStatement(node)) issues.push(...providerStatementIssues(node, version));
+        sink.add(providerTimeIssues(node, path, version));
+        if (!isSubStatement(node)) sink.add(providerStatementIssues(node, version));
       }
     },
     actor(node, path) {
-      issues.push(...identifierIssues(node, path));
+      sink.add(identifierIssues(node, path));
     },
     activity(node, path) {
-      issues.push(...interactionIssues(node, path, rules));
+      sink.add(interactionIssues(node, path, rules));
     },
     result(node, path) {
-      issues.push(...resultIssues(node, path));
-      if (provider) issues.push(...providerResultIssues(node, path));
+      sink.add(resultIssues(node, path));
+      if (provider) sink.add(providerResultIssues(node, path));
     },
   });
-  if (version === "1.0.3" && !provider) issues.push(...versionIssues(statement));
+  if (version === "1.0.3" && !provider) sink.add(versionIssues(statement));
   // 2.0 asks a provider to leave out an empty object (5.2.4.1); 1.0.3 asks it of every Statement (Data 2.2).
-  if (provider || version === "1.0.3") issues.push(...emptyObjectIssues(statement));
-  if (provider) issues.push(...singleActivityIssues(input, ""));
-  return issues;
+  if (provider || version === "1.0.3") sink.add(emptyObjectIssues(statement));
+  if (provider) sink.add(singleActivityIssues(input, ""));
 }

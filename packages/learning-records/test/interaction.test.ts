@@ -81,10 +81,10 @@ describe("the response patterns of the interaction types", () => {
 
 describe("the Activities of a context that a provider wrote as one", () => {
   it("are found in the input, and nothing is found in a value that is not an object", () => {
-    expect(singleActivityIssues(null, "")).toStrictEqual([]);
-    expect(singleActivityIssues("text", "")).toStrictEqual([]);
-    expect(singleActivityIssues([], "")).toStrictEqual([]);
-    expect(singleActivityIssues({ context: 5 }, "")).toStrictEqual([]);
-    expect(singleActivityIssues({ context: { contextActivities: { parent: [{}] } } }, "")).toStrictEqual([]);
+    expect([...singleActivityIssues(null, "")]).toStrictEqual([]);
+    expect([...singleActivityIssues("text", "")]).toStrictEqual([]);
+    expect([...singleActivityIssues([], "")]).toStrictEqual([]);
+    expect([...singleActivityIssues({ context: 5 }, "")]).toStrictEqual([]);
+    expect([...singleActivityIssues({ context: { contextActivities: { parent: [{}] } } }, "")]).toStrictEqual([]);
   });
 });

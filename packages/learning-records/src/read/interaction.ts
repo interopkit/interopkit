@@ -36,53 +36,53 @@ const COMPONENT_LISTS: Readonly<Record<InteractionType, readonly ComponentList[]
  * for an interaction and need not (1.0.3 Data 2.4.4.1), so for an LRS a repeated id is a warning in either version, and for a
  * provider of 1.0.3 an error.
  */
-function componentIssues(components: readonly InteractionComponent[], path: string, rules: RuleSet): StatementIssue[] {
+function* componentIssues(
+  components: readonly InteractionComponent[],
+  path: string,
+  rules: RuleSet,
+): Generator<StatementIssue> {
   const repeated = rules.version === "1.0.3" && rules.role === "provider" ? error : warning;
-  const issues: StatementIssue[] = [];
   const seen = new Set<string>();
   for (const [index, component] of components.entries()) {
     const at = member(item(path, index), "id");
     if (/\s/u.test(component.id)) {
-      issues.push(
-        warning(at, "component-id-whitespace", "expected an id with no white space, which an LRS should not accept."),
+      yield warning(
+        at,
+        "component-id-whitespace",
+        "expected an id with no white space, which an LRS should not accept.",
       );
     }
     if (seen.has(component.id)) {
-      issues.push(
-        repeated(
-          at,
-          "duplicate-component-id",
-          `expected an id that identifies the component in its list, found ${JSON.stringify(component.id)} again.`,
-        ),
+      yield repeated(
+        at,
+        "duplicate-component-id",
+        `expected an id that identifies the component in its list, found ${JSON.stringify(component.id)} again.`,
       );
     }
     seen.add(component.id);
   }
-  return issues;
 }
 
 /** Judges the lists of components of a definition against the type of the interaction. */
-function listIssues(
+function* listIssues(
   definition: ActivityDefinition,
   type: InteractionType,
   path: string,
   rules: RuleSet,
-): StatementIssue[] {
+): Generator<StatementIssue> {
   const allowed = COMPONENT_LISTS[type];
-  const issues: StatementIssue[] = [];
   for (const name of ALL_LISTS) {
     const list = definition[name];
     if (list === undefined) continue;
     if (allowed.includes(name)) {
-      issues.push(...componentIssues(list, member(path, name), rules));
+      yield* componentIssues(list, member(path, name), rules);
       continue;
     }
     const lists = allowed.length === 0 ? "no list of components" : `the lists ${allowed.join(" and ")}`;
     const message = `a ${type} interaction has ${lists}, found ${name}.`;
     const finding = rules.role === "provider" ? error : warning;
-    issues.push(finding(member(path, name), "unsupported-component-list", message));
+    yield finding(member(path, name), "unsupported-component-list", message);
   }
-  return issues;
 }
 
 /**
@@ -91,30 +91,28 @@ function listIssues(
  * (4.2.4.2), so it is a warning for an LRS and an error for a provider, which shall not add properties (5.2.1). A response
  * pattern that does not have the form of its type is a warning, since an LRS does not validate patterns (4.2.2.3).
  */
-export function interactionIssues(activity: Activity, path: string, rules: RuleSet): StatementIssue[] {
+export function* interactionIssues(activity: Activity, path: string, rules: RuleSet): Generator<StatementIssue> {
   const { definition } = activity;
-  if (definition === undefined) return [];
+  if (definition === undefined) return;
   const base = member(path, "definition");
   const { interactionType, correctResponsesPattern = [] } = definition;
   if (interactionType === undefined) {
     const interactive =
       definition.correctResponsesPattern !== undefined || ALL_LISTS.some((name) => definition[name] !== undefined);
-    return interactive
-      ? [
-          error(
-            member(base, "interactionType"),
-            "missing-property",
-            'missing the property "interactionType", which an interaction needs.',
-          ),
-        ]
-      : [];
+    if (interactive) {
+      yield error(
+        member(base, "interactionType"),
+        "missing-property",
+        'missing the property "interactionType", which an interaction needs.',
+      );
+    }
+    return;
   }
-  const issues = listIssues(definition, interactionType, base, rules);
+  yield* listIssues(definition, interactionType, base, rules);
   for (const [index, pattern] of correctResponsesPattern.entries()) {
     const problem = patternProblem(interactionType, pattern);
     if (problem !== undefined) {
-      issues.push(warning(item(member(base, "correctResponsesPattern"), index), "response-pattern", `${problem}.`));
+      yield warning(item(member(base, "correctResponsesPattern"), index), "response-pattern", `${problem}.`);
     }
   }
-  return issues;
 }
