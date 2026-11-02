@@ -221,7 +221,7 @@ describe("the alternate request syntax", () => {
     const fields = Object.fromEntries(Array.from({ length: 33 }, (_, index) => [`name${index}`, "x"]));
     const answer = await send(memory(), alternate("GET", "/statements", fields));
     expect(answer.status).toBe(400);
-    expect(reasonOf(answer)).toBe("The form has 33 parameters, above the limit of 32.");
+    expect(reasonOf(answer)).toBe("The form has more than 32 parameters.");
   });
 
   it("takes a form of as many parameters as the limit", async () => {

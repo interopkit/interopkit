@@ -3770,7 +3770,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A form of more parameters than the limit is refused unread.",
     file: "packages/learning-records/src/store/alternate-syntax.ts",
-    find: "if (fields > MAX_FIELDS) return refused(400, `The form has ${fields} parameters, above the limit of ${MAX_FIELDS}.`);",
+    find: "if (hasTooManyFields(request.body)) return refused(400, `The form has more than ${MAX_FIELDS} parameters.`);",
     replace: "",
     test: "packages/learning-records/test/v1-alternate.test.ts",
   },

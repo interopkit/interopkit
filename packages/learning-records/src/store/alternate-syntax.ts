@@ -37,6 +37,19 @@ const AMPERSAND = 0x26;
 /** The type of the content when the form does not name one: the content of the requests of an LRS is JSON but for documents. */
 const JSON_TYPE = "application/json";
 
+/**
+ * Tells whether a form has more parameters than the limit. It finds the separators in the bytes and stops at the first beyond
+ * the limit, so that it allocates nothing: a `for...of` over a body of 10 MiB would make an iterator result for each byte.
+ */
+function hasTooManyFields(body: Uint8Array): boolean {
+  let fields = 1;
+  for (let at = body.indexOf(AMPERSAND); at >= 0; at = body.indexOf(AMPERSAND, at + 1)) {
+    fields += 1;
+    if (fields > MAX_FIELDS) return true;
+  }
+  return false;
+}
+
 /** Tells whether a request uses the alternate request syntax: a POST whose query names a method. */
 export function isAlternateRequest(request: HttpRequest): boolean {
   return request.method === "POST" && new URL(request.url).searchParams.has(METHOD);
@@ -101,8 +114,6 @@ export function readAlternateRequest(request: HttpRequest, maxBytes: number): Ve
   if (request.body.byteLength > maxBytes) {
     return refused(413, `The body has ${request.body.byteLength} bytes, above the limit of ${maxBytes} bytes.`);
   }
-  let fields = 1;
-  for (const byte of request.body) if (byte === AMPERSAND) fields += 1;
-  if (fields > MAX_FIELDS) return refused(400, `The form has ${fields} parameters, above the limit of ${MAX_FIELDS}.`);
+  if (hasTooManyFields(request.body)) return refused(400, `The form has more than ${MAX_FIELDS} parameters.`);
   return attempt(() => carried(request));
 }
