@@ -13,7 +13,8 @@ flowchart LR
   have --> vocab["Vocabularies: actions, profiles, roles, statuses,<br/>LTI message types, identifier types, metrics"]
   have --> ctx["Contexts: one, a list that ends with Caliper's,<br/>and inline"]
   have --> prof["Profile rules: 91 rows, the General Profile,<br/>the certification guide, findings"]
-  next --> later["The endpoint, version 1.1"]
+  have --> wire["Transport: mixed data, optional token,<br/>size limit, ping, the endpoint role"]
+  next --> later["Version 1.1 at the endpoint"]
 ```
 
 | Construct                                                  | Built | Where                                           |
@@ -33,7 +34,9 @@ flowchart LR
 | The 91 rows of the profile tables, the General Profile, the Library Use Profile | Yes | `validateEvent`, `buildEvent`; [judging events](./validate.md) |
 | The event conformance tables of the certification guide    | Yes      | Same                                            |
 | The recommendations of the profiles (generated entity, properties of an attempt, a score, a result and a timeout session) | Yes | Same |
-| Sensor: one envelope of events with a bearer token         | Yes      | `sendCaliper`; [sending events](./send.md)      |
+| Sensor: one envelope of events and entity describes, mixed, with an optional bearer token | Yes | `sendCaliper`; [sending events](./send.md) |
+| Sensor: the maximum payload size of the endpoint, and the ping of section 6.2 | Yes | `maxPayloadBytes`, `pingEndpoint`, `EndpointConfiguration` |
+| Endpoint: 200, 400, 401, 405, 413, 415, 422 and 500 in a fixed order, the configuration of a GET | Yes | `handleCaliperRequest`, `readEnvelope`; [receiving events](./endpoint.md) |
 
 ```ts
 import { ACTIONS, ENTITY_TYPES, EVENT_TYPES, PROFILES } from "@interopkit/learning-analytics";
@@ -44,12 +47,9 @@ ENTITY_TYPES.length; // => 76
 PROFILES.length; // => 16
 ```
 
-## Not yet built
+## Not built
 
-| What                                                                                                       | Why                                                              |
-| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Entity describes and a mix of events and entities in `data` of an envelope                                 | Built with the transport                                         |
-| Reading the configuration of an endpoint (section 6.2), `caliperMaximumPayloadSize`, splitting an envelope | Built with the transport                                         |
-| The endpoint role: reading an envelope and answering 2xx, 400, 401, 415 and 422 (section 6)                | Built with the transport                                         |
-| Caliper 1.1 at the endpoint                                                                                | Read, never written                                              |
-| A send without a bearer token                                                                              | The code requires one; the specification recommends it           |
+| What                                                   | Why                                                                                             |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Caliper 1.1 at the endpoint                            | Read, never written: an envelope of 1.1 is answered 422 until the version routing is built      |
+| Splitting an envelope that is too large                | The host decides how to batch: `maxPayloadBytes` refuses an envelope that is too large          |

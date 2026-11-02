@@ -24,6 +24,11 @@ export const ADVISED: ReadonlyMap<string, readonly string[]> = new Map([
 /** The properties that the session profile advises of the session that a timeout ends. */
 const TIMED_OUT_SESSION: readonly string[] = ["user", "startedAtTime", "endedAtTime", "duration"];
 
+/** Writes a class with its article for a sentence: `an Attempt`, `a Score`. */
+export function articled(type: string): string {
+  return `${/^[AEIOU]/u.test(type) ? "an" : "a"} ${type}`;
+}
+
 /** Lists the advised properties that an entity lacks. */
 export function* missingProperties(
   entity: object,
@@ -47,7 +52,8 @@ export function* advisedOfEvent(event: CaliperEvent): Generator<CaliperFinding> 
   const { generated, object } = event;
   if (isRecord(generated)) {
     const properties = GENERATED_ADVISED.get(String(generated.type));
-    if (properties !== undefined) yield* missingProperties(generated, "generated", properties, `a ${generated.type}`);
+    if (properties !== undefined)
+      yield* missingProperties(generated, "generated", properties, articled(String(generated.type)));
   }
   if (event.action === "TimedOut" && isRecord(object) && isNamed(String(object.type), ["Session"])) {
     yield* missingProperties(object, "object", TIMED_OUT_SESSION, "the Session of a timeout");

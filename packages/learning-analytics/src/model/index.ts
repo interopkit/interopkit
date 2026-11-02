@@ -5,6 +5,7 @@
  * @module
  */
 export { CALIPER_CONTEXT, type Context, LIBRARY_PROFILE_CONTEXT } from "./context.js";
+export type { EndpointConfiguration } from "./endpoint-configuration.js";
 export * from "./entities/index.js";
 export type { EntityDocument } from "./entity-document.js";
 export * from "./events/index.js";

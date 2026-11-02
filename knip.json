@@ -22,7 +22,7 @@
       ]
     },
     "packages/learning-analytics": {
-      "entry": ["src/index.ts"]
+      "entry": ["src/index.ts", "src/endpoint/index.ts"]
     },
     "packages/learning-records": {
       "entry": [

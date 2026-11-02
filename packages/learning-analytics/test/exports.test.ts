@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as endpoint from "../src/endpoint/index.js";
 import * as root from "../src/index.js";
 
 describe("the public API", () => {
@@ -25,6 +26,7 @@ describe("the public API", () => {
         "METRICS",
         "MEDIA_OBJECT_TYPES",
         "mintUrn",
+        "pingEndpoint",
         "ORGANIZATION_TYPES",
         "PROFILES",
         "QUESTION_TYPES",
@@ -42,5 +44,10 @@ describe("the public API", () => {
         "validateEvent",
       ].sort(),
     );
+  });
+
+  it("exports the endpoint from its own subpath, and keeps it out of the root", () => {
+    expect(Object.keys(endpoint).sort()).toStrictEqual(["handleCaliperRequest", "readEnvelope"]);
+    expect(Object.keys(root)).not.toContain("handleCaliperRequest");
   });
 });

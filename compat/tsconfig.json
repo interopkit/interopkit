@@ -19,6 +19,7 @@
       "@interopkit/learning-records/signing": ["../packages/learning-records/src/signing/index.ts"],
       "@interopkit/learning-records/store": ["../packages/learning-records/src/store/index.ts"],
       "@interopkit/learning-analytics": ["../packages/learning-analytics/src/index.ts"],
+      "@interopkit/learning-analytics/endpoint": ["../packages/learning-analytics/src/endpoint/index.ts"],
       "@interopkit/tool-integration": ["../packages/tool-integration/src/index.ts"],
       "@interopkit/tool-integration/tool": ["../packages/tool-integration/src/tool/index.ts"],
       "@interopkit/tool-integration/platform": ["../packages/tool-integration/src/platform/index.ts"]

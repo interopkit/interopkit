@@ -18,7 +18,7 @@ flowchart LR
 | ----------------------- | ------------------------------------------------------------------------------------------------------ |
 | `src/attempt.ts`        | `AttemptRecord`: the attempt as the host keeps it                                                      |
 | `src/attempt-events.ts` | `attemptEvents`: Started, Submitted and Graded events from a record, with identifiers from the attempt |
-| `src/sensor.ts`         | `createSensor`: sends the events, and sends them again after a failure that a resend can cure          |
+| `src/sensor.ts`         | `createSensor`: sends the events, sends them again after a failure that a resend can cure, and pings the endpoint |
 | `scenario.ts`           | `runScenario`: an endpoint that answers 503 and then 200, and the sensor that reports to it            |
 | `test/`                 | The tests, which CI runs                                                                               |
 
@@ -31,6 +31,8 @@ flowchart LR
 | Resend              | After status 0 or 500 and above, at most `MAX_ATTEMPTS` (3) sends in all, with the same events and the time of the new send |
 | No resend           | After any other status (401, 415, 422, a redirect) and after an abort: the same envelope would get the same answer          |
 | Backoff             | None. A host puts the delay of its own queue between the sends                                                              |
+| Token               | Optional: an endpoint that asks for none gets no `Authorization` header                                                     |
+| Size                | `maxPayloadBytes`, from the configuration that `ping` reads: an envelope above it is refused before any request and not sent again |
 | Actor               | The opaque IRI of the learner, never an email address or a name                                                             |
 | Data                | Times, IRIs and the score. No response and no answer key                                                                    |
 

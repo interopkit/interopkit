@@ -80,6 +80,85 @@ describe("sendCaliper: the request", () => {
   });
 });
 
+describe("sendCaliper: data and sender", () => {
+  const person = {
+    "@context": CALIPER_CONTEXT,
+    id: "https://exam.example/users/554433",
+    type: "Person",
+    name: "Candidate",
+  } as const;
+
+  it("sends an entity describe beside the events, in the order given, in one envelope", async () => {
+    const endpoint = fakeEndpoint({ status: 200 });
+    const events = sample();
+    await sendCaliper([person, ...events], { ...SENDER, fetch: endpoint.fetch });
+    const envelope = JSON.parse(bodyOf(endpoint.requests));
+    expect(envelope.data).toStrictEqual(JSON.parse(JSON.stringify([person, ...events])));
+    expect(Object.keys(envelope)).toStrictEqual(["sensor", "sendTime", "dataVersion", "data"]);
+  });
+
+  it("sends no Authorization header when the sender has no token, and nothing else changes", async () => {
+    const endpoint = fakeEndpoint({ status: 200 });
+    const { token: _token, ...anonymous } = SENDER;
+    await sendCaliper(sample(), { ...anonymous, fetch: endpoint.fetch });
+    expect(endpoint.requests[0]?.init.headers).toStrictEqual({ "Content-Type": "application/json" });
+  });
+
+  it("refuses an envelope above maxPayloadBytes before any request, and counts the bytes of the UTF-8 text", async () => {
+    const endpoint = fakeEndpoint({ status: 200 });
+    const events = sample();
+    const bytes = new TextEncoder().encode(
+      JSON.stringify({
+        sensor: SENDER.sensor,
+        sendTime: "2023-11-14T22:13:20.000Z",
+        dataVersion: CALIPER_CONTEXT,
+        data: events,
+      }),
+    ).byteLength;
+    await expect(sendCaliper(events, { ...SENDER, fetch: endpoint.fetch, maxPayloadBytes: bytes - 1 })).rejects.toThrow(
+      `The envelope has ${bytes} bytes, above the option maxPayloadBytes of ${bytes - 1}: send fewer events and entities in each envelope.`,
+    );
+    expect(endpoint.requests).toHaveLength(0);
+    await expect(
+      sendCaliper(events, { ...SENDER, fetch: endpoint.fetch, maxPayloadBytes: bytes }),
+    ).resolves.toBeUndefined();
+    const wide = [{ ...person, name: "é".repeat(100) }];
+    const text = JSON.stringify({
+      sensor: SENDER.sensor,
+      sendTime: "2023-11-14T22:13:20.000Z",
+      dataVersion: CALIPER_CONTEXT,
+      data: wide,
+    });
+    const wideBytes = new TextEncoder().encode(text).byteLength;
+    expect(wideBytes - text.length).toBe(100);
+    const between = text.length + 50;
+    await expect(sendCaliper(wide, { ...SENDER, fetch: endpoint.fetch, maxPayloadBytes: between })).rejects.toThrow(
+      `The envelope has ${wideBytes} bytes, above the option maxPayloadBytes of ${between}`,
+    );
+    await expect(
+      sendCaliper(wide, { ...SENDER, fetch: endpoint.fetch, maxPayloadBytes: wideBytes }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("rejects a size limit that is not a positive integer, and data that is not what the envelope holds", async () => {
+    const endpoint = fakeEndpoint({ status: 200 });
+    const given = { ...SENDER, fetch: endpoint.fetch };
+    for (const maxPayloadBytes of [0, -1, 1.5, "1000", fromJson<never>("null"), Number.NaN]) {
+      await expect(
+        sendCaliper(sample(), { ...given, maxPayloadBytes: maxPayloadBytes as never }),
+        String(maxPayloadBytes),
+      ).rejects.toThrow("The option maxPayloadBytes must be a positive integer");
+    }
+    await expect(sendCaliper(sample(), { ...given, token: fromJson<never>("null") })).rejects.toThrow(
+      "The option token must be a string, found null.",
+    );
+    await expect(sendCaliper([{ "@context": CALIPER_CONTEXT, type: "Person" } as never], given)).rejects.toThrow(
+      "The id of the Caliper item 0 must be a non-empty string",
+    );
+    expect(endpoint.requests).toHaveLength(0);
+  });
+});
+
 describe("sendCaliper: when the endpoint fails", () => {
   it("fails with the status and the body of a refusal that Caliper names, and of a server error", async () => {
     for (const status of [400, 401, 415, 422, 500]) {
@@ -318,7 +397,7 @@ describe("sendCaliper: input of other types", () => {
       'The option endpoint must be an absolute https URL, found "http://lrs.example/caliper".',
     );
     await expect(sendCaliper([], options())).rejects.toThrow(
-      "The Caliper events must have at least one event, as an envelope does.",
+      "The Caliper data must have at least one event or entity describe, as an envelope does.",
     );
     await expect(sendCaliper(sample(), { ...options(), token: "two words" })).rejects.toThrow(
       "The option token must be a bearer token of RFC 6750 section 2.1: letters, digits and -._~+/, then =.",

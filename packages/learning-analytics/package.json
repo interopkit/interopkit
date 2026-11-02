@@ -1,7 +1,7 @@
 {
   "name": "@interopkit/learning-analytics",
   "version": "0.0.0",
-  "description": "Caliper Analytics 1.2 events with identifiers that stay the same when an event is reported again, and a sensor that sends them to an endpoint.",
+  "description": "Caliper Analytics 1.2 events with identifiers that stay the same when an event is reported again, a sensor that sends them to an endpoint, and the endpoint that receives them.",
   "keywords": [
     "interopkit",
     "learning-analytics",
@@ -25,6 +25,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./endpoint": {
+      "types": "./dist/endpoint/index.d.ts",
+      "default": "./dist/endpoint/index.js"
     }
   },
   "files": [

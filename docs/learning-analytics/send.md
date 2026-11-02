@@ -1,13 +1,17 @@
 # Sending events
 
-`sendCaliper` posts events in one envelope to a Caliper endpoint with a bearer token. It follows no redirect, ends at a deadline
-and takes a `signal` that ends the caller's wait.
+`sendCaliper` posts events and entity describes in one envelope to a Caliper endpoint, with a bearer token when the endpoint asks
+for one. `pingEndpoint` asks the endpoint whether it is available and what it takes. Neither follows a redirect, both end at a
+deadline, and both take a `signal` that ends the caller's wait.
 
 ```mermaid
 flowchart LR
-  host["Host"] -->|"events, options"| send["sendCaliper"]
+  host["Host"] -->|"events, entity describes, options"| send["sendCaliper"]
+  host -->|"options"| ping["pingEndpoint"]
   send -->|"POST envelope, bearer token,<br/>no redirect, deadline"| endpoint[("Caliper endpoint")]
+  ping -->|"GET, bearer token,<br/>no redirect, deadline"| endpoint
   endpoint -->|"2xx"| ok["resolves"]
+  endpoint -->|"200 and its configuration,<br/>401, any other status"| avail["available, unauthorized,<br/>unavailable"]
   endpoint -.->|"not 2xx, no answer"| fail["ServiceError"]
 ```
 
@@ -43,22 +47,25 @@ requests[0].body.sendTime; // => "2023-11-14T22:13:21.000Z"
 requests[0].body.data[0].id === event.id; // => true
 ```
 
-`sendCaliper(events, options)` posts one envelope (section 5.2) with the events as its `data`, over HTTPS (section 5.4).
+`sendCaliper(data, options)` posts one envelope (section 5.2) with the events and entity describes as its `data`, over HTTPS
+(section 5.4).
 
 | Option      | Meaning                                                                                                                                               | Default                               |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
 | `endpoint`  | The address of the endpoint, an `https` URL                                                                                                           | required                              |
-| `token`     | The bearer token that the endpoint validates: letters, digits and `-._~+/`, then `=` ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750#section-2.1)) | required                              |
+| `token`     | The bearer token that the endpoint validates: letters, digits and `-._~+/`, then `=` ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750#section-2.1)). Caliper recommends one | none: no `Authorization` header       |
 | `fetch`     | The `fetch` that makes the request: the global one, or a function with the signature of `Fetch` of `@interopkit/core`                                 | required                              |
 | `sensor`    | The absolute IRI that identifies the sensor (section 5.2), which is checked                                                                           | required                              |
 | `sendTime`  | The time of sending in epoch milliseconds. A resend has the time of the resend                                                                        | required                              |
 | `timeoutMs` | The most time in milliseconds from the request to the last byte of the answer                                                                         | `DEFAULT_CALIPER_TIMEOUT_MS`, `10000` |
+| `maxPayloadBytes` | The most bytes of the envelope that the endpoint takes, which its configuration gives in kilobytes of 1,024 bytes. A larger envelope is a `DataError` before any request | none |
 | `signal`    | An `AbortSignal` that ends this caller's wait                                                                                                         | none                                  |
 
-The request is a `POST` with `Content-Type: application/json` and `Authorization: Bearer <token>`. The body has the properties
-`sensor`, `sendTime`, `dataVersion` (the Caliper context) and `data`, and no others. At least one event is needed, as an
-envelope has at least one. Each event must have the Caliper `@context` and an `id`; the sensor does not check the rest, so
-events from another builder go too.
+The request is a `POST` with `Content-Type: application/json` and, when there is a token, `Authorization: Bearer <token>`. The
+body has the properties `sensor`, `sendTime`, `dataVersion` (the Caliper context) and `data`, and no others. At least one event
+or entity describe is needed, as an envelope has at least one, and they may be mixed (section 5.2). Each must have the Caliper
+`@context`, or the context of the Library Use Profile, and an `id`; the sensor does not check the rest, so events from another
+builder go too. Check what is about to go with [`validateEvent`](./validate.md).
 
 The call goes through `callService` of `@interopkit/core` ([service calls](../core/service.md)). The token travels only in
 the `Authorization` header of the endpoint.
@@ -101,15 +108,48 @@ sequenceDiagram
 | Time of a call         | `timeoutMs`, `10000` ms by default                                                                                                      | Per call    |
 | Bytes of the answer    | 65,536                                                                                                                                  | No          |
 | Redirects              | None followed; any 3xx is an error                                                                                                      | No          |
-| Events in an envelope  | At least 1. No greatest number: the maximum payload size of the endpoint is not read                                                    |             |
+| Events and describes in an envelope | At least 1. No greatest number: `maxPayloadBytes` limits the bytes, which the endpoint announces                           | Per call    |
 | Times                  | `1970-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z` for `caliperTime`; the form `YYYY-MM-DDTHH:mm:ss.SSSZ` for a time in an entity |             |
 | Parts of an identifier | At least one; strings and finite numbers                                                                                                | No          |
+
+## Asking the endpoint
+
+`pingEndpoint(sender, options)` sends a `GET` to the endpoint, with the bearer token when there is one, and reads the answer as
+section 6.2 says. It takes the same `endpoint`, `token`, `fetch`, `sensor` and `timeoutMs` as `sendCaliper`, and a `signal` in its
+second argument.
+
+```ts
+import { pingEndpoint } from "@interopkit/learning-analytics";
+
+const fetch = async () =>
+  new Response(
+    JSON.stringify({
+      caliperMaximumPayloadSize: 512,
+      caliperSupportedVersions: ["http://purl.imsglobal.org/ctx/caliper/v1p2"],
+    }),
+    { status: 200 },
+  );
+const result = await pingEndpoint({ endpoint: "https://lrs.example/caliper", fetch, sensor: "https://exam.example/sensors/1" });
+result.status; // => "available"
+```
+
+| The endpoint answers                | The result                                                                                                                           |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 200 and its configuration           | `{ status: "available", configuration }`: `caliperMaximumPayloadSize` (kilobytes), `caliperSupportedVersions` (contexts, required), `caliperSupportedExtensions` |
+| 401                                 | `{ status: "unauthorized" }`                                                                                                         |
+| Any other status                    | `{ status: "unavailable", httpStatus }`                                                                                              |
+| A redirect                          | `ServiceError` with the status: no redirect is followed                                                                              |
+| Nothing, or not within `timeoutMs`  | `ServiceError` with status `0`                                                                                                       |
+| 200 and a body that is not the configuration | `DataError`: not JSON, nested deeper than 64 levels, a property of its own, or no `caliperSupportedVersions`                |
+
+A sender that learns `caliperMaximumPayloadSize` from the ping gives `maxPayloadBytes` its value times 1,024. Splitting the data
+into several envelopes is the host's: `sendCaliper` refuses an envelope that is too large and sends nothing.
 
 ## Errors
 
 | Error                              | When                                                                                                                                                                                                                                                                                                                                     | What to do                                                                                             |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `DataError`                        | An argument has the wrong type or value: an event with a property that is not valid, a relative IRI, a time not in the form, a token with a space, an `http` endpoint, an empty list of events. The message names the path and what is expected, such as `The event is invalid at actor.id: expected an absolute IRI, found "person-1".` | Fix the input. Nothing was sent                                                                        |
+| `DataError`                        | An argument has the wrong type or value: an item without a Caliper `@context` or an `id`, a time not in the form, a token with a space, an `http` endpoint, an empty list, a size limit that is not a positive integer, or an envelope above `maxPayloadBytes` | Fix the input, or send fewer events and entities in each envelope. Nothing was sent                    |
 | `ServiceError`, status `0`         | The endpoint did not answer, or not within `timeoutMs`                                                                                                                                                                                                                                                                                   | Check the address and the network. Resend the same events with a new `sendTime`                        |
 | `ServiceError`, status 400 to 499  | The endpoint refused the envelope; `body` holds what it said                                                                                                                                                                                                                                                                             | 401 is a bad token. 415 and 422 are an envelope that the endpoint cannot read. Resending does not help |
 | `ServiceError`, status 500 or more | The endpoint failed                                                                                                                                                                                                                                                                                                                      | Resend the same events later with a new `sendTime`                                                     |
@@ -123,6 +163,7 @@ sequenceDiagram
 | Data                               | From                                  | To                                                           |
 | ---------------------------------- | ------------------------------------- | ------------------------------------------------------------ |
 | The actor, the IRIs, times, scores | The calls of the host to `buildEvent` | The body of the request, to the endpoint                     |
+| The configuration of the endpoint  | The endpoint                          | The result of `pingEndpoint`, and nowhere else               |
 | The bearer token                   | `options.token`                       | The `Authorization` header of the endpoint, and nowhere else |
 | The answer of the endpoint         | The endpoint                          | `ServiceError.body`, and nowhere else                        |
 

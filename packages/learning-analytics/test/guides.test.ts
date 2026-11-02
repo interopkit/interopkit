@@ -1,9 +1,10 @@
 import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { runGuideSamples } from "../../../scripts/guide-samples.js";
+import * as endpoint from "../src/endpoint/index.js";
 import * as root from "../src/index.js";
 
-const modules = { "@interopkit/learning-analytics": root };
+const modules = { "@interopkit/learning-analytics": root, "@interopkit/learning-analytics/endpoint": endpoint };
 const GUIDES = new URL("../../../docs/learning-analytics/", import.meta.url);
 const guides = readdirSync(GUIDES).filter((name) => name.endsWith(".md"));
 

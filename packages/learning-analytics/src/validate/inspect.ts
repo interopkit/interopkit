@@ -2,7 +2,7 @@ import { copyJson, type FindingSink, findingsOf, safeParseBounded } from "@inter
 import type * as v from "valibot";
 import type { CaliperEvent, EntityDocument } from "../model/index.js";
 import { entityDocumentSchema, entitySchema, eventSchema } from "../read/internal.js";
-import { ADVISED, missingProperties } from "./advised-properties.js";
+import { ADVISED, articled, missingProperties } from "./advised-properties.js";
 import { eventFindings } from "./event-findings.js";
 import { type CaliperFinding, error } from "./finding.js";
 
@@ -57,6 +57,6 @@ export function inspectEntity(value: unknown, sink: FindingSink<CaliperFinding>)
   }
   const entity: EntityDocument = { "@context": context, ...result.output };
   const properties = ADVISED.get(entity.type);
-  if (properties !== undefined) sink.add(missingProperties(entity, "", properties, `a ${entity.type}`));
+  if (properties !== undefined) sink.add(missingProperties(entity, "", properties, articled(entity.type)));
   return entity;
 }

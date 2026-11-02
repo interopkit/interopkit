@@ -7,7 +7,10 @@
     "types": ["node"],
     "paths": {
       "@interopkit/core": ["../core/src/index.ts"],
-      "@interopkit/core/checks": ["../core/src/checks.ts"]
+      "@interopkit/core/checks": ["../core/src/checks.ts"],
+      "@interopkit/core/http": ["../core/src/http/index.ts"],
+      "@interopkit/learning-analytics": ["./src/index.ts"],
+      "@interopkit/learning-analytics/endpoint": ["./src/endpoint/index.ts"]
     }
   },
   "include": ["src", "test"]

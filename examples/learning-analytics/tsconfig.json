@@ -7,7 +7,9 @@
     "paths": {
       "@interopkit/core": ["../../packages/core/src/index.ts"],
       "@interopkit/core/checks": ["../../packages/core/src/checks.ts"],
-      "@interopkit/learning-analytics": ["../../packages/learning-analytics/src/index.ts"]
+      "@interopkit/core/http": ["../../packages/core/src/http/index.ts"],
+      "@interopkit/learning-analytics": ["../../packages/learning-analytics/src/index.ts"],
+      "@interopkit/learning-analytics/endpoint": ["../../packages/learning-analytics/src/endpoint/index.ts"]
     }
   },
   "include": ["scenario.ts", "src", "test"]

@@ -1,5 +1,5 @@
 import { type CallOptions, type Clock, type Fetch, readClock, ServiceError } from "@interopkit/core";
-import { sendCaliper } from "@interopkit/learning-analytics";
+import { type PingResult, pingEndpoint, sendCaliper } from "@interopkit/learning-analytics";
 import type { AttemptRecord } from "./attempt.ts";
 import { attemptEvents } from "./attempt-events.ts";
 
@@ -10,8 +10,8 @@ export const MAX_ATTEMPTS = 3;
 export interface SensorOptions {
   /** The address of the Caliper endpoint, an `https` URL. */
   readonly endpoint: string;
-  /** The bearer token that the endpoint validates. */
-  readonly token: string;
+  /** The bearer token that the endpoint validates, when it asks for one. */
+  readonly token?: string;
   /** The `fetch` that makes the request. */
   readonly fetch: Fetch;
   /** The IRI of the sensor. */
@@ -20,6 +20,8 @@ export interface SensorOptions {
   readonly edApp: string;
   /** The time of each sending. */
   readonly clock: Clock;
+  /** The most bytes of an envelope that the endpoint takes, which its configuration says in kilobytes. */
+  readonly maxPayloadBytes?: number;
 }
 
 /** A sensor that reports attempts. */
@@ -30,6 +32,8 @@ export interface Sensor {
    * @throws The `ServiceError` of the last send when every send failed, and the reason of the signal when it aborts.
    */
   report(attempt: AttemptRecord, call?: CallOptions): Promise<void>;
+  /** Asks the endpoint whether it is available and what it takes. */
+  ping(call?: CallOptions): Promise<PingResult>;
 }
 
 /** Tells whether sending the same events again can succeed: the endpoint did not answer, or failed on its side. */
@@ -46,6 +50,7 @@ function isTransient(error: unknown): boolean {
 export function createSensor(options: SensorOptions): Sensor {
   const { clock, edApp, ...sender } = options;
   return {
+    ping: (call) => pingEndpoint(sender, call),
     async report(attempt, call) {
       const events = attemptEvents(attempt, edApp);
       for (let sent = 1; ; sent += 1) {
