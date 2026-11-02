@@ -10,7 +10,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
 `@interopkit/learning-records` implements the xAPI Statement of 2.0 and 1.0.3 and its readers, the message of its Attachments, its signature, a client of an LRS and the handler of its requests,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
-implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists and their refresh, and it reads Open Badges 2.0.
+implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists, their refresh and their verification, and it reads Open Badges 2.0.
 
 ```mermaid
 flowchart BT
@@ -22,7 +22,7 @@ flowchart BT
   cf["competency-frameworks<br/>model, read, version, graph, client, provider"]
   lr["learning-records<br/>model, read, build, compare, format,<br/>attachments, signing, client, store"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
-  ac["achievement-credentials<br/>model, read, issue, compare, baking, client,<br/>keys, jwt, data-integrity,<br/>status, refresh"]
+  ac["achievement-credentials<br/>model, read, issue, compare, baking, client,<br/>keys, jwt, data-integrity,<br/>status, refresh, verify"]
   proto --> core
   tool --> proto
   plat --> proto
@@ -90,7 +90,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
 | `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
-| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/` |
+| `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/`, `verify/` |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -158,8 +158,9 @@ current behavior only, and never how it came to be. A package's changeset is wri
 - `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders, the comparison of
   credentials, baking in PNG and SVG images, the client of the Open Badges and CLR APIs, the keys that verify credentials with
   their binding to the issuer, the JWT and Data Integrity proofs with the loader of contexts and their pins, the status lists
-  and the refresh, and the model and the reader of Open Badges 2.0, which it never writes. It does not own JSON-LD processing and the cryptosuites (the Interop Alliance libraries do them),
-  verification, the provider of the APIs, the OAuth 2.0 clients (those of `core/oauth`) or the fetching, verification and baking of Open Badges 2.0 (those arrive
+  and the refresh, the verification of a credential with its endorsements and the credentials of a CLR, and the model and the reader of Open Badges 2.0,
+  which it never writes. It does not own JSON-LD processing and the cryptosuites (the Interop Alliance libraries do them),
+  the provider of the APIs, the OAuth 2.0 clients (those of `core/oauth`) or the fetching, verification and baking of Open Badges 2.0 (those arrive
   in later modules), nor wallets,
   issuing platforms and storage. It reaches the network only through a `Fetch` that the caller passes.
 - `selective-disclosure` owns the `ecdsa-sd-2023` cryptosuite in its three roles. It does not own JSON-LD processing and
@@ -184,7 +185,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`
   imports no other module, `read/` builds on `model/` only, `issue/`, `compare/`, `baking/` and `client/` build on `model/` and `read/`
   and never import each other, `keys/` builds on `model/` only, and `jwt/` and `data-integrity/` build on `model/`, `read/` and `keys/` and never import each other, `status/` builds on those and `jwt/` and imports `data-integrity/` only dynamically (a test keeps
-  a verifier of JWTs free of JSON-LD), and `refresh/` imports `model/` and `core` only. In `learning-records`, `model/` imports no other module,
+  a verifier of JWTs free of JSON-LD), and `refresh/` imports `model/` and `core` only, and `verify/` builds on all of them but `baking/` and `client/`, imports `data-integrity/` only dynamically, and is imported by no module. In `learning-records`, `model/` imports no other module,
   `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
   `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
   `model/`, `read/`, `compare/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. Imports never form cycles.
@@ -205,7 +206,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `ecdsa-sd-2023` suite with `@digitalbazaar/data-integrity`, `jsonld-signatures` and `@digitalbazaar/ecdsa-multikey`, which
   sign, derive and verify beside `selective-disclosure`, and `jsonld`, whose default loader the loader test makes fail.
   `@cfworker/json-schema` is a development dependency of the repository, for `scripts/schema-oracle.ts`: the validator that
-  tests run the published JSON schemas of a standard through. `oidc-provider` is a development dependency of `core` and of
+  tests run the published JSON schemas of a standard through, and a dependency of `achievement-credentials` for the schemas that a
+  credential names beyond those of 1EdTech. `oidc-provider` is a development dependency of `core` and of
   `achievement-credentials`: the authorization server that their OAuth tests run against.
 
 ## Deviations from the standards
@@ -338,6 +340,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   that every entry still matches its file. So does each behavior of a reader or a converter that refuses or changes a value,
   guarded by a test that is not a corpus test, because the scratch copy has no download.
 - Every public function has a test of input of other types, as JavaScript or JSON pass it: `null` options and arguments, a
+- Verification is tested with forged credentials: a good signature by a key that the issuer does not publish, for a credential,
+  an endorsement, a credential of a CLR and a status list, each `verified: false` with its check `failed`, and the order of the
+  work is a test of the requests that a credential whose proof fails causes (none).
   string for a number, an object for an array. Pass such input with `JSON.parse`, not a cast.
 - Properties that hold for any input are tested with fast-check, with a fixed seed and a bounded number of runs. Every parser
   and decoder is fuzzed.

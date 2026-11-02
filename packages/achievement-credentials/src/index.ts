@@ -151,6 +151,7 @@ export {
   type VerificationCheckName,
   type VerificationKey,
   type VerificationObjectV2,
+  type VerificationResult,
   type VerificationTypeV2,
 } from "./model/index.js";
 export {

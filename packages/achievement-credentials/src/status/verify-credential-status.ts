@@ -2,7 +2,7 @@ import { callService, ServiceError } from "@interopkit/core";
 import { checkRecord, describe, isRecord } from "@interopkit/core/checks";
 import { parseJsonText } from "../json-text.js";
 import { readCredentialJwt } from "../jwt/index.js";
-import type { IssuableCredential, VerifiableCredential, VerificationCheck } from "../model/index.js";
+import type { CredentialV1p1, IssuableCredential, VerifiableCredential, VerificationCheck } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
 import { isSet, MIN_LIST_LENGTH } from "./bitstring.js";
 import { decodeList } from "./encoded-list.js";
@@ -98,6 +98,9 @@ async function verifiedList(text: string, settings: CheckSettings): Promise<Veri
     keys: settings.keys,
     clock: settings.clock,
     maxTokens: settings.maxTokens,
+    allowUnboundKeys: settings.allowUnboundKeys,
+    ...(settings.algorithms === undefined ? {} : { algorithms: settings.algorithms }),
+    ...(settings.clockSkewSeconds === undefined ? {} : { clockSkewSeconds: settings.clockSkewSeconds }),
     ...(settings.signal === undefined ? {} : { signal: settings.signal }),
   };
   if (!text.trimStart().startsWith("{")) {
@@ -120,7 +123,12 @@ async function verifiedList(text: string, settings: CheckSettings): Promise<Veri
   }
   // Loaded when a list credential with a Data Integrity proof is checked, so that a verifier of JWTs never loads JSON-LD.
   const { verifyProof } = await import("../data-integrity/index.js");
-  const result = await verifyProof(parsed.value as IssuableCredential, { ...keyed, contexts: settings.contexts });
+  const result = await verifyProof(parsed.value as IssuableCredential, {
+    ...keyed,
+    contexts: settings.contexts,
+    legacyProofs: settings.legacyProofs,
+    suites: settings.suites,
+  });
   if (!result.valid) throw new ListFailure(result.reason);
   return asList(result.credential);
 }
@@ -221,7 +229,7 @@ async function readEntry(
  * @see {@link https://www.w3.org/TR/vc-bitstring-status-list/#validate-algorithm | Bitstring Status List, validate algorithm}
  */
 export async function verifyCredentialStatus(
-  credential: IssuableCredential,
+  credential: IssuableCredential | CredentialV1p1,
   options: StatusCheckOptions,
 ): Promise<VerificationCheck> {
   const settings = checkSettings(options);

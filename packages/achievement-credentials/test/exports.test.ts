@@ -6,6 +6,7 @@ import * as jwt from "../src/jwt/index.js";
 import * as keys from "../src/keys/index.js";
 import * as refresh from "../src/refresh/index.js";
 import * as status from "../src/status/index.js";
+import * as verify from "../src/verify/index.js";
 
 describe("the exports", () => {
   it("are what the package documents and nothing else", () => {
@@ -73,6 +74,10 @@ describe("the exports", () => {
       "setCredentialStatus",
       "verifyCredentialStatus",
     ]);
+  });
+
+  it("are, for the subpath verify, the verification of a credential", () => {
+    expect(Object.keys(verify)).toStrictEqual(["verifyCredential"]);
   });
 
   it("are, for the subpath refresh, the request to the service and the answer of the issuer", () => {

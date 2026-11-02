@@ -4,6 +4,7 @@ import {
   checkArray,
   checkFunction,
   checkNonEmptyString,
+  checkNonNegativeInteger,
   checkPositiveInteger,
   checkRecord,
   checkString,
@@ -12,7 +13,8 @@ import {
   methodsSchema,
   parseWith,
 } from "@interopkit/core/checks";
-import type { ContextLoader, KeyResolver } from "../model/index.js";
+import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
+import { checkFlag } from "../option-checks.js";
 import type { StatusList } from "./bitstring.js";
 import type { StatusListCache } from "./status-list-cache.js";
 
@@ -105,9 +107,41 @@ export interface StatusCheckOptions extends CallOptions {
    * @defaultValue `1000000`
    */
   readonly maxTokens?: number;
+  /**
+   * The algorithms that may sign a list credential that is a JWT.
+   *
+   * @defaultValue `["RS256", "RS384", "RS512", "ES256", "ES384", "EdDSA"]`
+   */
+  readonly algorithms?: readonly string[];
+  /**
+   * The seconds that the time claims of a list credential that is a JWT may be off.
+   *
+   * @defaultValue `60`
+   */
+  readonly clockSkewSeconds?: number;
+  /**
+   * Accepts a list credential whose key its issuer does not publish. The status is then read from a list that nothing ties to
+   * the issuer of the credential.
+   *
+   * @defaultValue `false`
+   */
+  readonly allowUnboundKeys?: boolean;
+  /**
+   * Accepts a list credential with an `Ed25519Signature2020` proof.
+   *
+   * @defaultValue `false`
+   */
+  readonly legacyProofs?: boolean;
+  /**
+   * More Data Integrity suites for a list credential, beside the built-in ones.
+   *
+   * @defaultValue none
+   */
+  readonly suites?: readonly DataIntegritySuite[];
 }
 
 const keyResolverSchema = methodsSchema<KeyResolver>("resolve", "issuerKeys");
+const suiteSchema = methodsSchema<DataIntegritySuite>("verify");
 
 /** The checked options of a status check. */
 export interface CheckSettings {
@@ -120,6 +154,11 @@ export interface CheckSettings {
   readonly timeoutMs: number | undefined;
   readonly maxBytes: number | undefined;
   readonly maxTokens: number;
+  readonly algorithms: readonly string[] | undefined;
+  readonly clockSkewSeconds: number | undefined;
+  readonly allowUnboundKeys: boolean;
+  readonly legacyProofs: boolean;
+  readonly suites: readonly DataIntegritySuite[];
   readonly signal: AbortSignal | undefined;
 }
 
@@ -127,7 +166,8 @@ export interface CheckSettings {
 export function checkSettings(options: unknown): CheckSettings {
   checkRecord(options, "The options of verifyCredentialStatus must be an object");
   const { fetch, clock, contexts, cache, timeoutMs, maxBytes, signal, statusIssuers = [] } = options;
-  const { maxTokens = MAX_JSON_TOKENS } = options;
+  const { maxTokens = MAX_JSON_TOKENS, algorithms, clockSkewSeconds } = options;
+  const { allowUnboundKeys = false, legacyProofs = false, suites = [] } = options;
   checkFunction(fetch, "The option fetch must be a function");
   const keys = parseWith(keyResolverSchema, options.keys, "The option keys");
   checkClock(clock);
@@ -141,6 +181,15 @@ export function checkSettings(options: unknown): CheckSettings {
   if (timeoutMs !== undefined) checkPositiveInteger(timeoutMs, "The option timeoutMs");
   if (maxBytes !== undefined) checkPositiveInteger(maxBytes, "The option maxBytes");
   checkPositiveInteger(maxTokens, "The option maxTokens");
+  if (algorithms !== undefined) {
+    checkArray(algorithms, "The option algorithms must be an array");
+    for (const algorithm of algorithms) checkString(algorithm, "An algorithm of the option algorithms");
+  }
+  if (clockSkewSeconds !== undefined) checkNonNegativeInteger(clockSkewSeconds, "The option clockSkewSeconds");
+  checkFlag(allowUnboundKeys, "The option allowUnboundKeys");
+  checkFlag(legacyProofs, "The option legacyProofs");
+  checkArray(suites, "The option suites must be an array");
+  const checkedSuites = suites.map((suite, index) => parseWith(suiteSchema, suite, `The option suites[${index}]`));
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   return {
     fetch: fetch as Fetch,
@@ -152,6 +201,11 @@ export function checkSettings(options: unknown): CheckSettings {
     timeoutMs,
     maxBytes,
     maxTokens,
+    algorithms: algorithms as readonly string[] | undefined,
+    clockSkewSeconds,
+    allowUnboundKeys,
+    legacyProofs,
+    suites: checkedSuites,
     signal,
   };
 }

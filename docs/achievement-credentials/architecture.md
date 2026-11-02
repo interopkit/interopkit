@@ -1,15 +1,17 @@
 # Architecture of achievement-credentials
 
-`@interopkit/achievement-credentials` has eleven modules that share one model. `model` holds the types, the vocabularies, the
+`@interopkit/achievement-credentials` has twelve modules that share one model. `model` holds the types, the vocabularies, the
 findings and the terms of verification. `read` turns untrusted JSON into the model. `issue` writes credentials from their parts,
 `compare` looks at credentials, `baking` writes a credential into an image and reads it out, and `client` calls the APIs of a
 server. `keys` resolves the keys that verify a proof and checks that a key belongs to an issuer, `jwt` signs and reads a
 credential as a JSON Web Token, and `data-integrity` secures a credential with a Data Integrity proof and loads contexts at their
-pins. `status` keeps and checks the status lists of credentials, and `refresh` gets and answers the refresh of a credential.
+pins. `status` keeps and checks the status lists of credentials, `refresh` gets and answers the refresh of a credential, and `verify`
+joins the checks of Open Badges 9 and CLR 8.
 `read` imports only `model` and `@interopkit/core`, `issue`, `compare`, `baking` and `client` import those and `read` and never
 each other, `keys` imports `model` and `core`, `jwt` imports those and `read` and `keys`, `data-integrity` imports those three as
 well and never `jwt`, `status` builds on those and loads `data-integrity` only when a Data Integrity proof is asked for, `refresh`
-imports `model` and `core` only, and `model` imports nothing of the family.
+imports `model` and `core` only, `verify` builds on every module but `baking` and `client` and loads `data-integrity` only when a Data
+Integrity proof is asked for, and `model` imports nothing of the family.
 
 ```mermaid
 flowchart BT
@@ -25,6 +27,7 @@ flowchart BT
   di["data-integrity<br/>proofs, contexts, safe mode"]
   status["status<br/>lists, validate algorithm, cache"]
   refresh["refresh<br/>get and answer a refresh"]
+  verify["verify<br/>the checks of a credential, its endorsements,<br/>the credentials of a CLR"]
   root["index.ts<br/>the public API"]
   read --> model
   read --> core
@@ -50,6 +53,13 @@ flowchart BT
   status -.->|"on demand"| di
   refresh --> model
   refresh --> core
+  verify --> issue
+  verify --> compare
+  verify --> jwt
+  verify --> keys
+  verify --> status
+  verify --> refresh
+  verify -.->|"on demand"| di
   root --> model
   root --> read
   root --> issue
@@ -84,6 +94,10 @@ flowchart BT
 |           | `suites.ts`, `contexts.ts`, `canonical-json.ts`, `document-loader.ts`, `proof-list.ts`, `mandatory-pointers.ts`, `options.ts` | The suites over the adopted library, the loader of contexts and the pins, and the glue to the processors of JSON-LD |
 | `status`  | `bitstring.ts`, `encoded-list.ts`, `issue-status-list-credential.ts`, `verify-credential-status.ts`, `status-list-cache.ts`, `options.ts` | The list as plain data, its encoding under a limit, the issue of its credential, the validate algorithm and the cache |
 | `refresh` | `refresh-credential.ts`, `handle-refresh-request.ts`                                             | Getting a credential from its refresh service, and answering as that service              |
+| `verify`  | `verify-credential.ts`, `verify-one.ts`                                                          | The entry point, and the checks of one credential in order, with its endorsements and the credentials of a CLR             |
+|           | `input.ts`, `options.ts`, `context.ts`, `kind.ts`, `result.ts`                                   | What the input is, the options and their limits, what a call shares, the kind of a credential, the result of the checks     |
+|           | `authenticate.ts`                                                                                | The form, the proof and the issuer's hold on the key: the checks that fetch nothing that the credential names               |
+|           | `check-schema.ts`, `check-refresh.ts`, `check-status.ts`, `check-validity.ts`, `check-recipient.ts`, `held.ts` | The other checks, and where the endorsements and the held credentials of a credential are                       |
 
 `@interopkit/core/checks` holds what other standards need as much: records that refuse or keep unknown properties, the formats
 of a date and a date and time, the copy of JSON within a depth limit, and the conversion of the issues of a parse to findings
@@ -138,6 +152,6 @@ or a property differs.
 
 | The package owns                                                                    | The package does not own                                                                      |
 | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| The model of Open Badges 3.0 and CLR 2.0, the readers, the builders, the comparison, baking, the client of the APIs, keys and their binding, JWT and Data Integrity proofs, status lists, refresh | Verification and the provider of the APIs: later modules; JSON-LD processing and the cryptosuites: the adopted libraries |
+| The model of Open Badges 3.0 and CLR 2.0, the readers, the builders, the comparison, baking, the client of the APIs, keys and their binding, JWT and Data Integrity proofs, status lists, refresh, verification | The provider of the APIs: a later module; JSON-LD processing and the cryptosuites: the adopted libraries |
 | The model of Open Badges 2.0 and its reader, from documents and without the network | Fetching, verifying and baking Open Badges 2.0: verification; issuing it: never |
 | The classes under both Verifiable Credentials data models                           | Wallets, issuer platforms, storage                                                            |

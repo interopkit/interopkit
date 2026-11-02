@@ -8,7 +8,7 @@ import {
   MAX_JSON_TOKENS,
 } from "@interopkit/core/checks";
 import { parseJsonText } from "../json-text.js";
-import type { IssuableCredential } from "../model/index.js";
+import type { CredentialV1p1, IssuableCredential } from "../model/index.js";
 
 /** The types of a refresh service: `1EdTechCredentialRefresh` of Open Badges 9.1, and `ImsCredentialRefresh` that CLR 8.1 writes. */
 const REFRESH_TYPES: readonly string[] = ["1EdTechCredentialRefresh", "ImsCredentialRefresh"];
@@ -60,7 +60,7 @@ export interface RefreshOptions extends CallOptions {
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/#refreshing | Open Badges 3.0, 9.1}
  */
 export async function refreshCredential(
-  credential: IssuableCredential,
+  credential: IssuableCredential | CredentialV1p1,
   options: RefreshOptions,
 ): Promise<string | Readonly<Record<string, unknown>> | undefined> {
   checkRecord(credential, "The credential must be an object");

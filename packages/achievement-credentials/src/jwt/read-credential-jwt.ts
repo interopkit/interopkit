@@ -181,16 +181,53 @@ async function verifiedKey(
   return { value: key };
 }
 
-/** Reads the payload of a JWS whose signature verified into a credential, and checks its time claims and its other claims against it. */
-function credentialOf(bytes: Uint8Array, settings: ReadSettings): Step<AnyVerifiableCredential> {
+/** What is wrong with a JWS, and which check of a verification it belongs to: the form of the input, or the proof. */
+interface Fault {
+  readonly check: "format" | "proof";
+  readonly reason: string;
+}
+
+/** What the payload of a JWS whose signature verified held. */
+interface Payload {
+  readonly credential: AnyVerifiableCredential;
+  /** The credential as the payload wrote it, which a schema judges, before the model read it. */
+  readonly raw: unknown;
+  /** What is wrong with the time claims, or `undefined`: they are the validity of the credential and not its form or its proof. */
+  readonly timeFault: string | undefined;
+}
+
+/** Reads the payload of a JWS whose signature verified into a credential, and checks its other claims against it. */
+function payloadOf(bytes: Uint8Array, settings: ReadSettings): { readonly value: Payload } | Fault {
   const payload = readObject(bytes, "payload", settings);
-  if ("reason" in payload) return payload;
-  const timeFault = timeProblem(payload.value, settings);
-  if (timeFault !== undefined) return { reason: timeFault };
-  const carried = readCarried(carriedCredential(payload.value));
-  if ("reason" in carried) return carried;
+  if ("reason" in payload) return { check: "format", reason: payload.reason };
+  const raw = carriedCredential(payload.value);
+  const carried = readCarried(raw);
+  if ("reason" in carried) return { check: "format", reason: carried.reason };
   const conflict = disagreement(payload.value, carried.value);
-  return conflict === undefined ? carried : { reason: conflict };
+  if (conflict !== undefined) return { check: "proof", reason: conflict };
+  return { value: { credential: carried.value, raw, timeFault: timeProblem(payload.value, settings) } };
+}
+
+/** What reading a JWS found: the credential with the key that verified it, or the fault. A key is not yet bound to the issuer. */
+type JwtInspection =
+  | ({ readonly valid: true; readonly key: VerificationKey } & Payload)
+  | ({ readonly valid: false } & Fault);
+
+/**
+ * Reads a credential from a compact JWS as `readCredentialJwt` does, but tells the faults of the form from those of the proof,
+ * keeps the time claims as a finding and not a fault, and leaves the key unbound: the caller binds it.
+ */
+export async function inspectJwt(jws: string, settings: ReadSettings): Promise<JwtInspection> {
+  settings.signal?.throwIfAborted();
+  const shape = shapeOf(jws, settings);
+  if ("reason" in shape) return { valid: false, check: "format", reason: shape.reason };
+  const headerFault = headerProblem(shape.value.header, settings);
+  if (headerFault !== undefined) return { valid: false, check: "proof", reason: headerFault };
+  const verified = await verifiedKey(jws, shape.value.header, settings);
+  if ("reason" in verified) return { valid: false, check: "proof", reason: verified.reason };
+  settings.signal?.throwIfAborted();
+  const payload = payloadOf(shape.value.payload, settings);
+  return "check" in payload ? { valid: false, ...payload } : { valid: true, key: verified.value, ...payload.value };
 }
 
 /**
@@ -221,19 +258,11 @@ function credentialOf(bytes: Uint8Array, settings: ReadSettings): Step<AnyVerifi
 export async function readCredentialJwt(jws: string, options: JwtReadOptions): Promise<ProofResult> {
   const settings = readSettings(options);
   if (typeof jws !== "string") throw new DataError(`The JWS must be a string, found ${describe(jws)}.`);
-  settings.signal?.throwIfAborted();
   const invalid = (reason: string): ProofResult => ({ valid: false, reason });
-  const shape = shapeOf(jws, settings);
-  if ("reason" in shape) return invalid(shape.reason);
-  const headerFault = headerProblem(shape.value.header, settings);
-  if (headerFault !== undefined) return invalid(headerFault);
-  const verified = await verifiedKey(jws, shape.value.header, settings);
-  if ("reason" in verified) return invalid(verified.reason);
-  settings.signal?.throwIfAborted();
-  const read = credentialOf(shape.value.payload, settings);
-  if ("reason" in read) return invalid(read.reason);
-  const { value: key } = verified;
-  const { value: credential } = read;
+  const inspected = await inspectJwt(jws, settings);
+  if (!inspected.valid) return invalid(inspected.reason);
+  if (inspected.timeFault !== undefined) return invalid(inspected.timeFault);
+  const { key, credential } = inspected;
   const binding = await bindKey(key, valuesOf(credential).issuer, settings);
   return "reason" in binding ? invalid(binding.reason) : { valid: true, credential, key, bound: binding.bound };
 }

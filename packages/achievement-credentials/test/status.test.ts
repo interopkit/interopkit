@@ -541,6 +541,13 @@ describe("checking the status of a credential", () => {
       { timeoutMs: 0 },
       { maxBytes: 1.5 },
       { maxTokens: 0 },
+      { algorithms: "ES256" },
+      { algorithms: [5] },
+      { clockSkewSeconds: -1 },
+      { allowUnboundKeys: "yes" },
+      { legacyProofs: 1 },
+      { suites: "x" },
+      { suites: [{ cryptosuite: "x" }] },
       { signal: 1 },
       { clock: 5 },
     ]) {

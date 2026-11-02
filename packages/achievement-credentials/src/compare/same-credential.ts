@@ -1,4 +1,4 @@
-import type { IssuableCredential } from "../model/index.js";
+import type { CredentialV1p1, IssuableCredential } from "../model/index.js";
 import { comparableOf, isSame } from "./comparable.js";
 
 /**
@@ -15,7 +15,10 @@ import { comparableOf, isSame } from "./comparable.js";
  * @throws `DataError` when a credential is not an object with an `issuer` that is an address or a profile with an `id`.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#credential-equality-and-comparison-algorithm | Open Badges 3.0, 10}
  */
-export function sameCredential(a: IssuableCredential, b: IssuableCredential): boolean {
+export function sameCredential(
+  a: IssuableCredential | CredentialV1p1,
+  b: IssuableCredential | CredentialV1p1,
+): boolean {
   const first = comparableOf(a, "The first credential");
   const second = comparableOf(b, "The second credential");
   return isSame(first, second);

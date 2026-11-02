@@ -72,3 +72,13 @@ embeds its BadgeClass and issuer, or the three documents as a `BadgeAssertionV2`
 `BadgeAssertionV2` beside `AnyVerifiableCredential`, and `readCredential` with a `kind` returns an `AnyVerifiableCredential`.
 `credentialSummary` shows a 2.0 assertion as `badge-v2`, and `matchesIdentifier` matches its recipient of `IDENTITY_TYPES_V2`
 in `sha256$` and `md5$`. A 2.0 badge is read and never written.
+
+`@interopkit/achievement-credentials/verify` is `verifyCredential`: it verifies a credential, an endorsement or a CLR (as an object, a
+compact JWS, or what `readPng` and `readSvg` return) as Open Badges 9 and CLR 8 say, and returns every check (`format`,
+`schema`, `proof`, `issuer`, `refresh`, `status`, `validity`, `recipient`) with its outcome and a detail, always in that order. The key
+of every proof must belong to its issuer, for the credential, for each endorsement and credential of a CLR, and for a status list;
+nothing that a credential names is fetched before its proof is valid; a schema other than 1EdTech's is fetched once for the call and
+refused when it runs a regular expression; a refreshed credential must be authentic and the same credential. `unavailable` says
+whether a status list, a refresh, a schema or an issuer's keys that cannot be read fail the verification, and a proof that cannot
+be checked always does. A credential has at most `maxEndorsements` (32) endorsements and a CLR `maxNestedCredentials` (1,000)
+credentials, and the input is limited in characters, tokens and levels before it is parsed.

@@ -11,6 +11,7 @@ import * as jwt from "../src/jwt/index.js";
 import * as keys from "../src/keys/index.js";
 import * as refresh from "../src/refresh/index.js";
 import * as status from "../src/status/index.js";
+import * as verify from "../src/verify/index.js";
 
 const modules = {
   "@interopkit/achievement-credentials": root,
@@ -22,6 +23,7 @@ const modules = {
   "@interopkit/achievement-credentials/keys": keys,
   "@interopkit/achievement-credentials/refresh": refresh,
   "@interopkit/achievement-credentials/status": status,
+  "@interopkit/achievement-credentials/verify": verify,
   "@interopkit/core": core,
 };
 const GUIDES = new URL("../../../docs/achievement-credentials/", import.meta.url);
@@ -38,6 +40,7 @@ const PATHS = {
   "@interopkit/achievement-credentials/keys": [`${PACKAGES}achievement-credentials/src/keys/index.ts`],
   "@interopkit/achievement-credentials/refresh": [`${PACKAGES}achievement-credentials/src/refresh/index.ts`],
   "@interopkit/achievement-credentials/status": [`${PACKAGES}achievement-credentials/src/status/index.ts`],
+  "@interopkit/achievement-credentials/verify": [`${PACKAGES}achievement-credentials/src/verify/index.ts`],
   "@interopkit/core": [`${PACKAGES}core/src/index.ts`],
   "@interopkit/achievement-credentials/client": [`${PACKAGES}achievement-credentials/src/client/index.ts`],
   "@interopkit/core/checks": [`${PACKAGES}core/src/checks.ts`],

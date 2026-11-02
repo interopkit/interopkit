@@ -9,3 +9,4 @@ export { failOperation, rethrowOperational } from "./document-loader.js";
 export { defaultMandatoryPointers } from "./mandatory-pointers.js";
 export { withProofList, withProofObject } from "./proof-list.js";
 export { EDDSA_RDFC_2022 } from "./suites.js";
+export { inspectProofs } from "./verify-proof.js";

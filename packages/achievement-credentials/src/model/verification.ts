@@ -5,7 +5,7 @@
  * @module
  */
 import type { CallOptions } from "@interopkit/core";
-import type { AnyVerifiableCredential } from "./kinds.js";
+import type { AnyCredential, AnyVerifiableCredential } from "./kinds.js";
 
 /** The verification relationships of a DID document or controller document that a key can sit under (Controlled Identifiers 1.0 section 2.3). */
 export const KEY_RELATIONSHIPS = [
@@ -152,3 +152,17 @@ export type ProofResult =
       /** A sentence that says what is wrong with the proof. */
       readonly reason: string;
     };
+
+/** What a verification found of a credential: whether it is verified, what was checked, and what it holds. */
+export interface VerificationResult {
+  /** Whether every check passed or did not apply, and so did every endorsement and every credential that a CLR holds. */
+  readonly verified: boolean;
+  /** The credential that the proof secures, set when the proof is valid and the issuer check did not fail. */
+  readonly credential?: AnyCredential;
+  /** Every check of the verification, in the order of Open Badges 9. */
+  readonly checks: readonly VerificationCheck[];
+  /** The results for the endorsements of the credential, of its issuer and of its achievements. */
+  readonly endorsements: readonly VerificationResult[];
+  /** The results for the credentials that a CLR holds. */
+  readonly nested: readonly VerificationResult[];
+}

@@ -1,9 +1,9 @@
 import { CONTEXTS, type EndorsementCredential } from "../model/index.js";
+import { ENDORSEMENT_CREDENTIAL_SCHEMA } from "../model/internal.js";
 import { CLASS_SCHEMAS, ruleIssues } from "../read/internal.js";
 import { finish, readInput } from "./finish.js";
 import { endorsementCredentialInputSchema } from "./input-schemas.js";
 import type { EndorsementCredentialInput } from "./inputs.js";
-import { ENDORSEMENT_CREDENTIAL_SCHEMA } from "./schema-urls.js";
 
 /**
  * Builds an EndorsementCredential of Open Badges 3.0 under the Verifiable Credentials Data Model 2.0: writes the contexts, the

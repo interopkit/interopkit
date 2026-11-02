@@ -7,7 +7,8 @@ schemas of 1EdTech and the rules of the specifications. Validators list every fi
 issuer awards, and functions hash the identity of a recipient, compare two credentials and summarize one for display. A credential
 can be baked into a PNG or an SVG image and read out of one, and a client talks to the Open Badges and CLR APIs of a server. Keys
 resolve from DIDs and HTTPS documents, a key is bound to the issuer that publishes it, and a credential is signed and read as a
-JSON Web Token. The readers also read [Open Badges 2.0](https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html)
+JSON Web Token. A credential, its endorsements and the credentials of a CLR are verified as Open Badges and CLR say: the proof,
+the issuer's hold on the key, the status, the validity and the recipient. The readers also read [Open Badges 2.0](https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html)
 assertions with their BadgeClass and issuer, which are read and never written. It knows nothing of any product: the host says where a credential comes from and what it is for.
 
 ```mermaid
@@ -22,6 +23,7 @@ flowchart LR
     client["client: discoverService,<br/>createCredentialsClient"]
     jwt["signCredentialJwt, readCredentialJwt"]
     keys["createKeyResolver, verifyIssuerKey"]
+    verify["verifyCredential"]
   end
   model["AchievementCredential, ClrCredential, Profile, ...<br/>the model of Open Badges 3.0 and CLR 2.0;<br/>BadgeAssertionV2 of Open Badges 2.0"]
   host -->|"JSON as parsed"| read
@@ -39,6 +41,9 @@ flowchart LR
   host -->|"a credential, a signer"| jwt
   jwt -->|"a compact JWS, or a credential with its key"| host
   jwt --> keys
+  host -->|"a credential, keys, a clock"| verify
+  verify -->|"every check, and what the proof secures"| host
+  verify --> jwt
   keys -->|"your fetch"| docs["Key documents:<br/>DID, JWK, key set"]
 ```
 
@@ -67,7 +72,7 @@ npm install @interopkit/achievement-credentials
 |                                       | `AchievementCredentialV1p1`, `EndorsementCredentialV1p1`, `ClrCredentialV1p1`, `VerifiableCredentialV1p1`: the credentials under the Verifiable Credentials Data Model 1.1                                         |
 |                                       | `BadgeAssertionV2`, `AssertionV2`, `BadgeClassV2`, `ProfileV2`, `IdentityObjectV2`, `VerificationObjectV2` and the other classes of Open Badges 2.0, which the readers read and nothing writes                       |
 |                                       | `GetOpenBadgeCredentialsResponse`, `GetClrCredentialsResponse`, `ImsxStatusInfo`, `ServiceDescriptionDocument`, `Multikey`, `JWK`, `JWKS`: the models of the APIs and of keys                                      |
-|                                       | `KeyResolver`, `VerificationKey`, `VerificationCheck`, `ProofResult`, `ContextLoader`, `DataIntegritySuite`, `JsonLdIssue`, `KEY_RELATIONSHIPS`, `VERIFICATION_CHECKS`, `CHECK_OUTCOMES`: the terms of verification |
+|                                       | `KeyResolver`, `VerificationKey`, `VerificationCheck`, `VerificationResult`, `ProofResult`, `ContextLoader`, `DataIntegritySuite`, `JsonLdIssue`, `KEY_RELATIONSHIPS`, `VERIFICATION_CHECKS`, `CHECK_OUTCOMES`: the terms of verification |
 |                                       | `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CONTEXTS`, `ACHIEVEMENT_TYPES`, `ALIGNMENT_TARGET_TYPES`, `IDENTIFIER_TYPES`, `RESULT_TYPES`, `AUTHORIZATION_ERRORS`, `IDENTITY_TYPES_V2`, `VERIFICATION_TYPES_V2` and the other vocabularies |
 |                                       | `IssuableCredential`, `CredentialV1p1`, `AnyVerifiableCredential`, `AnyCredential`, `Entity`, `CredentialKind`, `EntityKind`, `ExtensionTerm` and the types of the vocabularies                                      |
 |                                       | `BakedCredential`, `BakedKind`: a credential read from an image, and its kind                                                                                                                                      |
@@ -88,6 +93,7 @@ npm install @interopkit/achievement-credentials
 |                                       | `verifyCredentialStatus`, `StatusCheckOptions`, `createStatusListCache`, `StatusListCache`: the validate algorithm with its codes, and list credentials kept across verifications          |
 | `@interopkit/achievement-credentials/refresh` | `refreshCredential`, `RefreshOptions`: get the newer version of a credential from its refresh service                                                                              |
 |                                       | `handleRefreshRequest`, `RefreshHandlerOptions`: answer a request to refresh, for the issuer                                                                                                        |
+| `@interopkit/achievement-credentials/verify` | `verifyCredential`, `VerifyOptions`, `KnownRecipient`: verify a credential, an endorsement or a CLR as Open Badges 9 and CLR 8 say, and return every check as data |
 
 ```ts
 import { readCredential, validateCredential } from "@interopkit/achievement-credentials";

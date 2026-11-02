@@ -3,6 +3,7 @@ import { base64url } from "jose";
 import { describe, expect, it } from "vitest";
 import { type IssuableCredential, readCredential } from "../src/index.js";
 import { readCredentialJwt, signCredentialJwt } from "../src/jwt/index.js";
+import { inspectJwt, readSettings } from "../src/jwt/internal.js";
 import { createKeyResolver } from "../src/keys/index.js";
 import {
   achievementCredential,
@@ -646,5 +647,67 @@ describe("reading a JWT", () => {
         readCredentialJwt("a.b.c", { ...options, ...JSON.parse(JSON.stringify(extra)) }),
       ).rejects.toBeInstanceOf(DataError);
     });
+  });
+});
+
+describe("inspecting a JWS for a verification", () => {
+  const inspect = (jws: string, extra: Record<string, unknown> = {}) =>
+    inspectJwt(jws, readSettings({ ...world().options, ...extra }));
+
+  it("gives the credential, the key and the raw payload, and leaves the key unbound", async () => {
+    const { options } = world();
+    let published = 0;
+    const keys = {
+      resolve: options.keys.resolve.bind(options.keys),
+      issuerKeys: async () => {
+        published += 1;
+        return [];
+      },
+    };
+    const jws = await signCredentialJwt(badge(), signerOf(KEYS.es256), { kid: `${ISSUER}#es256` });
+    const inspected = await inspectJwt(jws, readSettings({ ...options, keys }));
+    expect(inspected).toMatchObject({ valid: true, key: { id: `${ISSUER}#es256` }, timeFault: undefined });
+    expect(published).toBe(0);
+    if (inspected.valid) expect(inspected.raw).toMatchObject({ id: "https://example.edu/credentials/1" });
+  });
+
+  it.each([
+    ["is no compact JWS", "a.b", "format"],
+    ["is longer than it may be", "a.b.c", "format"],
+  ])("calls a fault of the form a format fault when the input %s", async (_name, jws) => {
+    expect(await inspect(jws, jws === "a.b.c" ? { maxInputBytes: 4 } : {})).toMatchObject({
+      valid: false,
+      check: "format",
+    });
+  });
+
+  it("calls a fault of the algorithm, of the key and of the signature a proof fault", async () => {
+    const jws = await signCredentialJwt(badge(), signerOf(KEYS.es256), { kid: `${ISSUER}#es256` });
+    expect(await inspect(jws, { algorithms: ["ES384"] })).toMatchObject({ valid: false, check: "proof" });
+    const forged = await forge({ ...badge(), iss: ISSUER }, KEYS.other);
+    expect(await inspect(forged)).toMatchObject({ valid: false, check: "proof" });
+    const unknown = await forge({ ...badge(), iss: ISSUER }, KEYS.es256, { kid: `${ISSUER}#nothing` });
+    expect(await inspect(unknown)).toMatchObject({ valid: false, check: "proof" });
+  });
+
+  it("calls a signed payload that is no credential a format fault, and one whose claims differ from it a proof fault", async () => {
+    expect(await inspect(await forge([1], KEYS.es256))).toMatchObject({ valid: false, check: "format" });
+    expect(await inspect(await forge({ hello: "world" }, KEYS.es256))).toMatchObject({ valid: false, check: "format" });
+    const differing = await forge({ ...badge(), iss: "https://other.example/issuers/9" }, KEYS.es256);
+    expect(await inspect(differing)).toMatchObject({ valid: false, check: "proof" });
+  });
+
+  it("keeps the time claims as a finding of a credential that is read, where readCredentialJwt refuses it", async () => {
+    const expired = await signCredentialJwt(
+      { ...badge(), validUntil: "2024-06-13T11:00:00Z" } as IssuableCredential,
+      signerOf(KEYS.es256),
+      {
+        kid: `${ISSUER}#es256`,
+      },
+    );
+    const inspected = await inspect(expired);
+    expect(inspected).toMatchObject({ valid: true });
+    if (inspected.valid) expect(inspected.timeFault).toContain("expired");
+    expect(await readCredentialJwt(expired, world().options)).toMatchObject({ valid: false });
   });
 });

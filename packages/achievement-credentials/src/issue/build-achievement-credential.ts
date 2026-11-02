@@ -1,9 +1,9 @@
 import { type AchievementCredential, CONTEXTS } from "../model/index.js";
+import { ACHIEVEMENT_CREDENTIAL_SCHEMA } from "../model/internal.js";
 import { CLASS_SCHEMAS, ruleIssues } from "../read/internal.js";
 import { finish, readInput } from "./finish.js";
 import { achievementCredentialInputSchema } from "./input-schemas.js";
 import type { AchievementCredentialInput } from "./inputs.js";
-import { ACHIEVEMENT_CREDENTIAL_SCHEMA } from "./schema-urls.js";
 
 /**
  * Builds an AchievementCredential of Open Badges 3.0 under the Verifiable Credentials Data Model 2.0: writes the contexts, the

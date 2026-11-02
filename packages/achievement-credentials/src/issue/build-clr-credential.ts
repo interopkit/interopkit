@@ -4,11 +4,11 @@ import {
   type ClrCredentialJwtPayload,
   CONTEXTS,
 } from "../model/index.js";
+import { CLR_CREDENTIAL_SCHEMA } from "../model/internal.js";
 import { CLASS_SCHEMAS, ruleIssues } from "../read/internal.js";
 import { finish, readInput } from "./finish.js";
 import { clrCredentialInputSchema } from "./input-schemas.js";
 import type { ClrCredentialInput } from "./inputs.js";
-import { CLR_CREDENTIAL_SCHEMA } from "./schema-urls.js";
 
 /**
  * Builds a ClrCredential of CLR 2.0 under the Verifiable Credentials Data Model 2.0: writes the contexts, the types, the

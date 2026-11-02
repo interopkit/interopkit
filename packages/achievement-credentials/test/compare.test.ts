@@ -11,7 +11,7 @@ import {
   verifiableCredential,
 } from "./fixtures.js";
 
-type Credential = Parameters<typeof sameCredential>[0];
+type Credential = Parameters<typeof newerCredential>[0];
 
 /** A credential with a change, for the comparisons. */
 const credential = (change: Record<string, unknown>): Credential =>

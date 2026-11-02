@@ -137,6 +137,11 @@ verified and its key is bound to the issuer of the list, who must be the issuer 
 | `timeoutMs`     | The time a fetch may take                                                                                              | `10000`                          |
 | `maxTokens`     | The most tokens of JSON in the list credential, counted before it is parsed                                             | `1000000`       |
 | `maxBytes`      | The most bytes of the list credential                                                                                  | `1048576`                        |
+| `algorithms`    | The algorithms that may sign a list credential that is a JWT                                                           | `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `EdDSA` |
+| `clockSkewSeconds` | The seconds that the time claims of a list credential that is a JWT may be off                                      | `60`                             |
+| `allowUnboundKeys` | Accept a list credential whose key its issuer does not publish                                                      | `false`                          |
+| `legacyProofs`  | Accept a list credential with an `Ed25519Signature2020` proof                                                          | `false`                          |
+| `suites`        | More Data Integrity suites for a list credential                                                                       | None                             |
 | `signal`        | Ends the caller's wait                                                                                                 | None                             |
 
 ## Keeping list credentials

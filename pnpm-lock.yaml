@@ -271,6 +271,9 @@ importers:
 
   packages/achievement-credentials:
     dependencies:
+      '@cfworker/json-schema':
+        specifier: 4.1.1
+        version: 4.1.1
       '@interop/data-integrity-proof':
         specifier: 3.4.8
         version: 3.4.8

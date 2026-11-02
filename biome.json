@@ -772,7 +772,9 @@
                       "**/refresh",
                       "**/refresh/**",
                       "**/status",
-                      "**/status/**"
+                      "**/status/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "model/ holds the types and terms and imports no other module: they build on it."
                   }
@@ -811,7 +813,9 @@
                       "**/refresh",
                       "**/refresh/**",
                       "**/status",
-                      "**/status/**"
+                      "**/status/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "read/ builds on model/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
@@ -848,7 +852,9 @@
                       "**/refresh",
                       "**/refresh/**",
                       "**/status",
-                      "**/status/**"
+                      "**/status/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "issue/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
@@ -887,7 +893,9 @@
                       "**/refresh",
                       "**/refresh/**",
                       "**/status",
-                      "**/status/**"
+                      "**/status/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "keys/ builds on model/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
@@ -922,7 +930,9 @@
                       "**/refresh",
                       "**/refresh/**",
                       "**/status",
-                      "**/status/**"
+                      "**/status/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "jwt/ builds on model/, read/, keys/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
@@ -957,7 +967,9 @@
                       "**/refresh",
                       "**/refresh/**",
                       "**/status",
-                      "**/status/**"
+                      "**/status/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "data-integrity/ builds on model/, read/, keys/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
@@ -988,7 +1000,9 @@
                       "**/issue",
                       "**/issue/**",
                       "**/refresh",
-                      "**/refresh/**"
+                      "**/refresh/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "status/ builds on model/, read/, keys/, jwt/, data-integrity/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
@@ -1027,7 +1041,9 @@
                       "**/read",
                       "**/read/**",
                       "**/status",
-                      "**/status/**"
+                      "**/status/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "refresh/ builds on model/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
@@ -1064,7 +1080,9 @@
                       "**/refresh",
                       "**/refresh/**",
                       "**/status",
-                      "**/status/**"
+                      "**/status/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "compare/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }
@@ -1101,9 +1119,31 @@
                       "**/refresh",
                       "**/refresh/**",
                       "**/status",
-                      "**/status/**"
+                      "**/status/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "baking/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/achievement-credentials/src/verify/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/baking", "**/baking/**", "**/client", "**/client/**"],
+                    "message": "verify/ builds on model/, read/, keys/, jwt/, data-integrity/, status/, refresh/, compare/, issue/ and @interopkit/core only: baking/ and client/ are its siblings and never a layer under it."
                   }
                 ]
               }
@@ -1138,7 +1178,9 @@
                       "**/refresh",
                       "**/refresh/**",
                       "**/status",
-                      "**/status/**"
+                      "**/status/**",
+                      "**/verify",
+                      "**/verify/**"
                     ],
                     "message": "client/ builds on model/, read/ and @interopkit/core only: the other modules are its siblings or build on it, and are never a layer under it."
                   }

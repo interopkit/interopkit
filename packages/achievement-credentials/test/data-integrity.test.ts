@@ -8,6 +8,7 @@ import {
   defaultMandatoryPointers,
   EDDSA_RDFC_2022,
   failOperation,
+  inspectProofs,
   rethrowOperational,
   withProofList,
   withProofObject,
@@ -17,7 +18,7 @@ import { createKeyResolver } from "../src/keys/index.js";
 import { CLOSED, memoryContexts } from "./context-fixtures.js";
 import { achievementCredential, clrCredential, endorsementCredential } from "./fixtures.js";
 import { HOSTILE, neverParsesLarge } from "./hostile.js";
-import { clockAt, KEYS, signerOf, type TestKey } from "./key-fixtures.js";
+import { clockAt, KEYS, serve, signerOf, type TestKey } from "./key-fixtures.js";
 
 const NOW = Date.UTC(2024, 5, 14, 12, 0, 0);
 
@@ -569,5 +570,79 @@ describe("a suite that is given a proof with no verification method", () => {
       },
     );
     expect(verdict).toBe(false);
+  });
+});
+
+describe("looking at the proofs of a credential that has been read", () => {
+  const issuer = issuerOf(KEYS.ed25519);
+
+  async function signed() {
+    const { keys, clock, contexts, options } = world();
+    const credential = await addProof(credentialOf(issuer.did), issuer.signer, options);
+    const check = (document: unknown, extra: Record<string, unknown> = {}) =>
+      inspectProofs(document as Record<string, unknown>, readCredential(document, { kind: "AchievementCredential" }), {
+        keys,
+        clock,
+        contexts: contexts.load,
+        ...extra,
+      });
+    return { credential, check };
+  }
+
+  it("gives the key that verified the proof and leaves the key unbound when the caller says so", async () => {
+    const { credential, check } = await signed();
+    const verdict = await check(credential, { allowUnboundKeys: true });
+    expect(verdict).toMatchObject({ valid: true, bound: false, key: { id: issuer.method } });
+  });
+
+  it("says that a proof is not valid when it does not verify, and that it is unavailable when no suite checks it", async () => {
+    const { credential, check } = await signed();
+    expect(await check({ ...credential, name: "Changed" })).toMatchObject({ valid: false, unavailable: false });
+    const [proof] = (credential as unknown as { proof: Record<string, unknown>[] }).proof;
+    const foreign = { ...credential, proof: [{ ...proof, cryptosuite: "eddsa-jcs-2022" }] };
+    const verdict = await check(foreign);
+    expect(verdict).toMatchObject({ valid: false, unavailable: true });
+    const { proof: _proof, ...unsigned } = credential as unknown as Record<string, unknown>;
+    expect(await check(unsigned)).toMatchObject({
+      valid: false,
+      unavailable: false,
+      reason: "The credential has no proof.",
+    });
+    const legacy = { ...credential, proof: [{ ...proof, type: "Ed25519Signature2020" }] };
+    expect(await check(legacy)).toMatchObject({ valid: false, unavailable: false });
+  });
+
+  it("rejects with the ServiceError of a key that cannot be read, which the caller turns into an unavailable proof", async () => {
+    const { credential } = await signed();
+    const { fetch } = serve({ "https://example.edu/keys/1": 503 });
+    const keys = createKeyResolver({ clock: clockAt(NOW), fetch });
+    const [proof] = (credential as unknown as { proof: Record<string, unknown>[] }).proof;
+    const moved = { ...credential, proof: [{ ...proof, verificationMethod: "https://example.edu/keys/1" }] };
+    await expect(
+      inspectProofs(
+        moved as unknown as Record<string, unknown>,
+        readCredential(moved, { kind: "AchievementCredential" }),
+        {
+          keys,
+          clock: clockAt(NOW),
+          contexts: world().contexts.load,
+        },
+      ),
+    ).rejects.toBeInstanceOf(ServiceError);
+  });
+
+  it("refuses an option that is not valid, as verifyProof does", async () => {
+    const { credential } = await signed();
+    await expect(
+      inspectProofs(
+        credential as unknown as Record<string, unknown>,
+        readCredential(credential, { kind: "AchievementCredential" }),
+        {
+          keys: createKeyResolver({ clock: clockAt(NOW) }),
+          clock: clockAt(NOW),
+          contexts: "loader" as never,
+        },
+      ),
+    ).rejects.toBeInstanceOf(DataError);
   });
 });

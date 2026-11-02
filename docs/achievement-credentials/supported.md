@@ -12,7 +12,8 @@ flowchart LR
   model --> client["Client of the APIs:<br/>discovery, credentials, profile"]
   model --> keys["Keys, issuer binding,<br/>JWT and Data Integrity proofs"]
   spec2["Open Badges 2.0"] --> read2["Reader of 2.0<br/>documents, aliases, rules"]
-  spec -.-> outside["Not included here:<br/>status, refresh, verification,<br/>the provider of the APIs"]
+  model --> verify["Verification: every check of Open Badges 9<br/>and CLR 8, endorsements, held credentials"]
+  spec -.-> outside["Not included here:<br/>the provider of the APIs,<br/>verifying Open Badges 2.0"]
 ```
 
 | Area                    | Specification              | Included                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -48,12 +49,12 @@ flowchart LR
 | Status lists            | OB 9.1, Bitstring Status List 2.1, 3.2 | `createStatusList`, `allocateStatusIndex` (a free index at random), `setCredentialStatus`, `issueStatusListCredential` (a JWS or a Data Integrity proof), `verifyCredentialStatus` (the validate algorithm with its codes), `createStatusListCache` (`ttl` and `validUntil`); entries of the `message` purpose or wider than 1 bit are `skipped` |
 | Refresh                 | OB 9.1, VCCR               | `refreshCredential` (`1EdTechCredentialRefresh` and `ImsCredentialRefresh`), `handleRefreshRequest` for the issuer                                                                                |
 | Examples of 2.0         | OB 2.0 and its examples    | Every document that the pages print is read; the first example lacks `hashed`, and a revoked endorsement holds only what revocation requires: both are pinned with their findings                                                                                                                                                                                                                                                                             |
+| Verification            | OB 9, CLR 8                | `verifyCredential`: the form, the schema (1EdTech's, and any other that is fetched and has no regular expression), the proof, the issuer's hold on the key, the refresh, the status, the validity and the recipient; the endorsements of the credential, of its issuer and of its achievements; the credentials that a CLR holds |
 
 ## Not included
 
 | Not included                                                         | Why                                                                                                         |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Verification of a whole credential                                   | `/verify` joins the checks; the readers only check shape and the rules of the subject                        |
 | The provider side of the APIs of Open Badges and CLR                 | A server over requests, with the host's storage and authorization                                            |
 | Fetching, verifying and baking Open Badges 2.0, and issuing it       | Verification fetches and verifies 2.0 badges and reads baked ones; 2.0 is never issued                       |
 | JSON-LD processing, a map of languages for a text, a single context | The compacted form is read as JSON; the contexts give no language container and a credential needs both contexts |

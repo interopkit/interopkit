@@ -1,6 +1,7 @@
 import { DataError } from "@interopkit/core";
-import { describe, hasMoreTokensThan, isRecord, nestsDeeperThan } from "@interopkit/core/checks";
+import { describe, isRecord } from "@interopkit/core/checks";
 import { isBaseProof } from "@interopkit/selective-disclosure";
+import { textWithinLimits } from "../json-text.js";
 import { bindKey } from "../keys/internal.js";
 import type {
   AnyVerifiableCredential,
@@ -19,18 +20,31 @@ const MILLISECONDS_PER_SECOND = 1000;
 /** The `proofPurpose` of a proof that makes a credential an assertion of its issuer. */
 const ASSERTION = "assertionMethod";
 
+/** What a proof is not valid for, and whether that is a matter of what the verifier has and not of the proof. */
+interface Refusal {
+  readonly reason: string;
+  /** Whether no suite of the verifier checks the proof: a proof that is neither valid nor invalid for it. */
+  readonly unavailable: boolean;
+}
+
 /** The suite that checks a proof, or the reason that none does. */
-function suiteOf(proof: Readonly<Record<string, unknown>>, settings: VerifySettings): DataIntegritySuite | string {
+function suiteOf(proof: Readonly<Record<string, unknown>>, settings: VerifySettings): DataIntegritySuite | Refusal {
   if (proof.type === ED25519_SIGNATURE_2020.cryptosuite) {
     return settings.legacyProofs
       ? ED25519_SIGNATURE_2020
-      : "The proof is an Ed25519Signature2020, which is refused unless legacyProofs is set.";
+      : {
+          reason: "The proof is an Ed25519Signature2020, which is refused unless legacyProofs is set.",
+          unavailable: false,
+        };
   }
   if (proof.type !== "DataIntegrityProof" || typeof proof.cryptosuite !== "string") {
-    return `The proof is a ${describe(proof.type)}, and a Data Integrity proof is a DataIntegrityProof with a cryptosuite.`;
+    return {
+      reason: `The proof is a ${describe(proof.type)}, and a Data Integrity proof is a DataIntegrityProof with a cryptosuite.`,
+      unavailable: false,
+    };
   }
   const found = [...settings.suites, ...BUILT_IN_SUITES].find(({ cryptosuite }) => cryptosuite === proof.cryptosuite);
-  return found ?? `No suite verifies the cryptosuite ${proof.cryptosuite}.`;
+  return found ?? { reason: `No suite verifies the cryptosuite ${proof.cryptosuite}.`, unavailable: true };
 }
 
 /** Finds what is wrong with a proof before its signature is looked at, or `undefined`. */
@@ -56,52 +70,101 @@ async function checkProof(
   candidate: unknown,
   issuer: string,
   settings: VerifySettings,
-): Promise<{ readonly key: VerificationKey; readonly bound: boolean } | { readonly reason: string }> {
+): Promise<{ readonly key: VerificationKey; readonly bound: boolean } | Refusal> {
   // The model has refused a proof that is no object; the empty object stands in for the type, and has no type to name.
   const proof = isRecord(candidate) ? candidate : {};
   if (isBaseProof(proof)) {
     return {
       reason: "The proof is an ecdsa-sd-2023 base proof, which holds what a holder hides: derive a disclosure first.",
+      unavailable: false,
     };
   }
   const suite = suiteOf(proof, settings);
-  if (typeof suite === "string") return { reason: suite };
+  if ("reason" in suite) return suite;
   const problem = proofProblem(proof, settings);
-  if (problem !== undefined) return { reason: problem };
+  if (problem !== undefined) return { reason: problem, unavailable: false };
   const method = String(proof.verificationMethod);
   const resolved = await settings.keys.resolve(
     method,
     settings.signal === undefined ? undefined : { signal: settings.signal },
   );
-  if (resolved === undefined) return { reason: `No key is named by the verificationMethod ${method}.` };
+  if (resolved === undefined)
+    return { reason: `No key is named by the verificationMethod ${method}.`, unavailable: false };
   const verdict = await suite.verify(document, proof, {
     publicKeyJwk: resolved.publicKeyJwk,
     contexts: settings.contexts,
     ...(settings.signal === undefined ? {} : { signal: settings.signal }),
   });
-  if (!verdict) return { reason: `The proof does not verify with the key ${resolved.id}.` };
+  if (!verdict) return { reason: `The proof does not verify with the key ${resolved.id}.`, unavailable: false };
   const binding = await bindKey(resolved, issuer, settings);
-  return "reason" in binding ? binding : { key: resolved, bound: binding.bound };
+  return "reason" in binding ? { reason: binding.reason, unavailable: false } : { key: resolved, bound: binding.bound };
 }
 
-/** Checks the credential before anything reads it: its size and depth, and the model; returns the credential as the model has it. */
+/** Checks the credential before anything reads it: its size, tokens and depth, and the model; returns the credential as the model has it. */
 function readInput(
   credential: IssuableCredential,
   settings: VerifySettings,
 ): { readonly value: AnyVerifiableCredential } | { readonly reason: string } {
-  const text = JSON.stringify(credential);
-  if (text.length > settings.maxInputBytes) {
-    return {
-      reason: `The credential has ${text.length} characters, more than the ${settings.maxInputBytes} that it may have.`,
-    };
+  const text = textWithinLimits(
+    credential,
+    { maxCharacters: settings.maxInputBytes, maxDepth: settings.maxDepth, maxTokens: settings.maxTokens },
+    "The credential",
+  );
+  return "reason" in text ? text : credentialOrReason(credential, "The credential");
+}
+
+/** What the proofs of a credential came to: the first that is valid, or why none is. */
+type ProofVerdict =
+  | {
+      readonly valid: true;
+      readonly credential: AnyVerifiableCredential;
+      readonly key: VerificationKey;
+      readonly bound: boolean;
+    }
+  | { readonly valid: false; readonly reason: string; readonly unavailable: boolean };
+
+/** Looks at every proof of a credential that has been read, in order, and keeps the first that is valid or else the verdict on the first. */
+async function proofsOf(
+  document: Readonly<Record<string, unknown>>,
+  credential: AnyVerifiableCredential,
+  settings: VerifySettings,
+): Promise<ProofVerdict> {
+  const proofs = Array.isArray(document.proof) ? document.proof : document.proof === undefined ? [] : [document.proof];
+  const issuer = typeof credential.issuer === "string" ? credential.issuer : credential.issuer.id;
+  let first: Refusal = { reason: "The credential has no proof.", unavailable: false };
+  for (const [index, proof] of proofs.entries()) {
+    try {
+      const checked = await checkProof(document, proof, issuer, settings);
+      if ("key" in checked) return { valid: true, credential, key: checked.key, bound: checked.bound };
+      if (index === 0) first = checked;
+    } catch (error) {
+      rethrowOperational(error, settings.signal);
+      throw error;
+    }
   }
-  // The tokens and the levels are counted from the text, as for any text that is parsed; the object is read next.
-  if (hasMoreTokensThan(text, settings.maxTokens)) {
-    return { reason: `The credential has more than the ${settings.maxTokens} tokens of JSON that it may have.` };
-  }
-  if (nestsDeeperThan(text, settings.maxDepth))
-    return { reason: `The credential nests more than ${settings.maxDepth} levels.` };
-  return credentialOrReason(credential, "The credential");
+  return { valid: false, ...first };
+}
+
+/**
+ * Looks at the proofs of a credential that the caller has read within its limits, and tells a proof that no suite checks from
+ * one that is not valid. It reads and counts nothing again, which is what `verifyCredential` needs.
+ *
+ * @param document - The credential as it was received, which the proofs sign.
+ * @param credential - The same credential, read into the model.
+ * @param options - The options of `verifyProof`.
+ * @returns The verdict.
+ * @throws `DataError` when an option is not valid.
+ * @throws `ServiceError` when a key, what the issuer publishes or a context cannot be read.
+ * @throws The `reason` of the signal when it aborts.
+ */
+export async function inspectProofs(
+  document: Readonly<Record<string, unknown>>,
+  credential: AnyVerifiableCredential,
+  options: DataIntegrityVerifyOptions,
+): Promise<ProofVerdict> {
+  const settings = verifySettings(options);
+  settings.signal?.throwIfAborted();
+  return await proofsOf(document, credential, settings);
 }
 
 /**
@@ -132,22 +195,6 @@ export async function verifyProof(
   settings.signal?.throwIfAborted();
   const read = readInput(credential, settings);
   if ("reason" in read) return { valid: false, reason: read.reason };
-  const proofs = Array.isArray(credential.proof)
-    ? credential.proof
-    : credential.proof === undefined
-      ? []
-      : [credential.proof];
-  const issuer = typeof read.value.issuer === "string" ? read.value.issuer : read.value.issuer.id;
-  let first = "The credential has no proof.";
-  for (const [index, proof] of proofs.entries()) {
-    try {
-      const checked = await checkProof(credential, proof, issuer, settings);
-      if ("key" in checked) return { valid: true, credential: read.value, key: checked.key, bound: checked.bound };
-      if (index === 0) first = checked.reason;
-    } catch (error) {
-      rethrowOperational(error, settings.signal);
-      throw error;
-    }
-  }
-  return { valid: false, reason: first };
+  const verdict = await proofsOf(credential, read.value, settings);
+  return verdict.valid ? verdict : { valid: false, reason: verdict.reason };
 }

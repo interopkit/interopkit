@@ -1,0 +1,66 @@
+import { DataError, ServiceError } from "@interopkit/core";
+import { sameCredential } from "../compare/index.js";
+import { VERIFICATION_CHECKS, type VerificationCheck } from "../model/index.js";
+import { refreshCredential } from "../refresh/index.js";
+import { type Authentic, type Authenticated, authenticate } from "./authenticate.js";
+import type { Context } from "./context.js";
+import { preparedOf } from "./input.js";
+import { fetchOf } from "./options.js";
+import { type Checks, checkOf } from "./result.js";
+
+/** What a refresh came to: its check, and the credential that took the place of the original when it succeeded. */
+export interface Refreshed {
+  readonly check: VerificationCheck;
+  readonly replacement?: Authenticated & { readonly authentic: Authentic };
+}
+
+/** Says which check of a credential did not pass. */
+function firstProblem(checks: Checks): string {
+  const found = VERIFICATION_CHECKS.map((name) => checks[name]).find(
+    (check) => check !== undefined && check.outcome !== "passed" && check.outcome !== "skipped",
+  );
+  return found === undefined ? "it is not valid" : `the check of the ${found.check} says: ${found.detail}`;
+}
+
+/**
+ * Follows the refresh service of a credential, once, after its proof (Open Badges 9.1): the answer is a candidate that must be
+ * authentic itself and the same credential (Open Badges 10), or the refresh has not succeeded and the verification goes on with
+ * the original. A candidate is not refreshed again, whatever it names.
+ */
+export async function refresh(authentic: Authentic, context: Context): Promise<Refreshed> {
+  const { settings } = context;
+  const unavailable = (detail: string): Refreshed => ({ check: checkOf("refresh", "unavailable", detail) });
+  if (!settings.refresh) return { check: checkOf("refresh", "skipped", "The option refresh is false.") };
+  const { jwt } = settings;
+  let candidate: Awaited<ReturnType<typeof refreshCredential>>;
+  try {
+    candidate = await refreshCredential(authentic.credential, {
+      fetch: fetchOf(settings),
+      timeoutMs: settings.timeoutMs,
+      maxBytes: settings.maxBytes,
+      maxTokens: jwt.maxTokens,
+      ...(jwt.signal === undefined ? {} : { signal: jwt.signal }),
+    });
+  } catch (error) {
+    if (error instanceof ServiceError || error instanceof DataError) {
+      return unavailable(`The refresh did not succeed, and the original credential is verified: ${error.message}`);
+    }
+    throw error;
+  }
+  if (candidate === undefined) {
+    return { check: checkOf("refresh", "skipped", "The credential has no refresh service of a type that is known.") };
+  }
+  const prepared = preparedOf(candidate, settings);
+  if ("reason" in prepared) return unavailable(`The refresh service answered no credential: ${prepared.reason}`);
+  const refreshed = await authenticate(prepared.prepared, context);
+  if (refreshed.authentic === undefined) {
+    return unavailable(`The refreshed credential is not authentic: ${firstProblem(refreshed.checks)}`);
+  }
+  if (!sameCredential(authentic.credential, refreshed.authentic.credential)) {
+    return unavailable("The refreshed credential is another credential: its id or its issuer differs.");
+  }
+  return {
+    check: checkOf("refresh", "passed", "The credential was refreshed, and the refreshed credential is verified."),
+    replacement: { ...refreshed, authentic: refreshed.authentic },
+  };
+}

@@ -15,7 +15,8 @@
       "@interopkit/achievement-credentials/keys": ["./src/keys/index.ts"],
       "@interopkit/achievement-credentials/refresh": ["./src/refresh/index.ts"],
       "@interopkit/achievement-credentials/status": ["./src/status/index.ts"],
-      "@interopkit/achievement-credentials/jwt": ["./src/jwt/index.ts"]
+      "@interopkit/achievement-credentials/jwt": ["./src/jwt/index.ts"],
+      "@interopkit/achievement-credentials/verify": ["./src/verify/index.ts"]
     }
   },
   "include": ["src", "test"]

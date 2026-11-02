@@ -114,6 +114,7 @@ export {
   type VerificationCheck,
   type VerificationCheckName,
   type VerificationKey,
+  type VerificationResult,
 } from "./verification.js";
 export {
   ACHIEVEMENT_TYPES,

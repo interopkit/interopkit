@@ -16,7 +16,8 @@
         "src/jwt/index.ts",
         "src/data-integrity/index.ts",
         "src/status/index.ts",
-        "src/refresh/index.ts"
+        "src/refresh/index.ts",
+        "src/verify/index.ts"
       ]
     },
     "packages/learning-analytics": {
