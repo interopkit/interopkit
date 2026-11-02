@@ -155,25 +155,27 @@ a response. An LRS does not validate patterns, so a problem is a warning.
 | ------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------- |
 | `maxBytes` of `readStatementJson`           | 10,485,760 | The text of a request, counted as UTF-8                                                           |
 | `maxDepth` of `readStatementJson`           | 64         | Arrays and objects nested in each other, checked before the text is parsed                        |
-| `maxTokens` of `readStatementJson`          | 1,000,000  | The memory of the parse, up to 250 bytes for each token; checked before the text is parsed        |
+| `maxTokens` of `readStatementJson`          | 1,000,000  | The memory of the parse, which grows with the tokens; checked before the text is parsed           |
 | `maxFindings`                               | 1,000      | The findings of a call, which cost about a kilobyte each; the check stops looking at the first one beyond it |
 | Levels that the value of an extension nests | 64         | `extensions` of an Activity Definition, a Result and a Context; a deeper value is `invalid-value` |
 
 `readStatement` and `validateStatement` take a value that is in memory already, so the host's limit on the request applies
 first. A batch has no limit here: the LRS sets the number of Statements.
 
-`maxTokens` bounds the memory of `readStatementJson`, because the syntax tree grows with the tokens and not with the bytes: the
-worst text, `[0,0,0,...]`, has one token for each byte. Peak memory above the process, measured on Node.js:
+`maxTokens` bounds the memory of `readStatementJson`, because a parse grows with the tokens and not with the bytes: the worst
+text, `[0,0,0,...]`, has one token for each byte. Peak memory of the process, measured on Node.js 26, whose empty process is 60 MB:
 
-| Text                                                          | Result                         | Peak memory |
-| ------------------------------------------------------------- | ------------------------------ | ----------- |
-| 10 MiB of `[0,0,0,...]`, 10,485,000 tokens                    | Refused before the parse       | 19 MB       |
-| 1,000,000 tokens of `{"":0,"":0,...}`, the most for the tree | Read, then refused as repeated | 229 MB      |
-| 1,000,000 tokens of `[{},{},...]` through `validateStatements` | 1,001 findings                 | 141 MB      |
+| Input | Result | Peak memory |
+| --- | --- | --- |
+| 10 MiB of `[0,0,0,...]`, 5,242,880 tokens | Refused before the parse | 80 MB |
+| 1,000,000 tokens of `{"k0":0,"k1":0,...}`, the most names | Read | 134 MB |
+| 1,000,000 tokens of `[{},{},...]` | Read | 125 MB |
+| A string of 10 MiB | Read | 101 MB |
+| 300,000 empty objects through `validateStatements` | 1,001 findings | 131 MB |
 
-A host with less memory passes a smaller `maxTokens`: the parse takes up to 250 bytes for each token. The findings add no more
-than `maxFindings` of about a kilobyte, whatever the size of the value: a Statement with a million wrong entries in a list gives
-1,001 findings in 38 MB.
+The findings add no more than `maxFindings` of about a kilobyte, whatever the size of the value, and the check stops at the first
+finding beyond it, in the rules between properties as in the schema. A text whose limit of bytes or tokens refuses it throws
+`JsonLimitError`, a `DataError` that names the limit, so that an LRS answers 413.
 
 ## Errors
 

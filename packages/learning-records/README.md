@@ -124,7 +124,8 @@ differences from the references. The guides of [building](https://github.com/int
 [the LRS handler](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/store.md) and
 [the versions of xAPI](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/versions.md) do the same.
 
-[The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/evidence.md) shows what the
+[The comparators](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/comparators.md) map what other LRSs and
+clients do against the package. [The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/evidence.md) shows what the
 package was checked against: the rules of both versions, both ADL conformance suites, SQL LRS and the validator of Learning
 Locker as oracles, an example LRS with a platform and a dashboard, the speed of checking and four runtimes.
 

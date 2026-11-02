@@ -523,7 +523,7 @@ describe("voiding", () => {
     expect(batch.store.held.get(uuid(6))?.voided).toBe(true);
   });
 
-  it("accepts a voiding Statement whose target it does not hold, and voids the Statement when it comes (4.2.5)", async () => {
+  it("accepts a voiding Statement whose target it does not hold, and voids the Statement when it comes", async () => {
     const store = memory();
     const { response } = await send("POST", voiding(2, uuid(1)), { store });
     expect(response.status).toBe(200);
@@ -582,7 +582,7 @@ describe("voiding", () => {
 });
 
 describe("A batch with an id that the LRS holds", () => {
-  it("stores nothing of a batch with a Statement that conflicts, whatever else it holds (4.1.5)", async () => {
+  it("stores nothing of a batch with a Statement that conflicts, whatever else it holds", async () => {
     const store = memory();
     await send("POST", statementOf(1), { store });
     const changed = { ...statementOf(1), object: { id: "https://example.org/other" } };

@@ -7,14 +7,14 @@ export const BENCH_OPTIONS = { time: 500, iterations: 10, warmupTime: 100, warmu
 export const STATEMENTS = 1000;
 
 /**
- * The most that the fastest sample of a benchmark may take, in milliseconds: five times the fastest sample of the runner of CI,
- * rounded up to one significant digit, as docs/learning-records/evidence.md explains.
+ * The most that the fastest sample of a benchmark may take, in milliseconds: five times the fastest of the samples of the runner
+ * of CI, rounded up to one significant digit, as docs/learning-records/evidence.md explains.
  */
 export const BUDGETS = {
   /** `validateStatement` of each of the Statements of the batch. */
-  validateStatement: 200,
+  validateStatement: 100,
   /** `readStatementJson` of the text of the batch. */
-  readStatementJson: 700,
+  readStatementJson: 500,
 } as const;
 
 /**
@@ -26,7 +26,7 @@ export const RATIOS = {
   /** `validateStatement` of the Statements of the batch, as a multiple of the validator of Learning Locker on the same Statements: parity or better. */
   validateAgainstLearningLocker: 1,
   /** `readStatementJson` of the text of the batch, as a multiple of `JSON.parse` of it. */
-  readJsonAgainstParse: 200,
+  readJsonAgainstParse: 40,
 } as const;
 
 /**

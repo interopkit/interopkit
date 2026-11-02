@@ -78,16 +78,20 @@ allows.
 
 ## Speed
 
-`validateStatement` checks 1,000 Statements of 771 KB in about 5 ms, and the validator of Learning Locker takes about 10 ms on
-the same Statements, which both accept: a ratio of 0.5, where the design asks for parity or better. `readStatementJson`, which
-also finds a property that occurs twice, takes 14 to 26 times what `JSON.parse` takes on the same text; the ratio moves with the load of the machine, since the two do different work.
+`validateStatement` checks 1,000 Statements of 771 KB in 19 to 34 ms on the runners of CI, and the validator of Learning Locker
+takes 40 to 62 ms on the same Statements, which both accept: a ratio of 0.46 to 0.56 in five runs, where the design asks for
+parity or better. `readStatementJson`, which also finds a property that occurs twice, takes 3.6 to 6.6 times what `JSON.parse`
+takes on the same text on a laptop: 3.6 for the best of 40 runs at a load of 10, and up to 6.6 through `vitest bench` at a load of
+18. `JSON.parse` judges the syntax first, so the search for a repeated name is a scan of the strings and the brackets that keeps
+the names of the open objects and builds nothing else; a parser that builds a syntax tree took 16 to 18 times `JSON.parse` on the
+same machine. A test checks the scan against such a parser on 2,000 generated texts.
 
-| Budget                                                       | Value | How it was set                                                                                                   |
-| ------------------------------------------------------------ | ----- | ---------------------------------------------------------------------------------------------------------------- |
-| `validateStatement` against the validator of Learning Locker | 1     | Parity, as the design asks; measured 0.48 to 0.53 on a laptop, and the ratio holds on any machine                |
-| `readStatementJson` against `JSON.parse`                     | 200   | Five times the highest ratio measured, 25.5, rounded up to one significant digit                                 |
-| `validateStatement` of the batch, in milliseconds | 200 | Five times the fastest sample of the runner of CI, 34.21, rounded up to one significant digit |
-| `readStatementJson` of the batch, in milliseconds | 700 | Five times the fastest sample of the runner of CI, 131.05, rounded up to one significant digit |
+| Budget | Value | How it was set |
+| --- | --- | --- |
+| `validateStatement` against the validator of Learning Locker | 1 | Parity, as the design asks; the ratio holds on any machine |
+| `readStatementJson` against `JSON.parse` | 40 | Five times the highest ratio measured, 6.6, rounded up to one significant digit |
+| `validateStatement` of the batch, in milliseconds | 100 | Five times the fastest of five samples of the runners of CI, 18.84, rounded up to one significant digit |
+| `readStatementJson` of the batch, in milliseconds | 500 | Five times the fastest of five samples of the runners of CI, 94.46, rounded up to one significant digit. The samples were taken before the scan, which reads about four times faster; the ratio is the budget that holds it |
 
 ## Runtimes
 

@@ -67,10 +67,11 @@ page.value?.statements.length; // => 1
 | `sendStatements(statements, options?)`    | `POST statements`                                     | The ids of the batch, in order, when every Statement has one; else the list of a 200      | Any other status is a `ServiceError`    |
 | `getStatement(id, options?)`              | `GET statements?statementId=` or `voidedStatementId=` | The Statement; with `attachments: true`, `{ statement, attachments }`                     | `undefined` for 404                     |
 | `queryStatements(query, options?)`        | `GET statements?` and then each `more`                | An iteration of `StatementPage`: Statements, Attachment data, `consistentThrough`, `more` | A page that fails rejects the iteration |
+| `moreStatements(more, options?)` | `GET` of a `more` that a host kept, and then each `more` | An iteration of `StatementPage`, as `queryStatements` | An address on another origin throws `DataError` before any request |
 | `getDocument(target, options?)`           | `GET` of the resource of the target                   | `LrsDocument`: type, bytes, `etag`, `updated`                                             | `undefined` for 404                     |
 | `putDocument(target, document, options?)` | `PUT`                                                 | `"written"` for 204; `"precondition-failed"` for 412; `"conflict"` for 409                | Any other status is a `ServiceError`    |
 | `postDocument(target, json, options?)`    | `POST`, the JSON merged into the document             | As `putDocument`                                                                          | As `putDocument`                        |
-| `deleteDocument(target, options?)`        | `DELETE`                                              | `"written"` for 204; `"precondition-failed"` for 412                                      | Any other status is a `ServiceError`    |
+| `deleteDocument(target, options?)`        | `DELETE`                                              | `"written"` for 204; `"precondition-failed"` for 412; `"conflict"` for 409                                      | Any other status is a `ServiceError`    |
 | `listDocumentIds(scope, options?)`        | `GET` of the resource, with no id                     | The ids, perhaps those after `since`                                                      |                                         |
 | `deleteStates(scope, options?)`           | `DELETE activities/state` with no `stateId`           | Nothing                                                                                   |                                         |
 | `getActivity(activityId, options?)`       | `GET activities?activityId=`                          | The `Activity`                                                                            |                                         |
@@ -82,7 +83,9 @@ A target names a document by its resource: `{ resource: "state", activityId, age
 target without the id. Every `agent` has exactly one identifier. Every call takes the `signal` of `CallOptions`.
 
 Statements are read with the rules of an LRS, and a property given twice in an answer is refused. A Statement to send is
-checked with the rules of a provider first. When `attachments` is passed to a send, even as an empty list, the request is a
+checked with the rules of a provider first, or with those of an LRS when `role: "lrs"` says that the host forwards what another
+LRS holds, with the `stored`, `authority` and `version` that it set. Every request asks for JSON with `Accept`, and a read that
+names `languages` sends them as `Accept-Language`, by which the LRS picks one language of each map of the format `canonical`. When `attachments` is passed to a send, even as an empty list, the request is a
 multipart message written by `writeMultipart`; otherwise it is JSON, and each Attachment needs a `fileUrl`. A query that asks for
 `attachments: true` is answered with a multipart message, and `StatementPage.attachments` holds the data by their hash. So does a
 `getStatement` with `attachments: true`, which resolves with the Statement and the data.
@@ -102,8 +105,8 @@ version requires a precondition for and has none.
 | `deleteStates`                 | Not needed | Not needed |
 
 A precondition that the version does not require is sent when the caller gives it. A write whose precondition fails resolves
-`"precondition-failed"` (412); a PUT with none over a document that exists, or a merge that keeps losing a race, resolves
-`"conflict"` (409). Read the document again with `getDocument` and write with its new `etag`.
+`"precondition-failed"` (412); a PUT with none over a document that exists, or a merge or a removal that keeps losing a race,
+resolves `"conflict"` (409). Read the document again with `getDocument` and write with its new `etag`.
 
 ## Options
 
@@ -118,6 +121,8 @@ A precondition that the version does not require is sent when the caller gives i
 | `maxTokens`     | `LrsClientConfig`               | 1,000,000  | The most tokens of JSON in one answer, counted before it is parsed                                     |
 | `signal`        | `LrsClientConfig`               | none       | Ends every wait of the client                                                                          |
 | `attachments`   | `SendOptions`                   | none       | The data of the Attachments, which makes the request a multipart message                               |
+| `role` | `SendOptions` | `"provider"` | `"provider"`, or `"lrs"` to forward what another LRS holds as it is |
+| `languages` | `ReadStatementsOptions`, `GetStatementOptions` | none | The languages to prefer, the first the most, as language tags or `*`: the `Accept-Language` of a read |
 | `format`        | `GetStatementOptions`           | `"exact"`  | `ids`, `exact` or `canonical`                                                                          |
 | `voided`        | `GetStatementOptions`           | false      | Fetch by `voidedStatementId`                                                                           |
 | `attachments`   | `GetStatementOptions`           | false      | Fetch the data of the Attachments too: the answer is `{ statement, attachments }`                      |
@@ -159,7 +164,6 @@ The filters of `queryStatements` are the properties of `StatementQuery`: `agent`
 | Not included                          | Why                                                                                                       |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Retries and backoff                   | A retry of a write needs the host's idea of what is safe to resend; `Retry-After` is in the error         |
-| A language for `canonical` Statements | `Accept-Language` is not sent; the LRS chooses                                                            |
 | `HEAD` requests                       | They return what GET does without a body, which a client has no use for                                   |
 | The alternate request syntax          | Removed in 2.0, and meant for browsers that cannot set headers; the client never sends it                 |
 | Getting a credential                  | `authorization` is the host's: Basic, bearer or OAuth 2.0 through `@interopkit/core/oauth`                |

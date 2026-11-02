@@ -48,3 +48,9 @@ flowchart LR
 | Not included                  | Why                                                             |
 | ----------------------------- | --------------------------------------------------------------- |
 | xAPI Profiles, cmi5, launch   | Standards of their own                                          |
+| The vocabularies of ADL: verbs, activity types, attachment usages | The data of profiles, which change apart from the standard; the package names `VERB_VOIDED` and `SIGNATURE_USAGE_TYPE`, which the standard reserves |
+| Storage, accounts, an admin UI, queues | An application's: the handler works over the store ports and `access` |
+| CORS, compression, TLS | The host's web server; the handler answers plain requests |
+
+[The comparators](comparators.md) map what the LRSs and the clients of xAPI do against the package, with the reason for each
+exclusion.
