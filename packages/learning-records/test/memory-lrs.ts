@@ -1,6 +1,13 @@
 import type { Clock } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
-import type { Activity, AttachmentData, DocumentScope, DocumentTarget, LrsDocument } from "../src/index.js";
+import {
+  type Activity,
+  type AttachmentData,
+  type DocumentScope,
+  type DocumentTarget,
+  type LrsDocument,
+  VERB_VOIDED,
+} from "../src/index.js";
 import {
   type Access,
   type ActivityStore,
@@ -48,6 +55,7 @@ function inScope(key: DocumentTarget, scope: DocumentScope): boolean {
 /** A store of Statements and Activities in memory that follows the contract of the ports. */
 export function memory(): Memory {
   const held = new Map<string, StoredStatement>();
+  const targets = new Set<string>();
   const data = new Map<string, AttachmentData>();
   const observed: Memory["observed"] = [];
   const definitions = new Map<string, Activity>();
@@ -60,16 +68,20 @@ export function memory(): Memory {
       const existing = batch.flatMap(({ statement }) =>
         held.has(statement.id ?? "") ? [held.get(statement.id ?? "") as StoredStatement] : [],
       );
+      if (existing.length > 0) return { existing };
+      for (const id of voids) targets.add(id);
       for (const entry of batch) {
         const id = entry.statement.id ?? "";
-        if (!held.has(id)) held.set(id, entry);
+        held.set(id, entry);
       }
-      for (const id of voids) {
+      for (const id of new Set([...voids, ...batch.map(({ statement }) => statement.id ?? "")])) {
         const voided = held.get(id);
-        if (voided !== undefined) held.set(id, { ...voided, voided: true });
+        if (voided !== undefined && targets.has(id) && voided.statement.verb.id !== VERB_VOIDED) {
+          held.set(id, { ...voided, voided: true });
+        }
       }
       for (const attachment of attachments) data.set(attachment.sha2, attachment);
-      return { existing };
+      return { existing: [] };
     },
     async get(id, options) {
       calls.push("get");

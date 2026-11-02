@@ -176,9 +176,14 @@ A stored Statement gets what the LRS sets (4.2.4.2): an `id` when it has none, i
 brings; `version` `2.0.0` when it has none, or `1.0.0` on the route of 1.0.3. A Statement is read with the rules of an LRS of the route first, and a list is judged whole:
 one Statement with an error refuses the request and stores nothing, and two with one id refuse it too. A `version` is `1.0`, `1.0.x`, `2.0` or `2.0.x`, or `1.0` and `1.0.x` alone on the route of 1.0.3, and a submitted `authority` that is a Group is an anonymous Group of two Agents, though the LRS replaces it; the `revision` and `platform` of a context go with an Activity.
 
-A Statement with the voided Verb voids the Statement it refers to when the LRS holds it, or the batch has it, and it is not a
-voiding Statement itself. A voided Statement is returned only to a request by `voidedStatementId`, and Statements that refer to
-it are still returned.
+A batch is stored whole or not at all (4.1.5). When the LRS holds an id of the batch, the store stores nothing and returns what it
+holds: another Statement with that id refuses the request with 409 and changes nothing; the same Statement is a resend, and the
+others of the batch are stored without it. A resend changes nothing, a voiding Statement included, and the store of Activities sees
+the Statement as the LRS holds it.
+
+A Statement with the voided Verb voids the Statement it refers to, whether the LRS holds it, the batch has it, or it arrives later,
+unless it is a voiding Statement itself: the store keeps the ids of `voids` to do that (4.2.5). A voided Statement is returned only
+to a request by `voidedStatementId`, and Statements that refer to it are still returned.
 
 The query parameters are `agent`, `verb`, `activity`, `registration`, `related_activities`, `related_agents`, `since`, `until`,
 `limit`, `format`, `attachments` and `ascending`, and `cursor`, which the LRS adds to the address of the next page. A parameter

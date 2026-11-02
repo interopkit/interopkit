@@ -292,6 +292,13 @@ describe("POST of Statements", () => {
   });
 });
 
+/** The Statement with an index that voids the Statement with an id. */
+const voiding = (n: number, target: string): Statement => ({
+  ...statementOf(n),
+  verb: { id: VERB_VOIDED, display: { "en-US": "voided" } },
+  object: { objectType: "StatementRef", id: target },
+});
+
 describe("the ports of a request that stores Statements", () => {
   it("answers 500 without a word of the cause when the store rejects, and stores nothing more", async () => {
     const store = memory();
@@ -301,17 +308,10 @@ describe("the ports of a request that stores Statements", () => {
     expect(reasonOf(response)).not.toContain("disk 7");
   });
 
-  it("answers 500 when consistentThrough rejects, and when get rejects for a voiding Statement", async () => {
+  it("answers 500 when consistentThrough rejects", async () => {
     const store = memory();
     const broken = { ...store.statements, consistentThrough: () => Promise.reject(new Error("down")) };
     expect((await send("POST", statementOf(1), { store, changes: { statements: broken } })).response.status).toBe(500);
-    const voiding = {
-      ...statementOf(2),
-      verb: { id: VERB_VOIDED },
-      object: { objectType: "StatementRef", id: uuid(1) },
-    };
-    const noGet = { ...store.statements, get: () => Promise.reject(new Error("down")) };
-    expect((await send("POST", voiding, { changes: { statements: noGet } })).response.status).toBe(500);
   });
 
   it("throws a DataError when consistentThrough answers something that is no time", async () => {
@@ -494,12 +494,6 @@ describe("a defect of a reader", () => {
 });
 
 describe("voiding", () => {
-  const voiding = (n: number, target: string): Statement => ({
-    ...statementOf(n),
-    verb: { id: VERB_VOIDED, display: { "en-US": "voided" } },
-    object: { objectType: "StatementRef", id: target },
-  });
-
   it("marks the Statement that a voiding Statement refers to as voided", async () => {
     const store = memory();
     await send("POST", statementOf(1), { store });
@@ -529,15 +523,22 @@ describe("voiding", () => {
     expect(batch.store.held.get(uuid(6))?.voided).toBe(true);
   });
 
-  it("accepts a voiding Statement whose target it does not hold, and leaves the later Statement alone", async () => {
+  it("accepts a voiding Statement whose target it does not hold, and voids the Statement when it comes (4.2.5)", async () => {
     const store = memory();
     const { response } = await send("POST", voiding(2, uuid(1)), { store });
     expect(response.status).toBe(200);
     await send("POST", statementOf(1), { store });
+    expect(store.held.get(uuid(1))?.voided).toBe(true);
+  });
+
+  it("does not void a voiding Statement that comes after a Statement that refers to it", async () => {
+    const store = memory();
+    await send("POST", voiding(2, uuid(1)), { store });
+    await send("POST", voiding(1, uuid(3)), { store });
     expect(store.held.get(uuid(1))?.voided).toBe(false);
   });
 
-  it("passes the ids that are voided to the store in lower case, and nothing for a Statement that is already voided", async () => {
+  it("passes the target of each voiding Statement to the store once, in lower case, and asks the store for nothing", async () => {
     const store = memory();
     const inserted: (readonly string[])[] = [];
     const watching = {
@@ -548,15 +549,96 @@ describe("voiding", () => {
       },
     };
     await send("POST", statementOf(1), { store, changes: { statements: watching } });
-    await send("POST", voiding(2, uuid(1).toUpperCase()), { store, changes: { statements: watching } });
-    await send("POST", voiding(3, uuid(1)), { store, changes: { statements: watching } });
-    expect(inserted).toStrictEqual([[], [uuid(1)], []]);
+    await send("POST", [voiding(2, uuid(1).toUpperCase()), voiding(3, uuid(1))], {
+      store,
+      changes: { statements: watching },
+    });
+    expect(inserted).toStrictEqual([[], [uuid(1)]]);
+    expect(store.calls).not.toContain("get");
+  });
+
+  it("voids nothing for a conflict: another Statement with an id that the LRS holds changes no Statement", async () => {
+    const store = memory();
+    await send("POST", [statementOf(1), statementOf(2)], { store });
+    const { response } = await send("POST", voiding(1, uuid(2)), { store });
+    expect(response.status).toBe(409);
+    expect(store.held.get(uuid(2))?.voided).toBe(false);
+  });
+
+  it("voids nothing for a resend: a voiding Statement that the LRS holds changes nothing when it comes again", async () => {
+    const store = memory();
+    await send("POST", voiding(2, uuid(1)), { store });
+    await send("POST", statementOf(3), { store });
+    const { response } = await send("POST", voiding(2, uuid(1)), { store });
+    expect(response.status).toBe(204);
+    expect(store.held.get(uuid(3))?.voided).toBe(false);
   });
 
   it("refuses a voiding Statement whose Object is no Statement Reference with 400", async () => {
     const wrong = { ...statementOf(2), verb: { id: VERB_VOIDED } };
     const { response } = await send("POST", wrong);
     expect(response.status).toBe(400);
+  });
+});
+
+describe("A batch with an id that the LRS holds", () => {
+  it("stores nothing of a batch with a Statement that conflicts, whatever else it holds (4.1.5)", async () => {
+    const store = memory();
+    await send("POST", statementOf(1), { store });
+    const changed = { ...statementOf(1), object: { id: "https://example.org/other" } };
+    const { response } = await send("POST", [statementOf(2), changed, voiding(3, uuid(1))], { store });
+    expect(response.status).toBe(409);
+    expect([...store.held.keys()]).toStrictEqual([uuid(1)]);
+    expect(store.held.get(uuid(1))?.voided).toBe(false);
+    expect(store.observed).toHaveLength(1);
+  });
+
+  it("stores the new Statements of a batch that resends others, and answers with every id in order", async () => {
+    const store = memory();
+    await send("POST", statementOf(2), { store });
+    const { response } = await send("POST", [statementOf(1), statementOf(2), voiding(3, uuid(1))], { store });
+    expect(response.status).toBe(200);
+    expect(jsonOf(response)).toStrictEqual([uuid(1), uuid(2), uuid(3)]);
+    expect([...store.held.keys()].sort()).toStrictEqual([uuid(1), uuid(2), uuid(3)]);
+    expect(store.held.get(uuid(1))?.voided).toBe(true);
+  });
+
+  it("calls the store again when another writer took an id between two rounds", async () => {
+    const store = memory();
+    await send("POST", statementOf(2), { store });
+    let rounds = 0;
+    const racing = {
+      ...store.statements,
+      insert: async (...args: Parameters<typeof store.statements.insert>) => {
+        rounds += 1;
+        if (rounds === 2)
+          await store.statements.insert([{ ...args[0][0], statement: statementOf(3) } as never], [], []);
+        return store.statements.insert(...args);
+      },
+    };
+    const batch = [statementOf(1), statementOf(2), statementOf(3)];
+    const { response } = await send("POST", batch, { store, changes: { statements: racing } });
+    expect(response.status).toBe(200);
+    expect(rounds).toBe(3);
+    expect(store.held.has(uuid(1))).toBe(true);
+  });
+
+  it("tells the store of Activities what the LRS holds for a resend, and not a definition that the resend changes", async () => {
+    const store = memory();
+    await send("POST", statementOf(1), { store });
+    const { object } = statementOf(1);
+    const resent = { ...statementOf(1), object: { ...object, definition: { name: { en: "Changed" } } } } as Statement;
+    const { response } = await send("POST", resent, { store });
+    expect(response.status).toBe(204);
+    expect(JSON.stringify(store.observed)).not.toContain("Changed");
+  });
+
+  it("refuses a store that names a Statement of no batch, which is a port that breaks its contract", async () => {
+    const store = memory();
+    const wrong = { ...store.statements, insert: async () => ({ existing: [{ statement: statementOf(9) }] }) as never };
+    await expect(send("POST", statementOf(1), { store, changes: { statements: wrong } })).rejects.toThrow(
+      "The answer of StatementStore.insert names",
+    );
   });
 });
 

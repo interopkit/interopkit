@@ -1,4 +1,4 @@
-import type { Statement } from "@interopkit/learning-records";
+import { type Statement, VERB_VOIDED } from "@interopkit/learning-records";
 import type { StoredStatement } from "@interopkit/learning-records/store";
 import { describe, expect, it } from "vitest";
 import { createDirectory, createMemoryDocuments } from "../src/documents.ts";
@@ -23,12 +23,39 @@ function entry(n: number, verb = "completed", voided = false): StoredStatement {
 }
 
 describe("the memory store of Statements", () => {
-  it("stores a batch, returns the Statements it held already, and leaves them as they were", async () => {
+  it("stores a batch, and stores nothing of a batch with an id that it holds, which it returns as it held it", async () => {
     const { statements, count } = createMemoryStatements(CLOCK);
     expect(await statements.insert([entry(1), entry(2)], [], [])).toStrictEqual({ existing: [] });
     const resent = await statements.insert([entry(2, "answered"), entry(3)], [], []);
     expect(resent.existing).toStrictEqual([entry(2)]);
-    expect(count()).toBe(3);
+    expect(count()).toBe(2);
+  });
+
+  it("keeps the ids of voids, so that a Statement which comes later is voided", async () => {
+    const { statements } = createMemoryStatements(CLOCK);
+    const later = entry(1).statement.id ?? "";
+    await statements.insert([entry(2)], [later], []);
+    await statements.insert([entry(1)], [], []);
+    expect((await statements.get(later, { voided: true }))?.voided).toBe(true);
+  });
+
+  it("never voids a voiding Statement, whether it is held or comes later", async () => {
+    const { statements } = createMemoryStatements(CLOCK);
+    const voiding = (n: number, target: string): StoredStatement => ({
+      ...entry(n),
+      statement: {
+        ...entry(n).statement,
+        verb: { id: VERB_VOIDED },
+        object: { objectType: "StatementRef", id: target },
+      },
+    });
+    const [first, second] = [entry(1).statement.id ?? "", entry(2).statement.id ?? ""];
+    await statements.insert([voiding(1, entry(9).statement.id ?? "")], [entry(9).statement.id ?? ""], []);
+    await statements.insert([entry(3)], [first], []);
+    expect((await statements.get(first, { voided: false }))?.voided).toBe(false);
+    await statements.insert([entry(4)], [second], []);
+    await statements.insert([voiding(2, entry(9).statement.id ?? "")], [], []);
+    expect((await statements.get(second, { voided: false }))?.voided).toBe(false);
   });
 
   it("marks the Statements of voids as voided, those of the same batch included, and returns each only to a query for voided ones", async () => {

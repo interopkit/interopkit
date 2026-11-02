@@ -1,5 +1,12 @@
 import type { Clock } from "@interopkit/core";
-import type { Activity, ActivityDefinition, Actor, AttachmentData, StatementQuery } from "@interopkit/learning-records";
+import {
+  type Activity,
+  type ActivityDefinition,
+  type Actor,
+  type AttachmentData,
+  type StatementQuery,
+  VERB_VOIDED,
+} from "@interopkit/learning-records";
 import {
   type ActivityStore,
   matchesStatementQuery,
@@ -53,24 +60,25 @@ function mergedDefinition(known: Activity | undefined, seen: Activity): Activity
  */
 export function createMemoryStatements(clock: Clock): MemoryStatements {
   const held = new Map<string, Held>();
+  const voidTargets = new Set<string>();
   const data = new Map<string, AttachmentData>();
   const definitions = new Map<string, { readonly activity: Activity; readonly authority: Actor }>();
   let arrived = 0;
 
   const statements: StatementStore = {
     async insert(batch, voids, attachments) {
-      const existing: StoredStatement[] = [];
+      const existing = batch.flatMap(({ statement }) => held.get(statement.id ?? "")?.entry ?? []);
+      if (existing.length > 0) return { existing };
+      for (const id of voids) voidTargets.add(id);
       for (const entry of batch) {
-        const id = entry.statement.id ?? "";
-        const present = held.get(id);
-        if (present === undefined) {
-          arrived += 1;
-          held.set(id, { entry, order: arrived });
-        } else existing.push(present.entry);
+        arrived += 1;
+        held.set(entry.statement.id ?? "", { entry, order: arrived });
       }
-      for (const id of voids) {
+      for (const id of new Set([...voids, ...batch.map(({ statement }) => statement.id ?? "")])) {
         const target = held.get(id);
-        if (target !== undefined) held.set(id, { ...target, entry: { ...target.entry, voided: true } });
+        if (target !== undefined && voidTargets.has(id) && target.entry.statement.verb.id !== VERB_VOIDED) {
+          held.set(id, { ...target, entry: { ...target.entry, voided: true } });
+        }
       }
       for (const attachment of attachments) data.set(attachment.sha2, attachment);
       return { existing };

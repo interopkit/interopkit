@@ -61,9 +61,9 @@ export type Access =
       readonly retryAfterSeconds?: number;
     };
 
-/** What `insert` did: the Statements of the batch that the store held already. */
+/** What `insert` did: nothing, when the store held a Statement of the batch already, and then these are the ones it held. */
 export interface InsertResult {
-  /** The Statements with an id that the store held, as it held them. */
+  /** The Statements with an id of the batch that the store held, as it held them. Empty when the batch was stored. */
   readonly existing: readonly StoredStatement[];
 }
 
@@ -101,12 +101,16 @@ export interface StatementsPage {
  */
 export interface StatementStore {
   /**
-   * Stores the Statements and the data of their Attachments, and marks the Statements of `voids` voided, those of the batch
-   * included. An id that the store holds already is left unchanged and returned in `existing`.
+   * Stores the Statements and the data of their Attachments, or, when it holds a Statement with an id of the batch, stores
+   * nothing and returns the ones it holds in `existing`. The LRS compares them, and calls again with the others when they are
+   * resends.
    *
    * @remarks
-   * The batch is stored whole or not at all, and the call is atomic across processes: two requests with one id store one
-   * Statement, and the other gets it in `existing`.
+   * The call is atomic across processes: two requests with one id store one Statement, and the other gets it in `existing`.
+   * `voids` lists the ids that the voiding Statements of the batch refer to, whether the store holds them or not (4.2.5). The
+   * store marks voided every Statement it holds with such an id, those of the batch included, and every Statement that comes
+   * later with such an id, so it keeps the ids. A Statement whose Verb is `VERB_VOIDED` is never voided. The data of an
+   * Attachment are named by their hash, so the same data come again with a resend.
    */
   insert(
     batch: readonly StoredStatement[],

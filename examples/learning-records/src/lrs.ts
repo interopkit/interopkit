@@ -81,10 +81,12 @@ export function createLrs(config: LrsConfig): Lrs {
   const access = async (request: HttpRequest): Promise<Access> => {
     if (new URL(request.url).pathname === aboutPath) return { allowed: true, authority: ANONYMOUS, actions: [] };
     const given = readBasicAuthorization(request);
-    const known = credentials.find(
-      ({ user, password }) =>
-        given !== undefined && sameSecret(given.user, user) && sameSecret(given.password, password),
-    );
+    const known = credentials.find(({ user, password }) => {
+      // Both are compared, so that the time of a refusal does not say which of the two was wrong.
+      const sameUser = sameSecret(given?.user ?? "", user);
+      const samePassword = sameSecret(given?.password ?? "", password);
+      return given !== undefined && sameUser && samePassword;
+    });
     if (known === undefined) {
       return {
         allowed: false,
