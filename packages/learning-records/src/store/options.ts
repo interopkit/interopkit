@@ -142,10 +142,11 @@ export interface LrsOptions extends CallOptions {
     options?: CallOptions,
   ) => Promise<readonly StatementIssue[]>;
   /**
-   * Decides whether the certificate chain of a signed Statement is trusted. The signature is checked against the leaf of the
-   * chain whatever it answers, and the LRS does not claim trust.
+   * Decides whether the certificate chain of a signed Statement is trusted, leaf first, each as the base64 of its DER encoding.
+   * A chain that it does not trust refuses the request with 400. A signature with no chain has no certificate to judge, and
+   * is taken when it is well formed.
    *
-   * @defaultValue none
+   * @defaultValue none: the signature is checked against the leaf of its chain, and anyone's certificate is taken
    */
   readonly trustCertificate?: (chain: readonly string[], options?: CallOptions) => Promise<boolean>;
   /**

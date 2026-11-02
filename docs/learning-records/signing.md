@@ -10,7 +10,7 @@ flowchart LR
   sign --> signed["SignedStatement<br/>statement: with the header of the Attachment<br/>signature: the compact JWS as data"]
   signed --> send["writeMultipart<br/>the signature is a part"]
   send --> lrs["LRS or reader"]
-  lrs --> verify["verifyStatementSignature<br/>leaf of x5c, or a key"]
+  lrs --> verify["verifyStatementSignature<br/>a key, or the leaf of x5c"]
   verify --> check["SignatureCheck<br/>valid and certified, or the reason"]
 ```
 
@@ -80,7 +80,9 @@ A signature that is not good is a value, so that an LRS can answer 400 with the 
 | `{ valid: false, reason: "not-equivalent" }` | The signature is good, and the payload is another Statement than the one received                                                |
 
 The chain in the header is not validated: the signature is checked against its leaf, as the standard asks, and `trustCertificate`
-decides about the rest, for example by checking the chain against the host's roots. The JWS JSON serialization is `malformed`: the
+decides about the rest, for example by checking the chain against the host's roots. Anyone can make a certificate, so a signature
+that verifies against a chain nobody judged says that the Statement was not changed after it was signed, and not who signed it: to
+know the signer, pass `key` or check that `certified` is true. The JWS JSON serialization is `malformed`: the
 standard asks for the compact one.
 
 ## Errors
@@ -109,6 +111,6 @@ An error of the signer, of `trustCertificate`, and the `reason` of a `signal` pa
 
 | Reference    | Difference                                                                                                                                                                                                                |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The standard | "Logically equivalent" is not defined for a signature; the package uses the equivalence of the immutability rules (`sameStatement`), which ignores the id, the time, `stored`, `authority`, `version` and the Attachments |
+| The standard | "Logically equivalent" is not defined for a signature; the package uses the equivalence of the immutability rules (`sameStatement`) and, since that leaves them out, holds the `id`, the `timestamp` and the Attachments of the payload to the Statement; `stored`, `authority` and `version` are the LRS's to set |
 | The standard | The Statement signed is "the complete Statement before the signature was added"; a Statement without an id is signed without one, and the LRS may give it one without breaking the signature                              |
 | jwcrypto     | Signatures made by jwcrypto with RS256, RS384 and RS512 and an X.509 chain verify, and the cases in which they must not are refused with the reasons above (`validation/xapi_signatures.py`)                              |

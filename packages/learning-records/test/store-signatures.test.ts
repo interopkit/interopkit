@@ -104,7 +104,7 @@ describe("a signed Statement", () => {
     expect(noData.response.status).toBe(400);
   });
 
-  it("asks trustCertificate about the chain of the header, leaf first, and does not refuse an untrusted chain", async () => {
+  it("asks trustCertificate about the chain of the header, leaf first, and refuses a chain that it does not trust", async () => {
     const good = fixture.cases[0] as Case;
     const asked: (readonly string[])[] = [];
     const controller = new AbortController();
@@ -117,9 +117,12 @@ describe("a signed Statement", () => {
       trustCertificate: trusting,
       signal: controller.signal,
     });
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(400);
+    expect(reasonOf(response)).toContain("is not trusted");
     expect(asked).toHaveLength(1);
     expect(asked[0]?.at(-1)).toBe(fixture.root);
+    const trusted = await sendSigned(good.statement, good.signature, { trustCertificate: async () => true });
+    expect(trusted.response.status).toBe(200);
   });
 
   it("answers 500 when trustCertificate rejects", async () => {

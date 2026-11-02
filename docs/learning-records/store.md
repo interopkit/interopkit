@@ -200,7 +200,7 @@ With `attachments=true` the answer is a `multipart/mixed` message with the data 
 part for each hash. A Statement is stored with the data that come in a multipart request, and an Attachment needs either a
 `fileUrl` or its part, and a part that no Attachment names refuses the request; the `length` of the Attachment is not compared to its data, which the hash binds. The signature of a Statement is checked (4.2.6): it must be a compact JWS of RS256, RS384 or RS512
 whose payload is the same Statement, whether the LRS holds a key or not, and when its header has an `x5c` it must verify against
-the leaf; `trustCertificate` is asked about the chain and its answer does not refuse a request.
+the leaf. Anyone can make a certificate: with `trustCertificate` a chain that it does not trust refuses the request with 400.
 
 ## Documents
 
@@ -307,7 +307,7 @@ method is in the table of [the resources](#the-resources).
 | `versions`               | `LrsOptions` | `["2.0.0", "1.0.3"]`                  | The versions the LRS serves, the latest first; a request of another is 400, and About lists these              |
 | `newId`                  | `LrsOptions` | `crypto.randomUUID`                   | Makes the id of a Statement that has none                                                                      |
 | `accept`                 | `LrsOptions` | none                                  | A check after the standard's, for the rules of a profile; an error among its findings refuses with 400         |
-| `trustCertificate`       | `LrsOptions` | none                                  | Whether the chain of a signed Statement is trusted; the signature is checked against the leaf whatever it says |
+| `trustCertificate`       | `LrsOptions` | none: anyone's certificate is taken   | Whether the chain of a signed Statement is trusted; a chain that it does not trust is 400; the signature is checked against the leaf whatever it says |
 | `keepSubmittedAuthority` | `LrsOptions` | false                                 | Keeps the `authority` a Statement brings, which the standard allows only with a strong trust relationship      |
 | `aboutExtensions`        | `LrsOptions` | none                                  | A JSON object that About gives as `extensions`                                                                 |
 | `limits`                 | `LrsOptions` | the limits below                      | `LrsLimits`                                                                                                    |

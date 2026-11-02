@@ -99,13 +99,39 @@ function matchAttachments(
   return { value: [...matched.values()] };
 }
 
+/** Judges one signature of a Statement, and says why it is refused, if it is. */
+async function refusalOfSignature(
+  statement: Statement,
+  signature: Uint8Array,
+  context: Context,
+): Promise<Refusal | undefined> {
+  const { signal, trustCertificate } = context.settings;
+  const checked = await callPort(
+    () =>
+      verifyStatementSignature(statement, signature, {
+        version: context.version,
+        ...(trustCertificate === undefined ? {} : { trustCertificate }),
+        ...(signal === undefined ? {} : { signal }),
+      }),
+    signal,
+  );
+  if (checked === undefined) return refused(500, "The LRS could not check the signature.");
+  if (checked.value.valid) {
+    // A signature that verifies here verified against its chain, since the LRS passes no key.
+    if (trustCertificate === undefined || checked.value.certified) return undefined;
+    return refused(400, `The certificate of the signature of the Statement ${statement.id} is not trusted.`);
+  }
+  // Without a certificate in the header the LRS has no key, and the signature is well formed all the same.
+  if (checked.value.reason === "no-key") return undefined;
+  return refused(400, `The signature of the Statement ${statement.id} ${SIGNATURE_PROBLEMS[checked.value.reason]}.`);
+}
+
 /** Checks the signature of a Statement that has one (4.2.6): it must be well formed, and it must verify when the key is known. */
 async function checkSignature(
   statement: Statement,
   parts: ReadonlyMap<string, AttachmentData>,
   context: Context,
 ): Promise<Verdict<undefined>> {
-  const { signal, trustCertificate } = context.settings;
   for (const header of statement.attachments ?? []) {
     if (header.usageType !== SIGNATURE_USAGE_TYPE) continue;
     const data = parts.get(header.sha2.toLowerCase());
@@ -115,19 +141,8 @@ async function checkSignature(
         "The signature of a Statement is an Attachment of the type application/octet-stream whose data come with the request.",
       );
     }
-    const checked = await callPort(
-      () =>
-        verifyStatementSignature(statement, data.body, {
-          version: context.version,
-          ...(trustCertificate === undefined ? {} : { trustCertificate }),
-          ...(signal === undefined ? {} : { signal }),
-        }),
-      signal,
-    );
-    if (checked === undefined) return refused(500, "The LRS could not check the signature.");
-    // Without a certificate in the header and a key the LRS has no key, and the signature is well formed all the same.
-    if (checked.value.valid || checked.value.reason === "no-key") continue;
-    return refused(400, `The signature of the Statement ${statement.id} ${SIGNATURE_PROBLEMS[checked.value.reason]}.`);
+    const refusal = await refusalOfSignature(statement, data.body, context);
+    if (refusal !== undefined) return refusal;
   }
   return { value: undefined };
 }

@@ -369,14 +369,13 @@ describe("verifyStatementSignature", () => {
     });
   });
 
-  it("accepts a Statement with what the LRS added and a different id and time, since equivalence ignores them", async () => {
+  it("accepts a Statement with what the LRS added", async () => {
     const signed = await signStatement(
       statementToSign(),
       signerFromCryptoKey(pairs.RS256.privateKey, { algorithm: "RS256" }),
     );
     const stored = {
       ...signed.statement,
-      id: "00000000-0000-4000-8000-000000000001",
       stored: "2026-01-15T10:31:00.000Z",
       authority: { account: { homePage: "https://lrs.example.org", name: "client" } },
       version: "2.0.0",
@@ -387,6 +386,71 @@ describe("verifyStatementSignature", () => {
         certified: false,
       },
     );
+  });
+
+  describe("what a signature keeps, which the equivalence of Statements leaves out", () => {
+    const signer = () => signerFromCryptoKey(pairs.RS256.privateKey, { algorithm: "RS256" });
+    const verify = (statement: Statement, signature: Uint8Array) =>
+      verifyStatementSignature(statement, signature, { key: pairs.RS256.publicKey });
+    const attachment = {
+      usageType: "https://example.org/usage/certificate",
+      display: { en: "Certificate" },
+      contentType: "text/plain",
+      length: 1,
+      sha2: "a".repeat(64),
+      fileUrl: "https://example.org/certificate",
+    };
+
+    it("refuses another id than the one that was signed", async () => {
+      const { statement, signature } = await signStatement(statementToSign(), signer());
+      const changed = { ...statement, id: "00000000-0000-4000-8000-000000000001" };
+      expect(await verify(changed, signature.body)).toStrictEqual({ valid: false, reason: "not-equivalent" });
+    });
+
+    it("refuses another time than the one that was signed, and takes the same time in another zone", async () => {
+      const timed = { ...statementToSign(), timestamp: "2024-06-13T18:46:03.250Z" };
+      const { statement, signature } = await signStatement(timed, signer());
+      const later = { ...statement, timestamp: "2024-06-13T18:46:04.250Z" };
+      expect(await verify(later, signature.body)).toStrictEqual({ valid: false, reason: "not-equivalent" });
+      const gone = { ...statement, timestamp: undefined };
+      delete gone.timestamp;
+      expect(await verify(gone, signature.body)).toStrictEqual({ valid: false, reason: "not-equivalent" });
+      const zoned = { ...statement, timestamp: "2024-06-13T20:46:03.250+02:00" };
+      expect((await verify(zoned, signature.body)).valid).toBe(true);
+    });
+
+    it("refuses a Statement that lost or changed an Attachment that was signed", async () => {
+      const { statement, signature } = await signStatement(
+        { ...statementToSign(), attachments: [attachment] },
+        signer(),
+      );
+      const [header, signatureHeader] = statement.attachments ?? [];
+      const swapped = { ...statement, attachments: [{ ...attachment, sha2: "b".repeat(64) }, signatureHeader] };
+      expect(await verify(swapped as Statement, signature.body)).toStrictEqual({
+        valid: false,
+        reason: "not-equivalent",
+      });
+      expect(header?.sha2).toBe(attachment.sha2);
+      const lost = { ...statement, attachments: [signatureHeader] };
+      expect(await verify(lost as Statement, signature.body)).toStrictEqual({ valid: false, reason: "not-equivalent" });
+      expect((await verify(statement, signature.body)).valid).toBe(true);
+    });
+
+    it("refuses the same changes when no key is at hand", async () => {
+      const { statement, signature } = await signStatement(statementToSign(), signer());
+      const changed = { ...statement, id: "00000000-0000-4000-8000-000000000001" };
+      expect(await verifyStatementSignature(changed, signature.body)).toStrictEqual({
+        valid: false,
+        reason: "not-equivalent",
+      });
+    });
+
+    it("takes an id that the LRS gave a Statement that was signed with none", async () => {
+      const { id: _id, ...anonymous } = statementToSign();
+      const { statement, signature } = await signStatement(anonymous, signer());
+      const stored = { ...statement, id: "00000000-0000-4000-8000-000000000001" };
+      expect((await verify(stored, signature.body)).valid).toBe(true);
+    });
   });
 
   it("does not use a key that the JWS carries, since its signer chose it", async () => {
@@ -487,6 +551,17 @@ describe("verifyStatementSignature", () => {
     const entry = fixture.cases[0] as Case;
     const chainOf = (token: string): readonly string[] =>
       JSON.parse(atob((token.split(".")[0] ?? "").replace(/-/gu, "+").replace(/_/gu, "/"))).x5c;
+
+    it("verifies with the key that the caller gives and never with a chain that the signer chose", async () => {
+      const good = fixture.cases[0] as { statement: Statement; signature: string };
+      const body = new TextEncoder().encode(good.signature);
+      const { statement } = good;
+      expect((await verifyStatementSignature(statement, body)).valid).toBe(true);
+      expect(await verifyStatementSignature(statement, body, { key: pairs.RS256.publicKey })).toStrictEqual({
+        valid: false,
+        reason: "signature",
+      });
+    });
 
     it("receives the chain of the header, leaf first, and the signal of the call", async () => {
       const controller = new AbortController();
