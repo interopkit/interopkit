@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
 import jsonld from "jsonld";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createProcessing } from "../src/document/index.js";
+import { createProcessing, hashCanonizedProof } from "../src/document/index.js";
 import { addBaseProof, deriveProof, selectiveDisclosureSuite } from "../src/index.js";
 import { memoryContexts, OPEN_CONTEXT } from "./contexts.js";
 import { CREATED, MANDATORY_POINTERS, SELECTIVE_POINTERS, sampleCredential } from "./documents.js";
@@ -29,10 +29,13 @@ afterEach(() => {
 });
 
 describe("the loader of contexts", () => {
-  it("is the one the test wires: a call of jsonld without a loader reaches the default one", async () => {
-    await expect(jsonld.expand({ "@context": OPEN_CONTEXT, id: "https://example.test/x" })).rejects.toThrow(
-      /Dereferencing a URL did not result in a valid JSON-LD object/,
-    );
+  it("is the one the test wires: a call of the primitives without a loader reaches the default one of their jsonld", async () => {
+    // The primitives import their own jsonld; the default loader that this file replaces must be theirs, or the tests below
+    // would pass whatever loader the primitives used.
+    const options = { maxDeepIterations: 1000 } as unknown as Parameters<typeof hashCanonizedProof>[0]["options"];
+    await expect(
+      hashCanonizedProof({ document: { "@context": OPEN_CONTEXT }, proof: { id: "https://example.test/x" }, options }),
+    ).rejects.toThrow(/Dereferencing a URL did not result in a valid JSON-LD object/);
     expect(reached).toStrictEqual([OPEN_CONTEXT]);
   });
 

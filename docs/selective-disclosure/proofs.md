@@ -157,6 +157,11 @@ key twice and every tag but 64, and it needs exactly one array of five items and
 for a call that is wrong and returns `false` for a document or a proof that is. The error of the caller's loader or signer
 reaches the caller as it was.
 
+| Error type of the Recommendation | Raised by                                                                                   | Here                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `PROOF_GENERATION_ERROR`         | 3.6.4: a `type` or `cryptosuite` of another suite, a `created` that is no date and time      | A `DataError` of `addBaseProof`, which writes the `type` and `cryptosuite` itself |
+| `PROOF_VERIFICATION_ERROR`       | 3.5.3 and 3.5.8: a proof value without `u`, its header or its five components; 3.6.7: a count of signatures that differs from the statements | `false` from `verify`; a `DataError` of `deriveProof` for a base proof value  |
+
 | Message begins                                                  | When                                                                      | What to do                                                                                     |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `The options of <function> must be an object`                   | The options are `null`, a string, an array                                | Pass an options object                                                                         |
