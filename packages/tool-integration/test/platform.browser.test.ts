@@ -1,16 +1,20 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
 
+import { signerFromCryptoKey } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
 import { afterEach, describe, expect, inject, it } from "vitest";
+import { createJwksCache } from "../src/index.js";
 import {
-  ltiPlatformAuthorize,
+  buildCapabilitiesScript,
+  buildPlatformEndpoints,
+  handlePlatformRequest,
+  type LaunchStore,
   ltiPlatformLogin,
-  type PlatformAuthorizeOptions,
+  type MessageInput,
   type PlatformConfig,
   type PlatformLoginOptions,
-  platformEndpoints,
-  platformStorage,
-  type ToolLaunch,
+  type PlatformRequestOptions,
+  type ToolRegistration,
 } from "../src/platform/index.js";
 import { hostileOrigin as hostile, requestsTo, seenBy } from "./hostile.js";
 import { textOf } from "./text-of.js";
@@ -23,62 +27,73 @@ import { waitFor } from "./wait.js";
 
 const { other, stranger } = inject("fixtures");
 const TOOL = "https://tool.example.com";
-const launch: ToolLaunch = {
-  principal: "candidate-7",
-  resource: "session-1/q1/1",
-  target: `${TOOL}/lti/tools/drawing`,
-  title: "Drawing tool",
-  custom: { exam: "tryout-1" },
-  scoreMaximum: 10,
+const message: MessageInput = {
+  messageType: "LtiResourceLinkRequest",
+  clientId: "tool-client-1",
+  deploymentId: "deployment-1",
+  targetLinkUri: `${TOOL}/lti/tools/drawing`,
+  user: { subject: "candidate-7" },
+  roles: [],
+  resourceLink: { id: "q1" },
 };
-const pair = await crypto.subtle.generateKey(
-  { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
-  true,
-  ["sign", "verify"],
-);
+const pair = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+  "sign",
+  "verify",
+])) as CryptoKeyPair;
 const config: PlatformConfig = {
   issuer: "https://platform.example",
   origin: "https://lti.platform.example",
   frameOrigin: "https://app.platform.example",
   reservedOrigins: ["https://assets.platform.example"],
-  keys: pair,
+  keys: {
+    signer: signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "platform-1" }),
+    publicKeys: [{ ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid: "platform-1" } as JsonWebKey],
+  },
   hintKey: await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]),
 };
 const clock = { now: () => 1_700_000_000_000 };
-const used = new Set<string>();
+const kept = new Map<string, MessageInput>();
+const launches: LaunchStore = {
+  put: async (id, value) => void kept.set(id, value),
+  take: async (id) => {
+    const value = kept.get(id);
+    kept.delete(id);
+    return value;
+  },
+};
 
 /** The platform with a tool whose redirect URI has a path of the test's own. */
-function platform(path: string): { login: PlatformLoginOptions; authorize: PlatformAuthorizeOptions } {
-  const tool = {
+function platform(path: string): { login: PlatformLoginOptions; requests: PlatformRequestOptions } {
+  const tool: ToolRegistration = {
     clientId: "tool-client-1",
-    deploymentId: "deployment-1",
+    deploymentIds: ["deployment-1"],
     loginUrl: `${TOOL}/lti/login`,
     redirectUris: [`${TOOL}${path}`],
     jwksUrl: `${TOOL}/jwks`,
+    scopes: [],
   };
   const login: PlatformLoginOptions = {
     config,
     clock,
     registration: async () => tool,
     check: async () => undefined,
+    launches,
   };
-  const authorize: PlatformAuthorizeOptions = {
+  const requests: PlatformRequestOptions = {
     config,
     clock,
     client: async () => tool,
-    once: async (id) => {
-      if (used.has(id)) return false;
-      used.add(id);
-      return true;
-    },
+    launches,
+    once: async () => true,
+    jwks: createJwksCache({ fetch: () => Promise.reject(new Error("No key set is fetched.")) }),
   };
-  return { login, authorize };
+  return { login, requests };
 }
 
 /** Makes the platform answer the authentication request of a launch with the given `state`. */
 async function answer(path: string, state: string): Promise<HttpResponse> {
-  const { login, authorize } = platform(path);
-  const initiation = new URL(await ltiPlatformLogin(launch, login));
+  const { login, requests } = platform(path);
+  const initiation = new URL(await ltiPlatformLogin(message, login));
   const parameters = new URLSearchParams([
     ["scope", "openid"],
     ["response_type", "id_token"],
@@ -91,15 +106,8 @@ async function answer(path: string, state: string): Promise<HttpResponse> {
     ["prompt", "none"],
     ["lti_message_hint", initiation.searchParams.get("lti_message_hint") ?? ""],
   ]);
-  return ltiPlatformAuthorize(
-    {
-      method: "GET",
-      url: `${platformEndpoints(config).authorization}?${parameters}`,
-      headers: {},
-      body: new Uint8Array(),
-    },
-    authorize,
-  );
+  const url = `${buildPlatformEndpoints(config).authorization}?${parameters}`;
+  return handlePlatformRequest({ method: "GET", url, headers: {}, body: new Uint8Array() }, requests);
 }
 
 const frames: HTMLIFrameElement[] = [];
@@ -176,7 +184,12 @@ window.addEventListener("message", function (event) {
 
   /** The storage page beside a tool frame that relays what the test says to it, and what it answers. */
   async function pages(): Promise<{ ask(message: Record<string, unknown>): Promise<Record<string, unknown>> }> {
-    const page = await platformStorage({ config, clock });
+    const { requests } = platform("/launch");
+    const storageUrl = buildPlatformEndpoints(config).storage;
+    const page = await handlePlatformRequest(
+      { method: "GET", url: storageUrl, headers: {}, body: new Uint8Array() },
+      requests,
+    );
     const policy = (page.headers["content-security-policy"] ?? "").replace(/; frame-ancestors [^;]*/u, "");
     await open(
       "lti-storage",
@@ -299,5 +312,43 @@ window.addEventListener("message", function (event) {
     await ask({ subject: "lti.get_data", key: "k" });
     window.removeEventListener("message", listen);
     expect(answers).toStrictEqual([]);
+  });
+});
+
+describe("the script that answers the capabilities", () => {
+  /** A tool frame inside a frame of the host page, which asks its parent for the capabilities and reports what it gets. */
+  const TOOL_ASKS = `<script>
+window.addEventListener("message", function (event) {
+  if (event.data && event.data.subject === "lti.capabilities.response") {
+    window.parent.parent.postMessage({ answer: event.data, sameSource: event.source === window.parent }, "*");
+  }
+});
+window.parent.postMessage({ subject: "lti.capabilities", message_id: "c-1" }, "*");
+</script>`;
+
+  it("answers the tool's frame with the frame of the storage page for lti.put_data and lti.get_data", async () => {
+    const { source } = await buildCapabilitiesScript({ storageTarget: "storage-7" });
+    const answers: Record<string, unknown>[] = [];
+    const listen = (event: MessageEvent): void => {
+      if (event.data?.answer !== undefined) answers.push(event.data);
+    };
+    window.addEventListener("message", listen);
+    const escaped = TOOL_ASKS.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+    await open("host", `<script>${source}</script><iframe name="lti-tool" srcdoc="${escaped}"></iframe>`);
+    await waitFor(() => expect(answers).toHaveLength(1));
+    window.removeEventListener("message", listen);
+    const [received] = answers;
+    expect(received).toMatchObject({
+      sameSource: true,
+      answer: {
+        subject: "lti.capabilities.response",
+        message_id: "c-1",
+        supported_messages: [
+          { subject: "lti.capabilities" },
+          { subject: "lti.put_data", frame: "storage-7" },
+          { subject: "lti.get_data", frame: "storage-7" },
+        ],
+      },
+    });
   });
 });

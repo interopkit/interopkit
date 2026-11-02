@@ -1,14 +1,16 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 requests are snake_case.
 
 import type { HttpRequest } from "@interopkit/core/http";
+import { createLocalJWKSet, type JWK, jwtVerify, SignJWT } from "jose";
 import { expect } from "vitest";
 import type { ToolRegistration } from "../src/platform/index.js";
-import { type KeyPair, readToken, request, signToken, type TestClock } from "./fixture.js";
+import { type KeyPair, request, signToken, type TestClock } from "./fixture.js";
 
 /**
  * A conformant LTI 1.3 tool for the tests of the platform role. It is written from the specifications, not from the code
  * under test: Security Framework section 5.1.1 (the login and the authentication request), section 5.1.3 (the validation of the
- * id_token), section 4.1.1 (the client assertion) and LTI 1.3 Core section 5 (the claims it relies on).
+ * id_token, with jose), section 4.1.1 (the client assertion) and LTI 1.3 Core sections 4.1 and 5 (the parameters and the claims
+ * it relies on).
  */
 
 export const TOOL_ORIGIN = "https://tool.example.com";
@@ -20,16 +22,16 @@ export const TOOL_LAUNCH_URL = `${TOOL_ORIGIN}/lti/tools/drawing`;
 export const TOOL_JWKS_URL = `${TOOL_ORIGIN}/.well-known/jwks.json`;
 
 const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";
-const AGS_CLAIM = "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint";
 
 /** The registration that the platform keeps of the tool. */
 export function toolRegistration(overrides: Partial<ToolRegistration> = {}): ToolRegistration {
   return {
     clientId: TOOL_CLIENT_ID,
-    deploymentId: TOOL_DEPLOYMENT_ID,
+    deploymentIds: [TOOL_DEPLOYMENT_ID],
     loginUrl: TOOL_LOGIN_URL,
     redirectUris: [TOOL_REDIRECT_URI],
     jwksUrl: TOOL_JWKS_URL,
+    scopes: [],
     ...overrides,
   };
 }
@@ -75,12 +77,13 @@ export function authenticationParameters(
   initiation: Initiation,
   state = "state-1",
   nonce = "nonce-1",
+  redirectUri = TOOL_REDIRECT_URI,
 ): URLSearchParams {
   return new URLSearchParams([
     ["scope", "openid"],
     ["response_type", "id_token"],
     ["client_id", initiation.clientId],
-    ["redirect_uri", TOOL_REDIRECT_URI],
+    ["redirect_uri", redirectUri],
     ["login_hint", initiation.loginHint],
     ["state", state],
     ["response_mode", "form_post"],
@@ -105,74 +108,37 @@ export function authenticationRequest(
   });
 }
 
-/** What the tool reads from the page that the platform answers the authentication request with. */
-export interface Delivered {
-  readonly action: string;
-  readonly idToken: string;
-  readonly state: string;
-}
-
 /** The fields of a key set, as RFC 7517 section 5 gives them. */
-export interface KeySet {
-  readonly keys: readonly Record<string, string>[];
+export interface KeySetBody {
+  readonly keys: readonly JWK[];
 }
 
 /**
- * Validates an `id_token` as Security Framework section 5.1.3 and LTI 1.3 Core section 5.3 say a tool must: the signature against the
- * platform's key set by `kid`, `iss`, `aud` (the client id alone), `exp`, `iat`, `nonce`; and the claims of a resource link
- * launch. It returns the claims.
+ * Validates an `id_token` as Security Framework section 5.1.3 and LTI 1.3 Core section 5.3 say a tool must, with jose: the
+ * signature against the platform's key set by `kid` with an approved algorithm, `iss`, `aud` (the client id alone), `exp`,
+ * `iat`, `nonce`, and the claims that every message has. It returns the claims.
  */
 export async function acceptIdToken(
   idToken: string,
-  keySet: KeySet,
+  keySet: KeySetBody,
   expected: { issuer: string; nonce: string; clock: TestClock },
 ): Promise<Record<string, unknown>> {
-  const { header, payload } = readToken(idToken);
-  expect(header.alg).toBe("RS256");
-  const jwk = keySet.keys.find((key) => key.kid === header.kid);
-  expect(jwk, "the key set holds the kid of the token").toBeDefined();
-  expect(jwk?.kty).toBe("RSA");
-  const key = await crypto.subtle.importKey(
-    "jwk",
-    { kty: "RSA", n: jwk?.n, e: jwk?.e, alg: "RS256", ext: true },
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["verify"],
-  );
-  const [signedHeader = "", signedPayload = "", signature = ""] = idToken.split(".");
-  const valid = await crypto.subtle.verify(
-    "RSASSA-PKCS1-v1_5",
-    key,
-    Buffer.from(signature, "base64url"),
-    new TextEncoder().encode(`${signedHeader}.${signedPayload}`),
-  );
-  expect(valid, "the signature").toBe(true);
-  expect(payload.iss).toBe(expected.issuer);
+  const { payload, protectedHeader } = await jwtVerify(idToken, createLocalJWKSet({ keys: [...keySet.keys] }), {
+    issuer: expected.issuer,
+    audience: TOOL_CLIENT_ID,
+    algorithms: ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512"],
+    currentDate: new Date(expected.clock.now()),
+  });
+  expect(protectedHeader.typ).toBe("JWT");
   expect([payload.aud].flat()).toEqual([TOOL_CLIENT_ID]);
-  const now = expected.clock.now() / 1000;
-  expect(Number(payload.exp)).toBeGreaterThan(now);
-  expect(Number(payload.iat)).toBeLessThanOrEqual(now);
+  expect(Number(payload.iat)).toBeLessThanOrEqual(expected.clock.now() / 1000);
   expect(payload.nonce).toBe(expected.nonce);
-  expect(payload[`${CLAIM}message_type`]).toBe("LtiResourceLinkRequest");
   expect(payload[`${CLAIM}version`]).toBe("1.3.0");
-  expect(payload[`${CLAIM}deployment_id`]).toBe(TOOL_DEPLOYMENT_ID);
-  expect(typeof payload.sub).toBe("string");
+  expect(typeof payload[`${CLAIM}message_type`]).toBe("string");
+  expect(typeof payload[`${CLAIM}deployment_id`]).toBe("string");
   expect(Array.isArray(payload[`${CLAIM}roles`])).toBe(true);
   expect(payload[`${CLAIM}target_link_uri`]).toBeTruthy();
-  expect(payload[`${CLAIM}resource_link`]).toHaveProperty("id");
   return payload;
-}
-
-/** The grade services of a launch, as LTI AGS 2.0 section 3.1 gives the claim. */
-export function agsClaim(claims: Record<string, unknown>): { scope: string[]; lineitem: string } {
-  const claim = claims[AGS_CLAIM];
-  if (typeof claim === "object" && claim !== null && "scope" in claim && "lineitem" in claim) {
-    const { scope, lineitem } = claim;
-    if (Array.isArray(scope) && scope.every((item) => typeof item === "string") && typeof lineitem === "string") {
-      return { scope, lineitem };
-    }
-  }
-  throw new Error("The launch has no grade services claim with scope and lineitem.");
 }
 
 /** The options of a client assertion (Security Framework section 4.1.1) that a test may change. */
@@ -183,28 +149,57 @@ export interface Assertion {
   readonly iat?: number | undefined;
   readonly exp?: number | undefined;
   readonly jti?: string | undefined;
-  readonly header?: Readonly<Record<string, unknown>>;
-  readonly signer?: KeyPair;
+  readonly [claim: string]: unknown;
 }
 
-/** Signs the client assertion that Security Framework section 4.1.1 describes, with `exp` five minutes after `iat`. */
-export function clientAssertion(
-  tool: KeyPair,
-  tokenUrl: string,
-  clock: TestClock,
-  change: Assertion = {},
-): Promise<string> {
+/** The claims of the client assertion that Security Framework section 4.1.1 describes, with `exp` five minutes after `iat`. */
+function assertionClaims(tokenUrl: string, clock: TestClock, change: Assertion): Record<string, unknown> {
   const iat = Math.floor(clock.now() / 1000);
-  const claims = {
+  return {
     iss: TOOL_CLIENT_ID,
     sub: TOOL_CLIENT_ID,
     aud: tokenUrl,
     iat,
     exp: iat + 300,
     jti: crypto.randomUUID(),
-    ...Object.fromEntries(Object.entries(change).filter(([name]) => name !== "header" && name !== "signer")),
+    ...change,
   };
-  return signToken(claims, change.signer ?? tool, change.header);
+}
+
+/** Signs a client assertion with an RSA key for RS256; `header` replaces fields of the default header. */
+export function clientAssertion(
+  tool: KeyPair,
+  tokenUrl: string,
+  clock: TestClock,
+  change: Assertion = {},
+  header: Readonly<Record<string, unknown>> = {},
+): Promise<string> {
+  return signToken(assertionClaims(tokenUrl, clock, change), tool, header);
+}
+
+/** A key of a tool for an elliptic curve algorithm, with its `kid`. */
+export interface EcKey {
+  readonly kid: string;
+  readonly algorithm: "ES256" | "ES384" | "ES512";
+  readonly privateKey: CryptoKey;
+  readonly publicKey: CryptoKey;
+}
+
+/** Generates an elliptic curve key of a tool. */
+export async function generateEcKey(kid: string, algorithm: EcKey["algorithm"] = "ES256"): Promise<EcKey> {
+  const curve = { ES256: "P-256", ES384: "P-384", ES512: "P-521" }[algorithm];
+  const pair = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: curve }, true, [
+    "sign",
+    "verify",
+  ])) as CryptoKeyPair;
+  return { kid, algorithm, privateKey: pair.privateKey, publicKey: pair.publicKey };
+}
+
+/** Signs a client assertion with an elliptic curve key, with jose. */
+export function ecAssertion(tool: EcKey, tokenUrl: string, clock: TestClock, change: Assertion = {}): Promise<string> {
+  return new SignJWT(assertionClaims(tokenUrl, clock, change))
+    .setProtectedHeader({ alg: tool.algorithm, kid: tool.kid, typ: "JWT" })
+    .sign(tool.privateKey);
 }
 
 /** The token request of the client-credentials grant with a JWT assertion (Security Framework section 4.1.1). */

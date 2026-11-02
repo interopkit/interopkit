@@ -1,7 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the form fields are those of LTI, in snake_case.
 
 import type { Clock } from "@interopkit/core";
-import { LtiError } from "@interopkit/tool-integration";
 import { generateSigningKeys } from "./src/keys.ts";
 import { connect, plainRequest, textOf } from "./src/network.ts";
 import { createPlatform } from "./src/platform.ts";
@@ -15,12 +14,11 @@ const DEPLOYMENT_ID = "07940580-b309-415e-a37c-914d387c1150";
 const KEY_ID = "tool-1";
 const NOW = 1_700_000_000_000;
 
-/** What the scenario shows: the launch the tool accepted, the score the platform received, and the replay it refused. */
+/** What the scenario shows: the launch the tool accepted, and the replay the platform refused. */
 export interface Outcome {
   readonly login: { readonly toolHost: string; readonly storageUrl: string };
   readonly launch: Readonly<Record<string, unknown>>;
-  readonly scores: readonly Readonly<Record<string, unknown>>[];
-  readonly replay: string;
+  readonly replay: { readonly status: number; readonly error: string };
 }
 
 /** Decodes the five entities that the pages of the packages write into an attribute. */
@@ -38,20 +36,21 @@ function configOf(page: string): Record<string, string> {
   return JSON.parse(decodeAttribute(/data-config="([^"]*)"/u.exec(page)?.[1] ?? "{}"));
 }
 
-/** Reads the form that the platform's page posts: the `id_token` and the `state`, and where they go. */
-function formOf(page: string): { action: string; idToken: string; state: string } {
+/** Reads the form that the platform's page posts: the `id_token` and the `state`, or the `error`, and where they go. */
+function formOf(page: string): { action: string; idToken: string; state: string; error: string } {
   const field = (name: string) => new RegExp(`name="${name}" value="([^"]*)"`, "u").exec(page)?.[1] ?? "";
   return {
     action: /<form id="form" method="post" action="([^"]*)"/u.exec(page)?.[1] ?? "",
     idToken: field("id_token"),
     state: field("state"),
+    error: field("error"),
   };
 }
 
 /**
- * Launches a tool from a platform and takes its score, each side with the role of this package, over an in-memory network.
- * The steps are those of the browser: the platform prepares the login URL, the browser asks the tool, then the platform
- * to authenticate, then posts the `id_token` to the tool; the tool then asks the platform for a token and posts the score.
+ * Launches a tool from a platform, each side with the role of this package, over an in-memory network. The steps are those of
+ * the browser: the platform keeps the message and prepares the login URL, the browser asks the tool, then the platform to
+ * authenticate, then posts the `id_token` to the tool.
  *
  * @returns What each side saw.
  */
@@ -89,14 +88,17 @@ export async function runScenario(): Promise<Outcome> {
   );
   Object.assign(systems, { [TOOL_ORIGIN]: tool.handle });
 
-  // The platform prepares the launch of the tool for a resource of the host.
+  // The platform keeps the message of the launch of the tool for a resource of the host.
   const frame = await platform.frame({
-    principal: "candidate-7",
-    resource: "session-1/question-4/1",
-    target: `${TOOL_ORIGIN}/lti/launch`,
-    title: "Drawing tool",
-    custom: { exam: "tryout-1" },
-    scoreMaximum: 10,
+    messageType: "LtiResourceLinkRequest",
+    clientId: CLIENT_ID,
+    deploymentId: DEPLOYMENT_ID,
+    targetLinkUri: `${TOOL_ORIGIN}/lti/launch`,
+    user: { subject: "candidate-7" },
+    roles: ["http://purl.imsglobal.org/vocab/lis/v2/membership#Learner"],
+    context: { id: "course-1", title: "Tryout" },
+    resourceLink: { id: "session-1-question-4", title: "Drawing tool" },
+    custom: { exam: "tryout-1", user: "$User.id" },
   });
   // The browser opens the frame. The platform asks for client-side login, so the tool answers with a page that keeps its
   // `state` and `nonce` in the platform's storage and then sends the browser to the platform to authenticate.
@@ -127,34 +129,14 @@ export async function runScenario(): Promise<Outcome> {
   const launch = tool.launches[0];
   if (launch === undefined) throw new Error(`The tool did not accept the launch: ${launched.status}.`);
 
-  // The tool publishes the score of the activity to the line item that the launch offered.
-  await tool.publish(
-    {
-      activityProgress: "Completed",
-      gradingProgress: "FullyGraded",
-      timestamp: "2023-11-14T22:13:20.000Z",
-      scoreGiven: 8,
-      scoreMaximum: 10,
-    },
-    launch,
-  );
-
-  // The authentication request of a launch is accepted once: the platform refuses the same request again.
-  const replay = await platform
-    .handle(plainRequest("GET", authenticationRequest))
-    .then(() => "accepted")
-    .catch((error: unknown) => (error instanceof LtiError ? error.reason : String(error)));
+  // The authentication request of a launch is answered once: the message is taken, so the same request a second time gets
+  // the authentication error response, which the page posts to the tool.
+  const again = await platform.handle(plainRequest("GET", authenticationRequest));
+  const replay = { status: again.status, error: formOf(textOf(again)).error };
 
   return {
     login: { toolHost: new URL(frame.url).host, storageUrl: frame.storageUrl },
     launch: JSON.parse(textOf(launched)),
-    scores: platform.scores.map(({ resource, score }) => ({
-      resource,
-      userId: score.userId,
-      scoreGiven: score.scoreGiven,
-      scoreMaximum: score.scoreMaximum,
-      gradingProgress: score.gradingProgress,
-    })),
     replay,
   };
 }

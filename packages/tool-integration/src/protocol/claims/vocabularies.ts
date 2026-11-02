@@ -130,8 +130,6 @@ export const CONTEXT_SUB_ROLES: readonly string[] = SUB_ROLE_NAMES.flatMap(([rol
  */
 export const LTI_SYSTEM_ROLES: readonly string[] = ["http://purl.imsglobal.org/vocab/lti/system/person#TestUser"];
 
-/** The context role of a learner (LTI 1.3 Core Appendix A). */
-export const LEARNER_ROLE = `${LIS}/membership#Learner`;
 /** The context role of a mentor, which a message needs to carry `role_scope_mentor` (LTI 1.3 Core section 5.4.3). */
 export const MENTOR_ROLE = `${LIS}/membership#Mentor`;
 

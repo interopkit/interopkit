@@ -45,7 +45,7 @@ Use these words with these meanings in code, comments and docs.
 | tool         | The system that a platform launches. In code, the tool role                                                                     |
 | launch       | One start of a tool by a platform: a login request, an authentication response and an `id_token` with the claims of the message |
 | registration | What a platform and a tool know of each other: issuer, client id, deployment and the addresses of their endpoints               |
-| resource     | What a launch is for, in the host's terms: a string that is signed into the hint and handed back with a score                   |
+| message      | What a launch carries: a `MessageInput` that the host gives the platform role, which keeps it in the host's `LaunchStore` until the tool's authentication request |
 | line item    | A column of the gradebook of a context; a tool posts scores to it                                                               |
 | score        | The grade of one user for one line item, with its progress and a timestamp                                                      |
 | port         | An interface that a package defines for what it needs from a host: a store, a lookup, a `fetch`, a `Clock`                      |
@@ -220,8 +220,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
 | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The randomness of `state`, `nonce`, `jti` and hints is not injected                        | A source that a host or a test could replace could make secrets predictable; tests observe the values in the store instead                           |
 | `custom` is a `Map` in the tool role and a record in the platform role                     | The tool role reads claim names from a token, `__proto__` among them, and the platform role writes what its host gave it                             |
-| The platform role of `tool-integration` signs with a `CryptoKey` through `jose`, not a `Signer` | Its configuration holds a `CryptoKeyPair`; a `KeySet` with a `Signer` replaces it with the platform's messages                                   |
-| Some functions are named for what they serve, such as `platformJwks` and `agsScores`       | They are the handlers of an endpoint, and the specifications name the endpoint; a verb would not say which one                                       |
+| The platform role of `tool-integration` seals its hints and tokens with an HMAC `CryptoKey` through `jose`, not a `Signer` | A sealed token is the platform's own, which only the platform opens; a `Signer` cannot verify, and the `id_token`s are signed by the `Signer` of `config.keys` |
+| Some functions are named for what they serve, such as `ltiLaunch` and `ltiPlatformLogin`  | They are the handlers of an endpoint, and the specifications name the endpoint; a verb would not say which one                                       |
 | `ltiLaunch` throws an `LtiError` for a refused launch, and returns a page or a launch      | A refusal needs a reason and an HTTP status for the route; tell the results apart with `"status" in result`                                          |
 | `toCaseVersion` reads the structure that it converts and not every property that it copies | `readPackage` and `readEntity` check the properties; the conversion reports the forms that 1.0 refuses, and it cannot tell the kind of a lone entity |
 | The strings of the three small pages are in English and not in a catalog                   | A person sees them only when the login fails; a host that needs another language builds its own page from the same script                            |

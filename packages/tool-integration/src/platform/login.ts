@@ -1,18 +1,17 @@
 import { readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import { LtiError } from "../errors.js";
-import { callOptionsOf, randomToken, toSeconds } from "../protocol/internal.js";
+import { callOptionsOf, MILLISECONDS, randomToken, toSeconds, writeMessage } from "../protocol/internal.js";
+import { DEFAULT_STORAGE_TARGET } from "./capabilities.js";
 import { endpointsOf, type PlatformConfig } from "./config.js";
+import { type MessageInput, readMessageInput } from "./messages/input.js";
+import { toWrite } from "./messages/write.js";
 import { checkLoginOptions, type PlatformLoginOptions } from "./options.js";
-import { checkToolRegistration, type ToolRegistration } from "./registration.js";
+import { readToolRegistration, type ToolRegistration } from "./registration.js";
 import { sealHint, sealLoginHint } from "./tokens.js";
-import { checkToolLaunch, type ToolLaunch } from "./tool-launch.js";
 
-/** How long a hint is valid, in seconds. It is the time for the browser to go to the tool and back. */
-export const LTI_HINT_TTL_SECONDS = 300;
-
-/** The name of the frame that shows the storage page, when the host names none. */
-const DEFAULT_STORAGE_TARGET = "lti-storage";
+/** How long a launch is kept, and its hint valid, in seconds: the time for the browser to go to the tool and back. */
+export const LAUNCH_TTL_SECONDS = 300;
 
 /**
  * Refuses a URL on one of the platform's own origins. The tool's frame has `allow-same-origin`, so a tool on the origin of the
@@ -36,42 +35,51 @@ interface Prepared {
   readonly registration: ToolRegistration;
 }
 
-/** Checks the arguments, finds the tool and builds the URL of its login with the signed hints. */
-async function prepare(launch: ToolLaunch, options: PlatformLoginOptions): Promise<Prepared> {
+/** Checks the arguments, finds the tool, keeps the message and builds the URL of the tool's login with the sealed hints. */
+async function prepare(input: MessageInput, options: PlatformLoginOptions): Promise<Prepared> {
   checkLoginOptions(options);
-  checkToolLaunch(launch);
+  const message = readMessageInput(input, "The message");
   const { config } = options;
+  // The rules that bind the sender hold before the message is kept, so that the authentication request cannot fail on them.
+  writeMessage(toWrite(message, { issuer: config.issuer, custom: new Map(Object.entries(message.custom ?? {})) }));
   const call = callOptionsOf(options);
-  await options.check(launch, call);
-  const registration: ToolRegistration | undefined = await options.registration(launch, call);
+  await options.check(message, call);
+  const registration = readToolRegistration(await options.registration(message.clientId, call), message.clientId);
   if (registration === undefined) {
-    throw new LtiError(`The platform has no tool for the launch ${describe(launch.title)}.`, "tool-unknown");
+    throw new LtiError(
+      `The platform has no tool with the client identifier ${describe(message.clientId)}.`,
+      "tool-unknown",
+    );
   }
-  checkToolRegistration(registration);
-  refuseOwnOrigins([launch.target, registration.loginUrl, ...registration.redirectUris], config);
+  if (!registration.deploymentIds.includes(message.deploymentId)) {
+    throw new LtiError(
+      `The deployment ${describe(message.deploymentId)} is not one of the deployments of the tool.`,
+      "deployment-unknown",
+    );
+  }
+  refuseOwnOrigins([message.targetLinkUri, registration.loginUrl, ...registration.redirectUris], config);
   options.signal?.throwIfAborted();
+  const id = randomToken();
+  const exp = toSeconds(readClock(options.clock)) + LAUNCH_TTL_SECONDS;
+  await options.launches.put(id, message, exp * MILLISECONDS, call);
   const hint = await sealHint(
     {
-      resource: launch.resource,
-      principal: launch.principal,
+      id,
       client: registration.clientId,
-      target: launch.target,
-      custom: { ...launch.custom },
-      title: launch.title,
-      scoreMaximum: launch.scoreMaximum,
-      jti: randomToken(),
-      exp: toSeconds(readClock(options.clock)) + LTI_HINT_TTL_SECONDS,
+      deployment: message.deploymentId,
+      ...(message.user.subject === undefined ? {} : { principal: message.user.subject }),
+      exp,
     },
     config.hintKey,
   );
   const url = new URL(registration.loginUrl);
   const parameters: readonly (readonly [string, string])[] = [
     ["iss", config.issuer],
-    ["login_hint", await sealLoginHint(launch.principal, config.hintKey)],
+    ["login_hint", await sealLoginHint(id, config.hintKey)],
     ["lti_message_hint", hint],
-    ["target_link_uri", launch.target],
+    ["target_link_uri", message.targetLinkUri],
     ["client_id", registration.clientId],
-    ["lti_deployment_id", registration.deploymentId],
+    ["lti_deployment_id", message.deploymentId],
     ["lti_storage_target", options.storageTarget ?? DEFAULT_STORAGE_TARGET],
   ];
   for (const [name, value] of parameters) url.searchParams.append(name, value);
@@ -93,41 +101,44 @@ export interface PlatformFrame {
 }
 
 /**
- * Prepares the launch of a tool and returns the URL of the tool's third-party initiated login for the frame to navigate to.
+ * Keeps a message for a tool and returns the URL of the tool's third-party initiated login, for the frame to navigate to.
  *
  * @remarks
- * The URL carries `iss`, `client_id`, `lti_deployment_id`, `target_link_uri` and `lti_storage_target`, and two hints:
- * `lti_message_hint` is HMAC-signed and names the resource and the principal with a random `jti` and an expiry of 300
- * seconds, and `login_hint` is the principal, signed with the same key. The hint also carries the launch's target, custom
- * properties and title, and the highest score, which `ltiPlatformAuthorize` puts in the launch. It is signed and not
- * encrypted, so the tool can read the resource and the principal. The order is: `check`, `registration`, the origins, then
- * the hint, so that nothing is signed for a launch that is not the caller's.
+ * The order is: the message is read and held to the rules of the sender, `check` confirms that it is the caller's, the tool is
+ * looked up with `registration`, the deployment must be one of the tool's, and the target and the tool's URLs must be on none of
+ * the platform's origins. Only then is the message kept in `launches` for 300 seconds, under a random identifier. The URL
+ * carries `iss`, `client_id`, `lti_deployment_id`, `target_link_uri` and `lti_storage_target`, and two hints sealed with the
+ * hint key: `lti_message_hint` names the kept message, the tool, the deployment and the user with an expiry of 300 seconds,
+ * and `login_hint` names the kept message. They are signed and not encrypted.
  *
  * @see {@link https://www.imsglobal.org/spec/security/v1p1/#step-1-third-party-initiated-login | LTI Security Framework 1.1, third-party initiated login}
- * @param launch - The launch of the tool.
- * @param options - The platform, its tools and the check of the caller.
+ * @param message - The message to send the tool.
+ * @param options - The platform, its tools, the check of the caller and the store of launches.
  * @returns The URL of the tool's login.
- * @throws `DataError` when an argument or an option has the wrong type, or the launch is not valid.
- * @throws `LtiError` (`tool-unknown`) when the platform has no tool for the launch, and (`origin-refused`) when the target
- * or the tool's URLs are on the platform's, the frame page's or a reserved origin.
- * @throws The error of `options.check`, which stops the launch before anything is signed.
- * @throws The `reason` of `options.signal` when it aborts before the hint is signed.
+ * @throws `DataError` when an argument or an option has the wrong type, the message is not valid or breaks a rule of the
+ * sender (LTI 1.3 Core sections 5.3 and 5.4), or the registration is not one.
+ * @throws `LtiError` (`tool-unknown`) when the platform has no tool with the client identifier, (`deployment-unknown`) when
+ * the deployment is not the tool's, and (`origin-refused`) when the target or the tool's URLs are on the platform's, the frame
+ * page's or a reserved origin.
+ * @throws The error of `options.check`, `options.registration` or `options.launches.put`, which stop the launch before
+ * anything is signed.
+ * @throws The `reason` of `options.signal` when it aborts.
  */
-export async function ltiPlatformLogin(launch: ToolLaunch, options: PlatformLoginOptions): Promise<string> {
-  return (await prepare(launch, options)).url;
+export async function ltiPlatformLogin(message: MessageInput, options: PlatformLoginOptions): Promise<string> {
+  return (await prepare(message, options)).url;
 }
 
 /**
- * Prepares the launch of a tool as `ltiPlatformLogin` does, and returns what the page that shows it needs: the URL of the
+ * Keeps a message for a tool as `ltiPlatformLogin` does, and returns what the page that shows the tool needs: the URL of the
  * login, the URL of the storage page, and the `allow` list of the tool's registration.
  *
- * @param launch - The launch of the tool.
- * @param options - The platform, its tools and the check of the caller.
+ * @param message - The message to send the tool.
+ * @param options - The platform, its tools, the check of the caller and the store of launches.
  * @returns The frame of the tool.
  * @throws As {@link ltiPlatformLogin} does.
  */
-export async function ltiPlatformFrame(launch: ToolLaunch, options: PlatformLoginOptions): Promise<PlatformFrame> {
-  const { url, registration } = await prepare(launch, options);
+export async function ltiPlatformFrame(message: MessageInput, options: PlatformLoginOptions): Promise<PlatformFrame> {
+  const { url, registration } = await prepare(message, options);
   const { allow } = registration;
   return { url, storageUrl: endpointsOf(options.config).storage, ...(allow === undefined ? {} : { allow }) };
 }

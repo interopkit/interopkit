@@ -1,61 +1,71 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 requests are snake_case.
 
 import { createHash } from "node:crypto";
+import { signerFromCryptoKey } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
-import { expect } from "vitest";
-import { createJwksCache } from "../src/index.js";
+import { createJwksCache, type KeySet } from "../src/index.js";
 import {
-  type AgsScore,
-  agsScores,
-  ltiPlatformAuthorize,
+  buildPlatformEndpoints,
+  handlePlatformRequest,
+  type LaunchStore,
   ltiPlatformLogin,
+  type MessageInput,
+  type MessageInputBase,
   type PlatformConfig,
-  platformEndpoints,
-  platformJwks,
-  platformToken,
-  type ToolLaunch,
+  type PlatformLoginOptions,
+  type PlatformRequestOptions,
+  type ResourceLinkInput,
   type ToolRegistration,
 } from "../src/platform/index.js";
 import {
   acceptIdToken,
-  agsClaim,
   authenticationParameters,
   authenticationRequest,
-  clientAssertion,
-  type Delivered,
+  generateEcKey,
   type Initiation,
-  type KeySet,
+  type KeySetBody,
   readInitiation,
   TOOL_CLIENT_ID,
+  TOOL_DEPLOYMENT_ID,
   TOOL_JWKS_URL,
   TOOL_LAUNCH_URL,
   TOOL_LOGIN_URL,
-  tokenRequest,
   toolRegistration,
 } from "./fake-tool.js";
-import { createClock, generateKeyPair, NOW, request, type TestClock } from "./fixture.js";
+import { createClock, generateKeyPair, type TestClock } from "./fixture.js";
 import { textOf } from "./text-of.js";
 
-export const SECONDS = NOW / 1000;
 export const ISSUER = "https://platform.example";
 export const PLATFORM_ORIGIN = "https://lti.platform.example";
 export const PLAYER_ORIGIN = "https://player.platform.example";
 export const ASSET_ORIGIN = "https://assets.platform.example";
-const AGS = "https://purl.imsglobal.org/spec/lti-ags/scope/";
-export const LINEITEM_READONLY = `${AGS}lineitem.readonly`;
-export const LINEITEM = `${AGS}lineitem`;
-export const SCORE = `${AGS}score`;
-export const RESULT_READONLY = `${AGS}result.readonly`;
 export const OTHER_CLIENT_ID = "tool-client-2";
-export const OTHER_ORIGIN = "https://other.example.org";
-const OTHER_LAUNCH_URL = `${OTHER_ORIGIN}/launch`;
+const OTHER_ORIGIN = "https://other.example.org";
+export const OTHER_LAUNCH_URL = `${OTHER_ORIGIN}/launch`;
 export const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";
-export const SCORE_TYPE = "application/vnd.ims.lis.v1.score+json";
+export const LEARNER = "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner";
 
-export const platformKeys = await generateKeyPair("unused");
-export const hintKey = await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+/** The key set of the platform: an ES256 key whose signer is a `Signer`, as a key in a KMS would be. */
+async function platformKeySet(kid: string): Promise<KeySet & { readonly privateKey: CryptoKey }> {
+  const pair = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+    "sign",
+    "verify",
+  ])) as CryptoKeyPair;
+  const publicJwk = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid, alg: "ES256", use: "sig" };
+  return {
+    signer: signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: kid }),
+    publicKeys: [publicJwk],
+    privateKey: pair.privateKey,
+  };
+}
+
+const hmac = () => crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+
+export const platformKeys = await platformKeySet("platform-1");
+export const hintKey = await hmac();
+export const previousHintKey = await hmac();
 export const toolKeys = await generateKeyPair("tool-key-1");
-export const otherToolKeys = await generateKeyPair("tool-key-2");
+export const otherToolKey = await generateEcKey("tool-key-2");
 export const attackerKeys = await generateKeyPair("tool-key-1");
 
 export const config: PlatformConfig = {
@@ -63,110 +73,115 @@ export const config: PlatformConfig = {
   origin: PLATFORM_ORIGIN,
   frameOrigin: PLAYER_ORIGIN,
   reservedOrigins: [ASSET_ORIGIN],
-  keys: { privateKey: platformKeys.privateKey, publicKey: platformKeys.publicKey },
+  keys: { signer: platformKeys.signer, publicKeys: platformKeys.publicKeys },
   hintKey,
+  previousHintKeys: [previousHintKey],
 };
-export const endpoints = platformEndpoints(config);
+export const endpoints = buildPlatformEndpoints(config);
 
-export const SCORE_MAXIMUM = 10;
-export const baseLaunch: ToolLaunch = {
-  principal: "candidate-7",
-  resource: "session-1/q-draw/1",
-  target: TOOL_LAUNCH_URL,
-  title: "Drawing tool",
+/** What every message of the tests carries: one learner in a course. */
+export const baseFields: MessageInputBase = {
+  clientId: TOOL_CLIENT_ID,
+  deploymentId: TOOL_DEPLOYMENT_ID,
+  targetLinkUri: TOOL_LAUNCH_URL,
+  user: { subject: "candidate-7", name: "Ana Candidate", email: "ana@example.edu" },
+  roles: [LEARNER],
+  context: { id: "course-1", label: "C1", title: "Course 1" },
   custom: { exam: "tryout-1" },
-  scoreMaximum: SCORE_MAXIMUM,
 };
-export const otherBaseLaunch: ToolLaunch = { ...baseLaunch, target: OTHER_LAUNCH_URL };
 
-/** The platform with its tools, its one-time ledger and the scores it received. */
+/** The launch of a resource link for one learner, with the claims of a course. */
+export const baseMessage: ResourceLinkInput = {
+  ...baseFields,
+  messageType: "LtiResourceLinkRequest",
+  resourceLink: { id: "session-1-q-draw", title: "Drawing tool" },
+};
+
+/** The platform with its tools, its store of launches, its single-use ledger and what its ports saw. */
 export interface Setup {
   readonly clock: TestClock;
+  readonly tools: Map<string, ToolRegistration>;
+  /** The messages in the store, by identifier, with their expiry. */
+  readonly kept: Map<string, { readonly message: MessageInput; readonly expiresAt: number }>;
   readonly used: Map<string, number>;
-  readonly scores: { resource: string; score: AgsScore }[];
-  readonly checked: string[];
+  readonly checked: MessageInput[];
   readonly toolFetches: string[];
   /** Makes the key set of the first tool answer 503 while set. */
   failToolKeys: boolean;
-  readonly login: Parameters<typeof ltiPlatformLogin>[1];
-  readonly authorize: Parameters<typeof ltiPlatformAuthorize>[1];
-  readonly token: Parameters<typeof platformToken>[1];
-  readonly scoring: Parameters<typeof agsScores>[1];
+  readonly login: PlatformLoginOptions;
+  readonly requests: PlatformRequestOptions;
 }
 
-/** A platform with two tools: the first publishes its key set, the second gives its key. */
-export function setup(overrides: { tools?: Map<string, ToolRegistration> } = {}): Setup {
+/** A store of launches in memory: `take` returns a message once. */
+function memoryLaunchStore(kept: Setup["kept"]): LaunchStore {
+  return {
+    put: async (id, message, expiresAt) => void kept.set(id, { message, expiresAt }),
+    take: async (id) => {
+      const entry = kept.get(id);
+      kept.delete(id);
+      return entry?.message;
+    },
+  };
+}
+
+/** A platform with two tools: the first publishes its key set, the second gives its elliptic curve key. */
+export function setup(overrides: { readonly tools?: readonly ToolRegistration[] } = {}): Setup {
   const clock = createClock();
-  const used = new Map<string, number>();
-  const tools =
-    overrides.tools ??
-    new Map([
-      [TOOL_CLIENT_ID, toolRegistration()],
-      [
-        OTHER_CLIENT_ID,
+  const tools = new Map(
+    (
+      overrides.tools ?? [
+        toolRegistration(),
         toolRegistration({
           clientId: OTHER_CLIENT_ID,
           loginUrl: `${OTHER_ORIGIN}/login`,
           redirectUris: [OTHER_LAUNCH_URL],
           jwksUrl: undefined,
-          keys: new Map([[otherToolKeys.kid, otherToolKeys.publicKey]]),
+          keys: new Map([[otherToolKey.kid, otherToolKey.publicKey]]),
         }),
-      ],
-    ]);
-  const state: Setup = {
-    clock,
-    used,
-    scores: [],
-    checked: [],
-    toolFetches: [],
-    failToolKeys: false,
-    login: undefined as never,
-    authorize: undefined as never,
-    token: undefined as never,
-    scoring: undefined as never,
-  };
+      ]
+    ).map((tool) => [tool.clientId, tool]),
+  );
+  const kept: Setup["kept"] = new Map();
+  const used = new Map<string, number>();
+  const toolFetches: string[] = [];
+  const state = { failToolKeys: false };
   const jwks = createJwksCache({
     fetch: async (url) => {
-      state.toolFetches.push(url);
+      toolFetches.push(url);
       if (state.failToolKeys) return new Response("down", { status: 503 });
       return url === TOOL_JWKS_URL ? Response.json({ keys: [toolKeys.publicJwk] }) : new Response("", { status: 404 });
     },
   });
-  const client = async (id: string): Promise<ToolRegistration | undefined> => tools.get(id);
+  const lookup = async (clientId: string): Promise<ToolRegistration | undefined> => tools.get(clientId);
+  const launches = memoryLaunchStore(kept);
+  const checked: MessageInput[] = [];
   const once = async (id: string, expiresAt: number): Promise<boolean> => {
     if (used.has(id)) return false;
     used.set(id, expiresAt);
     return true;
   };
-  const base = { config, clock };
   return Object.assign(state, {
+    clock,
+    tools,
+    kept,
+    used,
+    checked,
+    toolFetches,
     login: {
-      ...base,
-      registration: async (candidate: ToolLaunch) =>
-        [...tools.values()].find((tool) => candidate.target.startsWith(new URL(tool.loginUrl).origin)),
-      check: async (who: ToolLaunch) => {
-        state.checked.push(`${who.resource}/${who.principal}`);
+      config,
+      clock,
+      registration: lookup,
+      check: async (message: MessageInput) => {
+        checked.push(message);
       },
+      launches,
     },
-    authorize: { ...base, client, once },
-    token: { ...base, client, once, jwks },
-    scoring: {
-      ...base,
-      onScore: async (resource: string, score: AgsScore) => {
-        state.scores.push({ resource, score });
-      },
-    },
+    requests: { config, clock, client: lookup, launches, once, jwks },
   });
 }
 
-/** The key set of the platform, as a tool reads it. */
-async function keySet(ctx: Setup): Promise<KeySet> {
-  const response = await platformJwks(ctx.login);
-  return JSON.parse(textOf(response.body));
-}
-
 /** Decodes the text of an HTML attribute value. */
-export function decodeEntities(text: string): string {
+function decodeEntities(text: string): string {
   return text
     .replaceAll("&quot;", '"')
     .replaceAll("&#39;", "'")
@@ -175,161 +190,84 @@ export function decodeEntities(text: string): string {
     .replaceAll("&amp;", "&");
 }
 
-/** Reads the page that posts the id_token: the form's action and fields, the script and the hash of it. */
-export function readPost(
-  response: HttpResponse,
-): Delivered & { scripts: number; hash: string; inputs: Map<string, string> } {
-  const inputs = new Map<string, string>();
-  for (const [, name = "", value = ""] of textOf(response.body).matchAll(
-    /<input type="hidden" name="([^"]*)" value="([^"]*)">/gu,
-  )) {
-    inputs.set(name, decodeEntities(value));
+/** What the page that posts a form to the tool holds: its action, its fields, its scripts and the hash of its script. */
+export interface Post {
+  readonly action: string;
+  readonly fields: Map<string, string>;
+  readonly scripts: number;
+  readonly hash: string;
+}
+
+/** Reads the page that posts the `id_token`, or the authentication error response, to the tool. */
+export function readPost(response: HttpResponse): Post {
+  const text = textOf(response.body);
+  const fields = new Map<string, string>();
+  for (const [, name = "", value = ""] of text.matchAll(/<input type="hidden" name="([^"]*)" value="([^"]*)">/gu)) {
+    fields.set(decodeEntities(name), decodeEntities(value));
   }
-  const script = /<script>([\s\S]*)<\/script>/u.exec(textOf(response.body))?.[1] ?? "";
+  const script = /<script>([\s\S]*)<\/script>/u.exec(text)?.[1] ?? "";
   return {
-    action: decodeEntities(/<form id="form" method="post" action="([^"]*)">/u.exec(textOf(response.body))?.[1] ?? ""),
-    idToken: inputs.get("id_token") ?? "",
-    state: inputs.get("state") ?? "",
-    scripts: textOf(response.body).split("<script").length - 1,
+    action: decodeEntities(/<form id="form" method="post" action="([^"]*)">/u.exec(text)?.[1] ?? ""),
+    fields,
+    scripts: text.split("<script").length - 1,
     hash: createHash("sha256").update(script).digest("base64"),
-    inputs,
   };
 }
 
-/** The initiation of a launch, and the tool's authentication request for it. */
-export async function begin(
+/** Sends a request to the platform's handler. */
+export function handle(
   ctx: Setup,
-  options: { launch?: ToolLaunch; resource?: string; principal?: string } = {},
-): Promise<{ initiation: Initiation; parameters: URLSearchParams; url: string }> {
-  const base = options.launch ?? baseLaunch;
-  const who = { ...base, resource: options.resource ?? base.resource, principal: options.principal ?? base.principal };
-  const url = await ltiPlatformLogin(who, ctx.login);
-  const initiation = readInitiation(url, options.launch === otherBaseLaunch ? `${OTHER_ORIGIN}/login` : TOOL_LOGIN_URL);
-  return { initiation, parameters: authenticationParameters(initiation), url };
+  request: HttpRequest,
+  change: Partial<PlatformRequestOptions> = {},
+): Promise<HttpResponse> {
+  return handlePlatformRequest(request, { ...ctx.requests, ...change });
 }
 
-/** The platform's answer to the tool's authentication request for a new launch. */
+/** The login of a message, and the tool's authentication request for it. */
+export async function begin(
+  ctx: Setup,
+  message: MessageInput = baseMessage,
+): Promise<{ initiation: Initiation; parameters: URLSearchParams; url: string }> {
+  const url = await ltiPlatformLogin(message, ctx.login);
+  const initiation = readInitiation(url, ctx.tools.get(message.clientId)?.loginUrl ?? TOOL_LOGIN_URL);
+  const redirect = ctx.tools.get(message.clientId)?.redirectUris[0];
+  return { initiation, parameters: authenticationParameters(initiation, "state-1", "nonce-1", redirect), url };
+}
+
+/** The platform's answer to the tool's authentication request for a new login, after `change` edits its parameters. */
 export async function authorize(
   ctx: Setup,
   change: (parameters: URLSearchParams) => void = () => undefined,
-  method: "GET" | "POST" = "GET",
-  options: { launch?: ToolLaunch } = {},
+  options: {
+    readonly method?: "GET" | "POST";
+    readonly message?: MessageInput;
+    readonly requests?: Partial<PlatformRequestOptions>;
+  } = {},
 ): Promise<HttpResponse> {
-  const { parameters } = await begin(ctx, options);
+  const { parameters } = await begin(ctx, options.message);
   change(parameters);
-  return ltiPlatformAuthorize(authenticationRequest(endpoints.authorization, parameters, method), ctx.authorize);
+  return handle(ctx, authenticationRequest(endpoints.authorization, parameters, options.method), options.requests);
 }
 
-/** A whole launch: the claims of the id_token that the tool accepted, with what the tool received. */
+/** The key set of the platform, as a tool reads it from `/jwks`. */
+async function platformKeySetBody(ctx: Setup): Promise<KeySetBody> {
+  return JSON.parse(
+    textOf((await handle(ctx, { method: "GET", url: endpoints.jwks, headers: {}, body: new Uint8Array() })).body),
+  );
+}
+
+/** A whole launch: the claims of the `id_token` that the tool accepted, with the page that delivered it. */
 export async function launch(
   ctx: Setup,
-): Promise<{ claims: Record<string, unknown>; page: HttpResponse; nonce: string }> {
-  const { parameters } = await begin(ctx);
-  const page = await ltiPlatformAuthorize(authenticationRequest(endpoints.authorization, parameters), ctx.authorize);
-  const delivered = readPost(page);
-  const nonce = parameters.get("nonce") ?? "";
-  const claims = await acceptIdToken(delivered.idToken, await keySet(ctx), {
+  message: MessageInput = baseMessage,
+  requests: Partial<PlatformRequestOptions> = {},
+): Promise<{ claims: Record<string, unknown>; page: HttpResponse }> {
+  const page = await authorize(ctx, undefined, { message, requests });
+  const idToken = readPost(page).fields.get("id_token") ?? "";
+  const claims = await acceptIdToken(idToken, await platformKeySetBody(ctx), {
     issuer: ISSUER,
-    nonce,
+    nonce: "nonce-1",
     clock: ctx.clock,
   });
-  return { claims, page, nonce };
-}
-
-/** Gets an access token for the first tool, or the second with `other`. */
-export async function accessToken(ctx: Setup, scope: string, other = false): Promise<string> {
-  const assertion = other
-    ? await clientAssertion(otherToolKeys, endpoints.token, ctx.clock, { iss: OTHER_CLIENT_ID, sub: OTHER_CLIENT_ID })
-    : await clientAssertion(toolKeys, endpoints.token, ctx.clock);
-  const response = await platformToken(tokenRequest(endpoints.token, assertion, scope), ctx.token);
-  expect(response.status, textOf(response.body)).toBe(200);
-  return JSON.parse(textOf(response.body)).access_token;
-}
-
-/** A request to a service of the platform with a bearer token. */
-export function service(
-  url: string,
-  token: string | undefined,
-  init: { method?: string; headers?: Record<string, string>; body?: string } = {},
-): HttpRequest {
-  return request({
-    url,
-    method: init.method ?? "GET",
-    headers: { ...(token === undefined ? {} : { authorization: `Bearer ${token}` }), ...init.headers },
-    body: init.body ?? "",
-  });
-}
-
-/** The line item URL of a launch, and the claims of it. */
-export async function lineItemOf(ctx: Setup): Promise<string> {
-  return agsClaim((await launch(ctx)).claims).lineitem;
-}
-
-/** A body of a score as the spec's example 3.4.3.1 gives it. */
-export function scoreBody(change: Record<string, unknown> = {}): string {
-  return JSON.stringify({
-    timestamp: "2017-04-16T18:54:36.736+00:00",
-    scoreGiven: 83,
-    scoreMaximum: 100,
-    comment: "This is exceptional work.",
-    activityProgress: "Completed",
-    gradingProgress: "FullyGraded",
-    userId: baseLaunch.principal,
-    ...change,
-  });
-}
-
-/** Posts a score for the line item of a launch with a token that has the scope. */
-export async function postScore(
-  ctx: Setup,
-  body: string,
-  change: { type?: string; token?: string | null; url?: (url: string) => string; method?: string } = {},
-): Promise<HttpResponse> {
-  const url = await lineItemOf(ctx);
-  const token = change.token === undefined ? await accessToken(ctx, SCORE) : (change.token ?? undefined);
-  return agsScores(
-    service(change.url ? change.url(url) : `${url}/scores`, token, {
-      method: change.method ?? "POST",
-      headers: { "content-type": change.type ?? SCORE_TYPE },
-      body,
-    }),
-    ctx.scoring,
-  );
-}
-
-/** Converts an answer of a handler to a `Response`, as a host would. */
-export function toResponse({ status, headers, body }: HttpResponse): Response {
-  return new Response(status === 204 ? null : textOf(body), { status, headers });
-}
-
-/** Posts a score to a line item URL with a token. */
-export function postScoreWith(
-  ctx: Setup,
-  lineItem: string,
-  token: string,
-  options: Parameters<typeof agsScores>[1] = ctx.scoring,
-): Promise<HttpResponse> {
-  return agsScores(
-    service(`${lineItem}/scores`, token, {
-      method: "POST",
-      headers: { "content-type": SCORE_TYPE },
-      body: scoreBody(),
-    }),
-    options,
-  );
-}
-
-/** A launch for another resource. */
-export async function launchFor(
-  ctx: Setup,
-  resource = baseLaunch.resource,
-): Promise<{ claims: Record<string, unknown> }> {
-  const { parameters } = await begin(ctx, { resource });
-  const page = await ltiPlatformAuthorize(authenticationRequest(endpoints.authorization, parameters), ctx.authorize);
-  const claims = await acceptIdToken(readPost(page).idToken, await keySet(ctx), {
-    issuer: ISSUER,
-    nonce: parameters.get("nonce") ?? "",
-    clock: ctx.clock,
-  });
-  return { claims };
+  return { claims, page };
 }

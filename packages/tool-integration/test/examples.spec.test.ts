@@ -6,13 +6,21 @@ import { createLocalJWKSet, exportJWK } from "jose";
 import { describe, expect, it } from "vitest";
 import { readSpecExamples, readSpecPage } from "../../../scripts/spec-examples.js";
 import type { DeepLinkingRequestMessage, LtiMessage } from "../src/index.js";
-import { readAgsScore } from "../src/platform/index.js";
+import type { ResourceLinkInput } from "../src/platform/index.js";
 import { readMessage, readToolMessage, verifyJwt, writeMessage, writeToolMessage } from "../src/protocol/internal.js";
 import { deepLinkResponse, ltiLaunch, type PlatformRegistration, publishAgsScore } from "../src/tool/index.js";
 import { FakeLms, LINE_ITEM_URL } from "./fake-lms.js";
 import { registrationOf } from "./fake-platform.js";
+import { authenticationRequest, toolRegistration } from "./fake-tool.js";
 import { generateKeyPair, readToken, signToken } from "./fixture.js";
-import { launch as platformLaunch, setup as platformSetup } from "./platform-setup.js";
+import {
+  begin as platformBegin,
+  config as platformConfig,
+  endpoints as platformEndpoints,
+  handle as platformHandle,
+  setup as platformSetup,
+  readPost,
+} from "./platform-setup.js";
 import { textOf } from "./text-of.js";
 import { cookieLogin, setup, toolKey } from "./tool-setup.js";
 
@@ -307,40 +315,34 @@ describe("the scores of AGS section 3.4", () => {
 });
 
 describe("the platform role against the same examples", () => {
-  it("reads each score of AGS section 3.4 into the fields that it says", () => {
-    for (const example of examples.scores) {
-      expect(readAgsScore(example)).toMatchObject({
-        userId: example.userId,
-        timestamp: example.timestamp,
-        timestampMs: Date.parse(String(example.timestamp)),
-        activityProgress: example.activityProgress,
-        gradingProgress: example.gradingProgress,
-      });
-    }
-  });
-
-  it("issues an id_token with the required claims of LTI Core Appendix E, of the same kinds", async () => {
-    const issued = (await platformLaunch(platformSetup())).claims;
-    const required = [
-      "iss",
-      "sub",
-      "aud",
-      "exp",
-      "iat",
-      "nonce",
-      `${CLAIM}deployment_id`,
-      `${CLAIM}message_type`,
-      `${CLAIM}version`,
-      `${CLAIM}roles`,
-      `${CLAIM}resource_link`,
-      `${CLAIM}target_link_uri`,
-    ];
-    for (const name of required) {
-      expect(name in issued, name).toBe(true);
-      expect(typeof issued[name], name).toBe(typeof examples.launch[name === "aud" ? "iss" : name]);
-    }
-    expect(issued[`${CLAIM}message_type`]).toBe(examples.launch[`${CLAIM}message_type`]);
-    expect(issued[`${CLAIM}version`]).toBe(examples.launch[`${CLAIM}version`]);
-    expect(Object.keys(issued).every((name) => name in examples.launch || name.includes("lti-ags"))).toBe(true);
+  it("issues the launch of LTI Core Appendix E from the message it says, claim for claim but the services", async () => {
+    const client = String(examples.launch.azp);
+    const read = readExample(examples.launch, client);
+    if (read.messageType !== "LtiResourceLinkRequest") throw new Error("The example is not a resource link launch.");
+    const message: ResourceLinkInput = {
+      messageType: read.messageType,
+      clientId: client,
+      deploymentId: read.deploymentId,
+      targetLinkUri: read.targetLinkUri,
+      user: read.user,
+      roles: read.roles,
+      roleScopeMentor: read.roleScopeMentor,
+      context: read.context,
+      presentation: read.presentation,
+      lis: read.lis,
+      custom: Object.fromEntries(read.custom),
+      extensions: Object.fromEntries(Object.entries(read.claims).filter(([name]) => name.startsWith("http://"))),
+      resourceLink: read.resourceLink,
+    };
+    const ctx = platformSetup({ tools: [toolRegistration({ clientId: client, deploymentIds: [read.deploymentId] })] });
+    const { parameters } = await platformBegin(ctx, message);
+    const config = { ...platformConfig, instance: read.platform };
+    const page = await platformHandle(ctx, authenticationRequest(platformEndpoints.authorization, parameters), {
+      config,
+    });
+    const issued = readToken(readPost(page).fields.get("id_token") ?? "").payload;
+    const services = (claims: Readonly<Record<string, unknown>>) =>
+      Object.fromEntries(Object.entries(withoutEnvelope(claims)).filter(([name]) => !/lti-(ags|nrps)/u.test(name)));
+    expect(services(issued)).toEqual(services(examples.launch));
   });
 });

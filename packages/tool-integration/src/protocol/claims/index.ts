@@ -57,7 +57,6 @@ export {
   INSTITUTION_ROLES,
   isVocabularyContextType,
   isVocabularyRole,
-  LEARNER_ROLE,
   LTI_SYSTEM_ROLES,
   MENTOR_ROLE,
   SYSTEM_ROLES,

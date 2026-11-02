@@ -9,20 +9,18 @@ export { callOptionsOf } from "./call-options.js";
 export {
   CLAIM,
   type Claims,
+  HTTPS_URL,
   IDENTIFIER,
   isVocabularyContextType,
   isVocabularyRole,
-  LEARNER_ROLE,
   LTI_VERSION,
-  MAX_IDENTIFIER_LENGTH,
   NON_EMPTY_STRING,
   NUMBER,
-  POSITIVE_NUMBER,
+  optional,
   required,
   SCOPES,
   STRING,
   STRING_ARRAY,
-  STRING_RECORD,
 } from "./claims/index.js";
 export { CLOCK_SKEW_SECONDS } from "./clock-skew.js";
 export {
@@ -57,11 +55,11 @@ export {
   writeGroupQuery,
   writeGroupSetContainer,
 } from "./groups/index.js";
-export { escapeHtml, pagePolicy } from "./html.js";
+export { escapeHtml, pagePolicy, scriptSource } from "./html.js";
 export { checkJwksCache, type JwksCache } from "./jwks.js";
-export { hasCanonicalParts, rs256Header, unverifiedClaims, verifyJwt } from "./jwt.js";
-export { checkKeySet, checkLtiSigner } from "./key-set.js";
-export { isRsaKey, MIN_RSA_MODULUS_BITS } from "./keys.js";
+export { hasCanonicalParts, unverifiedClaims, verifyJwt } from "./jwt.js";
+export { checkKeySet, checkLtiSigner, keySetResponse } from "./key-set.js";
+export { isVerifyKey } from "./keys.js";
 export {
   type MessageToWrite,
   readMessage,

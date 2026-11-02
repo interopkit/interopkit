@@ -1,6 +1,6 @@
 # A platform and a tool
 
-A platform that launches a tool, and the tool that validates the launch and publishes a score, in one process. The platform uses
+A platform that launches a tool, and the tool that validates the launch, in one process. The platform uses
 the platform role of `@interopkit/tool-integration`, the tool uses the tool role, and both use `@interopkit/core`. They reach each
 other through an in-memory network, so the example needs no server, and each handler is the one a host would route a request to.
 
@@ -10,26 +10,26 @@ sequenceDiagram
   participant B as Browser
   participant T as Tool
   participant P as Platform handlers
-  H->>P: ltiPlatformFrame(launch)
-  P-->>H: login URL, storage URL
+  H->>P: ltiPlatformFrame(message)
+  P-->>H: login URL, storage URL; the message kept
   B->>T: login URL (ltiLogin)
   T-->>B: page: keep state and nonce in the platform's storage
-  B->>P: authentication request (ltiPlatformAuthorize)
+  B->>P: authentication request (handlePlatformRequest)
   P-->>B: page: post the id_token
   B->>T: id_token and state (ltiLaunch)
   T-->>B: page: fetch the stored values
   B->>T: id_token, state and the stored values
-  T->>P: platformJwks, platformToken
-  T->>P: agsScores (publishAgsScore)
-  P->>H: onScore(resource, score)
+  T->>P: the key set (handlePlatformRequest)
 ```
 
 | File              | Holds                                                                                                                                     |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/platform.ts` | `createPlatform`: the keys, the registration of the tool, the ledger of single-use identifiers, and one handler for the platform's origin |
+| `src/platform.ts` | `createPlatform`: one handler for the platform's origin, and the frame of a message                                                       |
 | `src/tool.ts`     | `createTool`: the registration of the platform, the store of logins, and one handler for the tool's routes                                |
 | `src/network.ts`  | `connect`: a `fetch` that reaches the handler of an origin, and `plainRequest`                                                            |
-| `src/keys.ts`     | The RSA and HMAC keys that each side generates for itself                                                                                 |
+| `src/platform-setup.ts` | The platform's keys, its registration of the tool, its store of launches and its ledger of single-use identifiers                   |
+| `src/tool-setup.ts` | The tool's registration of the platform, its store of logins and its key set cache                                                      |
+| `src/keys.ts`     | The keys that each side generates for itself: RS256 for the tool, ES256 and HMAC for the platform                                         |
 | `scenario.ts`     | `runScenario`: the steps of the browser, and what each side saw                                                                           |
 | `test/`           | The tests, which CI runs                                                                                                                  |
 
@@ -39,7 +39,7 @@ sequenceDiagram
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Keys                      | Generated at each run with Web Crypto; the platform has the tool's public key, not a URL of the tool's key set                          |
 | Time                      | A fixed `Clock`, so that the tokens of both sides agree                                                                                 |
-| Single use                | The platform's `once` is a set: the same authentication request a second time is `hint-used`                                            |
+| Single use                | The platform's store of launches gives a message once: the same authentication request a second time gets `login_required`             |
 | Where a real host differs | Its stores are shared across processes, its routes sit behind its own sessions, and the page of the client-side login runs in a browser |
 
 To run the scenario, build the packages, then start it. It prints what each side saw:

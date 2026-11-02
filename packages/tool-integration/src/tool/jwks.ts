@@ -1,7 +1,7 @@
 import { checkNonNegativeInteger, checkRecord } from "@interopkit/core/checks";
-import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { checkHttpRequest, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 import type { KeySet } from "../protocol/index.js";
-import { checkKeySet } from "../protocol/internal.js";
+import { checkKeySet, keySetResponse } from "../protocol/internal.js";
 
 // Security Framework section 6.3 lets the issuer say how long a retriever may cache the key set. An hour matches the cache of
 // the key sets that the package reads, so a rotation that waits one max-age is followed by both.
@@ -39,13 +39,5 @@ export function serveToolJwks(request: HttpRequest, keys: KeySet, options: Serve
   checkRecord(options, "The options must be an object");
   const { maxAgeSeconds = DEFAULT_MAX_AGE_SECONDS } = options;
   checkNonNegativeInteger(maxAgeSeconds, "The option maxAgeSeconds");
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    return { status: 405, headers: { allow: "GET, HEAD" }, body: "" };
-  }
-  const response = jsonResponse(
-    200,
-    { keys: keys.publicKeys },
-    { "cache-control": `public, max-age=${maxAgeSeconds}` },
-  );
-  return request.method === "HEAD" ? { ...response, body: "" } : response;
+  return keySetResponse(request, keys, maxAgeSeconds);
 }

@@ -428,30 +428,43 @@ platform's key, to the tool's client and deployment, and to one use.
 
 ## The platform role
 
-The platform launches tools through the browser of the user, so a tool's requests are untrusted until the handlers have checked
+The platform launches tools through the browser of the user, so a tool's requests are untrusted until the handler has checked
 them ([platform role](docs/tool-integration/platform.md)).
 
-- **Three kinds of origin.** The platform's handlers, the page that frames the tool and the reserved origins must differ, because
-  the tool's frame has `allow-same-origin`. A handler answers only at its own origin, and a launch refuses a tool on any of them.
-- **Hints bind the request to a launch.** `ltiPlatformAuthorize` is a navigation, often a cross-site POST in a frame where the
-  host's cookie may be withheld, so it relies on the signed `lti_message_hint` and not on a cookie: valid, unexpired, for this
-  tool, naming the principal of `login_hint`, passing `checkLaunch`, and single-use through `once`. The host's check runs
-  before the hint is spent.
-- **Sealed tokens.** Hints, line item identifiers and access tokens are compact JWS with HMAC-SHA-256. The `typ` header binds a
-  token to its use, only `HS256` verifies, the spelling must be canonical, and WebCrypto compares the MAC in constant time. They are
-  signed and not encrypted: the tool reads them, so they hold no secret.
+- **Three kinds of origin.** The platform's handler, the page that frames the tool and the reserved origins must differ, because
+  the tool's frame has `allow-same-origin`. `handlePlatformRequest` answers only at its own origin, and a login refuses a tool or
+  a target on any of them.
+- **The launch is kept, not carried.** `ltiPlatformLogin` keeps the message in the host's `LaunchStore` for 300 seconds, under a
+  random identifier of 160 bits, and the hints name only that identifier, the tool, the deployment and the user. The store is
+  shared by every process and `take` is atomic, so a launch is answered once. The message holds personal data: the store keeps it
+  no longer than the 300 seconds, and the host need keep it nowhere else.
+- **Hints bind the request to a launch.** The authentication request is a navigation, often a cross-site POST in a frame where
+  the host's cookie may be withheld, so it relies on the sealed `lti_message_hint` and not on a cookie: sealed by this platform,
+  unexpired, for this tool, named by `login_hint`, passing `checkLaunch`, and taken once. The host's check runs before the
+  message is taken, so a refused check spends nothing.
+- **A refusal goes back to the tool.** Once the tool and its redirect URI are known, a refusal is the authentication error
+  response, posted only to a redirect URI of the tool; before that it is answered to the browser, so the handler never redirects
+  to an address that the request alone names.
+- **Sealed tokens.** Hints, access tokens, the session data of a proctored attempt and the data of a Deep Linking request are
+  compact JWS with HMAC-SHA-256 under the hint key. The `typ` header binds a token to its use (RFC 8725 section 3.11), only `HS256`
+  verifies, the spelling must be canonical, and Web Crypto compares the MAC in constant time. They are signed and not encrypted:
+  the tool reads them, so the host's Deep Linking `data` holds no secret and no personal data.
 - **Server-side requests.** The platform fetches the key set of a tool from the `jwksUrl` of its registration. It must be `https`,
   and a redirect is refused, yet in a multi-tenant platform a tool's administrator could name an internal host. Pass a `fetch` that
   refuses loopback, private and link-local addresses, checked on the address that the connection resolves to and not on the host
-  name, because of DNS rebinding (see the tool role). Give a tool its public key in the registration, which needs no fetch.
-- **Client assertions.** The six approved algorithms (a key given in the registration is RS256 only), the audience is the token endpoint and no other, the lifetime is at most 3,600 seconds, and a `jti` is
-  accepted once and remembered through the clock-skew leeway after the assertion's expiry. A `once` that rejects fails closed.
-- **Scores.** A tool reads and posts only to its own line item, only for the user of the launch, with the scopes the token holds.
-  The platform does not order scores: the receiver keeps a score unless a later one is kept (AGS 3.4.9).
-- `ToolLaunch.resource`, `target`, `title` and `custom` are signed and not encrypted, and they travel in the login URL, so they are limited.
-  They hold no secret and no personal data.
-- Keep the private key and the hint key in the host's key store. Rotating the hint key invalidates the hints, line item URLs and
-  access tokens that are outstanding.
+  name, because of DNS rebinding (see the tool role). Give a tool its public keys in the registration, which needs no fetch.
+- **Client assertions.** An algorithm of the tool's registration among the six approved ones, refused before any key is fetched
+  for `none`, HMAC and every other; the key type fits the algorithm; the audience is the token endpoint, beside which only the
+  platform's issuer may stand; no `message_type`, so a message of the tool never passes as an assertion; a lifetime of at most
+  3,600 seconds; the deployment, when named, the tool's; and a `jti` accepted once and remembered through the clock-skew leeway
+  after the assertion's expiry. A `once` that rejects fails closed.
+- **Access tokens are stateless.** A token holds the client, the deployment, the granted scopes and the expiry, sealed with the
+  hint key, and grants only the scopes that the request asks for, the registration grants and a service of the platform offers.
+- **Keys.** The `id_token`s are signed through the `Signer` of `config.keys`, so the private key may stay in a KMS or an HSM; the
+  key set publishes the public keys of a rotation. `previousHintKeys` opens what an earlier hint key sealed, so a rotation of the
+  hint key breaks nothing in flight; remove an old key once the longest of what it sealed has expired.
+- **LTI 1.1 secrets.** `migrationSecret` gives the secret of a consumer key for one HMAC of the migration claim at authorization;
+  no message or store of the package ever holds it.
 
 ## Default limits
 
@@ -571,15 +584,15 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `tool-integration`        | Lifetime of a login                                                      | 600                               | seconds                | The time in which a launch must answer a login; not replaceable                                                                                           |
 | `tool-integration`        | Lifetime of a client assertion and of a Deep Linking response            | 300                               | seconds                | `exp` after `iat`; not replaceable                                                                                                                        |
 | `tool-integration`        | Leeway for clock skew                                                    | 60                                | seconds                | `exp`, `nbf` and `iat` of an `id_token` and of a client assertion; not replaceable                                                                        |
-| `tool-integration`        | Lifetime of a hint and of an `id_token`                                  | 300                               | seconds                | `exp` after `iat`; not replaceable                                                                                                                        |
+| `tool-integration`        | Lifetime of a kept launch, a hint and an `id_token`                      | 300                               | seconds                | `put` of the `LaunchStore`, and `exp` after `iat`; not replaceable                                                                                       |
+| `tool-integration`        | `maxBodyBytes` of `handlePlatformRequest`                                | 65,536                            | bytes                  | The body of a request to the platform, measured before it is parsed: 413 at `/authorize`, `invalid_request` at `/token`                                 |
+| `tool-integration`        | `sessionDataLifetimeSeconds` of `handlePlatformRequest`                  | 3,600                             | seconds                | The sealed session data of a Start Proctoring message                                                                                                     |
+| `tool-integration`        | `deepLinkingLifetimeSeconds` of `handlePlatformRequest`                  | 86,400                            | seconds                | The sealed data of a Deep Linking request                                                                                                                 |
+| `tool-integration`        | Cache lifetime of the platform's key set                                 | 3,600                             | seconds                | The `max-age` of `/jwks`; not replaceable                                                                                                                 |
+| `tool-integration`        | `toolFrame` of `handlePlatformRequest`                                   | `"lti-tool"`                      |                        | The frame that the storage page answers                                                                                                                   |
 | `tool-integration`        | Longest accepted lifetime of a client assertion                          | 3,600                             | seconds                | `exp` after `iat`; not replaceable                                                                                                                        |
 | `tool-integration`        | Lifetime of an access token                                              | 3,600                             | seconds                | Not replaceable                                                                                                                                           |
-| `tool-integration`        | Most characters of `ToolLaunch.resource`                                 | 1,024                             | characters             | The query of the login URL; not replaceable                                                                                                               |
-| `tool-integration`        | Most characters of `ToolLaunch.target`                                   | 2,048                             | characters             | The query of the login URL, twice; not replaceable                                                                                                        |
-| `tool-integration`        | Most characters of `ToolLaunch.title`                                    | 255                               | characters             | The query of the login URL; not replaceable                                                                                                               |
-| `tool-integration`        | Most characters of the names and values of `ToolLaunch.custom`           | 2,048                             | characters             | The query of the login URL; not replaceable                                                                                                               |
-| `tool-integration`        | Smallest key                                                             | 2,048 bits (RSA), 256 bits (HMAC) |                        | The keys of a platform, a tool and a registration; not replaceable                                                                                        |
-| `tool-integration`        | `toolFrame` of `platformStorage`                                         | `"lti-tool"`                      |                        | The frame that the storage page answers                                                                                                                   |
+| `tool-integration`        | Smallest key                                                             | 2,048 bits (RSA), P-256 (EC), 256 bits (HMAC) |            | The keys of a platform, a tool and a registration; not replaceable                                                                                        |
 | `tool-integration`        | `storageTarget` of the login                                             | `"lti-storage"`                   |                        | The frame that shows the storage page                                                                                                                     |
 | `tool-integration`        | Storage of a tool                                                        | 4,096 bytes and 500 keys          |                        | One origin, in the storage page; not replaceable                                                                                                          |
 

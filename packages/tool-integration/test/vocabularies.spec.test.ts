@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseLtiTables } from "../../../scripts/lti-tables.js";
 import { requireSchemas } from "../../../scripts/schemas.js";
 import {
@@ -13,6 +13,11 @@ import {
   LTI_SYSTEM_ROLES,
   SYSTEM_ROLES,
 } from "../src/index.js";
+import { baseMessage, launch, setup } from "./platform-setup.js";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 /**
  * The tables are those of Appendices A and B of LTI Core as the open portal prints them: `pnpm schemas` downloads the page at
@@ -69,5 +74,66 @@ describe("the variables of Appendix B of LTI Core", () => {
     expect(tables.variables).toContain("User.gradeLevels.*");
     expect(tables.variables).toContain("ToolPlatformInstance.contactEmail");
     expect(new Set(tables.variables).size).toBe(tables.variables.length);
+  });
+});
+
+describe("the variables of Appendix B in the platform role", () => {
+  /** The variables that the message answers, as the design of the platform role lists them. */
+  const Answered = [
+    "User.id",
+    "User.image",
+    "User.scope.mentor",
+    "Person.sourcedId",
+    "Person.name.full",
+    "Person.name.family",
+    "Person.name.given",
+    "Person.name.middle",
+    "Person.email.primary",
+    "Context.id",
+    "Context.type",
+    "Context.label",
+    "Context.title",
+    "CourseOffering.sourcedId",
+    "CourseSection.sourcedId",
+    "ResourceLink.id",
+    "ResourceLink.title",
+    "ResourceLink.description",
+    "Message.returnUrl",
+    "Message.documentTarget",
+    "Message.height",
+    "Message.width",
+    "Message.locale",
+    "Organization.id",
+    "Organization.type",
+    "Organization.name",
+    "Organization.description",
+    "Organization.url",
+    "ToolPlatform.productFamilyCode",
+    "ToolPlatform.version",
+    "ToolPlatformInstance.guid",
+    "ToolPlatformInstance.name",
+    "ToolPlatformInstance.description",
+    "ToolPlatformInstance.url",
+    "ToolPlatformInstance.contactEmail",
+  ];
+
+  it("are each answered by the message, or resolved by the host's substitution", async () => {
+    const ctx = setup();
+    const asked: string[] = [];
+    const substitution = {
+      names: tables.variables,
+      resolve: async (name: string) => {
+        asked.push(name);
+        return "host";
+      },
+    };
+    const custom = Object.fromEntries(tables.variables.map((name, index) => [`v${index}`, `$${name}`]));
+    const { claims } = await launch(ctx, { ...baseMessage, custom }, { substitution });
+    const values = claims["https://purl.imsglobal.org/spec/lti/claim/custom"] as Record<string, string>;
+    const fromMessage = tables.variables.filter((_, index) => values[`v${index}`] !== "host");
+    expect(fromMessage).toEqual(tables.variables.filter((name) => Answered.includes(name)));
+    expect(Answered.every((name) => tables.variables.includes(name))).toBe(true);
+    expect(asked).toEqual(tables.variables.filter((name) => !Answered.includes(name)));
+    expect(Object.values(values).some((value) => value.startsWith("$"))).toBe(false);
   });
 });

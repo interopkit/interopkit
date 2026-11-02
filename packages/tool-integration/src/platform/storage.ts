@@ -1,11 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
-import { checkNonEmptyString } from "@interopkit/core/checks";
 import type { HttpResponse } from "@interopkit/core/http";
 import { escapeHtml, pagePolicy } from "../protocol/internal.js";
-import { checkPlatformOptions, type PlatformStorageOptions } from "./options.js";
-
-/** The name of the frame of the tool, when the host names none. */
-const DEFAULT_TOOL_FRAME = "lti-tool";
 
 /**
  * The most bytes, as the sum of the lengths of the keys and values, that the page keeps for one origin. It is the least that
@@ -96,14 +91,17 @@ const SCRIPT = `(function () {
 })();`;
 
 /**
- * Builds the page that stores the values of a tool for the length of its frame: `lti.put_data` and `lti.get_data`, kept by
- * the origin of the message and answered to the window that sent them, and only to the frame of the tool. The page has a policy
- * that allows its one script by hash and framing only by the host's frame page; the answer is not cached and sends no referrer.
+ * Builds the page that stores the values of a tool for the length of its frame (LTI Client Side OIDC 0.1 and postMessage
+ * Storage 0.1): `lti.put_data` and `lti.get_data`, kept by the origin of the message and answered to the window that sent them,
+ * and only to the frame of the tool. It keeps the `state` and the `nonce` of a tool's login, and `lti_storage_target` names its
+ * frame. The page has a policy that allows its one script by hash and framing only by the host's frame page; the answer is not
+ * cached and sends no referrer.
  *
+ * @see {@link https://www.imsglobal.org/spec/lti-cs-oidc/v0p1 | LTI Client Side OIDC 0.1}
  * @param frameOrigin - The origin of the page that frames this one, the only one that may.
  * @param toolFrame - The name of the frame of the tool, the only one that the page answers.
  */
-async function storagePage(frameOrigin: string, toolFrame: string): Promise<HttpResponse> {
+export async function storagePage(frameOrigin: string, toolFrame: string): Promise<HttpResponse> {
   const config = { tool: toolFrame, maxBytes: STORAGE_MAX_BYTES, maxKeys: STORAGE_MAX_KEYS };
   const html = `<!doctype html>
 <html lang="en">
@@ -128,21 +126,4 @@ async function storagePage(frameOrigin: string, toolFrame: string): Promise<Http
     },
     body: html,
   };
-}
-
-/**
- * Answers a request for the storage page of the platform: the page that keeps the `state` and the `nonce` of a tool's login
- * (LTI Client Side OIDC 0.1) and that the `lti_storage_target` of `ltiPlatformLogin` names. The host shows it in a hidden
- * frame beside the frame of the tool.
- *
- * @see {@link https://www.imsglobal.org/spec/lti-cs-oidc/v0p1 | LTI Client Side OIDC 0.1}
- * @param options - The platform, and the name of the frame of the tool.
- * @returns The page.
- * @throws `DataError` when the options are not those of a platform.
- */
-export function platformStorage(options: PlatformStorageOptions): Promise<HttpResponse> {
-  checkPlatformOptions(options);
-  const { toolFrame = DEFAULT_TOOL_FRAME } = options;
-  checkNonEmptyString(toolFrame, "The option toolFrame");
-  return storagePage(options.config.frameOrigin, toolFrame);
 }

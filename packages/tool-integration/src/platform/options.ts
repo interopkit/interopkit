@@ -1,14 +1,21 @@
-import { type CallOptions, type Clock, checkClock } from "@interopkit/core";
-import { checkAbortSignal, checkFunction, checkNonEmptyString, checkRecord } from "@interopkit/core/checks";
-import type { HttpRequest } from "@interopkit/core/http";
-import { LtiError } from "../errors.js";
-import { callOptionsOf, checkJwksCache, type JwksCache } from "../protocol/internal.js";
-import type { AgsScore } from "./ags-score.js";
+import type { CallOptions, Clock } from "@interopkit/core";
+import {
+  abortSignalSchema,
+  guardSchema,
+  methodsSchema,
+  nonEmptyStringSchema,
+  parseWith,
+  positiveIntegerSchema,
+  strictRecord,
+} from "@interopkit/core/checks";
+import * as v from "valibot";
+import type { JwksCache } from "../protocol/index.js";
 import { checkPlatformConfig, type PlatformConfig } from "./config.js";
-import { checkToolRegistration, type ToolRegistration } from "./registration.js";
-import type { ToolLaunch } from "./tool-launch.js";
+import type { MessageInput } from "./messages/input.js";
+import type { LaunchStore, Substitution } from "./ports.js";
+import type { ToolRegistration } from "./registration.js";
 
-/** What every handler of the platform role needs: what the platform is, and the time. */
+/** What every function of the platform role needs: what the platform is, and the time. */
 export interface PlatformOptions {
   /** The identity, the origins and the keys of the platform. */
   readonly config: PlatformConfig;
@@ -18,10 +25,12 @@ export interface PlatformOptions {
 
 /** The options of `ltiPlatformLogin` and `ltiPlatformFrame`. */
 export interface PlatformLoginOptions extends PlatformOptions, CallOptions {
-  /** Looks up the registration of the tool that a launch is for, or returns `undefined` when there is none. */
-  readonly registration: (launch: ToolLaunch, options?: CallOptions) => Promise<ToolRegistration | undefined>;
-  /** Confirms that the launch is the caller's, and throws otherwise; nothing launches without it. */
-  readonly check: (launch: ToolLaunch, options?: CallOptions) => Promise<void>;
+  /** Looks up the registration of a tool by its client identifier, or returns `undefined` when there is none. */
+  readonly registration: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
+  /** Confirms that the message is the caller's, and throws otherwise, before anything is kept or signed. */
+  readonly check: (message: MessageInput, options?: CallOptions) => Promise<void>;
+  /** Where the platform keeps the message until the tool's authentication request. */
+  readonly launches: LaunchStore;
   /**
    * The name of the frame that shows the storage page, which the tool's `lti_storage_target` names.
    *
@@ -30,167 +39,166 @@ export interface PlatformLoginOptions extends PlatformOptions, CallOptions {
   readonly storageTarget?: string;
 }
 
-/** The options of `ltiPlatformAuthorize`. */
-export interface PlatformAuthorizeOptions extends PlatformOptions, CallOptions {
-  /** Looks up the registration of a tool by its client identifier, or returns `undefined` when there is none. */
-  readonly client: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
-  /**
-   * Records that an identifier is used until a time (milliseconds since 1970-01-01T00:00:00Z), and returns `false` when it
-   * was used already. It is atomic across processes.
-   */
-  readonly once: (id: string, expiresAt: number, options?: CallOptions) => Promise<boolean>;
-  /**
-   * An extra check of the principal and the resource of the hint, before `once`: it throws when the launch is not the
-   * caller's.
-   *
-   * @defaultValue none
-   */
-  readonly checkLaunch?: (
-    launch: { readonly principal: string; readonly resource: string },
-    options?: CallOptions,
-  ) => Promise<void>;
+/** What the launch of a tool is, as `checkLaunch` sees it before the message is taken. */
+export interface LaunchToCheck {
+  /** The client identifier of the tool. */
+  readonly clientId: string;
+  /** The deployment of the launch. */
+  readonly deploymentId: string;
+  /** The `sub` of the launch; absent in an anonymous launch. */
+  readonly principal?: string;
 }
 
-/** The options of `platformToken`. */
-export interface PlatformTokenOptions extends PlatformOptions, CallOptions {
-  /** Looks up the registration of a tool by its client identifier, or returns `undefined` when there is none. */
+/** The options of `handlePlatformRequest`. */
+export interface PlatformRequestOptions extends PlatformOptions, CallOptions {
+  /**
+   * Looks up the registration of a tool by its client identifier, or returns `undefined` when there is none. It is called on
+   * every authentication request and token request, so that a removed tool loses access at once.
+   */
   readonly client: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
+  /** Where the platform keeps the messages of the logins in progress. */
+  readonly launches: LaunchStore;
+  /**
+   * Records that an identifier is used until a time (milliseconds since 1970-01-01T00:00:00Z), and returns `false` when it
+   * was used already. It is atomic across processes. The `jti` of a client assertion is recorded until its expiry, rounded up
+   * to a whole second, plus the clock-skew leeway of 60 seconds, because the assertion verifies until then.
+   */
+  readonly once: (id: string, expiresAt: number, options?: CallOptions) => Promise<boolean>;
   /** The cache of the key sets of tools, from `createJwksCache`. */
   readonly jwks: JwksCache;
   /**
-   * Records that an identifier is used until a time (milliseconds since 1970-01-01T00:00:00Z), and returns `false` when it
-   * was used already. The time of an assertion is its expiry, rounded up to a whole second, plus the clock-skew leeway of 60 seconds, because the assertion
-   * verifies until then: a store that forgets an identifier at `expiresAt` forgets it only when it can no more be used.
+   * A last check of the launch before its message is taken from the `LaunchStore`, such as that the user's session is still
+   * the one that started it; `false` refuses it with `launch-refused`, and the message stays.
+   *
+   * @defaultValue none
    */
-  readonly once: (id: string, expiresAt: number, options?: CallOptions) => Promise<boolean>;
-}
-
-/** The options of `agsScores`. */
-export interface AgsScoresOptions extends PlatformOptions, CallOptions {
+  readonly checkLaunch?: (launch: LaunchToCheck, options?: CallOptions) => Promise<boolean>;
   /**
-   * Receives a score that passed every check, with the `resource` of its line item. Ordering by `timestampMs` is the
-   * receiver's (AGS 3.4.9).
+   * The variables of custom properties that the host resolves beyond those that the message answers.
+   *
+   * @defaultValue none
    */
-  readonly onScore: (resource: string, score: AgsScore, options?: CallOptions) => Promise<void>;
-}
-
-/** The options of `platformStorage`. */
-export interface PlatformStorageOptions extends PlatformOptions {
+  readonly substitution?: Substitution;
+  /**
+   * Returns the LTI 1.1 secret of an `oauth_consumer_key`, which signs the `oauth_consumer_key_sign` of the migration claim
+   * and is dropped. Returns `undefined` for a key it has no secret for.
+   *
+   * @defaultValue none, and the migration claim goes unsigned
+   */
+  readonly migrationSecret?: (consumerKey: string, options?: CallOptions) => Promise<string | undefined>;
   /**
    * The name of the frame of the tool, the only one that the storage page answers.
    *
    * @defaultValue `"lti-tool"`
    */
   readonly toolFrame?: string;
+  /**
+   * The most bytes of the body of a request, measured before it is parsed.
+   *
+   * @defaultValue `65536`
+   */
+  readonly maxBodyBytes?: number;
+  /**
+   * How long the session data of a Start Proctoring message is valid, in seconds.
+   *
+   * @defaultValue `3600`
+   */
+  readonly sessionDataLifetimeSeconds?: number;
+  /**
+   * How long the data of a Deep Linking request is valid, in seconds: the time that the tool's picker may take to answer.
+   *
+   * @defaultValue `86400`
+   */
+  readonly deepLinkingLifetimeSeconds?: number;
 }
 
+/** The options of `handlePlatformRequest` with their defaults filled in. */
+export interface PlatformSettings
+  extends Required<Omit<PlatformRequestOptions, "checkLaunch" | "substitution" | "migrationSecret" | "signal">> {
+  readonly checkLaunch?: PlatformRequestOptions["checkLaunch"];
+  readonly substitution?: PlatformRequestOptions["substitution"];
+  readonly migrationSecret?: PlatformRequestOptions["migrationSecret"];
+  readonly signal?: AbortSignal;
+}
+
+/** The name of the frame of the tool, which the storage page answers, when the host names none. */
+const DEFAULT_TOOL_FRAME = "lti-tool";
 /**
- * Checks the options that every handler needs.
- *
- * @throws `DataError` when they are not an object with a platform configuration and a `clock`.
+ * The most bytes of a body: the form of an authentication request or a token request is a few kilobytes, and a JSON body of a
+ * service, such as a line item or a score, less.
  */
-export function checkPlatformOptions(options: unknown): asserts options is PlatformOptions {
-  checkRecord(options, "The options must be an object");
-  checkPlatformConfig(options.config);
-  checkClock(options.clock);
-}
+const DEFAULT_MAX_BODY_BYTES = 65_536;
+/** How long the session data of a proctored attempt is valid, in seconds: the hour that the attempt may take to start. */
+const DEFAULT_SESSION_DATA_LIFETIME_SECONDS = 3600;
+/** How long the data of a Deep Linking request is valid, in seconds: a day for the person who picks the content. */
+const DEFAULT_DEEP_LINKING_LIFETIME_SECONDS = 86_400;
 
-/** Checks the signal of a call, which a handler passes to the ports of the host. */
-function checkSignal(options: Readonly<Record<string, unknown>>): void {
-  if (options.signal !== undefined) checkAbortSignal(options.signal, "The option signal");
-}
+const isFunction = <T>(value: unknown): value is T => typeof value === "function";
+const functionSchema = <T>() => guardSchema(isFunction<T>, "a function");
+// `checkPlatformConfig` throws a `DataError` that names what is wrong with the configuration.
+const configSchema = v.custom<PlatformConfig>((config) => {
+  checkPlatformConfig(config);
+  return true;
+});
+const launchStoreSchema = methodsSchema<LaunchStore>("put", "take");
+
+const loginOptionsSchema = strictRecord({
+  config: configSchema,
+  clock: methodsSchema<Clock>("now"),
+  registration: functionSchema<PlatformLoginOptions["registration"]>(),
+  check: functionSchema<PlatformLoginOptions["check"]>(),
+  launches: launchStoreSchema,
+  storageTarget: v.optional(nonEmptyStringSchema),
+  signal: v.optional(abortSignalSchema),
+});
+
+const requestOptionsSchema = strictRecord({
+  config: configSchema,
+  clock: methodsSchema<Clock>("now"),
+  client: functionSchema<PlatformRequestOptions["client"]>(),
+  launches: launchStoreSchema,
+  once: functionSchema<PlatformRequestOptions["once"]>(),
+  jwks: methodsSchema<JwksCache>("keySet"),
+  checkLaunch: v.optional(functionSchema<NonNullable<PlatformRequestOptions["checkLaunch"]>>()),
+  substitution: v.optional(
+    v.pipe(
+      methodsSchema<Substitution>("resolve"),
+      v.check(
+        (substitution) =>
+          Array.isArray(substitution.names) && substitution.names.every((name) => typeof name === "string"),
+        "expected names to be an array of strings",
+      ),
+    ),
+  ),
+  migrationSecret: v.optional(functionSchema<NonNullable<PlatformRequestOptions["migrationSecret"]>>()),
+  toolFrame: v.optional(nonEmptyStringSchema),
+  maxBodyBytes: v.optional(positiveIntegerSchema),
+  sessionDataLifetimeSeconds: v.optional(positiveIntegerSchema),
+  deepLinkingLifetimeSeconds: v.optional(positiveIntegerSchema),
+  signal: v.optional(abortSignalSchema),
+});
 
 /**
- * Checks the options of `ltiPlatformLogin`.
+ * Checks the options of `ltiPlatformLogin` and `ltiPlatformFrame`.
  *
- * @throws `DataError` when they are not.
+ * @throws `DataError` that names the option and what it must be.
  */
 export function checkLoginOptions(options: unknown): asserts options is PlatformLoginOptions {
-  checkPlatformOptions(options);
-  checkRecord(options, "The options must be an object");
-  checkFunction(options.registration, "The option registration must be a function");
-  checkFunction(options.check, "The option check must be a function");
-  if (options.storageTarget !== undefined) checkNonEmptyString(options.storageTarget, "The option storageTarget");
-  checkSignal(options);
+  parseWith(loginOptionsSchema, options, "The options");
 }
 
 /**
- * Checks the options of `ltiPlatformAuthorize`.
+ * Checks the options of `handlePlatformRequest` and fills in their defaults.
  *
- * @throws `DataError` when they are not.
+ * @throws `DataError` that names the option and what it must be.
  */
-export function checkAuthorizeOptions(options: unknown): asserts options is PlatformAuthorizeOptions {
-  checkPlatformOptions(options);
-  checkRecord(options, "The options must be an object");
-  checkFunction(options.client, "The option client must be a function");
-  checkFunction(options.once, "The option once must be a function");
-  if (options.checkLaunch !== undefined)
-    checkFunction(options.checkLaunch, "The option checkLaunch must be a function");
-  checkSignal(options);
-}
-
-/**
- * Checks the options of `platformToken`.
- *
- * @throws `DataError` when they are not.
- */
-export function checkTokenOptions(options: unknown): asserts options is PlatformTokenOptions {
-  checkPlatformOptions(options);
-  checkRecord(options, "The options must be an object");
-  checkFunction(options.client, "The option client must be a function");
-  checkFunction(options.once, "The option once must be a function");
-  checkJwksCache(options.jwks);
-  checkSignal(options);
-}
-
-/**
- * Checks the options of `agsScores`.
- *
- * @throws `DataError` when they are not.
- */
-export function checkScoresOptions(options: unknown): asserts options is AgsScoresOptions {
-  checkPlatformOptions(options);
-  checkRecord(options, "The options must be an object");
-  checkFunction(options.onScore, "The option onScore must be a function");
-  checkSignal(options);
-}
-
-/**
- * Checks that a request is for the platform's own origin. The tool's frame is same-origin with any platform page on the
- * origin of the frame page, so a handler mounted elsewhere would put that page at risk.
- *
- * @throws `LtiError` (`wrong-origin`) when the request is for another origin.
- */
-export function checkRequestOrigin(request: HttpRequest, config: PlatformConfig): void {
-  if (new URL(request.url).origin !== config.origin) {
-    throw new LtiError(
-      `The platform answers only at ${config.origin}, and the request is for ${new URL(request.url).origin}.`,
-      "wrong-origin",
-    );
-  }
-}
-
-/**
- * Finds a tool by its client identifier with the host's lookup and checks the registration.
- *
- * @throws `LtiError` (`client-unknown`) when the platform has no such tool.
- * @throws `DataError` when the lookup returns something that is not a registration.
- */
-export async function findClient(
-  lookup: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>,
-  clientId: string,
-  options: CallOptions,
-): Promise<ToolRegistration> {
-  const registration = await lookup(clientId, callOptionsOf(options));
-  if (registration === undefined) {
-    throw new LtiError(
-      `The platform has no tool with the client identifier ${JSON.stringify(clientId)}.`,
-      "client-unknown",
-    );
-  }
-  checkToolRegistration(registration);
-  if (registration.clientId !== clientId) {
-    throw new LtiError(`The registration is not the one of the tool ${JSON.stringify(clientId)}.`, "client-unknown");
-  }
-  return registration;
+export function readRequestOptions(options: unknown): PlatformSettings {
+  const read = parseWith(requestOptionsSchema, options, "The options");
+  return {
+    ...read,
+    toolFrame: read.toolFrame ?? DEFAULT_TOOL_FRAME,
+    maxBodyBytes: read.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES,
+    sessionDataLifetimeSeconds: read.sessionDataLifetimeSeconds ?? DEFAULT_SESSION_DATA_LIFETIME_SECONDS,
+    deepLinkingLifetimeSeconds: read.deepLinkingLifetimeSeconds ?? DEFAULT_DEEP_LINKING_LIFETIME_SECONDS,
+  };
 }

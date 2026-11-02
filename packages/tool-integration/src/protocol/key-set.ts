@@ -1,5 +1,6 @@
 import { DataError, type Signer } from "@interopkit/core";
 import { checkNonEmptyString, checkRecord, checkString, describe, isRecord } from "@interopkit/core/checks";
+import { type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
 import { base64url } from "jose";
 import { APPROVED_ALGORITHMS } from "./claims/index.js";
 import { MIN_RSA_MODULUS_BITS } from "./keys.js";
@@ -120,4 +121,25 @@ export function checkKeySet(value: unknown): asserts value is KeySet {
   if (!fits) {
     throw new DataError(`The key ${describe(signer.keyId)} does not fit the algorithm ${algorithm} of the signer.`);
   }
+}
+
+/**
+ * Answers a request for the key set of a party (Security Framework section 6.3, RFC 7517 section 5): a GET with the public
+ * keys as JSON and `Cache-Control: public, max-age`, a HEAD with the same headers and no body, and any other method with 405 and
+ * `Allow: GET, HEAD`. The caller has checked the key set.
+ *
+ * @param request - The request, which `checkHttpRequest` has accepted.
+ * @param keys - The key set.
+ * @param maxAgeSeconds - How long a reader may cache the set.
+ */
+export function keySetResponse(request: HttpRequest, keys: KeySet, maxAgeSeconds: number): HttpResponse {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return { status: 405, headers: { allow: "GET, HEAD" }, body: "" };
+  }
+  const response = jsonResponse(
+    200,
+    { keys: keys.publicKeys },
+    { "cache-control": `public, max-age=${maxAgeSeconds}` },
+  );
+  return request.method === "HEAD" ? { ...response, body: "" } : response;
 }

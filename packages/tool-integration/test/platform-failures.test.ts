@@ -1,312 +1,266 @@
-// biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 requests are snake_case.
-
-import type { CallOptions } from "@interopkit/core";
+import { type CallOptions, DataError } from "@interopkit/core";
+import type { HttpResponse } from "@interopkit/core/http";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LtiError } from "../src/index.js";
-import { agsScores, ltiPlatformAuthorize, ltiPlatformLogin, platformToken } from "../src/platform/index.js";
+import { ltiPlatformLogin, type MessageInput, type ToolRegistration } from "../src/platform/index.js";
 import { openToken, sealToken } from "../src/platform/internal.js";
-import { authenticationRequest, clientAssertion, tokenRequest } from "./fake-tool.js";
-import { readToken } from "./fixture.js";
+import { authenticationRequest, clientAssertion, TOOL_CLIENT_ID, tokenRequest, toolRegistration } from "./fake-tool.js";
+import { generateKeyPair } from "./fixture.js";
 import {
-  accessToken,
-  baseLaunch,
+  authorize,
+  baseMessage,
   begin,
+  config,
   endpoints,
+  handle,
   hintKey,
-  lineItemOf,
   readPost,
-  SCORE,
-  SCORE_TYPE,
-  scoreBody,
-  service,
+  type Setup,
   setup,
   toolKeys,
 } from "./platform-setup.js";
+import { textOf } from "./text-of.js";
 
-afterEach(() => vi.useRealTimers());
-
-const DOWN = new Error("The host is down.");
-const REASON = new Error("The candidate left the item.");
-
-describe("ports that fail", () => {
-  it("makes ltiPlatformLogin reject with the error of the registration lookup, and sign nothing", async () => {
-    const ctx = setup();
-    await expect(ltiPlatformLogin(baseLaunch, { ...ctx.login, registration: () => Promise.reject(DOWN) })).rejects.toBe(
-      DOWN,
-    );
-  });
-
-  it("makes ltiPlatformAuthorize fail closed when the client lookup or once rejects, and issue no token", async () => {
-    const ctx = setup();
-    const { parameters } = await begin(ctx);
-    const get = authenticationRequest(endpoints.authorization, parameters);
-    await expect(ltiPlatformAuthorize(get, { ...ctx.authorize, client: () => Promise.reject(DOWN) })).rejects.toBe(
-      DOWN,
-    );
-    await expect(ltiPlatformAuthorize(get, { ...ctx.authorize, once: () => Promise.reject(DOWN) })).rejects.toBe(DOWN);
-    expect(readPost(await ltiPlatformAuthorize(get, ctx.authorize)).idToken).toBeTruthy();
-  });
-
-  it("refuses a hint that once has seen, with the status of a request that is not bound to a launch", async () => {
-    const ctx = setup();
-    const { parameters } = await begin(ctx);
-    const get = authenticationRequest(endpoints.authorization, parameters);
-    await ltiPlatformAuthorize(get, ctx.authorize);
-    await expect(ltiPlatformAuthorize(get, ctx.authorize)).rejects.toMatchObject({
-      name: "LtiError",
-      reason: "hint-used",
-      status: 403,
-    });
-  });
-
-  it("spends the hint before it signs, so that a later failure costs a new login and never a second use", async () => {
-    const ctx = setup();
-    const { parameters } = await begin(ctx);
-    const get = authenticationRequest(endpoints.authorization, parameters);
-    const seen: string[] = [];
-    const once = async (id: string, expiresAt: number) => {
-      seen.push(id);
-      return ctx.authorize.once(id, expiresAt);
-    };
-    await ltiPlatformAuthorize(get, { ...ctx.authorize, once });
-    expect(seen).toHaveLength(1);
-    expect(seen[0]).toMatch(/^hint:/u);
-  });
-
-  it("makes platformToken fail closed when once or the client lookup rejects, and grant no token", async () => {
-    const ctx = setup();
-    const assertion = await clientAssertion(toolKeys, endpoints.token, ctx.clock);
-    const post = tokenRequest(endpoints.token, assertion, SCORE);
-    await expect(platformToken(post, { ...ctx.token, once: () => Promise.reject(DOWN) })).rejects.toBe(DOWN);
-    await expect(platformToken(post, { ...ctx.token, client: () => Promise.reject(DOWN) })).rejects.toBe(DOWN);
-    const granted = await platformToken(post, ctx.token);
-    expect(granted.status).toBe(200);
-  });
-
-  it("makes agsScores reject when onScore rejects, and passes every check again on the retry", async () => {
-    const ctx = setup();
-    const lineItem = await lineItemOf(ctx);
-    const bearer = await accessToken(ctx, SCORE);
-    const post = () =>
-      service(`${lineItem}/scores`, bearer, {
-        method: "POST",
-        headers: { "content-type": SCORE_TYPE },
-        body: scoreBody(),
-      });
-    await expect(agsScores(post(), { ...ctx.scoring, onScore: () => Promise.reject(DOWN) })).rejects.toBe(DOWN);
-    expect(ctx.scores).toStrictEqual([]);
-    expect((await agsScores(post(), ctx.scoring)).status).toBe(204);
-    expect(ctx.scores).toHaveLength(1);
-  });
+afterEach(() => {
+  vi.useRealTimers();
 });
 
-describe("the status of an LtiError of the platform role", () => {
-  it("is 403 for a request that is not bound to a launch of this platform, and 400 for a broken protocol", async () => {
-    const ctx = setup();
-    const { parameters } = await begin(ctx);
-    parameters.set("scope", "profile");
-    await expect(
-      ltiPlatformAuthorize(authenticationRequest(endpoints.authorization, parameters), ctx.authorize),
-    ).rejects.toMatchObject({ reason: "scope-invalid", status: 400 });
-    const unbound = await begin(ctx);
-    unbound.parameters.set("lti_message_hint", "not-a-hint");
-    await expect(
-      ltiPlatformAuthorize(authenticationRequest(endpoints.authorization, unbound.parameters), ctx.authorize),
-    ).rejects.toMatchObject({ reason: "hint-invalid", status: 403 });
-  });
-});
+/** Whether an answer is the 500 of a failed port, which says nothing of the cause. */
+function isServerError(response: HttpResponse): boolean {
+  return response.status === 500 && !textOf(response.body).includes("cause");
+}
 
-describe("signals on the platform role", () => {
-  /** Ports that record the signal each receives. */
-  function spying(ctx: ReturnType<typeof setup>, signal: AbortSignal | undefined) {
-    const seen: Record<string, (AbortSignal | undefined)[]> = {
-      check: [],
-      registration: [],
-      client: [],
-      once: [],
-      checkLaunch: [],
-    };
-    const note = (name: string, call?: CallOptions): void => {
-      seen[name]?.push(call?.signal);
-    };
-    return {
-      seen,
-      login: {
+/** A port that never settles and records the signal it received. */
+function hanging(signals: (AbortSignal | undefined)[]) {
+  return (...args: unknown[]): Promise<never> => {
+    const options = args.at(-1) as CallOptions | undefined;
+    signals.push(options?.signal);
+    return new Promise(() => undefined);
+  };
+}
+
+describe("the login when a port of the host fails", () => {
+  it("rejects with the failure of the store and signs nothing", async () => {
+    const ctx = setup();
+    const failure = new Error("cause: the store is down");
+    await expect(
+      ltiPlatformLogin(baseMessage, {
         ...ctx.login,
-        signal,
-        check: async (...args: Parameters<typeof ctx.login.check>) => {
-          note("check", args[1]);
-          return ctx.login.check(args[0]);
-        },
-        registration: async (...args: Parameters<typeof ctx.login.registration>) => {
-          note("registration", args[1]);
-          return ctx.login.registration(args[0]);
-        },
-      },
-      authorize: {
-        ...ctx.authorize,
-        signal,
-        client: async (id: string, call?: CallOptions) => {
-          note("client", call);
-          return ctx.authorize.client(id);
-        },
-        once: async (id: string, at: number, call?: CallOptions) => {
-          note("once", call);
-          return ctx.authorize.once(id, at);
-        },
-        checkLaunch: async (_who: unknown, call?: CallOptions) => {
-          note("checkLaunch", call);
-        },
+        launches: { ...ctx.login.launches, put: () => Promise.reject(failure) },
+      }),
+    ).rejects.toBe(failure);
+  });
+
+  it("passes the signal to every port it calls", async () => {
+    const ctx = setup();
+    const signal = new AbortController().signal;
+    const seen: (AbortSignal | undefined)[] = [];
+    const record =
+      <T>(value: T) =>
+      async (...args: unknown[]) => {
+        seen.push((args.at(-1) as CallOptions | undefined)?.signal);
+        return value;
+      };
+    await ltiPlatformLogin(baseMessage, {
+      ...ctx.login,
+      signal,
+      check: record(undefined),
+      registration: record(toolRegistration()),
+      launches: { put: record(undefined), take: record(undefined) },
+    });
+    expect(seen).toEqual([signal, signal, signal]);
+  });
+
+  it("rejects with the reason of the signal before the message is kept", async () => {
+    const ctx = setup();
+    const controller = new AbortController();
+    const reason = new Error("gone");
+    const check = async () => controller.abort(reason);
+    await expect(ltiPlatformLogin(baseMessage, { ...ctx.login, signal: controller.signal, check })).rejects.toBe(
+      reason,
+    );
+    expect(ctx.kept.size).toBe(0);
+  });
+
+  it("throws DataError for a registration that is not one, or that is another tool's", async () => {
+    const ctx = setup();
+    const weak = await generateKeyPair("weak", 1024);
+    const cases: unknown[] = [
+      { ...toolRegistration(), deploymentIds: [] },
+      { ...toolRegistration(), keys: new Map(), jwksUrl: undefined, scopes: [] },
+      { ...toolRegistration(), keys: new Map([["k", toolKeys.privateKey]]), jwksUrl: undefined },
+      { ...toolRegistration(), algorithms: ["HS256"] },
+      { ...toolRegistration(), scopes: "all" },
+      { ...toolRegistration(), clientId: "someone-else" },
+      { ...toolRegistration(), allow: "camera <script>" },
+      { ...toolRegistration(), redirectUris: ["http://tool.example.com/lti/launch"] },
+      { ...toolRegistration(), keys: new Map([[weak.kid, weak.publicKey]]), jwksUrl: undefined },
+    ];
+    for (const registration of cases) {
+      await expect(
+        ltiPlatformLogin(baseMessage, { ...ctx.login, registration: async () => registration as ToolRegistration }),
+      ).rejects.toThrow(DataError);
+    }
+    expect(ctx.kept.size).toBe(0);
+  });
+});
+
+describe("the authentication request when a port of the host fails", () => {
+  it("answers 500 when the lookup of the tool fails, and takes nothing", async () => {
+    const ctx = setup();
+    const page = await authorize(ctx, undefined, {
+      requests: { client: () => Promise.reject(new Error("cause: the database is down")) },
+    });
+    expect(isServerError(page)).toBe(true);
+    expect(ctx.kept.size).toBe(1);
+  });
+
+  it("answers 500 when checkLaunch fails, and keeps the message", async () => {
+    const ctx = setup();
+    const page = await authorize(ctx, undefined, {
+      requests: { checkLaunch: () => Promise.reject(new Error("cause")) },
+    });
+    expect(isServerError(page)).toBe(true);
+    expect(ctx.kept.size).toBe(1);
+  });
+
+  it("throws DataError when checkLaunch gives something other than a boolean", async () => {
+    const ctx = setup();
+    await expect(authorize(ctx, undefined, { requests: { checkLaunch: async () => "yes" as never } })).rejects.toThrow(
+      "checkLaunch must resolve with a boolean",
+    );
+  });
+
+  it("answers 500 when the store fails to take the message, and signs nothing", async () => {
+    const ctx = setup();
+    const page = await authorize(ctx, undefined, {
+      requests: { launches: { ...ctx.requests.launches, take: () => Promise.reject(new Error("cause")) } },
+    });
+    expect(isServerError(page)).toBe(true);
+    expect(textOf(page.body)).not.toContain("id_token");
+  });
+
+  it("throws DataError when the store gives back something that is not the message of the launch", async () => {
+    const other: MessageInput = { ...baseMessage, user: { subject: "someone-else" } };
+    for (const taken of [
+      { messageType: "LtiResourceLinkRequest" },
+      other,
+      { ...baseMessage, deploymentId: "deployment-2" },
+    ]) {
+      const ctx = setup();
+      const launches = { ...ctx.requests.launches, take: async () => taken as MessageInput };
+      await expect(authorize(ctx, undefined, { requests: { launches } })).rejects.toThrow(DataError);
+    }
+  });
+
+  it("answers 500 when the substitution of the host fails, and throws DataError when it gives other than a string", async () => {
+    const ctx = setup();
+    const message = { ...baseMessage, custom: { begin: "$CourseSection.timeFrame.begin" } };
+    const failing = { names: ["CourseSection.timeFrame.begin"], resolve: () => Promise.reject(new Error("cause")) };
+    expect(isServerError(await authorize(ctx, undefined, { message, requests: { substitution: failing } }))).toBe(true);
+    const asked: unknown[] = [];
+    const wrong = {
+      names: ["CourseSection.timeFrame.begin"],
+      resolve: async (...args: unknown[]) => {
+        asked.push(args.slice(0, 3));
+        return 5 as never;
       },
     };
+    await expect(authorize(setup(), undefined, { message, requests: { substitution: wrong } })).rejects.toThrow(
+      "must resolve with a string or undefined",
+    );
+    expect(asked).toEqual([["CourseSection.timeFrame.begin", message, toolRegistration()]]);
+  });
+
+  it("answers 500 when migrationSecret fails, and throws DataError when it gives other than a string", async () => {
+    const message = { ...baseMessage, migration: { oauthConsumerKey: "key-1" } };
+    const failed = await authorize(setup(), undefined, {
+      message,
+      requests: { migrationSecret: () => Promise.reject(new Error("cause")) },
+    });
+    expect(isServerError(failed)).toBe(true);
+    await expect(
+      authorize(setup(), undefined, { message, requests: { migrationSecret: async () => 7 as never } }),
+    ).rejects.toThrow("migrationSecret must resolve with a string or undefined");
+  });
+
+  it("answers 500 when the signer fails, and the launch is spent", async () => {
+    const ctx = setup();
+    const signer = { ...config.keys.signer, sign: () => Promise.reject(new Error("cause: the KMS is down")) };
+    const page = await authorize(ctx, undefined, {
+      requests: { config: { ...config, keys: { ...config.keys, signer } } },
+    });
+    expect(isServerError(page)).toBe(true);
+    expect(ctx.kept.size).toBe(0);
+  });
+
+  it("rejects with the reason of the signal while a port hangs: before take the message stays, after it the launch is spent", async () => {
+    const ctx = setup();
+    const signals: (AbortSignal | undefined)[] = [];
+    const controller = new AbortController();
+    const reason = new Error("the browser left");
+    const pending = authorize(ctx, undefined, {
+      requests: { signal: controller.signal, checkLaunch: hanging(signals) },
+    });
+    await vi.waitFor(() => expect(signals).toHaveLength(1));
+    controller.abort(reason);
+    await expect(pending).rejects.toBe(reason);
+    expect(signals).toEqual([controller.signal]);
+    expect(ctx.kept.size).toBe(1);
+
+    const after = setup();
+    const late = new AbortController();
+    const substitution = { names: ["X.y"], resolve: hanging(signals) };
+    const spent = authorize(after, undefined, {
+      message: { ...baseMessage, custom: { x: "$X.y" } },
+      requests: { signal: late.signal, substitution },
+    });
+    await vi.waitFor(() => expect(signals).toHaveLength(2));
+    late.abort(reason);
+    await expect(spent).rejects.toBe(reason);
+    expect(after.kept.size).toBe(0);
+  });
+});
+
+describe("the token endpoint when a port of the host fails", () => {
+  /** A token request of the first tool. */
+  async function tokenOf(ctx: Setup) {
+    return tokenRequest(endpoints.token, await clientAssertion(toolKeys, endpoints.token, ctx.clock), "s");
   }
 
-  it("hands the signal to check and registration of the login, and to client, checkLaunch and once of the authorization", async () => {
+  it("answers 500 when the lookup of the tool or once fails, and issues no token", async () => {
     const ctx = setup();
-    const { signal } = new AbortController();
-    const spy = spying(ctx, signal);
-    const url = await ltiPlatformLogin(baseLaunch, spy.login);
-    expect(url).toContain("lti_message_hint");
-    expect(spy.seen.check).toStrictEqual([signal]);
-    expect(spy.seen.registration).toStrictEqual([signal]);
-    const { parameters } = await begin(ctx);
-    await ltiPlatformAuthorize(authenticationRequest(endpoints.authorization, parameters), spy.authorize);
-    expect(spy.seen.client).toStrictEqual([signal]);
-    expect(spy.seen.checkLaunch).toStrictEqual([signal]);
-    expect(spy.seen.once).toStrictEqual([signal]);
-  });
-
-  it("rejects the login with the reason when the signal aborts in check, and looks up no tool", async () => {
-    const ctx = setup();
-    const controller = new AbortController();
-    let looked = 0;
-    const options = {
-      ...ctx.login,
-      signal: controller.signal,
-      check: async () => controller.abort(REASON),
-      registration: async (...args: Parameters<typeof ctx.login.registration>) => {
-        looked += 1;
-        return ctx.login.registration(args[0]);
-      },
-    };
-    await expect(ltiPlatformLogin(baseLaunch, options)).rejects.toBe(REASON);
-    expect(looked).toBe(1);
-  });
-
-  it("leaves the hint unspent when the signal aborts before once, and spent when it aborts in once", async () => {
-    const ctx = setup();
-    const { parameters } = await begin(ctx);
-    const get = authenticationRequest(endpoints.authorization, parameters);
-    const early = new AbortController();
-    const checkLaunch = async () => early.abort(REASON);
-    await expect(ltiPlatformAuthorize(get, { ...ctx.authorize, signal: early.signal, checkLaunch })).rejects.toBe(
-      REASON,
-    );
+    expect(
+      isServerError(await handle(ctx, await tokenOf(ctx), { client: () => Promise.reject(new Error("cause")) })),
+    ).toBe(true);
+    expect(
+      isServerError(await handle(ctx, await tokenOf(ctx), { once: () => Promise.reject(new Error("cause")) })),
+    ).toBe(true);
     expect(ctx.used.size).toBe(0);
-    const late = new AbortController();
-    const once = async (id: string, at: number) => {
-      const fresh = await ctx.authorize.once(id, at);
-      late.abort(REASON);
-      return fresh;
-    };
-    await expect(ltiPlatformAuthorize(get, { ...ctx.authorize, signal: late.signal, once })).rejects.toBe(REASON);
-    expect(ctx.used.size).toBe(1);
-    await expect(ltiPlatformAuthorize(get, ctx.authorize)).rejects.toMatchObject({ reason: "hint-used" });
   });
 
-  it("spends the assertion when the signal aborts in once, and the tool asks again with a new one", async () => {
+  it("throws DataError when once gives something other than a boolean, or the lookup another tool", async () => {
     const ctx = setup();
-    const assertion = await clientAssertion(toolKeys, endpoints.token, ctx.clock);
-    const post = tokenRequest(endpoints.token, assertion, SCORE);
-    const controller = new AbortController();
-    const once = async (id: string, at: number) => {
-      const fresh = await ctx.token.once(id, at);
-      controller.abort(REASON);
-      return fresh;
-    };
-    await expect(platformToken(post, { ...ctx.token, signal: controller.signal, once })).rejects.toBe(REASON);
-    const replay = await platformToken(post, ctx.token);
-    expect(replay.status).toBe(400);
-    const again = await clientAssertion(toolKeys, endpoints.token, ctx.clock);
-    expect((await platformToken(tokenRequest(endpoints.token, again, SCORE), ctx.token)).status).toBe(200);
-  });
-
-  it("hands the signal to onScore", async () => {
-    const ctx = setup();
-    const lineItem = await lineItemOf(ctx);
-    const bearer = await accessToken(ctx, SCORE);
-    const { signal } = new AbortController();
-    const seen: (AbortSignal | undefined)[] = [];
-    const onScore = async (_resource: string, _score: unknown, call?: CallOptions): Promise<void> => {
-      seen.push(call?.signal);
-    };
-    const post = service(`${lineItem}/scores`, bearer, {
-      method: "POST",
-      headers: { "content-type": SCORE_TYPE },
-      body: scoreBody(),
-    });
-    await agsScores(post, { ...ctx.scoring, signal, onScore });
-    expect(seen).toStrictEqual([signal]);
+    await expect(handle(ctx, await tokenOf(ctx), { once: async () => "yes" as never })).rejects.toThrow(
+      "once must resolve with a boolean",
+    );
+    await expect(
+      handle(ctx, await tokenOf(ctx), { client: async () => toolRegistration({ clientId: "other" }) }),
+    ).rejects.toThrow(DataError);
   });
 });
 
-describe("sealed tokens", () => {
-  const claims = { principal: "candidate-7" };
-
-  it("round-trips the claims for the use and the key they were sealed with", async () => {
-    const token = await sealToken("login", claims, hintKey);
-    expect(readToken(token).header).toEqual({ alg: "HS256", typ: "login" });
-    expect(await openToken(token, "login", hintKey)).toEqual(claims);
-  });
-
-  it("refuses a token for another use, so that a hint cannot stand for an access token", async () => {
-    const token = await sealToken("hint", claims, hintKey);
-    expect(await openToken(token, "access", hintKey)).toBeUndefined();
-  });
-
-  it("refuses a token sealed with another key", async () => {
-    const other = await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
-    expect(await openToken(await sealToken("login", claims, other), "login", hintKey)).toBeUndefined();
-  });
-
-  it("verifies the MAC with WebCrypto, which compares in constant time, and with no comparison of its own", async () => {
-    const token = await sealToken("login", claims, hintKey);
-    const verify = vi.spyOn(crypto.subtle, "verify");
-    await openToken(token, "login", hintKey);
-    const [algorithm, key] = verify.mock.calls[0] ?? [];
-    expect(typeof algorithm === "string" ? algorithm : (algorithm as { name: string }).name).toBe("HMAC");
-    expect(key).toBe(hintKey);
-    verify.mockRestore();
-  });
-
-  it("refuses a token whose header names another algorithm, even with a MAC that fits", async () => {
-    const [, payload = "", mac = ""] = (await sealToken("login", claims, hintKey)).split(".");
-    for (const alg of ["none", "HS384", "RS256"]) {
-      const header = Buffer.from(JSON.stringify({ alg, typ: "login" })).toString("base64url");
-      expect(await openToken(`${header}.${payload}.${mac}`, "login", hintKey), alg).toBeUndefined();
+describe("the sealed tokens", () => {
+  it("are opened for their own use only, so that a token of one use is refused for another", async () => {
+    const ctx = setup();
+    const { parameters, initiation } = await begin(ctx);
+    const claims = await openToken(initiation.messageHint, "hint", [hintKey]);
+    for (const use of ["login", "access", "session-data", "deep-linking-data"] as const) {
+      const changed = new URLSearchParams(parameters);
+      changed.set("lti_message_hint", await sealToken(use, claims ?? {}, hintKey));
+      const page = await handle(ctx, authenticationRequest(endpoints.authorization, changed));
+      expect(readPost(page).fields.get("error"), use).toBe("login_required");
     }
-  });
-
-  it("refuses a token with a changed payload or a changed MAC, and one spelled another way", async () => {
-    const token = await sealToken("login", claims, hintKey);
-    const [header = "", payload = "", mac = ""] = token.split(".");
-    const changed = Buffer.from(JSON.stringify({ principal: "someone-else" })).toString("base64url");
-    expect(await openToken(`${header}.${changed}.${mac}`, "login", hintKey)).toBeUndefined();
-    const flipped = `${mac.slice(0, -1)}${mac.endsWith("A") ? "B" : "A"}`;
-    expect(await openToken(`${header}.${payload}.${flipped}`, "login", hintKey)).toBeUndefined();
-    expect(await openToken(` ${token}`, "login", hintKey)).toBeUndefined();
-    expect(await openToken(`${header}.${payload}.${mac}=`, "login", hintKey)).toBeUndefined();
-  });
-
-  it("refuses text that is not a token, without throwing", async () => {
-    for (const text of ["", "a.b", "a.b.c", "....", "x".repeat(10_000)]) {
-      expect(await openToken(text, "login", hintKey), text.slice(0, 8)).toBeUndefined();
-    }
-  });
-});
-
-describe("LtiError", () => {
-  it("is the error of every refusal of the platform role", () => {
-    expect(new LtiError("The hint is used.", "hint-used").status).toBe(403);
+    expect(await openToken(initiation.loginHint, "hint", [hintKey])).toBeUndefined();
+    expect(TOOL_CLIENT_ID).toBe(claims?.client);
   });
 });

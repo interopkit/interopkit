@@ -8,7 +8,7 @@ flowchart BT
   core["@interopkit/core<br/>errors, checks, clock, service calls, http, signals"]
   proto["protocol/<br/>claims, message model, service bodies,<br/>jwt, key sets, pages"]
   tool["tool/<br/>login, launch, Deep Linking,<br/>access tokens, scores"]
-  platformRole["platform/<br/>login, authorization, tokens,<br/>line items, scores"]
+  platformRole["platform/<br/>login, launch store, authorization,<br/>key set, tokens, storage page"]
   host["Your application"]
   proto --> core
   tool --> proto

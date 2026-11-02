@@ -40,6 +40,7 @@ function launchSummary(launch: LtiMessage): Record<string, unknown> {
         messageType: launch.messageType,
         subject: launch.user.subject,
         title: launch.resourceLink.title,
+        custom: Object.fromEntries(launch.custom),
         ags: lineItemShape(launch.services.grades),
       }
     : { messageType: launch.messageType };

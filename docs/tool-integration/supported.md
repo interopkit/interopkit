@@ -50,43 +50,42 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  login["ltiPlatformLogin<br/>ltiPlatformFrame"] --> authorize["ltiPlatformAuthorize<br/>id_token"]
-  authorize --> token["platformJwks<br/>platformToken"]
-  token --> ags["agsLineItem<br/>agsScores"]
-  login -.-> storage["platformStorage"]
-  authorize -.-> missing["Not yet:<br/>Deep Linking, NRPS, registration,<br/>proctoring, groups, review, PNP"]
+  login["ltiPlatformLogin<br/>ltiPlatformFrame<br/>LaunchStore"] --> authorize["/authorize<br/>id_token"]
+  authorize --> token["/jwks<br/>/token"]
+  login -.-> storage["/storage<br/>buildCapabilitiesScript"]
+  token -.-> missing["Not yet:<br/>the services, the readers of<br/>tool messages, registration"]
 ```
 
-| Area                                | Specification              | Platform role                                             | Not yet                                                                         |
-| ----------------------------------- | -------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Third-party login                   | Core 4.1, Security 5.1.1   | `ltiPlatformLogin`: all parameters, with two signed hints |                                                                                 |
-| Authentication request and response | Security 5.1.1             | `ltiPlatformAuthorize`                                    | A refusal throws and never reaches the tool as an authentication error response |
-| Client assertions                   | Security 5.1.3, 5.4        | Verified with RS256, against a key set or given keys      |                                                                                 |
-| Algorithms                          | Security 7.2               | RS256                                                     | RS384, RS512, ES256, ES384, ES512                                               |
-| Required claims                     | Core 5.3                   | `issueIdToken`, for a resource link launch                |                                                                                 |
-| Anonymous launch                    | Core 5.3.6.1               |                                                           | `sub` is always the principal                                                   |
-| Optional claims                     | Core 5.4                   |                                                           | `context`, `tool_platform`, `role_scope_mentor`, `launch_presentation`, `lis`   |
-| User identity claims                | Core 5.3.6                 |                                                           | Name, email, picture, locale                                                    |
-| Vendor claims                       | Core 5.4.7                 |                                                           | All                                                                             |
-| `target_link_uri`                   | Core 5.3.4                 | The same value in the login and in the token              |                                                                                 |
-| Roles                               | Core Appendix A            | The role of a learner                                     | The other 37 IRIs                                                               |
-| Custom properties                   | Core 5.4.6                 | Copied from the launch                                    | Variable substitution: values pass unsubstituted                                |
-| Key sets                            | Security 6.3, 6.4          | `platformJwks`: one key, with its thumbprint as `kid`     | A rotation overlap                                                              |
-| Service tokens                      | Core 6.2, Security 4.1     | `platformToken`: two scopes, replay check of the `jti`    |                                                                                 |
-| Deep Linking                        | DL 4.4, 4.5                |                                                           | Request and response                                                            |
-| AGS claim                           | AGS 3.1                    | `lineitem`                                                | `lineitems`                                                                     |
-| Line item service                   | AGS 3.2                    | `agsLineItem`: one line item, sealed in its own URL       | Container, create, update, delete, filters, paging                              |
-| Result service                      | AGS 3.3                    |                                                           | All; the scope is not offered                                                   |
-| Score publish                       | AGS 3.4                    | `agsScores`, `readAgsScore`: media type, user and values  | The order of timestamps is the receiver's                                       |
-| Client-side login                   | OIDC with postMessages 0.1 | `platformStorage`                                         |                                                                                 |
-| postMessage Storage                 | PM Storage 0.1             | The minimum limits, and `storage_exhaustion`              |                                                                                 |
-| Capabilities                        | postMessages 0.1           |                                                           | `lti.capabilities` is answered by the host's page                               |
-| Names and Role Provisioning         | NRPS 2.0                   |                                                           | All                                                                             |
-| Dynamic Registration                | DR 1.0                     |                                                           | All                                                                             |
-| Submission Review                   | SR 1.0                     |                                                           | All                                                                             |
-| Proctoring                          | Proctoring 1.0             |                                                           | All                                                                             |
-| Context Groups                      | Groups 1.0                 |                                                           | All                                                                             |
-| AfA PNP connector                   | PNP Connector 1.0          |                                                           | All                                                                             |
+| Area                                | Specification              | Platform role                                                                                                   | Not yet                                                    |
+| ----------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Third-party login                   | Core 4.1, Security 5.1.1   | `ltiPlatformLogin`: all parameters; the message kept in the `LaunchStore`, two sealed hints                     |                                                            |
+| Authentication request and response | Security 5.1.1             | `/authorize`, GET and form POST; a refusal is the authentication error response of 5.1.1.5                     |                                                            |
+| Client assertions                   | Security 4.1.1, 5.1.3, 5.4 | The six approved algorithms, or the registration's `algorithms`; audiences, `message_type`, deployment, `jti`  |                                                            |
+| Algorithms                          | Security 7.2               | Signs with the `Signer` of the key set, one of the six; verifies the six                                        |                                                            |
+| Message types                       | Core 5, DL 4.4, Proctoring 4 | `LtiResourceLinkRequest`, `LtiDeepLinkingRequest`, `LtiStartProctoring`, `LtiEndAssessment`                  | `LtiSubmissionReviewRequest`                               |
+| Required claims                     | Core 5.3                   | Every message, through the one model                                                                            |                                                            |
+| Anonymous launch                    | Core 5.3.6.1               | A `user` without a `subject`: no `sub`                                                                          |                                                            |
+| Optional claims                     | Core 5.4                   | `context`, `organization`, `tool_platform`, `role_scope_mentor`, `launch_presentation`, `lis`                   |                                                            |
+| User identity claims                | Core 5.3.6                 | Names, email, picture, locale; `actual_user` of an impersonation                                                |                                                            |
+| Vendor claims                       | Core 5.4.7                 | `extensions` by URL                                                                                             |                                                            |
+| `target_link_uri`                   | Core 5.3.4                 | The same value in the login and in the token                                                                    |                                                            |
+| Roles                               | Core Appendix A            | Any role of the vocabularies, held to the sender's rules                                                        |                                                            |
+| Custom properties and substitution  | Core 5.4.6, Appendix B     | The tool's and the message's; the variables of the message, and the host's through `substitution`              |                                                            |
+| Migration claim                     | Migration Guide            | `lti1p1`, its consumer key signed with the secret of `migrationSecret`                                          |                                                            |
+| Key sets                            | Security 6.3, 6.4          | `/jwks`: every public key of the key set, `max-age` of an hour; `previousHintKeys` for the hint key            |                                                            |
+| Service tokens                      | Core 6.2, Security 4.1     | `/token`: the granted subset, the deployment of the assertion, replay check of the `jti`                       | A service that offers a scope                              |
+| Deep Linking request                | DL 4.4                     | The ten settings; `data` seals the settings and the host's data                                                |                                                            |
+| Deep Linking response               | DL 4.5                     |                                                                                                                 | The reader                                                 |
+| Proctoring                          | Proctoring 4               | `LtiStartProctoring` with sealed session data, `LtiEndAssessment`                                              | The Start Assessment reader, the Assessment Control Service |
+| Client-side login                   | OIDC with postMessages 0.1 | `/storage`                                                                                                      |                                                            |
+| postMessage Storage                 | PM Storage 0.1             | The minimum limits, and `storage_exhaustion`                                                                    |                                                            |
+| Capabilities                        | postMessages 0.1           | `buildCapabilitiesScript` for the host's frame page                                                             |                                                            |
+| AGS                                 | AGS 2.0                    |                                                                                                                 | All                                                        |
+| Names and Role Provisioning         | NRPS 2.0                   |                                                                                                                 | All                                                        |
+| Dynamic Registration                | DR 1.0                     |                                                                                                                 | All                                                        |
+| Submission Review                   | SR 1.0                     |                                                                                                                 | All                                                        |
+| Context Groups                      | Groups 1.0                 |                                                                                                                 | All                                                        |
+| AfA PNP connector                   | PNP Connector 1.0          |                                                                                                                 | All                                                        |
 
 Specifications whose text is behind a sign-in at 1EdTech (the Asset Processor family, EULA, Context Message, Data Privacy,
 Rubric Service and others) are not assessed.
