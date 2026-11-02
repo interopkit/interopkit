@@ -9,7 +9,10 @@ keys and the CLR payloads of a JWT, with the vocabularies and their `ext:` terms
 value against the JSON schemas of 1EdTech and the rules of the subject, and return a copy in which a list that the compacted
 form of JSON-LD writes as its only member is a list; they throw a `DataError` that names the path of the first error and counts
 the others. `validateCredential` and `validateEntity` return the findings, at most `maxFindings` (1,000) of them, with their path, rule,
-sentence and severity, as data, among them `subject-unidentified`, `subject-empty`, `validity-period` and `identity-hash-form`.
+sentence and severity, as data, among them `subject-unidentified`, `subject-empty`, `validity-period`, `identity-hash-form`, the
+forms of a `relatedResource` (`related-resource-form`, `related-resource-id`, `related-resource-duplicate`,
+`related-resource-digest`), and the warnings `result-description-unknown`, `achieved-level-unknown`, `result-status-missing` and
+`criteria-undescribed`.
 
 `buildAchievementCredential`, `buildEndorsementCredential` and `buildClrCredential` write the contexts, the types, the subject
 and the official `credentialSchema` around the parts that an issuer gives, check the result as the readers do, and throw a
@@ -17,7 +20,7 @@ and the official `credentialSchema` around the parts that an issuer gives, check
 JWS. `caseAlignment` aligns an achievement to a CASE item. `hashIdentifier` writes the `sha256$` hash of a recipient's
 identity and `matchesIdentifier` matches an `IdentityObject` of 3.0 or of a 2.0 assertion with a known identity, in `sha256$`
 and `md5$`. `sameCredential` and `newerCredential` compare credentials of either data model as Open Badges 10 asks, by `validFrom` or `issuanceDate`, and `credentialSummary` gives what
-a wallet shows of a badge, a CLR or an endorsement under either data model.
+a wallet shows of a badge, a CLR or an endorsement under either data model, with the date it was awarded.
 
 `@interopkit/achievement-credentials/baking` writes a credential into a PNG or an SVG image and reads it out. `bakePng` and
 `bakeSvg` take a compact JWS or a credential with an embedded proof, choose `openbadgecredential` or `clrcredential` (and the
@@ -47,7 +50,8 @@ The package needs Node.js 24 or later.
 `addProof` signs a credential with `eddsa-rdfc-2022`, or writes the base proof of `ecdsa-sd-2023`, over a `Signer`; `deriveDisclosure`
 derives a disclosure from a base proof, and `verifyProof` verifies the Data Integrity proofs of a credential (`eddsa-rdfc-2022`,
 `ecdsa-rdfc-2019`, `ecdsa-sd-2023` and, on request, `Ed25519Signature2020`, or the suites that a host passes), with the key bound
-to the issuer; it refuses a base proof and a proof that names a `previousProof`, since a proof chain is not verified. `createContextLoader` serves a JSON-LD context only after its document matches the pin of its
+to the issuer; it verifies a proof set and a proof chain (`previousProof`) as Verifiable Credential Data Integrity 1.0 asks,
+prefers a proof by a key of the issuer to that of a witness, and refuses a base proof. `createContextLoader` serves a JSON-LD context only after its document matches the pin of its
 address (`KNOWN_CONTEXTS` pins those of Verifiable Credentials, Open Badges, CLR, Data Integrity, Multikey and DID), and every
 processor of JSON-LD loads contexts through it and no other way. `validateJsonLd` lists what safe mode would drop. The builders write
 the context of the 1EdTech extensions, so that a built credential survives safe mode.
@@ -55,7 +59,8 @@ the context of the 1EdTech extensions, so that a built credential survives safe 
 `createStatusList`, `allocateStatusIndex`, `setCredentialStatus` and `issueStatusListCredential` make a Bitstring Status List and the
 credential that holds it, as a compact JWS or with a Data Integrity proof; `verifyCredentialStatus` follows its validate algorithm
 and reports each failure by its code, reads an entry of the `message` purpose or wider than one bit as `skipped`, inflates the
-list through a stream that stops at 16,777,216 bytes, and binds the key of the list credential to its issuer; `createStatusListCache`
+list once through a stream that stops at 16,777,216 bytes, judges the validity of the list within `clockSkewSeconds`, binds the
+key of the list credential to its issuer, and reads a `1EdTechRevocationList` entry of the Revocation List Status Method; `createStatusListCache`
 keeps list credentials until their `ttl` or `validUntil`. `refreshCredential` gets the newer version of a credential from its
 `1EdTechCredentialRefresh` service and `handleRefreshRequest` answers as that service for an issuer.
 
@@ -80,10 +85,12 @@ in `sha256$` and `md5$`. A 2.0 badge is read and verified, and never written.
 compact JWS, or what `readPng` and `readSvg` return) as Open Badges 9 and CLR 8 say, and returns every check (`format`,
 `schema`, `proof`, `issuer`, `refresh`, `status`, `validity`, `recipient`) with its outcome and a detail, always in that order. The key
 of every proof must belong to its issuer, for the credential, for each endorsement and credential of a CLR, and for a status list;
-nothing that a credential names is fetched before its proof is valid; a schema other than 1EdTech's is fetched once for the call and
-refused when it runs a regular expression; a refreshed credential must be authentic and the same credential. `unavailable` says
-whether a status list, a refresh, a schema or an issuer's keys that cannot be read fail the verification, and a proof that cannot
-be checked always does. A credential has at most `maxEndorsements` (32) endorsements and a CLR `maxNestedCredentials` (1,000)
+nothing that a credential names is fetched before its proof is valid; a schema other than 1EdTech's is fetched once for the call,
+at most 4 of them, refused when it runs a regular expression, and judged within a bound of work; a refreshed credential must be
+authentic, bound to its issuer and the same credential, and one verification follows at most 16 refreshes. `unavailable` says
+whether a status list, a refresh or a schema that cannot be read fails the verification; a proof that cannot be checked and
+issuer keys that cannot be read always do. The endorsements are those that the credential holds anywhere: its own, its issuer's
+and its parent organizations', its achievements' and their creators'. A credential has at most `maxEndorsements` (32) endorsements and a CLR `maxNestedCredentials` (1,000)
 credentials, and the input is limited in characters, tokens and levels before it is parsed. A `KeyResolver`, a loader of contexts or a suite of the host that never answers does not hold a verification, a proof or a signature past its `signal`.
 
 `verifyCredential` also verifies an Open Badges 2.0 badge as its Verification section says, from the address of a hosted assertion,
@@ -98,9 +105,9 @@ A credential with a Data Integrity proof is also limited for what a JSON-LD proc
 with the square of the values of one property: `addProof`, `deriveDisclosure`, `verifyProof`, `validateJsonLd` and
 `verifyCredential` take `maxJsonLdTokens` (20,000 by default) and refuse a credential over it before any processor reads it, and
 the canonicalization of the cryptosuites stops after 1,000 runs of Hash N-Degree Quads, as in `selective-disclosure`. `verifyProof`
-checks the first four proofs of a credential and canonicalizes the credential once for all of them. A limit is the reason of the
-`proof` check and not a signature that fails. A `DataIntegritySuite` is given the credential without its proof and the limits that
-the glue checked (`maxBytes`, `maxTokens`), and a `DataError` that it rejects with becomes that reason.
+checks at most four proofs of a credential, those of a chain among them. A limit is the reason of the `proof` check and not a
+signature that fails. A `DataIntegritySuite` is given the document that the proof secures and the limits that the glue checked
+(`maxBytes`, `maxTokens`), and a `DataError` that it rejects with becomes that reason.
 
 `@interopkit/achievement-credentials/provider` is the resource server of the Open Badges API and the CLR Standard API:
 `handleCredentialsRequest` answers `getCredentials` with `limit`, `offset` and `since`, the objects in `credential` and the compact
