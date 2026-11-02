@@ -105,6 +105,8 @@ export interface Pair {
   login(message: MessageInput): Promise<string>;
   /** The platform's keys, whose public half verifies the `id_token`s. */
   readonly keys: Awaited<ReturnType<typeof generateKeys>>;
+  /** The tool's keys, whose public half verifies its client assertions and its messages. */
+  readonly toolKeys: Awaited<ReturnType<typeof generateKeys>>;
 }
 
 /** Makes a platform that signs with `algorithm` and one tool, which reach each other by plain requests. */
@@ -136,6 +138,7 @@ export async function createPair(
       SCOPES.resultReadonly,
       SCOPES.score,
       SCOPES.contextMembershipReadonly,
+      SCOPES.assessmentControl,
     ],
   };
   // The message stays in the store after a launch takes it, so that one login serves every request of a run.
@@ -183,20 +186,26 @@ export async function createPair(
     registration,
     store,
     keys,
+    toolKeys,
     login: (message) =>
       ltiPlatformLogin(message, { config, clock: CLOCK, registration: lookup, check: async () => undefined, launches }),
   };
 }
 
-/** A `fetch` that the tool's key set cache reaches the platform with: the platform answers the request itself. */
-export function platformFetch(pair: Pair): Fetch {
+/**
+ * A `fetch` that the tool reaches the platform with: the platform answers the request itself. It adds each request to `sent`
+ * when it is given, so that a benchmark can send it to the platform again.
+ */
+export function platformFetch(pair: Pair, sent?: HttpRequest[]): Fetch {
   return async (url, init) => {
-    const answer = await pair.platform({
+    const request = {
       method: init.method,
       url,
       headers: init.headers,
       body: typeof init.body === "string" ? new TextEncoder().encode(init.body) : (init.body ?? new Uint8Array()),
-    });
+    };
+    sent?.push(request);
+    const answer = await pair.platform(request);
     return new Response(answer.body.length === 0 ? null : answer.body, {
       status: answer.status,
       headers: answer.headers,

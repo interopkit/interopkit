@@ -18,7 +18,7 @@ import {
   platformFetch,
   postedFields,
 } from "./bench-setup.js";
-import { BENCH_OPTIONS, expectRatio, type RATIOS } from "./budgets.js";
+import { expectRatioInTurns, type RATIOS } from "./budgets.js";
 
 const ALGORITHMS: readonly Algorithm[] = ["RS256", "ES256"];
 const FORM = { "content-type": "application/x-www-form-urlencoded" };
@@ -65,9 +65,12 @@ for (const algorithm of ALGORITHMS) {
       });
     expect((await verify()).payload.sub).toBe("ana");
 
-    const reference = await bench("jose jwtVerify", verify).run(BENCH_OPTIONS);
-    const launch = await bench("ltiLaunch", () => ltiLaunch(request, options)).run(BENCH_OPTIONS);
-    await expectRatio(annotate, LAUNCH[algorithm], launch, { ...reference, name: "jwtVerify of jose" });
+    await expectRatioInTurns(
+      { annotate, bench },
+      LAUNCH[algorithm],
+      { name: "jwtVerify of jose", fn: verify },
+      { name: "ltiLaunch", fn: () => ltiLaunch(request, options) },
+    );
   });
 }
 
@@ -85,9 +88,12 @@ for (const algorithm of ALGORITHMS) {
 
     const sign = () =>
       new SignJWT(claims).setProtectedHeader({ alg: algorithm, kid: pair.keys.kid }).sign(pair.keys.privateKey);
-    const reference = await bench("jose SignJWT", sign).run(BENCH_OPTIONS);
-    const authorize = await bench("authorization request", () => pair.platform(request)).run(BENCH_OPTIONS);
-    await expectRatio(annotate, AUTHORIZE[algorithm], authorize, { ...reference, name: "SignJWT of jose" });
+    await expectRatioInTurns(
+      { annotate, bench },
+      AUTHORIZE[algorithm],
+      { name: "SignJWT of jose", fn: sign },
+      { name: "the authorization request", fn: () => pair.platform(request) },
+    );
   });
 }
 
@@ -128,11 +134,10 @@ test("substitutes every variable that the platform supports within a multiple of
   expect(custom(await claimsOf(plain)).v0).toBe(variables[0]);
   await annotate(`The request substitutes ${variables.length} variables.`);
 
-  const reference = await bench("authorization request with plain values", () => pair.platform(plain)).run(
-    BENCH_OPTIONS,
+  await expectRatioInTurns(
+    { annotate, bench },
+    "substitution",
+    { name: "the same request with plain values", fn: () => pair.platform(plain) },
+    { name: "the authorization request with every variable", fn: () => pair.platform(substituting) },
   );
-  const result = await bench("authorization request with every variable", () => pair.platform(substituting)).run(
-    BENCH_OPTIONS,
-  );
-  await expectRatio(annotate, "substitution", result, { ...reference, name: "the same request with plain values" });
 });
