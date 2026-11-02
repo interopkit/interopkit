@@ -292,9 +292,12 @@ export async function requestService(
     throw new ServiceError(`${what} answered ${response.status}.`, response.status, errorText(answer), { headers });
   }
   if (!answer.complete) {
-    throw new ServiceError(`${what} answered with more than ${maxBytes} bytes.`, response.status, errorText(answer), {
-      headers,
-    });
+    throw new ServiceError(
+      `${what} answered with more than ${maxBytes} bytes, the limit of the option maxBytes: raise it to read a larger answer.`,
+      response.status,
+      errorText(answer),
+      { headers },
+    );
   }
   return { status: response.status, headers, body: answer.bytes };
 }

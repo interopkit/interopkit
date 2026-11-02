@@ -177,7 +177,10 @@ describe("clientCredentialsToken", () => {
 
     it("refuses an answer of more than 65,536 bytes", async () => {
       const error = await failureOf(call(() => new Response("a".repeat(70_000), { status: 200 })));
-      expect(error).toMatchObject({ message: `${what} answered with more than 65536 bytes.`, status: 200 });
+      expect(error).toMatchObject({
+        message: `${what} answered with more than 65536 bytes, the limit of the option maxBytes: raise it to read a larger answer.`,
+        status: 200,
+      });
     });
   });
 

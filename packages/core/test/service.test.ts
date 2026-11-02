@@ -358,7 +358,10 @@ describe("a service that answers with an error", () => {
     const error = await failureOf(
       callService({ fetch: answering(() => response), timeoutMs: DEFAULT_TIMEOUT_MS }, WHAT, URL_OF_SERVICE, GET),
     );
-    expect(error).toMatchObject({ message: `${WHAT} answered with more than 65536 bytes.`, status: 200 });
+    expect(error).toMatchObject({
+      message: `${WHAT} answered with more than 65536 bytes, the limit of the option maxBytes: raise it to read a larger answer.`,
+      status: 200,
+    });
   });
 
   it("refuses an answer of more than the most bytes, cancels the reader and keeps what it read", async () => {
@@ -367,7 +370,10 @@ describe("a service that answers with an error", () => {
       callService({ fetch: answering(() => response), timeoutMs: DEFAULT_TIMEOUT_MS }, WHAT, URL_OF_SERVICE, GET),
     );
     expect(error).toBeInstanceOf(ServiceError);
-    expect(error).toMatchObject({ message: `${WHAT} answered with more than 65536 bytes.`, status: 200 });
+    expect(error).toMatchObject({
+      message: `${WHAT} answered with more than 65536 bytes, the limit of the option maxBytes: raise it to read a larger answer.`,
+      status: 200,
+    });
     expect((error as ServiceError).body).toHaveLength(LIMIT);
     await cancelled;
   });
@@ -750,7 +756,9 @@ describe("requestService", () => {
       expect(DEFAULT_MAX_BYTES).toBe(LIMIT);
       const { response } = bodyOfBytes(LIMIT + 1);
       const error = await failureOf(request(answering(() => response)));
-      expect(error).toMatchObject({ message: `${WHAT} answered with more than 65536 bytes.` });
+      expect(error).toMatchObject({
+        message: `${WHAT} answered with more than 65536 bytes, the limit of the option maxBytes: raise it to read a larger answer.`,
+      });
     });
 
     it("is the one that the call names, above the default or below it", async () => {
@@ -769,7 +777,7 @@ describe("requestService", () => {
         ),
       );
       expect(error).toMatchObject({
-        message: `${WHAT} answered with more than 10 bytes.`,
+        message: `${WHAT} answered with more than 10 bytes, the limit of the option maxBytes: raise it to read a larger answer.`,
         status: 200,
         body: "a".repeat(10),
       });
@@ -916,7 +924,7 @@ describe("callService with the options of a request", () => {
     await expect(callService(service, WHAT, URL_OF_SERVICE, GET)).rejects.toMatchObject({ status: 404 });
     await expect(callService(service, WHAT, URL_OF_SERVICE, GET, { expect: [404], maxBytes: 5 })).rejects.toMatchObject(
       {
-        message: `${WHAT} answered with more than 5 bytes.`,
+        message: `${WHAT} answered with more than 5 bytes, the limit of the option maxBytes: raise it to read a larger answer.`,
       },
     );
   });
