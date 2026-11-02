@@ -83,6 +83,7 @@ export {
   type AssertionV2,
   type BadgeAssertionV2,
   type BadgeClassV2,
+  type ContextV2,
   type CriteriaV2,
   type CryptographicKeyV2,
   type EndorsementClaimV2,

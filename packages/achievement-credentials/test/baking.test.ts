@@ -205,7 +205,7 @@ describe("bakePng", () => {
     // A payload of one character is not base64url at all, and `_w` decodes to the byte 0xff, which is not UTF-8.
     for (const payload of ["A", "_w"]) {
       const error = failureOf(() => bakePng(image, `${part("{}")}.${payload}.${part("s")}`));
-      expect((error as DataError).message).toContain("not base64url text of UTF-8");
+      expect((error as DataError).message).toContain("not canonical base64url text of UTF-8");
     }
   });
 

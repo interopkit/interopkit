@@ -61,6 +61,7 @@ export {
   CONTEXTS,
   type ContextEntry,
   type ContextLoader,
+  type ContextV2,
   CREDENTIAL_APIS,
   CREDENTIAL_KINDS,
   type CredentialApi,

@@ -7,6 +7,14 @@
  * @module
  */
 
+import type { ContextEntry } from "./context.js";
+
+/**
+ * The context of a document of Open Badges 2.0: the address of the context of 2.0, or a list that holds it among other contexts,
+ * such as the context of an extension.
+ */
+export type ContextV2 = "https://w3id.org/openbadges/v2" | readonly ContextEntry[];
+
 /** The kinds of identity that the recipient of a 2.0 assertion may have: the properties that identify a profile. */
 export const IDENTITY_TYPES_V2 = ["id", "email", "url", "telephone"] as const;
 
@@ -36,8 +44,8 @@ export interface BadgeAssertionV2 {
 
 /** An awarded badge: the achievement of one earner (OB 2.0, Assertion). */
 export interface AssertionV2 {
-  /** The context of Open Badges 2.0, when the document names it. */
-  readonly "@context"?: "https://w3id.org/openbadges/v2";
+  /** The context of Open Badges 2.0, alone or among others, when the document names it. */
+  readonly "@context"?: ContextV2;
   /** Unique IRI for the Assertion: its address when it is hosted, or a `urn:uuid` when it is signed. */
   readonly id: string;
   /** The types, which include `Assertion`. */
@@ -76,8 +84,8 @@ export interface AssertionV2 {
 
 /** The accomplishment that a badge recognizes, which many assertions may award (OB 2.0, BadgeClass). */
 export interface BadgeClassV2 {
-  /** The context of Open Badges 2.0, when the document names it. */
-  readonly "@context"?: "https://w3id.org/openbadges/v2";
+  /** The context of Open Badges 2.0, alone or among others, when the document names it. */
+  readonly "@context"?: ContextV2;
   /** Unique IRI for the BadgeClass. */
   readonly id: string;
   /** The types, which include `BadgeClass`. */
@@ -108,8 +116,8 @@ export interface BadgeClassV2 {
 
 /** The individual, entity or organization that issues badges (OB 2.0, Profile), with what an issuer must have. */
 export interface ProfileV2 {
-  /** The context of Open Badges 2.0, when the document names it. */
-  readonly "@context"?: "https://w3id.org/openbadges/v2";
+  /** The context of Open Badges 2.0, alone or among others, when the document names it. */
+  readonly "@context"?: ContextV2;
   /** Unique IRI for the Profile. */
   readonly id: string;
   /** The types, which include `Issuer` or `Profile`. */
@@ -173,8 +181,8 @@ export interface VerificationObjectV2 {
 
 /** A key used for signing Open Badges documents (OB 2.0, CryptographicKey). */
 export interface CryptographicKeyV2 {
-  /** The context of Open Badges 2.0, when the document names it. */
-  readonly "@context"?: "https://w3id.org/openbadges/v2";
+  /** The context of Open Badges 2.0, alone or among others, when the document names it. */
+  readonly "@context"?: ContextV2;
   /** The identifier for the key. */
   readonly id?: string;
   /** The types; `CryptographicKey` when present. */
@@ -187,8 +195,8 @@ export interface CryptographicKeyV2 {
 
 /** The assertions and endorsements that an issuer revoked (OB 2.0, RevocationList). */
 export interface RevocationListV2 {
-  /** The context of Open Badges 2.0, when the document names it. */
-  readonly "@context"?: "https://w3id.org/openbadges/v2";
+  /** The context of Open Badges 2.0, alone or among others, when the document names it. */
+  readonly "@context"?: ContextV2;
   /** The id of the RevocationList. */
   readonly id?: string;
   /** The types, which include `RevocationList`. */
@@ -271,8 +279,8 @@ export interface AlignmentObjectV2 {
 
 /** A claim that an issuer makes about a profile, a BadgeClass or an assertion (OB 2.0, Endorsement). */
 export interface EndorsementV2 {
-  /** The context of Open Badges 2.0, when the document names it. */
-  readonly "@context"?: "https://w3id.org/openbadges/v2";
+  /** The context of Open Badges 2.0, alone or among others, when the document names it. */
+  readonly "@context"?: ContextV2;
   /** Unique IRI for the Endorsement. */
   readonly id: string;
   /** The types, which include `Endorsement`. */

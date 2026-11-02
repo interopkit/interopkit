@@ -7,16 +7,15 @@ import {
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
-import {
-  type BadgeAssertionV2,
-  CONTEXTS,
-  type CredentialIssue,
-  type CryptographicKeyV2,
-  type EndorsementV2,
-  type ProfileV2,
-  type RevocationListV2,
+import type {
+  BadgeAssertionV2,
+  CredentialIssue,
+  CryptographicKeyV2,
+  EndorsementV2,
+  ProfileV2,
+  RevocationListV2,
 } from "../model/index.js";
-import { replaceAliasesV2 } from "./context-v2.js";
+import { holdsContextV2, replaceAliasesV2 } from "./context-v2.js";
 import { parseInto } from "./inspect.js";
 import {
   type AssertionDocumentV2,
@@ -258,9 +257,9 @@ export function inspectBadgeAssertionV2(
   return inspectBadgeV2(parts.assertion, { badge: parts.badge, issuer: parts.issuer }, MODEL_PLACES, sink);
 }
 
-/** Tells whether a value is a document of Open Badges 2.0: it names the context of Open Badges 2.0 as its only context. */
+/** Tells whether a value is a document of Open Badges 2.0: its contexts are that of Open Badges 2.0, alone or with others. */
 export function isDocumentV2(value: unknown): boolean {
-  return isRecord(value) && value["@context"] === CONTEXTS.openBadgesV2;
+  return isRecord(value) && holdsContextV2(value["@context"]);
 }
 
 /** Tells whether a value is meant as a `BadgeAssertionV2`: it has the version `2.0` and names no context. */

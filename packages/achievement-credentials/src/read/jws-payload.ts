@@ -1,5 +1,6 @@
 import { isRecord, MAX_JSON_DEPTH } from "@interopkit/core/checks";
 import * as v from "valibot";
+import { decodeBase64url } from "../base64url.js";
 import { parseJsonText } from "../json-text.js";
 import { jws } from "./primitives.js";
 
@@ -16,32 +17,6 @@ export type JwsPayload =
       /** A sentence that says what is wrong with the JWS or its payload. */
       readonly reason: string;
     };
-
-/** The alphabet of base64url (RFC 4648 section 5), in the order of the values of its characters. */
-const BASE64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-
-/** The bits of the last character that no byte holds when the length of the text is 2 more than a multiple of 4. */
-const UNUSED_OF_TWO = 0b1111;
-/** The bits of the last character that no byte holds when the length of the text is 3 more than a multiple of 4. */
-const UNUSED_OF_THREE = 0b11;
-
-/**
- * Decodes base64url without padding to bytes, when the text is the one canonical spelling of them (RFC 7515 section 2): its
- * length is not one more than a multiple of four, and the bits of its last character that no byte holds are zero. The text is
- * of the alphabet of base64url, which the form of a compact JWS ensures.
- */
-function decodeBase64url(text: string): Uint8Array | undefined {
-  const rest = text.length % 4;
-  if (rest === 1) return undefined;
-  const unused = rest === 2 ? UNUSED_OF_TWO : rest === 3 ? UNUSED_OF_THREE : 0;
-  if ((BASE64URL.indexOf(text.charAt(text.length - 1)) & unused) !== 0) return undefined;
-  // The text is of the alphabet of base64url and of a length that holds bytes, so `atob` reads it.
-  const binary = atob(text.replaceAll("-", "+").replaceAll("_", "/"));
-  // A loop over the code units, since a conversion with a callback makes a string of each.
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-  return bytes;
-}
 
 /**
  * Reads the payload of a compact JWS as a JSON object, without checking its signature: what a verifier reads first to learn

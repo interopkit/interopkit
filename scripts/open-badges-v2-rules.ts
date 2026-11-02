@@ -3,9 +3,11 @@
  * the validator of 1EdTech, each with a document that breaks it and what the reader finds.
  *
  * The entries are written from the vocabulary of Open Badges 2.0 (its tables, whose bold properties are required, and its
- * primitive data types) and from the class validators of `openbadges-validator-core` (`tasks/validation.py`), and not from
- * the code that reads badges: the tests of the package change a sound document with `fixture` and compare what the readers
- * find with `findings`. A source names the class of the specification, or `validator` and the class of `validation.py`.
+ * primitive data types) and from the class validators of `openbadges-validator-core` at commit
+ * `0a66b52a8a0b7841469a35b056e5c3f8e5ce87d1` (`tasks/validation.py` and `tasks/graph.py`, which `scripts/schemas.lock.json`
+ * pins), and not from the code that reads badges: the tests of the package change a sound document with `fixture` and compare
+ * what the readers find with `findings`. A source names the class of the specification, or `validator` and the class of
+ * `validation.py` or the file of the validator.
  */
 
 /** A JSON object, such as an assertion. */
@@ -283,6 +285,24 @@ export const OB2_REFUSALS: readonly Ob2Rule[] = [
     [error('badge["@context"]', "invalid-value")],
   ),
   assertion(
+    "validator graph.py",
+    "A document whose context is a list is read as 2.0 and compacted into the 2.0 context: a later context that redefines a term of 2.0 changes what the term means.",
+    set("@context", [CONTEXT, { name: "https://example.org/terms#title" }]),
+    [error('["@context"][1].name', "redefined-term")],
+  ),
+  assertion(
+    "OB 2.0 Additional Properties",
+    "If properties are included in JSON that cannot be mapped to JSON-LD terms defined in the object's @context, they are not considered part of the badge object's meaning.",
+    all(set("@context", [CONTEXT, "https://example.org/context.json"]), set("level", "advanced")),
+    [warning("level", "unknown-term")],
+  ),
+  assertion(
+    "OB 2.0 Linked Data",
+    "A list of contexts that does not hold the context of Open Badges 2.0 is not one of 2.0.",
+    set("badge.@context", ["https://w3id.org/openbadges/v1"]),
+    [error('badge["@context"]', "invalid-value")],
+  ),
+  assertion(
     "OB 2.0 context",
     "verify is an alias of verification: an object holding both holds the property twice.",
     set("verify", { type: "hosted" }),
@@ -539,6 +559,18 @@ export const OB2_ACCEPTANCES: readonly Omit<Ob2Rule, "findings">[] = [
     text: "verify is an alias of verification.",
     document: "assertion",
     fixture: all(remove("verification"), set("verify", { type: "hosted" })),
+  },
+  {
+    source: "OB 2.0 Additional Properties",
+    text: "Add individual mappings to the context: a compact IRI of a prefix that a later context defines is a property.",
+    document: "assertion",
+    fixture: all(set("@context", [CONTEXT, { ex: "https://example.org/terms#" }]), set("ex:level", "advanced")),
+  },
+  {
+    source: "validator graph.py",
+    text: "A context before that of 2.0 that defines one of its terms is overridden by the context of 2.0.",
+    document: "assertion",
+    fixture: set("@context", [{ name: "https://example.org/terms#title" }, CONTEXT]),
   },
   {
     source: "OB 2.0 VerificationObject",

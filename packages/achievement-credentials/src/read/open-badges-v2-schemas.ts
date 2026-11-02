@@ -6,12 +6,21 @@
  * @module
  */
 
-import { guardSchema, isRecord, languageTagSchema, openRecord, type Schema } from "@interopkit/core/checks";
+import {
+  guardSchema,
+  isRecord,
+  jsonObjectSchema,
+  languageTagSchema,
+  openRecord,
+  type Schema,
+} from "@interopkit/core/checks";
 import * as v from "valibot";
 import type {
   AlignmentObjectV2,
   AssertionV2,
   BadgeClassV2,
+  ContextEntry,
+  ContextV2,
   CriteriaV2,
   CryptographicKeyV2,
   EndorsementClaimV2,
@@ -57,13 +66,30 @@ export interface BadgeClassDocumentV2 extends Omit<BadgeClassV2, "issuer"> {
 /** An embedded document, which the reader checks as a document of its own. */
 export const embeddedDocument: Schema<EmbeddedDocument> = guardSchema(isRecord, "an object");
 
+/** A context in a list: the address of a context, or a context that the document holds. */
+const contextEntry: Schema<ContextEntry> = v.lazy((input) => (typeof input === "string" ? text : jsonObjectSchema));
+
+/** The context of a document of Open Badges 2.0: the address of the context of 2.0, or a list of contexts that holds it. */
+const contextV2: Schema<ContextV2> = v.lazy((input) =>
+  typeof input === "string"
+    ? v.literal(CONTEXTS.openBadgesV2)
+    : v.pipe(
+        v.array(contextEntry),
+        v.rawTransform(({ dataset, addIssue, NEVER }) => {
+          if (dataset.value.includes(CONTEXTS.openBadgesV2)) return dataset.value;
+          addIssue({ message: `expected the contexts to hold ${CONTEXTS.openBadgesV2}` });
+          return NEVER;
+        }),
+      ),
+);
+
 /**
- * The schema of a class of Open Badges 2.0: an open record that may name the context of Open Badges 2.0 and no other.
+ * The schema of a class of Open Badges 2.0: an open record that may name the context of Open Badges 2.0, alone or with others.
  *
  * @param entries - The schemas of the properties of the class.
  */
 function documentV2<const TEntries extends v.ObjectEntries>(entries: TEntries) {
-  return openRecord({ "@context": v.optional(v.literal(CONTEXTS.openBadgesV2)), ...entries });
+  return openRecord({ "@context": v.optional(contextV2), ...entries });
 }
 
 /**

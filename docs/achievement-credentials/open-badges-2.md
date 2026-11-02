@@ -9,7 +9,7 @@ badge is read and never written.
 
 ```mermaid
 flowchart TD
-  value["A value, as parsed from JSON"] --> route{"Its only context is<br/>https://w3id.org/openbadges/v2,<br/>or it is a BadgeAssertionV2?"}
+  value["A value, as parsed from JSON"] --> route{"Its contexts hold<br/>https://w3id.org/openbadges/v2,<br/>or it is a BadgeAssertionV2?"}
   route -->|"no"| v3["Read as Open Badges 3.0 or CLR 2.0:<br/>see the model guide"]
   route -->|"yes"| copy["Copy within 64 levels,<br/>write the aliases verify, hosted, signed<br/>as verification, HostedBadge, SignedBadge"]
   copy --> assertion["The assertion: its class and rules"]
@@ -79,14 +79,16 @@ Pass the option `kind` to read only credentials of Open Badges 3.0 and CLR 2.0, 
 
 | Value                                                                 | Read as                                                                                                                                       |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| An object whose `@context` is the string `https://w3id.org/openbadges/v2` | An assertion, whose `badge` must be an embedded BadgeClass, whose `issuer` must be an embedded Profile                                     |
+| An object whose `@context` is `https://w3id.org/openbadges/v2`, or a list that holds it | An assertion, whose `badge` must be an embedded BadgeClass, whose `issuer` must be an embedded Profile                                     |
 | An object with `version: "2.0"`, `assertion`, `badge` and `issuer`, and no `@context` | A `BadgeAssertionV2`: the three documents, each with the context of Open Badges 2.0 or none, the assertion naming the BadgeClass and the BadgeClass naming the issuer by their `id` |
 | Any other value                                                       | A credential of Open Badges 3.0 or CLR 2.0                                                                                                    |
 | Any value, with the option `kind`                                     | A credential of Open Badges 3.0 or CLR 2.0 of that kind                                                                                       |
 
 The documents are the compacted form of JSON-LD under the context of Open Badges 2.0, and the reader needs no JSON-LD processor:
 it knows the terms, prefixes and aliases of that context from a fixed table, which a test compares with the context at its pinned
-hash. A document embedded in another may name the same context. An extension, an object that names a context of its own, is kept
+hash. A document embedded in another may name the same contexts. A list of contexts is read as the validator of 1EdTech reads
+it, as 2.0: a name that the context of 2.0 does not define is kept with the warning `unknown-term`, and an inline context after
+that of 2.0 that redefines one of its terms is the error `redefined-term`. An extension, an object that names contexts of its own, is kept
 as it is.
 
 | Alias of the context | Read as                       |
@@ -124,6 +126,8 @@ each class rule of the validator of 1EdTech, with what the reader finds, and a t
 | Rule                  | Severity | When                                                                                                         |
 | --------------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
 | `duplicate-term`      | error    | An object holds both `verify` and `verification`, which the context reads as one property with two values     |
+| `redefined-term`      | error    | An inline context after that of 2.0 defines a term of 2.0 again, so the term would mean something else        |
+| `unknown-term`        | warning  | A name that no term of the context of 2.0 defines and that is no IRI: it is no part of the meaning, and is kept as JSON |
 | `not-embedded`        | error    | The assertion names its BadgeClass, or the BadgeClass its issuer, by an IRI, and the document is not there    |
 | `unlinked-document`   | error    | In a `BadgeAssertionV2`, a document's `id` is not the IRI that names it, or a document is embedded and given apart as well |
 | `identity-hash-form`  | error    | A recipient that says it is hashed holds no `sha256$` and 64 hexadecimal digits, and no `md5$` and 32         |
@@ -168,7 +172,7 @@ its findings stop at the limit.
 | Checking a signature, a revocation, an expiry against the clock, or the scope of a hosted assertion | Verification                                                                                     |
 | Baked 2.0 badges                                                             | `readPng` and `readSvg` read 2.0 badges with verification                                                                 |
 | Issuing, signing or baking a 2.0 badge                                       | Open Badges 3.0 supersedes 2.0; a 2.0 badge is read and verified only                                                     |
-| A document under another context, or with more contexts than that of 2.0     | Their terms may differ from the table; reading them needs a JSON-LD processor, so they are read as Open Badges 3.0 and refused |
+| A document under another context                                            | Its terms may differ from the table; reading it needs a JSON-LD processor, so it is read as Open Badges 3.0 and refused |
 | The expanded form, and a property written as an IRI or a compact IRI of a term | The reader reads the compacted form; such a property is kept as one that no class lists                                 |
 | The JSON schemas that an extension's context links                            | They need the network                                                                                                    |
 | Open Badges 1.x and 0.5                                                      | Retired before 2.0                                                                                                        |
@@ -176,7 +180,9 @@ its findings stop at the limit.
 ## Differences from the references
 
 The references are the vocabulary of Open Badges 2.0 and its examples, which the tests read at pinned hashes, and the class
-validators of `openbadges-validator-core`, whose rules the table of `scripts/open-badges-v2-rules.ts` follows. The reader gives
+validators of `openbadges-validator-core` at commit `0a66b52`, whose files `pnpm schemas` pins: the table of
+`scripts/open-badges-v2-rules.ts` follows them, and a test compares the required properties of each class and the terms of the
+context with them. The reader gives
 their verdict, except in the cases below.
 
 | Case                                                                | The references                                                                                         | The reader                                                                          |
@@ -192,3 +198,4 @@ their verdict, except in the cases below.
 | A date and time in the basic form of ISO 8601, such as `20161231T235959Z` | The validator reads it                                                                           | `invalid-format`: the form that the specification describes                         |
 | The properties of an embedded related edition                        | The validator checks those it has against its class                                                     | Its `id`, `@language` and `version`; the others are kept as JSON                    |
 | An image                                                            | The validator fetches it                                                                                | Its address and, for a data URI, its media type                                     |
+| A list of contexts that holds that of 2.0 and a remote context            | The validator loads every context and compacts the document into that of 2.0           | The reader loads none: it reads the terms of 2.0 as their context defines them, and warns of every other name |

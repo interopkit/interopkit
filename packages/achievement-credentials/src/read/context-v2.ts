@@ -131,20 +131,56 @@ function classTerm(value: JsonValue): JsonValue {
   return typeof value === "string" ? (CLASS_ALIASES.get(value) ?? value) : value;
 }
 
-/** What `replaceAliasesV2` returns: the document with the terms in place of the aliases, and the findings. */
+/** What `replaceAliasesV2` returns: the document with the terms in place of the aliases, and the findings of its terms. */
 export interface ReplacedAliases {
   /** The document. An object that names a context of its own is the object of the input, and every other one is new. */
   readonly value: JsonValue;
-  /** One finding for each object that holds a property under both an alias and its term. */
+  /** A finding for each property held under an alias and its term, each name that no term defines, and each redefined term. */
   readonly issues: readonly CredentialIssue[];
 }
 
-/** Writes a value with the aliases replaced, and adds a finding for each object that holds a property twice. */
+/**
+ * Tells whether a context is that of Open Badges 2.0, alone or in a list with others. A JSON-LD processor reads a document whose
+ * contexts hold it by the terms of Open Badges 2.0, as the validator of 1EdTech does when it compacts a document into them.
+ *
+ * @param context - The `@context` of a document.
+ */
+export function holdsContextV2(context: unknown): boolean {
+  return context === CONTEXTS.openBadgesV2 || (Array.isArray(context) && context.includes(CONTEXTS.openBadgesV2));
+}
+
+/** Tells whether a name is one that the context of Open Badges 2.0 gives a meaning: a term, or a compact or absolute IRI. */
+function isKnownName(name: string): boolean {
+  return TERMS_V2.has(name) || name.includes(":");
+}
+
+/**
+ * Finds the terms of Open Badges 2.0 that a context in a list redefines after the context of 2.0: a processor reads such a term by
+ * the later context, and the reader, which reads by the fixed table, would read it otherwise.
+ */
+function* redefinitions(context: JsonValue, path: string): Generator<CredentialIssue> {
+  if (!Array.isArray(context)) return;
+  const start = context.indexOf(CONTEXTS.openBadgesV2);
+  for (const [index, entry] of context.entries()) {
+    if (index < start || !isRecord(entry)) continue;
+    for (const term of Object.keys(entry).filter((name) => TERMS_V2.has(name))) {
+      yield {
+        path: memberPath(`${memberPath(path, "@context")}[${index}]`, term),
+        rule: "redefined-term",
+        message: `redefines ${term}, a term of the context of Open Badges 2.0, which the reader reads only as that context defines it.`,
+        severity: "error",
+      };
+    }
+  }
+}
+
+/** Writes a value with the aliases replaced, and adds the findings of its terms. */
 function replaceIn(node: JsonValue, path: string, issues: CredentialIssue[]): JsonValue {
   if (Array.isArray(node)) return node.map((item, index) => replaceIn(item, `${path}[${index}]`, issues));
   if (!isRecord(node)) return node;
   const context = node["@context"];
-  if (context !== undefined && context !== CONTEXTS.openBadgesV2) return node;
+  if (context !== undefined && !holdsContextV2(context)) return node;
+  if (context !== undefined) issues.push(...redefinitions(context, path));
   const members = Object.entries(node).map(([name, member]) => replaceMember(node, name, member, path, issues));
   // `Object.fromEntries` defines each member, so that a member named `__proto__` stays a member.
   return Object.fromEntries(members);
@@ -159,6 +195,18 @@ function replaceMember(
   issues: CredentialIssue[],
 ): [string, JsonValue] {
   if (name === "type") return [name, Array.isArray(member) ? member.map(classTerm) : classTerm(member)];
+  // A keyword, such as `@context` or `@language`, holds no terms of the document.
+  if (name.startsWith("@")) return [name, member];
+  if (!isKnownName(name)) {
+    issues.push({
+      path: memberPath(path, name),
+      rule: "unknown-term",
+      message:
+        "is not a term of the context of Open Badges 2.0, so it is no part of the meaning of the document: the reader keeps it as JSON.",
+      severity: "warning",
+    });
+    return [name, member];
+  }
   const term = PROPERTY_ALIASES.get(name) ?? name;
   if (term !== name && Object.hasOwn(node, term)) {
     issues.push({
@@ -177,9 +225,11 @@ function replaceMember(
  * property `verify` as `verification`, and `hosted` and `signed` in a `type` as `HostedBadge` and `SignedBadge`.
  *
  * @remarks
- * An object that names a context of its own other than that of Open Badges 2.0, such as an extension, is kept as it is with
- * what it holds, since its context may give the names other meanings. An object that holds a property under both an alias and
- * its term keeps both, with a finding, since the context reads them as one property with two values.
+ * An object that names contexts of its own that do not hold that of Open Badges 2.0, such as an extension, is kept as it is with
+ * what it holds, since its contexts may give the names other meanings. An object that holds a property under both an alias and
+ * its term keeps both, with a finding, since the context reads them as one property with two values. A member whose name the
+ * context does not define is kept with a warning, and so is what it holds; a context in a list that redefines a term of Open
+ * Badges 2.0 after it is an error.
  *
  * @param value - The document, as JSON.
  * @param path - Where the document is, for the findings.

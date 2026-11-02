@@ -1,6 +1,7 @@
 import { DataError } from "@interopkit/core";
 import { describe, isRecord } from "@interopkit/core/checks";
-import { base64url, compactVerify, importJWK } from "jose";
+import { compactVerify, importJWK } from "jose";
+import { decodeBase64url } from "../base64url.js";
 import { type JsonLimits, parseJsonText } from "../json-text.js";
 import { bindKey, publicJwk, thumbprintOf, thumbprintUri } from "../keys/internal.js";
 import type { AnyVerifiableCredential, ProofResult, VerificationKey } from "../model/index.js";
@@ -18,17 +19,6 @@ const TYPES: readonly string[] = ["jwt", "vc+jwt"];
 
 /** What one step of reading ends with: its value, or the reason that the JWS is not valid. */
 type Step<TValue> = { readonly value: TValue } | { readonly reason: string };
-
-/** Tells whether a text is the one canonical base64url of some bytes: jose decodes more loosely, so that one signature would have many spellings. */
-function decodeCanonical(part: string): Uint8Array | undefined {
-  try {
-    const bytes = base64url.decode(part);
-    return base64url.encode(bytes) === part ? bytes : undefined;
-  } catch {
-    // jose throws a TypeError for a character that is not in the alphabet.
-    return undefined;
-  }
-}
 
 /** Reads the bytes of a part of the JWS as a JSON object: UTF-8, within the depth limit, and an object. */
 function readObject(bytes: Uint8Array, name: string, limits: JsonLimits): Step<Readonly<Record<string, unknown>>> {
@@ -137,9 +127,9 @@ function shapeOf(jws: string, settings: ReadSettings): Step<Shape> {
   if (encodedHeader.length > MAX_HEADER_CHARS) {
     return { reason: `The header of the JWS has more than ${MAX_HEADER_CHARS} characters.` };
   }
-  const headerBytes = decodeCanonical(encodedHeader);
-  const payload = decodeCanonical(encodedPayload);
-  if (headerBytes === undefined || payload === undefined || decodeCanonical(encodedSignature) === undefined) {
+  const headerBytes = decodeBase64url(encodedHeader);
+  const payload = decodeBase64url(encodedPayload);
+  if (headerBytes === undefined || payload === undefined || decodeBase64url(encodedSignature) === undefined) {
     return { reason: "The parts of the JWS must be canonical base64url without padding (RFC 7515 section 2)." };
   }
   const header = readObject(headerBytes, "header", settings);

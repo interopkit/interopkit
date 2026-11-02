@@ -1,6 +1,7 @@
 import { DataError } from "@interopkit/core";
 import { copyJson, describe, hasMoreTokensThan, isRecord, MAX_JSON_DEPTH } from "@interopkit/core/checks";
 import * as v from "valibot";
+import { decodeBase64url } from "../base64url.js";
 import { parseJsonText } from "../json-text.js";
 import { readCredential } from "../read/index.js";
 import { jws } from "../read/internal.js";
@@ -19,12 +20,13 @@ export interface CredentialText {
 
 /** Decodes the base64url text of a part of a compact JWS to the text it holds. */
 function decodePayload(payload: string): string {
+  const bytes = decodeBase64url(payload);
   try {
-    const binary = atob(payload.replaceAll("-", "+").replaceAll("_", "/"));
-    return UTF8.decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+    if (bytes !== undefined) return UTF8.decode(bytes);
   } catch {
-    throw new DataError("The payload of the compact JWS is not base64url text of UTF-8.");
+    // Not UTF-8: the sentence below says so.
   }
+  throw new DataError("The payload of the compact JWS is not canonical base64url text of UTF-8.");
 }
 
 /** Reads the class names that the `type` of a value holds. */

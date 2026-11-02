@@ -358,5 +358,15 @@
     "url": "https://purl.imsglobal.org/spec/afapnp/v1p0/schema/openapi/imsafapnpv1p0_openapi3_v1p0p0.json",
     "file": "afapnp-openapi.json",
     "sha256": "4f99adb2a576a85ebe3e4649bfc9f31de7232bc0668577d0d69d6494406d9de1"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/1EdTech/openbadges-validator-core/0a66b52a8a0b7841469a35b056e5c3f8e5ce87d1/openbadges/verifier/tasks/validation.py",
+    "file": "openbadges-validator-core-validation.py",
+    "sha256": "d9e003f04ac8dcb4a495023264d173492b41e0e7bdebba4b746cc919474cbf07"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/1EdTech/openbadges-validator-core/0a66b52a8a0b7841469a35b056e5c3f8e5ce87d1/openbadges/verifier/openbadges_context.py",
+    "file": "openbadges-validator-core-context.py",
+    "sha256": "4b065cd2f2604633deb5afcc62a9db68fe4cac6ae2259fcd599e1bbd629fa601"
   }
 ]

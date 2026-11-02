@@ -181,11 +181,11 @@ describe("reading an assertion that embeds its BadgeClass and issuer", () => {
     );
   });
 
-  it("reads a document under another context, or a context of two entries, as a 3.0 credential", () => {
+  it("reads a document under another context as a 3.0 credential, and one whose contexts hold that of 2.0 as 2.0", () => {
     const old = { ...soundAssertion(), "@context": "https://w3id.org/openbadges/v1" };
     expect(validateCredential(old)[0]).toMatchObject({ path: '["@context"]', rule: "wrong-type" });
-    const extended = { ...soundAssertion(), "@context": [CONTEXTS.openBadgesV2, { foo: "http://example.org/foo" }] };
-    expect(validateCredential(extended)[0]).toMatchObject({ path: '["@context"][0]', rule: "invalid-value" });
+    const extended = { ...soundAssertion(), "@context": [CONTEXTS.openBadgesV2, "https://example.org/context.json"] };
+    expect(asV2(readCredential(extended)).assertion["@context"]).toStrictEqual(extended["@context"]);
   });
 
   it("refuses a value that is not JSON, or nests too deep, as a finding at the document", () => {
