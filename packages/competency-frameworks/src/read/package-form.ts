@@ -5,9 +5,15 @@ import { identifierKey } from "../model/internal.js";
 /** The rule of a link to its document or its package that an entity in the form of a package carries, which the form lacks. */
 const RULE = "package-form-link";
 
+/** The member of a value that the schemas have read, or `undefined` when it has none. */
+function memberOf(value: unknown, name: string): unknown {
+  return isRecord(value) ? value[name] : undefined;
+}
+
 /** The identifier of an entity or a link that the schemas have read. */
 function identifierOf(entity: unknown): string | undefined {
-  return isRecord(entity) && typeof entity.identifier === "string" ? entity.identifier : undefined;
+  const identifier = memberOf(entity, "identifier");
+  return typeof identifier === "string" ? identifier : undefined;
 }
 
 /** Says that a link names another document than the one of the package. */
@@ -27,7 +33,8 @@ function* listIssues(list: unknown, path: string, what: string, document: string
   if (!Array.isArray(list)) return;
   const linked: [number, unknown][] = [];
   for (const [at, entity] of list.entries()) {
-    if (isRecord(entity) && entity.CFDocumentURI !== undefined) linked.push([at, entity.CFDocumentURI]);
+    const link = memberOf(entity, "CFDocumentURI");
+    if (link !== undefined) linked.push([at, link]);
   }
   const [first] = linked;
   if (first === undefined) return;
@@ -50,10 +57,10 @@ function* listIssues(list: unknown, path: string, what: string, document: string
  * document of the package.
  */
 export function* packageFormIssues(value: unknown): Generator<CaseIssue> {
-  if (!isRecord(value)) return;
-  const { CFDocument: document } = value;
+  const document = memberOf(value, "CFDocument");
   const documentIdentifier = identifierOf(document);
-  if (isRecord(document) && document.CFPackageURI !== undefined) {
+  const packageLink = memberOf(document, "CFPackageURI");
+  if (packageLink !== undefined) {
     yield {
       path: "CFDocument.CFPackageURI",
       rule: RULE,
@@ -61,8 +68,8 @@ export function* packageFormIssues(value: unknown): Generator<CaseIssue> {
       message:
         "the document of a package heads the package and has no CFPackageURI in the form of a package; it is left out.",
     };
-    yield* mismatch(document.CFPackageURI, "CFDocument.CFPackageURI", documentIdentifier);
+    yield* mismatch(packageLink, "CFDocument.CFPackageURI", documentIdentifier);
   }
-  yield* listIssues(value.CFItems, "CFItems", "items", documentIdentifier);
-  yield* listIssues(value.CFAssociations, "CFAssociations", "associations", documentIdentifier);
+  yield* listIssues(memberOf(value, "CFItems"), "CFItems", "items", documentIdentifier);
+  yield* listIssues(memberOf(value, "CFAssociations"), "CFAssociations", "associations", documentIdentifier);
 }

@@ -1064,7 +1064,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A reader warns of the links to the document that the items of a package carry and it leaves out.",
     file: "packages/competency-frameworks/src/read/package-form.ts",
-    find: 'yield* listIssues(value.CFItems, "CFItems", "items", documentIdentifier);',
+    find: 'yield* listIssues(memberOf(value, "CFItems"), "CFItems", "items", documentIdentifier);',
     replace: "",
     test: "packages/competency-frameworks/test/read.test.ts",
   },
