@@ -151,6 +151,33 @@ export default defineConfig({
         },
       },
       {
+        // The benchmarks of learning-analytics: `pnpm bench` runs them with `vitest bench`, against the build that ships, and against
+        // the draft 4 schemas of `caliper-spec`, which `pnpm corpus` downloads.
+        resolve: {
+          alias: [
+            {
+              find: /^@interopkit\/learning-analytics$/,
+              replacement: resolve(import.meta.dirname, "packages/learning-analytics/dist/index.js"),
+            },
+            {
+              find: /^@interopkit\/learning-analytics\/(.+)$/,
+              replacement: resolve(import.meta.dirname, "packages/learning-analytics/dist/$1/index.js"),
+            },
+          ],
+        },
+        test: {
+          name: "learning-analytics-bench",
+          include: [],
+          server: { deps: { external: [/\/packages\/learning-analytics\/dist\//] } },
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
+          benchmark: {
+            include: ["packages/learning-analytics/test/**/*.bench.ts"],
+            suppressExportGetterWarnings: true,
+          },
+        },
+      },
+      {
         // The benchmarks of learning-records: `pnpm bench` runs them with `vitest bench`, against the build that ships.
         resolve: {
           alias: [

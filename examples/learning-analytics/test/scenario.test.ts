@@ -47,9 +47,9 @@ const parse = (body: string | undefined): { sendTime: string; data: { id: string
 
 describe("the scenario", () => {
   it("sends the events of the attempt twice, because the first answer is a 503", async () => {
-    const received = await runScenario();
-    expect(received.map(({ status }) => status)).toStrictEqual([503, 200]);
-    const [first, second] = received.map(({ body }) => parse(body));
+    const { sends } = await runScenario();
+    expect(sends.map(({ status }) => status)).toStrictEqual([503, 200, 200, 200]);
+    const [first, second] = sends.map(({ body }) => parse(body));
     expect(first?.data.map(({ type, action }) => `${type} ${action}`)).toStrictEqual([
       "AssessmentEvent Started",
       "AssessmentEvent Submitted",
@@ -59,7 +59,7 @@ describe("the scenario", () => {
   });
 
   it("gives the second send the same identifiers and a later time of sending", async () => {
-    const [first, second] = (await runScenario()).map(({ body }) => parse(body));
+    const [first, second] = (await runScenario()).sends.map(({ body }) => parse(body));
     const ids = first?.data.map(({ id }) => id) ?? [];
     expect(ids).toHaveLength(3);
     expect(new Set(ids).size).toBe(3);

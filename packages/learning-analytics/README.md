@@ -104,9 +104,10 @@ resend sends the same events, so with the same identifiers, and a new `sendTime`
 The guides say what each part holds: the [architecture](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/architecture.md),
 the [model](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/model.md), reading
 [Caliper 1.1](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/versions.md), what is
-[supported](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/supported.md) and what is not yet, and
-the places where the [specifications disagree](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/spec-gaps.md).
-A complete sensor, which sends again after a failure, is in the
+[supported](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/supported.md) and what is not,
+the places where the [specifications disagree](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/spec-gaps.md),
+and the [evidence](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/evidence.md) that it does what it says.
+A complete sensor, which sends again after a failure, and an endpoint that receives both versions are in the
 [example](https://github.com/interopkit/interopkit/tree/main/examples/learning-analytics#readme).
 
 ## License

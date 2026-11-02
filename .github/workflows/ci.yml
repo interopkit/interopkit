@@ -305,8 +305,9 @@ jobs:
 
   # The time to read, check and walk a framework of 10,000 items, against the budgets of
   # packages/competency-frameworks/test/budgets.ts (docs/competency-frameworks/evidence.md), the time to check 1,000 Statements
-  # against the budgets of packages/learning-records/test/budgets.ts (docs/learning-records/evidence.md), and the time of the
-  # three roles of ecdsa-sd-2023 against Digital Bazaar's suite (docs/selective-disclosure/proofs.md). It builds first.
+  # against the budgets of packages/learning-records/test/budgets.ts (docs/learning-records/evidence.md), the time of the
+  # three roles of ecdsa-sd-2023 against Digital Bazaar's suite (docs/selective-disclosure/proofs.md), and the time to read an
+  # envelope of 1,000 Caliper events against the draft 4 schemas of caliper-spec (docs/learning-analytics/evidence.md). It builds first.
   bench:
     needs: changes
     if: needs.changes.outputs.bench == 'true'
@@ -321,6 +322,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # The benchmarks of selective-disclosure read the contexts that pnpm schemas downloads at their pinned hashes.
       - run: pnpm schemas
+      # The benchmarks of learning-analytics read the fixtures and the schemas of caliper-spec that pnpm corpus downloads.
+      - run: pnpm corpus
       - run: pnpm bench
 
   # OpenSALT in containers as a counterparty of the CASE client and provider (validation/opensalt/README.md).

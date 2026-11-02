@@ -7,8 +7,14 @@ import { runScenario as runTool } from "../examples/tool-integration/scenario.ts
 
 /** What every runtime must give: plain data, the same on each. */
 export interface Results {
-  /** The sends of the sensor example: the status, and the events of each. */
-  readonly analytics: readonly { readonly status: number; readonly events: readonly string[] }[];
+  /** The sensor example: the sends with their status and items, what the endpoint holds and read of each envelope, and its refusals. */
+  readonly analytics: {
+    readonly sends: readonly { readonly status: number; readonly events: readonly string[] }[];
+    readonly held: Awaited<ReturnType<typeof runAnalytics>>["held"];
+    readonly log: Awaited<ReturnType<typeof runAnalytics>>["log"];
+    readonly versions: readonly string[];
+    readonly refusals: Awaited<ReturnType<typeof runAnalytics>>["refusals"];
+  };
   /** The platform and the tool of the tool-integration example, as the example reports them. */
   readonly tool: Awaited<ReturnType<typeof runTool>>;
   /** The university, the wallet, the employer, the guild and the VC-API service of the credentials example, as the example reports them. */
@@ -68,12 +74,18 @@ async function serviceChecks(base: string): Promise<Record<string, unknown>> {
  * @param base - The address of the server of the check.
  */
 export async function runAll(base: string): Promise<Results> {
-  const sends = await runAnalytics();
+  const { sends, held, log, versions, refusals } = await runAnalytics();
   return {
-    analytics: sends.map(({ status, body }) => ({
-      status,
-      events: (JSON.parse(body).data as readonly { readonly id: string }[]).map((event) => event.id),
-    })),
+    analytics: {
+      sends: sends.map(({ status, body }) => ({
+        status,
+        events: (JSON.parse(body).data as readonly { readonly id: string }[]).map((event) => event.id),
+      })),
+      held,
+      log,
+      versions,
+      refusals,
+    },
     tool: await runTool(),
     credentials: await runCredentials(),
     frameworks: await runFrameworks(),

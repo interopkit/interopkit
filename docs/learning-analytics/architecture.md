@@ -105,7 +105,8 @@ when the endpoint is meant to hold it.
 | JSON-LD processing: expansion, compaction, framing   | Caliper needs none: the terms are fixed strings, and the published context is the oracle of the tests                                  |
 | Answers of a candidate in events                     | They are not analytics data; an event that needs a response builds it from the host's own record                                       |
 
-What of Caliper this version builds, and what it leaves out, is in [supported](./supported.md).
+What of Caliper this version builds, and what it leaves out, is in [supported](./supported.md); what shows that it does it is in
+[evidence](./evidence.md).
 
 ## Differences from the references
 

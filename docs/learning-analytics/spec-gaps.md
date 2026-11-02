@@ -124,5 +124,5 @@ which Caliper 1.2 does not list. The model has none of them.
 `schema_1_1` refuses six fixtures that the readers of 1.1 read: it gives a `metric` as a number, leaves the generic `Entity` out
 of a `Collection`, and names no class of an extension profile as the object, the target or the generated entity of an event. It
 allows the `@context` of a nested entity as a string or a list, where section 4.1 of 1.1 allows an object too. The readers read
-all 138 documents of the fixtures of 1.1 but one, and refuse everything that the schema refuses after a change, but a nested
+138 of the 139 documents of the fixtures of 1.1, and refuse everything that the schema refuses after a change, but a nested
 `@context` that becomes an object.
