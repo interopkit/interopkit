@@ -150,7 +150,8 @@ is 404.
 | `signal`      | An `AbortSignal` that ends the wait for the store and `authorize`                                                            | none                  |
 
 The URL of the request is the one the consumer used, and the `Link` header is built from it: behind a proxy, build the request
-from the public address.
+from the public address. The store receives an identifier as the consumer wrote it, in either case: compare UUIDs without
+regard to case, as the readers do.
 
 ## The query of the list
 

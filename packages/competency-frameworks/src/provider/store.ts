@@ -39,7 +39,8 @@ export interface DocumentPage {
  * @remarks
  * Every method is read-only and may be called again. A method answers `undefined` for an identifier it does not hold, and
  * rejects when it fails; the provider answers 500 and passes nothing of the failure on. Every method receives the `signal` of
- * the provider, and ends its work when it aborts.
+ * the provider, and ends its work when it aborts. An identifier is a UUID as the consumer wrote it, in either case, so a store
+ * compares it without regard to case, as the readers of the package compare identifiers.
  */
 export interface FrameworkStore {
   /**
