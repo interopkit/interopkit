@@ -60,10 +60,12 @@ A change to a rule of a specification cites its section in the pull request and 
 | `pnpm compat`                                                                   | A change that could differ between runtimes: a use of Web Crypto, `fetch`, `URL` or `AbortSignal`; run `pnpm build` first      |
 | `pnpm check:licenses`, `pnpm check:audit`                                       | A change to a dependency                                                                                                       |
 | `pnpm corpus`, `pnpm schemas`, `pnpm spec-examples`, `pnpm test:spec`           | A change to what the downloaded files are read for                                                                             |
-| `pnpm bench`                                                                    | A change to code that reads, checks or walks a framework, that checks Statements, or that the three roles of `selective-disclosure` run, or to a budget; `pnpm schemas` first |
+| `pnpm bench`                                                                    | A change to code that reads, checks or walks a framework, that checks Statements, that verifies a credential, or that the three roles of `selective-disclosure` run, or to a budget; `pnpm schemas` first |
 | `pnpm opensalt`                                                                 | A change to the CASE client or provider, or to the example that they run in; it needs Docker                                   |
 | `pnpm adl-lrs`                                                                  | A change to the LRS handler, or to the example that runs it; it needs the packages built first                                 |
 | `pnpm sql-lrs`                                                                  | A change to the readers of Statements, the LRS handler or the client; it needs Docker                                          |
+| `pnpm w3c-suites`                                                               | A change to the credentials, their proofs, their status lists or their verification, or to the VC-API service of the example; build and `pnpm schemas` first |
+| `pnpm validator`                                                                | A change to the credentials, their baking or their JWTs, or to the example that makes them; it needs Docker and `pnpm schemas` first |
 
 - A change to a package goes into the pending release's changeset in `.changeset/`, or a new one made with `pnpm changeset`
   when none is pending ([AGENTS.md](AGENTS.md#releases)).

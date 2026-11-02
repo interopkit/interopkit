@@ -106,10 +106,11 @@ describe("Digital Bazaar's vc with eddsa-rdfc-2022, as a counterparty", () => {
     expect((await verifyCredential(changed, options)).verified).toBe(false);
   });
 
-  it("verifies a credential whose key is not the key of its issuer as a proof, and we do not as a credential", async () => {
+  it("refuses a credential that the key of another issuer signed, as we do", async () => {
     const { key } = await digitalBazaarKey();
-    const signed = (await dbSign(credentialOf(OURS), key)) as IssuableCredential;
     // The proof names the key of Digital Bazaar's key pair, while the credential names our issuer.
+    const signed = (await dbSign(credentialOf(OURS), key)) as IssuableCredential;
+    expect(await dbVerify(signed)).toBe(false);
     expect(await verifyProof(signed, options)).toMatchObject({ valid: false });
     expect((await verifyCredential(signed, options)).verified).toBe(false);
   });

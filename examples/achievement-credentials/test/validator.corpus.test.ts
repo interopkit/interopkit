@@ -7,7 +7,7 @@ import {
   type KeyResolver,
   type VerificationKey,
 } from "@interopkit/achievement-credentials";
-import { bakePng, bakeSvg } from "@interopkit/achievement-credentials/baking";
+import { bakePng, bakeSvg, readPng, readSvg } from "@interopkit/achievement-credentials/baking";
 import {
   addProof,
   createContextLoader,
@@ -16,7 +16,7 @@ import {
 } from "@interopkit/achievement-credentials/data-integrity";
 import { signCredentialJwt } from "@interopkit/achievement-credentials/jwt";
 import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
-import { verifyCredential } from "@interopkit/achievement-credentials/verify";
+import { type VerifyOptions, verifyCredential } from "@interopkit/achievement-credentials/verify";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadList, schemaDirectory } from "../../../scripts/schemas.ts";
 import { createSigningKey } from "../src/keys.ts";
@@ -70,21 +70,27 @@ interface Case {
   readonly validator: "OB30Inspector" | "CLR20Inspector";
   readonly file: string;
   readonly body: () => string | Uint8Array<ArrayBuffer>;
+  /** What `verifyCredential` is given for the same input: the credential, or what `readPng` and `readSvg` return. */
+  readonly input: () => string | object;
   /** The outcome of the validator. */
   readonly outcome: string;
-  /** Whether `verifyCredential` verifies the same input, or `undefined` where it is not asked. */
-  readonly verified?: boolean;
   /** The probe that the validator reports a problem from, when it reports one. */
   readonly probe?: string;
+  /** Whether `verifyCredential` verifies the input, with the keys of the issuer and, for a JWS with a `kid`, the key at its address. */
+  readonly verified: boolean;
 }
 
 describe("the public validator of 1EdTech", () => {
   let server: Server;
   let cases: readonly Case[] = [];
-  let keys: KeyResolver;
+  let options: VerifyOptions;
 
   beforeAll(async () => {
-    const [ed, es] = [await createSigningKey("EdDSA"), await createSigningKey("ES256")];
+    const [ed, es, other] = [
+      await createSigningKey("EdDSA"),
+      await createSigningKey("ES256"),
+      await createSigningKey("EdDSA"),
+    ];
     const [edMethod, esMethod] = [`${ed.did}#${ed.multikey}`, `${es.did}#${es.multikey}`];
     // The validator reads the key of a JWT at the address in its kid, over HTTP from the container to this host.
     server = createServer((_request, response) => {
@@ -95,7 +101,13 @@ describe("the public validator of 1EdTech", () => {
     await new Promise<void>((done) => server.listen(0, "0.0.0.0", done));
     const kid = `http://host.docker.internal:${(server.address() as { port: number }).port}/jwk`;
     const published: VerificationKey = { id: kid, publicKeyJwk: es.publicKeyJwk, relationships: [] };
-    keys = { resolve: async (url) => (url === kid ? published : undefined), issuerKeys: async () => [] };
+    const real = createKeyResolver({ clock });
+    const keys: KeyResolver = {
+      resolve: async (url, call) => (url === kid ? published : await real.resolve(url, call)),
+      issuerKeys: (issuer, call) => real.issuerKeys(issuer, call),
+    };
+    // The key at the kid is the host's own: no issuer publishes it, which the host says.
+    options = { keys, clock, contexts, allowUnboundKeys: true };
 
     const achievement = {
       id: "urn:uuid:5f1ea0a4-1d3d-4c0b-9f0e-6b6a1b3c8d11",
@@ -130,12 +142,24 @@ describe("the public validator of 1EdTech", () => {
     const record = await addProof(clr(ed.did, signed) as never, ed.signer(edMethod), { clock, contexts });
     const edJws = await signCredentialJwt(badge(ed.did), ed.signer(edMethod), { kid: edMethod });
     const recordJws = await signCredentialJwt(clr(es.did, jws) as never, es.signer(kid), { kid });
+    // The issuer is at an address and names a method there, which the key of someone else signs: the method says who owns it.
+    const issuerAddress = "https://example.edu/issuers/1";
+    const claimed = await addProof(badge(issuerAddress), other.signer(`${issuerAddress}#${other.multikey}`), {
+      clock,
+      contexts,
+    });
+    const png = new Uint8Array(bakePng(PIXEL, signed));
+    const pngJws = new Uint8Array(bakePng(PIXEL, jws));
+    const svg = bakeSvg(DRAWING, signed);
+    const svgJws = bakeSvg(DRAWING, jws);
+    const found = (image: ReturnType<typeof readPng>): string | object => (image === undefined ? "" : image);
     cases = [
       {
         name: "an achievement credential with an eddsa-rdfc-2022 proof",
         validator: "OB30Inspector",
         file: "badge.json",
         body: () => JSON.stringify(signed),
+        input: () => signed,
         outcome: "VALID",
         verified: true,
       },
@@ -144,13 +168,16 @@ describe("the public validator of 1EdTech", () => {
         validator: "OB30Inspector",
         file: "badge.jwt",
         body: () => jws,
+        input: () => jws,
         outcome: "VALID",
+        verified: true,
       },
       {
         name: "an ecdsa-sd-2023 disclosure of an achievement credential",
         validator: "OB30Inspector",
         file: "disclosure.json",
         body: () => JSON.stringify(disclosure),
+        input: () => disclosure,
         outcome: "VALID",
         verified: true,
       },
@@ -158,35 +185,44 @@ describe("the public validator of 1EdTech", () => {
         name: "an achievement credential with a proof, baked into a PNG",
         validator: "OB30Inspector",
         file: "badge.png",
-        body: () => new Uint8Array(bakePng(PIXEL, signed)),
+        body: () => png,
+        input: () => found(readPng(png)),
         outcome: "VALID",
+        verified: true,
       },
       {
         name: "an achievement credential in a JWS, baked into a PNG",
         validator: "OB30Inspector",
         file: "badge-jws.png",
-        body: () => new Uint8Array(bakePng(PIXEL, jws)),
+        body: () => pngJws,
+        input: () => found(readPng(pngJws)),
         outcome: "VALID",
+        verified: true,
       },
       {
         name: "an achievement credential with a proof, baked into an SVG",
         validator: "OB30Inspector",
         file: "badge.svg",
-        body: () => bakeSvg(DRAWING, signed),
+        body: () => svg,
+        input: () => found(readSvg(svg)),
         outcome: "VALID",
+        verified: true,
       },
       {
         name: "an achievement credential in a JWS, baked into an SVG",
         validator: "OB30Inspector",
         file: "badge-jws.svg",
-        body: () => bakeSvg(DRAWING, jws),
+        body: () => svgJws,
+        input: () => found(readSvg(svgJws)),
         outcome: "VALID",
+        verified: true,
       },
       {
         name: "a CLR with an eddsa-rdfc-2022 proof, which holds a credential of its own proof",
         validator: "CLR20Inspector",
         file: "record.json",
         body: () => JSON.stringify(record),
+        input: () => record,
         outcome: "VALID",
         verified: true,
       },
@@ -195,6 +231,7 @@ describe("the public validator of 1EdTech", () => {
         validator: "OB30Inspector",
         file: "changed.json",
         body: () => JSON.stringify({ ...signed, name: "Another badge" }),
+        input: () => ({ ...signed, name: "Another badge" }),
         outcome: "ERROR",
         probe: "EmbeddedProofProbe",
         verified: false,
@@ -204,40 +241,48 @@ describe("the public validator of 1EdTech", () => {
         validator: "OB30Inspector",
         file: "ed.jwt",
         body: () => edJws,
+        input: () => edJws,
         outcome: "FATAL",
         probe: "ExternalProofProbe",
+        verified: true,
       },
       {
         name: "a CLR in a JWS, which the validator does not parse: its CLR inspector leaves a setting of the JWT unset",
         validator: "CLR20Inspector",
         file: "record.jwt",
         body: () => recordJws,
+        input: () => recordJws,
         outcome: "EXCEPTION",
         probe: "CredentialParseProbe",
+        verified: true,
+      },
+      {
+        name: "a credential of an issuer at an address, signed by a key that the issuer does not publish, under a method at that address",
+        validator: "OB30Inspector",
+        file: "claimed.json",
+        body: () => JSON.stringify(claimed),
+        input: () => claimed,
+        outcome: "VALID",
+        verified: false,
       },
     ];
   });
 
   afterAll(() => new Promise<void>((done) => server.close(() => done())));
 
-  it("gives each input the outcome that the table of the guide lists, and the same verdict as verifyCredential", async () => {
+  it("gives each input the outcome that the table of the guide lists", async () => {
     expect(cases.length).toBeGreaterThan(0);
-    const resolver = createKeyResolver({ clock });
-    for (const { name, validator, file, body, outcome, probe, verified } of cases) {
+    for (const { name, validator, file, body, outcome, probe } of cases) {
       const report = await validate(validator, body(), file);
       expect(report.summary.outcome, name).toBe(outcome);
       if (probe !== undefined) expect(JSON.stringify({ ...report.errors, ...report.fatals }), name).toContain(probe);
-      if (verified === undefined) continue;
-      const input = JSON.parse(String(body()));
-      const result = await verifyCredential(input, { keys: resolver, clock, contexts });
-      expect(result.verified, name).toBe(verified);
     }
   });
 
-  it("reads the credentials in a JWS and in an image as verifyCredential does, with the key at the address of the kid", async () => {
-    for (const { file, body } of cases.filter(({ outcome, file }) => outcome === "VALID" && file.endsWith(".jwt"))) {
-      const result = await verifyCredential(String(body()), { keys, clock, contexts, allowUnboundKeys: true });
-      expect(result.verified, file).toBe(true);
+  it("gives each input the verdict of verifyCredential that the table lists, with the keys of the issuer", async () => {
+    for (const { name, input, verified } of cases) {
+      const own = name.includes("at an address") ? { ...options, allowUnboundKeys: false } : options;
+      expect((await verifyCredential(input(), own)).verified, name).toBe(verified);
     }
   });
 });

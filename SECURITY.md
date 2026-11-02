@@ -237,6 +237,7 @@ the address that the connection resolves to.
 | Many proofs on one credential, each canonicalizing and fetching a key again | The first four are checked and the rest are not looked at; the credential is canonicalized once for all of them. 5,000 values of one property with 300 proofs took 95 s before |
 | An `ecdsa-sd-2023` base proof given to a verifier, which holds the key of the proof and every signature | `verifyProof` refuses it and says to derive a disclosure first; the guide says that disclosures of one credential can be linked |
 | A proof for a purpose other than assertion, an expired proof, a legacy proof | Only `assertionMethod` counts, `expires` is compared with the clock within the skew, and `Ed25519Signature2020` needs `legacyProofs` |
+| A proof that names a `previousProof`, which Data Integrity verifies only with the proofs that it names | The proof is not valid, with the reason: a proof chain is not verified, and the proof is never read as one that names no other |
 | A signer that signs another algorithm than the cryptosuite names, or names no key | `addProof` refuses it with a `DataError` before it signs |
 | A status list credential that inflates to gigabytes (a gzip bomb within the fetch limit)   | The list is inflated through a `DecompressionStream` that is cancelled at 16,777,216 bytes; the library's decoder, which inflates with no limit, is never called; a test inflates a bomb of 20 MiB from under 100 KB |
 | A status list credential published by another party for a credential's status               | The list credential's proof is verified and its key is bound to its issuer, who must be the credential's issuer or one of `statusIssuers`; a purpose that differs from the entry's fails |
@@ -248,7 +249,7 @@ the address that the connection resolves to.
 `verifyCredential` ([verification guide](docs/achievement-credentials/verify.md)) joins the checks of a credential, its endorsements
 and the credentials of a CLR. It fetches only through the host's `fetch`, and only for a credential whose proof is valid: the
 keys and the contexts of the proof first, then the refresh, the schema and the status list that the credential names. It keeps
-nothing across calls but the caches that the host passes. A host passes a `signal` with a deadline: a call has none of its own.
+nothing across calls but the caches that the host passes. A host passes a `signal` with a deadline: a call has none of its own, and it ends the wait for a `KeyResolver` of the host that ignores it.
 
 | Threat                                                                                     | Control                                                                                                                                                                                                  |
 | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

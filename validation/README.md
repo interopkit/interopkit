@@ -6,6 +6,9 @@ implementation. A counterparty is an application that runs beside the packages: 
 and editor, which `pnpm opensalt` starts in containers and runs the client and provider of the example against.
 [adl-lrs](adl-lrs/README.md) is the conformance suite of ADL, which `pnpm adl-lrs` runs against the example LRS of xAPI.
 [sql-lrs](sql-lrs/README.md) is an LRS that `pnpm sql-lrs` starts in a container, as the oracle of the rules and a counterparty of the client.
+[w3c-suites](w3c-suites/README.md) holds the interoperability suites of the W3C, which `pnpm w3c-suites` runs against the VC-API service of
+the credentials example, and [1edtech-validator](1edtech-validator/README.md) the public validator of 1EdTech, which `pnpm validator`
+builds and starts in a container and runs the credentials of that example through.
 
 ```mermaid
 flowchart LR
