@@ -94,7 +94,13 @@ export function createMemoryStatements(clock: Clock): MemoryStatements {
       const ascending = query.ascending === true;
       const target = (id: string) => held.get(id)?.entry.statement;
       const matching = [...held.values()]
-        .filter(({ entry }) => !entry.voided && matchesStatementQuery(entry.statement, query, target))
+        .filter(
+          ({ entry }) =>
+            !entry.voided &&
+            matchesStatementQuery(entry.statement, query, target, {
+              ...(page.authority === undefined ? {} : { authority: page.authority }),
+            }),
+        )
         .sort((a, b) => (ascending ? a.order - b.order : b.order - a.order))
         .filter(({ order }) => after === undefined || (ascending ? order > after : order < after));
       const pageOf = matching.slice(0, page.limit);

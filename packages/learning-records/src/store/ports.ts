@@ -18,6 +18,7 @@ import type {
 /** The actions that a request may be granted. `access` lists the ones that the credentials of a request allow. */
 export const LRS_ACTIONS = [
   "statements.read",
+  "statements.read.mine",
   "statements.write",
   "state.read",
   "state.write",
@@ -27,7 +28,11 @@ export const LRS_ACTIONS = [
   "agents.read",
 ] as const;
 
-/** An action of a request: reading or writing Statements, State or profiles, or reading Activities or Agents. */
+/**
+ * An action of a request: reading or writing Statements, State or profiles, or reading Activities or Agents.
+ * `statements.read.mine` reads only the Statements whose `authority` is the one that `access` gives the request, the scope
+ * `statements/read/mine` of 1.0.3 Communication 4.2; `statements.read` reads any.
+ */
 export type LrsAction = (typeof LRS_ACTIONS)[number];
 
 /** The decision of `access` about a request: who it is from and what it may do, or why it is refused. */
@@ -124,13 +129,18 @@ export interface StatementStore {
    * Returns a page of the Statements that match the query, newest first or oldest first as `query.ascending` says.
    *
    * @remarks
-   * A Statement matches when `matchesStatementQuery` says so, with a lookup that finds any Statement by its id, voided or not.
-   * A voided Statement is never returned. The answer is `undefined` for a cursor that the store does not know or that has
-   * expired, and the LRS answers 400.
+   * A Statement matches when `matchesStatementQuery` says so, with a lookup that finds any Statement by its id, voided or not,
+   * and `page.authority` as its option. A voided Statement is never returned. The answer is `undefined` for a cursor that the
+   * store does not know or that has expired, and the LRS answers 400.
    */
   query(
     query: StatementQuery,
-    page: { readonly limit: number; readonly cursor?: string },
+    page: {
+      readonly limit: number;
+      readonly cursor?: string;
+      /** Only the Statements of this authority, for a credential that may read its own Statements alone. */
+      readonly authority?: Actor;
+    },
     options?: CallOptions,
   ): Promise<StatementsPage | undefined>;
   /** Returns the time up to which every Statement that was stored is available, as an ISO 8601 time. */

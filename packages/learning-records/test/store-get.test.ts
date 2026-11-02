@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { readMultipart, writeMultipart } from "../src/attachments/index.js";
 import { type Statement, type StatementQuery, VERB_VOIDED } from "../src/index.js";
 import { handleLrsRequest, type LrsOptions } from "../src/store/index.js";
-import { uuid } from "./full-statement.js";
+import { minimalStatement, uuid } from "./full-statement.js";
 import { statementOf } from "./lrs-client.js";
-import { AUTHORITY, jsonOf, memory, NOW, optionsOf, reasonOf, requestOf, textOf } from "./memory-lrs.js";
+import { ALLOW_ALL, AUTHORITY, jsonOf, memory, NOW, optionsOf, reasonOf, requestOf, textOf } from "./memory-lrs.js";
 import { dataOf, statementWithAttachments } from "./multipart.js";
 
 const JSON_TYPE = { "content-type": "application/json" };
@@ -564,5 +564,62 @@ describe("X-Experience-API-Consistent-Through", () => {
     );
     expect(denied.status).toBe(401);
     expect(denied.headers[THROUGH]).toBeUndefined();
+  });
+});
+
+describe("a credential that reads its own Statements (statements/read/mine of 1.0.3)", () => {
+  const OTHER = { account: { homePage: "https://lrs.example.org", name: "client-2" } };
+  const MINE = { ...ALLOW_ALL, actions: ["statements.read.mine", "statements.write"] } as const;
+
+  /** A store with a Statement of the authority of the tests and one of another client. */
+  async function twoClients() {
+    const store = memory();
+    const write = (n: number, authority: unknown) =>
+      handleLrsRequest(
+        requestOf("POST", "/statements", {
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(minimalOf(n)),
+        }),
+        optionsOf(store, { access: async () => ({ ...ALLOW_ALL, authority }) as never }),
+      );
+    await write(1, AUTHORITY);
+    await write(2, OTHER);
+    return store;
+  }
+  const minimalOf = (n: number) => ({ ...minimalStatement(), id: uuid(n) });
+
+  it("finds its own Statements in a query, and not those of another credential", async () => {
+    const store = await twoClients();
+    const response = await handleLrsRequest(
+      requestOf("GET", "/statements"),
+      optionsOf(store, { access: async () => MINE }),
+    );
+    expect(response.status).toBe(200);
+    expect((jsonOf(response) as { statements: { id: string }[] }).statements.map(({ id }) => id)).toStrictEqual([
+      uuid(1),
+    ]);
+  });
+
+  it("finds its own Statement by id, and answers 404 for one of another credential", async () => {
+    const store = await twoClients();
+    const ask = (n: number) =>
+      handleLrsRequest(
+        requestOf("GET", "/statements", { query: { statementId: uuid(n) } }),
+        optionsOf(store, { access: async () => MINE }),
+      );
+    expect((await ask(1)).status).toBe(200);
+    expect((await ask(2)).status).toBe(404);
+  });
+
+  it("reads any Statement with statements.read, and none without a read action", async () => {
+    const store = await twoClients();
+    const any = await handleLrsRequest(requestOf("GET", "/statements"), optionsOf(store));
+    expect((jsonOf(any) as { statements: unknown[] }).statements).toHaveLength(2);
+    const none = { ...ALLOW_ALL, actions: ["statements.write"] } as const;
+    const refused = await handleLrsRequest(
+      requestOf("GET", "/statements"),
+      optionsOf(store, { access: async () => none }),
+    );
+    expect(refused.status).toBe(403);
   });
 });

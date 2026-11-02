@@ -2570,9 +2570,9 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A property given twice is found by its name and not by the way it is written.",
-    file: "packages/learning-records/src/read/read-statement-json.ts",
-    find: "String(evaluate(entry.name))",
-    replace: "entry.name.loc.start.offset.toString()",
+    file: "packages/learning-records/src/read/repeated-property.ts",
+    find: 'return raw.includes("\\\\") ? (JSON.parse(text.slice(start, end + 1)) as string) : raw;',
+    replace: "return raw;",
     test: "packages/learning-records/test/json.test.ts",
   },
   {
@@ -2662,7 +2662,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A media type that is written into a header has no line end.",
     file: "packages/learning-records/src/read/schemas.ts",
-    find: "export const attachmentDataSchema: Schema<AttachmentData> = strictRecord({\n  sha2,\n  contentType: mediaType,",
+    find: "export const attachmentDataSchema: Schema<AttachmentData> = strictRecord({\n  sha2,\n  contentType: mediaTypeSchema,",
     replace:
       "export const attachmentDataSchema: Schema<AttachmentData> = strictRecord({\n  sha2,\n  contentType: text,",
     test: "packages/learning-records/test/attachments.test.ts",
@@ -2705,8 +2705,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A Statement is checked with the rules of a provider before it is sent.",
     file: "packages/learning-records/src/client/statements.ts",
-    find: 'const read = readStatement(statement, { role: "provider", version: settings.version });',
-    replace: "const read = readStatement(statement, { version: settings.version });",
+    find: 'const { attachments, role = "provider", signal } = readCallOptions(sendOptionsSchema, options);\n  const read',
+    replace: 'const { attachments, role = "lrs", signal } = readCallOptions(sendOptionsSchema, options);\n  const read',
     test: "packages/learning-records/test/client-statements.test.ts",
   },
   {
@@ -2740,7 +2740,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A request for an action that the credentials do not allow is refused with 403.",
     file: "packages/learning-records/src/store/router.ts",
-    find: "if (action !== null && !decision.actions.includes(action)) {",
+    find: "if (action !== null && !grants(decision.actions, action)) {",
     replace: "if (false) {",
     test: "packages/learning-records/test/store.test.ts",
   },
@@ -2810,8 +2810,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A signature that is not well formed or does not verify is refused.",
     file: "packages/learning-records/src/store/statements/prepare.ts",
-    find: 'if (checked.value.valid || checked.value.reason === "no-key") continue;',
-    replace: "continue;",
+    find: 'if (checked.value.reason === "no-key") return undefined;',
+    replace: "return undefined;",
     test: "packages/learning-records/test/store-signatures.test.ts",
   },
   {
@@ -2859,9 +2859,37 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The handler refuses a chain that trustCertificate does not trust.",
     file: "packages/learning-records/src/store/statements/prepare.ts",
-    find: "if (trustCertificate === undefined || checked.value.certified) continue;",
-    replace: "continue;",
+    find: "if (trustCertificate === undefined || checked.value.certified) return undefined;",
+    replace: "return undefined;",
     test: "packages/learning-records/test/store-signatures.test.ts",
+  },
+  {
+    rule: "A credential that reads its own Statements reads no other.",
+    file: "packages/learning-records/src/store/query.ts",
+    find: "(authority === undefined || (statement.authority !== undefined && sameActor(statement.authority, authority))) &&",
+    replace: "",
+    test: "packages/learning-records/test/store-query.test.ts",
+  },
+  {
+    rule: "The handler gives the store the authority of a credential that reads its own Statements.",
+    file: "packages/learning-records/src/store/statements/answer.ts",
+    find: "...(own === undefined ? {} : { authority: own }),",
+    replace: "",
+    test: "packages/learning-records/test/store-get.test.ts",
+  },
+  {
+    rule: "A credential that reads its own Statements does not find another's by id.",
+    file: "packages/learning-records/src/store/statements/answer.ts",
+    find: "if (held === undefined || held.voided !== get.voided || hidden) {",
+    replace: "if (held === undefined || held.voided !== get.voided) {",
+    test: "packages/learning-records/test/store-get.test.ts",
+  },
+  {
+    rule: "A credential that reads its own Statements may ask for Statements.",
+    file: "packages/learning-records/src/store/router.ts",
+    find: '|| (action === "statements.read" && actions.includes("statements.read.mine"))',
+    replace: "",
+    test: "packages/learning-records/test/store-get.test.ts",
   },
   {
     rule: "A store never voids a voiding Statement.",
@@ -2908,8 +2936,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A Statement that was voided is returned only to a request by voidedStatementId.",
     file: "packages/learning-records/src/store/statements/answer.ts",
-    find: "if (held === undefined || held.voided !== get.voided) {",
-    replace: "if (held === undefined) {",
+    find: "if (held === undefined || held.voided !== get.voided || hidden) {",
+    replace: "if (held === undefined || hidden) {",
     test: "packages/learning-records/test/store-get.test.ts",
   },
   {
@@ -2929,15 +2957,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A message over a limit of parts or bytes is refused with 413.",
     file: "packages/learning-records/src/store/verdict.ts",
-    find: "error instanceof MultipartLimitError ? 413 : 400",
+    find: "error instanceof MultipartLimitError || error instanceof JsonLimitError ? 413 : 400",
     replace: "400",
     test: "packages/learning-records/test/store-statements.test.ts",
   },
   {
-    rule: "A Statement meets a filter through the Statement it refers to, and a loop of references ends.",
+    rule: "A Statement meets a filter through the Statement it refers to, and a loop of references ends without meeting it.",
     file: "packages/learning-records/src/store/query.ts",
     find: "if (seen.has(id)) return false;",
-    replace: "if (false) return false;",
+    replace: "if (seen.has(id)) return true;",
     test: "packages/learning-records/test/store-query.test.ts",
   },
   {
@@ -2957,7 +2985,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A Statement refers to the Statement it targets through a Statement Reference as its Object.",
     file: "packages/learning-records/src/store/query.ts",
-    find: 'if (statement.object.objectType !== "StatementRef") return false;',
+    find: 'if (current.object.objectType !== "StatementRef") return false;',
     replace: "return false;",
     test: "packages/learning-records/test/store-query.test.ts",
   },
@@ -3111,8 +3139,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A resource that needs no action is not refused for lack of one.",
     file: "packages/learning-records/src/store/router.ts",
-    find: "action !== null && !decision.actions.includes(action)",
-    replace: "!decision.actions.includes(action as never)",
+    find: "action !== null && !grants(decision.actions, action)",
+    replace: "!grants(decision.actions, action as never)",
     test: "packages/learning-records/test/store-documents.test.ts",
   },
   {
@@ -3144,10 +3172,10 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-records/test/store-statements.test.ts",
   },
   {
-    rule: "The JSON body of a request is read within the tokens of the limits.",
+    rule: "The JSON body of a request is read within the limits of a request.",
     file: "packages/learning-records/src/store/statements/body.ts",
-    find: "maxDepth: limits.maxDepth,\n      maxTokens: limits.maxTokens,\n    }),",
-    replace: "maxDepth: limits.maxDepth,\n    }),",
+    find: "const read = attempt(() => readRequestJson(readText(request), limits));",
+    replace: "const read = attempt(() => JSON.parse(readText(request)));",
     test: "packages/learning-records/test/store-statements.test.ts",
   },
   {
@@ -3279,7 +3307,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A Statement of a version that the LRS does not take is refused.",
     file: "packages/learning-records/src/store/statements/prepare.ts",
-    find: "if (statement.version !== undefined && !TAKEN_VERSION.test(statement.version)) {",
+    find: "if (statement.version !== undefined && !isTakenVersion(statement.version)) {",
     replace: "if (false) {",
     test: "packages/learning-records/test/store-statements.test.ts",
   },
@@ -3735,21 +3763,21 @@ export const RULES: readonly Rule[] = [
   {
     rule: "An LRS of 1.0.3 refuses a Statement whose version does not start with 1.0.",
     file: "packages/learning-records/src/read/rules.ts",
-    find: 'if (version === "1.0.3" && !provider) issues.push(...versionIssues(statement));',
+    find: 'if (version === "1.0.3" && !provider) sink.add(versionIssues(statement));',
     replace: "",
     test: "packages/learning-records/test/v1-rules.test.ts",
   },
   {
     rule: "Every Statement of 1.0.3 is judged for empty objects.",
     file: "packages/learning-records/src/read/rules.ts",
-    find: 'if (provider || version === "1.0.3") issues.push(...emptyObjectIssues(statement));',
+    find: 'if (provider || version === "1.0.3") sink.add(emptyObjectIssues(statement));',
     replace: "if (provider) issues.push(...emptyObjectIssues(statement));",
     test: "packages/learning-records/test/v1-rules.test.ts",
   },
   {
     rule: "A provider of 1.0.3 writes the version 1.0.0.",
     file: "packages/learning-records/src/read/provider.ts",
-    find: "const expected = PROVIDER_VERSIONS[version];",
+    find: "const expected = STATEMENT_VERSIONS[version];",
     replace: 'const expected = "2.0.0";',
     test: "packages/learning-records/test/v1-rules.test.ts",
   },
@@ -3784,7 +3812,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The form of 1.0.3 has a version of 1.0.x.",
     file: "packages/learning-records/src/compare/to-statement-version.ts",
-    find: "VERSION_1_0.test(written) ? written : VERSION_1_0_0",
+    find: 'VERSION_PATTERNS["1.0.3"].test(written) ? written : STATEMENT_VERSIONS["1.0.3"]',
     replace: "written",
     test: "packages/learning-records/test/v1-version.test.ts",
   },
@@ -3833,15 +3861,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A client of 1.0.3 checks a Statement by the rules of 1.0.3 before it is sent.",
     file: "packages/learning-records/src/client/statements.ts",
-    find: 'const read = readStatement(statement, { role: "provider", version: settings.version });',
-    replace: 'const read = readStatement(statement, { role: "provider" });',
+    find: "const read = readStatement(statement, { role, version: settings.version });",
+    replace: "const read = readStatement(statement, { role });",
     test: "packages/learning-records/test/v1-client.test.ts",
   },
   {
     rule: "A client of 1.0.3 checks a batch by the rules of 1.0.3 before it is sent.",
     file: "packages/learning-records/src/client/statements.ts",
-    find: 'const rules = { role: "provider", version: settings.version } as const;',
-    replace: 'const rules = { role: "provider" } as const;',
+    find: "const batch = inspectBatch(statements, { role, version: settings.version }, sink);",
+    replace: 'const batch = inspectBatch(statements, { role, version: "2.0.0" }, sink);',
     test: "packages/learning-records/test/v1-client.test.ts",
   },
   {
@@ -3903,14 +3931,14 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A Statement that brings no version gets the version of its route.",
     file: "packages/learning-records/src/store/statements/prepare.ts",
-    find: "version: statement.version ?? DEFAULT_VERSIONS[context.version],",
+    find: "version: statement.version ?? STATEMENT_VERSIONS[context.version],",
     replace: 'version: statement.version ?? "2.0.0",',
     test: "packages/learning-records/test/v1-store.test.ts",
   },
   {
     rule: "A signature on a route is verified by the rules of that route.",
     file: "packages/learning-records/src/store/statements/prepare.ts",
-    find: "          version: context.version,\n",
+    find: "        version: context.version,\n",
     replace: "",
     test: "packages/learning-records/test/v1-client.test.ts",
   },

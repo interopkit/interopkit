@@ -149,7 +149,7 @@ and sends the `HttpResponse`. The header `X-Experience-API-Version` is on every 
 
 | Path below `basePath` | Resource         | Methods                      | Actions                               | Section                          |
 | --------------------- | ---------------- | ---------------------------- | ------------------------------------- | -------------------------------- |
-| `statements`          | Statements       | GET, HEAD, PUT, POST         | `statements.read`, `statements.write` | [Statements](#statements)        |
+| `statements`          | Statements       | GET, HEAD, PUT, POST         | `statements.read` or `statements.read.mine`, `statements.write` | [Statements](#statements)        |
 | `activities/state`    | State            | GET, HEAD, PUT, POST, DELETE | `state.read`, `state.write`           | [Documents](#documents)          |
 | `agents/profile`      | Agent Profile    | GET, HEAD, PUT, POST, DELETE | `profiles.read`, `profiles.write`     | [Documents](#documents)          |
 | `activities/profile`  | Activity Profile | GET, HEAD, PUT, POST, DELETE | `profiles.read`, `profiles.write`     | [Documents](#documents)          |
@@ -292,6 +292,22 @@ every request and needs no action: a host that lets anyone ask About answers `{ 
 401, 403 or 429, or `{ allowed: true, authority, actions }`. A 401 carries `challenge` as `WWW-Authenticate`, and a 429
 carries `retryAfterSeconds` as `Retry-After`. A request for an action that `actions` does not list is 403; the action of each
 method is in the table of [the resources](#the-resources).
+
+A credential with `statements.read.mine` and not `statements.read` reads only the Statements whose `authority` is the one that
+`access` gives it, the scope `statements/read/mine` of 1.0.3 Communication 4.2: `StatementStore.query` gets that authority as
+`page.authority`, which `matchesStatementQuery` takes as its option, and a Statement of another authority asked for by id is 404.
+The other scopes of 1.0.3 map to the actions as follows; OAuth itself, and `define`, are the host's.
+
+| Scope of 1.0.3 | Actions |
+| --- | --- |
+| `statements/write` | `statements.write` |
+| `statements/read/mine` | `statements.read.mine` |
+| `statements/read` | `statements.read` |
+| `state` | `state.read`, `state.write` |
+| `profile` | `profiles.read`, `profiles.write` |
+| `all/read` | every action that reads |
+| `all` | every action |
+| `define` | None: `ActivityStore.observe` gets the `authority`, and the host decides what becomes canonical |
 
 ## Options
 

@@ -3,4 +3,4 @@
  *
  * @module
  */
-export { equivalenceKey, identityKey, iriKey } from "./canonical.js";
+export { equivalenceKey, identityKey, iriKey, sameActor } from "./canonical.js";

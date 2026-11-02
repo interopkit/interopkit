@@ -77,6 +77,11 @@ const accessSchema = v.variant("allowed", [
   }),
 ]);
 
+/** Tells whether the actions of a credential allow an action: reading its own Statements lets it ask to read Statements. */
+function grants(actions: readonly LrsAction[], action: LrsAction): boolean {
+  return actions.includes(action) || (action === "statements.read" && actions.includes("statements.read.mine"));
+}
+
 /** Finds the resource that a path names under the base path. */
 function resourceOf(pathname: string, basePath: string): Resource | undefined {
   if (!pathname.startsWith(`${basePath}/`)) return undefined;
@@ -139,7 +144,7 @@ async function serve(
   if (asked === undefined) return refuse(500, FAILED);
   const decision = parseWith(accessSchema, asked.value, "The decision of access");
   if (!decision.allowed) return denial(decision, refuse);
-  if (action !== null && !decision.actions.includes(action)) {
+  if (action !== null && !grants(decision.actions, action)) {
     return refuse(403, `The credentials do not allow ${action}.`);
   }
   if (request.body.byteLength > settings.limits.maxBodyBytes) {

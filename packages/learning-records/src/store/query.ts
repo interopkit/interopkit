@@ -1,5 +1,5 @@
 import { parseDateTime } from "@interopkit/core/checks";
-import { identityKey, iriKey } from "../compare/internal.js";
+import { identityKey, iriKey, sameActor } from "../compare/internal.js";
 import type {
   Activity,
   Actor,
@@ -149,6 +149,18 @@ function meets(statement: Statement, condition: Condition, target: (id: string) 
   return false;
 }
 
+/** The options of `matchesStatementQuery`. */
+export interface MatchOptions {
+  /**
+   * Only Statements whose `authority` is this Agent or Group: the Statements that a credential of the action
+   * `statements.read.mine` may read (1.0.3 Communication 4.2). It is not a parameter of a query, and applies to the Statement
+   * alone, not to the Statements that it refers to.
+   *
+   * @defaultValue none
+   */
+  readonly authority?: Actor;
+}
+
 /**
  * Tells whether a Statement meets the filters of a query (4.1.6.1), the Statements it refers to included.
  *
@@ -164,6 +176,8 @@ function meets(statement: Statement, condition: Condition, target: (id: string) 
  * @param statement - The Statement, as the LRS holds it.
  * @param query - The filters.
  * @param target - Finds a Statement by its id in lower case, a voided one too, or none.
+ * @param options - The authority whose Statements alone a credential may read, which `page.authority` of
+ * `StatementStore.query` gives.
  * @returns Whether the Statement is one of those that the query asks for.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
@@ -171,6 +185,12 @@ export function matchesStatementQuery(
   statement: Statement,
   query: StatementQuery,
   target: (id: string) => Statement | undefined,
+  options?: MatchOptions,
 ): boolean {
-  return isInTime(statement, query) && conditionsOf(query).every((condition) => meets(statement, condition, target));
+  const authority = options?.authority;
+  return (
+    (authority === undefined || (statement.authority !== undefined && sameActor(statement.authority, authority))) &&
+    isInTime(statement, query) &&
+    conditionsOf(query).every((condition) => meets(statement, condition, target))
+  );
 }

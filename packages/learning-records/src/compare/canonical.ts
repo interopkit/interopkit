@@ -54,6 +54,18 @@ export function identityKey(actor: Actor): string | undefined {
   return account === null || account === undefined ? undefined : `account:${JSON.stringify(account)}`;
 }
 
+/**
+ * Tells whether two Agents or Groups are the same: the same identifier, or for two anonymous Groups the same members, in any
+ * order. An LRS writes an OAuth consumer and its user as an anonymous Group of the two.
+ */
+export function sameActor(a: Actor, b: Actor): boolean {
+  const key = identityKey(a);
+  if (key !== undefined || identityKey(b) !== undefined) return key === identityKey(b);
+  const members = (actor: Actor) =>
+    actor.objectType === "Group" ? (actor.member ?? []).map((agent) => identityKey(agent) ?? "").sort() : [];
+  return a.objectType === "Group" && b.objectType === "Group" && members(a).join("\n") === members(b).join("\n");
+}
+
 /** An Agent in the canonical form: whether the type was written or not makes no difference. */
 function agentKey(agent: Agent): Canonical {
   return { objectType: "Agent", name: agent.name ?? null, ...identifiersKey(agent) };

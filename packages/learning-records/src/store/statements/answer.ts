@@ -3,8 +3,9 @@ import { isLanguageTag } from "@interopkit/core/checks";
 import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
 import { writeMultipart } from "../../attachments/index.js";
 import { toStatementVersion } from "../../compare/index.js";
+import { sameActor } from "../../compare/internal.js";
 import { formatStatement } from "../../format/index.js";
-import type { ActivityDefinition, Statement, StatementFormat, StatementResult } from "../../model/index.js";
+import type { ActivityDefinition, Actor, Statement, StatementFormat, StatementResult } from "../../model/index.js";
 import { attachmentHeadersOf } from "../../read/internal.js";
 import type { StoredStatement } from "../ports.js";
 import { activitiesIn } from "../query.js";
@@ -94,13 +95,25 @@ async function present(
   return { status: 200, headers: { "content-type": message.contentType, ...headers }, body: message.body };
 }
 
+/**
+ * The authority whose Statements alone the request may read, when its credential may read its own and not any (1.0.3
+ * Communication 4.2).
+ */
+function ownAuthority(context: Context): Actor | undefined {
+  const { actions, authority } = context.access;
+  return actions.includes("statements.read") ? undefined : authority;
+}
+
 /** Answers a request for one Statement: the Statement, or 404 when the LRS has none of that kind. */
 export async function answerOne(context: Context, get: Extract<StatementsGet, { kind: "one" }>): Promise<HttpResponse> {
   const { signal } = context.settings;
   const asked = await callPort(() => context.settings.statements.get(get.id, { voided: get.voided, signal }), signal);
   if (asked === undefined) return context.refuse(500, FAILED);
   const held = asked.value;
-  if (held === undefined || held.voided !== get.voided) {
+  const own = ownAuthority(context);
+  const hidden =
+    own !== undefined && (held?.statement.authority === undefined || !sameActor(held.statement.authority, own));
+  if (held === undefined || held.voided !== get.voided || hidden) {
     return context.refuse(404, `The LRS holds no ${get.voided ? "voided " : ""}Statement with the id ${get.id}.`);
   }
   const formatted = await inFormat(context, [held.statement], get.format ?? "exact");
@@ -139,7 +152,12 @@ export async function answerMany(
 ): Promise<HttpResponse> {
   const { signal } = context.settings;
   const limit = pageLimit(get.query.limit, context);
-  const page = { limit, ...(get.cursor === undefined ? {} : { cursor: get.cursor }) };
+  const own = ownAuthority(context);
+  const page = {
+    limit,
+    ...(get.cursor === undefined ? {} : { cursor: get.cursor }),
+    ...(own === undefined ? {} : { authority: own }),
+  };
   const asked = await callPort(() => context.settings.statements.query(get.query, page, { signal }), signal);
   if (asked === undefined) return context.refuse(500, FAILED);
   if (asked.value === undefined)

@@ -94,7 +94,11 @@ export function memory(): Memory {
       if (!Number.isInteger(offset) || offset < 0) return undefined;
       const matching = [...held.values()]
         .filter((entry) => !entry.voided)
-        .filter((entry) => matchesStatementQuery(entry.statement, query, (id) => held.get(id)?.statement))
+        .filter((entry) =>
+          matchesStatementQuery(entry.statement, query, (id) => held.get(id)?.statement, {
+            ...(page.authority === undefined ? {} : { authority: page.authority }),
+          }),
+        )
         .sort((a, b) => Date.parse(a.stored) - Date.parse(b.stored));
       if (query.ascending !== true) matching.reverse();
       const slice = matching.slice(offset, offset + page.limit);
@@ -188,6 +192,7 @@ export const ALLOW_ALL: Access = {
   authority: AUTHORITY,
   actions: [
     "statements.read",
+    "statements.read.mine",
     "statements.write",
     "state.read",
     "state.write",

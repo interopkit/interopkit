@@ -20,5 +20,5 @@ export {
   type StoredStatement,
   type WriteCondition,
 } from "./ports.js";
-export { matchesStatementQuery } from "./query.js";
+export { type MatchOptions, matchesStatementQuery } from "./query.js";
 export { handleLrsRequest } from "./router.js";

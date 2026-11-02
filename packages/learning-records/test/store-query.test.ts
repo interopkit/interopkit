@@ -271,6 +271,23 @@ describe("matchesStatementQuery: Statement References", () => {
   });
 });
 
+describe("matchesStatementQuery: the authority of a credential that reads its own", () => {
+  const consumer = { account: { homePage: "https://lrs.example.org", name: "app" } };
+  const user = { mbox: "mailto:teacher@example.org" };
+  const pair = (members: Actor[]): Actor => ({ objectType: "Group", member: members }) as Actor;
+
+  it("keeps the Statements of that authority alone, an anonymous Group of two in any order", () => {
+    const own = statement(1, { authority: pair([consumer, user]) as Statement["authority"] });
+    expect(matchesStatementQuery(own, {}, () => undefined, { authority: pair([user, consumer]) })).toBe(true);
+    expect(matchesStatementQuery(own, {}, () => undefined, { authority: pair([user]) })).toBe(false);
+    expect(matchesStatementQuery(own, {}, () => undefined, { authority: user })).toBe(false);
+    const other = statement(2, { authority: { mbox: "mailto:Teacher@Example.org" } });
+    expect(matchesStatementQuery(other, {}, () => undefined, { authority: user })).toBe(true);
+    expect(matchesStatementQuery(statement(3), {}, () => undefined, { authority: user })).toBe(false);
+    expect(matchesStatementQuery(statement(3), {}, () => undefined, {})).toBe(true);
+  });
+});
+
 describe("matchesStatementQuery: a long chain of references", () => {
   it("walks a chain longer than the stack could hold", () => {
     const length = 200_000;
