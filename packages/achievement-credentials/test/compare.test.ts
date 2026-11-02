@@ -109,6 +109,16 @@ describe("newerCredential", () => {
     expect(newerCredential(late, early)).toBe(late);
   });
 
+  it("compares the issuanceDate of a credential under the Verifiable Credentials Data Model 1.1", () => {
+    const old = { ...achievementCredentialV1p1(), issuanceDate: "2024-06-13T10:00:00Z" };
+    const recent = { ...achievementCredentialV1p1(), issuanceDate: "2024-06-14T10:00:00Z" };
+    expect(newerCredential(old, recent)).toBe(recent);
+    expect(newerCredential(recent, old)).toBe(recent);
+    expect(() => newerCredential(old, { ...recent, issuanceDate: "2024-06-14" })).toThrow(
+      "has no validFrom that is a date and time of RFC 3339 with an offset",
+    );
+  });
+
   it("refuses two credentials that are not the same credential", () => {
     expect(() => newerCredential(older, credential({ id: "https://example.edu/credentials/2" }))).toThrow(
       "The credentials are not the same credential: they differ in id or in the id of the issuer.",

@@ -1,11 +1,15 @@
 import { looseRecord, parseWith, type Schema } from "@interopkit/core/checks";
 import * as v from "valibot";
 
-/** What two credentials are compared by: the address of the credential and of its issuer, and when it became valid. */
+/**
+ * What two credentials are compared by: the address of the credential and of its issuer, and when it became valid, which the
+ * Verifiable Credentials Data Model 1.1 calls `issuanceDate`.
+ */
 interface Comparable {
   readonly id?: string;
   readonly issuer: string | { readonly id: string };
   readonly validFrom?: string;
+  readonly issuanceDate?: string;
 }
 
 const issuerSchema = v.lazy((input) => (typeof input === "string" ? v.string() : looseRecord({ id: v.string() })));
@@ -14,6 +18,7 @@ const comparableSchema: Schema<Comparable> = looseRecord({
   id: v.optional(v.string()),
   issuer: issuerSchema,
   validFrom: v.optional(v.string()),
+  issuanceDate: v.optional(v.string()),
 });
 
 /** Reads the parts of a credential that a comparison needs, and refuses a value that has no issuer. */

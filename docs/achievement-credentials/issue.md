@@ -124,7 +124,8 @@ holds it.
 percent-encoded characters are unescaped and the white space around them is trimmed (Open Badges 10). A credential with no `id`
 is the same as none. `newerCredential(a, b)` returns the one of two equal credentials with the later `validFrom`, compared as
 instants, so that an offset does not matter; when they are the same instant it returns the first. It returns the argument
-itself.
+itself. Under the Verifiable Credentials Data Model 1.1 the later `issuanceDate` counts, so a store that keeps what a provider
+received compares the credentials of both models alike.
 
 `credentialSummary(credential)` returns what a wallet shows: the `kind` (`badge`, `clr` or `endorsement`), the `name`,
 `description` and `image` of the credential or, for an achievement credential that has none, of its achievement, the `issuer`
@@ -157,7 +158,6 @@ and its name, and the dates. It reads a credential under either Verifiable Crede
 | A clock: no `validFrom` is filled in                      | The dates are the issuer's; a builder that read the clock would write a different credential each time |
 | An Open Badges 2.0 assertion                              | 2.0 is read and verified, never issued                                                             |
 | A random identifier: no `id` is made up                   | The address of a credential is the issuer's                                                        |
-| Equality of credentials under the Verifiable Credentials Data Model 1.1 | The comparison is defined for `validFrom`; a 1.1 credential is read and verified, and never written |
 
 ## Differences from the references
 
