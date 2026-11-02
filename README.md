@@ -81,6 +81,7 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `pnpm bench`           | Times reading, checking and walking a framework of 10,000 items against budgets ([evidence](docs/competency-frameworks/evidence.md))                                  |
 | `pnpm opensalt`        | Starts OpenSALT in containers and runs the CASE client and provider of the example against it ([validation/opensalt](validation/opensalt/README.md))                  |
 | `pnpm adl-lrs`         | Runs the ADL conformance suite of xAPI 2.0 against the example LRS ([validation/adl-lrs](validation/adl-lrs/README.md)); build first                                  |
+| `pnpm sql-lrs`         | Starts SQL LRS in a container and checks the rules and the client of the example against it ([validation/sql-lrs](validation/sql-lrs/README.md))                      |
 | `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                                                                                                |
 | `pnpm corpus`          | Downloads the pinned repositories that tests read                                                                                                                     |
 | `pnpm schemas`         | Downloads the pinned specification files that tests read                                                                                                              |

@@ -3089,6 +3089,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-records/test/signing.test.ts",
   },
   {
+    rule: "An answer to a POST that names a Statement the batch does not have is refused.",
+    file: "packages/learning-records/src/client/statements.ts",
+    find: "if (stranger !== undefined)\n    throw new DataError",
+    replace: "if (false)\n    throw new DataError",
+    test: "packages/learning-records/test/client-statements.test.ts",
+  },
+  {
     rule: "A reader that refuses writes the first error, how many follow, and the function that lists them.",
     file: "packages/core/src/checks.ts",
     find: 'let more = others.length === 0 ? "" : ` ${count}: ${validator} lists every finding.`;',

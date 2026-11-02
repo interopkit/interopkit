@@ -197,6 +197,19 @@ export default defineConfig({
           testTimeout: HANG_LIMIT,
         },
       },
+      {
+        // The verdicts and the flows against SQL LRS in a container: `pnpm sql-lrs` starts it and runs them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "example-learning-records-sqllrs",
+          include: [
+            "packages/learning-records/test/sqllrs.corpus.test.ts",
+            "examples/learning-records/test/sqllrs.corpus.test.ts",
+          ],
+          testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
+        },
+      },
       nodeProject("tool-integration"),
       {
         // The pages of the client-side login, which run in the engines of the browsers.

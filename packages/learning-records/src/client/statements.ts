@@ -128,20 +128,31 @@ export async function sendStatement(
   return response.status === 204 ? "stored" : "conflict";
 }
 
-/** Reads the ids that the LRS answered a `POST` with: a list of UUIDs, one for each Statement, in order. */
+/**
+ * Reads the ids that the LRS answered a `POST` with. Where every Statement of the batch has an id, the ids are the batch's: the
+ * answer may list them all, only the Statements that are new, or none, which is how real LRSs answer a resend, and it must name
+ * no Statement that the batch does not have. Where a Statement has none, the LRS gives it one, so the answer lists one id for
+ * each Statement, in order.
+ */
 function storedIds(response: ServiceResponse, batch: readonly Statement[], settings: Settings): readonly string[] {
+  const sent = batch.map(({ id }) => id);
+  const known = sent.every((id): id is string => id !== undefined);
   if (response.status === 204) {
-    const ids = batch.map(({ id }) => id);
-    if (ids.some((id) => id === undefined)) {
-      throw new DataError("The LRS answered 204 with no ids, and a Statement of the batch has none.");
-    }
-    return ids as string[];
+    if (!known) throw new DataError("The LRS answered 204 with no ids, and a Statement of the batch has none.");
+    return sent;
   }
   const ids = parseWith(v.array(uuidSchema), jsonOf(response, settings), "The answer");
-  if (ids.length !== batch.length) {
-    throw new DataError(`The answer lists ${ids.length} ids for ${batch.length} Statements.`);
+  if (!known) {
+    if (ids.length !== batch.length) {
+      throw new DataError(`The answer lists ${ids.length} ids for ${batch.length} Statements.`);
+    }
+    return ids;
   }
-  return ids;
+  const held = new Set(sent.map((id) => id.toLowerCase()));
+  const stranger = ids.find((id) => !held.has(id.toLowerCase()));
+  if (stranger !== undefined)
+    throw new DataError(`The answer lists the id ${stranger}, which no Statement of the batch has.`);
+  return sent;
 }
 
 /** Stores a batch of Statements with `POST`, and returns the ids that the LRS gave them. */

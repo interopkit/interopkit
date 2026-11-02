@@ -117,10 +117,30 @@ describe("sendStatements", () => {
     );
   });
 
-  it("refuses an answer with another number of ids, or ids that are no UUIDs", async () => {
+  it("resolves with the ids of the batch for an answer that lists the new Statements only, or none, as a resend gets from real LRSs", async () => {
+    const batch = [statementOf(1), statementOf(2)];
+    expect(await clientOf(fakeLrs(() => ({ body: [uuid(2)] }))).sendStatements(batch)).toStrictEqual([
+      uuid(1),
+      uuid(2),
+    ]);
+    expect(await clientOf(fakeLrs(() => ({ body: [] }))).sendStatements(batch)).toStrictEqual([uuid(1), uuid(2)]);
+    expect(await clientOf(fakeLrs(() => ({ body: [uuid(1).toUpperCase()] }))).sendStatements(batch)).toStrictEqual([
+      uuid(1),
+      uuid(2),
+    ]);
+  });
+
+  it("refuses an answer with an id that no Statement of the batch has, and another number of ids for Statements with none", async () => {
     await expect(
-      clientOf(fakeLrs(() => ({ body: [uuid(1)] }))).sendStatements([statementOf(1), statementOf(2)]),
-    ).rejects.toThrow("The answer lists 1 ids for 2 Statements.");
+      clientOf(fakeLrs(() => ({ body: [uuid(1), uuid(9)] }))).sendStatements([statementOf(1), statementOf(2)]),
+    ).rejects.toThrow(`The answer lists the id ${uuid(9)}, which no Statement of the batch has.`);
+    const { id: _id, ...withoutId } = statementOf(1);
+    await expect(clientOf(fakeLrs(() => ({ body: [uuid(1)] }))).sendStatements([withoutId, withoutId])).rejects.toThrow(
+      "The answer lists 1 ids for 2 Statements.",
+    );
+  });
+
+  it("refuses an answer with ids that are no UUIDs", async () => {
     await expect(clientOf(fakeLrs(() => ({ body: ["x"] }))).sendStatements([statementOf(1)])).rejects.toThrow(
       "The answer is invalid at [0]",
     );

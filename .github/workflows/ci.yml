@@ -162,3 +162,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm adl-lrs
+
+  # SQL LRS in a container as the oracle of the rules and a counterparty of the client (validation/sql-lrs/README.md).
+  sql-lrs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm sql-lrs

@@ -63,6 +63,7 @@ A change to a rule of a specification cites its section in the pull request and 
 | `pnpm bench`                                                                    | A change to code that reads, checks or walks a framework, or to a budget                                                       |
 | `pnpm opensalt`                                                                 | A change to the CASE client or provider, or to the example that they run in; it needs Docker                                   |
 | `pnpm adl-lrs`                                                                  | A change to the LRS handler, or to the example that runs it; it needs the packages built first                                 |
+| `pnpm sql-lrs`                                                                  | A change to the readers of Statements, the LRS handler or the client; it needs Docker                                          |
 
 - A change to a package goes into the pending release's changeset in `.changeset/`, or a new one made with `pnpm changeset`
   when none is pending ([AGENTS.md](AGENTS.md#releases)).

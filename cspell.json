@@ -85,6 +85,7 @@
     "lineitems",
     "lojban",
     "longsightgroup",
+    "lrsql",
     "ltijs",
     "ltikit",
     "measurekit",
@@ -126,6 +127,7 @@
     "skolemization",
     "skolemize",
     "spki",
+    "sqllrs",
     "SSSZ",
     "subcomponent",
     "statistika",
@@ -150,6 +152,7 @@
     "xapi",
     "xiang",
     "xmlchars",
+    "yetanalytics",
     "Älg"
   ]
 }

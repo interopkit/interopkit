@@ -5,6 +5,7 @@ scripts sign with libraries that share no code with the packages, so that a test
 implementation. A counterparty is an application that runs beside the packages: [opensalt](opensalt/README.md) is a CASE server
 and editor, which `pnpm opensalt` starts in containers and runs the client and provider of the example against.
 [adl-lrs](adl-lrs/README.md) is the conformance suite of ADL, which `pnpm adl-lrs` runs against the example LRS of xAPI.
+[sql-lrs](sql-lrs/README.md) is an LRS that `pnpm sql-lrs` starts in a container, as the oracle of the rules and a counterparty of the client.
 
 ```mermaid
 flowchart LR
