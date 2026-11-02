@@ -1,4 +1,3 @@
-import { type AnyNode, evaluate, type ObjectNode, parse } from "@humanwhocodes/momoa";
 import { DataError } from "@interopkit/core";
 import {
   checkString,
@@ -10,7 +9,7 @@ import {
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
-import { item, member } from "./path.js";
+import { findRepeatedProperty } from "./repeated-property.js";
 
 /** The most bytes of text that `readStatementJson` reads unless the caller says otherwise: 10 MiB, the size of an LRS request. */
 const DEFAULT_MAX_BYTES = 10_485_760;
@@ -34,7 +33,7 @@ export interface ReadStatementJsonOptions {
   readonly maxDepth?: number;
   /**
    * The most tokens of the text: each bracket, brace, colon and comma, each string, each number, and each of `true`, `false`
-   * and `null`. The memory of the syntax tree grows with the tokens and not with the bytes.
+   * and `null`. The memory of a parse grows with the tokens and not with the bytes.
    *
    * @defaultValue 1,000,000
    */
@@ -46,55 +45,6 @@ const optionsSchema = strictRecord({
   maxDepth: v.optional(positiveIntegerSchema),
   maxTokens: v.optional(positiveIntegerSchema),
 });
-
-/** The place in a text where a property occurs again, and its name. */
-interface Repeat {
-  readonly path: string;
-  readonly name: string;
-  readonly line: number;
-  readonly column: number;
-}
-
-/** Finds the first property that an object of the tree has twice, in the order of the text. */
-function findInObject(node: ObjectNode, path: string): Repeat | undefined {
-  const seen = new Set<string>();
-  for (const entry of node.members) {
-    const name = String(evaluate(entry.name));
-    if (seen.has(name)) return { path, name, line: entry.loc.start.line, column: entry.loc.start.column };
-    seen.add(name);
-    const found = findRepeat(entry.value, member(path, name));
-    if (found !== undefined) return found;
-  }
-  return undefined;
-}
-
-/** Finds the first object of a tree that has a property twice, walking in the order of the text. */
-function findRepeat(node: AnyNode, path: string): Repeat | undefined {
-  if (node.type === "Object") return findInObject(node, path);
-  if (node.type !== "Array") return undefined;
-  for (const [index, element] of node.elements.entries()) {
-    const found = findRepeat(element.value, item(path, index));
-    if (found !== undefined) return found;
-  }
-  return undefined;
-}
-
-/**
- * Finds the first property that an object of the text has twice. The text is JSON that `JSON.parse` read, and nests at most
- * `maxDepth` levels, so the parser below can walk it unless the caller allowed a depth that the stack cannot hold.
- */
-function repeatedProperty(text: string, maxDepth: number): Repeat | undefined {
-  try {
-    return findRepeat(parse(text, { mode: "json" }).body, "");
-  } catch (error) {
-    if (error instanceof RangeError) {
-      throw new DataError(
-        `The text nests deeper than the parser can read, and the limit of ${maxDepth} levels is too high.`,
-      );
-    }
-    throw error;
-  }
-}
 
 /**
  * Parses the text of a Statement, or of a batch of them, as JSON, and refuses an object that has a property twice.
@@ -135,12 +85,12 @@ export function readStatementJson(text: string, options?: ReadStatementJsonOptio
   }
   let value: unknown;
   try {
-    // `JSON.parse` is the judge of the syntax of RFC 8259: the tree below accepts a tab inside a string, which it forbids.
+    // `JSON.parse` is the judge of the syntax of RFC 8259, and the search for a repeated property relies on it.
     value = JSON.parse(text);
   } catch (error) {
     throw new DataError(`The text is not valid JSON: ${String(error)}.`);
   }
-  const repeat = repeatedProperty(text, maxDepth);
+  const repeat = findRepeatedProperty(text);
   if (repeat !== undefined) {
     const where = repeat.path === "" ? "" : ` in ${repeat.path}`;
     throw new DataError(

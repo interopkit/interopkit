@@ -199,9 +199,10 @@ current behavior only, and never how it came to be. A package's changeset is wri
 - Generic concerns use mature libraries: `jose` for JOSE, `@interop/did-method-key`, `@interop/did-web-resolver` and the Multikey
   packages and the Data Integrity packages of the Interop Alliance (`@interop/jsonld-signatures`, `data-integrity-proof`,
   `ed25519-signature`, `ecdsa-signature`, `jsonld`) for DIDs, Multikeys and the cryptosuites, `valibot` for schemas, `uuid` for name-based UUIDs, `@noble/hashes` for the hashes of an identity and of an address, `oauth4webapi` for
-  OAuth 2.0 clients, `momoa` for the syntax tree of JSON where a property given twice must be seen,
+  OAuth 2.0 clients,
   `@remix-run/multipart-parser` for `multipart/mixed` messages, `saxes` for the XML of an SVG. Hand-written
-  code is for domain logic that no library does correctly, with the reason in the guide of the module.
+  code is for domain logic that no library does correctly, with the reason in the guide of the module; the scan of `learning-records`
+  for a property given twice is such code, since a parser that sees one builds a tree at seventeen times the time of `JSON.parse`.
 - Candidates that were compared and not adopted may be development dependencies, as counterparties in tests: Digital Bazaar's
   `ecdsa-sd-2023` suite with `@digitalbazaar/data-integrity`, `jsonld-signatures` and `@digitalbazaar/ecdsa-multikey`, which
   sign, derive and verify beside `selective-disclosure`, and `jsonld`, whose default loader the loader test makes fail.

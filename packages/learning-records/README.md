@@ -45,7 +45,7 @@ flowchart LR
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
 environment variable, writes no log and makes no request. Its dependencies are `@interopkit/core`,
-[valibot](https://valibot.dev), [momoa](https://github.com/humanwhocodes/momoa), [uuid](https://github.com/uuidjs/uuid),
+[valibot](https://valibot.dev), [uuid](https://github.com/uuidjs/uuid),
 [@noble/hashes](https://github.com/paulmillr/noble-hashes), [jose](https://github.com/panva/jose) (`/signing`) and
 [@remix-run/multipart-parser](https://github.com/remix-run/remix/tree/main/packages/multipart-parser) (`/attachments`).
 

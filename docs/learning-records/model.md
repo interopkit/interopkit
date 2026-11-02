@@ -187,7 +187,6 @@ than `maxFindings` of about a kilobyte, whatever the size of the value: a Statem
 | `The text has N bytes or more, above the limit of M bytes.`                                             | The text is longer than `maxBytes`                         | Answer with 413 as the standard asks, or raise the limit                                |
 | `The text nests arrays and objects deeper than the limit of N levels.`                                  | The text is deeper than `maxDepth`                         | Refuse it, or raise the limit                                                           |
 | `The text has more than N tokens, above the limit of the option maxTokens.`                             | The text has more tokens than `maxTokens`                  | Answer with 413, or raise the limit if the host can hold the memory                     |
-| `The text nests deeper than the parser can read, and the limit of N levels is too high.`                | `maxDepth` is above what the stack of the runtime can hold | Lower `maxDepth`                                                                        |
 
 ## Not included
 

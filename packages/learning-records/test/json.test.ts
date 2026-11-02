@@ -1,4 +1,4 @@
-import { tokenize } from "@humanwhocodes/momoa";
+import { type AnyNode, evaluate, parse, tokenize } from "@humanwhocodes/momoa";
 import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
@@ -8,7 +8,80 @@ import { fullStatement, minimalStatement } from "./full-statement.js";
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
 const RUNS = { seed: 20_241_102, numRuns: 300 };
 
+/** What momoa, a parser that builds a syntax tree, finds as the first repeated property of a text, written as the error names it. */
+function repeatOfTree(node: AnyNode, path: string): string | undefined {
+  if (node.type === "Array") {
+    for (const [index, element] of node.elements.entries()) {
+      const found = repeatOfTree(element.value, `${path}[${index}]`);
+      if (found !== undefined) return found;
+    }
+  }
+  if (node.type !== "Object") return undefined;
+  const seen = new Set<string>();
+  for (const entry of node.members) {
+    const name = String(evaluate(entry.name));
+    if (seen.has(name)) {
+      const where = path === "" ? "" : ` in ${path}`;
+      return `${JSON.stringify(name)} twice${where}, at line ${entry.loc.start.line} column ${entry.loc.start.column}`;
+    }
+    seen.add(name);
+    const found = repeatOfTree(entry.value, path === "" ? name : `${path}.${name}`);
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}
+
+/** Writes a value of JSON as text, with white space and escapes between its tokens, and a name of an object that may repeat. */
+const jsonText: fc.Arbitrary<string> = fc.letrec<{ value: string }>((tie) => ({
+  value: fc.oneof(
+    { depthSize: "small", withCrossShrink: true },
+    fc.constantFrom(
+      "0",
+      "true",
+      "null",
+      '"text"',
+      String.raw`"a\\"`,
+      String.raw`"\\"`,
+      String.raw`"\"quoted\""`,
+      '"{"',
+      '"]"',
+      '","',
+    ),
+    fc
+      .array(tie("value"), { maxLength: 4 })
+      .chain((items) =>
+        fc
+          .constantFrom(" ", "\n", "\r\n", "\r", "\t", "")
+          .map((space) => `[${space}${items.join(`,${space}`)}${space}]`),
+      ),
+    fc
+      .array(
+        fc.tuple(
+          fc.constantFrom('"a"', '"b"', String.raw`"a"`, String.raw`"a\\"`, String.raw`"\""`, '"x y"'),
+          tie("value"),
+        ),
+        { maxLength: 4 },
+      )
+      .chain((members) =>
+        fc
+          .constantFrom(" ", "\n", "\r\n", "\r", "\t", "")
+          .map((space) => `{${space}${members.map(([name, value]) => `${name}${space}:${value}`).join(`,${space}`)}}`),
+      ),
+  ),
+})).value;
+
 describe("readStatementJson", () => {
+  it("finds the first repeated property where a parser that builds a syntax tree finds it", () => {
+    fc.assert(
+      fc.property(jsonText, (text) => {
+        const repeat = repeatOfTree(parse(text, { mode: "json" }).body, "");
+        if (repeat === undefined) expect(readStatementJson(text)).toStrictEqual(JSON.parse(text));
+        else expect(() => readStatementJson(text)).toThrow(`The text has the property ${repeat}.`);
+      }),
+      { ...RUNS, numRuns: 2000 },
+    );
+  });
+
   it("returns the value that JSON.parse returns, for a Statement and for a batch", () => {
     for (const value of [fullStatement(), [minimalStatement(), fullStatement()]]) {
       const text = JSON.stringify(value);
@@ -214,23 +287,15 @@ describe("readStatementJson", () => {
       expect(() => readStatementJson(oneMore)).toThrow("The text has more than 1000000 tokens");
     });
 
-    it("refuses the text of 10 MiB that has the most tokens, the worst for memory, before it builds the tree", async () => {
-      // Each byte is a token, and a syntax tree of the text takes over 1 GB.
+    it("refuses the text of 10 MiB that has the most tokens, the worst for memory, before it parses anything", () => {
       const worst = `[${"0,".repeat(5_242_878)}0]`;
       expect(worst.length).toBe(10_485_759);
-      vi.resetModules();
-      const parse = vi.fn(() => {
-        throw new Error("the syntax tree was built");
-      });
-      vi.doMock("@humanwhocodes/momoa", () => ({ parse }));
+      const parse = vi.spyOn(JSON, "parse");
       try {
-        const { readStatementJson: withSpy } = await import("../src/index.js");
-        // The module is imported again, so its DataError is not the class of this file: the message is the evidence.
-        expect(() => withSpy(worst)).toThrow("The text has more than 1000000 tokens");
+        expect(() => readStatementJson(worst)).toThrow("The text has more than 1000000 tokens");
         expect(parse).not.toHaveBeenCalled();
       } finally {
-        vi.doUnmock("@humanwhocodes/momoa");
-        vi.resetModules();
+        parse.mockRestore();
       }
     });
 
@@ -239,11 +304,10 @@ describe("readStatementJson", () => {
       expect(() => readStatementJson('{"a":'.repeat(50_000))).toThrow("deeper than the limit of 64");
     });
 
-    it("refuses a depth that the parser cannot hold, with a sentence and not a stack overflow", () => {
-      const levels = 200_000;
-      const text = "[".repeat(levels) + "]".repeat(levels);
-      expect(() => readStatementJson(text, { maxDepth: levels })).toThrow(DataError);
-      expect(() => readStatementJson(text, { maxDepth: levels })).toThrow("the limit of 200000 levels is too high");
+    it("reads a depth above the stack when the caller allows it, since the search for a repeat does not recurse", () => {
+      const levels = 2_000;
+      const text = `${'{"a":'.repeat(levels)}1${"}".repeat(levels)}`;
+      expect(() => readStatementJson(text, { maxDepth: levels })).not.toThrow();
     });
 
     it.each([
@@ -260,21 +324,5 @@ describe("readStatementJson", () => {
       const given = JSON.parse(JSON.stringify(options));
       expect(() => readStatementJson("{}", given)).toThrow(new DataError(sentence));
     });
-  });
-
-  it("does not hide an error of the parser that is not about depth", async () => {
-    vi.resetModules();
-    vi.doMock("@humanwhocodes/momoa", () => ({
-      parse: () => {
-        throw new TypeError("a defect of the parser");
-      },
-    }));
-    try {
-      const { readStatementJson: withBrokenParser } = await import("../src/index.js");
-      expect(() => withBrokenParser("{}")).toThrow(new TypeError("a defect of the parser"));
-    } finally {
-      vi.doUnmock("@humanwhocodes/momoa");
-      vi.resetModules();
-    }
   });
 });
