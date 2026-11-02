@@ -1,4 +1,4 @@
-import { callService, ServiceError } from "@interopkit/core";
+import { callService, readClock, ServiceError } from "@interopkit/core";
 import { checkRecord, describe, isRecord } from "@interopkit/core/checks";
 import { parseJsonText } from "../json-text.js";
 import { readCredentialJwt } from "../jwt/index.js";
@@ -8,8 +8,11 @@ import { isSet, MIN_LIST_LENGTH } from "./bitstring.js";
 import { decodeList } from "./encoded-list.js";
 import { type CheckSettings, checkSettings, type StatusCheckOptions } from "./options.js";
 
-/** The `type` of the status entry that this module checks (Bitstring Status List 3.1). */
+/** The `type` of the status entry of Bitstring Status List (3.1). */
 const ENTRY_TYPE = "BitstringStatusListEntry";
+
+/** The `type` of the status of the 1EdTech Revocation List Status Method, which credentials of Open Badges 3.0 named first. */
+const REVOCATION_LIST_TYPE = "1EdTechRevocationList";
 
 /** The types of the credential that holds a list. */
 const LIST_TYPE = "BitstringStatusListCredential";
@@ -21,7 +24,7 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_BYTES = 1_048_576;
 const MAX_DEPTH = 64;
 const MILLISECONDS_PER_SECOND = 1000;
-const CLOCK_SKEW_SECONDS = 60;
+const DEFAULT_CLOCK_SKEW_SECONDS = 60;
 
 const check = (outcome: VerificationCheck["outcome"], detail: string): VerificationCheck => ({
   check: "status",
@@ -42,14 +45,16 @@ interface Entry {
   readonly purpose: string;
 }
 
-/** Reads the status entry of a credential, or says why there is nothing to check. */
-function entryOf(credential: unknown): { readonly entry: Entry } | { readonly done: VerificationCheck } {
-  const status: unknown = isRecord(credential) ? credential.credentialStatus : undefined;
-  if (status === undefined) return { done: check("skipped", "The credential has no credentialStatus.") };
-  if (!isRecord(status) || status.type !== ENTRY_TYPE) {
-    const type = isRecord(status) ? describe(status.type) : describe(status);
-    return { done: check("skipped", `The credentialStatus is ${type}, and only ${ENTRY_TYPE} is checked.`) };
-  }
+/** Tells whether text is an absolute HTTPS address, the only kind of list that is fetched. */
+function isHttpsAddress(text: unknown): text is string {
+  return typeof text === "string" && text.startsWith("https://") && URL.canParse(text);
+}
+
+/** What the status of a credential names: an entry of a Bitstring Status List, or a 1EdTech Revocation List. */
+type Named = { readonly entry: Entry } | { readonly revocationList: string } | { readonly done: VerificationCheck };
+
+/** Reads an entry of a Bitstring Status List, or says why there is nothing to check. */
+function bitstringEntryOf(status: Readonly<Record<string, unknown>>): Named {
   const { statusPurpose, statusSize, statusListIndex, statusListCredential } = status;
   if (typeof statusPurpose !== "string" || MEANING[statusPurpose] === undefined) {
     return {
@@ -77,11 +82,7 @@ function entryOf(credential: unknown): { readonly entry: Entry } | { readonly do
       ),
     };
   }
-  if (
-    typeof statusListCredential !== "string" ||
-    !URL.canParse(statusListCredential) ||
-    !statusListCredential.startsWith("https://")
-  ) {
+  if (!isHttpsAddress(statusListCredential)) {
     return {
       done: check(
         "failed",
@@ -90,6 +91,29 @@ function entryOf(credential: unknown): { readonly entry: Entry } | { readonly do
     };
   }
   return { entry: { url: statusListCredential, index, purpose: statusPurpose } };
+}
+
+/** Reads the status of a credential, or says why there is nothing to check. */
+function entryOf(credential: unknown): Named {
+  const status: unknown = isRecord(credential) ? credential.credentialStatus : undefined;
+  if (status === undefined) return { done: check("skipped", "The credential has no credentialStatus.") };
+  if (isRecord(status) && status.type === ENTRY_TYPE) return bitstringEntryOf(status);
+  if (!isRecord(status) || status.type !== REVOCATION_LIST_TYPE) {
+    const type = isRecord(status) ? describe(status.type) : describe(status);
+    return {
+      done: check(
+        "skipped",
+        `The credentialStatus is ${type}, and ${ENTRY_TYPE} and ${REVOCATION_LIST_TYPE} are checked.`,
+      ),
+    };
+  }
+  if (isHttpsAddress(status.id)) return { revocationList: status.id };
+  return {
+    done: check(
+      "failed",
+      `STATUS_VERIFICATION_ERROR: the id of the revocation list, ${describe(status.id)}, is not an HTTPS address.`,
+    ),
+  };
 }
 
 /** Reads the text of a list credential as a credential, verifying its proof and its issuer's hold on the key. */
@@ -142,22 +166,89 @@ function asList(credential: unknown): VerifiableCredential {
   return credential as VerifiableCredential;
 }
 
-/** Fetches a list credential and checks it, or throws what is wrong with it. */
-async function fetchList(url: string, settings: CheckSettings): Promise<VerifiableCredential> {
-  const text = await callService(
+/** Fetches the text of a list, within the time and size of the options. */
+async function fetchText(url: string, what: string, accept: string, settings: CheckSettings): Promise<string> {
+  return await callService(
     { fetch: settings.fetch, timeoutMs: settings.timeoutMs ?? DEFAULT_TIMEOUT_MS },
-    `The status list credential at ${url}`,
+    `${what} at ${url}`,
     url,
-    { method: "GET", headers: { accept: "application/vc+jwt, application/ld+json, application/json" } },
+    { method: "GET", headers: { accept } },
     { maxBytes: settings.maxBytes ?? DEFAULT_MAX_BYTES },
   );
-  return await verifiedList(text, settings);
+}
+
+/** Fetches a list credential and checks it, or throws what is wrong with it. */
+async function fetchList(url: string, settings: CheckSettings): Promise<VerifiableCredential> {
+  const accept = "application/vc+jwt, application/ld+json, application/json";
+  return await verifiedList(await fetchText(url, "The status list credential", accept, settings), settings);
+}
+
+/** Fetches a revocation list of the 1EdTech Revocation List Status Method, a JSON object, or throws what is wrong with it. */
+async function fetchRevocationList(url: string, settings: CheckSettings): Promise<Readonly<Record<string, unknown>>> {
+  const text = await fetchText(url, "The revocation list", "application/json", settings);
+  const parsed = parseJsonText(text, { maxDepth: MAX_DEPTH, maxTokens: settings.maxTokens }, "The revocation list");
+  if ("reason" in parsed) throw new ListFailure(parsed.reason);
+  if (!isRecord(parsed.value)) throw new ListFailure("The revocation list is not a JSON object.");
+  return parsed.value;
 }
 
 /** Reads the identifier of the issuer of a credential. */
 function issuerOf(credential: { readonly issuer: unknown }): string {
   const { issuer } = credential;
   return typeof issuer === "string" ? issuer : isRecord(issuer) && typeof issuer.id === "string" ? issuer.id : "";
+}
+
+/** Tells whether a list of the issuers it names may publish the status of a credential: its issuer, or one of `statusIssuers`. */
+function mayPublish(issuers: readonly unknown[], issuer: string, settings: CheckSettings): boolean {
+  return issuers.some(
+    (named) => named === issuer || (typeof named === "string" && settings.statusIssuers.includes(named)),
+  );
+}
+
+/** Reads what a property holds as a list: its members, or none when it is absent. */
+function listOf(value: unknown): readonly unknown[] {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+/**
+ * Reads a revocation list of the 1EdTech Revocation List Status Method: the credential is revoked when the list names its `id`
+ * with `revoked` true or absent. A list that names its issuers must name the credential's, or one of `statusIssuers`.
+ */
+function readRevocation(
+  list: Readonly<Record<string, unknown>>,
+  credential: Readonly<Record<string, unknown>>,
+  settings: CheckSettings,
+): VerificationCheck {
+  const issuer = issuerOf({ issuer: credential.issuer });
+  if (list.issuer !== undefined && !mayPublish(listOf(list.issuer), issuer, settings)) {
+    return check(
+      "failed",
+      `STATUS_VERIFICATION_ERROR: the revocation list is issued by ${describe(list.issuer)}, not by ${issuer} or an issuer allowed to publish its status.`,
+    );
+  }
+  const { id } = credential;
+  if (typeof id !== "string") return check("skipped", "The credential has no id, which a revocation list names.");
+  // The data model names the list revokedCredential, and its protocol and example revokedCredentials.
+  const entries = [...listOf(list.revokedCredential), ...listOf(list.revokedCredentials)].filter(isRecord);
+  const revoked = entries.find(
+    (entry) => entry.id === id && (entry.revoked === undefined || entry.revoked === true || entry.revoked === "true"),
+  );
+  if (revoked === undefined) return check("passed", "The revocation list does not name the credential as revoked.");
+  const reason = typeof revoked.revocationReason === "string" ? `: ${revoked.revocationReason}` : ".";
+  return check("failed", `The credential is revoked${reason}`);
+}
+
+/** The bits of the list of each list credential, decoded once: a list is read again for each credential that names it. */
+const decodedLists = new WeakMap<object, ReturnType<typeof decodeList>>();
+
+/** Decodes the list of a list credential, or returns the decoding that was made of it before. */
+function decodedList(list: VerifiableCredential, encoded: unknown): ReturnType<typeof decodeList> {
+  const earlier = decodedLists.get(list);
+  if (earlier !== undefined) return earlier;
+  const decoding = decodeList(encoded);
+  decodedLists.set(list, decoding);
+  return decoding;
 }
 
 /** Checks a verified list against the entry that names it, and reads the bit. */
@@ -168,18 +259,16 @@ async function readEntry(
   settings: CheckSettings,
 ): Promise<VerificationCheck> {
   const listIssuer = issuerOf(list);
-  if (listIssuer !== issuer && !settings.statusIssuers.includes(listIssuer)) {
+  if (!mayPublish([listIssuer], issuer, settings)) {
     return check(
       "failed",
       `STATUS_VERIFICATION_ERROR: the status list credential is issued by ${listIssuer}, not by ${issuer} or an issuer allowed to publish its status.`,
     );
   }
-  const now = settings.clock.now();
+  const now = readClock(settings.clock);
+  const skew = (settings.clockSkewSeconds ?? DEFAULT_CLOCK_SKEW_SECONDS) * MILLISECONDS_PER_SECOND;
   const expires = list.validUntil === undefined ? Infinity : Date.parse(list.validUntil);
-  if (
-    now + CLOCK_SKEW_SECONDS * MILLISECONDS_PER_SECOND < Date.parse(list.validFrom) ||
-    now - CLOCK_SKEW_SECONDS * MILLISECONDS_PER_SECOND >= expires
-  ) {
+  if (now + skew < Date.parse(list.validFrom) || now - skew >= expires) {
     return check("failed", "STATUS_VERIFICATION_ERROR: the status list credential is not valid at this time.");
   }
   const subject: unknown = list.credentialSubject;
@@ -190,7 +279,7 @@ async function readEntry(
       `STATUS_VERIFICATION_ERROR: purpose mismatch, the entry is for ${entry.purpose} and the list is for ${describe(isRecord(subject) ? subject.statusPurpose : undefined)}.`,
     );
   }
-  const decoded = await decodeList(isRecord(subject) ? subject.encodedList : undefined);
+  const decoded = await decodedList(list, isRecord(subject) ? subject.encodedList : undefined);
   if ("reason" in decoded) return check("failed", `STATUS_VERIFICATION_ERROR: ${decoded.reason}`);
   const length = decoded.bits.byteLength * 8;
   if (length < MIN_LIST_LENGTH) {
@@ -214,12 +303,19 @@ async function readEntry(
  * @remarks
  * The algorithm is that of Bitstring Status List 3.2. The list credential is a compact JWS or a credential with a Data Integrity
  * proof; its proof is verified and its key is bound to its issuer, which must be the credential's issuer or one of
- * `statusIssuers`. Its purpose must be the entry's, its validity must hold, its `encodedList` is inflated through a
- * `DecompressionStream` that stops at 16,777,216 bytes, it must have at least 131,072 entries, and the index must be inside it.
- * Every failure is a `failed` check that names its code. A credential with no status, a status of another type, a purpose other
- * than revocation and suspension, or entries wider than one bit give `skipped` and say so: the list is never read as one bit
- * then. A list that cannot be fetched, or whose Data Integrity proof cannot be checked for want of contexts, gives `unavailable`.
- * With a `cache` the list credential is kept across verifications until its `ttl` or `validUntil`.
+ * `statusIssuers`. Its purpose must be the entry's, its validity must hold within `clockSkewSeconds`, its `encodedList` is
+ * inflated through a `DecompressionStream` that stops at 16,777,216 bytes, once for each list credential, it must have at least
+ * 131,072 entries, and the index must be inside it. Every failure is a `failed` check that names its code. A credential with no
+ * status, a status of another type, a purpose other than revocation and suspension, or entries wider than one bit give `skipped`
+ * and say so: the list is never read as one bit then.
+ *
+ * A status of the type `1EdTechRevocationList` (the 1EdTech Revocation List Status Method, which credentials of Open Badges 3.0
+ * named before Bitstring Status List) is read from the JSON list at its HTTPS `id`: the credential is revoked when the list
+ * names its `id` with `revoked` true or absent, and a list that names its issuers must name the credential's or one of
+ * `statusIssuers`. Such a list is not signed, so it is as true as the HTTPS of its address.
+ *
+ * A list that cannot be fetched, or whose Data Integrity proof cannot be checked for want of contexts, gives `unavailable`. With a
+ * `cache` a list is kept across verifications until its `ttl` or `validUntil`, and 300,000 ms for a revocation list.
  *
  * @param credential - The credential.
  * @param options - The `fetch`, the keys, the clock and the other options.
@@ -227,6 +323,7 @@ async function readEntry(
  * @throws `DataError` when an argument is not valid.
  * @throws The `reason` of the signal when it aborts.
  * @see {@link https://www.w3.org/TR/vc-bitstring-status-list/#validate-algorithm | Bitstring Status List, validate algorithm}
+ * @see {@link https://www.imsglobal.org/spec/vcrl/v1p0/ | 1EdTech Revocation List Status Method}
  */
 export async function verifyCredentialStatus(
   credential: IssuableCredential | CredentialV1p1,
@@ -237,12 +334,17 @@ export async function verifyCredentialStatus(
   settings.signal?.throwIfAborted();
   const read = entryOf(credential);
   if ("done" in read) return read.done;
-  const { entry } = read;
+  const withSignal = settings.signal === undefined ? undefined : { signal: settings.signal };
+  const cached = <TDocument extends object>(url: string, load: () => Promise<TDocument>): Promise<object> =>
+    settings.cache === undefined ? load() : settings.cache.get(url, load, withSignal);
   try {
-    const load = () => fetchList(entry.url, settings);
-    const withSignal = settings.signal === undefined ? undefined : { signal: settings.signal };
-    const list = settings.cache === undefined ? await load() : await settings.cache.get(entry.url, load, withSignal);
-    return await readEntry(list, entry, issuerOf(credential), settings);
+    if ("revocationList" in read) {
+      const list = await cached(read.revocationList, () => fetchRevocationList(read.revocationList, settings));
+      return readRevocation(isRecord(list) ? list : {}, credential, settings);
+    }
+    const { entry } = read;
+    const list = await cached(entry.url, () => fetchList(entry.url, settings));
+    return await readEntry(asList(list), entry, issuerOf(credential), settings);
   } catch (error) {
     if (error instanceof ListFailure) return check("failed", `STATUS_VERIFICATION_ERROR: ${error.message}`);
     if (error instanceof ServiceError || error instanceof ListUnavailable) {

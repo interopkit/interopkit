@@ -5098,22 +5098,43 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A list credential comes from the issuer of the credential or an issuer the host allows.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "if (listIssuer !== issuer && !settings.statusIssuers.includes(listIssuer)) {",
+    find: "if (!mayPublish([listIssuer], issuer, settings)) {",
     replace: "if (false) {",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
+    rule: "A credential that a revocation list of 1EdTech names as revoked fails its status.",
+    file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
+    find: '(entry) => entry.id === id && (entry.revoked === undefined || entry.revoked === true || entry.revoked === "true"),',
+    replace: "() => false,",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
+    rule: "A revocation list of 1EdTech that names its issuers counts only when it names the credential's or one allowed.",
+    file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
+    find: "if (list.issuer !== undefined && !mayPublish(listOf(list.issuer), issuer, settings)) {",
+    replace: "if (false) {",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
+    rule: "A revocation list of 1EdTech is fetched over HTTPS only.",
+    file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
+    find: "if (isHttpsAddress(status.id)) return { revocationList: status.id };",
+    replace: 'if (typeof status.id === "string") return { revocationList: status.id };',
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
     rule: "A list credential that has expired is refused, within the skew.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "now - CLOCK_SKEW_SECONDS * MILLISECONDS_PER_SECOND >= expires",
-    replace: "false",
+    find: "|| now - skew >= expires) {",
+    replace: "|| false) {",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
     rule: "A list credential that is not valid yet is refused, within the skew.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "now + CLOCK_SKEW_SECONDS * MILLISECONDS_PER_SECOND < Date.parse(list.validFrom) ||",
-    replace: "false ||",
+    find: "if (now + skew < Date.parse(list.validFrom) ||",
+    replace: "if (false ||",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
@@ -5147,8 +5168,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A list credential is kept no longer than its ttl or its validUntil.",
     file: "packages/achievement-credentials/src/status/status-list-cache.ts",
-    find: "return Math.min(ttlOf(credential), untilExpiry);",
-    replace: "return ttlOf(credential);",
+    find: "return Math.min(ttlOf(document), untilExpiry);",
+    replace: "return ttlOf(document);",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
@@ -5266,8 +5287,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The check of the status of a credential passes its limit of tokens to the reading of the list credential.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "maxTokens: settings.maxTokens }",
-    replace: "maxTokens: Number.MAX_SAFE_INTEGER }",
+    find: '{ maxDepth: MAX_DEPTH, maxTokens: settings.maxTokens },\n    "The status list credential",',
+    replace: '{ maxDepth: MAX_DEPTH, maxTokens: Number.MAX_SAFE_INTEGER },\n    "The status list credential",',
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {

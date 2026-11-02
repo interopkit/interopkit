@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import fc from "fast-check";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   allocateStatusIndex,
   createStatusList,
@@ -371,9 +371,9 @@ describe("checking the status of a credential", () => {
       outcome: "skipped",
       detail: "The credential has no credentialStatus.",
     });
-    expect(await skipped(credentialWithStatus({ type: "1EdTechRevocationList" }))).toMatchObject({
+    expect(await skipped(credentialWithStatus({ type: "StatusList2021Entry" }))).toMatchObject({
       outcome: "skipped",
-      detail: expect.stringContaining("only BitstringStatusListEntry"),
+      detail: expect.stringContaining("BitstringStatusListEntry and 1EdTechRevocationList are checked"),
     });
     expect(await skipped({ ...bare, credentialStatus: "a text" })).toMatchObject({ outcome: "skipped" });
     expect(
@@ -516,6 +516,46 @@ describe("checking the status of a credential", () => {
     }
   });
 
+  it("judges the validity of a list within clockSkewSeconds", async () => {
+    const edKey = KEYS.ed25519;
+    const did = `did:key:${edKey.multikey}`;
+    const contexts = memoryContexts();
+    const list = await issueStatusListCredential(
+      { id: LIST_URL, issuer: did, purpose: "revocation", list: listWith(), validFrom: "2024-06-14T12:00:30Z" },
+      signerOf(edKey, `${did}#${edKey.multikey}`),
+      { proof: "data-integrity", contexts: contexts.load, clock: clockAt(NOW) },
+    );
+    const credential = credentialWithStatus({ statusListIndex: "8" }, did);
+    const w = world({ [LIST_URL]: list });
+    const options = { ...w.options, contexts: contexts.load };
+    expect((await verifyCredentialStatus(credential, options)).outcome).toBe("passed");
+    expect((await verifyCredentialStatus(credential, { ...options, clockSkewSeconds: 0 })).outcome).toBe("failed");
+  });
+
+  it("inflates a list once for every credential that names it", async () => {
+    const w = world({ [LIST_URL]: await listJws(listWith()) });
+    const cache = createStatusListCache({ clock: clockAt(NOW) });
+    let inflated = 0;
+    const Original = globalThis.DecompressionStream;
+    vi.stubGlobal(
+      "DecompressionStream",
+      class extends Original {
+        constructor(format: CompressionFormat) {
+          super(format);
+          inflated += 1;
+        }
+      },
+    );
+    try {
+      for (const index of ["8", "9", "10"]) {
+        await verifyCredentialStatus(credentialWithStatus({ statusListIndex: index }), { ...w.options, cache });
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(inflated).toBe(1);
+  });
+
   it("passes on the failure of a cache that is no fault of the list", async () => {
     const w = world({ [LIST_URL]: await listJws(listWith()) });
     const cache = { get: async () => Promise.reject(new TypeError("the cache broke")) };
@@ -612,5 +652,84 @@ describe("the cache of status list credentials", () => {
     expect(() => createStatusListCache(JSON.parse("null"))).toThrow(DataError);
     expect(() => createStatusListCache(JSON.parse("{}"))).toThrow(DataError);
     expect(createStatusListCache({ clock }).get).toBeTypeOf("function");
+  });
+});
+
+describe("a revocation list of the 1EdTech Revocation List Status Method", () => {
+  const REVOCATIONS = "https://example.edu/revocations/24";
+  /** A credential that names the revocation list, as credentials of Open Badges 3.0 did before Bitstring Status List. */
+  const named = (extra: Record<string, unknown> = {}) =>
+    ({
+      ...credentialWithStatus(),
+      credentialStatus: { id: REVOCATIONS, type: "1EdTechRevocationList" },
+      ...extra,
+    }) as unknown as Parameters<typeof verifyCredentialStatus>[0];
+  const ID = "https://example.edu/credentials/1";
+  const listOf = (revoked: unknown[], extra: Record<string, unknown> = {}) => ({
+    id: REVOCATIONS,
+    issuer: ISSUER,
+    revokedCredential: revoked,
+    ...extra,
+  });
+  const check = async (list: unknown, credential = named(), options: object = {}) => {
+    const w = world({ [REVOCATIONS]: list });
+    return await verifyCredentialStatus(credential, { ...w.options, ...options });
+  };
+
+  it("fails a credential that the list names as revoked, with the reason, whether revoked is true, absent or the text true", async () => {
+    for (const entry of [{ id: ID }, { id: ID, revoked: true }, { id: ID, revoked: "true" }]) {
+      expect(await check(listOf([{ ...entry, revocationReason: "No final payment" }]))).toMatchObject({
+        outcome: "failed",
+        detail: "The credential is revoked: No final payment",
+      });
+    }
+  });
+
+  it("passes a credential that the list does not name, or names as reinstated", async () => {
+    expect((await check(listOf([{ id: "https://example.edu/credentials/2" }]))).outcome).toBe("passed");
+    expect((await check(listOf([{ id: ID, revoked: false }]))).outcome).toBe("passed");
+    expect((await check(listOf([]))).outcome).toBe("passed");
+  });
+
+  it("reads the revoked credentials under the name of the data model and under that of the protocol", async () => {
+    const protocol = { id: REVOCATIONS, issuer: ISSUER, revokedCredentials: [{ id: ID }] };
+    expect((await check(protocol)).outcome).toBe("failed");
+  });
+
+  it("fails a list that names another issuer, unless statusIssuers allows it", async () => {
+    const other = listOf([{ id: ID }], { issuer: "https://other.example/issuers/1" });
+    expect(await check(other)).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("STATUS_VERIFICATION_ERROR"),
+    });
+    const allowed = await check(other, named(), { statusIssuers: ["https://other.example/issuers/1"] });
+    expect(allowed.outcome).toBe("failed");
+    expect(allowed.detail).toContain("revoked");
+    expect((await check(listOf([], { issuer: [ISSUER, "https://other.example/issuers/1"] }))).outcome).toBe("passed");
+  });
+
+  it("is unavailable when the list cannot be fetched, failed when it is not a JSON object or not at an HTTPS address", async () => {
+    expect((await check(503)).outcome).toBe("unavailable");
+    expect((await check("not json")).outcome).toBe("failed");
+    expect((await check("[1]")).outcome).toBe("failed");
+    const insecure = named({
+      credentialStatus: { id: "http://example.edu/revocations/24", type: "1EdTechRevocationList" },
+    });
+    expect(await check(listOf([]), insecure)).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("HTTPS"),
+    });
+  });
+
+  it("is skipped for a credential with no id, which no list can name", async () => {
+    const { id: _id, ...anonymous } = named() as unknown as Record<string, unknown>;
+    expect((await check(listOf([{ id: ID }]), anonymous as never)).outcome).toBe("skipped");
+  });
+
+  it("is fetched once across verifications with a cache", async () => {
+    const w = world({ [REVOCATIONS]: listOf([]) });
+    const cache = createStatusListCache({ clock: clockAt(NOW) });
+    for (let time = 0; time < 3; time += 1) await verifyCredentialStatus(named(), { ...w.options, cache });
+    expect(w.requests.filter((url) => url === REVOCATIONS)).toHaveLength(1);
   });
 });
