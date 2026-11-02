@@ -211,7 +211,8 @@ current behavior only, and never how it came to be. A package's changeset is wri
   sign, derive and verify beside `selective-disclosure`, and `jsonld`, whose default loader the loader test makes fail. For
   `achievement-credentials`: `@digitalbazaar/vc` with its `eddsa-rdfc-2022` suite and its `did:key` driver, `@interop/verifier-core`,
   `@digitalcredentials/verifier-core` and `did-jwt-vc` with `did-jwt`, which verify what the package signs and sign what it
-  verifies, and are timed against `verifyCredential`.
+  verifies, and are timed against `verifyCredential`; `pnpm-workspace.yaml` overrides the `zod` of `@interop/verifier-core`, which
+  asks for a version that has a known vulnerability and no repair.
   `@cfworker/json-schema` is a development dependency of the repository, for `scripts/schema-oracle.ts`: the validator that
   tests run the published JSON schemas of a standard through, and a dependency of `achievement-credentials` for the schemas that a
   credential names beyond those of 1EdTech. `oidc-provider` is a development dependency of `core` and of

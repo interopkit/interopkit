@@ -6,6 +6,11 @@ packages:
 # A version is installed only when it has been on the registry for 14 days (in minutes).
 minimumReleaseAge: 20160
 
+# The verifier of the Interop Alliance, a counterparty of the tests, asks for zod 3, whose memory a constrained collection can
+# exhaust (GHSA-mrhx-c7xc-m3w5) and which no release of 3 repairs.
+overrides:
+  "@interop/verifier-core>zod": 4.6.7
+
 allowBuilds:
   core-js: false
   esbuild: false
