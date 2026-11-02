@@ -20,11 +20,11 @@ flowchart LR
 | Learning Locker `xapi-service` | LRS application, Node.js, MongoDB | `685c342`, 2023-08-15: unmaintained | MIT | 13 | 10 | 0 | 3 | 0 |
 | SQL LRS | LRS application, Clojure, SQL | 0.9.11, 2026-10-26 | Apache-2.0 | 12 | 7 | 0 | 5 | 0 |
 | Yet Analytics `lrs` | LRS library, Clojure and ClojureScript | 1.5.2, 2026-10-16 | Apache-2.0 | 11 | 8 | 0 | 3 | 0 |
-| Ralph | LRS application, Python | 5.1.0, 2026-10-12 | MIT | 8 | 4 | 1 | 3 | 0 |
+| Ralph | LRS application, Python | 5.1.0, 2026-10-12 | MIT | 7 | 3 | 1 | 3 | 0 |
 | `@xapi/xapi` | Client, TypeScript | 3.0.3, 2026-04-27 | MIT | 11 | 8 | 1 | 2 | 0 |
 | TinCanJS | Client, JavaScript | 0.50.0, 2016: unmaintained | Apache-2.0 | 11 | 7 | 0 | 4 | 0 |
 | ADL xAPIWrapper | Client, JavaScript | 1.11.0, 2022-05-24: unmaintained | Apache-2.0 | 6 | 3 | 1 | 2 | 0 |
-| **All** | | | | **72** | **47** | **3** | **22** | **0** |
+| **All** | | | | **71** | **46** | **3** | **22** | **0** |
 
 `@learninglocker/xapi-validation` and `@xapi/cmi5` are not rows: the first is the oracle of the rules of 1.0.3 ([evidence](evidence.md)),
 and the second implements cmi5, a profile with a standard of its own.
