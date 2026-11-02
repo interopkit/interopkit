@@ -5,7 +5,7 @@
  * @module @interopkit/achievement-credentials
  */
 
-export type { BakedCredential, BakedKind } from "./baking/index.js";
+export type { BakedCredential, BakedKind, FoundKind } from "./baking/index.js";
 export type {
   CredentialsClient,
   CredentialsClientConfig,

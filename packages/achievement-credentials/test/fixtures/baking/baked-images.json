@@ -447,5 +447,151 @@
       "kind": "badge",
       "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8xIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIk9wZW5CYWRnZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmVkdS9pc3N1ZXJzLzEiLCJ0eXBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwMjQtMDYtMTNUMTA6MDA6MDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTpsZWFybmVyIiwidHlwZSI6WyJBY2hpZXZlbWVudFN1YmplY3QiXSwiYWNoaWV2ZW1lbnQiOnsiaWQiOiJodHRwczovL2V4YW1wbGUuZWR1L2FjaGlldmVtZW50cy8xIiwidHlwZSI6WyJBY2hpZXZlbWVudCJdLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJQYXNzIHRoZSBjb3Vyc2UgXV0-IDxiPiAmIFwicXVvdGVzXCIgw6nkuJbwn5iALiJ9LCJkZXNjcmlwdGlvbiI6IlBhc3NlZCB0aGUgY291cnNlLiIsIm5hbWUiOiJDb3Vyc2UifX19.bm90IGEgc2lnbmF0dXJl"
     }
+  },
+  "openBadgesV2": {
+    "assertion": {
+      "@context": "https://w3id.org/openbadges/v2",
+      "id": "https://example.org/assertions/123",
+      "type": "Assertion",
+      "recipient": {
+        "type": "email",
+        "hashed": false,
+        "identity": "alice@example.org"
+      },
+      "issuedOn": "2016-12-31T23:59:59+00:00",
+      "verification": {
+        "type": "hosted"
+      },
+      "badge": {
+        "id": "https://example.org/badges/5",
+        "type": "BadgeClass",
+        "name": "3-D Printmaster",
+        "description": "This badge is awarded for passing the 3-D printing knowledge and safety test.",
+        "image": "https://example.org/badges/5/image",
+        "criteria": {
+          "narrative": "Students are tested on knowledge and safety."
+        },
+        "issuer": {
+          "id": "https://example.org/issuer",
+          "type": "Profile",
+          "name": "Example Maker Society",
+          "url": "https://example.org",
+          "email": "contact@example.org"
+        }
+      }
+    },
+    "signed": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6NTJlNGM2YjMtOGMxMy00ZmE4LTg0ODItYTVjZjM0ZWYzN2E5IiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOmZhbHNlLCJpZGVudGl0eSI6ImFsaWNlQGV4YW1wbGUub3JnIn0sImlzc3VlZE9uIjoiMjAxNi0xMi0zMVQyMzo1OTo1OSswMDowMCIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoic2lnbmVkIn0sImJhZGdlIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9iYWRnZXMvNSIsInR5cGUiOiJCYWRnZUNsYXNzIiwibmFtZSI6IjMtRCBQcmludG1hc3RlciIsImRlc2NyaXB0aW9uIjoiVGhpcyBiYWRnZSBpcyBhd2FyZGVkIGZvciBwYXNzaW5nIHRoZSAzLUQgcHJpbnRpbmcga25vd2xlZGdlIGFuZCBzYWZldHkgdGVzdC4iLCJpbWFnZSI6Imh0dHBzOi8vZXhhbXBsZS5vcmcvYmFkZ2VzLzUvaW1hZ2UiLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJTdHVkZW50cyBhcmUgdGVzdGVkIG9uIGtub3dsZWRnZSBhbmQgc2FmZXR5LiJ9LCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUub3JnL2lzc3VlciIsInR5cGUiOiJQcm9maWxlIiwibmFtZSI6IkV4YW1wbGUgTWFrZXIgU29jaWV0eSIsInVybCI6Imh0dHBzOi8vZXhhbXBsZS5vcmciLCJlbWFpbCI6ImNvbnRhY3RAZXhhbXBsZS5vcmcifX19.bm90IGEgc2lnbmF0dXJl",
+    "png": {
+      "an iTXt chunk with the JSON of an assertion": {
+        "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAC0WlUWHRvcGVuYmFkZ2VzAAAAAAB7IkBjb250ZXh0IjoiaHR0cHM6Ly93M2lkLm9yZy9vcGVuYmFkZ2VzL3YyIiwiaWQiOiJodHRwczovL2V4YW1wbGUub3JnL2Fzc2VydGlvbnMvMTIzIiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOmZhbHNlLCJpZGVudGl0eSI6ImFsaWNlQGV4YW1wbGUub3JnIn0sImlzc3VlZE9uIjoiMjAxNi0xMi0zMVQyMzo1OTo1OSswMDowMCIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoiaG9zdGVkIn0sImJhZGdlIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9iYWRnZXMvNSIsInR5cGUiOiJCYWRnZUNsYXNzIiwibmFtZSI6IjMtRCBQcmludG1hc3RlciIsImRlc2NyaXB0aW9uIjoiVGhpcyBiYWRnZSBpcyBhd2FyZGVkIGZvciBwYXNzaW5nIHRoZSAzLUQgcHJpbnRpbmcga25vd2xlZGdlIGFuZCBzYWZldHkgdGVzdC4iLCJpbWFnZSI6Imh0dHBzOi8vZXhhbXBsZS5vcmcvYmFkZ2VzLzUvaW1hZ2UiLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJTdHVkZW50cyBhcmUgdGVzdGVkIG9uIGtub3dsZWRnZSBhbmQgc2FmZXR5LiJ9LCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUub3JnL2lzc3VlciIsInR5cGUiOiJQcm9maWxlIiwibmFtZSI6IkV4YW1wbGUgTWFrZXIgU29jaWV0eSIsInVybCI6Imh0dHBzOi8vZXhhbXBsZS5vcmciLCJlbWFpbCI6ImNvbnRhY3RAZXhhbXBsZS5vcmcifX19cOnz4QAAAA1JREFUeJxjEFAw+A8AAgQBYI28u3EAAAAASUVORK5CYII=",
+        "kind": "badge-v2",
+        "credential": {
+          "@context": "https://w3id.org/openbadges/v2",
+          "id": "https://example.org/assertions/123",
+          "type": "Assertion",
+          "recipient": {
+            "type": "email",
+            "hashed": false,
+            "identity": "alice@example.org"
+          },
+          "issuedOn": "2016-12-31T23:59:59+00:00",
+          "verification": {
+            "type": "hosted"
+          },
+          "badge": {
+            "id": "https://example.org/badges/5",
+            "type": "BadgeClass",
+            "name": "3-D Printmaster",
+            "description": "This badge is awarded for passing the 3-D printing knowledge and safety test.",
+            "image": "https://example.org/badges/5/image",
+            "criteria": {
+              "narrative": "Students are tested on knowledge and safety."
+            },
+            "issuer": {
+              "id": "https://example.org/issuer",
+              "type": "Profile",
+              "name": "Example Maker Society",
+              "url": "https://example.org",
+              "email": "contact@example.org"
+            }
+          }
+        }
+      },
+      "an iTXt chunk with a signed assertion": {
+        "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAEOWlUWHRvcGVuYmFkZ2VzAAAAAABleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SW1oMGRIQnpPaTh2WlhoaGJYQnNaUzVsWkhVdmEyVjVjeU5yWlhrdE1TSXNJblI1Y0NJNklrcFhWQ0o5LmV5SkFZMjl1ZEdWNGRDSTZJbWgwZEhCek9pOHZkek5wWkM1dmNtY3ZiM0JsYm1KaFpHZGxjeTkyTWlJc0ltbGtJam9pZFhKdU9uVjFhV1E2TlRKbE5HTTJZak10T0dNeE15MDBabUU0TFRnME9ESXRZVFZqWmpNMFpXWXpOMkU1SWl3aWRIbHdaU0k2SWtGemMyVnlkR2x2YmlJc0luSmxZMmx3YVdWdWRDSTZleUowZVhCbElqb2laVzFoYVd3aUxDSm9ZWE5vWldRaU9tWmhiSE5sTENKcFpHVnVkR2wwZVNJNkltRnNhV05sUUdWNFlXMXdiR1V1YjNKbkluMHNJbWx6YzNWbFpFOXVJam9pTWpBeE5pMHhNaTB6TVZReU16bzFPVG8xT1Nzd01Eb3dNQ0lzSW5abGNtbG1hV05oZEdsdmJpSTZleUowZVhCbElqb2ljMmxuYm1Wa0luMHNJbUpoWkdkbElqcDdJbWxrSWpvaWFIUjBjSE02THk5bGVHRnRjR3hsTG05eVp5OWlZV1JuWlhNdk5TSXNJblI1Y0dVaU9pSkNZV1JuWlVOc1lYTnpJaXdpYm1GdFpTSTZJak10UkNCUWNtbHVkRzFoYzNSbGNpSXNJbVJsYzJOeWFYQjBhVzl1SWpvaVZHaHBjeUJpWVdSblpTQnBjeUJoZDJGeVpHVmtJR1p2Y2lCd1lYTnphVzVuSUhSb1pTQXpMVVFnY0hKcGJuUnBibWNnYTI1dmQyeGxaR2RsSUdGdVpDQnpZV1psZEhrZ2RHVnpkQzRpTENKcGJXRm5aU0k2SW1oMGRIQnpPaTh2WlhoaGJYQnNaUzV2Y21jdlltRmtaMlZ6THpVdmFXMWhaMlVpTENKamNtbDBaWEpwWVNJNmV5SnVZWEp5WVhScGRtVWlPaUpUZEhWa1pXNTBjeUJoY21VZ2RHVnpkR1ZrSUc5dUlHdHViM2RzWldSblpTQmhibVFnYzJGbVpYUjVMaUo5TENKcGMzTjFaWElpT25zaWFXUWlPaUpvZEhSd2N6b3ZMMlY0WVcxd2JHVXViM0puTDJsemMzVmxjaUlzSW5SNWNHVWlPaUpRY205bWFXeGxJaXdpYm1GdFpTSTZJa1Y0WVcxd2JHVWdUV0ZyWlhJZ1UyOWphV1YwZVNJc0luVnliQ0k2SW1oMGRIQnpPaTh2WlhoaGJYQnNaUzV2Y21jaUxDSmxiV0ZwYkNJNkltTnZiblJoWTNSQVpYaGhiWEJzWlM1dmNtY2lmWDE5LmJtOTBJR0VnYzJsbmJtRjBkWEpsFQrOOgAAAA1JREFUeJxjEFAw+A8AAgQBYI28u3EAAAAASUVORK5CYII=",
+        "kind": "badge-v2",
+        "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6NTJlNGM2YjMtOGMxMy00ZmE4LTg0ODItYTVjZjM0ZWYzN2E5IiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOmZhbHNlLCJpZGVudGl0eSI6ImFsaWNlQGV4YW1wbGUub3JnIn0sImlzc3VlZE9uIjoiMjAxNi0xMi0zMVQyMzo1OTo1OSswMDowMCIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoic2lnbmVkIn0sImJhZGdlIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9iYWRnZXMvNSIsInR5cGUiOiJCYWRnZUNsYXNzIiwibmFtZSI6IjMtRCBQcmludG1hc3RlciIsImRlc2NyaXB0aW9uIjoiVGhpcyBiYWRnZSBpcyBhd2FyZGVkIGZvciBwYXNzaW5nIHRoZSAzLUQgcHJpbnRpbmcga25vd2xlZGdlIGFuZCBzYWZldHkgdGVzdC4iLCJpbWFnZSI6Imh0dHBzOi8vZXhhbXBsZS5vcmcvYmFkZ2VzLzUvaW1hZ2UiLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJTdHVkZW50cyBhcmUgdGVzdGVkIG9uIGtub3dsZWRnZSBhbmQgc2FmZXR5LiJ9LCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUub3JnL2lzc3VlciIsInR5cGUiOiJQcm9maWxlIiwibmFtZSI6IkV4YW1wbGUgTWFrZXIgU29jaWV0eSIsInVybCI6Imh0dHBzOi8vZXhhbXBsZS5vcmciLCJlbWFpbCI6ImNvbnRhY3RAZXhhbXBsZS5vcmcifX19.bm90IGEgc2lnbmF0dXJl"
+      },
+      "a legacy tEXt chunk with the address of a hosted assertion": {
+        "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAALXRFWHRvcGVuYmFkZ2VzAGh0dHBzOi8vZXhhbXBsZS5vcmcvYXNzZXJ0aW9ucy8xMjMgYdb3AAAADUlEQVR4nGMQUDD4DwACBAFgjby7cQAAAABJRU5ErkJggg==",
+        "kind": "badge-v2",
+        "credential": "https://example.org/assertions/123"
+      },
+      "a legacy chunk before a credential of Open Badges 3.0": {
+        "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAALXRFWHRvcGVuYmFkZ2VzAGh0dHBzOi8vZXhhbXBsZS5vcmcvYXNzZXJ0aW9ucy8xMjMgYdb3AAAAH2lUWHRvcGVuYmFkZ2VjcmVkZW50aWFsAAAAAAB7ImEiOjF9k+9LmQAAAABJRU5ErkJggg==",
+        "kind": "badge-v2",
+        "credential": "https://example.org/assertions/123"
+      }
+    },
+    "pngRefused": {
+      "a legacy chunk that holds no address": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAGXRFWHRvcGVuYmFkZ2VzAG5vdCBhbiBhZGRyZXNziteU2QAAAABJRU5ErkJggg==",
+      "a legacy chunk that fails its CRC-32": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAALXRFWHRvcGVuYmFkZ2VzAGh0dHBzOi8vZXhhbXBsZS5vcmcvYXNzZXJ0aW9ucy8xMjMgYdYIAAAAAElFTkSuQmCC",
+      "an iTXt chunk that is neither JSON nor a JWS": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAH2lUWHRvcGVuYmFkZ2VzAAAAAABub3QgYW4gYXNzZXJ0aW9uBeQU7QAAAABJRU5ErkJggg=="
+    },
+    "svg": {
+      "the address of a hosted assertion and its JSON, as the example of 2.0 Baking writes them": {
+        "image": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:openbadges=\"http://openbadges.org\"><openbadges:assertion verify=\"https://example.org/assertions/123\"><![CDATA[{\"@context\":\"https://w3id.org/openbadges/v2\",\"id\":\"https://example.org/assertions/123\",\"type\":\"Assertion\",\"recipient\":{\"type\":\"email\",\"hashed\":false,\"identity\":\"alice@example.org\"},\"issuedOn\":\"2016-12-31T23:59:59+00:00\",\"verification\":{\"type\":\"hosted\"},\"badge\":{\"id\":\"https://example.org/badges/5\",\"type\":\"BadgeClass\",\"name\":\"3-D Printmaster\",\"description\":\"This badge is awarded for passing the 3-D printing knowledge and safety test.\",\"image\":\"https://example.org/badges/5/image\",\"criteria\":{\"narrative\":\"Students are tested on knowledge and safety.\"},\"issuer\":{\"id\":\"https://example.org/issuer\",\"type\":\"Profile\",\"name\":\"Example Maker Society\",\"url\":\"https://example.org\",\"email\":\"contact@example.org\"}}}]]></openbadges:assertion>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n",
+        "kind": "badge-v2",
+        "credential": {
+          "@context": "https://w3id.org/openbadges/v2",
+          "id": "https://example.org/assertions/123",
+          "type": "Assertion",
+          "recipient": {
+            "type": "email",
+            "hashed": false,
+            "identity": "alice@example.org"
+          },
+          "issuedOn": "2016-12-31T23:59:59+00:00",
+          "verification": {
+            "type": "hosted"
+          },
+          "badge": {
+            "id": "https://example.org/badges/5",
+            "type": "BadgeClass",
+            "name": "3-D Printmaster",
+            "description": "This badge is awarded for passing the 3-D printing knowledge and safety test.",
+            "image": "https://example.org/badges/5/image",
+            "criteria": {
+              "narrative": "Students are tested on knowledge and safety."
+            },
+            "issuer": {
+              "id": "https://example.org/issuer",
+              "type": "Profile",
+              "name": "Example Maker Society",
+              "url": "https://example.org",
+              "email": "contact@example.org"
+            }
+          }
+        }
+      },
+      "a signed assertion in the verify attribute of an empty element": {
+        "image": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:openbadges=\"http://openbadges.org\"><openbadges:assertion verify=\"eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6NTJlNGM2YjMtOGMxMy00ZmE4LTg0ODItYTVjZjM0ZWYzN2E5IiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOmZhbHNlLCJpZGVudGl0eSI6ImFsaWNlQGV4YW1wbGUub3JnIn0sImlzc3VlZE9uIjoiMjAxNi0xMi0zMVQyMzo1OTo1OSswMDowMCIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoic2lnbmVkIn0sImJhZGdlIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9iYWRnZXMvNSIsInR5cGUiOiJCYWRnZUNsYXNzIiwibmFtZSI6IjMtRCBQcmludG1hc3RlciIsImRlc2NyaXB0aW9uIjoiVGhpcyBiYWRnZSBpcyBhd2FyZGVkIGZvciBwYXNzaW5nIHRoZSAzLUQgcHJpbnRpbmcga25vd2xlZGdlIGFuZCBzYWZldHkgdGVzdC4iLCJpbWFnZSI6Imh0dHBzOi8vZXhhbXBsZS5vcmcvYmFkZ2VzLzUvaW1hZ2UiLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJTdHVkZW50cyBhcmUgdGVzdGVkIG9uIGtub3dsZWRnZSBhbmQgc2FmZXR5LiJ9LCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUub3JnL2lzc3VlciIsInR5cGUiOiJQcm9maWxlIiwibmFtZSI6IkV4YW1wbGUgTWFrZXIgU29jaWV0eSIsInVybCI6Imh0dHBzOi8vZXhhbXBsZS5vcmciLCJlbWFpbCI6ImNvbnRhY3RAZXhhbXBsZS5vcmcifX19.bm90IGEgc2lnbmF0dXJl\"/>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n",
+        "kind": "badge-v2",
+        "credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6Imh0dHBzOi8vZXhhbXBsZS5lZHUva2V5cyNrZXktMSIsInR5cCI6IkpXVCJ9.eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvb3BlbmJhZGdlcy92MiIsImlkIjoidXJuOnV1aWQ6NTJlNGM2YjMtOGMxMy00ZmE4LTg0ODItYTVjZjM0ZWYzN2E5IiwidHlwZSI6IkFzc2VydGlvbiIsInJlY2lwaWVudCI6eyJ0eXBlIjoiZW1haWwiLCJoYXNoZWQiOmZhbHNlLCJpZGVudGl0eSI6ImFsaWNlQGV4YW1wbGUub3JnIn0sImlzc3VlZE9uIjoiMjAxNi0xMi0zMVQyMzo1OTo1OSswMDowMCIsInZlcmlmaWNhdGlvbiI6eyJ0eXBlIjoic2lnbmVkIn0sImJhZGdlIjp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9iYWRnZXMvNSIsInR5cGUiOiJCYWRnZUNsYXNzIiwibmFtZSI6IjMtRCBQcmludG1hc3RlciIsImRlc2NyaXB0aW9uIjoiVGhpcyBiYWRnZSBpcyBhd2FyZGVkIGZvciBwYXNzaW5nIHRoZSAzLUQgcHJpbnRpbmcga25vd2xlZGdlIGFuZCBzYWZldHkgdGVzdC4iLCJpbWFnZSI6Imh0dHBzOi8vZXhhbXBsZS5vcmcvYmFkZ2VzLzUvaW1hZ2UiLCJjcml0ZXJpYSI6eyJuYXJyYXRpdmUiOiJTdHVkZW50cyBhcmUgdGVzdGVkIG9uIGtub3dsZWRnZSBhbmQgc2FmZXR5LiJ9LCJpc3N1ZXIiOnsiaWQiOiJodHRwczovL2V4YW1wbGUub3JnL2lzc3VlciIsInR5cGUiOiJQcm9maWxlIiwibmFtZSI6IkV4YW1wbGUgTWFrZXIgU29jaWV0eSIsInVybCI6Imh0dHBzOi8vZXhhbXBsZS5vcmciLCJlbWFpbCI6ImNvbnRhY3RAZXhhbXBsZS5vcmcifX19.bm90IGEgc2lnbmF0dXJl"
+      },
+      "the address of a hosted assertion alone": {
+        "image": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:openbadges=\"http://openbadges.org\"><openbadges:assertion verify=\"https://example.org/assertions/123\"/>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n",
+        "kind": "badge-v2",
+        "credential": "https://example.org/assertions/123"
+      },
+      "another prefix bound to the namespace of 2.0": {
+        "image": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:ob=\"http://openbadges.org\"><ob:assertion verify=\"https://example.org/assertions/123\"/>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n",
+        "kind": "badge-v2",
+        "credential": "https://example.org/assertions/123"
+      }
+    },
+    "svgRefused": {
+      "an element with no body and no verify attribute": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a badge -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" xmlns:openbadges=\"http://openbadges.org\"><openbadges:assertion/>\n  <rect width=\"512\" height=\"512\" fill=\"#336\"/>\n</svg>\n"
+    }
   }
 }

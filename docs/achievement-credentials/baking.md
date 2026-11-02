@@ -2,9 +2,10 @@
 
 `@interopkit/achievement-credentials/baking` writes a credential into a PNG or an SVG image, so that the credential travels
 wherever the image does, and reads it out again. It covers Open Badges 3.0 section 5.3 and CLR 2.0 section 4.3: the image holds
-a compact JWS when the credential is signed as a VC-JWT, and the JSON of the credential when it carries an embedded proof. It
-checks the structure of the image and the shape of the credential and nothing else: `verifyCredential` decides whether the
-credential is genuine.
+a compact JWS when the credential is signed as a VC-JWT, and the JSON of the credential when it carries an embedded proof. The
+readers also find an Open Badges 2.0 assertion as Open Badges 2.0 Baking writes it, which is read and never baked. It checks the
+structure of the image and the shape of the credential and nothing else: `verifyCredential` decides whether the credential is
+genuine.
 
 ```mermaid
 flowchart LR
@@ -16,7 +17,7 @@ flowchart LR
     k1 --> w1
   end
   subgraph read["Reading"]
-    i2["An image"] --> p2{"PNG: first iTXt chunk with a keyword<br/>SVG: first credential element"}
+    i2["An image"] --> p2{"PNG: first iTXt chunk with a keyword,<br/>or legacy tEXt openbadges<br/>SVG: first credential or 2.0 assertion element"}
     p2 -->|"none"| u2["undefined"]
     p2 -->|"found"| r2["kind and credential:<br/>text for a JWS, an object for JSON"]
   end
@@ -30,8 +31,8 @@ flowchart LR
 | `bakeSvg(svg, credential, options)`     | Returns the SVG with a `credential` element right after the `svg` start tag                   |
 | `readSvg(svg, options)`                 | Returns the `BakedCredential` of the first credential element, or `undefined`                 |
 
-A `BakedCredential` is `{ kind, credential }`: `kind` is `"badge"` or `"clr"`, and `credential` is the compact JWS as text, or
-the JSON as an object that nothing has checked.
+A `BakedCredential` is `{ kind, credential }`: `kind` is `"badge"`, `"clr"` or `"badge-v2"`, and `credential` is the compact JWS
+as text, the address of a hosted 2.0 assertion as text, or the JSON as an object that nothing has checked.
 
 ## Quick start
 
@@ -110,6 +111,21 @@ declaration goes on the new element, and when the `svg` element is empty (`<svg/
 
 A reader accepts any prefix: it matches the namespace and the local name `credential`.
 
+## Open Badges 2.0
+
+The readers find an Open Badges 2.0 assertion as Open Badges 2.0 Baking writes it, with the kind `badge-v2`; the bakers refuse
+one, as an object, as a `BadgeAssertionV2` or in a compact JWS. Pass what they find to `verifyCredential`, which verifies a 2.0
+assertion ([Reading Open Badges 2.0](open-badges-2.md)).
+
+| Image | Where                                                            | Holds                                                                                                        |
+| ----- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| PNG   | An `iTXt` chunk with the keyword `openbadges`                     | The JSON of an assertion, or a signed assertion as a compact JWS                                              |
+| PNG   | A legacy `tEXt` chunk with the keyword `openbadges`               | The HTTP or HTTPS address of a hosted assertion; its CRC-32 is checked                                       |
+| SVG   | An `assertion` element in the namespace `http://openbadges.org`  | The JSON of an assertion in its text, else a compact JWS or the address of a hosted assertion in `verify`    |
+
+A body wins over `verify`, which the example of 2.0 Baking fills with the address of the same assertion. A baker of Open Badges
+3.0 leaves a 2.0 chunk or element where it is: its own goes first, so a reader finds it first.
+
 ## Options
 
 | Option     | Applies to   | Meaning                                                                                                     | Default    |
@@ -162,9 +178,11 @@ Every error is a `DataError` with a sentence that names the fault.
 | The SVG is not well-formed XML before the credential, or the root is not `svg` in the SVG namespace | Fix the file; the message gives the line and the column                            |
 | The SVG has too many open elements or attributes                                              | The file is not an image that a badge needs                                            |
 | The credential element holds an element, or both `verify` and text, or nothing                | The image was not baked as the specifications say                                      |
+| A 2.0 `assertion` element has no body and no `verify`, or a legacy `tEXt` chunk holds no address or fails its CRC-32 | The image was not baked as Open Badges 2.0 Baking says                     |
 | The text is neither the JSON of an object nor a compact JWS, or the JSON nests too deep       | The image does not hold a credential                                                   |
 | The image holds a credential and `replace` is `false`                                         | Pass `replace: true`, or read the credential that is there                             |
-| The credential is not a compact JWS or an object that `readCredential` accepts                | Read the message: it names the first fault. A 2.0 assertion is never baked              |
+| The credential is not a compact JWS or an object that `readCredential` accepts                | Read the message: it names the first fault                                             |
+| The credential is an Open Badges 2.0 assertion                                                | Bake a credential of Open Badges 3.0 or CLR 2.0: 2.0 is read and never baked           |
 | A compact JWS whose payload is not base64url text of JSON with a `type`                       | Pass a JWS of a credential                                                             |
 
 `readPng` and `readSvg` return `undefined`, and do not throw, for an image that is well formed and holds no credential.
@@ -179,8 +197,8 @@ Every error is a `DataError` with a sentence that names the fault.
 
 | Not included                                     | Why                                                                                                       |
 | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| Open Badges 2.0 images                           | A later module reads them: 2.0 is read and never baked                                                     |
-| Compressed `iTXt` chunks, and `tEXt` or `zTXt`    | The specifications forbid compression; inflating text from an image is a way to exhaust memory           |
+| Baking an Open Badges 2.0 assertion              | Open Badges 3.0 supersedes 2.0, which is read and never issued                                            |
+| Compressed `iTXt` chunks, `zTXt`, and `tEXt` but the legacy 2.0 address | The specifications forbid compression; inflating text from an image is a way to exhaust memory |
 | Verifying the credential                         | `verifyCredential` does it; baking checks the shape of the image and the credential                       |
 | Rendering, resizing or validating the picture    | Nothing is decoded or displayed: the pixels and every other chunk are copied                              |
 | Other image formats                              | The specifications name PNG and SVG                                                                       |
@@ -197,3 +215,4 @@ Every error is a `DataError` with a sentence that names the fault.
 | A prefix that the root binds to another namespace | Silent                                                                            | The declaration goes on the new element                                               |
 | Text after the credential element              | The rest may be discarded                                                            | Not parsed: a fault after the first credential is not found                           |
 | Compression                                    | A baker must not use it; the reader's duty is not stated                             | A reader refuses a compressed credential chunk                                        |
+| A 2.0 SVG element with both a body and `verify` | 2.0 Baking: with a body, the body is the assertion                                  | The body; `verify` is not read                                                        |

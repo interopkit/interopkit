@@ -71,7 +71,9 @@ or in a list of contexts as the validator of 1EdTech reads it, that embeds its B
 `not-embedded`, `unlinked-document`, `duplicate-term`, `redefined-term`, `unknown-term`, `identity-hash-form` and
 `expiry-before-issue`. `AnyCredential` holds
 `BadgeAssertionV2` beside `AnyVerifiableCredential`, and `readCredential` with a `kind` returns an `AnyVerifiableCredential`.
-`credentialSummary` shows a 2.0 assertion as `badge-v2`, and `matchesIdentifier` matches its recipient of `IDENTITY_TYPES_V2`
+`readPng` and `readSvg` find a 2.0 assertion as Open Badges 2.0 Baking writes it, kind `badge-v2`: JSON or a compact JWS in an
+`iTXt` chunk `openbadges`, the address of a hosted assertion in a legacy `tEXt` chunk, or an `assertion` element of
+`http://openbadges.org`; the bakers refuse a 2.0 assertion. `credentialSummary` shows a 2.0 assertion as `badge-v2`, and `matchesIdentifier` matches its recipient of `IDENTITY_TYPES_V2`
 in `sha256$` and `md5$`. A 2.0 badge is read and never written.
 
 `@interopkit/achievement-credentials/verify` is `verifyCredential`: it verifies a credential, an endorsement or a CLR (as an object, a

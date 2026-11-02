@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { SaxesParser, type SaxesTagNS } from "saxes";
-import { BAKED_KINDS, type BakedKind, CREDENTIAL_ELEMENT, FORMATS, VERIFY_ATTRIBUTE } from "./formats.js";
+import { BAKED_KINDS, FORMATS, FOUND_KINDS, type FoundKind, VERIFY_ATTRIBUTE } from "./formats.js";
 
 /**
  * The most characters that go to the parser at once, so that a reader which finds the credential at the top of a large image
@@ -22,7 +22,7 @@ export const MAX_SVG_ATTRIBUTES = 256;
 
 /** The element that holds a credential, with where it lies in the text and what it holds. */
 interface CredentialElement {
-  readonly kind: BakedKind;
+  readonly kind: FoundKind;
   /** The index of the `<` that opens it. */
   readonly start: number;
   /** The index after the `>` that closes it. */
@@ -52,9 +52,9 @@ export interface SvgScan {
   readonly credentials: readonly CredentialElement[];
 }
 
-/** Tells which kind of credential an element is by its namespace and local name. */
-function kindOfElement(tag: SaxesTagNS): BakedKind | undefined {
-  return tag.local === CREDENTIAL_ELEMENT ? BAKED_KINDS.find((kind) => FORMATS[kind].namespace === tag.uri) : undefined;
+/** Tells which kind of credential an element is by its namespace and local name, among the kinds looked for. */
+function kindOfElement(tag: SaxesTagNS, kinds: readonly FoundKind[]): FoundKind | undefined {
+  return kinds.find((kind) => FORMATS[kind].namespace === tag.uri && FORMATS[kind].element === tag.local);
 }
 
 /**
@@ -76,7 +76,9 @@ export function scanSvg(svg: string, all: boolean): SvgScan {
   let depth = 0;
   let attributes = 0;
   let tagStart = 0;
-  let open: { kind: BakedKind; start: number; depth: number; verify: string | undefined; text: string[] } | undefined;
+  let open: { kind: FoundKind; start: number; depth: number; verify: string | undefined; text: string[] } | undefined;
+  // A baker looks for the kinds that it writes, and a reader for every kind, Open Badges 2.0 assertions among them.
+  const kinds = all ? BAKED_KINDS : FOUND_KINDS;
 
   parser.on("error", (error) => {
     if (!done) throw new DataError(`The SVG is not well-formed XML at ${error.message}`);
@@ -115,7 +117,7 @@ export function scanSvg(svg: string, all: boolean): SvgScan {
         bindings: { ...tag.ns },
       };
     }
-    const kind = kindOfElement(tag);
+    const kind = kindOfElement(tag, kinds);
     if (kind !== undefined) {
       open = { kind, start: tagStart, depth, verify: tag.attributes[VERIFY_ATTRIBUTE]?.value, text: [] };
     }

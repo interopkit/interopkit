@@ -6,9 +6,24 @@ import { checkTextSize, limitsOf, type ReadImageOptions } from "./options.js";
 import { scanSvg } from "./svg-scan.js";
 
 /**
+ * Reads what the `assertion` element of Open Badges 2.0 holds: the JSON of an assertion when it has a body, else in its `verify`
+ * attribute a compact JWS or the address of a hosted assertion (Open Badges 2.0 Baking). A body wins over the attribute, which
+ * may then repeat the address of the assertion.
+ */
+function assertionV2Of(verify: string | undefined, body: string, maxTokens: number): string | object {
+  if (body !== "") return bakedJson(body, maxTokens);
+  const value = (verify ?? "").trim();
+  if (/^https?:\/\/\S+$/u.test(value) && URL.canParse(value)) return value;
+  if (value !== "") return bakedJws(value);
+  throw new DataError("The assertion element of the SVG holds no assertion: no body, and no verify attribute.");
+}
+
+/**
  * Reads the credential that an SVG image holds: the first `credential` element in the namespace of Open Badges
- * (`https://purl.imsglobal.org/ob/v3p0`) or of CLR (`https://purl.imsglobal.org/clr/v2p0`), whatever its prefix. A compact JWS
- * is in its `verify` attribute, and the JSON of a credential with an embedded proof is in its text.
+ * (`https://purl.imsglobal.org/ob/v3p0`) or of CLR (`https://purl.imsglobal.org/clr/v2p0`), or `assertion` element of Open
+ * Badges 2.0 (`http://openbadges.org`), whatever its prefix. A compact JWS is in its `verify` attribute, and the JSON of a
+ * credential with an embedded proof is in its text; a 2.0 element holds JSON in its text, else a compact JWS or the address of a
+ * hosted assertion in `verify`.
  *
  * @remarks
  * The result is what the image holds and nothing has checked it: a compact JWS is text, and JSON is an object. The image is
@@ -25,6 +40,7 @@ import { scanSvg } from "./svg-scan.js";
  * nor valid JSON.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#baked-badge | Open Badges 3.0, Baked Badge}
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/#image-format | CLR 2.0, Image Format}
+ * @see {@link https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/baking/index.html | Open Badges 2.0 Baking}
  */
 export function readSvg(svg: string, options?: ReadImageOptions): BakedCredential | undefined {
   const { maxBytes, maxTokens } = limitsOf(options, ["maxBytes", "maxTokens"]);
@@ -33,6 +49,8 @@ export function readSvg(svg: string, options?: ReadImageOptions): BakedCredentia
   const [element] = scanSvg(svg, false).credentials;
   if (element === undefined) return undefined;
   const body = element.text.trim();
+  if (element.kind === "badge-v2")
+    return { kind: "badge-v2", credential: assertionV2Of(element.verify, body, maxTokens) };
   if (element.verify !== undefined) {
     if (body !== "")
       throw new DataError("The credential element of the SVG has a verify attribute and text. It may have one.");

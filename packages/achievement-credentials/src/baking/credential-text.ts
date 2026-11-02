@@ -4,10 +4,14 @@ import * as v from "valibot";
 import { decodeBase64url } from "../base64url.js";
 import { parseJsonText } from "../json-text.js";
 import { readCredential } from "../read/index.js";
-import { jws } from "../read/internal.js";
+import { isBadgeAssertionV2, isDocumentV2, jws } from "../read/internal.js";
 import type { BakedKind } from "./formats.js";
 
 const UTF8 = new TextDecoder("utf-8", { fatal: true });
+
+/** Why an Open Badges 2.0 assertion is not baked: 2.0 is read and never issued, and Open Badges 3.0 supersedes it. */
+const NOT_BAKED_V2 =
+  "The credential is an Open Badges 2.0 assertion, which is read and never baked: bake a credential of Open Badges 3.0 or CLR 2.0.";
 
 /** The credential as an image holds it: its kind, and the text that is written. */
 export interface CredentialText {
@@ -46,6 +50,7 @@ function kindOfJws(compact: string, maxTokens: number): BakedKind {
   const parsed = parseJsonText(payload, { maxDepth: MAX_JSON_DEPTH, maxTokens }, "The payload of the compact JWS");
   if ("reason" in parsed) throw new DataError(parsed.reason);
   const claims = parsed.value;
+  if (isDocumentV2(claims)) throw new DataError(NOT_BAKED_V2);
   const names = typeNames(isRecord(claims) && claims.vc !== undefined ? claims.vc : claims);
   if (!names.some((name) => typeof name === "string")) {
     throw new DataError("The payload of the compact JWS has no type, so it is not a credential.");
@@ -76,6 +81,7 @@ export function textToBake(credential: unknown, maxTokens: number): CredentialTe
   }
   const copy = copyJson(credential, "The credential");
   if ("problem" in copy) throw new DataError(`${copy.problem}.`);
+  if (isDocumentV2(copy.value) || isBadgeAssertionV2(copy.value)) throw new DataError(NOT_BAKED_V2);
   const text = JSON.stringify(copy.value);
   // Counted before the readers walk the value, which costs them a copy and the memory of their findings.
   if (hasMoreTokensThan(text, maxTokens)) {

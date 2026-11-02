@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { crc32 } from "./crc32.js";
-import { BAKED_KINDS, type BakedKind, FORMATS } from "./formats.js";
+import { type BakedKind, FORMATS, type FoundKind } from "./formats.js";
 import type { Chunk } from "./png-chunks.js";
 
 const ENCODER = new TextEncoder();
@@ -9,8 +9,15 @@ const UTF8 = new TextDecoder("utf-8", { fatal: true });
 /** The type of the chunk that holds international text (PNG 1.2, section 11.3.4.5). */
 export const TEXT_CHUNK = "iTXt";
 
+/** The type of the chunk of Latin-1 text that held the address of a hosted badge before 2.0 (Open Badges 2.0 Baking, Legacy PNGs). */
+export const LEGACY_TEXT_CHUNK = "tEXt";
+
 /** The keywords of the kinds as bytes: the chunk starts with one and a null byte. */
-const KEYWORDS = BAKED_KINDS.map((kind) => [kind, ENCODER.encode(FORMATS[kind].keyword)] as const);
+const KEYWORDS: Readonly<Record<FoundKind, Uint8Array>> = {
+  badge: ENCODER.encode(FORMATS.badge.keyword),
+  clr: ENCODER.encode(FORMATS.clr.keyword),
+  "badge-v2": ENCODER.encode(FORMATS["badge-v2"].keyword),
+};
 
 /**
  * The bytes of an `iTXt` chunk between its keyword and its text: the null byte that ends the keyword, the compression flag
@@ -22,14 +29,24 @@ const UNCOMPRESSED_FIELDS = 5;
 /** The bytes of a chunk besides its data: the length, the type and the CRC-32, four each. */
 const FRAME_BYTES = 12;
 
-/** Tells which kind a chunk is the credential of by its keyword, and whether it is one at all. */
-export function kindOfChunk(image: Uint8Array, chunk: Chunk): BakedKind | undefined {
-  return KEYWORDS.find(
-    ([, keyword]) =>
+/**
+ * Tells which kind a chunk is the credential of by its keyword, and whether it is one at all.
+ *
+ * @param kinds - The kinds to look for: those that the bakers write, or every kind that a reader finds.
+ */
+export function kindOfChunk<TKind extends FoundKind>(
+  image: Uint8Array,
+  chunk: Chunk,
+  kinds: readonly TKind[],
+): TKind | undefined {
+  return kinds.find((kind) => {
+    const keyword = KEYWORDS[kind];
+    return (
       chunk.dataEnd - chunk.dataStart > keyword.length &&
       image[chunk.dataStart + keyword.length] === 0 &&
-      keyword.every((byte, at) => image[chunk.dataStart + at] === byte),
-  )?.[0];
+      keyword.every((byte, at) => image[chunk.dataStart + at] === byte)
+    );
+  });
 }
 
 /**
@@ -40,13 +57,10 @@ export function kindOfChunk(image: Uint8Array, chunk: Chunk): BakedKind | undefi
  * @param kind - The kind that the keyword names.
  * @throws `DataError` when the chunk fails its CRC-32, is compressed, lacks its fields, or its text is not UTF-8.
  */
-export function readCredentialChunk(image: Uint8Array, chunk: Chunk, kind: BakedKind): string {
+export function readCredentialChunk(image: Uint8Array, chunk: Chunk, kind: FoundKind): string {
   const { keyword } = FORMATS[kind];
   const label = `The ${keyword} chunk at byte ${chunk.start}`;
-  const stored = new DataView(image.buffer, image.byteOffset + chunk.dataEnd, 4).getUint32(0);
-  if (crc32(image.subarray(chunk.start + 4, chunk.dataEnd)) !== stored) {
-    throw new DataError(`${label} fails its CRC-32, so the image is damaged.`);
-  }
+  checkCrc(image, chunk, label);
   const flags = chunk.dataStart + keyword.length + 1;
   // Compression is refused and not undone: the specifications forbid it, and inflating a chunk of an image is a bomb.
   if (flags + 2 > chunk.dataEnd || image[flags] !== 0 || image[flags + 1] !== 0) {
@@ -65,6 +79,39 @@ export function readCredentialChunk(image: Uint8Array, chunk: Chunk, kind: Baked
   } catch {
     throw new DataError(`${label} holds text that is not UTF-8.`);
   }
+}
+
+/** Checks the CRC-32 of a chunk. */
+function checkCrc(image: Uint8Array, chunk: Chunk, label: string): void {
+  const stored = new DataView(image.buffer, image.byteOffset + chunk.dataEnd, 4).getUint32(0);
+  if (crc32(image.subarray(chunk.start + 4, chunk.dataEnd)) !== stored) {
+    throw new DataError(`${label} fails its CRC-32, so the image is damaged.`);
+  }
+}
+
+/**
+ * Reads the address of a hosted assertion that a legacy `tEXt` chunk with the keyword `openbadges` holds, after checking its
+ * CRC-32 (Open Badges 2.0 Baking, Legacy PNGs).
+ *
+ * @param image - The PNG.
+ * @param chunk - A `tEXt` chunk whose keyword is `openbadges`.
+ * @throws `DataError` when the chunk fails its CRC-32 or holds no HTTP or HTTPS address.
+ */
+export function readLegacyChunk(image: Uint8Array, chunk: Chunk): string {
+  const label = `The openbadges tEXt chunk at byte ${chunk.start}`;
+  checkCrc(image, chunk, label);
+  const start = chunk.dataStart + FORMATS["badge-v2"].keyword.length + 1;
+  let address = "";
+  try {
+    // tEXt holds Latin-1, and an address is ASCII, which UTF-8 reads the same.
+    address = UTF8.decode(image.subarray(start, chunk.dataEnd)).trim();
+  } catch {
+    // Not ASCII: the sentence below says so.
+  }
+  if (!/^https?:\/\/\S+$/u.test(address) || !URL.canParse(address)) {
+    throw new DataError(`${label} holds no address of a hosted assertion.`);
+  }
+  return address;
 }
 
 /**

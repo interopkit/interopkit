@@ -1,6 +1,7 @@
 import { DataError } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import { textToBake } from "./credential-text.js";
+import { BAKED_KINDS } from "./formats.js";
 import { type BakeImageOptions, checkImageSize, limitsOf } from "./options.js";
 import { type Chunk, chunksOf } from "./png-chunks.js";
 import { kindOfChunk, TEXT_CHUNK, writeCredentialChunk } from "./png-text.js";
@@ -33,7 +34,7 @@ export function bakePng(image: Uint8Array, credential: string | object, options?
   const held: Chunk[] = [];
   for (const chunk of chunksOf(image)) {
     if (chunk.type === "IHDR") insertAt = chunk.end;
-    else if (chunk.type === TEXT_CHUNK && kindOfChunk(image, chunk) !== undefined) held.push(chunk);
+    else if (chunk.type === TEXT_CHUNK && kindOfChunk(image, chunk, BAKED_KINDS) !== undefined) held.push(chunk);
   }
   const [first] = held;
   if (first !== undefined && !replace) {

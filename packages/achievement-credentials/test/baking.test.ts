@@ -29,6 +29,20 @@ interface Fixture {
     readonly replaced: { readonly image: string; readonly baked: string };
     readonly otherPrefix: { readonly image: string; readonly kind: string; readonly credential: string };
   };
+  readonly openBadgesV2: {
+    readonly assertion: object;
+    readonly signed: string;
+    readonly png: Record<
+      string,
+      { readonly image: string; readonly kind: string; readonly credential: string | object }
+    >;
+    readonly pngRefused: Record<string, string>;
+    readonly svg: Record<
+      string,
+      { readonly image: string; readonly kind: string; readonly credential: string | object }
+    >;
+    readonly svgRefused: Record<string, string>;
+  };
 }
 
 // The fixture is written by validation/baked_images.py, which writes the PNG chunks with struct and zlib and the SVG text by
@@ -535,5 +549,42 @@ describe("readSvg", () => {
     for (const svg of [null, 1, [], new Uint8Array(4)]) {
       expect(failureOf(() => readSvg(svg as never))).toBeInstanceOf(DataError);
     }
+  });
+});
+
+describe("Open Badges 2.0 in images", () => {
+  const V2 = FIXTURE.openBadgesV2;
+
+  it.each(Object.entries(V2.png))("reads from a PNG %s", (_name, { image, kind, credential }) => {
+    expect(readPng(bytes(image))).toStrictEqual({ kind, credential });
+  });
+
+  it.each(Object.entries(V2.svg))("reads from an SVG %s", (_name, { image, kind, credential }) => {
+    expect(readSvg(image)).toStrictEqual({ kind, credential });
+  });
+
+  it.each(Object.entries(V2.pngRefused))("refuses a PNG with %s", (_name, image) => {
+    expect(failureOf(() => readPng(bytes(image)))).toBeInstanceOf(DataError);
+  });
+
+  it.each(Object.entries(V2.svgRefused))("refuses an SVG with %s", (_name, image) => {
+    expect((failureOf(() => readSvg(image)) as DataError).message).toBe(
+      "The assertion element of the SVG holds no assertion: no body, and no verify attribute.",
+    );
+  });
+
+  it("never bakes a 2.0 assertion, as JSON, as a BadgeAssertionV2 or in a compact JWS", () => {
+    const refusal =
+      "The credential is an Open Badges 2.0 assertion, which is read and never baked: bake a credential of Open Badges 3.0 or CLR 2.0.";
+    const model = { version: "2.0", assertion: {}, badge: {}, issuer: {} };
+    for (const credential of [V2.assertion, model, V2.signed]) {
+      expect((failureOf(() => bakePng(bytes(FIXTURE.png.base), credential)) as DataError).message).toBe(refusal);
+      expect((failureOf(() => bakeSvg(FIXTURE.svg.base, credential)) as DataError).message).toBe(refusal);
+    }
+  });
+
+  it("bakes a credential of 3.0 into an image that holds a 2.0 assertion, which a reader then finds after it", () => {
+    const image = bytes(V2.png["a legacy tEXt chunk with the address of a hosted assertion"]?.image ?? "");
+    expect(readPng(bakePng(image, PARAMETERS.badge))).toStrictEqual({ kind: "badge", credential: PARAMETERS.badge });
   });
 });

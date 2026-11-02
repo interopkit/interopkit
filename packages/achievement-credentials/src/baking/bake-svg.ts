@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import { textToBake } from "./credential-text.js";
-import { CREDENTIAL_ELEMENT, FORMATS, SVG_NAMESPACE, VERIFY_ATTRIBUTE } from "./formats.js";
+import { FORMATS, SVG_NAMESPACE, VERIFY_ATTRIBUTE } from "./formats.js";
 import { type BakeImageOptions, checkTextSize, limitsOf } from "./options.js";
 import { scanSvg } from "./svg-scan.js";
 
@@ -57,12 +57,12 @@ export function bakeSvg(svg: string, credential: string | object, options?: Bake
   if (credentials.length > 0 && !replace) {
     throw new DataError("The SVG image already holds a credential. Pass the option replace to replace it.");
   }
-  const { prefix, namespace } = FORMATS[kind];
+  const { prefix, namespace, element: local } = FORMATS[kind];
   const bound = root.bindings[prefix];
   const declaration = ` xmlns:${prefix}="${namespace}"`;
   // A prefix that the root binds elsewhere is rebound on the element, so that the root's own uses of it stay as they are.
   const own = bound !== undefined && bound !== namespace ? declaration : "";
-  const name = `${prefix}:${CREDENTIAL_ELEMENT}`;
+  const name = `${prefix}:${local}`;
   const element = `<${name}${own}${signed ? ` ${VERIFY_ATTRIBUTE}="${text}"` : ""}>${signed ? "" : cdata(text)}</${name}>`;
   const added = bound === undefined ? declaration : "";
   const edits: Edit[] = credentials.map(({ start, end }) => ({ start, end, text: "" }));

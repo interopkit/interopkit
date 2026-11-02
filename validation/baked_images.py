@@ -261,6 +261,96 @@ def svg_fixtures(credentials):
     }
 
 
+V2_CONTEXT = "https://w3id.org/openbadges/v2"
+V2_NAMESPACE = "http://openbadges.org"
+V2_ADDRESS = "https://example.org/assertions/123"
+
+
+def assertion_v2():
+    """The assertion of the example of Open Badges 2.0 Baking, which embeds its BadgeClass and issuer, with the hashed it lacks."""
+    return {
+        "@context": V2_CONTEXT,
+        "id": V2_ADDRESS,
+        "type": "Assertion",
+        "recipient": {"type": "email", "hashed": False, "identity": "alice@example.org"},
+        "issuedOn": "2016-12-31T23:59:59+00:00",
+        "verification": {"type": "hosted"},
+        "badge": {
+            "id": "https://example.org/badges/5",
+            "type": "BadgeClass",
+            "name": "3-D Printmaster",
+            "description": "This badge is awarded for passing the 3-D printing knowledge and safety test.",
+            "image": "https://example.org/badges/5/image",
+            "criteria": {"narrative": "Students are tested on knowledge and safety."},
+            "issuer": {
+                "id": "https://example.org/issuer",
+                "type": "Profile",
+                "name": "Example Maker Society",
+                "url": "https://example.org",
+                "email": "contact@example.org",
+            },
+        },
+    }
+
+
+def v2_svg(element):
+    """An SVG of Open Badges 2.0: the namespace on the root and the element right after its start tag (2.0 Baking, SVGs)."""
+    root = SVG_ROOT_TAG[:-1] + f' xmlns:openbadges="{V2_NAMESPACE}">'
+    return SVG_BASE.replace(SVG_ROOT_TAG, root + element, 1)
+
+
+def v2_fixtures():
+    """Images that hold an Open Badges 2.0 assertion as 2.0 Baking writes them, and what a reader finds in each."""
+    assertion = assertion_v2()
+    signed = jws({**assertion, "id": "urn:uuid:52e4c6b3-8c13-4fa8-8482-a5cf34ef37a9", "verification": {"type": "signed"}})
+    assertion_text = compact_json(assertion).encode("utf-8")
+    found = lambda credential: {"kind": "badge-v2", "credential": credential}
+    legacy = chunk(b"tEXt", b"openbadges\0" + V2_ADDRESS.encode("ascii"))
+    bad_legacy = bytearray(legacy)
+    bad_legacy[-1] ^= 0xFF
+    png_cases = {
+        "an iTXt chunk with the JSON of an assertion": (png(IHDR, itxt("openbadges", assertion_text), IDAT, IEND), found(assertion)),
+        "an iTXt chunk with a signed assertion": (png(IHDR, itxt("openbadges", signed.encode()), IDAT, IEND), found(signed)),
+        "a legacy tEXt chunk with the address of a hosted assertion": (png(IHDR, legacy, IDAT, IEND), found(V2_ADDRESS)),
+        "a legacy chunk before a credential of Open Badges 3.0": (
+            png(IHDR, legacy, itxt(FORMATS["badge"]["keyword"], b'{"a":1}'), IEND),
+            found(V2_ADDRESS),
+        ),
+    }
+    png_refused = {
+        "a legacy chunk that holds no address": png(IHDR, chunk(b"tEXt", b"openbadges\0not an address"), IEND),
+        "a legacy chunk that fails its CRC-32": png(IHDR, bytes(bad_legacy), IEND),
+        "an iTXt chunk that is neither JSON nor a JWS": png(IHDR, itxt("openbadges", b"not an assertion"), IEND),
+    }
+    svg_cases = {
+        "the address of a hosted assertion and its JSON, as the example of 2.0 Baking writes them": (
+            v2_svg(f'<openbadges:assertion verify="{V2_ADDRESS}">{cdata(compact_json(assertion))}</openbadges:assertion>'),
+            found(assertion),
+        ),
+        "a signed assertion in the verify attribute of an empty element": (
+            v2_svg(f'<openbadges:assertion verify="{signed}"/>'),
+            found(signed),
+        ),
+        "the address of a hosted assertion alone": (v2_svg(f'<openbadges:assertion verify="{V2_ADDRESS}"/>'), found(V2_ADDRESS)),
+        "another prefix bound to the namespace of 2.0": (
+            SVG_BASE.replace(SVG_ROOT_TAG, SVG_ROOT_TAG[:-1] + f' xmlns:ob="{V2_NAMESPACE}"><ob:assertion verify="{V2_ADDRESS}"/>', 1),
+            found(V2_ADDRESS),
+        ),
+    }
+    for svg, expected in svg_cases.values():
+        element = ElementTree.fromstring(svg.encode("utf-8")).find(f"{{{V2_NAMESPACE}}}assertion")
+        assert element is not None and element.get("verify") is not None
+    svg_refused = {"an element with no body and no verify attribute": v2_svg("<openbadges:assertion/>")}
+    return {
+        "assertion": assertion,
+        "signed": signed,
+        "png": {name: {"image": encoded(image), **expected} for name, (image, expected) in png_cases.items()},
+        "pngRefused": {name: encoded(image) for name, image in png_refused.items()},
+        "svg": {name: {"image": svg, **expected} for name, (svg, expected) in svg_cases.items()},
+        "svgRefused": svg_refused,
+    }
+
+
 def main():
     badge, clr = achievement_credential(), clr_credential()
     badge_jws = jws(badge)
@@ -277,6 +367,7 @@ def main():
         "credentials": {"badge": badge, "clr": clr},
         "png": png_fixtures(credentials),
         "svg": svg_fixtures(credentials),
+        "openBadgesV2": v2_fixtures(),
     }
     OUTPUT.write_text(json.dumps(fixture, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
