@@ -22,7 +22,7 @@ jobs:
   # files); the lock file, the root configuration, the scripts that the tests share and this workflow reach every job; the
   # Markdown, the changesets and the configuration of the linters reach none but check. A file that no rule names reaches every
   # job. The guides of a package are tests of that package alone. Outputs: test, spec, browsers, bench, runtimes, opensalt,
-  # adl_lrs, sql_lrs, w3c_suites and validator say whether the job runs; projects and packages are the Vitest projects and the
+  # adl_lrs, sql_lrs, w3c_suites, validator and pylti1p3 say whether the job runs; projects and packages are the Vitest projects and the
   # packages whose coverage floors the test job checks. The rules job is in rules.yml.
   changes:
     runs-on: ubuntu-latest
@@ -42,6 +42,7 @@ jobs:
       sql_lrs: ${{ steps.filter.outputs.sql_lrs }}
       w3c_suites: ${{ steps.filter.outputs.w3c_suites }}
       validator: ${{ steps.filter.outputs.validator }}
+      pylti1p3: ${{ steps.filter.outputs.pylti1p3 }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -115,7 +116,9 @@ jobs:
             if ((top === "packages" || top === "examples") && members.has(`${top}/${name}`)) touched.add(`${top}/${name}`);
             else if (top === "compat") touched.add("compat");
             else if (top === "docs" && third !== undefined && members.has(`packages/${name}`)) guides.add(`packages/${name}`);
-            else if (top === "validation" && ["opensalt", "adl-lrs", "sql-lrs", "w3c-suites", "1edtech-validator"].includes(name))
+            else if (top === "validation" && ["opensalt", "adl-lrs", "sql-lrs", "w3c-suites", "1edtech-validator", "pylti1p3", "containers"].includes(
+                name,
+              ))
               validation.add(name);
             else if (OWN_SCRIPTS.test(file)) scriptTests = true;
             else if (!NOT_CHECKED.test(file)) everything = true;
@@ -161,6 +164,8 @@ jobs:
             sql_lrs: everything || reached.has("examples/learning-records") || validation.has("sql-lrs"),
             w3c_suites: everything || reached.has("examples/achievement-credentials") || validation.has("w3c-suites"),
             validator: everything || reached.has("examples/achievement-credentials") || validation.has("1edtech-validator"),
+            // The flows of the tool that PyLTI1p3 runs, against the platform role; the helpers of the containers are shared.
+            pylti1p3: everything || reached.has("packages/tool-integration") || validation.has("pylti1p3") || validation.has("containers"),
           };
           for (const [name, value] of Object.entries(outputs)) {
             console.log(`${name}=${value}`);
@@ -240,6 +245,12 @@ jobs:
         run: pnpm caliper-tables
       - if: needs.changes.outputs.projects != ''
         run: pnpm test:corpus
+      # The libraries of other authors that play the tool against the platform role of tool-integration, in the process of the tests.
+      - if: needs.changes.outputs.projects != ''
+        env:
+          PROJECTS: ${{ needs.changes.outputs.projects }}
+        run: |
+          if [[ " $PROJECTS " == *" tool-integration "* ]]; then pnpm test:references; fi
 
   # The tests that read the examples of the specifications, downloaded at the hashes that scripts/spec-examples.lock.json pins,
   # and the files that they are compared with.
@@ -408,3 +419,18 @@ jobs:
       # The credentials of the test are signed under the contexts that pnpm schemas downloads at their pinned hashes.
       - run: pnpm schemas
       - run: pnpm validator
+
+  # PyLTI1p3 in a container as a counterparty of the platform role (validation/pylti1p3/README.md).
+  pylti1p3:
+    needs: changes
+    if: needs.changes.outputs.pylti1p3 == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm pylti1p3

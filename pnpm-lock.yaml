@@ -497,9 +497,15 @@ importers:
         specifier: 1.5.0
         version: 1.5.0(typescript@6.0.3)
     devDependencies:
+      '@lti-tool/core':
+        specifier: 1.2.2
+        version: 1.2.2
       fast-check:
         specifier: ^4.10.2
         version: 4.10.2
+      lti-core:
+        specifier: 0.4.0
+        version: 0.4.0
 
 packages:
 
@@ -1421,6 +1427,14 @@ packages:
 
   '@loaderkit/resolve@1.0.6':
     resolution: {integrity: sha512-G8FdIoF5CypfwmD9rl8BXod5HDn8JqB0CCNBXDTaRZ+yRYhARrrSToX1zg1zy9jX3zLqigsELwhT4gNtkdQAUg==}
+
+  '@lti-tool/core@1.2.2':
+    resolution: {integrity: sha512-hDDwkz6PimIgjMwgmXQTt3bFEMsZjnnU1P5vXcaELB3ZyXZ5kVahrLZbBXFVjvtHWrn6iaH3iY0YIgIlbc7VrA==}
+    peerDependencies:
+      pino: ^9.11.0
+    peerDependenciesMeta:
+      pino:
+        optional: true
 
   '@manypkg/find-root@3.1.0':
     resolution: {integrity: sha512-BcSqCyKhBVZ5YkSzOiheMCV41kqAFptW6xGqYSTjkVTl9XQpr+pqHhwgGCOHQtjDCv7Is6EFyA14Sm5GVbVABA==}
@@ -2767,6 +2781,10 @@ packages:
   lru-cache@6.0.0:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
+
+  lti-core@0.4.0:
+    resolution: {integrity: sha512-BOYef6lOKmxAjoyirYSbYpaXy4JngBh69DtmXEWzuIGsTCtGUsil3SPpcVa+aBpnCr9HKFW6sThU+n20DRrXWw==}
+    engines: {node: '>=20'}
 
   lunr@2.3.9:
     resolution: {integrity: sha512-zTU3DaZaF3Rt9rhN3uBMGQD3dD2/vFQqnvZCDv4dl5iOzq2IZQqTxu90r4E5J+nP70J3ilqVCrbho2eWaeW8Ow==}
@@ -4437,6 +4455,11 @@ snapshots:
     dependencies:
       '@braidai/lang': 1.1.2
 
+  '@lti-tool/core@1.2.2':
+    dependencies:
+      jose: 6.2.12
+      zod: 4.6.7
+
   '@manypkg/find-root@3.1.0':
     dependencies:
       '@manypkg/tools': 2.1.2
@@ -5645,6 +5668,10 @@ snapshots:
   lru-cache@6.0.0:
     dependencies:
       yallist: 4.0.0
+
+  lti-core@0.4.0:
+    dependencies:
+      jose: 6.2.12
 
   lunr@2.3.9: {}
 

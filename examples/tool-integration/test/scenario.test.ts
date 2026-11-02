@@ -96,6 +96,20 @@ describe("the scenario", () => {
     });
   });
 
+  it("shows the work of a user to a reviewer with the line item and the result that the platform holds", async () => {
+    const { reviewed } = await runScenario();
+    expect(reviewed).toStrictEqual({
+      launch: { messageType: "LtiSubmissionReviewRequest", forUser: "candidate-7" },
+      userId: "candidate-7",
+      label: "Drawing quiz",
+      resultScore: 8,
+    });
+  });
+
+  it("sends the candidate to the proctoring tool with the message that ends the attempt", async () => {
+    expect((await runScenario()).ended).toStrictEqual({ messageType: "LtiEndAssessment", attemptNumber: 1 });
+  });
+
   it("registers a second tool through Dynamic Registration, which reads its registration back once both sides activated it", async () => {
     const { registered } = await runScenario();
     expect(registered).toStrictEqual({

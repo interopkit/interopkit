@@ -43,6 +43,16 @@ interface Roster {
   readonly needs: Readonly<Record<string, unknown>> | undefined;
 }
 
+/** What the tool saw when it showed the work of a user to a reviewer. */
+interface Review {
+  /** The user whose work is shown. */
+  readonly userId: string;
+  /** The label of the line item that the work was graded in. */
+  readonly label: string;
+  /** The score that the platform has for the user, as the reviewer sees it next to the work. */
+  readonly resultScore: number | undefined;
+}
+
 /** The tool: the handler of its origin, and the grading of a launch. */
 export interface Tool {
   /** The launches that the tool accepted, in order. A real tool keeps one in the user's session. */
@@ -55,6 +65,8 @@ export interface Tool {
   readRoster(launch: LtiMessage): Promise<Roster>;
   /** Pauses the attempt of a Start Proctoring message through the Assessment Control Service, as a proctor who sees an incident. */
   pause(launch: LtiMessage): Promise<ControlStatus>;
+  /** Reads the line item of a Submission Review request and the result of the user whose work it shows. */
+  review(launch: LtiMessage): Promise<Review>;
 }
 
 /** Creates the tool that a setup configures. */
@@ -122,6 +134,18 @@ export function createTool({ options }: ToolSetup): Tool {
       reasonMessage: "A second person is in view.",
     });
   };
+  const review = async (launch: LtiMessage): Promise<Review> => {
+    const grades = launch.services.grades;
+    if (launch.messageType !== "LtiSubmissionReviewRequest" || grades?.lineitem === undefined) {
+      throw new Error("The launch is not a review of a line item.");
+    }
+    const { userId } = launch.forUser;
+    const client = createServiceClient(launch, { ...options, scopes: grades.scopes });
+    const lineItem = await client.lineItem(grades.lineitem);
+    if (lineItem === undefined) throw new Error("The platform has no line item at the URL of the launch.");
+    const { items } = await client.results(grades.lineitem, { userId });
+    return { userId, label: lineItem.label, resultScore: items[0]?.resultScore };
+  };
   const grade = async (launch: LtiMessage, scoreGiven: number): Promise<Graded> => {
     const grades = launch.services.grades;
     const userId = launch.user.subject;
@@ -168,7 +192,7 @@ export function createTool({ options }: ToolSetup): Tool {
       needs: await client.preferences(preferences, userId, activityId),
     };
   };
-  return { launches, handle, grade, readRoster, pause };
+  return { launches, handle, grade, readRoster, pause, review };
 }
 
 /** What the route of the launch tells the browser: enough for the scenario to check the launch, and nothing secret. */
@@ -181,5 +205,9 @@ function launchSummary(launch: LtiMessage): Record<string, unknown> {
         custom: Object.fromEntries(launch.custom),
         ags: launch.services.grades,
       }
-    : { messageType: launch.messageType };
+    : {
+        messageType: launch.messageType,
+        ...(launch.messageType === "LtiSubmissionReviewRequest" ? { forUser: launch.forUser.userId } : {}),
+        ...(launch.messageType === "LtiEndAssessment" ? { attemptNumber: launch.attemptNumber } : {}),
+      };
 }

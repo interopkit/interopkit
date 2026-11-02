@@ -207,6 +207,17 @@
     "digitalcredentials",
     "Dskip",
     "libsodium",
-    "edtech"
+    "edtech",
+    "Acreateserial",
+    "certifi",
+    "cffi",
+    "extfile",
+    "idna",
+    "keyid",
+    "moodle",
+    "pycparser",
+    "pylti",
+    "pythondontwritebytecode",
+    "urllib"
   ]
 }

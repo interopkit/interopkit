@@ -99,6 +99,11 @@ option, and `ServiceError` for a platform that does not answer. The [guide](http
 has the routes, the store, every check of a launch, the key set and its rotation, scores, the failure paths and the
 signals; the [roster guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/roster.md) has the members, the groups and the preferences record; the [Deep Linking guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/deep-linking.md) has the items and both roles; the [proctoring guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/proctoring.md) has the Start Assessment message and the Assessment Control Service in both roles; the [registration guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/registration.md) has Dynamic Registration in both roles; the [platform guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/platform.md) has the same for the platform role.
 
+[The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/evidence.md) shows what the package
+was checked against: the examples and vocabularies of the specifications, tokens that another library signs, tools of other authors
+(`@lti-tool/core`, `lti-core` and PyLTI1p3) that launch from the platform role and use its services, the speed of the launch and of
+the pages of the services, and four runtimes.
+
 ## License
 
 [Apache-2.0](LICENSE). Copyright Fariz Wakan. LTI, Learning Tools Interoperability and 1EdTech are trademarks of 1EdTech

@@ -14,7 +14,7 @@ const modules = {
 };
 const GUIDES = new URL("../../../docs/tool-integration/", import.meta.url);
 const guides = readdirSync(GUIDES).filter(
-  (name) => name.endsWith(".md") && !["supported.md", "architecture.md", "spec-gaps.md"].includes(name),
+  (name) => name.endsWith(".md") && !["supported.md", "architecture.md", "spec-gaps.md", "evidence.md"].includes(name),
 );
 
 describe("the samples of the documentation", () => {

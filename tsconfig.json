@@ -10,7 +10,9 @@
   "include": [
     "scripts",
     "validation/adl-lrs",
+    "validation/containers",
     "validation/opensalt",
+    "validation/pylti1p3",
     "validation/sql-lrs",
     "validation/w3c-suites",
     "vitest.config.ts"

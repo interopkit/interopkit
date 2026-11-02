@@ -34,6 +34,8 @@ export interface Outcome {
   readonly roster: Readonly<Record<string, unknown>>;
   readonly deepLinked: Readonly<Record<string, unknown>>;
   readonly proctored: Readonly<Record<string, unknown>>;
+  readonly reviewed: Readonly<Record<string, unknown>>;
+  readonly ended: Readonly<Record<string, unknown>>;
   readonly registered: Readonly<Record<string, unknown>>;
   readonly replay: { readonly status: number; readonly error: string };
 }
@@ -234,6 +236,30 @@ export async function runScenario(): Promise<Outcome> {
   const paused = await tool.pause(proctoredLaunch);
   const [started] = platform.started;
 
+  // An instructor opens the work of the candidate from the gradebook: the platform sends a Submission Review request that names
+  // the user and the line item, and the tool reads the line item and the result of that user.
+  const reviewing = await browse(platform, tool.handle, {
+    ...base,
+    messageType: "LtiSubmissionReviewRequest",
+    user: { subject: "instructor-1" },
+    roles: [INSTRUCTOR],
+    forUser: { userId: "candidate-7" },
+    services: { grades: { lineItemId: "quiz-1", container: false } },
+  });
+  const reviewLaunch = tool.launches.at(-1);
+  if (reviewLaunch === undefined) throw new Error("The tool did not accept the Submission Review request.");
+  const review = await tool.review(reviewLaunch);
+
+  // The platform closes the proctored attempt: it sends the candidate to the proctoring tool with an End Assessment message.
+  const ending = await browse(platform, tool.handle, {
+    ...base,
+    messageType: "LtiEndAssessment",
+    user: { subject: "candidate-7" },
+    roles: [LEARNER],
+    resourceLink: { id: "exam-1", title: "Final exam" },
+    attemptNumber: 1,
+  });
+
   // A second tool registers itself: the platform's administrator opens the tool's initiation URL with the address of the
   // platform's configuration and a registration token; the tool discovers the platform, registers, and closes the window. Each
   // administrator then activates its side, and the tool reads its registration back with a token of registration.readonly.
@@ -295,6 +321,8 @@ export async function runScenario(): Promise<Outcome> {
       paused: paused.status,
       kept: platform.attempts.statusOf("candidate-7", "exam-1", 1),
     },
+    reviewed: { launch: JSON.parse(textOf(reviewing.launched)), ...review },
+    ended: JSON.parse(textOf(ending.launched)),
     registered: {
       closes: textOf(closed).includes('postMessage({ subject: "org.imsglobal.lti.close" }, "*")'),
       clientId: recorded.clientId,

@@ -37,12 +37,12 @@ const browser = () => ({
 });
 
 /** The Node tests of a package, which run against the sources of the packages it depends on. */
-const nodeProject = (name: string): TestProjectInlineConfiguration => ({
+const nodeProject = (name: string, also: readonly string[] = []): TestProjectInlineConfiguration => ({
   resolve: { alias: SOURCES },
   test: {
     name,
     include: [`packages/${name}/test/**/*.test.ts`],
-    exclude: ["**/*.browser.test.ts", "**/*.corpus.test.ts", "**/*.spec.test.ts"],
+    exclude: ["**/*.browser.test.ts", "**/*.corpus.test.ts", "**/*.spec.test.ts", ...also],
     testTimeout: HANG_LIMIT,
   },
 });
@@ -173,6 +173,32 @@ export default defineConfig({
           hookTimeout: 120_000,
           benchmark: {
             include: ["packages/learning-analytics/test/**/*.bench.ts"],
+            suppressExportGetterWarnings: true,
+          },
+        },
+      },
+      {
+        // The benchmarks of tool-integration: `pnpm bench` runs them with `vitest bench`, against the build that ships.
+        resolve: {
+          alias: [
+            {
+              find: /^@interopkit\/tool-integration$/,
+              replacement: resolve(import.meta.dirname, "packages/tool-integration/dist/index.js"),
+            },
+            {
+              find: /^@interopkit\/tool-integration\/(.+)$/,
+              replacement: resolve(import.meta.dirname, "packages/tool-integration/dist/$1/index.js"),
+            },
+          ],
+        },
+        test: {
+          name: "tool-integration-bench",
+          include: [],
+          server: { deps: { external: [/\/packages\/tool-integration\/dist\//] } },
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
+          benchmark: {
+            include: ["packages/tool-integration/test/**/*.bench.ts"],
             suppressExportGetterWarnings: true,
           },
         },
@@ -345,7 +371,27 @@ export default defineConfig({
           hookTimeout: HANG_LIMIT,
         },
       },
-      nodeProject("tool-integration"),
+      // The counterparties that run in the process of the tests have a project of their own, which `pnpm test:references` runs.
+      nodeProject("tool-integration", ["**/references*.test.ts"]),
+      {
+        // The libraries of other authors that play the tool against the platform of the package: `pnpm test:references`.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "tool-integration-references",
+          include: ["packages/tool-integration/test/references*.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The flows against PyLTI1p3 in a container: `pnpm pylti1p3` starts it and runs them.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "tool-integration-pylti1p3",
+          include: ["packages/tool-integration/test/pylti1p3.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
+        },
+      },
       {
         // The pages of the client-side login, which run in the engines of the browsers.
         resolve: { alias: SOURCES },

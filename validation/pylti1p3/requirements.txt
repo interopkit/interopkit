@@ -1,0 +1,14 @@
+# PyLTI1p3 2.0.0 (MIT) and every package it needs, each pinned to a release at least 14 days old on 2026-11-02, as the
+# release-age rule of pnpm-workspace.yaml has for the JavaScript packages.
+PyLTI1p3==2.0.0
+certifi==2026.10.18
+cffi==2.1.1
+charset-normalizer==3.5.2
+cryptography==50.0.2
+idna==3.20
+jwcrypto==1.6.1
+pycparser==3.11
+PyJWT==2.15.1
+requests==2.34.2
+typing_extensions==4.16.0
+urllib3==2.8.0
