@@ -10,9 +10,18 @@ export interface Members {
 
 /** Drops the members that are `undefined`. */
 export function compact(members: Members): Record<string, JsonValue> {
-  return Object.fromEntries(
-    Object.entries(members).filter((entry): entry is [string, JsonValue] => entry[1] !== undefined),
-  );
+  // A loop that assigns builds the object several times faster than Object.fromEntries, which every writer of a page pays
+  // for each item.
+  const kept: Record<string, JsonValue> = {};
+  for (const name of Object.keys(members)) {
+    const value = members[name];
+    if (value === undefined) continue;
+    // An assignment to __proto__ would set the prototype; a member of that name, which a spread may copy, stays a member.
+    if (name === "__proto__")
+      Object.defineProperty(kept, name, { value, enumerable: true, writable: true, configurable: true });
+    else kept[name] = value;
+  }
+  return kept;
 }
 
 /** Returns whether the name of a member is a fully qualified URL, as LTI requires of the name of an extension (Core 5.4.7, AGS 3.1, DL 3). */
@@ -31,13 +40,14 @@ export function isExtensionName(name: string): boolean {
  * @throws `DataError` when an extension is not JSON.
  */
 export function extensionsOf(
-  source: object,
+  source: Readonly<Record<string, unknown>>,
   known: readonly string[] = [],
 ): Readonly<Record<string, JsonValue>> | undefined {
   const found: [string, JsonValue][] = [];
-  for (const [name, member] of Object.entries(source)) {
+  // The names alone, since most members are not extensions: a reader of a page calls this for each item.
+  for (const name of Object.keys(source)) {
     if (!isExtensionName(name) || known.includes(name)) continue;
-    const copy = copyJson(member, name);
+    const copy = copyJson(source[name], name);
     if ("problem" in copy) throw new DataError(`The extension ${describe(name)} is invalid: ${copy.problem}.`);
     found.push([name, copy.value]);
   }

@@ -40,6 +40,7 @@ export {
   readResultQuery,
   readResults,
   readScore,
+  readStoredResult,
   writeLineItem,
   writeLineItemInput,
   writeLineItemQuery,

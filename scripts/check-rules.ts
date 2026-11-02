@@ -982,6 +982,27 @@ export const RULES: readonly Rule[] = [
     test: "packages/tool-integration/test/tool.test.ts",
   },
   {
+    rule: "A token part whose last character carries bits that encode no byte is not canonical.",
+    file: "packages/tool-integration/src/protocol/jwt.ts",
+    find: "& spare) === 0;",
+    replace: "& 0) === 0;",
+    test: "packages/tool-integration/test/protocol.test.ts",
+  },
+  {
+    rule: "A token part with a character outside base64url is not canonical.",
+    file: "packages/tool-integration/src/protocol/jwt.ts",
+    find: "if (rest === 1 || !BASE64URL_TEXT.test(part)) return false;",
+    replace: "if (rest === 1) return false;",
+    test: "packages/tool-integration/test/protocol.test.ts",
+  },
+  {
+    rule: "A member named __proto__ that a writer copies stays a member and never sets the prototype of what it writes.",
+    file: "packages/tool-integration/src/protocol/claims/body.ts",
+    find: 'if (name === "__proto__")',
+    replace: "if (false)",
+    test: "packages/tool-integration/test/protocol.test.ts",
+  },
+  {
     rule: "An LTI 1.0 to 1.2 launch is refused.",
     file: "packages/tool-integration/src/tool/launch.ts",
     find: 'if (form.has("oauth_consumer_key")) {',

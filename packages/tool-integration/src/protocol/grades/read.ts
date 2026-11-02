@@ -116,30 +116,37 @@ const scoreSchema = v.pipe(
   ),
 );
 
+/** The members of a result but its addresses, which a platform knows before it asks its store for the rest. */
+const storedResultEntries = {
+  userId: IDENTIFIER,
+  resultScore: v.nullish(finiteSchema),
+  resultMaximum: v.nullish(positiveSchema),
+  scoringUserId: v.optional(IDENTIFIER),
+  comment: NULLABLE_STRING,
+};
+
+/** A result without its addresses, as the schema of its members read it. */
+function storedResultOf(
+  claim: v.InferOutput<ReturnType<typeof looseRecord<typeof storedResultEntries>>>,
+): Omit<Result, "id" | "scoreOf"> {
+  return {
+    userId: claim.userId,
+    resultScore: claim.resultScore ?? undefined,
+    resultMaximum: claim.resultMaximum ?? undefined,
+    scoringUserId: claim.scoringUserId,
+    comment: claim.comment,
+    extensions: extensionsOf(claim),
+  };
+}
+
 /** A result as a platform sends it (AGS 3.3). */
 const resultSchema = v.pipe(
-  looseRecord({
-    id: HTTPS_URL,
-    scoreOf: HTTPS_URL,
-    userId: IDENTIFIER,
-    resultScore: v.nullish(finiteSchema),
-    resultMaximum: v.nullish(positiveSchema),
-    scoringUserId: v.optional(IDENTIFIER),
-    comment: NULLABLE_STRING,
-  }),
-  v.transform(
-    (claim): Result => ({
-      id: claim.id,
-      scoreOf: claim.scoreOf,
-      userId: claim.userId,
-      resultScore: claim.resultScore ?? undefined,
-      resultMaximum: claim.resultMaximum ?? undefined,
-      scoringUserId: claim.scoringUserId,
-      comment: claim.comment,
-      extensions: extensionsOf(claim),
-    }),
-  ),
+  looseRecord({ id: HTTPS_URL, scoreOf: HTTPS_URL, ...storedResultEntries }),
+  v.transform((claim): Result => ({ id: claim.id, scoreOf: claim.scoreOf, ...storedResultOf(claim) })),
 );
+
+/** A result without its addresses, as the store of a platform gives it. */
+const storedResultSchema = v.pipe(looseRecord(storedResultEntries), v.transform(storedResultOf));
 
 /**
  * Reads a line item that a platform sent into the model.
@@ -179,6 +186,15 @@ export function readScore(value: unknown): Score {
 /** Reads a result that a platform sent into the model; a `null` score or comment is absent. @throws `DataError`. */
 export function readResult(value: unknown): Result {
   return parseWith(resultSchema, value, "The result");
+}
+
+/**
+ * Reads a result without its `id` and `scoreOf`, which the platform that writes it knows: a `null` score or comment is absent.
+ *
+ * @throws `DataError` that names the path of the first invalid member, as `readResult` does.
+ */
+export function readStoredResult(value: unknown): Omit<Result, "id" | "scoreOf"> {
+  return parseWith(storedResultSchema, value, "The result");
 }
 
 /** Reads the results of a container (`application/vnd.ims.lis.v2.resultcontainer+json`), a JSON array. @throws `DataError`. */

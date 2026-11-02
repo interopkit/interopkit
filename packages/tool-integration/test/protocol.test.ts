@@ -1,14 +1,17 @@
 import { DataError } from "@interopkit/core";
 import fc from "fast-check";
+import { base64url } from "jose";
 import { describe, expect, it } from "vitest";
 import { LtiError } from "../src/errors.js";
 import {
   escapeHtml,
+  hasCanonicalParts,
   pagePolicy,
   readCookie,
   renderPage,
   unverifiedClaims,
   verifyJwt,
+  writeControlRequest,
 } from "../src/protocol/internal.js";
 import { createClock, generateKeyPair, NOW, request, signToken } from "./fixture.js";
 import { FUZZ } from "./fuzz.js";
@@ -206,6 +209,66 @@ describe("unverifiedClaims", () => {
 
   it("reads a claim named __proto__ as data", () => {
     expect(Object.keys(unverifiedClaims(token('{"__proto__":{"x":1}}')))).toEqual(["__proto__"]);
+  });
+});
+
+describe("hasCanonicalParts", () => {
+  /** The oracle: a part is canonical when jose decodes it and encodes the bytes back into the same text. */
+  const roundTrips = (part: string) => {
+    try {
+      return base64url.encode(base64url.decode(part)) === part;
+    } catch {
+      return false;
+    }
+  };
+  const Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+  it("takes a part as jose decodes and encodes it again, for text of the alphabet and of characters around it", () => {
+    const character = fc.oneof(
+      fc.constantFrom(...Alphabet),
+      fc.constantFrom("+", "/", "=", " ", "\n", "\t", ".", "é", "\u0000"),
+    );
+    fc.assert(
+      fc.property(fc.array(character, { maxLength: 12 }), (characters) => {
+        const part = characters.join("");
+        expect(hasCanonicalParts(`${part}.${part}.${part}`), JSON.stringify(part)).toBe(roundTrips(part));
+      }),
+      { seed: 20_261_102, numRuns: 20_000 },
+    );
+  });
+
+  it("takes the encoding of any bytes, and refuses each other spelling of its last character", () => {
+    fc.assert(
+      fc.property(fc.uint8Array({ maxLength: 40 }), (bytes) => {
+        const part = base64url.encode(bytes);
+        expect(hasCanonicalParts(`${part}.${part}.${part}`)).toBe(true);
+        for (const last of Alphabet) {
+          const other = `${part.slice(0, -1)}${last}`;
+          expect(hasCanonicalParts(`${other}.${part}.${part}`), other).toBe(roundTrips(other));
+        }
+      }),
+      { seed: 20_261_102, numRuns: 2_000 },
+    );
+  });
+
+  it("refuses a token of other than three parts", () => {
+    for (const token of ["", "a", "a.b", "a.b.c.d"]) expect(hasCanonicalParts(token), token).toBe(false);
+  });
+});
+
+describe("a writer of a body", () => {
+  it("leaves out the members that are undefined, keeps the order of the others, and keeps __proto__ as a member", () => {
+    const resourceLink = JSON.parse('{"title":"Exam","__proto__":{"x":1},"id":"link-1"}');
+    const written = writeControlRequest({
+      user: { issuer: "https://lms.example.edu", subject: "ana" },
+      resourceLink: { ...resourceLink, description: undefined },
+      attemptNumber: 1,
+      action: "pause",
+    });
+    const link = written.resource_link;
+    expect(Object.keys(link ?? {})).toStrictEqual(["title", "__proto__", "id"]);
+    expect(Object.getPrototypeOf(link)).toBe(Object.prototype);
+    expect(JSON.stringify(link)).toBe('{"title":"Exam","__proto__":{"x":1},"id":"link-1"}');
   });
 });
 

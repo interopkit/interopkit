@@ -13,7 +13,7 @@ export const PAGE_SIZE = 1000;
  * explains. Both samples come from one run, so a ratio holds on any machine.
  */
 export const RATIOS = {
-  /** `ltiLaunch` with an RS256 `id_token`, as a multiple of `jwtVerify` of jose on the same token. Measured up to 2.93. */
+  /** `ltiLaunch` with an RS256 `id_token`, as a multiple of `jwtVerify` of jose on the same token. Measured up to 2.40. */
   launchRs256: 20,
   /** `ltiLaunch` with an ES256 `id_token`, as a multiple of `jwtVerify` of jose on the same token. Measured up to 2.05. */
   launchEs256: 20,
@@ -23,43 +23,43 @@ export const RATIOS = {
   authorizeEs256: 20,
   /** `members` of a page of 1,000 members, as a multiple of `JSON.parse` of its text. Measured up to 4.03. */
   members: 30,
-  /** `results` of a page of 1,000 results, as a multiple of `JSON.parse` of its text. Measured up to 7.91. */
+  /** `results` of a page of 1,000 results, as a multiple of `JSON.parse` of its text. Measured up to 6.49. */
   results: 40,
-  /** `lineItems` of a page of 1,000 line items, as a multiple of `JSON.parse` of its text. Measured up to 8.45. */
-  lineItems: 50,
+  /** `lineItems` of a page of 1,000 line items, as a multiple of `JSON.parse` of its text. Measured up to 7.27. */
+  lineItems: 40,
   /** The key that the key set cache resolves from a set it holds, as a multiple of `createLocalJWKSet` of jose on the same set. Measured up to 2.72. */
   jwksAgainstLocal: 20,
   /** The same, as a multiple of `createRemoteJWKSet` of jose that holds the same set. Measured up to 2.04. */
   jwksAgainstRemote: 20,
-  /** `publishScore` of a score, as a multiple of `callService` of core sending the same request to the same answer. Measured up to 3.97. */
+  /** `publishScore` of a score, as a multiple of `callService` of core sending the same request to the same answer. Measured up to 3.61. */
   publishScore: 20,
   /** `control` of a request of the Assessment Control Service, as a multiple of `callService` of the same request. Measured up to 2.64. */
   control: 20,
-  /** `registerTool` of a tool's configuration, as a multiple of `callService` of the same request. Measured up to 5.43. */
+  /** `registerTool` of a tool's configuration, as a multiple of `callService` of the same request. Measured up to 4.72. */
   registerTool: 30,
-  /** The token endpoint of the platform, as a multiple of `jwtVerify` of jose on the client assertion of the request. Measured up to 3.09. */
+  /** The token endpoint of the platform, as a multiple of `jwtVerify` of jose on the client assertion of the request. Measured up to 2.50. */
   tokenEndpoint: 20,
-  /** The handler of the members of a context, a page of 1,000, as a multiple of `JSON.stringify` of the page. Measured up to 13.25. */
-  membersHandler: 70,
-  /** The handler of the results of a line item, a page of 1,000, as a multiple of `JSON.stringify` of the page. Measured up to 18.76. */
-  resultsHandler: 100,
-  /** The handler of a score, as a multiple of `compactVerify` of jose on its access token and `JSON.parse` of its body. Measured up to 3.28. */
+  /** The handler of the members of a context, a page of 1,000, as a multiple of `JSON.stringify` of the page. Measured up to 6.24. */
+  membersHandler: 40,
+  /** The handler of the results of a line item, a page of 1,000, as a multiple of `JSON.stringify` of the page. Measured up to 8.06. */
+  resultsHandler: 50,
+  /** The handler of a score, as a multiple of `compactVerify` of jose on its access token and `JSON.parse` of its body. Measured up to 3.10. */
   scoreHandler: 20,
-  /** The handler of a request of the Assessment Control Service, as a multiple of the same. Measured up to 3.60. */
+  /** The handler of a request of the Assessment Control Service, as a multiple of the same. Measured up to 3.05. */
   controlHandler: 20,
-  /** The handler of a registration, as a multiple of the same and `JSON.stringify` of its answer. Measured up to 4.32. */
-  registrationHandler: 30,
+  /** The handler of a registration, as a multiple of the same and `JSON.stringify` of its answer. Measured up to 3.39. */
+  registrationHandler: 20,
   /** `createDeepLinkResponse` with five items, one of each type, as a multiple of `SignJWT` of jose on the same claims. Measured up to 1.18. */
   deepLinkingResponse: 6,
-  /** `readDeepLinkingResponse` of the same, as a multiple of `jwtVerify` of jose on its JWT. Measured up to 4.58. */
-  readDeepLinkingResponse: 30,
+  /** `readDeepLinkingResponse` of the same, as a multiple of `jwtVerify` of jose on its JWT. Measured up to 3.25. */
+  readDeepLinkingResponse: 20,
   /** `createStartAssessmentPage`, as a multiple of `SignJWT` of jose on the same claims. Measured up to 1.13. */
   startAssessment: 6,
-  /** `readStartAssessment` of the same, as a multiple of `jwtVerify` of jose on its JWT. Measured up to 3.37. */
+  /** `readStartAssessment` of the same, as a multiple of `jwtVerify` of jose on its JWT. Measured up to 2.53. */
   readStartAssessment: 20,
-  /** `ltiLaunch` of a message with every claim, as a multiple of `verifyLaunch` of `@lti-tool/core` on the same message. Measured up to 1.48. */
-  launchAgainstLtiTool: 8,
-  /** The same, as a multiple of `validate` of `lti-core`. Measured up to 2.35. */
+  /** `ltiLaunch` of a message with every claim, as a multiple of `verifyLaunch` of `@lti-tool/core` on the same message. Measured up to 1.31. */
+  launchAgainstLtiTool: 7,
+  /** The same, as a multiple of `validate` of `lti-core`. Measured up to 2.06. */
   launchAgainstLtiCore: 20,
   /** The authorization request that substitutes the 44 variables that the platform supports, as a multiple of the same request with plain values. Measured up to 1.00. */
   substitution: 5,

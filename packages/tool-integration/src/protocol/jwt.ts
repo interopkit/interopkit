@@ -41,14 +41,26 @@ interface JwtExpectation {
   readonly maxTokens?: number;
 }
 
-/** Returns whether text is the one canonical base64url of some bytes: decoding and encoding it again gives the same text. */
+/** The alphabet of base64url, in the order of the values of its characters (RFC 4648 section 5). */
+const BASE64URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+/** Text of base64url characters alone, without padding. */
+const BASE64URL_TEXT = /^[A-Za-z0-9_-]*$/u;
+/**
+ * The bits of the last character that encode no byte, by the number of characters of the last group: two characters carry one
+ * byte and four spare bits, three carry two bytes and two spare bits (RFC 4648 section 4).
+ */
+const SPARE_BITS: Readonly<Record<number, number>> = { 2: 0b1111, 3: 0b11 };
+
+/**
+ * Returns whether text is the one canonical base64url of some bytes: decoding and encoding it again gives the same text. That
+ * holds when it has only characters of the alphabet, no group of one character, and spare bits that are zero (RFC 4648
+ * section 3.5), which the function checks without decoding.
+ */
 function isCanonicalBase64Url(part: string): boolean {
-  try {
-    return base64url.encode(base64url.decode(part)) === part;
-  } catch {
-    // jose throws a TypeError for a character that is not in the alphabet.
-    return false;
-  }
+  const rest = part.length % 4;
+  if (rest === 1 || !BASE64URL_TEXT.test(part)) return false;
+  const spare = SPARE_BITS[rest];
+  return spare === undefined || (BASE64URL_ALPHABET.indexOf(part.at(-1) ?? "") & spare) === 0;
 }
 
 /**

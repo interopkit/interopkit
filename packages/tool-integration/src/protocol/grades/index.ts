@@ -24,6 +24,7 @@ export {
   readResultQuery,
   readResults,
   readScore,
+  readStoredResult,
 } from "./read.js";
 export {
   writeLineItem,

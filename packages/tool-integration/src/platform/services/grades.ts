@@ -10,9 +10,9 @@ import {
   RESULTS_SUFFIX,
   readLineItemInput,
   readLineItemQuery,
-  readResult,
   readResultQuery,
   readScore,
+  readStoredResult,
   SCORE_MEDIA_TYPE,
   SCORES_SUFFIX,
   writeLineItem,
@@ -157,13 +157,15 @@ async function getResults(call: Call): Promise<HttpResponse> {
   const found = await askStore(call, (options) => store.results(caller, context, lineItem, asked, options));
   if (found === undefined) return notFound();
   const scoreOf = lineItemUrl(settings.config.origin, context, lineItem);
+  // The address of the results has no query and no fragment, since the platform's origin has none and the path is encoded, so
+  // the address of each result is it with its user as the query (AGS 3.3), as URLSearchParams writes one.
+  const resultsUrl = new URL(`${scoreOf}${RESULTS_SUFFIX}`).href;
   const label = "GradebookStore.results";
   const results = storePage(label, found, (item): Result => {
     const userId = memberOf(item, "userId");
     checkNonEmptyString(userId, "The userId of a result");
-    const id = new URL(`${scoreOf}${RESULTS_SUFFIX}`);
-    id.searchParams.set("user_id", userId);
-    return readResult({ ...(isRecord(item) ? item : {}), id: id.href, scoreOf });
+    const id = `${resultsUrl}?${new URLSearchParams([["user_id", userId]])}`;
+    return { id, scoreOf, ...readStoredResult(item) };
   });
   const headers = pageHeaders(url, results, page, label);
   return jsonResponse(200, writeResults(results.items), headers, RESULT_CONTAINER_MEDIA_TYPE);
