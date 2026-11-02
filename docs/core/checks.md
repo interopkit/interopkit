@@ -41,9 +41,24 @@ option. Inner functions trust their callers.
 | `checkString(value, label)`             | A string                                      | `<label> must be a string, found <value>.`               |
 | `checkNonEmptyString(value, label)`     | A string of at least one character            | `<label> must be a non-empty string, found <value>.`     |
 | `checkHttpsUrl(value, label)`           | An absolute `https` URL                       | `<label> must be an absolute https URL, found <value>.`  |
+| `checkRemoteUrl(value, label)`          | An `https` URL that names a public host (below) | `<label> must be an https URL that names a public host, found <value>, which <what is wrong>.` |
 | `checkNonNegativeInteger(value, label)` | A safe integer from 0                         | `<label> must be a non-negative integer, found <value>.` |
 | `checkPositiveInteger(value, label)`    | A safe integer from 1                         | `<label> must be a positive integer, found <value>.`     |
 | `checkAbortSignal(value, label)`        | An `AbortSignal`                              | `<label> must be an AbortSignal, found <value>.`         |
+
+`checkHttpsUrl` is for a URL that the host configures. `checkRemoteUrl` is for a URL that a message or a document gives, which
+a server then fetches or sends a token to. It reads the host after URL parsing and refuses:
+
+| Refused | Examples |
+| --- | --- |
+| An IP address, in any spelling the URL parser reads | `127.0.0.1`, `2130706433`, `0x7f.1`, `[::1]` |
+| A single label | `localhost`, `intranet` |
+| A name of a private network, and the names below it | `localhost` (RFC 6761), `local` (RFC 6762), `home.arpa` (RFC 8375), `internal` |
+| User information | `https://user@lms.example.edu/` |
+
+A final dot of the root is read away, so `localhost.` is `localhost`. The check sees only the URL: a public name may still
+resolve to a private address, so the host's `fetch` refuses loopback, private, link-local and metadata addresses after
+resolution, and `checkRemoteUrl` does not replace it.
 
 `describe(value)` writes a value into a message: strings quoted, and arrays, functions and objects as `an array`,
 `a function` and `an object`. `isRecord(value)` is the test that `checkRecord` uses.
@@ -69,6 +84,7 @@ option. Inner functions trust their callers.
 | `nonNegativeIntegerSchema`, `positiveIntegerSchema` | A safe integer from 0, and from 1                                                                                                                                                                                                                                                                                           |
 | `nonEmptyStringSchema`                              | A string of at least one character                                                                                                                                                                                                                                                                                          |
 | `httpsUrlSchema`                                    | An absolute `https` URL                                                                                                                                                                                                                                                                                                     |
+| `remoteUrlSchema`                                   | An `https` URL that names a public host, as `checkRemoteUrl` reads it                                                                                                                                                                                                                                                       |
 | `uuidSchema`, `dateSchema`, `dateTimeSchema`        | A UUID as 8-4-4-4-12 digits, a date that exists, and a date and time of RFC 3339 with an offset (see Formats)                                                                                                                                                                                                               |
 | `absoluteUriSchema`                                 | A URI with a scheme, such as `https://example.org/x`                                                                                                                                                                                                                                                                        |
 | `languageTagSchema`                                 | A language tag that is well-formed by RFC 5646, such as `en-US` (see Formats)                                                                                                                                                                                                                                               |
@@ -159,7 +175,7 @@ any string, and a string literal hides its brackets. `readJson` and `readStateme
 |          | `@assesskit/runtime/checks`           | `@interopkit/core/checks`                                                                                                          |
 | -------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Messages | The same words and the same paths     | The same                                                                                                                           |
-| Contents | Every check that QTI processing needs | Only what the interopkit packages use, and `checkHttpsUrl` with `httpsUrlSchema` for the `https` URLs that LTI and Caliper require |
+| Contents | Every check that QTI processing needs | Only what the interopkit packages use, `checkHttpsUrl` with `httpsUrlSchema` for the `https` URLs that LTI and Caliper require, and `checkRemoteUrl` with `remoteUrlSchema` for the URLs that a message or a document gives |
 
 The module is a separate copy of that shape, because packages of different families never import each other.
 

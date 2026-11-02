@@ -6,6 +6,7 @@ import { DataError, type Signer, signerFromCryptoKey } from "../src/index.js";
 import {
   type ClientAuthentication,
   clientCredentialsToken,
+  type OAuthClient,
   refreshAccessToken,
   revokeToken,
 } from "../src/oauth/index.js";
@@ -25,6 +26,13 @@ const ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
 const AGS_SCORE = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
 const AGS_LINE_ITEM = "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem";
 const SECONDS = NOW / 1000;
+
+/** Returns the client of `assertionClient` with claims, as a host passes them from JavaScript. */
+function withClaims(client: OAuthClient, claims: unknown): OAuthClient {
+  const { authentication } = client;
+  if (authentication.method !== "private_key_jwt") throw new Error("The client must use private_key_jwt.");
+  return { ...client, authentication: { ...authentication, claims: claims as Record<string, never> } };
+}
 
 /** Reads the claims of an assertion after checking its signature against the public key. */
 async function claimsOf(assertion: string, publicKey: CryptoKey): Promise<Record<string, unknown>> {
@@ -55,6 +63,45 @@ describe("private_key_jwt", () => {
       exp: SECONDS + 300,
     });
     expect(decodeProtectedHeader(assertion)).toStrictEqual({ alg: "RS256", kid: "tool-key-1", typ: "JWT" });
+  });
+
+  it("carries the claims of the client beside the registered ones, such as the LTI deployment", async () => {
+    const { client, publicKey } = await assertionClient();
+    const deployment = "https://purl.imsglobal.org/spec/lti/claim/deployment_id";
+    const claims = { [deployment]: "07940580-b309-415e-a37c-914d387c1150", extra: { list: [1, null, "a"] } };
+    const server = fakeServer(() => json({ access_token: "at", token_type: "bearer" }));
+    await clientCredentialsToken(SERVER, withClaims(client, claims), ["read"], callOptions(server.fetch));
+    expect(await claimsOf(server.requests[0]?.form.get("client_assertion") ?? "", publicKey)).toStrictEqual({
+      ...claims,
+      iss: client.clientId,
+      sub: client.clientId,
+      aud: TOKEN_URL,
+      jti: expect.any(String),
+      iat: SECONDS,
+      exp: SECONDS + 300,
+    });
+  });
+
+  it("refuses claims that name a registered claim, are not JSON or are not an object, and makes no request", async () => {
+    const { client } = await assertionClient();
+    const server = fakeServer(() => json({ access_token: "at", token_type: "bearer" }));
+    const call = (claims: unknown) =>
+      failureOf(clientCredentialsToken(SERVER, withClaims(client, claims), [], callOptions(server.fetch)));
+    for (const name of ["iss", "sub", "aud", "exp", "nbf", "iat", "jti"]) {
+      expect(await call({ [name]: "x" })).toStrictEqual(
+        new DataError(
+          `The claims of the client must not name "${name}", a claim that every assertion sets itself (RFC 7519 section 4.1).`,
+        ),
+      );
+    }
+    expect(await call(["a"])).toStrictEqual(
+      new DataError("The claims of the client must be an object, found an array."),
+    );
+    expect(await call(null)).toStrictEqual(new DataError("The claims of the client must be an object, found null."));
+    const notJson = await call({ when: new Date(NOW) });
+    expect(notJson).toBeInstanceOf(DataError);
+    expect(String(notJson)).toContain("The claims of the client must be JSON");
+    expect(server.requests).toHaveLength(0);
   });
 
   it("gives every request an assertion of its own, with a fresh jti", async () => {

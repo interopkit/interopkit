@@ -7,6 +7,6 @@
  */
 export { type ReadJsonOptions, readJson, readText } from "./body.js";
 export { negotiate } from "./negotiate.js";
-export { readForm, readQuery } from "./parameters.js";
+export { type ReadFormOptions, readForm, readQuery } from "./parameters.js";
 export { checkHttpRequest, type HttpRequest } from "./request.js";
 export { type HttpResponse, jsonResponse } from "./response.js";

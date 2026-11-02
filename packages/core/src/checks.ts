@@ -156,6 +156,61 @@ export function checkHttpsUrl(value: unknown, label: string): asserts value is s
   if (!isHttpsUrl(value)) throw new DataError(`${label} must be an absolute https URL, found ${describe(value)}.`);
 }
 
+/** An IPv4 address as the URL parser writes every form of one, such as `2130706433` and `0x7f.1`: four decimal numbers. */
+const IPV4_HOST = /^\d+\.\d+\.\d+\.\d+$/u;
+
+/**
+ * The names that never name a public host, each with the names below it: loopback (RFC 6761 section 6.3), link-local
+ * (RFC 6762), the home network (RFC 8375) and private use (`internal`, which ICANN reserved in 2024).
+ */
+const PRIVATE_NAMES: readonly string[] = ["localhost", "local", "home.arpa", "internal"];
+
+/** Says what keeps text from being an `https` URL that names a public host, or returns `undefined` when nothing does. */
+function remoteUrlProblem(text: string): string | undefined {
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    return "is not an absolute URL";
+  }
+  if (url.protocol !== "https:") return "is not https";
+  if (url.username !== "" || url.password !== "") return "has user information";
+  // A name may end with the dot of the root, which names the same host.
+  const host = url.hostname.replace(/\.$/u, "");
+  if (IPV4_HOST.test(host) || host.startsWith("[")) return "names its host by an IP address";
+  if (!host.includes(".")) return "names its host by a single label";
+  if (PRIVATE_NAMES.some((name) => host === name || host.endsWith(`.${name}`)))
+    return "names a host of a private network";
+  return undefined;
+}
+
+/**
+ * Checks that a value is an absolute `https` URL that names its host by a public-looking name, for a URL that a message or a
+ * document gives, which a server then fetches or sends a token to.
+ *
+ * @remarks
+ * The host is read after URL parsing, so every spelling of an address is caught: an IPv4 address in any form (`127.0.0.1`,
+ * `2130706433`, `0x7f.1`), an IPv6 address, a single label such as `localhost` or an intranet name, and the names under
+ * `localhost`, `local`, `home.arpa` and `internal`. User information is refused too. A URL that the host configures keeps
+ * `checkHttpsUrl`.
+ *
+ * The check sees only the URL: a public name may still resolve to a private address. The host's `fetch` refuses loopback,
+ * private, link-local and metadata addresses after resolution, and this check does not replace it.
+ *
+ * @param value - The value.
+ * @param label - Names the value in the error message, such as `The line item of the launch`.
+ * @throws `DataError` when it is not, with what is wrong.
+ */
+export function checkRemoteUrl(value: unknown, label: string): asserts value is string {
+  checkString(value, label);
+  const problem = remoteUrlProblem(value);
+  if (problem !== undefined) {
+    throw new DataError(
+      `${label} must be an https URL that names a public host, found ${describe(value)}, which ${problem}.`,
+    );
+  }
+}
+
 /**
  * Checks that a value is a safe integer of at least 0, such as a count.
  *
@@ -474,6 +529,16 @@ export const abortSignalSchema: Schema<AbortSignal> = guardSchema(
 export const httpsUrlSchema = v.pipe(
   v.string(),
   v.check(isHttpsUrl, (issue) => `expected an absolute https URL, found ${issue.received}`),
+);
+
+/** An `https` URL that names a public host, as `checkRemoteUrl` checks it: for a URL that a message or a document gives. */
+export const remoteUrlSchema: Schema<string> = v.pipe(
+  v.string(),
+  v.check(
+    (text) => remoteUrlProblem(text) === undefined,
+    (issue) =>
+      `expected an https URL that names a public host, found ${issue.received}, which ${remoteUrlProblem(String(issue.input))}`,
+  ),
 );
 
 /** A string of at least one character, such as an identifier. */

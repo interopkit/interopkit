@@ -129,6 +129,31 @@ describe("the parameters of a query and a form", () => {
     );
   });
 
+  it("reads a form of the most bytes, and refuses one of more with the size and the limit", () => {
+    const post = (body: string) => request({ method: "POST", headers: FORM, body });
+    expect([...readForm(post("a=1&b=22"), { maxBytes: 8 })]).toStrictEqual([
+      ["a", "1"],
+      ["b", "22"],
+    ]);
+    expect(() => readForm(post("a=1&b=223"), { maxBytes: 8 })).toThrow(
+      new DataError("The body of the request has 9 bytes, above the limit of 8 bytes."),
+    );
+    expect([...readForm(post("a=1&b=223"))]).toHaveLength(2);
+  });
+
+  it("refuses options of other types", () => {
+    const form = request({ method: "POST", headers: FORM, body: "a=1" });
+    expect(() => readForm(form, JSON.parse("null"))).toThrow(
+      new DataError("The options of readForm must be an object, found null."),
+    );
+    expect(() => readForm(form, { maxBytes: JSON.parse('"8"') })).toThrow(
+      new DataError('The option maxBytes must be a positive integer, found "8".'),
+    );
+    expect(() => readForm(form, { maxBytes: 0 })).toThrow(
+      new DataError("The option maxBytes must be a positive integer, found 0."),
+    );
+  });
+
   it("decodes the percent-encoded UTF-8 of a form, and a plus as a space", () => {
     const form = readForm(request({ method: "POST", headers: FORM, body: "name=caf%C3%A9+au+lait&mark=%E2%82%AC" }));
     expect([...form]).toStrictEqual([

@@ -1,7 +1,14 @@
 // biome-ignore-all lint/style/useNamingConvention: OAuth is a name of the specification, and the API names it as such.
 
 import * as oauth from "oauth4webapi";
-import { checkNonEmptyString, checkPositiveInteger, checkRecord, describe } from "../checks.js";
+import {
+  checkNonEmptyString,
+  checkPositiveInteger,
+  checkRecord,
+  copyJson,
+  describe,
+  type JsonValue,
+} from "../checks.js";
 import { DataError } from "../errors.js";
 import type { Signer } from "../signer/index.js";
 import { checkSigner } from "../signer/internal.js";
@@ -28,6 +35,13 @@ export type ClientAuthentication =
        * @defaultValue 300
        */
       readonly assertionLifetimeSeconds?: number;
+      /**
+       * Claims that every assertion carries beside `iss`, `sub`, `aud`, `jti`, `iat` and `exp`, such as the deployment that
+       * LTI 1.3 Core section 6.2.1 asks a tool to name (`https://purl.imsglobal.org/spec/lti/claim/deployment_id`).
+       *
+       * @defaultValue none
+       */
+      readonly claims?: Readonly<Record<string, JsonValue>>;
     }
   | {
       /** The client is public and sends only its identifier. */
@@ -44,6 +58,22 @@ export interface OAuthClient {
 
 /** The seconds that an assertion of `private_key_jwt` lasts unless the client says otherwise (a few minutes is the habit of LTI). */
 const DEFAULT_ASSERTION_LIFETIME_SECONDS = 300;
+
+/** The claims that RFC 7519 section 4.1 registers: an assertion sets them itself, so the claims of a client never name one. */
+const REGISTERED_CLAIMS: readonly string[] = ["iss", "sub", "aud", "exp", "nbf", "iat", "jti"];
+
+/** Checks the claims of an assertion, as a host passes them from JavaScript: JSON, and no registered claim. */
+function checkAssertionClaims(value: unknown): asserts value is Readonly<Record<string, JsonValue>> {
+  checkRecord(value, "The claims of the client must be an object");
+  const registered = Object.keys(value).find((name) => REGISTERED_CLAIMS.includes(name));
+  if (registered !== undefined) {
+    throw new DataError(
+      `The claims of the client must not name ${describe(registered)}, a claim that every assertion sets itself (RFC 7519 section 4.1).`,
+    );
+  }
+  const copy = copyJson(value, "claims");
+  if ("problem" in copy) throw new DataError(`The claims of the client must be JSON: ${copy.problem}.`);
+}
 
 /**
  * Checks a client, as a host passes it from JavaScript.
@@ -66,6 +96,7 @@ export function checkOAuthClient(value: unknown): asserts value is OAuthClient {
       if (authentication.assertionLifetimeSeconds !== undefined) {
         checkPositiveInteger(authentication.assertionLifetimeSeconds, "The assertionLifetimeSeconds of the client");
       }
+      if (authentication.claims !== undefined) checkAssertionClaims(authentication.claims);
       break;
     case "none":
       break;
@@ -104,6 +135,7 @@ export function clientAuthentication(
         signer: authentication.signer,
         audience: server.audience ?? server.tokenEndpoint,
         lifetimeSeconds: authentication.assertionLifetimeSeconds ?? DEFAULT_ASSERTION_LIFETIME_SECONDS,
+        claims: authentication.claims ?? {},
         clock: options.clock,
         options: { signal: options.signal },
       });

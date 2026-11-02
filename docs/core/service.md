@@ -90,29 +90,33 @@ answer repeats joined by a comma and a space, and the body as a `Uint8Array`, em
 
 The REST bindings of CASE and Open Badges page a collection with `X-Total-Count` and `Link`, and ask a client to read
 `Retry-After` when a server is busy. Three functions read them from the `headers` of a `ServiceResponse` or a `ServiceError`,
-which hold them by name in lower case:
+which hold them by name in lower case; a fourth gives the address of a link:
 
 | Function                  | Reads                          | Gives                                                                                                              |
 | ------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
 | `totalCountOf(headers)`   | `X-Total-Count`                | The count, or `undefined` when the header is absent or is not a whole number of at most 15 digits                  |
 | `hasNextLink(headers)`    | `Link` (RFC 8288)              | `undefined` without the header, else whether a value has the relation `next`, quoted or not, in any case, among several |
 | `retryAfterSeconds(headers)` | `Retry-After` (RFC 9110)    | The seconds, or `undefined` when it is absent, gives a date (that needs a clock) or is not a whole number           |
+| `linkTarget(headers, relation, requestUrl)` | `Link` (RFC 8288) | The address of the first value with the relation, resolved against `requestUrl`, when it is `https` on the origin of `requestUrl` and has no user information; else `undefined` |
 
 ```ts
-import { hasNextLink, retryAfterSeconds, totalCountOf } from "@interopkit/core";
+import { hasNextLink, linkTarget, retryAfterSeconds, totalCountOf } from "@interopkit/core";
 
 const headers = {
   "x-total-count": "503",
-  link: '<https://x.example/items?limit=10&offset=20>; rel="next", <https://x.example/items?limit=10&offset=500>; rel="last"',
+  link: '<https://x.example/items?limit=10&offset=20>; rel="next", <https://evil.example/items>; rel="last"',
   "retry-after": "30",
 };
 totalCountOf(headers); // => 503
 hasNextLink(headers); // => true
 retryAfterSeconds(headers); // => 30
+linkTarget(headers, "next", "https://x.example/items?limit=10"); // => "https://x.example/items?limit=10&offset=20"
+linkTarget(headers, "last", "https://x.example/items?limit=10"); // => undefined
 ```
 
-`hasNextLink` never returns the address: a client that follows the address in a header could be led anywhere, so it builds
-each request from its own base.
+A client that followed any address in a header could be led anywhere, with its bearer token. `hasNextLink` answers only
+whether a next page exists, for a client that builds each request from its own base. `linkTarget` serves a binding whose next
+page is an opaque address, such as the paging of LTI Advantage: it gives the address only on the origin that answered.
 
 ## Failure paths
 

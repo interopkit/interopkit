@@ -5,7 +5,7 @@
  *
  * @module @interopkit/core
  */
-export { hasNextLink, retryAfterSeconds, totalCountOf } from "./answer-headers.js";
+export { hasNextLink, linkTarget, retryAfterSeconds, totalCountOf } from "./answer-headers.js";
 export type { CallOptions } from "./call-options.js";
 export { callPort, type PortOutcome } from "./call-port.js";
 export { type Clock, checkClock, readClock, SYSTEM_CLOCK } from "./clock.js";

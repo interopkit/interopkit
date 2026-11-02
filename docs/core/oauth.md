@@ -77,7 +77,7 @@ new URL(pending.url).searchParams.get("code_challenge_method"); // => "S256"
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AuthorizationServer`  | `tokenEndpoint`; optional `authorizationEndpoint`, `registrationEndpoint`, `revocationEndpoint`, `audience`, `issuer`                                      |
 | `OAuthClient`          | `clientId`, `authentication`                                                                                                                               |
-| `ClientAuthentication` | `client_secret_basic` or `client_secret_post` with `clientSecret`; `private_key_jwt` with `signer` and `assertionLifetimeSeconds`; `none`                  |
+| `ClientAuthentication` | `client_secret_basic` or `client_secret_post` with `clientSecret`; `private_key_jwt` with `signer`, `assertionLifetimeSeconds` and `claims`; `none`        |
 | `OAuthCallOptions`     | `fetch`, `timeoutMs` and `signal` of [service calls](service.md), and `clock`                                                                              |
 | `AccessToken`          | `accessToken`; `expiresAt`, in epoch milliseconds, when the server gave an `expires_in`; `refreshToken` when it sent one; `scopes`                         |
 | `PendingAuthorization` | `url`, `state`, `codeVerifier`, `redirectUri`: what the host keeps in the user's session between the redirect and the callback                             |
@@ -117,8 +117,10 @@ Each request with `private_key_jwt` gets an assertion of its own:
 | `iat`        | The clock's time in whole seconds                                                    |
 | `exp`        | `iat` plus `assertionLifetimeSeconds`, which is 300 unless the client says otherwise |
 | `jti`        | A new random UUID, so that no assertion can be replayed                              |
+| Others       | The `claims` of the client, none by default, such as the deployment of LTI 1.3 Core section 6.2.1 |
 
-The assertion carries no claim beyond these.
+The assertion carries no claim beyond these. `claims` must be JSON and must not name `iss`, `sub`, `aud`, `exp`, `nbf`, `iat`
+or `jti`, which the assertion sets itself (RFC 7519 section 4.1); a client that does is a `DataError`.
 
 ## The authorization code flow
 

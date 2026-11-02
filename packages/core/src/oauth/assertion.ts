@@ -1,5 +1,6 @@
 import type * as oauth from "oauth4webapi";
 import type { CallOptions } from "../call-options.js";
+import type { JsonValue } from "../checks.js";
 import { type Clock, readClock } from "../clock.js";
 import { type Signer, signCompactJws } from "../signer/index.js";
 import { MILLISECONDS_PER_SECOND } from "./time.js";
@@ -17,6 +18,8 @@ export interface AssertionOptions {
   readonly audience: string;
   /** The seconds from `iat` to `exp`. */
   readonly lifetimeSeconds: number;
+  /** The claims besides the registered ones, which the client has checked. */
+  readonly claims: Readonly<Record<string, JsonValue>>;
   /** Gives `iat` and `exp`. */
   readonly clock: Clock;
   /** Ends the wait for the signer. */
@@ -24,20 +27,22 @@ export interface AssertionOptions {
 }
 
 /**
- * Builds the client authentication of `private_key_jwt` over a signer: each request gets a new assertion with `iss` and
- * `sub` of the client, the audience, `iat` and `exp` from the clock, and a fresh `jti`. The `kid` is the `keyId` of the
- * signer.
+ * Builds the client authentication of `private_key_jwt` over a signer: each request gets a new assertion with the claims of
+ * the client, `iss` and `sub` of the client, the audience, `iat` and `exp` from the clock, and a fresh `jti`. The `kid` is
+ * the `keyId` of the signer.
  */
 export function privateKeyJwt({
   signer,
   audience,
   lifetimeSeconds,
+  claims: more,
   clock,
   options,
 }: AssertionOptions): oauth.ClientAuth {
   return async (_server, client, body) => {
     const issuedAt = Math.floor(readClock(clock) / MILLISECONDS_PER_SECOND);
     const claims = {
+      ...more,
       iss: client.client_id,
       sub: client.client_id,
       aud: audience,

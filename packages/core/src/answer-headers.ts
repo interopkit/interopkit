@@ -1,3 +1,5 @@
+import { checkHttpsUrl, checkNonEmptyString } from "./checks.js";
+
 /** The most digits of a count or of a number of seconds in a header: more are not a count a client can use. */
 const WHOLE_NUMBER = /^\d{1,15}$/u;
 
@@ -19,13 +21,25 @@ export function totalCountOf(headers: Readonly<Record<string, string>>): number 
   return text !== undefined && WHOLE_NUMBER.test(text) ? Number(text) : undefined;
 }
 
+/** Returns the targets of the values of a `Link` header that have the relation, in order, as the header writes them. */
+function targetsOf(link: string, relation: string): string[] {
+  const wanted = relation.toLowerCase();
+  return [...link.matchAll(LINK_VALUE)].flatMap(([value]) => {
+    const end = value.indexOf(">");
+    // The parameters follow the address, so a `rel=` inside the address is not one.
+    const match = RELATION.exec(value.slice(end + 1));
+    const relations = (match?.[1] ?? match?.[2] ?? "").toLowerCase().split(/\s+/u);
+    return relations.includes(wanted) ? [value.slice(1, end)] : [];
+  });
+}
+
 /**
  * Tells whether a `Link` header points to a next page.
  *
  * @remarks
  * The relation is read quoted or not, in any case, and among several (`rel="prev next"`). An address with commas or semicolons
- * in it does not end a value early. The address itself is never returned: a client that follows the address of a header could
- * be led anywhere, so it builds each request from its own base.
+ * in it does not end a value early. Only whether a next page exists is answered: `linkTarget` gives the address, and only on
+ * the origin of the request.
  *
  * @param headers - The headers of the answer by name in lower case.
  * @returns `undefined` when there is no `Link` header, otherwise whether one of its values has the relation `next`.
@@ -33,12 +47,46 @@ export function totalCountOf(headers: Readonly<Record<string, string>>): number 
  */
 export function hasNextLink(headers: Readonly<Record<string, string>>): boolean | undefined {
   const link = headers.link;
-  if (link === undefined) return undefined;
-  return [...link.matchAll(LINK_VALUE)].some(([value]) => {
-    const relation = RELATION.exec(value);
-    const relations = (relation?.[1] ?? relation?.[2] ?? "").toLowerCase().split(/\s+/u);
-    return relations.includes("next");
-  });
+  return link === undefined ? undefined : targetsOf(link, "next").length > 0;
+}
+
+/**
+ * Returns the address that a `Link` header gives for a relation, such as the `next` page of a collection, when it lies on the
+ * origin of the request.
+ *
+ * @remarks
+ * The first value with the relation decides. Its address is resolved against the request's, since a link may be relative
+ * (RFC 8288 section 3.1), and is returned only when it is `https`, on the origin of the request and without user information.
+ * A client that sends a bearer token with each page so never sends it to another server, whatever the answer says. The
+ * relation is compared in any case (RFC 8288 section 2.1.1).
+ *
+ * @param headers - The headers of the answer by name in lower case.
+ * @param relation - The relation, such as `next` or `differences`.
+ * @param requestUrl - The address of the request that the answer answers, an `https` URL.
+ * @returns The absolute address, or `undefined` when there is no `Link` header, no value with the relation, or the first
+ * such value is not an address on the origin of the request.
+ * @throws `DataError` when the relation is not a non-empty string or the request URL is not an absolute `https` URL.
+ * @see {@link https://www.rfc-editor.org/rfc/rfc8288 | RFC 8288, Web Linking}
+ */
+export function linkTarget(
+  headers: Readonly<Record<string, string>>,
+  relation: string,
+  requestUrl: string,
+): string | undefined {
+  checkNonEmptyString(relation, "The relation");
+  checkHttpsUrl(requestUrl, "The request URL");
+  const link = headers.link;
+  const [target] = link === undefined ? [] : targetsOf(link, relation);
+  if (target === undefined) return undefined;
+  let url: URL;
+  try {
+    url = new URL(target, requestUrl);
+  } catch {
+    // An address that does not parse leads nowhere.
+    return undefined;
+  }
+  const sameOrigin = url.protocol === "https:" && url.origin === new URL(requestUrl).origin;
+  return sameOrigin && url.username === "" && url.password === "" ? url.href : undefined;
 }
 
 /**

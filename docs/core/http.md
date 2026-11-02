@@ -65,7 +65,7 @@ that has no body, such as 204, takes `null`.
 | `readText(request)`                         | Reads the body as UTF-8 text                                                           |
 | `readJson(request, options)`                | Reads the body as JSON within limits on its size, its depth and its tokens             |
 | `readQuery(request)`                        | Reads the parameters of the query into a map                                           |
-| `readForm(request)`                         | Reads the parameters of an `application/x-www-form-urlencoded` body into a map         |
+| `readForm(request, options)`                | Reads the parameters of an `application/x-www-form-urlencoded` body into a map         |
 | `jsonResponse(status, body, headers, type)` | Builds an answer with a JSON body                                                      |
 | `negotiate(accept, offered)`                | Chooses a media type from the `Accept` header                                          |
 
@@ -81,11 +81,13 @@ that has no body, such as 204, takes `null`.
 | `readJson` `options.maxBytes` | 1,048,576                        | bytes  | `DataError`  | The size of the body, counted in bytes                              |
 | `readJson` `options.maxDepth` | 64                               | levels | `DataError`  | Arrays and objects nested inside each other: `[]` is 1, `[[]]` is 2 |
 | `readJson` `options.maxTokens` | 1,000,000                       | tokens | `DataError`  | Each bracket, brace, colon and comma, each string, each number and each `true`, `false` and `null` |
+| `readForm` `options.maxBytes` | none                             | bytes  | `DataError`  | The size of the body, counted before anything is decoded            |
 | `jsonResponse` `headers`      | none                             |        |              | Win over the `content-type` that it sets                            |
 | `jsonResponse` `type`         | `application/json;charset=UTF-8` |        |              | The media type of the answer                                        |
 
-`readText`, `readQuery` and `readForm` set no limit: the host caps the size of a body before it builds the request, as the
-handlers of the packages document.
+`readText` and `readQuery` set no limit, nor does `readForm` without `maxBytes`: the host caps the size of a body before it
+builds the request, as the handlers of the packages document. A handler that reads a form passes its own limit, so that a
+form is measured before it is decoded.
 
 ## Reading
 

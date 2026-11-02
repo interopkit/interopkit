@@ -78,7 +78,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                  |
 | `packages/core/src/call-options.ts`  | `CallOptions`, the `signal` of every call that waits on I/O                                         |
 | `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`                       |
-| `packages/core/src/answer-headers.ts` | `totalCountOf`, `hasNextLink`, `retryAfterSeconds`: the paging and retry headers of an answer      |
+| `packages/core/src/answer-headers.ts` | `totalCountOf`, `hasNextLink`, `retryAfterSeconds`, `linkTarget`: the paging and retry headers of an answer |
 | `packages/core/src/http/`            | The request and answer types and their helpers, which `@interopkit/core/http` exports               |
 | `packages/core/src/signer/`          | `Signer`, `signerFromCryptoKey`, `signCompactJws`                                                   |
 | `packages/core/src/random.ts`        | `Random`, `SYSTEM_RANDOM`                                                                           |

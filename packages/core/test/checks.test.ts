@@ -11,6 +11,7 @@ import {
   checkPositiveInteger,
   checkProperties,
   checkRecord,
+  checkRemoteUrl,
   checkString,
   dateTimeSchema,
   describe as describeValue,
@@ -32,6 +33,7 @@ import {
   positiveIntegerSchema,
   positiveSchema,
   refusalOf,
+  remoteUrlSchema,
   strictRecord,
 } from "../src/checks.js";
 import { DataError } from "../src/index.js";
@@ -146,6 +148,93 @@ describe("checkHttpsUrl", () => {
       'The option endpoint must be an absolute https URL, found "http://platform.example/".',
     );
     expect(() => checkHttpsUrl(5, "The option endpoint")).toThrow("The option endpoint must be a string, found 5.");
+  });
+});
+
+describe("checkRemoteUrl", () => {
+  it("accepts an https URL that names a public host, with a port, a path, a query or a final dot", () => {
+    for (const value of [
+      "https://lms.example.edu/api/lti/courses/1/line_items?limit=10",
+      "https://platform.example:8443/jwks",
+      "https://lms.example.edu./scores",
+      "https://xn--bcher-kva.example/",
+    ]) {
+      expect(() => checkRemoteUrl(value, "The line item")).not.toThrow();
+    }
+  });
+
+  it("refuses an IP address in every spelling that the URL parser reads", () => {
+    for (const value of [
+      "https://127.0.0.1/",
+      "https://2130706433/",
+      "https://0x7f.1/",
+      "https://0177.0.0.1/",
+      "https://127.1/",
+      "https://169.254.169.254/latest/meta-data/",
+      "https://10.0.0.8:8443/",
+      "https://[::1]/",
+      "https://[::ffff:127.0.0.1]/",
+      "https://[fd00:ec2::254]/",
+    ]) {
+      expect(() => checkRemoteUrl(value, "The line item"), value).toThrow("which names its host by an IP address.");
+    }
+  });
+
+  it("refuses a single label, and the names of loopback, link-local, home and private networks", () => {
+    for (const value of ["https://localhost/", "https://LOCALHOST./", "https://intranet/", "https://metadata/"]) {
+      expect(() => checkRemoteUrl(value, "The line item"), value).toThrow("which names its host by a single label.");
+    }
+    for (const value of [
+      "https://api.localhost/",
+      "https://printer.local/",
+      "https://router.home.arpa/",
+      "https://grades.corp.internal/",
+      "https://lms.internal./",
+    ]) {
+      expect(() => checkRemoteUrl(value, "The line item"), value).toThrow("which names a host of a private network.");
+    }
+  });
+
+  it("refuses user information, another scheme and what is not a URL, and names the value", () => {
+    expect(() => checkRemoteUrl("https://user:secret@lms.example.edu/", "The line item")).toThrow(
+      new DataError(
+        'The line item must be an https URL that names a public host, found "https://user:secret@lms.example.edu/", which has user information.',
+      ),
+    );
+    expect(() => checkRemoteUrl("https://user@lms.example.edu/", "The line item")).toThrow("has user information.");
+    expect(() => checkRemoteUrl("http://lms.example.edu/", "The line item")).toThrow("which is not https.");
+    expect(() => checkRemoteUrl("/scores", "The line item")).toThrow("which is not an absolute URL.");
+    expect(() => checkRemoteUrl(JSON.parse("5"), "The line item")).toThrow(
+      new DataError("The line item must be a string, found 5."),
+    );
+  });
+
+  it("accepts with its schema what it accepts, and refuses with its schema what it refuses", () => {
+    expect(parseWith(remoteUrlSchema, "https://lms.example.edu/", "The value")).toBe("https://lms.example.edu/");
+    expect(() => parseWith(remoteUrlSchema, "https://0x7f.1/", "The value")).toThrow(
+      new DataError(
+        'The value is invalid: expected an https URL that names a public host, found "https://0x7f.1/", which names its host by an IP address.',
+      ),
+    );
+    expect(() => parseWith(remoteUrlSchema, JSON.parse("null"), "The value")).toThrow(DataError);
+    fc.assert(
+      fc.property(
+        fc.webUrl({ validSchemes: ["https", "http"], withQueryParameters: true }),
+        fc.string(),
+        (url, text) => {
+          for (const value of [url, text]) {
+            let thrown = false;
+            try {
+              checkRemoteUrl(value, "The value");
+            } catch {
+              thrown = true;
+            }
+            expect(v.safeParse(remoteUrlSchema, value).success).toBe(!thrown);
+          }
+        },
+      ),
+      { seed: 20_261_102, numRuns: 300 },
+    );
   });
 });
 
