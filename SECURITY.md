@@ -97,6 +97,7 @@ above apply.
 | An entity is another class than the property allows   | A property takes the classes that the tables name for it, chosen by the `type` of the object, and refuses any other; an event allows the actions of its class and no other             |
 | A value that nobody wrote for a validator exhausts the stack or the memory | `validateEvent` and `validateEntity` never throw for a value: one that is not JSON or nests more than 64 levels is one finding and nothing of it is read, and the findings stop at `maxFindings` (1,000), so a value that is wrong in a million places costs the memory of the limit. A finding of the shape can quote the value it found: treat it as untrusted text |
 | A value is judged by the profile that the sender chose | The tables of the profiles are fixed in the package; a `profile` that is none of Caliper's is a finding of the shape, and no table is read from the input |
+| A sender picks the version that reads its document    | The endpoint reads the version that the `dataVersion` names only if the host's `versions` lists it, and answers 422 before any item is read otherwise. Each item is then read by the schemas of that version, which refuse the classes, properties, actions and contexts that the version does not define; the limits and the memory of a reading are those of 1.2 |
 
 `handleCaliperRequest` receives what sensors send, as the endpoint of the host ([receiving events](docs/learning-analytics/endpoint.md)).
 

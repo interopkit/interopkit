@@ -1,7 +1,7 @@
 import { copyJson, type FindingSink, findingsOf, safeParseBounded } from "@interopkit/core/checks";
 import type * as v from "valibot";
-import type { CaliperEvent, EntityDocument } from "../model/index.js";
-import { entityDocumentSchema, entitySchema, eventSchema } from "../read/internal.js";
+import type { CaliperEvent, CaliperVersion, EntityDocument } from "../model/index.js";
+import { SCHEMA_SETS } from "../read/internal.js";
 import { ADVISED, articled, missingProperties } from "./advised-properties.js";
 import { eventFindings } from "./event-findings.js";
 import { type CaliperFinding, error } from "./finding.js";
@@ -20,19 +20,24 @@ function copyOf(value: unknown, sink: FindingSink<CaliperFinding>): { readonly v
 }
 
 /**
- * Reads an event into a sink of findings, and judges its profile when its shape is right.
+ * Reads an event into a sink of findings, and judges its profile when its shape is right and the version is 1.2: the tables of the
+ * profiles are those of 1.2, and an event of 1.1 names no profile.
  *
  * @returns The event as the schema reads it, a copy that shares nothing with the input, when its shape is right.
  */
-export function inspectEvent(value: unknown, sink: FindingSink<CaliperFinding>): CaliperEvent | undefined {
+export function inspectEvent(
+  value: unknown,
+  sink: FindingSink<CaliperFinding>,
+  version: CaliperVersion,
+): CaliperEvent | undefined {
   const copy = copyOf(value, sink);
   if (copy === undefined) return undefined;
-  const result = safeParseBounded(eventSchema, copy.value, sink.room);
+  const result = safeParseBounded(SCHEMA_SETS[version].event, copy.value, sink.room);
   if (!result.success) {
     sink.add(shapeFindings(result.issues));
     return undefined;
   }
-  sink.add(eventFindings(result.output));
+  if (version === "1.2") sink.add(eventFindings(result.output));
   return result.output;
 }
 
@@ -41,22 +46,27 @@ export function inspectEvent(value: unknown, sink: FindingSink<CaliperFinding>):
  *
  * @returns The entity, with its `@context` first, when its shape is right.
  */
-export function inspectEntity(value: unknown, sink: FindingSink<CaliperFinding>): EntityDocument | undefined {
+export function inspectEntity(
+  value: unknown,
+  sink: FindingSink<CaliperFinding>,
+  version: CaliperVersion,
+): EntityDocument | undefined {
   const copy = copyOf(value, sink);
   if (copy === undefined) return undefined;
-  const document = safeParseBounded(entityDocumentSchema, copy.value, sink.room);
+  const { entity, entityDocument } = SCHEMA_SETS[version];
+  const document = safeParseBounded(entityDocument, copy.value, sink.room);
   if (!document.success) {
     sink.add(shapeFindings(document.issues));
     return undefined;
   }
   const { "@context": context, ...rest } = document.output;
-  const result = safeParseBounded(entitySchema, rest, sink.room);
+  const result = safeParseBounded(entity, rest, sink.room);
   if (!result.success) {
     sink.add(shapeFindings(result.issues));
     return undefined;
   }
-  const entity: EntityDocument = { "@context": context, ...result.output };
-  const properties = ADVISED.get(entity.type);
-  if (properties !== undefined) sink.add(missingProperties(entity, "", properties, articled(entity.type)));
-  return entity;
+  const described: EntityDocument = { "@context": context, ...result.output };
+  const properties = version === "1.2" ? ADVISED.get(described.type) : undefined;
+  if (properties !== undefined) sink.add(missingProperties(described, "", properties, articled(described.type)));
+  return described;
 }

@@ -27,32 +27,32 @@ export function peopleSchemas(to: RangeFactory) {
     duration: v.optional(duration),
   };
   return {
-    Agent: entityRecord("Agent", agent),
-    Person: entityRecord("Person", agent),
-    Organization: entityRecord("Organization", organization),
-    CourseOffering: entityRecord("CourseOffering", courseOffering),
-    CourseSection: entityRecord("CourseSection", { ...courseOffering, category: v.optional(text) }),
-    Group: entityRecord("Group", organization),
-    Library: entityRecord("Library", {
+    Agent: entityRecord(to, "Agent", agent),
+    Person: entityRecord(to, "Person", agent),
+    Organization: entityRecord(to, "Organization", organization),
+    CourseOffering: entityRecord(to, "CourseOffering", courseOffering),
+    CourseSection: entityRecord(to, "CourseSection", { ...courseOffering, category: v.optional(text) }),
+    Group: entityRecord(to, "Group", organization),
+    Library: entityRecord(to, "Library", {
       ...organization,
       buildingName: v.optional(text),
       buildingNumber: v.optional(text),
     }),
-    SoftwareApplication: entityRecord("SoftwareApplication", {
+    SoftwareApplication: entityRecord(to, "SoftwareApplication", {
       ...agent,
       host: v.optional(text),
       ipAddress: v.optional(text),
       userAgent: v.optional(text),
       version: v.optional(text),
     }),
-    Membership: entityRecord("Membership", {
+    Membership: entityRecord(to, "Membership", {
       ...agent,
       organization: v.optional(to(ORGANIZATION_TYPES)),
       member: v.optional(to(["Person"])),
       roles: v.optional(v.array(term(ROLES, "a role"))),
       status: v.optional(term(STATUSES, "a status")),
     }),
-    Session: entityRecord("Session", session),
-    LtiSession: entityRecord("LtiSession", { ...session, messageParameters: v.optional(jsonObjectSchema) }),
+    Session: entityRecord(to, "Session", session),
+    LtiSession: entityRecord(to, "LtiSession", { ...session, messageParameters: v.optional(jsonObjectSchema) }),
   };
 }

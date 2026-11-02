@@ -1,6 +1,7 @@
 import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
-import { CALIPER_CONTEXT, type EndpointConfiguration } from "../model/index.js";
+import type { EndpointConfiguration } from "../model/index.js";
 import type { EndpointSettings } from "./options.js";
+import { contextOfVersion } from "./versions.js";
 
 /** The bytes in a kilobyte of `caliperMaximumPayloadSize`, which the specification does not define. */
 const BYTES_PER_KILOBYTE = 1024;
@@ -9,7 +10,7 @@ const BYTES_PER_KILOBYTE = 1024;
 export function configurationAnswer(settings: EndpointSettings): HttpResponse {
   const configuration: EndpointConfiguration = {
     caliperMaximumPayloadSize: Math.floor(settings.maxPayloadBytes / BYTES_PER_KILOBYTE),
-    caliperSupportedVersions: [CALIPER_CONTEXT],
+    caliperSupportedVersions: settings.versions.map(contextOfVersion),
     ...(settings.extensions === undefined ? {} : { caliperSupportedExtensions: settings.extensions }),
   };
   return jsonResponse(200, configuration);

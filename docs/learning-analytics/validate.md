@@ -100,6 +100,7 @@ The General Profile allows any `Agent` as actor, any action and any entity as ob
 
 | Option        | Meaning                                                                                                     | Default |
 | ------------- | ----------------------------------------------------------------------------------------------------------- | ------- |
+| `version`     | The version of Caliper that governs the value, `"1.2"` or `"1.1"`. A value of 1.1 is judged by its shape alone, since the tables of the profiles are those of 1.2 ([Caliper 1.1](./versions.md)) | `"1.2"` |
 | `maxFindings` | The most findings that the call lists. The check stops at the first finding beyond it and says so in the last | 1,000   |
 
 ## Limits
@@ -113,7 +114,7 @@ The General Profile allows any `Agent` as actor, any action and any entity as ob
 
 | Error       | When                                                                                    | What to do                                  |
 | ----------- | --------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `DataError` | The options are not an object, or `maxFindings` is not a positive integer, or an option does not exist | Fix the call. Nothing was checked |
+| `DataError` | The options are not an object, `maxFindings` is not a positive integer, `version` is not `"1.2"` or `"1.1"`, or an option does not exist | Fix the call. Nothing was checked |
 
 A value that is not an event is not an error of the call: it is a finding.
 

@@ -19,7 +19,7 @@ flowchart TD
   z -->|"no"| r413["413"]
   z -->|"yes"| j{"JSON within its limits,<br/>four fields, one item or more?"}
   j -->|"no"| r400["400"]
-  j -->|"yes"| v{"dataVersion read?"}
+  j -->|"yes"| v{"dataVersion in versions?"}
   v -->|"no"| r422["422"]
   v -->|"yes"| d["Read each item:<br/>validateEvent, validateEntity"]
   d -->|"strict, and an error"| r400
@@ -74,7 +74,7 @@ of the later ones: one that is not authorized is never parsed.
 | 4    | (POST) The media type is `application/json`; parameters and case are ignored        | 415                                        |
 | 5    | (POST) The body has at most `maxPayloadBytes`                                       | 413                                        |
 | 6    | (POST) The body is UTF-8 JSON within the depth and `maxTokens`, and an envelope of four properties and one item or more | 400 |
-| 7    | (POST) `dataVersion` is the context of Caliper 1.2                                  | 422                                        |
+| 7    | (POST) `dataVersion` is the context of a version in `versions`: 1.2 and 1.1 by default | 422                                     |
 | 8    | (POST) With `strict`, no item has an error                                          | 400                                        |
 | 9    | (POST) `accept` resolves                                                            | 200 with an empty body; 500 if it rejects  |
 
@@ -116,22 +116,25 @@ envelope.findings; // => []
 | `principal`   | Who sent it, as `authorize` named them                                                                                                                     |
 | `sensor`      | The identifier that the sender gave its sensor                                                                                                             |
 | `sendTime`    | When the sensor issued the message, as Caliper writes a time                                                                                               |
-| `dataVersion` | The context of the Caliper version of the data: `CALIPER_CONTEXT`                                                                                          |
+| `dataVersion` | The context of the Caliper version of the data: `CALIPER_CONTEXT` or `CALIPER_1_1_CONTEXT`                                                                 |
 | `data`        | The events and entity describes that read, as the [model](./model.md) has them, copies that share nothing with the request. One that did not read is left out |
 | `findings`    | What `validateEvent` and `validateEntity` found in each item, with `data[index]` before each path: the errors of the items left out, and the warnings and errors of the profile rules of those that read. At most `maxFindings`, and a last finding with the rule `findings-stopped` when the list stopped |
 
 `readEnvelope(value, principal, options)` does steps 6 to 8 for a value that is already parsed, and throws a `DataError` where the
-handler answers 400 or 422. Its options are `maxFindings` and `strict`.
+handler answers 400 or 422. Its options are `versions`, `maxFindings` and `strict`.
 
 An item is an event when its `type` is that of an event, and an entity describe otherwise. It is read as `readEvent` and
-`readEntity` read it, and judged as [`validateEvent`](./validate.md) does. Without `strict` an envelope with a faulty item is
+`readEntity` read it in the version of the envelope, and judged as [`validateEvent`](./validate.md) does. An envelope of 1.1
+hands over the same types as an envelope of 1.2, and the tables of the profiles of 1.2 judge none of its events
+([Caliper 1.1](./versions.md)). Without `strict` an envelope with a faulty item is
 received: the host decides from `findings` what to do with the rest. With `strict` it is refused with 400, and `accept` is not
 called.
 
 ## The configuration
 
 A GET answers what `pingEndpoint` reads: `caliperMaximumPayloadSize` in kilobytes (`maxPayloadBytes` divided by 1,024, rounded
-down), `caliperSupportedVersions` (the context of Caliper 1.2) and, when the host gives `extensions`, `caliperSupportedExtensions`.
+down), `caliperSupportedVersions` (the contexts of `versions`, in that order) and, when the host gives `extensions`,
+`caliperSupportedExtensions`.
 
 ## Options
 
@@ -139,6 +142,7 @@ down), `caliperSupportedVersions` (the context of Caliper 1.2) and, when the hos
 | ----------------- | ------------------------------------------------------------------------------------------------------------- | ----------- |
 | `authorize`       | Names the principal behind a token, or refuses it                                                             | required    |
 | `accept`          | Receives an envelope that read                                                                                | required    |
+| `versions`        | The versions of Caliper that the endpoint reads, `"1.2"` and `"1.1"`, in the order it announces them          | `["1.2", "1.1"]` |
 | `maxPayloadBytes` | The most bytes of the body, and what the configuration announces                                              | 1,048,576   |
 | `maxTokens`       | The most tokens of JSON in the body, counted before it is parsed                                              | 1,000,000   |
 | `maxFindings`     | The most findings of an envelope                                                                              | 1,000       |
@@ -173,7 +177,7 @@ A port that breaks its contract is a mistake of the host, not of the sender: `au
 | Error                | When                                                                                                    | What to do                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | `DataError`          | The request or the options have the wrong type, or `authorize` breaks its contract                      | Fix the host. The sender is not at fault    |
-| `DataError`          | `readEnvelope` finds the value is no envelope, of another version, or with an error under `strict`      | Answer the sender, or fix what it sent      |
+| `DataError`          | `readEnvelope` finds the value is no envelope, of a version that `versions` leaves out, or with an error under `strict` | Answer the sender, or fix what it sent |
 | The `signal` reason  | The signal aborted while a port waited                                                                  | Nothing: nobody is left to answer           |
 
 ## Data that flows
@@ -191,7 +195,7 @@ request.
 
 | What                                                                | Why                                                                                                            |
 | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Caliper 1.1 envelopes                                               | Answered 422: the version that the endpoint reads is the one in the configuration                              |
+| Writing Caliper 1.1                                                 | The endpoint reads 1.1 and a sensor sends 1.2 only; see [Caliper 1.1](./versions.md)                           |
 | A server, a route, TLS, a store of events, deduplication            | The host's: the handler takes a request and two ports, and Caliper defines no deduplication                    |
 | Certification of an endpoint                                        | The certification guide does not offer it                                                                      |
 | A property that the JSON of the envelope gives twice                | `JSON.parse` keeps the last, and section 5.2 says each property is referenced once                             |

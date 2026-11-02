@@ -1,7 +1,7 @@
 import type { CaliperFinding } from "./finding.js";
 import { findingSink } from "./finding.js";
 import { inspectEntity } from "./inspect.js";
-import { readMaxFindings, type ValidateOptions } from "./options.js";
+import { readValidateOptions, type ValidateOptions } from "./options.js";
 
 /**
  * Judges an entity describe: lists what is wrong with its shape, and, when the shape is right, the properties that Caliper
@@ -19,7 +19,8 @@ import { readMaxFindings, type ValidateOptions } from "./options.js";
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2#profiles-0 | Caliper Analytics 1.2, Profiles}
  */
 export function validateEntity(value: unknown, options?: ValidateOptions): CaliperFinding[] {
-  const sink = findingSink(readMaxFindings(options));
-  inspectEntity(value, sink);
+  const { version, maxFindings } = readValidateOptions(options);
+  const sink = findingSink(maxFindings);
+  inspectEntity(value, sink, version);
   return sink.list();
 }

@@ -18,12 +18,12 @@ import {
   STATUSES,
   SYSTEM_IDENTIFIER_TYPES,
 } from "../src/index.js";
-import { ENTITY_SCHEMAS } from "../src/read/internal.js";
+import { SCHEMA_SETS } from "../src/read/internal.js";
 import { CLASSES, closure, ENTITY_TERMS, inheritedRows, LIBRARY_TABLES, ROOT, TABLES } from "./caliper-oracle.js";
 
 /** The names of the properties that the schema of a class of the reader declares, and whether each is required. */
 function entriesOf(term: string): Map<string, boolean> {
-  const [, object] = Reflect.get(Reflect.get(ENTITY_SCHEMAS, term), "pipe");
+  const [, object] = Reflect.get(Reflect.get(SCHEMA_SETS["1.2"].entities, term), "pipe");
   const entries: Record<string, { readonly type: string }> = Reflect.get(object, "entries");
   return new Map(Object.entries(entries).map(([name, schema]) => [name, schema.type !== "optional"]));
 }

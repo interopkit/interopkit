@@ -5,3 +5,4 @@
  */
 export { readEntity } from "./read-entity.js";
 export { readEvent } from "./read-event.js";
+export type { ReadOptions } from "./read-options.js";

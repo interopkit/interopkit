@@ -3,7 +3,7 @@ import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { handleCaliperRequest, readEnvelope } from "../src/endpoint/index.js";
-import { CALIPER_CONTEXT, pingEndpoint, sendCaliper } from "../src/index.js";
+import { CALIPER_1_1_CONTEXT, CALIPER_CONTEXT, pingEndpoint, sendCaliper } from "../src/index.js";
 import { bytesOf, ENDPOINT, envelopeOf, post, recorder, request, soundAt, spied, textOf } from "./endpoint-fixture.js";
 import { fromJson, SENDER, STARTED_DOCUMENT } from "./fixture.js";
 
@@ -141,7 +141,7 @@ describe("handleCaliperRequest: a request that is not authorized costs no parsin
     ["is not an envelope", () => request("[]")],
     [
       "has another version",
-      () => post(envelopeOf(undefined, { dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p1" })),
+      () => post(envelopeOf(undefined, { dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p3" })),
     ],
     ["nests too deep", () => request(`${"[".repeat(1_000)}${"]".repeat(1_000)}`)],
   ])("answers 401 and not what a request that %s would get", async (_, make) => {
@@ -284,24 +284,35 @@ describe("handleCaliperRequest: the order of the checks", () => {
   it("answers 422 for an envelope of a version that it does not read, after the fields are right", async () => {
     const endpoint = recorder();
     for (const dataVersion of [
-      "http://purl.imsglobal.org/ctx/caliper/v1p1",
       "http://purl.imsglobal.org/ctx/caliper/v1p3",
+      "http://purl.imsglobal.org/ctx/caliper/v1p0",
       "",
       "1.2",
     ]) {
       const response = await handleCaliperRequest(post(envelopeOf(undefined, { dataVersion })), endpoint.options);
       expect(response.status, dataVersion).toBe(422);
       expect(problemOf(response).detail).toBe(
-        `The dataVersion ${JSON.stringify(dataVersion)} is not one that this endpoint reads; it reads ${CALIPER_CONTEXT}.`,
+        `The dataVersion ${JSON.stringify(dataVersion)} is not one that this endpoint reads; it reads ${CALIPER_CONTEXT} and ${CALIPER_1_1_CONTEXT}.`,
       );
     }
     const broken = {
       sensor: "s",
       sendTime: "2023-11-14T22:13:20.000Z",
-      dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p1",
+      dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p3",
     };
     expect((await handleCaliperRequest(request(JSON.stringify(broken)), endpoint.options)).status).toBe(400);
     expect(endpoint.received).toHaveLength(0);
+  });
+
+  it("answers 422 for the version that its versions leave out, and reads the one it lists", async () => {
+    const only = recorder({ versions: ["1.2"] });
+    const older = post(envelopeOf(undefined, { dataVersion: CALIPER_1_1_CONTEXT }));
+    const refused = await handleCaliperRequest(older, only.options);
+    expect(refused.status).toBe(422);
+    expect(problemOf(refused).detail).toBe(
+      `The dataVersion "${CALIPER_1_1_CONTEXT}" is not one that this endpoint reads; it reads ${CALIPER_CONTEXT}.`,
+    );
+    expect(only.received).toHaveLength(0);
   });
 });
 
@@ -400,7 +411,7 @@ describe("handleCaliperRequest: the configuration", () => {
     expect(response.headers["content-type"]).toBe("application/json;charset=UTF-8");
     expect(JSON.parse(textOf(response))).toStrictEqual({
       caliperMaximumPayloadSize: 1024,
-      caliperSupportedVersions: [CALIPER_CONTEXT],
+      caliperSupportedVersions: [CALIPER_CONTEXT, CALIPER_1_1_CONTEXT],
     });
     expect(endpoint.received).toHaveLength(0);
   });
@@ -411,9 +422,23 @@ describe("handleCaliperRequest: the configuration", () => {
     const response = await handleCaliperRequest(request("", { method: "GET" }), endpoint.options);
     expect(JSON.parse(textOf(response))).toStrictEqual({
       caliperMaximumPayloadSize: 1,
-      caliperSupportedVersions: [CALIPER_CONTEXT],
+      caliperSupportedVersions: [CALIPER_CONTEXT, CALIPER_1_1_CONTEXT],
       caliperSupportedExtensions: extensions,
     });
+  });
+
+  it("announces the versions that it reads, in the order that it is given them", async () => {
+    for (const [versions, announced] of [
+      [["1.1"], [CALIPER_1_1_CONTEXT]],
+      [
+        ["1.1", "1.2"],
+        [CALIPER_1_1_CONTEXT, CALIPER_CONTEXT],
+      ],
+    ] as const) {
+      const endpoint = recorder({ versions });
+      const response = await handleCaliperRequest(request("", { method: "GET" }), endpoint.options);
+      expect(JSON.parse(textOf(response)).caliperSupportedVersions).toStrictEqual(announced);
+    }
   });
 
   it("asks authorize before it answers a GET, and answers 401 when authorize refuses", async () => {
@@ -536,7 +561,7 @@ describe("handleCaliperRequest: input of other types", () => {
   it.each([
     ["null options", "null", "The endpoint options is invalid"],
     ["options as an array", "[]", "The endpoint options is invalid"],
-    ["an option that does not exist", '{"versions":["1.2"]}', "versions"],
+    ["an option that does not exist", '{"compress":true}', "compress"],
   ])("rejects %s with a DataError", async (_, text, message) => {
     const given = { ...options(), ...fromJson<object>(text === "null" || text === "[]" ? "{}" : text) };
     const value = text === "null" || text === "[]" ? fromJson<never>(text) : given;
@@ -614,9 +639,14 @@ describe("readEnvelope", () => {
   it("throws a DataError for a value that is not an envelope, one of another version, and a principal that is none", () => {
     expect(() => readEnvelope(fromJson("[]"), "tool-7")).toThrow("The envelope is invalid");
     expect(() =>
-      readEnvelope(envelopeOf(undefined, { dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p1" }), "tool-7"),
+      readEnvelope(envelopeOf(undefined, { dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p3" }), "tool-7"),
     ).toThrow(
-      `The dataVersion of the envelope must be ${CALIPER_CONTEXT}, the version that the endpoint reads, found "http://purl.imsglobal.org/ctx/caliper/v1p1".`,
+      `The dataVersion of the envelope must be ${CALIPER_CONTEXT} or ${CALIPER_1_1_CONTEXT}, the versions that the endpoint reads, found "http://purl.imsglobal.org/ctx/caliper/v1p3".`,
+    );
+    expect(() =>
+      readEnvelope(envelopeOf(undefined, { dataVersion: CALIPER_1_1_CONTEXT }), "tool-7", { versions: ["1.2"] }),
+    ).toThrow(
+      `The dataVersion of the envelope must be ${CALIPER_CONTEXT}, the versions that the endpoint reads, found "${CALIPER_1_1_CONTEXT}".`,
     );
     for (const principal of ["", fromJson<never>("null"), 7]) {
       expect(() => readEnvelope(envelopeOf(), principal as never), String(principal)).toThrow(
@@ -640,7 +670,16 @@ describe("readEnvelope", () => {
     expect(
       readEnvelope(envelopeOf([bad, bad, bad]), "tool-7", { maxFindings: 1 }).findings.map(({ rule }) => rule),
     ).toStrictEqual(["invalid-format", "findings-stopped"]);
-    for (const options of ["null", '{"maxFindings":0}', '{"strict":"yes"}', '{"versions":[]}', "[]"]) {
+    for (const options of [
+      "null",
+      '{"maxFindings":0}',
+      '{"strict":"yes"}',
+      '{"versions":[]}',
+      '{"versions":["1.2","1.2"]}',
+      '{"versions":["1.0"]}',
+      '{"versions":"1.2"}',
+      "[]",
+    ]) {
       expect(() => readEnvelope(envelopeOf(), "tool-7", fromJson<never>(options)), options).toThrow("The read options");
     }
   });
@@ -691,7 +730,7 @@ describe("a sensor and an endpoint, in process", () => {
     const result = await pingEndpoint({ ...SENDER, fetch: wire(endpoint.options) });
     expect(result).toStrictEqual({
       status: "available",
-      configuration: { caliperMaximumPayloadSize: 4, caliperSupportedVersions: [CALIPER_CONTEXT] },
+      configuration: { caliperMaximumPayloadSize: 4, caliperSupportedVersions: [CALIPER_CONTEXT, CALIPER_1_1_CONTEXT] },
     });
     if (result.status !== "available") throw new Error("The endpoint should be available.");
     const limit = (result.configuration.caliperMaximumPayloadSize ?? 0) * 1024;

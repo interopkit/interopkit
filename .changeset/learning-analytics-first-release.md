@@ -22,6 +22,12 @@ one: it follows no redirect, ends at `timeoutMs`, refuses an envelope above `max
 `signal` that ends the caller's wait. `pingEndpoint` asks an endpoint for its configuration and says whether it is available, as
 section 6.2 reads the answer.
 
+Caliper 1.1 is read and never written. `readEvent`, `readEntity`, `validateEvent` and `validateEntity` take `version: "1.1"` and
+read a document of 1.1 into the same model, with the context of 1.1 or of one of its six extension profiles, and refuse the classes,
+properties, actions and roles that 1.1 deprecated or only 1.2 defines. The endpoint takes `versions` (both by default), announces
+them in its configuration, reads each envelope as the version of its `dataVersion`, and answers 422 to one that `versions`
+leaves out; `readEnvelope` takes the same option.
+
 `@interopkit/learning-analytics/endpoint` is the endpoint. `handleCaliperRequest` takes an `HttpRequest` and answers a POST in a
 fixed order that costs a caller that is not authorized no parsing: the method (405), `authorize` (401), the media type (415), the
 size (413), the JSON within its depth and tokens and the four fields of the envelope (400) and the version (422); it hands the

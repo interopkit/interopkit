@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { requireSchemas } from "../../../scripts/schemas.js";
 import { CALIPER_CONTEXT } from "../src/index.js";
+import { EXTENSION_CONTEXTS_1_1 } from "../src/v1p1/index.js";
+import { CALIPER_SPEC } from "./caliper-oracle.js";
 
 /** The terms of the published JSON-LD context of Caliper 1.2, which `pnpm schemas` downloads at a pinned hash. */
 export const TERMS = new Map<string, unknown>(
@@ -127,4 +129,65 @@ export function envelopeProblems(envelope: unknown): string[] {
   if (!Array.isArray(envelope.data) || envelope.data.length === 0)
     return [...problems, "data is not a non-empty array"];
   return [...problems, ...envelope.data.flatMap((event, at) => eventProblems(event).map((p) => `data[${at}]: ${p}`))];
+}
+
+/**
+ * Reads the terms that a JSON-LD context of Caliper 1.1 defines, from the repository `caliper-spec` that `pnpm corpus`
+ * downloads: each file is the context of Caliper 1.1 followed by an object of terms, or the object alone.
+ */
+function termsOfFile(file: string): Map<string, unknown> {
+  const { "@context": list } = JSON.parse(readFileSync(join(CALIPER_SPEC, "contexts/v1p1", file), "utf8"));
+  return new Map(Object.entries(Array.isArray(list) ? (list.find(isRecord) ?? {}) : list));
+}
+
+/** The terms of the context of Caliper 1.1. */
+export const TERMS_1_1: ReadonlyMap<string, unknown> = termsOfFile("caliper-v1p1.jsonld");
+
+/** The terms that the context of each extension profile of Caliper 1.1 adds, by the address of the context. */
+export const EXTENSION_TERMS_1_1: ReadonlyMap<string, ReadonlyMap<string, unknown>> = new Map(
+  EXTENSION_CONTEXTS_1_1.map((context) => [
+    context,
+    termsOfFile(`caliper-v1p1-${(context.split("/").at(-1) ?? "").toLowerCase()}.jsonld`),
+  ]),
+);
+
+/** The terms that a document of Caliper 1.1 defines: those of the context of 1.1, and those of the profile that its `@context` names. */
+function termsOf1_1(context: unknown): ReadonlyMap<string, unknown> {
+  const named = Array.isArray(context) ? context : [context];
+  return new Map([
+    ...TERMS_1_1,
+    ...named.flatMap((each) => (typeof each === "string" ? [...(EXTENSION_TERMS_1_1.get(each) ?? [])] : [])),
+  ]);
+}
+
+/** The members whose values the sender defines, and no term of the context describes. */
+const FREE_FORM = new Set(["id", "type", "extensions", "messageParameters", "@context"]);
+
+/** Lists the node types and the properties of a node of a document of 1.1 that the terms do not define, and those of the nodes inside it. */
+function undefinedIn(terms: ReadonlyMap<string, unknown>, node: unknown, path: string): string[] {
+  if (!isRecord(node)) return [];
+  const problems: string[] = [];
+  if (typeof node.type === "string" && terms.get(node.type) !== `caliper:${node.type}`) {
+    problems.push(`${path}: the node type ${node.type} is not defined`);
+  }
+  for (const [key, value] of Object.entries(node)) {
+    if (FREE_FORM.has(key)) continue;
+    if (!terms.has(key)) problems.push(`${path}.${key}: the term is not defined`);
+    const members = Array.isArray(value) ? value : [value];
+    members.forEach((member, at) => {
+      problems.push(...undefinedIn(terms, member, Array.isArray(value) ? `${path}.${key}[${at}]` : `${path}.${key}`));
+    });
+  }
+  return problems;
+}
+
+/**
+ * Returns the node types and the properties of a document of Caliper 1.1, an event or an entity describe, that the contexts it
+ * names do not define: the context of 1.1 and the one of its extension profile. The types of the values are not checked, since the
+ * package reads 1.1 and never writes it, and the contexts coerce some properties in ways that the fixtures do not follow.
+ */
+export function undefinedTerms(document: unknown): string[] {
+  if (!isRecord(document)) return ["The document is not an object."];
+  const { "@context": context, ...rest } = document;
+  return undefinedIn(termsOf1_1(context), rest, "document");
 }

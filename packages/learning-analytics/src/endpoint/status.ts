@@ -44,11 +44,13 @@ export const tooLarge = (bytes: number, limit: number): HttpResponse =>
 export const badRequest = (sentence: string): HttpResponse => problem(400, "Bad Request", limited(sentence));
 
 /** The answer for an envelope of a version that the endpoint does not read: 422. */
-export const unsupportedVersion = (found: string, supported: string): HttpResponse =>
+export const unsupportedVersion = (found: string, supported: readonly string[]): HttpResponse =>
   problem(
     422,
     "Unprocessable Content",
-    limited(`The dataVersion ${JSON.stringify(found)} is not one that this endpoint reads; it reads ${supported}.`),
+    limited(
+      `The dataVersion ${JSON.stringify(found)} is not one that this endpoint reads; it reads ${supported.join(" and ")}.`,
+    ),
   );
 
 /** The answer for a port that failed: 500, with nothing of the failure in it. */

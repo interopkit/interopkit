@@ -2,7 +2,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { BAD_STRINGS, mutate, mutations } from "../../../scripts/json-mutation.js";
 import { ENTITY_TYPES, readEntity } from "../src/index.js";
-import { ENTITY_SCHEMAS } from "../src/read/internal.js";
+import { SCHEMA_SETS } from "../src/read/internal.js";
 import {
   closure,
   documentArbitrary,
@@ -28,7 +28,7 @@ function reads(value: unknown): boolean {
 
 /** The names of the properties that the schema of a class of the reader declares. */
 function propertiesOf(term: string): string[] {
-  const [, object] = Reflect.get(Reflect.get(ENTITY_SCHEMAS, term), "pipe");
+  const [, object] = Reflect.get(Reflect.get(SCHEMA_SETS["1.2"].entities, term), "pipe");
   return Object.keys(Reflect.get(object, "entries"));
 }
 

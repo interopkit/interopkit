@@ -26,25 +26,25 @@ export function recordSchemas(to: RangeFactory) {
     annotated: v.optional(to(DIGITAL_RESOURCE_TYPES)),
   };
   return {
-    Annotation: entityRecord("Annotation", annotation),
-    BookmarkAnnotation: entityRecord("BookmarkAnnotation", { ...annotation, bookmarkNotes: v.optional(text) }),
-    HighlightAnnotation: entityRecord("HighlightAnnotation", {
+    Annotation: entityRecord(to, "Annotation", annotation),
+    BookmarkAnnotation: entityRecord(to, "BookmarkAnnotation", { ...annotation, bookmarkNotes: v.optional(text) }),
+    HighlightAnnotation: entityRecord(to, "HighlightAnnotation", {
       ...annotation,
       selectionText: v.optional(text),
       selection: v.optional(to(["TextPositionSelector"])),
     }),
-    SharedAnnotation: entityRecord("SharedAnnotation", {
+    SharedAnnotation: entityRecord(to, "SharedAnnotation", {
       ...annotation,
       withAgents: v.optional(v.array(to(AGENT_TYPES))),
     }),
-    TagAnnotation: entityRecord("TagAnnotation", { ...annotation, tags: v.optional(texts) }),
-    Query: entityRecord("Query", {
+    TagAnnotation: entityRecord(to, "TagAnnotation", { ...annotation, tags: v.optional(texts) }),
+    Query: entityRecord(to, "Query", {
       ...base,
       creator: v.optional(to(["Person"])),
       searchTarget: v.optional(to(ENTITY_TYPES)),
       searchTerms: v.optional(text),
     }),
-    SearchResponse: entityRecord("SearchResponse", {
+    SearchResponse: entityRecord(to, "SearchResponse", {
       ...base,
       searchProvider: v.optional(to(["SoftwareApplication"])),
       searchTarget: v.optional(to(ENTITY_TYPES)),
@@ -63,7 +63,7 @@ export function recordSchemas(to: RangeFactory) {
       source: v.optional(to(["SoftwareApplication"])),
       extensions: v.optional(jsonObjectSchema),
     }),
-    LibraryActivity: entityRecord("LibraryActivity", {
+    LibraryActivity: entityRecord(to, "LibraryActivity", {
       ...base,
       activityType: v.optional(text),
       interactionMode: v.optional(text),
@@ -77,14 +77,14 @@ export function recordSchemas(to: RangeFactory) {
       exhibitMode: v.optional(text),
       reportingCategory: v.optional(text),
     }),
-    LibraryResource: entityRecord("LibraryResource", {
+    LibraryResource: entityRecord(to, "LibraryResource", {
       ...base,
       physicalOrDigital: v.optional(term(ACCESS_FORMS, "a form of access")),
       marc008: v.optional(text),
       resourceType: v.optional(text),
       learningObjectives: v.optional(v.array(to(["LearningObjective"]))),
     }),
-    LibrarySpace: entityRecord("LibrarySpace", {
+    LibrarySpace: entityRecord(to, "LibrarySpace", {
       ...base,
       isPartOf: v.optional(to(["Library"])),
       buildingName: v.optional(text),
@@ -93,6 +93,6 @@ export function recordSchemas(to: RangeFactory) {
       floor: v.optional(text),
       servicePoint: v.optional(text),
     }),
-    Entity: entityRecord("Entity", base),
+    Entity: entityRecord(to, "Entity", base),
   };
 }

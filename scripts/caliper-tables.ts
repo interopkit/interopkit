@@ -10,6 +10,8 @@ export interface CaliperPage {
   readonly file: string;
   /** The SHA-256 of the tables written as JSON, as lowercase hexadecimal. */
   readonly sha256: string;
+  /** How the page is laid out: the numbered sections of Caliper 1.2 and its extensions, or those of Caliper 1.1. Default: `current`. */
+  readonly layout?: "current" | "v1p1";
 }
 
 /** One row of the property table of an event or an entity: the name, the types of its value and its disposition. */
@@ -26,6 +28,8 @@ export interface PropertyRow {
   readonly collectionOf?: string;
   /** The actions that the description of an `action` row limits the event to, in the spelling of the page. */
   readonly actions?: readonly string[];
+  /** Present when the disposition says that the property is targeted for removal. Caliper 1.1 marks its deprecated properties so. */
+  readonly deprecated?: true;
 }
 
 /** An event or an entity as a page lists it: its term, its supertypes and the rows of its table of properties. */
@@ -36,6 +40,10 @@ export interface ClassTable {
   readonly supertypes: readonly string[];
   /** The rows of the table, `type` among them. */
   readonly properties: readonly PropertyRow[];
+  /** Present when the page marks the class as deprecated. Caliper 1.1 does so for the events and entities it retired. */
+  readonly deprecated?: true;
+  /** The actions of an event that the page lists as deprecated, in the spelling of the page. Caliper 1.1 lists them. */
+  readonly deprecatedActions?: readonly string[];
 }
 
 /**
@@ -394,6 +402,136 @@ export function parseCaliperPage(html: string): CaliperTables {
   };
 }
 
+/** One heading of the page of Caliper 1.1 with the markup that follows it up to the next heading of level 2 or 3. */
+interface Section {
+  /** The level of the heading, 2 or 3. */
+  readonly level: number;
+  /** The anchor of the heading. */
+  readonly id: string;
+  /** The text of the heading, with its number: `B.10 OutcomeEvent DEPRECATED`. */
+  readonly title: string;
+  /** The markup after the heading. */
+  readonly body: string;
+}
+
+/**
+ * The headings of an appendix class of the page of Caliper 1.1: `<h3><a name="id"></a>C.2 Annotation</h3>`. The page writes two of
+ * them wrongly, `C.4 AssessmentItem` as a paragraph that begins `*###` and `C.43 SoftwareApplication` as a heading of level 4,
+ * and both are read as the level 3 that their neighbors have.
+ */
+const APPENDIX_HEADING =
+  /<h([2-4])>(?:<a name="([^"]*)"><\/a>)?([\s\S]*?)<\/h\1>|<p>\*###\s*<a name="([^"]*)"><\/a>([^<]*)<\/p>/gu;
+
+/** Cuts the page of Caliper 1.1 at its headings of levels 2 and 3, and at the classes of its appendices wherever they are written. */
+function sectionsOf(html: string): Section[] {
+  const headings = [...html.matchAll(APPENDIX_HEADING)]
+    .map((match) => {
+      const wrong = match[1] === undefined;
+      const title = textOf(match[3] ?? match[5] ?? "");
+      const level = wrong ? 3 : Number(match[1]);
+      return {
+        match,
+        level: level === 4 && /^[A-D]\.\d+ /u.test(title) ? 3 : level,
+        id: match[2] ?? match[4] ?? "",
+        title,
+      };
+    })
+    // A heading without a number, such as `Required properties` inside the section of Organization, does not open a section.
+    .filter(({ level, title }) => level === 2 || (level === 3 && /^(?:\d+|[A-H])\.\d+ /u.test(title)));
+  return headings.map(({ match, level, id, title }, index) => ({
+    level,
+    id,
+    title,
+    body: html.slice((match.index ?? 0) + match[0].length, headings[index + 1]?.match.index ?? html.length),
+  }));
+}
+
+/** The paragraphs that follow the heading of level 4 with a title, up to the next heading, as text. */
+function paragraphsUnder(body: string, title: string): string[] {
+  const start = body.search(new RegExp(`<h4>${title}</h4>`, "u"));
+  if (start < 0) return [];
+  const rest = body.slice(start + title.length + 9);
+  const end = rest.search(/<(?:h4|table|pre)\b/u);
+  return [...(end < 0 ? rest : rest.slice(0, end)).matchAll(/<p>([\s\S]*?)<\/p>/gu)].map(([, paragraph = ""]) =>
+    textOf(paragraph),
+  );
+}
+
+/** Splits a comma-separated list of terms, which an appendix prints as `A, B, C`. */
+function listOf(text: string | undefined): string[] {
+  return (text ?? "").split(",").flatMap((term) => (term.trim() === "" ? [] : [term.trim()]));
+}
+
+/** Tells whether a section of an appendix defines a class: its title has the number of an appendix, such as `C.2`. */
+function isClassSection(section: Section): boolean {
+  return /^[B-D]\.\d+ /u.test(section.title);
+}
+
+/** The term of a class from the title of its appendix section: `B.10 OutcomeEvent DEPRECATED` is `OutcomeEvent`. */
+function termOf11(title: string): string {
+  return (/^[A-Z]\.\d+ (\w+)/u.exec(title)?.[1] ?? "").trim();
+}
+
+/** Reads a section of Appendix B, C or D that defines an event or an entity of Caliper 1.1. */
+function classOf11(section: Section): ClassTable {
+  const [supertypes] = paragraphsUnder(section.body, "Supertype");
+  const [supported] = paragraphsUnder(section.body, "Supported Actions");
+  // The section of an event that says why the actions are deprecated lists them in a second paragraph; the others have the list alone.
+  const deprecated = paragraphsUnder(section.body, "Deprecated Actions").at(-1);
+  const [properties, retired] = section.body.split(/<h4>Deprecated Properties<\/h4>/u);
+  const rows = rowsOf(properties ?? "").map((row) =>
+    // The description of the `action` row says only that the range is the list above, which the heading `Supported Actions` gives.
+    row.name === "action" ? { ...row, actions: listOf(supported) } : row,
+  );
+  return {
+    term: termOf11(section.title),
+    supertypes: listOf(supertypes),
+    properties: [...rows, ...rowsOf(retired ?? "").map((row) => ({ ...row, deprecated: true as const }))],
+    ...(/DEPRECATED/u.test(section.title) ? { deprecated: true as const } : {}),
+    ...(deprecated === undefined ? {} : { deprecatedActions: listOf(deprecated) }),
+  };
+}
+
+/** The terms in the first column of the tables of a section, which print `Term (IRI)` or `Term`. */
+function firstColumn(body: string): string[] {
+  return [...body.matchAll(/<tr>\s*<td[^>]*>([\s\S]*?)<\/td>/gu)].map(
+    ([, cell = ""]) => textOf(cell).split(" ")[0] ?? "",
+  );
+}
+
+/**
+ * Reads the tables of the page of Caliper 1.1: the properties of an event and of an entity (sections 2.1 and 2.2), every event,
+ * entity and selector of Appendices B to D with its supertypes, supported and deprecated actions and properties, and the actions,
+ * the profiles, the roles and the statuses. Section 3 of 1.1 lists the profiles in prose and prints no table of rows, so the
+ * profile tables are empty.
+ */
+export function parseCaliper11Page(html: string): CaliperTables {
+  const sections = sectionsOf(html);
+  const after = (id: string, level: number): Section[] => {
+    const start = sections.findIndex((section) => section.id === id);
+    const end = sections.findIndex((section, index) => index > start && section.level <= level);
+    return sections.slice(start + 1, end < 0 ? undefined : end);
+  };
+  const body = (id: string): string => sections.find((section) => section.id === id)?.body ?? "";
+  return {
+    eventProperties: rowsOf(body("event")),
+    entityProperties: rowsOf(body("entity")),
+    profileRows: [],
+    certificationRows: [],
+    events: after("events", 2).filter(isClassSection).map(classOf11),
+    entities: [...after("entities", 2), ...after("selectors", 2)].filter(isClassSection).map(classOf11),
+    actions: firstColumn(body("actions")),
+    profiles: after("profiles", 2)
+      .filter((section) => /^3\.\d+ /u.test(section.title))
+      .map((section) => profileTerm(section.title)),
+    roles: firstColumn(body("roles")),
+    statuses: firstColumn(body("status")),
+    ltiMessageTypes: [],
+    systemIdentifierTypes: [],
+    metrics: [],
+  };
+}
+
 /** Returns the hash that a page is pinned by: the SHA-256 of its tables written as JSON. */
 export function tablesHash(tables: CaliperTables): string {
   return sha256(new TextEncoder().encode(JSON.stringify(tables)));
@@ -413,7 +551,8 @@ export function tablesDirectory(root: string): string {
 async function readPage(page: CaliperPage): Promise<CaliperTables> {
   const response = await fetch(page.url);
   if (!response.ok) throw new Error(`Downloading ${page.url} failed: HTTP ${response.status}.`);
-  return parseCaliperPage(await response.text());
+  const html = await response.text();
+  return page.layout === "v1p1" ? parseCaliper11Page(html) : parseCaliperPage(html);
 }
 
 /**

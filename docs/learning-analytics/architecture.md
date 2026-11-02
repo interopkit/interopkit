@@ -1,19 +1,23 @@
 # Learning analytics architecture
 
 `@interopkit/learning-analytics` implements [Caliper Analytics 1.2](https://www.imsglobal.org/spec/caliper/v1p2) and the
-Library Use Profile. It holds the model of the events and entities, readers of data that arrives from elsewhere, builders that
-give events identifiers which stay the same when an event is reported again, and a sensor that sends events to an endpoint, and the endpoint that receives them.
+Library Use Profile, and reads Caliper 1.1 ([versions](./versions.md)). It holds the model of the events and entities, readers of
+data that arrives from elsewhere, builders that give events identifiers which stay the same when an event is reported again, and a
+sensor that sends events to an endpoint, and the endpoint that receives them.
 
 ```mermaid
 flowchart BT
   core["@interopkit/core<br/>errors, checks, findings, callService"]
   model["model<br/>vocabularies, contexts, one interface for each<br/>entity and event"]
-  read["read<br/>one schema for each class, readEntity"]
+  v11["v1p1<br/>what differs in Caliper 1.1"]
+  read["read<br/>one schema for each class and version,<br/>readEntity, readEvent"]
   validate["validate<br/>validateEvent, validateEntity,<br/>the tables of the profiles"]
   build["build<br/>buildEvent, mintUrn, caliperTime, checkIri"]
   send["send<br/>sendCaliper, pingEndpoint"]
   endpointNode["endpoint<br/>handleCaliperRequest, readEnvelope"]
+  v11 --> model
   read --> model
+  read --> v11
   validate --> model
   validate --> read
   build --> model
@@ -22,6 +26,7 @@ flowchart BT
   send --> model
   send --> build
   endpointNode --> model
+  endpointNode --> v11
   endpointNode --> read
   endpointNode --> validate
   model --> core
@@ -41,13 +46,14 @@ flowchart BT
 | Module  | Holds                                                                                                                                                  |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `model` | The contexts, the vocabularies, and an interface for each entity of Caliper 1.2 and of the Library Use Profile ([model](./model.md))                    |
-| `read`  | A schema for each class, and `readEntity`, which takes an entity describe from outside into the model                                                |
+| `v1p1`  | What differs in Caliper 1.1: its extension contexts, the terms of 1.2 that it lacks and the classes it deprecated ([Caliper 1.1](./versions.md))        |
+| `read`  | A schema for each class and each version, `readEvent` and `readEntity`, which take a document from outside into the model                            |
 | `validate` | `validateEvent`, `validateEntity` and the tables of the profiles of section 3 and of the certification guide ([judging events](./validate.md))     |
 | `build` | `buildEvent`, `mintUrn`, `caliperTime`, `checkIri` ([building events](./build.md))                                                                    |
 | `send`  | `sendCaliper`, `pingEndpoint`, `CaliperSender`, `SendCaliperOptions`, `PingResult`, `DEFAULT_CALIPER_TIMEOUT_MS` ([sending events](./send.md))        |
 | `endpoint` | `handleCaliperRequest`, `readEnvelope`, `ReceivedEnvelope`, `CaliperEndpointOptions`, from `@interopkit/learning-analytics/endpoint` ([receiving events](./endpoint.md)) |
 
-`model` imports no other module, `read` builds on `model`, `validate` on both, `build` on all three, `send` on `model` and `build`, and `endpoint` on `model`, `read` and `validate`; `send` and `endpoint` never import each other. Biome keeps the rules. The exports come from `@interopkit/learning-analytics`, and those of the endpoint from `@interopkit/learning-analytics/endpoint`. The package depends on `@interopkit/core` for errors, checks, findings
+`model` imports no other module, `v1p1` builds on `model` alone, `read` on both, `validate` on those and `read`, `build` on `model`, `read` and `validate`, `send` on `model` and `build`, and `endpoint` on `model`, `v1p1`, `read` and `validate`; `send` and `endpoint` never import each other, and neither `build` nor `send` imports `v1p1`, since 1.1 is read and never written. Biome keeps the rules. The exports come from `@interopkit/learning-analytics`, and those of the endpoint from `@interopkit/learning-analytics/endpoint`. The package depends on `@interopkit/core` for errors, checks, findings
 and the call to the service, on `uuid` for name-based UUIDs and on `valibot` for the schemas.
 
 ## Quick start
@@ -99,7 +105,7 @@ when the endpoint is meant to hold it.
 | JSON-LD processing: expansion, compaction, framing   | Caliper needs none: the terms are fixed strings, and the published context is the oracle of the tests                                  |
 | Answers of a candidate in events                     | They are not analytics data; an event that needs a response builds it from the host's own record                                       |
 
-What of Caliper this version does not yet build is in [supported](./supported.md).
+What of Caliper this version builds, and what it leaves out, is in [supported](./supported.md).
 
 ## Differences from the references
 

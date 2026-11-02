@@ -16,45 +16,45 @@ export function resourceSchemas(to: RangeFactory) {
   const media = { ...resource, duration: v.optional(duration) };
   const collection = { ...base, items: v.optional(v.array(to(DIGITAL_RESOURCE_TYPES))) };
   return {
-    LearningObjective: entityRecord("LearningObjective", base),
-    Link: entityRecord("Link", base),
-    DigitalResource: entityRecord("DigitalResource", resource),
-    AssignableDigitalResource: entityRecord("AssignableDigitalResource", assignable),
-    Chapter: entityRecord("Chapter", resource),
-    Document: entityRecord("Document", resource),
-    Frame: entityRecord("Frame", { ...resource, index: v.optional(position) }),
-    LtiLink: entityRecord("LtiLink", {
+    LearningObjective: entityRecord(to, "LearningObjective", base),
+    Link: entityRecord(to, "Link", base),
+    DigitalResource: entityRecord(to, "DigitalResource", resource),
+    AssignableDigitalResource: entityRecord(to, "AssignableDigitalResource", assignable),
+    Chapter: entityRecord(to, "Chapter", resource),
+    Document: entityRecord(to, "Document", resource),
+    Frame: entityRecord(to, "Frame", { ...resource, index: v.optional(position) }),
+    LtiLink: entityRecord(to, "LtiLink", {
       ...resource,
       messageType: v.optional(term(LTI_MESSAGE_TYPES, "an LTI message type")),
     }),
-    MediaLocation: entityRecord("MediaLocation", { ...resource, currentTime: v.optional(duration) }),
-    MediaObject: entityRecord("MediaObject", media),
-    AudioObject: entityRecord("AudioObject", {
+    MediaLocation: entityRecord(to, "MediaLocation", { ...resource, currentTime: v.optional(duration) }),
+    MediaObject: entityRecord(to, "MediaObject", media),
+    AudioObject: entityRecord(to, "AudioObject", {
       ...media,
       volumeLevel: v.optional(text),
       volumeMin: v.optional(text),
       volumeMax: v.optional(text),
       muted: v.optional(flag),
     }),
-    ImageObject: entityRecord("ImageObject", media),
-    VideoObject: entityRecord("VideoObject", media),
-    Message: entityRecord("Message", {
+    ImageObject: entityRecord(to, "ImageObject", media),
+    VideoObject: entityRecord(to, "VideoObject", media),
+    Message: entityRecord(to, "Message", {
       ...resource,
       replyTo: v.optional(to(["Message"])),
       body: v.optional(text),
       attachments: v.optional(v.array(to(DIGITAL_RESOURCE_TYPES))),
     }),
-    Page: entityRecord("Page", resource),
-    WebPage: entityRecord("WebPage", resource),
-    Collection: entityRecord("Collection", { ...base, items: v.optional(v.array(to(ENTITY_TYPES))) }),
-    AggregateMeasureCollection: entityRecord("AggregateMeasureCollection", {
+    Page: entityRecord(to, "Page", resource),
+    WebPage: entityRecord(to, "WebPage", resource),
+    Collection: entityRecord(to, "Collection", { ...base, items: v.optional(v.array(to(ENTITY_TYPES))) }),
+    AggregateMeasureCollection: entityRecord(to, "AggregateMeasureCollection", {
       ...base,
       items: v.optional(v.array(to(["AggregateMeasure"]))),
     }),
-    DigitalResourceCollection: entityRecord("DigitalResourceCollection", { ...resource, ...collection }),
-    Forum: entityRecord("Forum", { ...resource, items: v.optional(v.array(to(["Thread"]))) }),
-    Thread: entityRecord("Thread", { ...resource, items: v.optional(v.array(to(["Message"]))) }),
-    Questionnaire: entityRecord("Questionnaire", { ...resource, items: v.array(to(["QuestionnaireItem"])) }),
-    Survey: entityRecord("Survey", { ...base, items: v.optional(v.array(to(["Questionnaire"]))) }),
+    DigitalResourceCollection: entityRecord(to, "DigitalResourceCollection", { ...resource, ...collection }),
+    Forum: entityRecord(to, "Forum", { ...resource, items: v.optional(v.array(to(["Thread"]))) }),
+    Thread: entityRecord(to, "Thread", { ...resource, items: v.optional(v.array(to(["Message"]))) }),
+    Questionnaire: entityRecord(to, "Questionnaire", { ...resource, items: v.array(to(["QuestionnaireItem"])) }),
+    Survey: entityRecord(to, "Survey", { ...base, items: v.optional(v.array(to(["Questionnaire"]))) }),
   };
 }

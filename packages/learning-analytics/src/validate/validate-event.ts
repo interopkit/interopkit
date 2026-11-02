@@ -1,7 +1,7 @@
 import type { CaliperFinding } from "./finding.js";
 import { findingSink } from "./finding.js";
 import { inspectEvent } from "./inspect.js";
-import { readMaxFindings, type ValidateOptions } from "./options.js";
+import { readValidateOptions, type ValidateOptions } from "./options.js";
 
 /**
  * Judges an event: lists what is wrong with its shape, and, when the shape is right, where it departs from the rules of its
@@ -26,7 +26,8 @@ import { readMaxFindings, type ValidateOptions } from "./options.js";
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2/cert | Caliper Analytics 1.2 Conformance and Certification Guide}
  */
 export function validateEvent(value: unknown, options?: ValidateOptions): CaliperFinding[] {
-  const sink = findingSink(readMaxFindings(options));
-  inspectEvent(value, sink);
+  const { version, maxFindings } = readValidateOptions(options);
+  const sink = findingSink(maxFindings);
+  inspectEvent(value, sink, version);
   return sink.list();
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readSpecPage } from "../../../scripts/spec-examples.js";
 import { ACTIONS, ENTITY_TYPES, EVENT_TYPES, readEvent } from "../src/index.js";
-import { EVENT_SCHEMAS } from "../src/read/internal.js";
+import { SCHEMA_SETS } from "../src/read/internal.js";
 import {
   CLASSES,
   closure,
@@ -33,7 +33,7 @@ function entriesOf(schema: unknown): Map<string, boolean> {
 }
 
 /** The schema of an event of the reader, by its term. */
-const schemaOf = (term: string): unknown => Reflect.get(EVENT_SCHEMAS, term);
+const schemaOf = (term: string): unknown => Reflect.get(SCHEMA_SETS["1.2"].events, term);
 
 /** The properties that the fixtures use beyond the tables, by event and property, with the class that they add. */
 const BEYOND_THE_TABLES: Readonly<Record<string, Readonly<Record<string, string>>>> = {

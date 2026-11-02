@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import {
   fetchCaliperTables,
   loadLock,
+  parseCaliper11Page,
   parseCaliperPage,
   readCaliperTables,
   tablesDirectory,
@@ -234,6 +235,129 @@ describe("the profile tables", () => {
   });
 });
 
+/** The page of Caliper 1.1 in its markup: sections with anchors, and the classes of the appendices as headings of three kinds. */
+const PAGE_1_1 = [
+  '<h2><a name="infoModel"></a>2.0 The Information Model</h2>',
+  '<h3><a name="event"></a>2.1 The Caliper Event</h3>',
+  table(["id", "UUID", "The id.", "Required"], ["actor", "Agent | IRI", "The actor.", "Required"]),
+  '<h3><a name="entity"></a>2.2 The Caliper Entity</h3>',
+  table(["id", "IRI", "The id.", "Required"], ["name", "string", "The name.", "Optional"]),
+  '<h2><a name="profiles"></a>3.0 Metric Profiles</h2>',
+  '<h3><a name="annotationProfile"></a>3.1 Annotation Profile</h3>',
+  '<h3><a name="toolUseProfile"></a>3.9 Tool Use Profile</h3>',
+  '<h2><a name="dataSerialization"></a>4.0 Serialization of the Model</h2>',
+  '<h3><a name="context"></a>4.1 JSON-LD Context</h3>',
+  '<h2><a name="actions"></a>Appendix A. Actions</h2>',
+  "<table><thead><tr><th>Term (IRI)</th><th>Gloss</th></tr></thead><tbody>",
+  '<tr><td style="text-align:left"><a name="added"></a>Added (<a href="http://x">http://purl.imsglobal.org/caliper/actions/Added</a>)</td><td>Join.</td></tr>',
+  '<tr><td style="text-align:left"><a name="bookmarked"></a>Bookmarked (<a href="http://x">http://x</a>)</td><td>Mark.</td></tr>',
+  "</tbody></table>",
+  '<h2><a name="events"></a>Appendix B. Event Subtypes</h2>',
+  '<h3><a name="annotationEvent"></a>B.1 AnnotationEvent</h3>',
+  '<h4>IRI</h4><p><a href="http://x">http://purl.imsglobal.org/caliper/AnnotationEvent</a></p>',
+  '<h4>Supertype</h4><p><a href="#event">Event</a></p>',
+  '<h4>Supported Actions</h4><p><a href="#b">Bookmarked</a>, <a href="#t">Tagged</a></p>',
+  '<h4>Deprecated Actions</h4><p>The following actions are deprecated.</p><p><a href="#a">Attached</a>, <a href="#l">Liked</a></p>',
+  "<h4>Properties</h4>",
+  table(["action", "string", "The action. DEPRECATED actions SHOULD NOT be utilized.", "Required"]),
+  '<h3><a name="outcomeEvent"></a>B.10 OutcomeEvent DEPRECATED</h3>',
+  '<h4>Supertype</h4><p><a href="#event">Event</a></p>',
+  '<h2><a name="entities"></a>Appendix C. Entity Subtypes</h2>',
+  '<h3><a name="agent"></a>C.1 Agent</h3><h4>Supertype</h4><p><a href="#entity">Entity</a></p>',
+  '<p>*### <a name="assessmentItem"></a>C.4 AssessmentItem</p>',
+  '<h4>Supertype</h4><p><a href="#a">AssignableDigitalResource</a></p>',
+  "<h4>Properties</h4>",
+  table(["isTimeDependent", "boolean", "Whether it is timed.", "Optional"]),
+  "<h4>Deprecated Properties</h4><p>These properties have been DEPRECATED.</p>",
+  table(["<s>objectType</s>", "string", "The type.", "Optional"]),
+  '<h3><a name="organization"></a>C.33 Organization</h3><h4>Supertype</h4><p><a href="#a">Agent</a></p>',
+  "<h3>Required properties</h3>",
+  table(["members", "Array", "The members.", "Optional"]),
+  '<h4><a name="softwareApplication"></a>C.43 SoftwareApplication</h4><h4>Supertype</h4><p><a href="#a">Agent</a></p>',
+  '<h3><a name="reading"></a>C.36 Reading (DEPRECATED)</h3><h4>Supertype</h4><p><a href="#a">Entity</a></p>',
+  '<h2><a name="selectors"></a>Appendix D. Selectors</h2>',
+  '<h3><a name="textPositionSelector"></a>D.1 TextPositionSelector</h3>',
+  "<h4>Properties</h4>",
+  table(["start", "integer", "The start.", "Required"]),
+  '<h2><a name="roles"></a>Appendix E. Roles</h2><h3>Roles</h3><h4>Context Roles</h4>',
+  "<table><tbody><tr><td>Learner</td><td>http://x</td><td>Yes</td></tr><tr><td>Mentor#Auditor</td><td>http://y</td><td>No</td></tr></tbody></table>",
+  '<h2><a name="status"></a>Appendix F. Status</h2>',
+  "<table><tbody><tr><td>Active</td><td>http://x</td></tr><tr><td>Inactive</td><td>http://y</td></tr></tbody></table>",
+  '<h2><a name="changeLog"></a>Appendix H. Change Log</h2>',
+  '<h3><a name="changeLogProfiles"></a>H.1 Profiles</h3>',
+  table(["Basic Profile", "New", "Generic.", "x"]),
+].join("\n");
+
+describe("parseCaliper11Page", () => {
+  const tables = parseCaliper11Page(PAGE_1_1);
+
+  it("reads the base properties of events and entities from sections 2.1 and 2.2", () => {
+    expect(tables.eventProperties.map((row) => row.name)).toStrictEqual(["id", "actor"]);
+    expect(tables.entityProperties.map((row) => row.name)).toStrictEqual(["id", "name"]);
+  });
+
+  it("reads an event with its supertype, the actions it supports and the actions it deprecates", () => {
+    const [event] = tables.events;
+    expect(event?.term).toBe("AnnotationEvent");
+    expect(event?.supertypes).toStrictEqual(["Event"]);
+    expect(event?.properties[0]).toMatchObject({ name: "action", actions: ["Bookmarked", "Tagged"] });
+    expect(event?.deprecatedActions).toStrictEqual(["Attached", "Liked"]);
+    expect(event?.deprecated).toBeUndefined();
+  });
+
+  it("marks the class that its heading calls deprecated, and reads a class that has no actions", () => {
+    expect(tables.events.map(({ term, deprecated }) => [term, deprecated ?? false])).toStrictEqual([
+      ["AnnotationEvent", false],
+      ["OutcomeEvent", true],
+    ]);
+    expect(tables.events[1]?.deprecatedActions).toBeUndefined();
+  });
+
+  it("reads the classes of the appendices, the deprecated ones, and the selector, wherever the page writes the heading", () => {
+    expect(tables.entities.map(({ term, deprecated }) => [term, deprecated ?? false])).toStrictEqual([
+      ["Agent", false],
+      ["AssessmentItem", false],
+      ["Organization", false],
+      ["SoftwareApplication", false],
+      ["Reading", true],
+      ["TextPositionSelector", false],
+    ]);
+  });
+
+  it("reads the properties under a heading of Deprecated Properties as deprecated, and the others as they are", () => {
+    const item = tables.entities.find(({ term }) => term === "AssessmentItem");
+    expect(item?.properties.map(({ name, deprecated }) => [name, deprecated ?? false])).toStrictEqual([
+      ["isTimeDependent", false],
+      ["objectType", true],
+    ]);
+  });
+
+  it("reads the table that follows a heading without a number as the properties of the class before it", () => {
+    expect(
+      tables.entities.find(({ term }) => term === "Organization")?.properties.map(({ name }) => name),
+    ).toStrictEqual(["members"]);
+  });
+
+  it("reads the actions, the roles, the statuses and the profiles from the sections that name them", () => {
+    expect(tables.actions).toStrictEqual(["Added", "Bookmarked"]);
+    expect(tables.roles).toStrictEqual(["Learner", "Mentor#Auditor"]);
+    expect(tables.statuses).toStrictEqual(["Active", "Inactive"]);
+    expect(tables.profiles).toStrictEqual(["AnnotationProfile", "ToolUseProfile"]);
+  });
+
+  it("leaves the tables of profiles, vocabularies and metrics that the page does not have empty", () => {
+    expect(tables.profileRows).toStrictEqual([]);
+    expect(tables.certificationRows).toStrictEqual([]);
+    expect(tables.ltiMessageTypes).toStrictEqual([]);
+    expect(tables.systemIdentifierTypes).toStrictEqual([]);
+    expect(tables.metrics).toStrictEqual([]);
+  });
+
+  it("reads a page with none of the sections as empty tables", () => {
+    expect(parseCaliper11Page("<p>nothing</p>")).toMatchObject({ events: [], entities: [], actions: [], roles: [] });
+  });
+});
+
 describe("tablesHash", () => {
   it("is the SHA-256 of the tables as JSON, changes when a table changes, and not when only a description does", () => {
     const hash = tablesHash(parseCaliperPage(PAGE));
@@ -246,9 +370,9 @@ describe("tablesHash", () => {
 describe("the lock", () => {
   it("pins every page to an https address of the specifications, a file name and the hash of its tables", () => {
     const lock = loadLock(join(import.meta.dirname, "../.."));
-    expect(lock.length).toBe(3);
+    expect(lock.length).toBe(4);
     for (const { url, file, sha256 } of lock) {
-      expect(url).toMatch(/^https:\/\/www\.imsglobal\.org\/spec\/caliper/u);
+      expect(url).toMatch(/^https:\/\/www\.imsglobal\.org\/(?:spec|sites\/default\/files)\/caliper/u);
       expect(file).toMatch(/^[a-z0-9-]+\.json$/);
       expect(sha256).toMatch(/^[0-9a-f]{64}$/);
     }
@@ -279,6 +403,27 @@ describe("fetchCaliperTables", () => {
   it("writes nothing and names both hashes when the tables differ from the pinned ones", async () => {
     const root = setUp("changed", "0".repeat(64));
     await expect(fetchCaliperTables(root)).rejects.toThrow(/have the SHA-256 [0-9a-f]{64}, not the pinned 0{64}/);
+  });
+
+  it("reads a page of the layout of Caliper 1.1 with the reader of that layout", async () => {
+    const root = setUp("older", tablesHash(parseCaliper11Page(PAGE_1_1)));
+    writeFileSync(
+      join(root, "scripts/caliper-tables.lock.json"),
+      JSON.stringify([
+        {
+          url: "https://spec.example/older",
+          file: "older.json",
+          sha256: tablesHash(parseCaliper11Page(PAGE_1_1)),
+          layout: "v1p1",
+        },
+      ]),
+    );
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response(PAGE_1_1)));
+    await fetchCaliperTables(root);
+    expect(readCaliperTables(root, "older.json").events.map(({ term }) => term)).toStrictEqual([
+      "AnnotationEvent",
+      "OutcomeEvent",
+    ]);
   });
 
   it("names the page that could not be downloaded", async () => {

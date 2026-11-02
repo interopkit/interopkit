@@ -1,20 +1,33 @@
 import { describe, isRecord, type Schema } from "@interopkit/core/checks";
 import * as v from "valibot";
-import { type CaliperEntity, type CaliperEntityType, ENTITY_TYPES, type EntityOf, type Ref } from "../model/index.js";
+import {
+  type CaliperEntity,
+  type CaliperEntityType,
+  type CaliperVersion,
+  ENTITY_TYPES,
+  type EntityOf,
+  type Ref,
+} from "../model/index.js";
 import { iri } from "./primitives.js";
+import { definesClass, retiredNote } from "./version.js";
 
 /** The schemas of the entities, by the term of their type. */
 export type EntitySchemas = { readonly [TType in CaliperEntityType]: Schema<EntityOf<TType>> };
 
-/** Makes the schema of a value that is an entity of the given types, or the IRI of one. */
-export type RangeFactory = <const TRange extends readonly CaliperEntityType[]>(
-  range: TRange,
-) => Schema<Ref<EntityOf<TRange[number]>>>;
+/** Makes the schema of a value that is an entity of the given types, or the IRI of one, in a version of Caliper. */
+export interface RangeFactory {
+  /** Makes the schema of a range: the entities of the given types, or the IRI of one. */
+  <const TRange extends readonly CaliperEntityType[]>(range: TRange): Schema<Ref<EntityOf<TRange[number]>>>;
+  /** The version of Caliper that the schemas of this factory read. */
+  readonly version: CaliperVersion;
+}
 
 /** Words a value for a message: an object by its type. */
-function foundOf(input: unknown): string {
+function foundOf(input: unknown, version: CaliperVersion): string {
   if (!isRecord(input)) return describe(input);
-  return typeof input.type === "string" ? `an entity of type ${input.type}` : "an object without a type";
+  return typeof input.type === "string"
+    ? `an entity of type ${input.type}${retiredNote(version, input.type)}`
+    : "an object without a type";
 }
 
 /** Words the types of a range for a message: `A`, `A or B`, `A, B or C`. */
@@ -23,8 +36,12 @@ function namesOf(range: readonly string[]): string {
 }
 
 /** Makes the function that finds the schema of an object of a range by its `type`, and finds none for another value. */
-function finderOf<const TRange extends readonly CaliperEntityType[]>(range: TRange, schemas: () => EntitySchemas) {
-  const members: ReadonlySet<string> = new Set(range);
+function finderOf<const TRange extends readonly CaliperEntityType[]>(
+  range: TRange,
+  schemas: () => EntitySchemas,
+  version: CaliperVersion,
+) {
+  const members: ReadonlySet<string> = new Set(range.filter((type) => definesClass(version, type)));
   const isMember = (type: unknown): type is TRange[number] => typeof type === "string" && members.has(type);
   return (input: unknown): Schema<EntityOf<TRange[number]>> | undefined =>
     isRecord(input) && isMember(input.type) ? schemas()[input.type] : undefined;
@@ -39,24 +56,29 @@ function finderOf<const TRange extends readonly CaliperEntityType[]>(range: TRan
  * schema of a range costs one lookup, and a value is checked once, whatever the size of the range.
  *
  * @param schemas - Returns the schemas of all entities.
+ * @param version - The version of Caliper that the ranges read: a class that the version does not define is not in a range.
  */
-export function createRanges(schemas: () => EntitySchemas): RangeFactory {
-  return <const TRange extends readonly CaliperEntityType[]>(range: TRange) => {
-    const find = finderOf(range, schemas);
-    const names = namesOf(range);
+export function createRanges(schemas: () => EntitySchemas, version: CaliperVersion): RangeFactory {
+  const ranges = <const TRange extends readonly CaliperEntityType[]>(range: TRange) => {
+    const find = finderOf(range, schemas, version);
+    const names = namesOf(range.filter((type) => definesClass(version, type)));
     return v.lazy((input): Schema<Ref<EntityOf<TRange[number]>>> => {
       if (typeof input === "string") return iri;
-      return find(input) ?? v.never(`expected an entity of type ${names}, or its IRI, found ${foundOf(input)}`);
+      return (
+        find(input) ?? v.never(`expected an entity of type ${names}, or its IRI, found ${foundOf(input, version)}`)
+      );
     });
   };
+  return Object.assign(ranges, { version });
 }
 
 /**
  * Makes the schema of an entity written as an object of any class, chosen by its `type`.
  *
  * @param schemas - Returns the schemas of all entities.
+ * @param version - The version of Caliper that the schema reads.
  */
-export function createEntitySchema(schemas: () => EntitySchemas): Schema<CaliperEntity> {
-  const find = finderOf(ENTITY_TYPES, schemas);
-  return v.lazy((input) => find(input) ?? v.never(`expected an entity of any class, found ${foundOf(input)}`));
+export function createEntitySchema(schemas: () => EntitySchemas, version: CaliperVersion): Schema<CaliperEntity> {
+  const find = finderOf(ENTITY_TYPES, schemas, version);
+  return v.lazy((input) => find(input) ?? v.never(`expected an entity of any class, found ${foundOf(input, version)}`));
 }

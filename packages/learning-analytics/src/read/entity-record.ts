@@ -3,6 +3,7 @@ import * as v from "valibot";
 import { nestedContextSchema } from "./context.js";
 import { iri, text, time } from "./primitives.js";
 import type { RangeFactory } from "./range.js";
+import { restrictToVersion } from "./version.js";
 
 /**
  * Makes the entries that every entity has beyond its `id` and `type` (Caliper 1.2 section 2.2): the schemas of the properties
@@ -27,12 +28,14 @@ export function entityEntries(to: RangeFactory) {
  * and the entries of the class. A property the entries do not name is refused: the model asks for a sender's own properties to
  * go in `extensions`.
  *
+ * @param to - Makes the schema of a range of entities, and says which version of Caliper the class is read in.
  * @param type - The term of the class.
  * @param entries - The schemas of the properties of the class and of its supertypes.
  */
 export function entityRecord<const TType extends string, const TEntries extends v.ObjectEntries>(
+  to: RangeFactory,
   type: TType,
   entries: TEntries,
 ) {
-  return strictRecord({ id: iri, type: v.literal(type), ...entries });
+  return restrictToVersion(to.version, type, strictRecord({ id: iri, type: v.literal(type), ...entries }));
 }

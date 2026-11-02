@@ -105,9 +105,10 @@ The class of a column takes every class below it: a `GradeEvent` takes any agent
 `presenceDerivedFromSource` and `presenceDerivedFromID` to its use event, `accessLocation` and `forCourse` to its resource event,
 and `participationMode`, `forCourse` and `arrivalTime` to its participation event.
 
-`readEvent(value)` reads an event as `readEntity` reads an entity: the context, the `type` that chooses the class, every property,
-every entity inside it, and the rules above. The rules of the profile tables, which entity goes with which action across
-events, are not read here.
+`readEvent(value, options?)` reads an event as `readEntity` reads an entity: the context, the `type` that chooses the class, every
+property, every entity inside it, and the rules above. The rules of the profile tables, which entity goes with which action across
+events, are not read here. With `{ version: "1.1" }` both readers read a document of Caliper 1.1 into the same types ([Caliper
+1.1](./versions.md)); `CALIPER_1_1_CONTEXT` names its context and `CALIPER_VERSIONS` the two versions.
 
 ```ts
 import { readEvent } from "@interopkit/learning-analytics";
@@ -127,7 +128,7 @@ event.action; // => "Started"
 
 ## Reading an entity
 
-`readEntity(value)` reads an entity describe (Caliper 1.2 section 5.2): an entity with its `@context`, as a sensor sends it
+`readEntity(value, options?)` reads an entity describe (Caliper 1.2 section 5.2): an entity with its `@context`, as a sensor sends it
 outside an event. It checks the context, the `type`, every property, and every entity inside it, and returns a copy.
 
 | Rule                  | What is read                                                                                                                                                                    |

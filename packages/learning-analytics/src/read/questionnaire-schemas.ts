@@ -21,36 +21,36 @@ export function questionnaireSchemas(to: RangeFactory) {
     itemValues: v.optional(texts),
   };
   return {
-    Question: entityRecord("Question", question),
-    DateTimeQuestion: entityRecord("DateTimeQuestion", {
+    Question: entityRecord(to, "Question", question),
+    DateTimeQuestion: entityRecord(to, "DateTimeQuestion", {
       ...question,
       minDateTime: v.optional(time),
       minLabel: v.optional(text),
       maxDateTime: v.optional(time),
       maxLabel: v.optional(text),
     }),
-    MultiselectQuestion: entityRecord("MultiselectQuestion", {
+    MultiselectQuestion: entityRecord(to, "MultiselectQuestion", {
       ...question,
       points: v.optional(count),
       itemLabels: v.optional(texts),
       itemValues: v.optional(texts),
     }),
-    OpenEndedQuestion: entityRecord("OpenEndedQuestion", question),
-    RatingScaleQuestion: entityRecord("RatingScaleQuestion", { ...question, scale: v.optional(to(SCALE_TYPES)) }),
-    QuestionnaireItem: entityRecord("QuestionnaireItem", {
+    OpenEndedQuestion: entityRecord(to, "OpenEndedQuestion", question),
+    RatingScaleQuestion: entityRecord(to, "RatingScaleQuestion", { ...question, scale: v.optional(to(SCALE_TYPES)) }),
+    QuestionnaireItem: entityRecord(to, "QuestionnaireItem", {
       ...resource,
       question: v.optional(to(QUESTION_TYPES)),
       categories: v.optional(texts),
       weight: v.optional(decimal),
     }),
-    SurveyInvitation: entityRecord("SurveyInvitation", {
+    SurveyInvitation: entityRecord(to, "SurveyInvitation", {
       ...resource,
       rater: v.optional(to(["Person"])),
       survey: v.optional(to(["Survey"])),
       sentCount: v.optional(count),
       dateSent: v.optional(time),
     }),
-    Rating: entityRecord("Rating", {
+    Rating: entityRecord(to, "Rating", {
       ...base,
       rater: v.optional(to(["Person"])),
       rated: v.optional(to(ENTITY_TYPES)),
@@ -58,22 +58,22 @@ export function questionnaireSchemas(to: RangeFactory) {
       selections: v.optional(texts),
       ratingComment: v.optional(to(["Comment"])),
     }),
-    Comment: entityRecord("Comment", {
+    Comment: entityRecord(to, "Comment", {
       ...base,
       commenter: v.optional(to(["Person"])),
       commentedOn: v.optional(to(ENTITY_TYPES)),
       value: v.optional(text),
     }),
-    Scale: entityRecord("Scale", base),
-    LikertScale: entityRecord("LikertScale", { ...base, ...choices }),
-    MultiselectScale: entityRecord("MultiselectScale", {
+    Scale: entityRecord(to, "Scale", base),
+    LikertScale: entityRecord(to, "LikertScale", { ...base, ...choices }),
+    MultiselectScale: entityRecord(to, "MultiselectScale", {
       ...base,
       ...choices,
       isOrderedSelection: v.optional(flag),
       minSelections: v.optional(count),
       maxSelections: v.optional(count),
     }),
-    NumericScale: entityRecord("NumericScale", {
+    NumericScale: entityRecord(to, "NumericScale", {
       ...base,
       minValue: v.optional(decimal),
       minLabel: v.optional(text),

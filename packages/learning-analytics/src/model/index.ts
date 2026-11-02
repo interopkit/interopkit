@@ -4,7 +4,14 @@
  *
  * @module
  */
-export { CALIPER_CONTEXT, type Context, LIBRARY_PROFILE_CONTEXT } from "./context.js";
+export {
+  CALIPER_1_1_CONTEXT,
+  CALIPER_CONTEXT,
+  CALIPER_VERSIONS,
+  type CaliperVersion,
+  type Context,
+  LIBRARY_PROFILE_CONTEXT,
+} from "./context.js";
 export type { EndpointConfiguration } from "./endpoint-configuration.js";
 export * from "./entities/index.js";
 export type { EntityDocument } from "./entity-document.js";

@@ -1,9 +1,9 @@
 import { callPort, DataError } from "@interopkit/core";
 import { type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
-import { CALIPER_CONTEXT } from "../model/index.js";
 import { assembleEnvelope, type EnvelopeFields, parseEnvelope, strictRefusal } from "./envelope.js";
 import type { EndpointSettings } from "./options.js";
 import { badRequest, internalError, received, tooLarge, unsupportedType, unsupportedVersion } from "./status.js";
+import { contextOfVersion, versionOfContext } from "./versions.js";
 
 /** Reads the media type of a body from its `Content-Type`, in lower case and without its parameters. */
 function mediaTypeOf(request: HttpRequest): string | undefined {
@@ -46,8 +46,11 @@ export async function receive(
   const parsed = fieldsOf(request, settings);
   if ("refusal" in parsed) return parsed.refusal;
   const { fields } = parsed;
-  if (fields.dataVersion !== CALIPER_CONTEXT) return unsupportedVersion(fields.dataVersion, CALIPER_CONTEXT);
-  const envelope = assembleEnvelope(fields, principal, settings.maxFindings);
+  const version = versionOfContext(fields.dataVersion, settings.versions);
+  if (version === undefined) {
+    return unsupportedVersion(fields.dataVersion, settings.versions.map(contextOfVersion));
+  }
+  const envelope = assembleEnvelope(fields, principal, settings.maxFindings, version);
   const fault = settings.strict ? strictRefusal(envelope) : undefined;
   if (fault !== undefined) return badRequest(fault);
   const { accept, signal } = settings;

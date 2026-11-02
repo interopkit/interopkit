@@ -5,8 +5,7 @@ specification that the tests read: a test fails when a table has something that 
 
 ```mermaid
 flowchart LR
-  spec["Caliper 1.2: 21 events, 69 entities,<br/>2 entities with no id, 80 actions, 15 profiles"] --> have["Built and read now"]
-  spec --> next["Built in the next units"]
+  spec["Caliper 1.2: 21 events, 69 entities,<br/>2 entities with no id, 80 actions, 15 profiles"] --> have["Built and read"]
   lib["Library Use Profile: 3 events, 4 entities, 2 actions"] --> have
   have --> entityNode["Entities: all 75, and the generic Entity"]
   have --> eventNode["Events: all 24, and the generic Event, read and built"]
@@ -14,7 +13,7 @@ flowchart LR
   have --> ctx["Contexts: one, a list that ends with Caliper's,<br/>and inline"]
   have --> prof["Profile rules: 91 rows, the General Profile,<br/>the certification guide, findings"]
   have --> wire["Transport: mixed data, optional token,<br/>size limit, ping, the endpoint role"]
-  next --> later["Version 1.1 at the endpoint"]
+  have --> v11["Caliper 1.1 read: the readers and the endpoint"]
 ```
 
 | Construct                                                  | Built | Where                                           |
@@ -37,6 +36,7 @@ flowchart LR
 | Sensor: one envelope of events and entity describes, mixed, with an optional bearer token | Yes | `sendCaliper`; [sending events](./send.md) |
 | Sensor: the maximum payload size of the endpoint, and the ping of section 6.2 | Yes | `maxPayloadBytes`, `pingEndpoint`, `EndpointConfiguration` |
 | Endpoint: 200, 400, 401, 405, 413, 415, 422 and 500 in a fixed order, the configuration of a GET | Yes | `handleCaliperRequest`, `readEnvelope`; [receiving events](./endpoint.md) |
+| Caliper 1.1 events and entities, the contexts of its six extension profiles, and envelopes of 1.1 at the endpoint | Read | `version` of the readers, `versions` of the endpoint; [Caliper 1.1](./versions.md) |
 
 ```ts
 import { ACTIONS, ENTITY_TYPES, EVENT_TYPES, PROFILES } from "@interopkit/learning-analytics";
@@ -51,5 +51,5 @@ PROFILES.length; // => 16
 
 | What                                                   | Why                                                                                             |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Caliper 1.1 at the endpoint                            | Read, never written: an envelope of 1.1 is answered 422 until the version routing is built      |
+| Writing Caliper 1.1, and Caliper 1.0                   | 1.2 supersedes 1.1, and 1EdTech retired 1.0                                                     |
 | Splitting an envelope that is too large                | The host decides how to batch: `maxPayloadBytes` refuses an envelope that is too large          |

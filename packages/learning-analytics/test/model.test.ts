@@ -10,7 +10,7 @@ import {
   QUESTION_TYPES,
   SCALE_TYPES,
 } from "../src/index.js";
-import { ENTITY_SCHEMAS } from "../src/read/internal.js";
+import { SCHEMA_SETS } from "../src/read/internal.js";
 
 describe("the model", () => {
   it("names the context of Caliper 1.2 and the context of the Library Use Profile", () => {
@@ -19,7 +19,7 @@ describe("the model", () => {
   });
 
   it("has a schema for every entity type and for no other term", () => {
-    expect(Object.keys(ENTITY_SCHEMAS).sort()).toStrictEqual([...ENTITY_TYPES].sort());
+    expect(Object.keys(SCHEMA_SETS["1.2"].entities).sort()).toStrictEqual([...ENTITY_TYPES].sort());
   });
 
   it("lists no term twice in a vocabulary and names only entity types in a range", () => {

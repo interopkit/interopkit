@@ -1,7 +1,7 @@
 # Where the specifications disagree
 
-Caliper 1.2 has a specification, a JSON-LD context, JSON schemas and fixtures, and they do not always agree. Each place is
-here with how the package reads it, and a test pins it.
+Caliper 1.2 and Caliper 1.1 each have a specification, JSON-LD contexts, JSON schemas and fixtures, and they do not always agree.
+Each place is here with how the package reads it, and a test pins it.
 
 ```mermaid
 flowchart LR
@@ -88,6 +88,25 @@ ROLES.includes("Mentor#Auditor"); // => true
 | The sensor of an envelope                                               | Section 5.2 says it SHOULD be an IRI                                                                                                  | `sendCaliper` requires one; the endpoint takes any name that is not empty                         |
 | A status of a ping that is not 200 or 401                               | Section 6.2 says the sensor SHOULD read it as unavailable                                                                             | Unavailable with the status, except a redirect, which is an error                                 |
 
+## Caliper 1.1
+
+The package reads 1.1 from its tables, its six extension profiles, its contexts and its 129 fixtures ([Caliper 1.1](./versions.md)).
+
+| Place                                                                                                     | What the sources say                                                                                                                              | Reading                                                                                     |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `Collection`                                                                                              | The context of 1.1 lacks it, the Survey profile defines it, and a fixture of the collection names the Tool Use profile                              | Read                                                                                        |
+| `MultiselectScale`                                                                                        | The Feedback profile defines `MultiselectionScale` and the Survey profile `MultiselectScale`; the fixtures use the second                          | `MultiselectScale`                                                                          |
+| `scale` of a question                                                                                     | The fixtures of the Survey profile use it, and no context defines it                                                                              | Read                                                                                        |
+| `EnabledClosedCaptioning` and `DisabledClosedCaptioning`                                                  | Appendix A lists them, and no context of 1.1 defines them                                                                                         | Read                                                                                        |
+| Appendix E of 1.1 lists `Mentor#Auditor` and lacks `Manager#Manager`                                       | Appendix F of 1.2 lists the second, and the context of 1.2 the first                                                                              | Both are in `ROLES`; a document of 1.1 that uses `Manager#Manager` is refused               |
+| The target of a `NavigationEvent` and of a `ViewEvent`                                                    | The tables of 1.1 name a `Frame`; those of 1.2 name a `DigitalResource` and any entity                                                            | The table of the version                                                                    |
+| `ToolUseEvent.generated`                                                                                  | The table of 1.1 allows any entity; the Tool Use profile names the `AggregateMeasureCollection`, as the table of 1.2 does                          | The collection: an item that generates another entity is a finding                          |
+| `AssessmentItemEvent.generated`                                                                           | The table names a `Response`; a fixture of 1.1 with the action `Started` generates an `Attempt`                                                    | A response or an attempt, as in 1.2                                                         |
+| The disposition of `type` in the table of `ViewEvent`                                                     | The table leaves it empty; every other table writes `Required`                                                                                    | Required                                                                                    |
+| `MarkedAsUnRead` in the tables of `MessageEvent` and `ThreadEvent`                                        | Appendix A, the context and the schemas spell it `MarkedAsUnread`                                                                                 | `MarkedAsUnread`                                                                            |
+| A fixture that names the General Profile and an object of the class `Thesis`                              | The `profile` is a property of 1.2, and the class is defined by the context of the sender                                                         | Refused: the readers know the classes of the model alone                                    |
+| The contexts of the extension profiles                                                                    | Four of the six answer 404 at `purl.imsglobal.org`                                                                                                | Never fetched: the tests read them from `caliper-spec`                                      |
+
 ## The schemas against the fixtures
 
 `schema_1_2` accepts 62 of the 86 malformed events that the fixtures name: those whose entity is of another class, whose action
@@ -101,3 +120,9 @@ only in the form of a number. The tests of the corpus pin both lists.
 
 The schemas also keep the deprecated terms of Caliper 1.1 (`OutcomeEvent`, `ReadingEvent`, `Reading` and four Epub entities),
 which Caliper 1.2 does not list. The model has none of them.
+
+`schema_1_1` refuses six fixtures that the readers of 1.1 read: it gives a `metric` as a number, leaves the generic `Entity` out
+of a `Collection`, and names no class of an extension profile as the object, the target or the generated entity of an event. It
+allows the `@context` of a nested entity as a string or a list, where section 4.1 of 1.1 allows an object too. The readers read
+all 138 documents of the fixtures of 1.1 but one, and refuse everything that the schema refuses after a change, but a nested
+`@context` that becomes an object.

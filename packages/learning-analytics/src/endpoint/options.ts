@@ -10,6 +10,8 @@ import {
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
+import { CALIPER_VERSIONS, type CaliperVersion } from "../model/index.js";
+import { versionSchema } from "../read/internal.js";
 import type { ReceivedEnvelope } from "./received-envelope.js";
 
 /** The most bytes of an envelope that an endpoint takes unless it is told another: 1 MiB, which it announces as 1,024 kilobytes. */
@@ -35,6 +37,13 @@ export interface CaliperEndpointOptions extends CallOptions {
   >;
   /** Receives an envelope that read. A rejection answers 500 with nothing of the cause. */
   readonly accept: (envelope: ReceivedEnvelope, options?: CallOptions) => Promise<void>;
+  /**
+   * The versions of Caliper that the endpoint reads, in the order that it announces them as `caliperSupportedVersions`. An
+   * envelope whose `dataVersion` is the context of another version is answered 422. Caliper 1.1 is read and never written.
+   *
+   * @defaultValue ["1.2", "1.1"]
+   */
+  readonly versions?: readonly CaliperVersion[];
   /**
    * The most bytes of the body. A larger one is answered 413 before it is read. It is announced as `caliperMaximumPayloadSize`,
    * in kilobytes of 1,024 bytes and rounded down.
@@ -76,6 +85,7 @@ export interface CaliperEndpointOptions extends CallOptions {
 export interface EndpointSettings {
   readonly authorize: CaliperEndpointOptions["authorize"];
   readonly accept: CaliperEndpointOptions["accept"];
+  readonly versions: readonly CaliperVersion[];
   readonly maxPayloadBytes: number;
   readonly maxTokens: number;
   readonly maxFindings: number | undefined;
@@ -86,9 +96,17 @@ export interface EndpointSettings {
 
 const isFunction = <TFunction>(value: unknown): value is TFunction => typeof value === "function";
 
+/** The schema of the versions that an endpoint reads: at least one, each once. */
+export const versionsSchema = v.pipe(
+  v.array(versionSchema),
+  v.nonEmpty(),
+  v.check((versions) => new Set(versions).size === versions.length, "expected each version once"),
+);
+
 const optionsSchema = strictRecord({
   authorize: guardSchema(isFunction<CaliperEndpointOptions["authorize"]>, "a function"),
   accept: guardSchema(isFunction<CaliperEndpointOptions["accept"]>, "a function"),
+  versions: v.optional(versionsSchema),
   maxPayloadBytes: v.optional(positiveIntegerSchema),
   maxTokens: v.optional(positiveIntegerSchema),
   maxFindings: v.optional(positiveIntegerSchema),
@@ -107,6 +125,7 @@ export function readEndpointOptions(options: unknown): EndpointSettings {
   return {
     authorize: read.authorize,
     accept: read.accept,
+    versions: read.versions ?? CALIPER_VERSIONS,
     maxPayloadBytes: read.maxPayloadBytes ?? DEFAULT_MAX_PAYLOAD_BYTES,
     maxTokens: read.maxTokens ?? MAX_JSON_TOKENS,
     maxFindings: read.maxFindings,

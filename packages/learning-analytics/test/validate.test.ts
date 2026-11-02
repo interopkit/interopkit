@@ -191,7 +191,9 @@ describe("validateEvent and validateEntity: input of other types", () => {
     ["a limit as text", '{"maxFindings":"3"}'],
     ["a limit of 0", '{"maxFindings":0}'],
     ["a limit that is no integer", '{"maxFindings":1.5}'],
-    ["an option that does not exist", '{"version":"1.1"}'],
+    ["an option that does not exist", '{"language":"en"}'],
+    ["a version that no reader knows", '{"version":"1.0"}'],
+    ["a version as a number", '{"version":1.1}'],
   ])("refuses %s with a DataError", (_, text) => {
     const options = fromJson<never>(text);
     expect(() => validateEvent(SOUND_EVENT, options)).toThrow(DataError);

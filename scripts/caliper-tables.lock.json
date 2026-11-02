@@ -13,5 +13,11 @@
     "url": "https://www.imsglobal.org/spec/caliper/v1p2/cert",
     "file": "caliper-cert-1p2.json",
     "sha256": "fad5c7ce3ffaa98d0d0eed47b22ee32d3fb151ee53453cf4103211d5f257e158"
+  },
+  {
+    "url": "https://www.imsglobal.org/sites/default/files/caliper/v1p1/caliper-spec-v1p1/caliper-spec-v1p1.html",
+    "file": "caliper-1p1.json",
+    "sha256": "71b48091f731f5250e1572b1921731d906c635f46d8025327c1861bd725972f7",
+    "layout": "v1p1"
   }
 ]

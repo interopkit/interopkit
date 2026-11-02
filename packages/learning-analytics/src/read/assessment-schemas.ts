@@ -28,9 +28,9 @@ export function assessmentSchemas(to: RangeFactory) {
     comment: v.optional(text),
   };
   return {
-    Assessment: entityRecord("Assessment", { ...assignable, items: v.optional(v.array(to(["AssessmentItem"]))) }),
-    AssessmentItem: entityRecord("AssessmentItem", { ...assignable, isTimeDependent: v.optional(flag) }),
-    Attempt: entityRecord("Attempt", {
+    Assessment: entityRecord(to, "Assessment", { ...assignable, items: v.optional(v.array(to(["AssessmentItem"]))) }),
+    AssessmentItem: entityRecord(to, "AssessmentItem", { ...assignable, isTimeDependent: v.optional(flag) }),
+    Attempt: entityRecord(to, "Attempt", {
       ...base,
       isPartOf: v.optional(to(["Attempt"])),
       assignee: v.optional(to(["Person"])),
@@ -40,23 +40,23 @@ export function assessmentSchemas(to: RangeFactory) {
       endedAtTime: v.optional(time),
       duration: v.optional(duration),
     }),
-    Response: entityRecord("Response", response),
-    DateTimeResponse: entityRecord("DateTimeResponse", { ...response, dateTimeSelected: v.optional(time) }),
-    FillinBlankResponse: entityRecord("FillinBlankResponse", { ...response, values: v.optional(texts) }),
-    MultipleChoiceResponse: entityRecord("MultipleChoiceResponse", { ...response, value: v.optional(text) }),
-    MultipleResponseResponse: entityRecord("MultipleResponseResponse", { ...response, values: v.optional(texts) }),
-    MultiselectResponse: entityRecord("MultiselectResponse", { ...response, selections: v.optional(texts) }),
-    OpenEndedResponse: entityRecord("OpenEndedResponse", { ...response, value: v.optional(text) }),
-    RatingScaleResponse: entityRecord("RatingScaleResponse", { ...response, selections: v.optional(texts) }),
-    SelectTextResponse: entityRecord("SelectTextResponse", { ...response, values: v.optional(texts) }),
-    TrueFalseResponse: entityRecord("TrueFalseResponse", { ...response, value: v.optional(text) }),
-    Result: entityRecord("Result", {
+    Response: entityRecord(to, "Response", response),
+    DateTimeResponse: entityRecord(to, "DateTimeResponse", { ...response, dateTimeSelected: v.optional(time) }),
+    FillinBlankResponse: entityRecord(to, "FillinBlankResponse", { ...response, values: v.optional(texts) }),
+    MultipleChoiceResponse: entityRecord(to, "MultipleChoiceResponse", { ...response, value: v.optional(text) }),
+    MultipleResponseResponse: entityRecord(to, "MultipleResponseResponse", { ...response, values: v.optional(texts) }),
+    MultiselectResponse: entityRecord(to, "MultiselectResponse", { ...response, selections: v.optional(texts) }),
+    OpenEndedResponse: entityRecord(to, "OpenEndedResponse", { ...response, value: v.optional(text) }),
+    RatingScaleResponse: entityRecord(to, "RatingScaleResponse", { ...response, selections: v.optional(texts) }),
+    SelectTextResponse: entityRecord(to, "SelectTextResponse", { ...response, values: v.optional(texts) }),
+    TrueFalseResponse: entityRecord(to, "TrueFalseResponse", { ...response, value: v.optional(text) }),
+    Result: entityRecord(to, "Result", {
       ...scored,
       maxResultScore: v.optional(decimal),
       resultScore: v.optional(decimal),
     }),
-    Score: entityRecord("Score", { ...scored, maxScore: v.optional(decimal), scoreGiven: v.optional(decimal) }),
-    AggregateMeasure: entityRecord("AggregateMeasure", {
+    Score: entityRecord(to, "Score", { ...scored, maxScore: v.optional(decimal), scoreGiven: v.optional(decimal) }),
+    AggregateMeasure: entityRecord(to, "AggregateMeasure", {
       ...base,
       metricValue: decimal,
       maxMetricValue: v.optional(decimal),

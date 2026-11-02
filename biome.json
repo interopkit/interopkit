@@ -557,9 +557,42 @@
                       "**/validate",
                       "**/validate/**",
                       "**/endpoint",
+                      "**/endpoint/**",
+                      "**/v1p1",
+                      "**/v1p1/**"
+                    ],
+                    "message": "model/ holds the terms and imports none of build/, read/, send/, validate/, endpoint/ and v1p1/: they build on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-analytics/src/v1p1/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/build",
+                      "**/build/**",
+                      "**/read",
+                      "**/read/**",
+                      "**/send",
+                      "**/send/**",
+                      "**/validate",
+                      "**/validate/**",
+                      "**/endpoint",
                       "**/endpoint/**"
                     ],
-                    "message": "model/ holds the terms and imports none of build/, read/, send/, validate/ and endpoint/: they build on it."
+                    "message": "v1p1/ holds what differs in Caliper 1.1 and builds on model/ and @interopkit/core only: read/, validate/ and endpoint/ build on it."
                   }
                 ]
               }
@@ -627,8 +660,8 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/send", "**/send/**", "**/endpoint", "**/endpoint/**"],
-                    "message": "build/ builds on model/, read/, validate/ and @interopkit/core only: send/ and endpoint/ never import it."
+                    "group": ["**/send", "**/send/**", "**/endpoint", "**/endpoint/**", "**/v1p1", "**/v1p1/**"],
+                    "message": "build/ builds on model/, read/, validate/ and @interopkit/core only: send/ and endpoint/ never import it, and the 1.1 is read and never written."
                   }
                 ]
               }
@@ -653,9 +686,11 @@
                       "**/validate",
                       "**/validate/**",
                       "**/endpoint",
-                      "**/endpoint/**"
+                      "**/endpoint/**",
+                      "**/v1p1",
+                      "**/v1p1/**"
                     ],
-                    "message": "send/ builds on model/, build/ and @interopkit/core only: it never imports endpoint/, which is the other side of the wire."
+                    "message": "send/ builds on model/, build/ and @interopkit/core only: it never imports endpoint/, which is the other side of the wire, nor v1p1/, since 1.1 is read and never written."
                   }
                 ]
               }
