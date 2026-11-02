@@ -274,7 +274,7 @@ export async function createReferencePlatform(settings: ReferencePlatformOptions
   });
   const roster = new MemoryRoster(tool.clientId);
   const groups = new MemoryGroups(tool.clientId);
-  const jwks = createJwksCache({ fetch: fetch ?? (async () => new Response("", { status: 404 })) });
+  const jwks = createJwksCache({ fetch: fetch ?? (async () => new Response("", { status: 404 })), clock: CLOCK });
   const options: PlatformRequestOptions = {
     config,
     clock: CLOCK,

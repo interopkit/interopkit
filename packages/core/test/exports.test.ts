@@ -11,6 +11,7 @@ describe("the public API", () => {
         "callPort",
         "callService",
         "checkClock",
+        "createJwksCache",
         "createKeyedCache",
         "DataError",
         "DEFAULT_MAX_BYTES",

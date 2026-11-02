@@ -3,7 +3,7 @@
 import { DataError } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createJwksCache, LtiError } from "../src/index.js";
 import {
   buildCapabilitiesScript,
@@ -59,10 +59,6 @@ import {
   toolKeys,
 } from "./platform-setup.js";
 import { textOf } from "./text-of.js";
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 const SECONDS = NOW / 1000;
 const DL = "https://purl.imsglobal.org/spec/lti-dl/claim/";
@@ -1153,7 +1149,7 @@ describe("the tool role and the platform role together", () => {
       registration: async () => registration,
       clock: ctx.clock,
       store: new MemoryStore(),
-      jwks: createJwksCache({ fetch: platformFetch }),
+      jwks: createJwksCache({ fetch: platformFetch, clock: ctx.clock }),
     };
     const initiation = new URL(await ltiPlatformLogin(message, ctx.login));
     initiation.searchParams.delete("lti_storage_target");

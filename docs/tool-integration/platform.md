@@ -106,7 +106,7 @@ const options = {
   client: async () => tool,
   launches,
   once: async () => true,
-  jwks: createJwksCache({ fetch }),
+  jwks: createJwksCache({ fetch, clock }),
 };
 const jwks = await handlePlatformRequest(
   { method: "GET", url: "https://lti.platform.example/jwks", headers: {}, body: new Uint8Array() },

@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI claims, AGS bodies and OAuth 2.0 answers are those of the specifications.
 
 import { DataError } from "@interopkit/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { SCOPES } from "../src/index.js";
 import { ltiPlatformLogin, type MessageInput, type PlatformRequestOptions } from "../src/platform/index.js";
 import { readMessage } from "../src/protocol/internal.js";
@@ -23,10 +23,6 @@ import {
   toolKeys,
 } from "./platform-setup.js";
 import { textOf } from "./text-of.js";
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 const AGS_CLAIM = "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint";
 const CONTAINER = `${PLATFORM_ORIGIN}/contexts/course-1/line-items`;

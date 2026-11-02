@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 responses are snake_case.
 
 import { type CallOptions, DataError } from "@interopkit/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { signConsumerKey } from "../src/protocol/internal.js";
 import { ltiLaunch, ltiLogin } from "../src/tool/index.js";
 import { CLIENT_ID, DEPLOYMENT_ID, formPost, ISSUER, JWKS_URL, TARGET_LINK_URI } from "./fake-platform.js";
@@ -14,8 +14,6 @@ import { cookieLogin, launchOf, type Options, setup } from "./tool-setup.js";
  * migration claim. The expectations come from LTI 1.3 Core sections 4.1.2 and 5.3.4, the Security Framework 1.1 sections
  * 5.1.1.5 and 5.1.3, and the worked example of the Migration Guide.
  */
-
-afterEach(() => vi.useRealTimers());
 
 const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";
 const OTHER_DEPLOYMENT = "f2b3c1d7-0e1a-4c5b-9d8e-1a2b3c4d5e6f";

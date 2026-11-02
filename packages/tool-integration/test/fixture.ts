@@ -2,7 +2,6 @@
 
 import { createHash } from "node:crypto";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
-import { vi } from "vitest";
 import { textOf } from "./text-of.js";
 
 /** The fixed time of the tests of LTI: 2023-11-14T22:13:20Z. */
@@ -17,16 +16,14 @@ export interface TestClock {
   advance(seconds: number): void;
 }
 
-/**
- * Creates a clock at `NOW`. The clock is the time of the system, which the test fakes: the key set cache of jose reads it.
- * A test that creates a clock restores the system time with `vi.useRealTimers()` when it ends.
- */
+/** Creates a clock at `NOW`, which only the test moves: the functions under test read no other time. */
 export function createClock(): TestClock {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(NOW);
+  let time = NOW;
   return {
-    now: () => Date.now(),
-    advance: (seconds) => vi.setSystemTime(Date.now() + seconds * 1000),
+    now: () => time,
+    advance: (seconds) => {
+      time += seconds * 1000;
+    },
   };
 }
 

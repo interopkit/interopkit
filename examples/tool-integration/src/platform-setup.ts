@@ -116,7 +116,7 @@ export async function setupPlatform(clock: Clock, side: ToolSide, fetch: Fetch):
   const { roster, groups, preferences } = createRosterStores(courseOf(side.clientId));
   const attempts = createAttempts();
   // The tool registered by hand gave its key; a tool that registered itself names its key set, which the platform fetches.
-  const jwks = createJwksCache({ fetch });
+  const jwks = createJwksCache({ fetch, clock });
   return {
     login: { config, clock, registration: tools, check: async () => undefined, launches },
     requests: {

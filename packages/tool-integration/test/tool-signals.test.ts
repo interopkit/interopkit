@@ -1,15 +1,12 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 responses are snake_case.
 
 import { type CallOptions, DataError } from "@interopkit/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { createJwksCache } from "../src/index.js";
+import { describe, expect, it } from "vitest";
 import { type LtiStore, ltiLaunch, ltiLogin } from "../src/tool/index.js";
 import { requestServiceToken } from "../src/tool/internal.js";
 import { DEPLOYMENT_ID, JWKS_URL } from "./fake-platform.js";
 import { cookieLogin, type Setup, setup } from "./tool-setup.js";
 import { waitFor } from "./wait.js";
-
-afterEach(() => vi.useRealTimers());
 
 const REASON = new Error("The candidate left the item.");
 
@@ -127,30 +124,6 @@ describe("ltiLaunch and a signal", () => {
     gate.resolve();
     expect(await ltiLaunch(post, ctx.options)).toMatchObject({ messageType: "LtiResourceLinkRequest" });
     expect(ctx.platform.requests.filter((request) => request === `GET ${JWKS_URL}`)).toHaveLength(1);
-  });
-});
-
-describe("a key set cache and a signal", () => {
-  it("ends the wait of the caller whose signal aborts, and no other, on one shared fetch", async () => {
-    const { platform } = setup();
-    const gate = deferred<void>();
-    platform.keySetResponse = async () => {
-      await gate.promise;
-      return Response.json({ keys: platform.published.map((key) => key.publicJwk) });
-    };
-    const cache = createJwksCache({ fetch: platform.fetch });
-    const header = { alg: "RS256", kid: "platform-1" } as const;
-    const jws = { payload: "", signature: "" };
-    const leaving = new AbortController();
-    const ended = cache.keySet(JWKS_URL, { signal: leaving.signal })(header, jws);
-    const staying = cache.keySet(JWKS_URL, { signal: new AbortController().signal })(header, jws);
-    const unbound = cache.keySet(JWKS_URL)(header, jws);
-    leaving.abort(REASON);
-    await expect(ended).rejects.toBe(REASON);
-    gate.resolve();
-    expect(await staying).toBeDefined();
-    expect(await unbound).toBeDefined();
-    expect(platform.requests).toHaveLength(1);
   });
 });
 

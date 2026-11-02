@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the configurations of Dynamic Registration are those of the specification.
 
 import { DataError, type Fetch, ServiceError, signerFromCryptoKey } from "@interopkit/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { type LtiMessage, SCOPES, type ToolRegistrationResult } from "../src/index.js";
 import {
   createRegistrationClosePage,
@@ -18,8 +18,6 @@ import { CLIENT_ID, DEPLOYMENT_ID, ISSUER, REDIRECT_URI, TOOL_ORIGIN } from "./f
 import { readPost, request } from "./fixture.js";
 import { textOf } from "./text-of.js";
 import { cookieLogin, type Setup, setup, toolKey } from "./tool-setup.js";
-
-afterEach(() => vi.useRealTimers());
 
 const PLATFORM_LTI = "https://purl.imsglobal.org/spec/lti-platform-configuration";
 const TOOL_LTI = "https://purl.imsglobal.org/spec/lti-tool-configuration";

@@ -72,15 +72,16 @@ const registration = {
   signer: signerFromCryptoKey(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
 };
 const logins = new Map();
+const clock = { now: () => Date.now() };
 const options = {
   registration: async () => registration,
-  clock: { now: () => Date.now() },
+  clock,
   store: {
     put: async (state, record) => void logins.set(state, record),
     get: async (state) => logins.get(state),
     delete: async (state) => logins.delete(state),
   },
-  jwks: createJwksCache({ fetch }),
+  jwks: createJwksCache({ fetch, clock }),
 };
 
 const login = new URL("https://tool.example.com/lti/login");

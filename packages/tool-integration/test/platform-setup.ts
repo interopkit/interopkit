@@ -151,6 +151,7 @@ export function setup(overrides: { readonly tools?: readonly ToolRegistration[] 
       if (state.failToolKeys) return new Response("down", { status: 503 });
       return url === TOOL_JWKS_URL ? Response.json({ keys: [toolKeys.publicJwk] }) : new Response("", { status: 404 });
     },
+    clock,
   });
   const lookup = async (clientId: string): Promise<ToolRegistration | undefined> => tools.get(clientId);
   const launches = memoryLaunchStore(kept);

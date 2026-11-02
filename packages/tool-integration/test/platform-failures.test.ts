@@ -1,6 +1,6 @@
 import { type CallOptions, DataError } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ltiPlatformLogin, type MessageInput, type ToolRegistration } from "../src/platform/index.js";
 import { openToken, sealToken } from "../src/platform/internal.js";
 import { authenticationRequest, clientAssertion, TOOL_CLIENT_ID, tokenRequest, toolRegistration } from "./fake-tool.js";
@@ -18,10 +18,6 @@ import {
   toolKeys,
 } from "./platform-setup.js";
 import { textOf } from "./text-of.js";
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 /** Whether an answer is the 500 of a failed port, which says nothing of the cause. */
 function isServerError(response: HttpResponse): boolean {

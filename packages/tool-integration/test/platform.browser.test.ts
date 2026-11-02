@@ -85,7 +85,7 @@ function platform(path: string): { login: PlatformLoginOptions; requests: Platfo
     client: async () => tool,
     launches,
     once: async () => true,
-    jwks: createJwksCache({ fetch: () => Promise.reject(new Error("No key set is fetched.")) }),
+    jwks: createJwksCache({ fetch: () => Promise.reject(new Error("No key set is fetched.")), clock }),
   };
   return { login, requests };
 }

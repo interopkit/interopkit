@@ -93,7 +93,7 @@ export async function createReferenceTool(origin: string, fetch: Fetch): Promise
       get: async (state) => logins.get(state),
       delete: async (state) => logins.delete(state),
     },
-    jwks: createJwksCache({ fetch }),
+    jwks: createJwksCache({ fetch, clock }),
     fetch,
   };
   const launches: LtiMessage[] = [];

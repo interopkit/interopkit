@@ -3,7 +3,7 @@
 import { DataError, signerFromCryptoKey } from "@interopkit/core";
 import fc from "fast-check";
 import { jwtVerify } from "jose";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { ContentItem, DeepLinkingRequestMessage } from "../src/index.js";
 import { createDeepLinkResponse, type DeepLinkingResponseInput, ltiLaunch } from "../src/tool/index.js";
 import {
@@ -18,8 +18,6 @@ import {
 import { NOW, readPost, readToken, verifyToken } from "./fixture.js";
 import { textOf } from "./text-of.js";
 import { cookieLogin, deepLinkingOf, platformKey, SECONDS, type Setup, setup, toolKey } from "./tool-setup.js";
-
-afterEach(() => vi.useRealTimers());
 
 const DL = "https://purl.imsglobal.org/spec/lti-dl/claim/";
 const SETTINGS = `${DL}deep_linking_settings`;

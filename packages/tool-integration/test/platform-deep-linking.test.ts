@@ -4,7 +4,7 @@ import { type CallOptions, DataError, ServiceError } from "@interopkit/core";
 import type { HttpRequest } from "@interopkit/core/http";
 import fc from "fast-check";
 import { SignJWT } from "jose";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   type DeepLinkingInputSettings,
   type MessageInput,
@@ -35,10 +35,6 @@ import {
   toolKeys,
   toolMessageOptions,
 } from "./platform-setup.js";
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";
 const DL = "https://purl.imsglobal.org/spec/lti-dl/claim/";

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parseLtiTables } from "../../../scripts/lti-tables.js";
 import { requireSchemas } from "../../../scripts/schemas.js";
 import {
@@ -14,10 +14,6 @@ import {
   SYSTEM_ROLES,
 } from "../src/index.js";
 import { baseMessage, launch, setup } from "./platform-setup.js";
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 /**
  * The tables are those of Appendices A and B of LTI Core as the open portal prints them: `pnpm schemas` downloads the page at

@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the configuration of Dynamic Registration are those of the specification.
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { discoverPlatform } from "../src/tool/index.js";
 
 const MIB = 1024 * 1024;
@@ -13,8 +13,6 @@ const CONFIGURATION_URL = `${ISSUER}/.well-known/openid-configuration`;
 
 /** The peak resident memory of the process so far, in bytes. */
 const peak = () => process.resourceUsage().maxRSS * 1024;
-
-afterEach(() => vi.useRealTimers());
 
 /** A configuration whose `claims_supported` is an array of the given length. */
 function configuration(claims: number): string {

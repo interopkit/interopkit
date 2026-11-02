@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the bodies of NRPS, Context Groups and the PNP connector are those of the specifications.
 
 import { DataError, type Fetch } from "@interopkit/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { type LtiMessage, type PreferencesClaim, SCOPES } from "../src/index.js";
 import { createServiceClient, ltiLaunch, type ServiceClientOptions } from "../src/tool/index.js";
 import { ACCESS_TOKEN_URL, ISSUER } from "./fake-platform.js";
@@ -22,8 +22,6 @@ import { cookieLogin, type Setup, setup } from "./tool-setup.js";
  * The clients of Names and Role Provisioning, Context Groups and the AfA PNP Connector against a learning platform written from
  * their specifications: the fake platform checks the bearer token, the `Accept` and the filters of each request.
  */
-
-afterEach(() => vi.useRealTimers());
 
 /** The scopes that the learning platform offers for the three services. */
 const OFFERED = [SCOPES.contextMembershipReadonly, SCOPES.contextGroupReadonly, SCOPES.preferencesRecordReadonly];

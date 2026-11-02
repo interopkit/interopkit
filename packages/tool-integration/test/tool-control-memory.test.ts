@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { type LtiMessage, SCOPES } from "../src/index.js";
 import { createServiceClient, ltiLaunch } from "../src/tool/index.js";
 import { ISSUER } from "./fake-platform.js";
@@ -15,8 +15,6 @@ const CONTROL_TYPE = "application/vnd.ims.lti-ap.v1.control+json";
 
 /** The peak resident memory of the process so far, in bytes. */
 const peak = () => process.resourceUsage().maxRSS * 1024;
-
-afterEach(() => vi.useRealTimers());
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one client.
 describe("the peak memory of a control status", () => {

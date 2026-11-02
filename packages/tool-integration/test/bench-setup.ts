@@ -151,7 +151,7 @@ export async function createPair(
     client: lookup,
     launches,
     once: async () => true,
-    jwks: createJwksCache({ fetch: async () => new Response("", { status: 404 }) }),
+    jwks: createJwksCache({ fetch: async () => new Response("", { status: 404 }), clock: CLOCK }),
     services: {
       gradebook: new MemoryGradebook(CLIENT_ID),
       roster: new MemoryRoster(CLIENT_ID),

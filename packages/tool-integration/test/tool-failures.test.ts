@@ -1,15 +1,10 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 responses are snake_case.
 
-import { ServiceError } from "@interopkit/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { createJwksCache } from "../src/index.js";
+import { describe, expect, it } from "vitest";
 import { type LtiStore, ltiLaunch, ltiLogin } from "../src/tool/index.js";
-import { JWKS_URL } from "./fake-platform.js";
 import { textOf } from "./text-of.js";
 
 import { cookieLogin, type Setup, setup } from "./tool-setup.js";
-
-afterEach(() => vi.useRealTimers());
 
 /** The store of a setup with some of its functions replaced. */
 function withStore(ctx: Setup, replaced: Partial<LtiStore>): Setup["options"] {
@@ -102,30 +97,5 @@ describe("the status of an LtiError", () => {
     await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "nonce-mismatch", status: 401 });
     const legacy = { ...post, body: new TextEncoder().encode(`${textOf(post.body)}&oauth_consumer_key=k`) };
     await expect(ltiLaunch(legacy, ctx.options)).rejects.toMatchObject({ reason: "legacy-launch", status: 400 });
-  });
-});
-
-describe("a key set cache when the platform is down", () => {
-  const CACHE = { ttlSeconds: 100, refreshSeconds: 10 };
-  const keyOf = (cache: ReturnType<typeof createJwksCache>) =>
-    cache.keySet(JWKS_URL)({ alg: "RS256", kid: "platform-1" }, { payload: "", signature: "" });
-
-  it("serves a key that is still fresh, and asks the platform for nothing", async () => {
-    const { platform } = setup();
-    const cache = createJwksCache({ fetch: platform.fetch, ...CACHE });
-    const first = await keyOf(cache);
-    platform.keySetResponse = () => new Response("down", { status: 503 });
-    expect(await keyOf(cache)).toBe(first);
-    expect(platform.requests).toHaveLength(1);
-  });
-
-  it("fails closed past the time to live: it rejects with ServiceError and never serves the stale key", async () => {
-    const { platform, clock } = setup();
-    const cache = createJwksCache({ fetch: platform.fetch, ...CACHE });
-    await keyOf(cache);
-    platform.keySetResponse = () => new Response("down", { status: 503 });
-    clock.advance(CACHE.ttlSeconds);
-    await expect(keyOf(cache)).rejects.toBeInstanceOf(ServiceError);
-    await expect(keyOf(cache)).rejects.toMatchObject({ status: 503 });
   });
 });

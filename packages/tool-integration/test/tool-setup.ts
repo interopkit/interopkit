@@ -50,7 +50,7 @@ export function setup(overrides: Partial<PlatformRegistration> = {}): Setup {
     },
     clock,
     store,
-    jwks: createJwksCache({ fetch: platform.fetch }),
+    jwks: createJwksCache({ fetch: platform.fetch, clock }),
     fetch: platform.fetch,
   };
   return { clock, platform, store, options, registration, lookups };

@@ -88,6 +88,7 @@ const registration = {
   signer: signerFromCryptoKey(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
 };
 
+const clock = { now: () => Date.now() };
 const logins = new Map();
 const store = {
   put: async (state, record) => void logins.set(state, record),
@@ -99,9 +100,9 @@ const options = {
     issuer === registration.issuer && (clientId === undefined || clientId === registration.clientId)
       ? registration
       : undefined,
-  clock: { now: () => Date.now() },
+  clock,
   store,
-  jwks: createJwksCache({ fetch }),
+  jwks: createJwksCache({ fetch, clock }),
 };
 
 // The route of the tool's login URL, for a platform that starts the login with a GET.
@@ -324,14 +325,16 @@ is about to expire, and sends it only to the registration's `serviceOrigins`, or
 
 ## The key set cache
 
-`createJwksCache({ fetch })` holds a remote key set of jose for each URL, which comes from a registration and never from a
-token. `cache.keySet(url, options)` returns the function that resolves the public key of a token from its header, and
-`jwtVerify` of jose takes it. The `signal` of `options` ends the wait of the caller that holds the function; the fetch is shared
-work and runs on to its own timeout.
+`createJwksCache({ fetch, clock })`, which the package exports from [`@interopkit/core`](../core/signals.md), keeps the key set of
+each URL, which comes from a registration and never from a token, as a `createLocalJWKSet` of jose in a `createKeyedCache`.
+`cache.keySet(url, options)` returns the function that resolves the public key of a token from its header, and `jwtVerify` of
+jose takes it. The `signal` of `options` ends the wait of the caller that holds the function; the fetch is shared work and runs
+on to its own timeout.
 
 | Option           | Meaning                                                                  |
 | ---------------- | ------------------------------------------------------------------------ |
 | `fetch`          | The `fetch` that gets the key sets                                       |
+| `clock`          | The time that the lifetimes are counted by                               |
 | `ttlSeconds`     | How long a set stays cached. Default: `3600`.                            |
 | `refreshSeconds` | The least time between two fetches of a set that answers. Default: `60`. |
 | `timeoutMs`      | The most time one fetch may take. Default: `10000`.                      |
@@ -340,8 +343,9 @@ A set that is older than `ttlSeconds` is fetched again. A `kid` that the cached 
 `refreshSeconds` (Security Framework section 6.4: the platform adds a rotated key under a new `kid`), so a token with an invented
 `kid` cannot make the tool fetch on every request while the platform's key set answers. A key set that fails is not held back: each request that needs it fetches it again, so limit the rate of requests to the launch URL. Requests that wait for one fetch share it. The set resolves the key that
 has the `kid` and is meant for signing with the algorithm of the token (`use` is `sig` or absent, `alg` is that algorithm or absent, `key_ops` has
-`verify` when present); a `kid` that two keys share, and a set that is not a JWK Set (RFC 7517 section 5), are refused. A key of
-fewer than 2,048 bits does not verify (RFC 7518 section 3.3). The cache reads the time of the system, as jose does.
+`verify` when present); a `kid` that two keys share is refused, and a set that is not a JWK Set (RFC 7517 section 5) is a
+`DataError` and is not kept. A key of fewer than 2,048 bits does not verify (RFC 7518 section 3.3). The cache keeps 1,000 key
+sets at most: the one fetched first goes first.
 
 ## Calls to the platform
 
@@ -361,8 +365,8 @@ function in the options of the connection. See [SECURITY](../../SECURITY.md).
 
 ## The clock
 
-`clock.now()` answers whole milliseconds, as `Date.now()` does ([clock](../core/clock.md)). The functions read no other clock,
-except that the key set cache of jose reads the time of the system.
+`clock.now()` answers whole milliseconds, as `Date.now()` does ([clock](../core/clock.md)). The functions and the key set cache
+read no other clock.
 
 ## Deployment
 

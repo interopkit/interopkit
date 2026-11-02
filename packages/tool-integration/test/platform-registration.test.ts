@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the configurations of Dynamic Registration are those of the specification.
 
 import { type CallOptions, DataError, type Fetch, signerFromCryptoKey } from "@interopkit/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { SCOPES, type ToolConfiguration } from "../src/index.js";
 import {
   createRegistrationInitiation,
@@ -46,10 +46,6 @@ import {
 } from "./platform-setup.js";
 import { MemoryRoster } from "./roster-stores.js";
 import { textOf } from "./text-of.js";
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 const SECONDS = 1_700_000_000;
 const ISSUER = `${PLATFORM_ORIGIN}/tenant-1`;

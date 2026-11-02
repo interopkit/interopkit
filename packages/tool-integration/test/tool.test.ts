@@ -5,8 +5,8 @@ import { DataError, ServiceError, signerFromCryptoKey } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
 import { jwtVerify } from "jose";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { createJwksCache, type LtiMessage } from "../src/index.js";
+import { describe, expect, it } from "vitest";
+import type { LtiMessage } from "../src/index.js";
 import { randomToken } from "../src/protocol/internal.js";
 import { ltiLaunch, ltiLogin, type PlatformRegistration } from "../src/tool/index.js";
 import { getDataPage, requestServiceToken } from "../src/tool/internal.js";
@@ -19,7 +19,6 @@ import {
   DEPLOYMENT_ID,
   formPost,
   ISSUER,
-  JWKS_URL,
   LOGIN_URL,
   REDIRECT_URI,
   RETURN_URL,
@@ -43,8 +42,6 @@ import {
   toolKey,
   verificationPost,
 } from "./tool-setup.js";
-
-afterEach(() => vi.useRealTimers());
 
 describe("the request of a service token", () => {
   const [lineitem, , score] = AGS_SCOPES;
@@ -173,157 +170,6 @@ describe("the request of a service token", () => {
       ctx.platform.tokenResponse = answer;
       await expect(tokenFor(ctx, scopes)).rejects.toBeInstanceOf(ServiceError);
     }
-  });
-});
-
-describe("createJwksCache", () => {
-  /** Resolves the key that a token with the header resolves with from the key set at `JWKS_URL`. */
-  const key = (cache: ReturnType<typeof createJwksCache>, kid: string | undefined) =>
-    cache.keySet(JWKS_URL)({ alg: "RS256", kid }, { payload: "", signature: "" });
-  const NO_KEY = { code: "ERR_JWKS_NO_MATCHING_KEY" };
-
-  it("fetches a key set once and serves its keys from the cache", async () => {
-    const { platform } = setup();
-    const cache = createJwksCache({ fetch: platform.fetch });
-    const first = await key(cache, "platform-1");
-    expect(first).toBeDefined();
-    expect(await key(cache, "platform-1")).toBe(first);
-    expect(platform.requests).toEqual([`GET ${JWKS_URL}`]);
-  });
-
-  it("follows a rotation: a kid that the cached set lacks fetches the set again after the refresh time", async () => {
-    const { platform, clock } = setup();
-    const cache = createJwksCache({ fetch: platform.fetch });
-    await key(cache, "platform-1");
-    platform.published = [rotatedKey, platformKey];
-    await expect(key(cache, "platform-2")).rejects.toMatchObject(NO_KEY);
-    expect(platform.requests).toHaveLength(1);
-    clock.advance(60);
-    expect(await key(cache, "platform-2")).toBeDefined();
-    expect(await key(cache, "platform-1")).toBeDefined();
-    expect(platform.requests).toHaveLength(2);
-  });
-
-  it("does not fetch on every request that names an invented kid", async () => {
-    const { platform, clock } = setup();
-    const cache = createJwksCache({ fetch: platform.fetch });
-    for (let i = 0; i < 50; i += 1) await expect(key(cache, `invented-${i}`)).rejects.toMatchObject(NO_KEY);
-    expect(platform.requests).toHaveLength(1);
-    clock.advance(59);
-    await expect(key(cache, "invented-x")).rejects.toMatchObject(NO_KEY);
-    expect(platform.requests).toHaveLength(1);
-    clock.advance(1);
-    await expect(key(cache, "invented-y")).rejects.toMatchObject(NO_KEY);
-    expect(platform.requests).toHaveLength(2);
-  });
-
-  it("fetches a set again when it is older than the time to live", async () => {
-    const { platform, clock } = setup();
-    const cache = createJwksCache({ fetch: platform.fetch, ttlSeconds: 100, refreshSeconds: 10 });
-    await key(cache, "platform-1");
-    clock.advance(99);
-    await key(cache, "platform-1");
-    expect(platform.requests).toHaveLength(1);
-    clock.advance(1);
-    await key(cache, "platform-1");
-    expect(platform.requests).toHaveLength(2);
-  });
-
-  it("shares one fetch among the requests that wait for it", async () => {
-    const { platform } = setup();
-    const cache = createJwksCache({ fetch: platform.fetch });
-    const keys = await Promise.all(Array.from({ length: 5 }, () => key(cache, "platform-1")));
-    expect(new Set(keys).size).toBe(1);
-    expect(platform.requests).toHaveLength(1);
-  });
-
-  it("serves the keys of one URL from one set, and a set for each URL", () => {
-    const { platform } = setup();
-    const cache = createJwksCache({ fetch: platform.fetch });
-    expect(cache.keySet(JWKS_URL)).toBe(cache.keySet(JWKS_URL));
-    expect(cache.keySet(`${JWKS_URL}?other`)).not.toBe(cache.keySet(JWKS_URL));
-  });
-
-  it("keeps the RSA keys that are meant for signing with RS256, and refuses a kid that two keys share", async () => {
-    const { platform } = setup();
-    platform.keySetResponse = () =>
-      Response.json({
-        keys: [
-          { ...platformKey.publicJwk, kid: "encryption", use: "enc" },
-          { ...platformKey.publicJwk, kid: "other-alg", alg: "RS512" },
-          { ...platformKey.publicJwk, kid: "encrypt-only", key_ops: ["encrypt"] },
-          { kty: "EC", crv: "P-256", x: "a", y: "b", kid: "elliptic" },
-          { ...platformKey.publicJwk, kid: undefined },
-          platformKey.publicJwk,
-          { ...rotatedKey.publicJwk, kid: "shared" },
-          { ...attackerKey.publicJwk, kid: "shared" },
-        ],
-      });
-    const cache = createJwksCache({ fetch: platform.fetch });
-    for (const kid of ["encryption", "other-alg", "encrypt-only", "elliptic", "absent"]) {
-      await expect(key(cache, kid), kid).rejects.toMatchObject(NO_KEY);
-    }
-    await expect(key(cache, "shared")).rejects.toMatchObject({ code: "ERR_JWKS_MULTIPLE_MATCHING_KEYS" });
-    const token = await signToken({ a: 1 }, platformKey);
-    const kept = await key(cache, "platform-1");
-    expect(await jwtVerify(token, kept, { algorithms: ["RS256"] })).toMatchObject({ payload: { a: 1 } });
-    await expect(jwtVerify(token, attackerKey.publicKey, { algorithms: ["RS256"] })).rejects.toMatchObject({
-      code: "ERR_JWS_SIGNATURE_VERIFICATION_FAILED",
-    });
-  });
-
-  it("throws ServiceError with the status and the body when the platform refuses", async () => {
-    const { platform } = setup();
-    platform.keySetResponse = () => new Response("down", { status: 503 });
-    const cache = createJwksCache({ fetch: platform.fetch });
-    await expect(key(cache, "platform-1")).rejects.toMatchObject({ name: "ServiceError", status: 503, body: "down" });
-    platform.keySetResponse = undefined;
-    expect(await key(cache, "platform-1")).toBeDefined();
-  });
-
-  it("throws ServiceError with status 0 when the fetch fails, as it does for a redirect", async () => {
-    const { platform } = setup();
-    platform.keySetResponse = () => {
-      throw new TypeError("redirect mode is set to error");
-    };
-    const cache = createJwksCache({ fetch: platform.fetch });
-    await expect(key(cache, "platform-1")).rejects.toMatchObject({ name: "ServiceError", status: 0 });
-  });
-
-  it("throws ServiceError for an answer larger than 64 KiB", async () => {
-    const { platform } = setup();
-    platform.keySetResponse = () => new Response("x".repeat(65_537));
-    const cache = createJwksCache({ fetch: platform.fetch });
-    await expect(key(cache, "platform-1")).rejects.toMatchObject({ name: "ServiceError", status: 200 });
-  });
-
-  it("throws DataError for arguments and options of other types", () => {
-    const { platform } = setup();
-    const cache = createJwksCache({ fetch: platform.fetch });
-    expect(() => cache.keySet("http://lms.example.edu/jwks")).toThrow(
-      new DataError('The URL of a key set must be an absolute https URL, found "http://lms.example.edu/jwks".'),
-    );
-    const options = { fetch: platform.fetch };
-    const bad: readonly [string, () => unknown][] = [
-      ["The options must be an object, found null.", () => createJwksCache(JSON.parse("null"))],
-      [
-        'The option fetch must be a function, found "f".',
-        () => createJwksCache({ ...options, fetch: JSON.parse('"f"') }),
-      ],
-      [
-        "The option ttlSeconds must be a positive integer, found 0.",
-        () => createJwksCache({ ...options, ttlSeconds: 0 }),
-      ],
-      [
-        'The option refreshSeconds must be a positive integer, found "1".',
-        () => createJwksCache({ ...options, refreshSeconds: JSON.parse('"1"') }),
-      ],
-      [
-        "The option timeoutMs must be a positive integer, found null.",
-        () => createJwksCache({ ...options, timeoutMs: JSON.parse("null") }),
-      ],
-    ];
-    for (const [message, call] of bad) expect(call, message).toThrow(new DataError(message));
   });
 });
 

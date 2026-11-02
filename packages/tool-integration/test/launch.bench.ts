@@ -54,7 +54,7 @@ for (const algorithm of ALGORITHMS) {
       registration: async () => pair.registration,
       clock: CLOCK,
       store: pair.store,
-      jwks: createJwksCache({ fetch: platformFetch(pair) }),
+      jwks: createJwksCache({ fetch: platformFetch(pair), clock: CLOCK }),
     };
     expect("messageType" in (await ltiLaunch(request, options))).toBe(true);
     const verify = () =>

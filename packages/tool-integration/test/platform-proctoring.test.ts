@@ -2,7 +2,7 @@
 
 import { type CallOptions, DataError } from "@interopkit/core";
 import fc from "fast-check";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { type ControlRequest, type ControlStatus, SCOPES } from "../src/index.js";
 import {
   type AssessmentControl,
@@ -41,10 +41,6 @@ import {
   toolMessageOptions,
 } from "./platform-setup.js";
 import { textOf } from "./text-of.js";
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";
 const AP = "https://purl.imsglobal.org/spec/lti-ap/claim/";

@@ -1,15 +1,13 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI claims and of the bodies of the Assessment Control Service are those of the specifications.
 
 import { DataError, type Fetch, ServiceError } from "@interopkit/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { type ControlRequest, type LtiMessage, SCOPES, type StartProctoringMessage } from "../src/index.js";
 import { createServiceClient, createStartAssessmentPage, ltiLaunch } from "../src/tool/index.js";
 import { CLIENT_ID, DEPLOYMENT_ID, ISSUER } from "./fake-platform.js";
 import { readPost, readToken, verifyToken } from "./fixture.js";
 import { textOf } from "./text-of.js";
 import { cookieLogin, launchOf, SECONDS, type Setup, setup, toolKey } from "./tool-setup.js";
-
-afterEach(() => vi.useRealTimers());
 
 const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";
 const AP = "https://purl.imsglobal.org/spec/lti-ap/claim/";

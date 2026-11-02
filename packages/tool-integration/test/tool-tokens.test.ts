@@ -182,7 +182,7 @@ describe("tokens signed by PyJWT", () => {
       registration: async () => registration,
       clock,
       store,
-      jwks: createJwksCache({ fetch }),
+      jwks: createJwksCache({ fetch, clock }),
     };
     const token = fixture.cases[0]?.token ?? "";
     const post = formPost({ id_token: token, state }, { cookie: `__Host-lti_state_${state}=${state}` });

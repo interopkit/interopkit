@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the form parameters are those of LTI.
 
 import { base64url } from "jose";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ltiLaunch } from "../src/tool/index.js";
 import { formPost } from "./fake-platform.js";
 import { cookieLogin, setup } from "./tool-setup.js";
@@ -14,8 +14,6 @@ const MAX_FORM_BYTES = 65_536;
 
 /** The peak resident memory of the process so far, in bytes. */
 const peak = () => process.resourceUsage().maxRSS * 1024;
-
-afterEach(() => vi.useRealTimers());
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one function.
 describe("the peak memory of a launch", () => {

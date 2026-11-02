@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { request } from "./fixture.js";
 import { endpoints, handle, setup } from "./platform-setup.js";
 
@@ -15,8 +15,6 @@ const peak = () => process.resourceUsage().maxRSS * 1024;
 function formTo(url: string, body: string) {
   return request({ url, method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body });
 }
-
-afterEach(() => vi.useRealTimers());
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one handler.
 describe("the peak memory of the authentication and token requests", () => {

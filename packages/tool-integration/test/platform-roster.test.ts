@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI claims, NRPS, Context Groups and PNP bodies are those of the specifications.
 
 import { DataError } from "@interopkit/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { SCOPES } from "../src/index.js";
 import {
   ltiPlatformLogin,
@@ -25,10 +25,6 @@ import {
 } from "./platform-setup.js";
 import { INSTRUCTOR, LEARNER, MemoryGroups, MemoryPreferences, MemoryRoster } from "./roster-stores.js";
 import { textOf } from "./text-of.js";
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 const NRPS_CLAIM = "https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice";
 const GROUPS_CLAIM = "https://purl.imsglobal.org/spec/lti-gs/claim/groupsservice";

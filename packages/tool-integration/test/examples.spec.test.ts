@@ -2,7 +2,7 @@
 
 import { resolve } from "node:path";
 import { createLocalJWKSet, exportJWK } from "jose";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { readSpecExamples, readSpecPage } from "../../../scripts/spec-examples.js";
 import { type DeepLinkingRequestMessage, type LtiMessage, SCOPES } from "../src/index.js";
 import { type ResourceLinkInput, readDeepLinkingResponse } from "../src/platform/index.js";
@@ -57,10 +57,6 @@ import { cookieLogin, setup, toolKey } from "./tool-setup.js";
  * `pnpm spec-examples` downloads them at the hashes that scripts/spec-examples.lock.json pins.
  */
 const examples = readSpecExamples(resolve(import.meta.dirname, "../../.."));
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";
 const DL = "https://purl.imsglobal.org/spec/lti-dl/claim/";

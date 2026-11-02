@@ -1,5 +1,5 @@
 import { signerFromCryptoKey } from "@interopkit/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { generateKeyPair, request } from "./fixture.js";
 import { config, handle, PLATFORM_ORIGIN, setup } from "./platform-setup.js";
 
@@ -11,8 +11,6 @@ const MAX_BODY_BYTES = 65_536;
 
 /** The peak resident memory of the process so far, in bytes. */
 const peak = () => process.resourceUsage().maxRSS * 1024;
-
-afterEach(() => vi.useRealTimers());
 
 // Each test file runs in a process of its own, and the peak only grows, so this file measures the readings of one handler.
 describe("the peak memory of the bodies of the registration endpoint", () => {

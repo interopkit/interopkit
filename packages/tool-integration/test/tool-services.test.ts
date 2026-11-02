@@ -2,7 +2,7 @@
 
 import { DataError, ServiceError } from "@interopkit/core";
 import fc from "fast-check";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { type LtiMessage, type ResourceLinkMessage, SCOPES, type Score } from "../src/index.js";
 import { advanceScoreTimestamp, createServiceClient, ltiLaunch, type ServiceClientOptions } from "../src/tool/index.js";
 import { CONTAINER_URL, FakeLms, LINE_ITEM_URL, SUBJECT } from "./fake-lms.js";
@@ -13,8 +13,6 @@ import { cookieLogin, type Setup, setup } from "./tool-setup.js";
  * The client of the grade services against a learning platform written from LTI AGS 2.0: the bodies of scores are those of the
  * examples of 3.4, and the fake platform checks the rules of 3.4.4, 3.4.7, 3.4.8 and 3.4.9 on every request.
  */
-
-afterEach(() => vi.useRealTimers());
 
 const TIMESTAMP = "2023-11-14T22:13:20.000Z";
 /** The scopes that the learning platform offers and grants: AGS without the read-only scope of line items. */

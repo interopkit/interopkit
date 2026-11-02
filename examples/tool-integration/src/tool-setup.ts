@@ -49,6 +49,6 @@ export function setupTool(
     delete: async (state: string) => logins.delete(state),
   };
   return {
-    options: { registration: async () => registration, clock, store, jwks: createJwksCache({ fetch }), fetch },
+    options: { registration: async () => registration, clock, store, jwks: createJwksCache({ fetch, clock }), fetch },
   };
 }
