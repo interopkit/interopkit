@@ -107,16 +107,17 @@ the file instead, as the editor does.
 `packages/competency-frameworks/test/bank.ts` makes from the number alone. A benchmark takes at least 10 samples after a
 warm-up, and the gate is the fastest sample.
 
-| Benchmark                                     | What it times                                                       | Fastest on the CI runner | Budget | Holds on                                  |
-| --------------------------------------------- | ------------------------------------------------------------------- | -----------------------: | -----: | ----------------------------------------- |
-| `readPackage`                                 | Reading and checking the parsed framework                           |                  88.7 ms | 500 ms | A machine of the class of the CI runner   |
-| `readPackage` against `JSON.parse`            | The same sample as a multiple of the parse of the same framework    |          3.4 times that |  30 times | Any machine: both samples come from one run |
-| `validatePackage`                             | The findings of the framework                                       |                  87.6 ms | 500 ms | A machine of the class of the CI runner   |
-| `frameworkTree`                               | The tree of 10,000 items                                            |                  99.4 ms | 500 ms | A machine of the class of the CI runner   |
-| `queryEntities`                               | A filter and a sort over 10,000 documents                           |                  17.7 ms |  90 ms | A machine of the class of the CI runner   |
+| Benchmark                          | What it times                                                    | Fastest on the CI runner |   Budget | Holds on                                    |
+| ---------------------------------- | ---------------------------------------------------------------- | -----------------------: | -------: | ------------------------------------------- |
+| `readPackage`                      | Reading and checking the parsed framework                        |                  75.6 ms |   400 ms | A machine of the class of the CI runner     |
+| `readPackage` against `JSON.parse` | The same sample as a multiple of the parse of the same framework |     2.1 to 3.4 times that | 20 times | Any machine: both samples come from one run |
+| `validatePackage`                  | The findings of the framework                                    |                  74.9 ms |   400 ms | A machine of the class of the CI runner     |
+| `frameworkTree`                    | The tree of 10,000 items                                         |                  58.9 ms |   300 ms | A machine of the class of the CI runner     |
+| `queryEntities`                    | A filter and a sort over 10,000 documents                        |                   6.5 ms |    40 ms | A machine of the class of the CI runner     |
 
 The rule of the family sets a time to five times the fastest sample, rounded up to one significant digit, and a ratio the same
-way. The times are the fastest samples of the runner of CI (`ubuntu-latest`, Node.js 22) over the runs of the `bench` job; a
+way from the largest ratio measured. The times are the fastest samples of the runner of CI (`ubuntu-latest`, Node.js 22) over
+the first four runs of the `bench` job, whose fastest samples of one benchmark differ by up to 2.2 times from run to run; a
 laptop with an Apple processor and Node.js 26.8 is 3 to 5 times faster. The ratio to `JSON.parse` holds on any machine. A
 budget changes only with the reason in the commit that changes it. No other library reads CASE packages, so there is no
 reference to time against.

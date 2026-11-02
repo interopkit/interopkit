@@ -13,21 +13,21 @@ export const ITEMS = 10_000;
  */
 export const BUDGETS = {
   /** `readPackage` of a framework of 10,000 items that is already parsed. */
-  readPackage: 500,
+  readPackage: 400,
   /** `validatePackage` of the same framework. */
-  validatePackage: 500,
+  validatePackage: 400,
   /** `frameworkTree` of the same framework. */
-  frameworkTree: 500,
+  frameworkTree: 300,
   /** `queryEntities` with a filter and a sort over 10,000 documents. */
-  queryDocuments: 90,
+  queryDocuments: 40,
 } as const;
 
 /**
  * The most that the fastest sample of `readPackage` may take as a multiple of the fastest sample of `JSON.parse` of the same
- * framework in the same run: five times the measured ratio of 4.1, rounded up to one significant digit. Both samples come
- * from one run, so the ratio holds on any machine.
+ * framework in the same run: five times the largest ratio that the runner of CI measured, 3.4, rounded up to one significant
+ * digit. Both samples come from one run, so the ratio holds on any machine.
  */
-export const READ_RATIO = 30;
+export const READ_RATIO = 20;
 
 /**
  * Reports the median and the fastest sample of a benchmark with its budget, and fails the test when the fastest sample is
