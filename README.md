@@ -2,7 +2,7 @@
 
 TypeScript packages for learning-platform interoperability: the launches, grades and other messages that pass between a
 learning platform and a tool (LTI 1.3), the learning analytics events that a system reports (Caliper Analytics 1.2), the
-competency frameworks that a provider publishes (CASE 1.1), the learning records that a system keeps (xAPI 2.0), the achievement credentials that an issuer awards (Open Badges
+competency frameworks that a provider publishes (CASE 1.1), the learning records that a system keeps (xAPI 2.0 and 1.0.3), the achievement credentials that an issuer awards (Open Badges
 3.0 and CLR 2.0), and the credentials that a holder shows in part (the `ecdsa-sd-2023` cryptosuite). The packages know
 nothing of QTI or of any product. A host passes in its storage, its `fetch`
 and its clock.
@@ -45,7 +45,7 @@ flowchart LR
 | [`@interopkit/tool-integration`](packages/tool-integration/README.md)               | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Version 0.1; its README says what it contains                                               |
 | [`@interopkit/learning-analytics`](packages/learning-analytics/README.md)           | Caliper Analytics 1.2 events and a sensor that sends them to an endpoint. Version 0.1; its README says what it contains                                                   |
 | [`@interopkit/competency-frameworks`](packages/competency-frameworks/README.md)     | CASE 1.1 and 1.0: the model of a framework package, its readers, its tree and changes, and the conversion to 1.0                                                          |
-| [`@interopkit/learning-records`](packages/learning-records/README.md)               | xAPI 2.0: the model of a Statement, readers that check it against the rules of an LRS and of a provider, the message and signature of Attachments, a client of an LRS, and the handler of its requests |
+| [`@interopkit/learning-records`](packages/learning-records/README.md)               | xAPI 2.0 and 1.0.3: the model of a Statement, readers that check it against the rules of an LRS and of a provider, the message and signature of Attachments, a client of an LRS, and the handler of its requests |
 | [`@interopkit/achievement-credentials`](packages/achievement-credentials/README.md) | Open Badges 3.0 and CLR 2.0: the model of an achievement credential and of the APIs, and readers that check them, builders, identity hashes, comparison, baking in images, a client of the Open Badges and CLR APIs, keys and their JWT proofs |
 | [`@interopkit/selective-disclosure`](packages/selective-disclosure/README.md)       | The `ecdsa-sd-2023` cryptosuite: a base proof for the issuer, a derived proof for the holder and its verification                                                         |
 
@@ -80,7 +80,7 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `pnpm compat`          | Runs the scenarios of the three examples, built as the packages ship, on Node.js, Deno, Bun and workerd; it needs Deno and Bun installed ([compat](compat/README.md)) |
 | `pnpm bench`           | Times reading and walking a framework of 10,000 items and checking 1,000 Statements against budgets ([CASE](docs/competency-frameworks/evidence.md), [xAPI](docs/learning-records/evidence.md))                                  |
 | `pnpm opensalt`        | Starts OpenSALT in containers and runs the CASE client and provider of the example against it ([validation/opensalt](validation/opensalt/README.md))                  |
-| `pnpm adl-lrs`         | Runs the ADL conformance suite of xAPI 2.0 against the example LRS ([validation/adl-lrs](validation/adl-lrs/README.md)); build first                                  |
+| `pnpm adl-lrs`         | Runs the ADL conformance suites of xAPI 2.0 and 1.0.3 against the example LRS ([validation/adl-lrs](validation/adl-lrs/README.md)); build first                                  |
 | `pnpm sql-lrs`         | Starts SQL LRS in a container and checks the rules and the client of the example against it ([validation/sql-lrs](validation/sql-lrs/README.md))                      |
 | `pnpm docs:api`        | TypeDoc into `docs/api`; fails on undocumented exports                                                                                                                |
 | `pnpm corpus`          | Downloads the pinned repositories that tests read                                                                                                                     |
@@ -98,7 +98,7 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `packages/tool-integration/`                                                                                                                                     | LTI 1.3, tool and platform roles                                                                 |
 | `packages/learning-analytics/`                                                                                                                                   | Caliper 1.2                                                                                      |
 | `packages/competency-frameworks/`                                                                                                                                | CASE 1.1 and 1.0                                                                                 |
-| `packages/learning-records/`                                                                                                                                     | xAPI 2.0                                                                                         |
+| `packages/learning-records/`                                                                                                                                     | xAPI 2.0 and 1.0.3                                                                               |
 | `packages/achievement-credentials/`                                                                                                                              | Open Badges 3.0 and CLR 2.0                                                                      |
 | `packages/selective-disclosure/`                                                                                                                                 | `ecdsa-sd-2023`: base proof, derived proof, verification                                         |
 | `docs/core/`, `docs/tool-integration/`, `docs/learning-analytics/`, `docs/competency-frameworks/`, `docs/achievement-credentials/`, `docs/selective-disclosure/` | Guides of each package                                                                           |
