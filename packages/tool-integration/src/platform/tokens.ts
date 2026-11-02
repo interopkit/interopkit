@@ -1,7 +1,7 @@
 import type { JsonObject } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type { DeepLinkingSettings } from "../protocol/index.js";
-import { IDENTIFIER, NUMBER, STRING } from "../protocol/internal.js";
+import { IDENTIFIER, NUMBER, STRING, STRING_ARRAY } from "../protocol/internal.js";
 import { openToken, sealToken } from "./seal.js";
 
 /** What the hint of a login names: the launch kept in the `LaunchStore`, for one tool, deployment and user, until a time. */
@@ -68,6 +68,13 @@ const hintSchema = v.object({
   exp: NUMBER,
 });
 
+const accessSchema = v.object({
+  client: STRING,
+  deployment: v.optional(STRING),
+  scopes: STRING_ARRAY,
+  exp: NUMBER,
+});
+
 /** Seals a hint. */
 export function sealHint(hint: Hint, key: CryptoKey): Promise<string> {
   return sealToken("hint", { ...hint }, key);
@@ -94,6 +101,13 @@ export async function openLoginHint(token: string, keys: readonly CryptoKey[]): 
 /** Seals an access token. */
 export function sealAccess(access: Access, key: CryptoKey): Promise<string> {
   return sealToken("access", { ...access }, key);
+}
+
+/** Opens an access token, or returns `undefined` when it is not one this platform sealed. */
+export async function openAccess(token: string, keys: readonly CryptoKey[]): Promise<Access | undefined> {
+  const claims = await openToken(token, "access", keys);
+  const parsed = v.safeParse(accessSchema, claims);
+  return parsed.success ? parsed.output : undefined;
 }
 
 /** Seals the session data of a Start Proctoring message (Proctoring Services 1.0 section 4.2.2.5). */

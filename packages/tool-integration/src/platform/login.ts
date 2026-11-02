@@ -8,6 +8,7 @@ import { type MessageInput, readMessageInput } from "./messages/input.js";
 import { toWrite } from "./messages/write.js";
 import { checkLoginOptions, type PlatformLoginOptions } from "./options.js";
 import { readToolRegistration, type ToolRegistration } from "./registration.js";
+import { requestedClaims } from "./services/routes.js";
 import { sealHint, sealLoginHint } from "./tokens.js";
 
 /** How long a launch is kept, and its hint valid, in seconds: the time for the browser to go to the tool and back. */
@@ -41,7 +42,8 @@ async function prepare(input: MessageInput, options: PlatformLoginOptions): Prom
   const message = readMessageInput(input, "The message");
   const { config } = options;
   // The rules that bind the sender hold before the message is kept, so that the authentication request cannot fail on them.
-  writeMessage(toWrite(message, { issuer: config.issuer, custom: new Map(Object.entries(message.custom ?? {})) }));
+  const custom = new Map(Object.entries(message.custom ?? {}));
+  writeMessage(toWrite(message, { issuer: config.issuer, custom, services: requestedClaims(message, config.origin) }));
   const call = callOptionsOf(options);
   await options.check(message, call);
   const registration = readToolRegistration(await options.registration(message.clientId, call), message.clientId);

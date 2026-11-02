@@ -13,6 +13,7 @@ import { toWrite } from "./messages/write.js";
 import type { PlatformSettings } from "./options.js";
 import { autoPostPage } from "./page.js";
 import { readToolRegistration, type ToolRegistration } from "./registration.js";
+import { serviceClaims } from "./services/routes.js";
 import { type Hint, openHint, openLoginHint, sealDeepLinkingData, sealSessionData } from "./tokens.js";
 
 /** The error of an authentication error response (OpenID Connect Core section 3.1.2.6) for the reason of a failed check. */
@@ -198,16 +199,24 @@ async function issueIdToken(
 ): Promise<string | typeof FAILED> {
   const { config, signal } = settings;
   const { registration } = issue;
+  const services = serviceClaims(message, registration, settings);
   const custom = await substitute(
     { ...registration.custom, ...message.custom },
-    { view: { message, instance: config.instance }, tool: registration, substitution: settings.substitution, signal },
+    {
+      view: { message, instance: config.instance, services },
+      tool: registration,
+      substitution: settings.substitution,
+      signal,
+    },
   );
   if (custom === undefined) return FAILED;
   const migration = await signMigration(message, issue, settings);
   if (migration === FAILED) return FAILED;
   const sealed = await sealData(message, issue, settings);
   const claims = {
-    ...writeMessage(toWrite(message, { issuer: config.issuer, instance: config.instance, custom, migration, sealed })),
+    ...writeMessage(
+      toWrite(message, { issuer: config.issuer, instance: config.instance, custom, migration, services, sealed }),
+    ),
     iss: config.issuer,
     aud: message.clientId,
     iat: issue.iat,

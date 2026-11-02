@@ -4,6 +4,7 @@ import { methodNotAllowed, notFound, refusal } from "./answers.js";
 import { answerAuthorization } from "./authorize.js";
 import { PATHS } from "./config.js";
 import { type PlatformRequestOptions, readRequestOptions } from "./options.js";
+import { answerService } from "./services/routes.js";
 import { storagePage } from "./storage.js";
 import { answerToken } from "./token.js";
 
@@ -22,6 +23,15 @@ const KEY_SET_MAX_AGE_SECONDS = 3600;
  * | `/jwks` | GET, HEAD | The public keys of `config.keys`, with `Cache-Control: public, max-age=3600` |
  * | `/token` | POST | The client-credentials grant with a JWT assertion (Security Framework section 4.1.1) |
  * | `/storage` | GET | The storage page of the client-side login (LTI Client Side OIDC 0.1) |
+ * | `/contexts/{context}/line-items` | GET, POST | The line items of a context (AGS 3.2), over `services.gradebook` |
+ * | `/contexts/{context}/line-items/{lineItem}` | GET, PUT, DELETE | A line item (AGS 3.2) |
+ * | `/contexts/{context}/line-items/{lineItem}/results` | GET | The results of a line item (AGS 3.3) |
+ * | `/contexts/{context}/line-items/{lineItem}/scores` | POST | A score of a line item (AGS 3.4) |
+ *
+ * A route of a service exists only when its store is given. A request to it needs a bearer token of `/token` with one of the
+ * scopes of the method among those that the registration still grants: 401 with `WWW-Authenticate: Bearer` without one, 403
+ * `insufficient_scope` with too narrow a one. The store receives the caller and answers `undefined` for a context that is not
+ * the caller's, which is 404, so that existence does not leak.
  *
  * A request for another origin than `config.origin` is 403, because the tool's frame is same-origin with any page of the
  * platform on the origin of the frame page; a path that names nothing is 404, and a method that a route does not serve is 405
@@ -57,6 +67,6 @@ export async function handlePlatformRequest(
       if (request.method !== "GET") return methodNotAllowed(request.method, "GET");
       return storagePage(settings.config.frameOrigin, settings.toolFrame);
     default:
-      return notFound();
+      return (await answerService(request, url, settings)) ?? notFound();
   }
 }

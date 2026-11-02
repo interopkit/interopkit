@@ -22,6 +22,7 @@ import { methodNotAllowed, NO_STORE, refusal, serverError } from "./answers.js";
 import { endpointsOf } from "./config.js";
 import type { PlatformSettings } from "./options.js";
 import { readToolRegistration, type ToolRegistration, toolKeySet } from "./registration.js";
+import { offeredScopes } from "./services/routes.js";
 import { sealAccess } from "./tokens.js";
 
 // Security Framework sections 4.1.1 and 7.1.1: the recommended lifetime of an access token is one hour.
@@ -149,8 +150,8 @@ async function verifyAssertion(assertion: string, settings: PlatformSettings): P
  * assertion (Security Framework section 4.1.1, LTI 1.3 Core section 6.2).
  *
  * @remarks
- * The token grants the scopes that the request asks for and the registration grants; `invalid_scope` answers only when none
- * remains (Security Framework sections 4.1 and 7.1.4). It is sealed with the hint key,
+ * The token grants the scopes that the request asks for, the registration grants and a service of the platform offers, which
+ * it does when its store is given; `invalid_scope` answers only when none remains (Security Framework sections 4.1 and 7.1.4). It is sealed with the hint key,
  * holds the client, the deployment of the assertion when it named one, the scopes and the expiry, and lasts one hour. A request
  * that fails a check gets status 400 with the error code of RFC 6749 section 5.2 (`invalid_request`, `unsupported_grant_type`,
  * `invalid_scope`, and `invalid_client` for an assertion that fails). The checks, in order: the method, the size, the form,
@@ -171,7 +172,8 @@ export async function answerToken(request: HttpRequest, settings: PlatformSettin
     const verified = await verifyAssertion(assertion, settings);
     if (verified === FAILED) return serverError();
     const { registration, deployment } = verified;
-    const granted = scopes.filter((scope) => registration.scopes.includes(scope));
+    const offered = offeredScopes(settings);
+    const granted = scopes.filter((scope) => registration.scopes.includes(scope) && offered.includes(scope));
     if (granted.length === 0) {
       throw new LtiError("The platform grants the tool none of the scopes of the request.", "scope-invalid");
     }

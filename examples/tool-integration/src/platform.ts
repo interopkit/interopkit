@@ -5,6 +5,7 @@ import {
   type PlatformEndpoints,
   type PlatformFrame,
 } from "@interopkit/tool-integration/platform";
+import type { Gradebook } from "./gradebook.ts";
 import type { Handler } from "./network.ts";
 import { ISSUER, type PlatformSetup } from "./platform-setup.ts";
 
@@ -18,15 +19,18 @@ export interface Platform {
   readonly handle: Handler;
   /** Keeps a message for the tool and returns what the page that shows the tool needs. */
   frame(message: MessageInput): Promise<PlatformFrame>;
+  /** The gradebook behind the grade services. */
+  readonly gradebook: Gradebook;
 }
 
 /** Creates the platform that a setup configures: one handler serves every route of its origin. */
-export function createPlatform({ login, requests, endpoints }: PlatformSetup): Platform {
+export function createPlatform({ login, requests, endpoints, gradebook }: PlatformSetup): Platform {
   return {
     issuer: ISSUER,
     origin: ISSUER,
     endpoints,
     handle: (request) => handlePlatformRequest(request, requests),
     frame: (message) => ltiPlatformFrame(message, login),
+    gradebook,
   };
 }

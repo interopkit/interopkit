@@ -1,4 +1,4 @@
-import { type CallOptions, type Clock, checkClock, type Fetch } from "@interopkit/core";
+import { type CallOptions, type Clock, checkClock } from "@interopkit/core";
 import {
   checkAbortSignal,
   checkArray,
@@ -74,18 +74,6 @@ export interface LtiLaunchOptions<TOther extends string = never> extends ToolOpt
   readonly legacySecret?: (consumerKey: string, options?: CallOptions) => Promise<string | undefined>;
 }
 
-/** The options of `publishAgsScore`. */
-export interface PublishAgsScoreOptions extends ToolOptions {
-  /** The `fetch` that calls the platform's token endpoint and its services. */
-  readonly fetch: Fetch;
-  /**
-   * The most time that each call may take, in milliseconds.
-   *
-   * @defaultValue `10000`
-   */
-  readonly timeoutMs?: number;
-}
-
 /**
  * Checks the options that every function needs.
  *
@@ -131,18 +119,6 @@ export function checkLaunchOptions(options: unknown): asserts options is LtiLaun
   if (options.legacySecret !== undefined) {
     checkFunction(options.legacySecret, "The option legacySecret must be a function");
   }
-}
-
-/**
- * Checks the options of `publishAgsScore`.
- *
- * @throws `DataError` when they are not.
- */
-export function checkPublishOptions(options: unknown): asserts options is PublishAgsScoreOptions {
-  checkRecord(options, "The options must be an object");
-  checkToolOptions(options);
-  checkFunction(options.fetch, "The option fetch must be a function");
-  if (options.timeoutMs !== undefined) checkPositiveInteger(options.timeoutMs, "The option timeoutMs");
 }
 
 /**

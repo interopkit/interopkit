@@ -18,7 +18,7 @@ export const LAUNCH_PATH = "/lti/launch";
 
 /** What the tool is configured with: the options of its functions, which hold its registration, its store and its key set cache. */
 export interface ToolSetup {
-  /** The options of `ltiLogin`, `ltiLaunch` and `publishAgsScore`. */
+  /** The options of `ltiLogin`, `ltiLaunch` and `createServiceClient`, but its scopes. */
   readonly options: LtiLaunchOptions & { readonly fetch: Fetch };
 }
 

@@ -1,0 +1,191 @@
+import {
+  type CallOptions,
+  DataError,
+  linkTarget,
+  requestService,
+  ServiceError,
+  type ServiceInit,
+  type ServiceResponse,
+} from "@interopkit/core";
+import { describe, hasMoreTokensThan } from "@interopkit/core/checks";
+import { createTokenCache } from "@interopkit/core/oauth";
+import { LtiError } from "../../errors.js";
+import type { LtiDeployment } from "../../protocol/index.js";
+import { findDeployment } from "../options.js";
+import { checkServiceUrl } from "../registration.js";
+import { requestServiceToken } from "../token.js";
+import type { ServiceClientSettings } from "./options.js";
+
+/** A page of what a service of the platform holds: the items, and the link to the next page. */
+export interface Page<T> {
+  /** The items of the page. */
+  readonly items: readonly T[];
+  /**
+   * The next page: the `next` link of the answer, on the origin of the request, to pass to the same method as it is. Absent on
+   * the last page, and when the link leads to another origin, so that the token never leaves the platform that answered.
+   */
+  readonly next?: string;
+}
+
+/** A request to a service: its method, the scopes that allow it, and its media types and body. */
+interface ServiceRequestInit {
+  /** The method. */
+  readonly method: "GET" | "POST" | "PUT" | "DELETE";
+  /** The scopes that allow the request, the narrowest first; the first that the platform offered is asked for. */
+  readonly scopes: readonly string[];
+  /**
+   * The media type of the answer, sent as `Accept`.
+   *
+   * @defaultValue none
+   */
+  readonly accept?: string;
+  /**
+   * The body, as JSON, with its media type.
+   *
+   * @defaultValue none
+   */
+  readonly body?: { readonly type: string; readonly json: unknown };
+  /**
+   * The statuses beside 2xx that the call returns as values, such as 404.
+   *
+   * @defaultValue none
+   */
+  readonly expect?: readonly number[];
+}
+
+/** What the clients of the services share: the calls with a token, the limits, and the reading of answers and pages. */
+export interface ServiceAccess {
+  /** The settings of the client. */
+  readonly settings: ServiceClientSettings;
+  /**
+   * Sends a request to a URL of a service of the platform, with a token for the narrowest scope that allows it.
+   *
+   * @remarks
+   * The URL comes from a launch or an answer of the platform, so it must lie on one of the `serviceOrigins` of the
+   * registration, or, without them, be an `https` URL that names a public host: the token goes nowhere else. The token is one
+   * of the cache of its scope, and a 401 drops it, so that the next call asks for a new one; nothing retries.
+   *
+   * @throws `LtiError` (`scope-unavailable`) when the platform offered none of the scopes, (`scope-denied`) when it did not
+   * grant the one asked for, (`service-origin-refused`) when the URL may not receive the token, and (`platform-unknown`,
+   * `deployment-unknown`) when the registration is gone or no longer lists the deployment.
+   * @throws `ServiceError` when the token endpoint or the service does not answer with a success or an expected status.
+   */
+  request(url: string, init: ServiceRequestInit, options?: CallOptions): Promise<ServiceResponse>;
+  /**
+   * Reads the body of an answer as JSON within `maxTokens`, then with the reader of its model.
+   *
+   * @throws `DataError` when the body is not UTF-8 JSON, has more than `maxTokens` tokens, or breaks the model.
+   */
+  read<T>(response: ServiceResponse, what: string, reader: (value: unknown) => T): T;
+  /** Returns the `next` link of an answer, on the origin of the request, or `undefined`. */
+  next(response: ServiceResponse, url: string): string | undefined;
+}
+
+const DECODER = new TextDecoder("utf-8", { fatal: true });
+/** The statuses of a success, which a call that also expects another status lists beside it. */
+const SUCCESS: readonly number[] = Array.from({ length: 100 }, (_, offset) => 200 + offset);
+
+/** Returns the narrowest scope of a call that the platform offered. */
+function scopeOf(scopes: readonly string[], offered: readonly string[]): string {
+  const scope = scopes.find((candidate) => offered.includes(candidate));
+  if (scope === undefined) {
+    throw new LtiError(
+      `The platform offered none of the scopes ${scopes.join(", ")}, which the call needs.`,
+      "scope-unavailable",
+    );
+  }
+  return scope;
+}
+
+/** Builds the request of a call: its method, its bearer token and media types, and its body as JSON. */
+function requestOf(init: ServiceRequestInit, token: string): ServiceInit {
+  const headers: Record<string, string> = { authorization: `Bearer ${token}` };
+  if (init.accept !== undefined) headers.accept = init.accept;
+  if (init.body === undefined) return { method: init.method, headers };
+  headers["content-type"] = init.body.type;
+  return { method: init.method, headers, body: JSON.stringify(init.body.json) };
+}
+
+/** The name of a URL in an error. */
+const nameOf = (url: string): string => `The service at ${url}`;
+
+/**
+ * Creates the access to the services of a platform for one deployment: a token cache for each scope, the check of every URL
+ * against the registration, and the limits of the answers.
+ */
+export function createServiceAccess(deployment: LtiDeployment, settings: ServiceClientSettings): ServiceAccess {
+  const { options, offered } = settings;
+  const caches = new Map<string, (call?: CallOptions) => Promise<string>>();
+
+  /** The token cache of a scope: the work of a token is shared by the callers of the scope, and no caller's signal ends it. */
+  const cacheOf = (scope: string): ((call?: CallOptions) => Promise<string>) => {
+    const known = caches.get(scope);
+    if (known !== undefined) return known;
+    const cache = createTokenCache(
+      async () => {
+        const registration = await findDeployment({ ...options, signal: undefined }, deployment);
+        const call = { fetch: options.fetch, timeoutMs: settings.timeoutMs, clock: options.clock };
+        const token = await requestServiceToken(registration, deployment.deploymentId, [scope], call);
+        // The platform may grant fewer scopes than were asked (Security Framework section 4.1), and a token without the scope
+        // would only meet a 403.
+        if (!token.scopes.includes(scope)) {
+          throw new LtiError(`The platform did not grant the scope ${describe(scope)}.`, "scope-denied");
+        }
+        return token;
+      },
+      { clock: options.clock, refreshSkewSeconds: settings.refreshSkewSeconds },
+    );
+    caches.set(scope, cache);
+    return cache;
+  };
+
+  return {
+    settings,
+    async request(url, init, call = {}) {
+      const signal = call.signal ?? options.signal;
+      const registration = await findDeployment({ ...options, signal }, deployment);
+      checkServiceUrl(url, registration, `The URL ${url}`);
+      const scope = scopeOf(init.scopes, offered);
+      const cache = cacheOf(scope);
+      const token = await cache({ signal });
+      const service = {
+        fetch: options.fetch,
+        timeoutMs: settings.timeoutMs,
+        ...(signal === undefined ? {} : { signal }),
+      };
+      try {
+        return await requestService(service, nameOf(url), url, requestOf(init, token), {
+          maxBytes: settings.maxBytes,
+          ...(init.expect === undefined ? {} : { expect: [...SUCCESS, ...init.expect] }),
+        });
+      } catch (error) {
+        // The platform no longer takes the token: the next call of the scope asks for a new one.
+        if (error instanceof ServiceError && error.status === 401 && caches.get(scope) === cache) caches.delete(scope);
+        throw error;
+      }
+    },
+    read(response, what, reader) {
+      let text: string;
+      try {
+        text = DECODER.decode(response.body);
+      } catch {
+        throw new DataError(`${what} answered with a body that is not UTF-8 text.`);
+      }
+      if (hasMoreTokensThan(text, settings.maxTokens)) {
+        throw new DataError(
+          `${what} answered with a body of more than ${settings.maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
+        );
+      }
+      let json: unknown;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new DataError(`${what} answered with a body that is not JSON.`);
+      }
+      return reader(json);
+    },
+    next(response, url) {
+      return linkTarget(response.headers, "next", url);
+    },
+  };
+}

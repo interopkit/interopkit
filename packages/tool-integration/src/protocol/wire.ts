@@ -8,8 +8,14 @@
 export const SCORE_MEDIA_TYPE = "application/vnd.ims.lis.v1.score+json";
 /** The media type of a line item (LTI AGS 2.0 section 3.2.1). */
 export const LINE_ITEM_MEDIA_TYPE = "application/vnd.ims.lis.v2.lineitem+json";
+/** The media type of the line items of a context (LTI AGS 2.0 section 3.2). */
+export const LINE_ITEM_CONTAINER_MEDIA_TYPE = "application/vnd.ims.lis.v2.lineitemcontainer+json";
+/** The media type of the results of a line item (LTI AGS 2.0 section 3.3). */
+export const RESULT_CONTAINER_MEDIA_TYPE = "application/vnd.ims.lis.v2.resultcontainer+json";
 /** The path that follows a line item URL to make the URL of its scores (LTI AGS 2.0 section 3.4). */
 export const SCORES_SUFFIX = "/scores";
+/** The path that follows a line item URL to make the URL of its results (LTI AGS 2.0 section 3.3). */
+export const RESULTS_SUFFIX = "/results";
 /** The `grant_type` of the client-credentials grant. */
 export const CLIENT_CREDENTIALS_GRANT = "client_credentials";
 /** The `client_assertion_type` of a JWT bearer assertion (RFC 7523 section 2.2). */

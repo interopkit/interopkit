@@ -26,8 +26,8 @@ sequenceDiagram
   opt Deep Linking request
     T->>P: deepLinkResponse: a signed JWT posted to the return URL
   end
-  opt Grade passback
-    T->>P: publishAgsScore: an access token, then the score to the line item
+  opt Grade services
+    T->>P: createServiceClient: a cached access token, then the line item, the score, the results
   end
 ```
 
@@ -37,7 +37,8 @@ sequenceDiagram
 | `ltiLaunch(request, options)`                 | Validates the `id_token` and returns the launch, or the verification page of the storage path |
 | `serveToolJwks(request, keys, options)`       | Answers the request for the tool's key set: the public keys of its `KeySet`                   |
 | `deepLinkResponse(launch, items, options)`    | Signs the response to a Deep Linking request                                                  |
-| `publishAgsScore(score, launch, options)`     | Publishes a score to the line item of the launch, with an access token that it asks for       |
+| `createServiceClient(deployment, options)`    | Returns the client of the grade services of a platform ([grade services](grades.md))          |
+| `advanceScoreTimestamp(lastSent, now)`        | Returns a timestamp of a score strictly later than the last one sent                          |
 | `createJwksCache(options)`                    | Creates the cache of the platforms' key sets that `ltiLaunch` verifies signatures with        |
 
 The handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md), plain objects that a host builds from any web framework. The
@@ -305,71 +306,16 @@ JSON.parse(answer.body).keys[0].kid; // => "tool-2026-11"
 has fetched it; switch the registrations' `signer` and the key set's `signer` to the new key; keep the old public key until every
 token that it signed has expired (300 seconds), plus one `max-age`; then remove it.
 
-## Access tokens
+## Access tokens and the services
 
-`publishAgsScore` asks the platform for an access token on each call, with `clientCredentialsToken` of
+The client of the services, `createServiceClient`, asks the platform for access tokens with `clientCredentialsToken` of
 [`@interopkit/core/oauth`](../core/oauth.md) and `private_key_jwt`: a form to `accessTokenUrl` with
 `grant_type=client_credentials`, `client_id`, `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
-`client_assertion` and `scope` (space-separated), as Security Framework section 4.1.1 describes. The registration's `signer`
-signs the assertion: `iss` and `sub` the client identifier, `aud` the token endpoint (or the `audience` of the registration),
-`iat`, `exp` (300 seconds later), a new `jti`, and the deployment claim of the launch (LTI 1.3 Core section 6.2.1). The token
-goes only with the requests of that call.
-
-## Publishing a score
-
-`publishAgsScore(score, launch, options)` gives the learning platform a score: the tool posts it to the score service of the
-line item that the launch offered ([LTI AGS 2.0](https://www.imsglobal.org/spec/lti-ags/v2p0#score-publish-service)).
-`launch` is the resource link launch that started the activity. `options` are those of every function, with `fetch` and
-`timeoutMs`. The function asks for an access token for the scopes it needs on every call and keeps none. The line item URL comes
-from the launch, so the bearer token goes to it only when it is on one of the registration's `serviceOrigins`, or, without them,
-when `checkRemoteUrl` accepts it: no IP address, no single label such as `localhost`, no name of a private network and no user
-information.
-
-| Property of the score | Meaning                                                                                                                                            |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `activityProgress`    | `Completed`                                                                                                                                        |
-| `gradingProgress`     | `FullyGraded`; `Pending` while a service must still score; `PendingManual` while a person must                                                     |
-| `timestamp`           | ISO 8601 with a time zone. A resend takes a later one (see below)                                                                                  |
-| `scoreGiven`          | The score, from 0. Default: none, which tells the platform that there is no score yet                                                              |
-| `scoreMaximum`        | The highest score, above 0, with a `scoreGiven`. Default: the `scoreMaximum` of the line item, which the function reads when `scoreGiven` has none |
-| `comment`             | Text for the user. Default: none                                                                                                                   |
-
-The body also carries the `userId`, the `sub` of the launch.
-
-```mermaid
-sequenceDiagram
-  participant H as Host
-  participant T as publishAgsScore
-  participant P as Platform
-  H->>T: score, launch, options
-  T->>T: check the score and the launch
-  T->>T: the line item URL against the service origins
-  T->>P: a token for the scopes the call needs
-  opt scoreGiven without scoreMaximum
-    T->>P: GET the line item, for its scoreMaximum
-  end
-  T->>P: POST the score to the line item's score service
-```
-
-**Timestamps.** AGS 3.4.9 says that a tool must not send two updates of one line item and user with the same timestamp, and
-that timestamps increase strictly. The call is not idempotent: a resend needs a later `timestamp`, even when the first attempt
-is in doubt after a timeout. A host takes the time from the last attempt, not the last success, and records it before the
-request, so that a crash between the request and its record cannot repeat a time.
-
-**In doubt.** A timeout, or a `signal` that aborts while the request is in flight, leaves the score in doubt: the platform may
-have received it.
-
-| Error                              | When                                                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `DataError`                        | An argument has the wrong type, the score is not valid (see the property table), or the line item has no usable `scoreMaximum` |
-| `LtiError` `line-item-unavailable` | The launch has no grade services, or offers no line item                                                                       |
-| `LtiError` `scope-unavailable`     | The launch does not offer the `score` scope, or the scope to read the line item when the score has no maximum                  |
-| `LtiError` `subject-unavailable`   | The launch is anonymous                                                                                                        |
-| `LtiError` `scope-denied`          | The platform granted fewer scopes than the call needs                                                                          |
-| `LtiError` `service-origin-refused` | The line item is on an origin that may not receive the token, as above                                                        |
-| `LtiError` `platform-unknown`, `deployment-unknown` | The registration is gone, or no longer lists the deployment of the launch                                    |
-| `ServiceError`                     | The token endpoint, the line item or the score service did not answer with a success                                           |
-| The `reason` of the signal         | The caller aborted                                                                                                             |
+`client_assertion` and `scope`, as Security Framework section 4.1.1 describes. The registration's `signer` signs the assertion:
+`iss` and `sub` the client identifier, `aud` the token endpoint (or the `audience` of the registration), `iat`, `exp` (300
+seconds later), a new `jti`, and the deployment claim (LTI 1.3 Core section 6.2.1). It keeps a token for each scope until it
+is about to expire, and sends it only to the registration's `serviceOrigins`, or to an `https` URL that names a public host. The
+[grade services](grades.md) guide has the methods, the options, the timestamps of scores and the errors.
 
 ## The key set cache
 
@@ -394,13 +340,14 @@ fewer than 2,048 bits does not verify (RFC 7518 section 3.3). The cache reads th
 
 ## Calls to the platform
 
-`fetch` is an option and nothing else calls the network. The functions that do (`createJwksCache` and `publishAgsScore`) go
-through `requestService` of [`@interopkit/core`](../core/service.md): a time limit, no redirect (it could leave HTTPS) and at most
-64 KiB of the answer. A failure is a `ServiceError`: its `status` is the HTTP status, or `0` when the platform did not answer. A
-token answer that is not one is a `ServiceError` too; a line item that is not what the specification describes is a `DataError`.
+`fetch` is an option and nothing else calls the network. The functions that do (`createJwksCache` and the client of
+`createServiceClient`) go through `requestService` of [`@interopkit/core`](../core/service.md): a time limit, no redirect (it could
+leave HTTPS) and a limit on the bytes of the answer (64 KiB for a key set, `maxBytes` for a service). A failure is a
+`ServiceError`: its `status` is the HTTP status, or `0` when the platform did not answer. A token answer that is not one is a
+`ServiceError` too; a body that is not what the specification describes is a `DataError`.
 
-The key set and the token endpoint come from a registration, and the line item from a claim of a platform, which passes the rule
-of the service origins above. That rule sees only the URL: a tool that serves many platforms, whose administrators it does not control, passes a
+The key set and the token endpoint come from a registration, and the URLs of the services from a claim or an answer of a platform,
+which pass the rule of the service origins above. That rule sees only the URL: a tool that serves many platforms, whose administrators it does not control, passes a
 `fetch` that refuses loopback, private and link-local addresses. The check must be on the address that the connection resolves
 to and not on the host name, or DNS rebinding gets through: a name that is public when it is checked can be private when the
 connection is made. Resolve the name once, refuse the address if it is in one of those ranges (the metadata address
@@ -432,8 +379,7 @@ except that the key set cache of jose reads the time of the system.
 | `clock`        | required                                            | The source of the time                                      |
 | `store`        | required for `ltiLogin` and `ltiLaunch`             | The store of logins                                         |
 | `jwks`         | required for `ltiLaunch`                            | The cache of key sets                                       |
-| `fetch`        | required for `publishAgsScore`                      | The `fetch` that calls the platform                         |
-| `timeoutMs`    | `DEFAULT_TIMEOUT_MS`, 10,000 ms                     | The most time a call to the platform may take               |
+| `fetch`        | required for `createServiceClient`                  | The `fetch` that calls the platform ([grade services](grades.md) has the other options of the client) |
 | `versions`     | `["1.3.0"]`                                         | `ltiLaunch`: the values of the `version` claim that it accepts |
 | `otherMessageTypes` | none                                           | `ltiLaunch`: message types beyond the five modeled ones, returned as an `OtherMessage` with every claim, such as those of a specification that the package does not implement |
 | `maxFormBytes` | 65,536                                              | `ltiLaunch`: the most bytes of the posted form              |
@@ -449,7 +395,8 @@ except that the key set cache of jose reads the time of the system.
 | Lifetime of a client assertion          | 300 seconds  |
 | Lifetime of a Deep Linking response     | 300 seconds  |
 | Leeway for clock skew                   | 60 seconds   |
-| Most bytes of an answer of the platform | 65,536       |
+| Most bytes of a key set of the platform | 65,536       |
+| Most bytes of an answer of a service    | 1,048,576 (`maxBytes` of `createServiceClient`) |
 | Key set `ttlSeconds`, `refreshSeconds`  | 3,600 and 60 |
 
 ## Failure paths
@@ -473,8 +420,7 @@ except that the key set cache of jose reads the time of the system.
 | `ltiLaunch`, before `store.delete`             | Rejects with `signal.reason`; the login stays, and the platform may post again. After `delete` starts, the launch completes |
 | `deepLinkResponse`, in the registration lookup | Rejects with `signal.reason`                                                                                                |
 | `ltiLaunch`, in `legacySecret`                 | Rejects with `signal.reason`; the login stays                                                                               |
-| The token request of `publishAgsScore`         | Rejects with `signal.reason`; each request has a new `jti`, so a repeat is safe                                             |
-| `publishAgsScore`, in flight                   | In doubt: rejects with `signal.reason`. Resend with a later timestamp                                                       |
+| A call of the service client                   | Rejects with `signal.reason`; a token request it shares runs on. A score in flight is in doubt: resend with a later timestamp |
 | A key set fetch                                | One caller's abort ends that caller's wait. The fetch runs on for the others, to `timeoutMs`                                |
 
 ## Errors
@@ -483,7 +429,7 @@ except that the key set cache of jose reads the time of the system.
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------- |
 | `LtiError` `token-malformed`, `algorithm-unsupported`, `key-unknown`, `signature-invalid`, `issuer-mismatch`, `audience-mismatch`, `audience-untrusted`, `authorized-party-missing`, `authorized-party-mismatch`, `token-expired`, `issued-in-future`, `nonce-mismatch` | The `id_token` fails validation                                             | 401                                            |
 | `LtiError` `state-unknown`, `state-expired`, `state-reused`, `state-cookie`, `origin-mismatch`, `storage-mismatch`, `deployment-mismatch`                                                                             | The launch is not bound to a login of the tool                              | 403                                            |
-| `LtiError`, other reasons                                                                                                                                                                                             | The platform broke the protocol, or a scope or a line item is not available | 400                                            |
+| `LtiError`, other reasons                                                                                                                                                                                             | The platform broke the protocol, or a scope is not available                | 400                                            |
 | `DataError`                                                                                                                                                                                                           | An argument or a request has the wrong shape                                | 400                                            |
 | `ServiceError`                                                                                                                                                                                                        | The platform did not answer, or answered with an error                      | 502 or 504 for a host that proxies the failure |
 
@@ -495,7 +441,7 @@ except that the key set cache of jose reads the time of the system.
 | `state` and `nonce` of a login                              | `ltiLogin`                         | The host's `LtiStore`, and the browser (the cookie or the storage) | Only in the store, until used or 600 s |
 | The client assertion                                        | Signed by the tool's `signer`      | The platform's token endpoint                                      | No                                     |
 | The LTI 1.1 secret of a consumer key                        | `legacySecret`                     | One HMAC of the migration claim                                    | No                                     |
-| The access token                                            | The platform's token endpoint      | The score service and the line item, in the `Authorization` header | No: each call asks for its own         |
+| The access token                                            | The platform's token endpoint      | The services of the platform, in the `Authorization` header        | In the memory of the client, until near its expiry |
 | A score                                                     | The host                           | The platform's score service                                       | No                                     |
 | The answer of a service that failed                         | The platform                       | `ServiceError.body`, to the host: treat it as untrusted text       | No                                     |
 
@@ -515,6 +461,5 @@ an example disagree.
 | What                                                                                                            | Reason                                                                       |
 | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | LTI 1.0 to 1.2, Basic Outcomes                                                                                  | 1EdTech retired them; a launch of that form is refused                       |
-| An access token cache                                                                                           | A cache of tokens is shared work with its own rules; the function keeps none |
 | Names and Role Provisioning, Dynamic Registration, Submission Review, Proctoring, Context Groups                | See [supported](supported.md)                                                |
 | Sessions, routes, a database, a UI for Deep Linking                                                             | The host's                                                                   |

@@ -1,3 +1,4 @@
+import { DataError } from "@interopkit/core";
 import {
   guardSchema,
   isRecord,
@@ -16,6 +17,7 @@ import type {
   ActualUser,
   ContextClaim,
   DeepLinkingSettings,
+  ForUser,
   LaunchPresentation,
   MigrationClaim,
   OrganizationClaim,
@@ -93,6 +95,33 @@ export interface MessageInputBase {
    * @defaultValue none
    */
   readonly migration?: Omit<MigrationClaim, "oauthConsumerKeySign">;
+  /**
+   * The services that the message offers the tool; each needs the `context` of the message, and a service whose store
+   * `handlePlatformRequest` does not have is not offered.
+   *
+   * @defaultValue none
+   */
+  readonly services?: MessageServicesInput;
+}
+
+/** The services that a message offers the tool. */
+export interface MessageServicesInput {
+  /**
+   * The Assignment and Grade Services (AGS 3.1): the line item of the message, the container of the line items of the context,
+   * or both.
+   *
+   * @defaultValue none
+   */
+  readonly grades?: {
+    /**
+     * The store's identifier of the line item of the message, which the claim names as `lineitem`.
+     *
+     * @defaultValue none
+     */
+    readonly lineItemId?: string;
+    /** Whether the claim names the container of the line items of the context as `lineitems`. */
+    readonly container: boolean;
+  };
 }
 
 /** A launch of a resource link (`LtiResourceLinkRequest`, LTI 1.3 Core section 5). */
@@ -120,6 +149,30 @@ export interface DeepLinkingRequestInput extends MessageInputBase {
   readonly messageType: "LtiDeepLinkingRequest";
   /** What the platform asks of the tool; `returnUrl` is the host's route that reads the response. */
   readonly settings: DeepLinkingInputSettings;
+}
+
+/** A launch from the gradebook to the work behind a result (`LtiSubmissionReviewRequest`, Submission Review 1.0). */
+export interface SubmissionReviewInput extends MessageInputBase {
+  /** The message type. */
+  readonly messageType: "LtiSubmissionReviewRequest";
+  /**
+   * The resource link of the line item; absent for a line item of no resource link.
+   *
+   * @defaultValue none
+   */
+  readonly resourceLink?: ResourceLink;
+  /** The user whose work is shown. */
+  readonly forUser: ForUser;
+  /** The line item of the review, which the claim of the grade services names (Submission Review 1.0 section 2.5). */
+  readonly services: {
+    /** The grade services, which name the line item of the review. */
+    readonly grades: {
+      /** The store's identifier of the line item of the review. */
+      readonly lineItemId: string;
+      /** Whether the claim names the container of the line items of the context as `lineitems`. */
+      readonly container: boolean;
+    };
+  };
 }
 
 /** The message that sends a candidate to a proctoring tool (`LtiStartProctoring`, Proctoring Services 1.0 section 4.2). */
@@ -173,7 +226,12 @@ export interface EndAssessmentInput extends MessageInputBase {
 }
 
 /** What the host launches: a message that a platform sends, as plain data that a store can keep. It holds no secret. */
-export type MessageInput = ResourceLinkInput | DeepLinkingRequestInput | StartProctoringInput | EndAssessmentInput;
+export type MessageInput =
+  | ResourceLinkInput
+  | DeepLinkingRequestInput
+  | SubmissionReviewInput
+  | StartProctoringInput
+  | EndAssessmentInput;
 
 const TEXT = v.optional(v.string());
 
@@ -228,6 +286,11 @@ const baseEntries = {
       oauthConsumerKey: nonEmptyStringSchema,
     }),
   ),
+  services: v.optional(
+    strictRecord({
+      grades: v.optional(strictRecord({ lineItemId: v.optional(nonEmptyStringSchema), container: v.boolean() })),
+    }),
+  ),
 };
 
 /** The attempt number of a proctored assessment: a whole number from 0 (Proctoring Services 1.0 section 4.2.1.6). */
@@ -259,6 +322,23 @@ const messageInputSchema = v.pipe(
     }),
     v.strictObject({
       ...baseEntries,
+      messageType: v.literal("LtiSubmissionReviewRequest"),
+      resourceLink: v.optional(resourceLinkSchema),
+      forUser: strictRecord({
+        userId: IDENTIFIER,
+        personSourcedId: TEXT,
+        givenName: TEXT,
+        familyName: TEXT,
+        name: TEXT,
+        email: TEXT,
+        roles: v.optional(STRING_ARRAY),
+      }),
+      services: strictRecord({
+        grades: strictRecord({ lineItemId: nonEmptyStringSchema, container: v.boolean() }),
+      }),
+    }),
+    v.strictObject({
+      ...baseEntries,
       messageType: v.literal("LtiStartProctoring"),
       resourceLink: resourceLinkSchema,
       attemptNumber: ATTEMPT_NUMBER,
@@ -282,8 +362,13 @@ const messageInputSchema = v.pipe(
  *
  * @param value - The message.
  * @param label - Names the message in the error, such as `The message`.
- * @throws `DataError` that names the path of the first invalid member.
+ * @throws `DataError` that names the path of the first invalid member, or when the message offers a service without its
+ * context.
  */
 export function readMessageInput(value: unknown, label: string): MessageInput {
-  return parseWith(messageInputSchema, value, label);
+  const message = parseWith(messageInputSchema, value, label);
+  if (message.services?.grades !== undefined && message.context === undefined) {
+    throw new DataError(`${label} offers the grade services, which need its context.`);
+  }
+  return message;
 }

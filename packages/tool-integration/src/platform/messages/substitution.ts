@@ -1,6 +1,6 @@
 import { type CallOptions, callPort, DataError } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
-import type { PlatformInstance, ResourceLink } from "../../protocol/index.js";
+import type { MessageServices, PlatformInstance, ResourceLink } from "../../protocol/index.js";
 import type { Substitution } from "../ports.js";
 import type { ToolRegistration } from "../registration.js";
 import type { MessageInput } from "./input.js";
@@ -11,6 +11,8 @@ interface LaunchView {
   readonly message: MessageInput;
   /** The instance of the platform, from its configuration. */
   readonly instance?: PlatformInstance | undefined;
+  /** The claims of the services that the message offers. */
+  readonly services?: MessageServices | undefined;
 }
 
 /** The resource link of a message, when its type has one. */
@@ -69,6 +71,9 @@ const MESSAGE_VARIABLES: ReadonlyMap<string, (view: LaunchView) => string | numb
   ["ToolPlatformInstance.description", ({ instance }) => instance?.description],
   ["ToolPlatformInstance.url", ({ instance }) => instance?.url],
   ["ToolPlatformInstance.contactEmail", ({ instance }) => instance?.contactEmail],
+  // AGS 3.1: the claim of the grade services, whose line item exists only for a single line item of the resource link.
+  ["LineItems.url", ({ services }) => services?.grades?.lineitems],
+  ["LineItem.url", ({ services }) => services?.grades?.lineitem],
 ]);
 
 /** What the substitution of a launch needs beside the custom properties. */

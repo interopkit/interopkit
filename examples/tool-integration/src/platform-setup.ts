@@ -1,5 +1,5 @@
 import type { Clock } from "@interopkit/core";
-import { createJwksCache } from "@interopkit/tool-integration";
+import { createJwksCache, SCOPES } from "@interopkit/tool-integration";
 import {
   buildPlatformEndpoints,
   type LaunchStore,
@@ -10,6 +10,7 @@ import {
   type PlatformRequestOptions,
   type ToolRegistration,
 } from "@interopkit/tool-integration/platform";
+import { createGradebook, type Gradebook } from "./gradebook.ts";
 import { generateHintKey, generatePlatformKeys } from "./keys.ts";
 
 /** What the platform knows of the tool: the tool's side of the registration. */
@@ -35,6 +36,8 @@ export interface PlatformSetup {
   readonly requests: PlatformRequestOptions;
   /** The URLs of the endpoints, which the administrator of the tool registers with it. */
   readonly endpoints: PlatformEndpoints;
+  /** The gradebook behind the grade services. */
+  readonly gradebook: Gradebook;
 }
 
 /** The launches in progress, in memory: a real host keeps them where every process can reach them, for 300 seconds. */
@@ -66,7 +69,8 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
     loginUrl: side.loginUrl,
     redirectUris: [side.redirectUri],
     keys: new Map([[side.keyId, side.publicKey]]),
-    scopes: [],
+    // The tool may read the line items and the results, and post scores; it may not change the line items.
+    scopes: [SCOPES.lineitemReadonly, SCOPES.resultReadonly, SCOPES.score],
   };
   const tools = async (clientId: string) => (clientId === registration.clientId ? registration : undefined);
   // The ledger of single-use identifiers: a client assertion is accepted once.
@@ -77,6 +81,7 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
     return true;
   };
   const launches = launchStore();
+  const gradebook = createGradebook();
   return {
     login: { config, clock, registration: tools, check: async () => undefined, launches },
     requests: {
@@ -87,7 +92,9 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
       once,
       // The tool gave its key, so the platform never fetches a key set of the tool.
       jwks: createJwksCache({ fetch: () => Promise.reject(new Error("The tool gave its key.")) }),
+      services: { gradebook: gradebook.store },
     },
     endpoints: buildPlatformEndpoints(config),
+    gradebook,
   };
 }

@@ -422,6 +422,9 @@ platform's key, to the tool's client and deployment, and to one use.
   Framework section 6.4).
 - **LTI 1.1 secrets.** `legacySecret` gives the secret of a consumer key for one HMAC of the migration claim; the package keeps it
   nowhere. Trust the 1.1 identifiers of a launch only when `migration.verified` is `true`.
+- **Service tokens.** `createServiceClient` keeps one access token for each scope in memory until it is about to expire, asks for
+  the narrowest scope that a call needs, and sends the token only to a URL on the registration's `serviceOrigins`, or, without
+  them, an `https` URL that names a public host; a `next` link of another origin ends the pages. A 401 drops the token.
 - A score is not idempotent: AGS requires a strictly later `timestamp` for each update of a line item and user, and a platform
   may drop an equal or earlier one. After a timeout the first attempt is in doubt, and the resend takes a later time.
 - Launch claims (the `sub`, roles and custom properties) pass through the package to the host; it stores nothing.
@@ -463,6 +466,11 @@ them ([platform role](docs/tool-integration/platform.md)).
 - **Keys.** The `id_token`s are signed through the `Signer` of `config.keys`, so the private key may stay in a KMS or an HSM; the
   key set publishes the public keys of a rotation. `previousHintKeys` opens what an earlier hint key sealed, so a rotation of the
   hint key breaks nothing in flight; remove an old key once the longest of what it sealed has expired.
+- **Services.** A service is offered, in its claim, at the token endpoint and in its routes, only when the host gives its store. A
+  request to a route needs a token of this platform that has not expired, and the platform looks the tool up again on every
+  request: a removed tool or deployment is 401 at once, and a scope that the registration no longer grants is 403. Every store
+  receives the caller, and answers `undefined` for a context that is not the caller's, which is 404, so that existence does not
+  leak. The bodies are measured before they are parsed, and the store orders the scores (AGS 3.4.9).
 - **LTI 1.1 secrets.** `migrationSecret` gives the secret of a consumer key for one HMAC of the migration claim at authorization;
   no message or store of the package ever holds it.
 
@@ -576,7 +584,12 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `learning-analytics`      | Levels that an entity or an event nests                                              | 64                                | levels                 | Checked by `readEntity` and `readEvent` before they read; a `DataError`; not replaceable                                                                                   |
 | `tool-integration`        | `ttlSeconds` of `createJwksCache`                                        | 3,600                             | seconds                | How long a key set stays cached                                                                                                                           |
 | `tool-integration`        | `refreshSeconds` of `createJwksCache`                                    | 60                                | seconds                | The least time between two fetches of a key set that answers; a set that fails is fetched on every request that needs it                                  |
-| `tool-integration`        | `timeoutMs` of `createJwksCache` and `publishAgsScore`                   | 10,000                            | milliseconds           | One call to the platform                                                                                                                                  |
+| `tool-integration`        | `timeoutMs` of `createJwksCache` and `createServiceClient`               | 10,000                            | milliseconds           | One call to the platform                                                                                                                                  |
+| `tool-integration`        | `maxBytes` of `createServiceClient`                                      | 1,048,576                         | bytes                  | An answer of a service of the platform; `ServiceError` above it                                                                                          |
+| `tool-integration`        | `maxTokens` of `createServiceClient`                                     | 1,000,000                         | tokens                 | The JSON of an answer of a service, counted before it is parsed; `DataError` above it                                                                    |
+| `tool-integration`        | `pageLimit` of `createServiceClient`                                     | 100                               | items                  | The `limit` of a request for a container that names none                                                                                                 |
+| `tool-integration`        | `refreshSkewSeconds` of `createServiceClient`                            | 60                                | seconds                | How long before its expiry a cached access token is replaced                                                                                             |
+| `tool-integration`        | `pageSize` and `maxPageSize` of `handlePlatformRequest`                  | 100 and 1,000                     | items                  | A page of a service of the platform: without a `limit`, and at most                                                                                      |
 | `tool-integration`        | `maxFormBytes` of `ltiLaunch`                                            | 65,536                            | bytes                  | The form that the platform posts, measured before it is decoded; `form-too-large` above it                                                               |
 | `tool-integration`        | Most bytes of a login initiation form                                    | 65,536                            | bytes                  | A POST to the login URL; `DataError` above it; not replaceable                                                                                           |
 | `tool-integration`        | `maxAgeSeconds` of `serveToolJwks`                                       | 3,600                             | seconds                | The `max-age` of the tool's key set                                                                                                                      |

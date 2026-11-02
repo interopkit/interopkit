@@ -17,8 +17,8 @@ export {
   NON_EMPTY_STRING,
   NUMBER,
   optional,
+  parseZonedDateTime,
   required,
-  SCOPES,
   STRING,
   STRING_ARRAY,
 } from "./claims/index.js";
@@ -103,7 +103,10 @@ export { MILLISECONDS, toSeconds } from "./time.js";
 export {
   CLIENT_CREDENTIALS_GRANT,
   JWT_BEARER_ASSERTION_TYPE,
+  LINE_ITEM_CONTAINER_MEDIA_TYPE,
   LINE_ITEM_MEDIA_TYPE,
+  RESULT_CONTAINER_MEDIA_TYPE,
+  RESULTS_SUFFIX,
   SCORE_MEDIA_TYPE,
   SCORES_SUFFIX,
 } from "./wire.js";

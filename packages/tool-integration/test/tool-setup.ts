@@ -1,13 +1,9 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 responses are snake_case.
 
+import type { Fetch } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import { createJwksCache, type DeepLinkingRequestMessage, type LtiMessage } from "../src/index.js";
-import {
-  type LtiLaunchOptions,
-  ltiLogin,
-  type PlatformRegistration,
-  type PublishAgsScoreOptions,
-} from "../src/tool/index.js";
+import { type LtiLaunchOptions, ltiLogin, type PlatformRegistration } from "../src/tool/index.js";
 import {
   type Authenticated,
   CLIENT_ID,
@@ -27,7 +23,7 @@ export const rotatedKey = await generateKeyPair("platform-2");
 export const attackerKey = await generateKeyPair("platform-1");
 export const toolKey = await generateKeyPair("tool-1");
 
-export type Options = LtiLaunchOptions & PublishAgsScoreOptions;
+export type Options = LtiLaunchOptions & { readonly fetch: Fetch; readonly timeoutMs?: number };
 
 export interface Setup {
   readonly clock: TestClock;

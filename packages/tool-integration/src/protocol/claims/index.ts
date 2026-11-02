@@ -14,6 +14,7 @@ export {
   type Members,
   OPTIONAL_DATE_TIME,
   OPTIONAL_TEXT,
+  parseZonedDateTime,
   searchLimit,
   searchOf,
   searchValue,

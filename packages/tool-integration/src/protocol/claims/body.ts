@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { copyJson, describe, isDateTime, type JsonValue } from "@interopkit/core/checks";
+import { copyJson, describe, type JsonValue, parseDateTime } from "@interopkit/core/checks";
 import * as v from "valibot";
 
 /** The members of a JSON object that a writer builds, where a member that is `undefined` is left out. */
@@ -63,9 +63,19 @@ export function writeExtensions(
   return extensions ?? {};
 }
 
-/** Returns whether text is an ISO 8601 date and time with a time zone designator, which LTI requires of every date, with an offset of `+hh` read as `+hh:00` (AGS 3.4.8 prints `+00`). */
+/**
+ * Reads an ISO 8601 date and time with a time zone designator, which LTI requires of every date, into milliseconds since
+ * 1970-01-01T00:00:00Z, with an offset of `+hh` read as `+hh:00` (AGS 3.4.9 prints `+00`).
+ *
+ * @returns The instant, or `undefined` when the text is not such a date and time.
+ */
+export function parseZonedDateTime(text: string): number | undefined {
+  return parseDateTime(/T.*[+-]\d{2}$/u.test(text) ? `${text}:00` : text);
+}
+
+/** Returns whether text is an ISO 8601 date and time with a time zone designator. */
 function isZonedDateTime(text: string): boolean {
-  return isDateTime(/T.*[+-]\d{2}$/u.test(text) ? `${text}:00` : text);
+  return parseZonedDateTime(text) !== undefined;
 }
 
 /** A date and time with a time zone designator: `Z`, `+hh:mm` or `+hh`. */

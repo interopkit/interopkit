@@ -4,7 +4,8 @@
 `MessageInput` of plain data: a resource link, a Deep Linking request, a Start Proctoring or an End Assessment message.
 `ltiPlatformLogin` keeps it in the host's `LaunchStore` and returns the URL of the tool's login; one handler,
 `handlePlatformRequest`, answers every request to the platform's origin: the tool's authentication request with the `id_token`
-of the kept message, the key set, the token requests and the storage page. It runs on a server or an edge runtime, signs with a
+of the kept message, the key set, the token requests, the storage page and the routes of the services whose stores the host
+gives ([grade services](grades.md)). It runs on a server or an edge runtime, signs with a
 `Signer` of [`@interopkit/core`](../core/signer.md), and verifies the tools' tokens with [jose](https://github.com/panva/jose).
 
 ```mermaid
@@ -135,6 +136,7 @@ refuses a tool whose `targetLinkUri`, login URL or redirect URIs are on any of t
 | Key set       | `/jwks`             | GET, HEAD |
 | Token         | `/token`            | POST      |
 | Storage page  | `/storage`          | GET       |
+| Grade services | `/contexts/{context}/line-items`, and below it | With `services.gradebook`: see [grade services](grades.md) |
 
 A path that names nothing is 404, and a method that a route does not serve is 405 with `Allow`.
 
@@ -160,11 +162,14 @@ every login, authentication request and token request, so that a removed or chan
 
 A `MessageInput` is plain data that a store can keep and that holds no secret. Every message has `clientId`, `deploymentId` (one
 of the tool's), `targetLinkUri`, `user` (without a `subject` the launch is anonymous) and `roles`, and may have `actualUser`,
-`roleScopeMentor`, `context`, `organization`, `presentation`, `lis`, `custom`, `extensions` (vendor claims by URL) and `migration`.
+`roleScopeMentor`, `context`, `organization`, `presentation`, `lis`, `custom`, `extensions` (vendor claims by URL), `migration`, and
+`services`, the services that it offers the tool, which need its `context` and are offered only when the host gives their store
+([grade services](grades.md)).
 
 | `messageType`            | Adds                                                                                                                                                         |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `LtiResourceLinkRequest` | `resourceLink`                                                                                                                                               |
+| `LtiSubmissionReviewRequest` | `forUser`, and `resourceLink` when the line item has one; `services.grades.lineItemId` names the line item of the review, which needs `services.gradebook` |
 | `LtiDeepLinkingRequest`  | `settings`: the settings of DL 4.4.1, and the host's `data`, an object that the platform seals into the `data` claim with the settings for 86,400 seconds |
 | `LtiStartProctoring`     | `resourceLink`, `attemptNumber`, `startAssessmentUrl`, `proctoringSettings`; the platform seals the client, deployment, resource link, attempt and user into `session_data` for 3,600 seconds |
 | `LtiEndAssessment`       | `attemptNumber`, and `resourceLink`, `proctoringSettings`, `errorMessage`, `errorLog` when there are any                                                      |
@@ -189,6 +194,7 @@ Appendix B). A value that is `$` and the name of a variable becomes its value; a
 | `Message.returnUrl`, `Message.documentTarget`, `Message.height`, `Message.width`, `Message.locale` | The message's `presentation`                            |
 | `Organization.*`                                                                           | The message's `organization`                                    |
 | `ToolPlatform.*`, `ToolPlatformInstance.*`                                                 | `config.instance`                                               |
+| `LineItems.url`, `LineItem.url`                                                            | The claim of the grade services                                 |
 | Every other name that `substitution.names` lists                                           | `substitution.resolve(name, message, tool)`                     |
 | Every other name                                                                           | Nothing: the value passes unchanged, as Appendix B asks for a variable the platform does not support |
 
@@ -266,8 +272,8 @@ platform's issuer; the times with 60 seconds of leeway and an expiry within 3,60
 of the tool never passes as an assertion; the deployment claim of Core 6.2.1, when present, one of the tool's; and a non-empty
 `jti` that `once` has not seen, remembered until the expiry, rounded up to a whole second, plus the leeway.
 
-The token grants the scopes that the request asks for, the registration grants and a service of the platform offers, and
-`invalid_scope` answers only when none remains. It is sealed with the hint key, holds the client, the deployment of the
+The token grants the scopes that the request asks for, the registration grants and a service of the platform offers (a service
+offers its scopes when the host gives its store), and `invalid_scope` answers only when none remains. It is sealed with the hint key, holds the client, the deployment of the
 assertion, the scopes and the expiry, and lasts 3,600 seconds. A refusal is an OAuth error with status 400 (`invalid_request`,
 `unsupported_grant_type`, `invalid_scope`, `invalid_client`), and 500 when `client` or `once` rejects or the tool's key set
 cannot be fetched.
@@ -299,6 +305,9 @@ the origin that asked.
 | `checkLaunch(launch, options)`        | none                   | A last check of `{ clientId, deploymentId, principal }` before the message is taken      |
 | `substitution`                        | none                   | `names` and `resolve` of the variables the host resolves                                 |
 | `migrationSecret(consumerKey, options)` | none                 | The LTI 1.1 secret that signs the migration claim                                        |
+| `services`                            | none                   | The stores of the services: `gradebook` ([grade services](grades.md))                   |
+| `pageSize`                            | 100                    | The items of a page of a service when the request names no `limit`                       |
+| `maxPageSize`                         | 1,000                  | The most items of a page of a service                                                    |
 | `toolFrame`                           | `"lti-tool"`           | The frame of the tool that the storage page answers                                      |
 | `maxBodyBytes`                        | 65,536                 | The most bytes of a body, measured before it is parsed                                   |
 | `sessionDataLifetimeSeconds`          | 3,600                  | How long the session data of a Start Proctoring message is valid                         |
@@ -381,6 +390,6 @@ package. Where a specification disagrees with an example, see [spec-gaps](spec-g
 
 | What                                                                                         | Reason                                                       |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| The Assignment and Grade Services, Names and Role Provisioning, Context Groups, the PNP connector, the Assessment Control Service, Dynamic Registration | Not yet: see [supported](supported.md) |
+| Names and Role Provisioning, Context Groups, the PNP connector, the Assessment Control Service, Dynamic Registration | Not yet: see [supported](supported.md) |
 | The readers of the Deep Linking response and the Start Assessment message                    | Not yet: see [supported](supported.md)                       |
 | Sessions, routes beyond the handler, a database, the page that frames the tool, a picker     | The host's                                                   |

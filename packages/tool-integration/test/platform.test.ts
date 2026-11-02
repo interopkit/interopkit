@@ -31,6 +31,7 @@ import {
   toolRegistration,
 } from "./fake-tool.js";
 import { NOW, readToken, request } from "./fixture.js";
+import { MemoryGradebook } from "./gradebook.js";
 import {
   ASSET_ORIGIN,
   attackerKeys,
@@ -925,13 +926,14 @@ describe("the token endpoint", () => {
     expect(ctx.toolFetches).toEqual(["https://tool.example.com/.well-known/jwks.json"]);
   });
 
-  it("grants a sealed token of an hour for the scopes that the request asks for and the registration grants", async () => {
+  it("grants a sealed token of an hour for the scopes that the request asks for, the registration grants and a service offers", async () => {
     const SCORE = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
     const RESULT = "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly";
     const ctx = setup({ tools: [toolRegistration({ scopes: [SCORE, "https://example.com/other"] })] });
     const assertion = await clientAssertion(toolKeys, endpoints.token, ctx.clock, {
       [`${CLAIM}deployment_id`]: TOOL_DEPLOYMENT_ID,
     });
+    Object.assign(ctx.requests, { services: { gradebook: new MemoryGradebook(TOOL_CLIENT_ID) } });
     const response = await handle(ctx, tokenRequest(endpoints.token, assertion, `${RESULT} ${SCORE}`));
     expect(response.status).toBe(200);
     expect(response.headers["cache-control"]).toBe("no-store");

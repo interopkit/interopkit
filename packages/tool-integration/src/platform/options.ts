@@ -12,7 +12,7 @@ import * as v from "valibot";
 import type { JwksCache } from "../protocol/index.js";
 import { checkPlatformConfig, type PlatformConfig } from "./config.js";
 import type { MessageInput } from "./messages/input.js";
-import type { LaunchStore, Substitution } from "./ports.js";
+import type { GradebookStore, LaunchStore, PlatformServices, Substitution } from "./ports.js";
 import type { ToolRegistration } from "./registration.js";
 
 /** What every function of the platform role needs: what the platform is, and the time. */
@@ -87,6 +87,25 @@ export interface PlatformRequestOptions extends PlatformOptions, CallOptions {
    */
   readonly migrationSecret?: (consumerKey: string, options?: CallOptions) => Promise<string | undefined>;
   /**
+   * The stores of the services of the platform, one for each service; a service without its store is neither offered in a
+   * claim, nor granted at the token endpoint, nor routed.
+   *
+   * @defaultValue none
+   */
+  readonly services?: PlatformServices;
+  /**
+   * The items of a page of a service when the request names no `limit`.
+   *
+   * @defaultValue `100`
+   */
+  readonly pageSize?: number;
+  /**
+   * The most items of a page of a service: a larger `limit` is lowered to it.
+   *
+   * @defaultValue `1000`
+   */
+  readonly maxPageSize?: number;
+  /**
    * The name of the frame of the tool, the only one that the storage page answers.
    *
    * @defaultValue `"lti-tool"`
@@ -114,7 +133,10 @@ export interface PlatformRequestOptions extends PlatformOptions, CallOptions {
 
 /** The options of `handlePlatformRequest` with their defaults filled in. */
 export interface PlatformSettings
-  extends Required<Omit<PlatformRequestOptions, "checkLaunch" | "substitution" | "migrationSecret" | "signal">> {
+  extends Required<
+    Omit<PlatformRequestOptions, "checkLaunch" | "substitution" | "migrationSecret" | "services" | "signal">
+  > {
+  readonly services?: PlatformServices;
   readonly checkLaunch?: PlatformRequestOptions["checkLaunch"];
   readonly substitution?: PlatformRequestOptions["substitution"];
   readonly migrationSecret?: PlatformRequestOptions["migrationSecret"];
@@ -128,6 +150,10 @@ const DEFAULT_TOOL_FRAME = "lti-tool";
  * service, such as a line item or a score, less.
  */
 const DEFAULT_MAX_BODY_BYTES = 65_536;
+/** The items of a page of a service when the request names no `limit`: the `limit` that the tool role sends by default. */
+const DEFAULT_PAGE_SIZE = 100;
+/** The most items of a page of a service, which bounds the work of one request. */
+const DEFAULT_MAX_PAGE_SIZE = 1000;
 /** How long the session data of a proctored attempt is valid, in seconds: the hour that the attempt may take to start. */
 const DEFAULT_SESSION_DATA_LIFETIME_SECONDS = 3600;
 /** How long the data of a Deep Linking request is valid, in seconds: a day for the person who picks the content. */
@@ -171,6 +197,23 @@ const requestOptionsSchema = strictRecord({
     ),
   ),
   migrationSecret: v.optional(functionSchema<NonNullable<PlatformRequestOptions["migrationSecret"]>>()),
+  services: v.optional(
+    strictRecord({
+      gradebook: v.optional(
+        methodsSchema<GradebookStore>(
+          "lineItems",
+          "lineItem",
+          "createLineItem",
+          "updateLineItem",
+          "deleteLineItem",
+          "results",
+          "keepScore",
+        ),
+      ),
+    }),
+  ),
+  pageSize: v.optional(positiveIntegerSchema),
+  maxPageSize: v.optional(positiveIntegerSchema),
   toolFrame: v.optional(nonEmptyStringSchema),
   maxBodyBytes: v.optional(positiveIntegerSchema),
   sessionDataLifetimeSeconds: v.optional(positiveIntegerSchema),
@@ -197,6 +240,8 @@ export function readRequestOptions(options: unknown): PlatformSettings {
   return {
     ...read,
     toolFrame: read.toolFrame ?? DEFAULT_TOOL_FRAME,
+    pageSize: read.pageSize ?? DEFAULT_PAGE_SIZE,
+    maxPageSize: read.maxPageSize ?? DEFAULT_MAX_PAGE_SIZE,
     maxBodyBytes: read.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES,
     sessionDataLifetimeSeconds: read.sessionDataLifetimeSeconds ?? DEFAULT_SESSION_DATA_LIFETIME_SECONDS,
     deepLinkingLifetimeSeconds: read.deepLinkingLifetimeSeconds ?? DEFAULT_DEEP_LINKING_LIFETIME_SECONDS,

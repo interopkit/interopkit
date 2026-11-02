@@ -1,4 +1,4 @@
-import type { MigrationClaim, PlatformInstance } from "../../protocol/index.js";
+import type { MessageServices, MigrationClaim, PlatformInstance } from "../../protocol/index.js";
 import { LTI_VERSION, type MessageToWrite } from "../../protocol/internal.js";
 import type { MessageInput } from "./input.js";
 
@@ -12,6 +12,8 @@ export interface Issued {
   readonly custom: ReadonlyMap<string, string>;
   /** The migration claim with the signature of its consumer key, when the host gave the secret. */
   readonly migration?: MigrationClaim | undefined;
+  /** The claims of the services that the message offers. */
+  readonly services?: MessageServices | undefined;
   /** The sealed `data` of a Deep Linking request, or the sealed `session_data` of a Start Proctoring message. */
   readonly sealed?: string | undefined;
 }
@@ -39,10 +41,18 @@ export function toWrite(message: MessageInput, issued: Issued): MessageToWrite {
     custom: issued.custom,
     migration: issued.migration ?? message.migration,
     extensions: message.extensions,
+    services: issued.services,
   };
   switch (message.messageType) {
     case "LtiResourceLinkRequest":
       return { ...base, messageType: message.messageType, resourceLink: message.resourceLink };
+    case "LtiSubmissionReviewRequest":
+      return {
+        ...base,
+        messageType: message.messageType,
+        resourceLink: message.resourceLink,
+        forUser: message.forUser,
+      };
     case "LtiDeepLinkingRequest":
       return { ...base, messageType: message.messageType, settings: { ...message.settings, data: issued.sealed } };
     case "LtiStartProctoring":

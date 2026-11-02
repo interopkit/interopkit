@@ -1,25 +1,34 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI claims and of AGS scores are those of the specifications.
 
 import { resolve } from "node:path";
-import { DataError } from "@interopkit/core";
 import { createLocalJWKSet, exportJWK } from "jose";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { readSpecExamples, readSpecPage } from "../../../scripts/spec-examples.js";
-import type { DeepLinkingRequestMessage, LtiMessage } from "../src/index.js";
+import { type DeepLinkingRequestMessage, type LtiMessage, SCOPES } from "../src/index.js";
 import type { ResourceLinkInput } from "../src/platform/index.js";
-import { readMessage, readToolMessage, verifyJwt, writeMessage, writeToolMessage } from "../src/protocol/internal.js";
-import { deepLinkResponse, ltiLaunch, type PlatformRegistration, publishAgsScore } from "../src/tool/index.js";
+import {
+  readMessage,
+  readScore,
+  readToolMessage,
+  verifyJwt,
+  writeMessage,
+  writeToolMessage,
+} from "../src/protocol/internal.js";
+import { createServiceClient, deepLinkResponse, ltiLaunch, type PlatformRegistration } from "../src/tool/index.js";
 import { FakeLms, LINE_ITEM_URL } from "./fake-lms.js";
 import { registrationOf } from "./fake-platform.js";
-import { authenticationRequest, toolRegistration } from "./fake-tool.js";
-import { generateKeyPair, readToken, signToken } from "./fixture.js";
+import { authenticationRequest, clientAssertion, TOOL_CLIENT_ID, tokenRequest, toolRegistration } from "./fake-tool.js";
+import { request as fixtureRequest, generateKeyPair, readToken, signToken } from "./fixture.js";
+import { MemoryGradebook } from "./gradebook.js";
 import {
+  PLATFORM_ORIGIN,
   begin as platformBegin,
   config as platformConfig,
   endpoints as platformEndpoints,
   handle as platformHandle,
   setup as platformSetup,
   readPost,
+  toolKeys,
 } from "./platform-setup.js";
 import { textOf } from "./text-of.js";
 import { cookieLogin, setup, toolKey } from "./tool-setup.js";
@@ -30,6 +39,10 @@ import { cookieLogin, setup, toolKey } from "./tool-setup.js";
  * `pnpm spec-examples` downloads them at the hashes that scripts/spec-examples.lock.json pins.
  */
 const examples = readSpecExamples(resolve(import.meta.dirname, "../../.."));
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";
 const DL = "https://purl.imsglobal.org/spec/lti-dl/claim/";
@@ -288,10 +301,9 @@ describe("the claim of the AfA PNP Connector", () => {
 describe("the scores of AGS section 3.4", () => {
   /** A tool launched by a user, and what the score service received of a publish. */
   async function publish(score: Record<string, unknown>): Promise<unknown> {
-    const { userId, ...input } = score;
     const ctx = setup();
     const lms = new FakeLms(ctx.platform);
-    const { request: post } = await cookieLogin(ctx, { claims: { sub: String(userId) } });
+    const { request: post } = await cookieLogin(ctx, { claims: { sub: String(score.userId) } });
     const launch = (await ltiLaunch(post, ctx.options)) as LtiMessage;
     const received: unknown[] = [];
     const fetch: typeof lms.fetch = async (url, init) => {
@@ -299,22 +311,53 @@ describe("the scores of AGS section 3.4", () => {
       received.push(JSON.parse(textOf(init.body ?? "")));
       return new Response(null, { status: 204 });
     };
-    await publishAgsScore(input as never, launch, { ...ctx.options, fetch });
+    const client = createServiceClient(launch, { ...ctx.options, fetch, scopes: [SCOPES.score] });
+    await client.publishScore(LINE_ITEM_URL, readScore(score));
     return received[0];
   }
 
-  it("posts the score of the example that waits for a person, as the example shows it", async () => {
-    const plain = examples.scores.find((score) => Object.keys(score).length === 4) ?? {};
-    expect(await publish(plain)).toEqual(plain);
-  });
-
-  it("refuses the score of the example that carries an extension, which the tool role does not support", async () => {
-    const extended = examples.scores.find((score) => Object.keys(score).length > 4) ?? {};
-    await expect(publish(extended)).rejects.toBeInstanceOf(DataError);
+  it("posts each score of the examples as the example shows it, its extensions included", async () => {
+    expect(examples.scores.length).toBeGreaterThan(1);
+    for (const example of examples.scores) expect(await publish(example)).toEqual(example);
   });
 });
 
 describe("the platform role against the same examples", () => {
+  it("keeps each score of AGS section 3.4, read into the fields that it says, with the instant of its timestamp", async () => {
+    const ctx = platformSetup({ tools: [toolRegistration({ scopes: [SCOPES.score] })] });
+    const gradebook = new MemoryGradebook(TOOL_CLIENT_ID).add("course-1", {
+      id: "quiz",
+      label: "Quiz",
+      scoreMaximum: 100,
+    });
+    const services = { gradebook };
+    const assertion = await clientAssertion(toolKeys, platformEndpoints.token, ctx.clock);
+    const granted = await platformHandle(ctx, tokenRequest(platformEndpoints.token, assertion, SCOPES.score), {
+      services,
+    });
+    const token = JSON.parse(textOf(granted.body)).access_token;
+    for (const example of examples.scores) {
+      const response = await platformHandle(
+        ctx,
+        fixtureRequest({
+          url: `${PLATFORM_ORIGIN}/contexts/course-1/line-items/quiz/scores`,
+          method: "POST",
+          headers: { authorization: `Bearer ${token}`, "content-type": "application/vnd.ims.lis.v1.score+json" },
+          body: JSON.stringify(example),
+        }),
+        { services },
+      );
+      expect(response.status).toBe(204);
+      expect(gradebook.calls.at(-1)?.args[2]).toMatchObject({
+        userId: example.userId,
+        timestamp: example.timestamp,
+        timestampMs: Date.parse(String(example.timestamp)),
+        activityProgress: example.activityProgress,
+        gradingProgress: example.gradingProgress,
+      });
+    }
+  });
+
   it("issues the launch of LTI Core Appendix E from the message it says, claim for claim but the services", async () => {
     const client = String(examples.launch.azp);
     const read = readExample(examples.launch, client);

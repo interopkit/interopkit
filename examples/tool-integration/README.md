@@ -1,6 +1,7 @@
 # A platform and a tool
 
-A platform that launches a tool, and the tool that validates the launch, in one process. The platform uses
+A platform that launches a tool, and the tool that validates the launch and publishes a score through the grade services, in one
+process. The platform uses
 the platform role of `@interopkit/tool-integration`, the tool uses the tool role, and both use `@interopkit/core`. They reach each
 other through an in-memory network, so the example needs no server, and each handler is the one a host would route a request to.
 
@@ -19,15 +20,17 @@ sequenceDiagram
   B->>T: id_token and state (ltiLaunch)
   T-->>B: page: fetch the stored values
   B->>T: id_token, state and the stored values
-  T->>P: the key set (handlePlatformRequest)
+  T->>P: the key set, a token, the line item, the score, the results (handlePlatformRequest)
+  P->>H: GradebookStore: lineItem, keepScore, results
 ```
 
 | File              | Holds                                                                                                                                     |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/platform.ts` | `createPlatform`: one handler for the platform's origin, and the frame of a message                                                       |
-| `src/tool.ts`     | `createTool`: the registration of the platform, the store of logins, and one handler for the tool's routes                                |
+| `src/tool.ts`     | `createTool`: one handler for the tool's routes, and the grading of a launch through `createServiceClient`                                |
 | `src/network.ts`  | `connect`: a `fetch` that reaches the handler of an origin, and `plainRequest`                                                            |
-| `src/platform-setup.ts` | The platform's keys, its registration of the tool, its store of launches and its ledger of single-use identifiers                   |
+| `src/platform-setup.ts` | The platform's keys, its registration of the tool, its store of launches, its ledger of single-use identifiers and its gradebook   |
+| `src/gradebook.ts` | A `GradebookStore` in memory, which keeps a score unless a later one is kept                                                            |
 | `src/tool-setup.ts` | The tool's registration of the platform, its store of logins and its key set cache                                                      |
 | `src/keys.ts`     | The keys that each side generates for itself: RS256 for the tool, ES256 and HMAC for the platform                                         |
 | `scenario.ts`     | `runScenario`: the steps of the browser, and what each side saw                                                                           |
