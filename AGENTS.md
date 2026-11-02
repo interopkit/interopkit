@@ -133,6 +133,9 @@ A job runs only when what it reads changed since the last green run of main: its
 root configuration, the shared scripts or `ci.yml`; `changes` in `ci.yml` computes it and `check` always runs. A newer push to
 the same ref cancels the run in progress, and a cancelled run is not a failure.
 
+`rules` is not a job of `ci.yml`: `rules.yml` runs it each week and on `workflow_dispatch`. A builder runs the rules of its package
+before a merge (`pnpm check:rules packages/<package>`), and the release gate needs a green `rules` run on the commit being released.
+
 Development needs Node.js 22.18+ and pnpm 12. The scripts in `scripts/` are TypeScript that Node runs directly, so their
 relative imports end in `.ts`. On a shared machine run Vitest with `--maxWorkers=2` and containers with `--cpus=2`.
 

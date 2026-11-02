@@ -14,7 +14,7 @@ flowchart LR
   change["Your change"] --> local["Local gates<br/>lint, check:standards, typecheck, test, knip"]
   local --> hooks["Pre-commit: Biome formats<br/>Pre-push: typecheck, test, knip"]
   hooks --> pr["Pull request<br/>with a changeset"]
-  pr --> ci["CI: check, test on Node 22 and 24, rules (the mutation check),<br/>spec, browsers, runtimes"]
+  pr --> ci["CI: check, test on Node 22 and 24,<br/>spec, browsers, runtimes"]
   ci --> review["Review"]
   review --> merge["Merge"]
   repo -.- change

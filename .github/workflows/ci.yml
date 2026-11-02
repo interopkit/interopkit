@@ -21,10 +21,9 @@ jobs:
   # that uses that one, changed (the packages, the examples and compat, with their dependencies read from their package.json
   # files); the lock file, the root configuration, the scripts that the tests share and this workflow reach every job; the
   # Markdown, the changesets and the configuration of the linters reach none but check. A file that no rule names reaches every
-  # job. The guides of a package are tests of that package alone. The list of rules, scripts/check-rules.ts, reaches the rules
-  # that it changes. Outputs: test, rules, spec, browsers, bench, runtimes, opensalt, adl_lrs and sql_lrs say whether the job
-  # runs; projects and packages are the Vitest projects and the packages whose coverage floors the test job checks; rule_paths
-  # are the files and folders whose rules check:rules checks, none for every rule.
+  # job. The guides of a package are tests of that package alone. Outputs: test, spec, browsers, bench, runtimes, opensalt,
+  # adl_lrs and sql_lrs say whether the job runs; projects and packages are the Vitest projects and the packages whose coverage
+  # floors the test job checks. The rules job is in rules.yml.
   changes:
     runs-on: ubuntu-latest
     permissions:
@@ -34,8 +33,6 @@ jobs:
       test: ${{ steps.filter.outputs.test }}
       projects: ${{ steps.filter.outputs.projects }}
       packages: ${{ steps.filter.outputs.packages }}
-      rules: ${{ steps.filter.outputs.rules }}
-      rule_paths: ${{ steps.filter.outputs.rule_paths }}
       spec: ${{ steps.filter.outputs.spec }}
       browsers: ${{ steps.filter.outputs.browsers }}
       bench: ${{ steps.filter.outputs.bench }}
@@ -89,26 +86,6 @@ jobs:
               .map((name) => names.get(name));
           };
           const project = (dir) => (dir.startsWith("examples/") ? `example-${dir.slice(9)}` : dir.slice(9));
-
-          // Every rule of scripts/check-rules.ts: its lines, and the file and the test it names. Null when the file is not laid out
-          // as expected, and then every rule runs.
-          const rulesOf = (text) => {
-            const lines = text.split("\n");
-            const rules = [];
-            let from = 0;
-            lines.forEach((line, index) => {
-              if (line === "  {") from = index + 1;
-              else if (line === "  }," && from > 0) {
-                const body = lines.slice(from, index).join("\n");
-                const [, file] = /file: "([^"]+)"/.exec(body) ?? [];
-                const [, test] = /test: "([^"]+)"/.exec(body) ?? [];
-                rules.push({ from, to: index + 1, file, test });
-                from = 0;
-              }
-            });
-            const declared = (text.match(/^ {4}rule: "/gm) ?? []).length;
-            return rules.length === declared && rules.every(({ file, test }) => file && test) ? rules : null;
-          };
 
           // What changed. Null when there is nothing to compare with: everything is then checked.
           let changed = null;
@@ -167,50 +144,11 @@ jobs:
             }
           };
 
-          // The rules to check: those of the packages that the change reaches, those that a reached package tests, and those that
-          // the change to the list of rules touches. The paths are files and folders, as check-rules.ts takes them.
-          const rulePaths = new Set(packages);
-          let allRules = everything;
-          if (!allRules) {
-            const rules = rulesOf(readFileSync("scripts/check-rules.ts", "utf8"));
-            const reachedPath = (path) => [...reached].some((dir) => path.startsWith(`${dir}/`));
-            if (rules === null) allRules = true;
-            else {
-              for (const { file, test } of rules) if (reachedPath(test)) rulePaths.add(file);
-              if (changed.includes("scripts/check-rules.ts")) {
-                let old = null;
-                try {
-                  old = rulesOf(git("show", `${process.env.BASE}:scripts/check-rules.ts`));
-                } catch {
-                  old = null;
-                }
-                const hunks = git("diff", "-U0", "--no-renames", process.env.BASE, "HEAD", "--", "scripts/check-rules.ts");
-                const touchedRules = (found, from, count) => {
-                  if (found === null) return false;
-                  for (let line = from; line < from + count; line++) {
-                    const rule = found.find((entry) => entry.from <= line && line <= entry.to);
-                    if (!rule) return false;
-                    rulePaths.add(rule.file);
-                  }
-                  return true;
-                };
-                for (const [, before, beforeCount = "1", after, afterCount = "1"] of hunks.matchAll(
-                  /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/gm,
-                )) {
-                  if (!touchedRules(old, Number(before), Number(beforeCount)) || !touchedRules(rules, Number(after), Number(afterCount)))
-                    allRules = true;
-                }
-              }
-            }
-          }
-
           const any = (dirs) => everything || dirs.length > 0;
           const outputs = {
             test: projects.size > 0 || reached.size > 0 || scriptTests,
             projects: [...projects].join(" "),
             packages: [...covered].join(" "),
-            rules: allRules || rulePaths.size > 0,
-            rule_paths: allRules ? "" : [...rulePaths].filter((path) => ![...rulePaths].some((other) => path.startsWith(`${other}/`))).join(" "),
             spec: any(packages.filter(hasTest(/spec[^/]*\.test\.ts$/))),
             browsers: any(packages.filter(hasTest(/\.browser\.test\.ts$/))),
             bench: any(packages.filter((dir) => members.get(dir).scripts?.bench)),
@@ -293,28 +231,6 @@ jobs:
         run: pnpm schemas
       - if: needs.changes.outputs.projects != ''
         run: pnpm test:corpus
-
-  # Removes each security rule that scripts/check-rules.ts lists from a copy of the code, and fails when its test still passes.
-  # It checks the rules that the change reaches.
-  rules:
-    needs: changes
-    if: needs.changes.outputs.rules == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # The rules of the pages that run in a browser are checked in Chromium.
-      - run: pnpm exec playwright install --with-deps chromium
-      - env:
-          RULE_PATHS: ${{ needs.changes.outputs.rule_paths }}
-        run: |
-          read -ra paths <<< "$RULE_PATHS"
-          pnpm check:rules "${paths[@]}"
 
   # The tests that read the examples of the specifications, downloaded at the hashes that scripts/spec-examples.lock.json pins.
   spec:
