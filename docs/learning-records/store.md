@@ -320,6 +320,7 @@ method is in the table of [the resources](#the-resources).
 | `maxDepth`         | 64         | 400          | The nesting of the JSON of a request, a document and an `agent` parameter included |
 | `maxTokens`        | 1,000,000  | 400          | The tokens of the JSON of a request, a document and an `agent` parameter included  |
 | `maxFindings`      | 1,000      | 400          | The errors counted in the Statements of a request                                  |
+| 32 parameters      | fixed      | 400          | A form of the alternate request syntax, counted before it is read                  |
 | `mergeRetries`     | 3          | 409          | The tries of a write or removal of a document that loses a race                    |
 | `pageSize`         | 100        | Capped       | The Statements of a page when the request has no `limit`                           |
 | `maxPageSize`      | 1,000      | Capped       | The largest page: a `limit` of 0 or above it is lowered to it                      |

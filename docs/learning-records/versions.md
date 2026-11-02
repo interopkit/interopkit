@@ -116,6 +116,7 @@ flowchart LR
 | `content`                    | The body, UTF-8 text; binary data and Attachments cannot be sent this way                            |
 | The type of the content      | `Content-Type` of the form, or `application/json` when the form names none                           |
 | The size                     | `limits.maxBodyBytes`, before the form is read: 413                                                  |
+| The parameters               | 32 at most, counted before the form is read: 400                                                     |
 | The version                  | From the form or the request; a version of 2.0 is 400, and an LRS whose `versions` lacks 1.0.3 is 400 |
 
 The JSON of `content` and of a parameter such as `agent` is read as any request reads it, so `limits.maxTokens`, `maxDepth` and
