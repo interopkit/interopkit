@@ -1,11 +1,14 @@
 import { isDateTime, isRecord } from "@interopkit/core/checks";
 import type { Result, Statement, StatementIssue, SubStatement, XapiVersion } from "../model/index.js";
-import { hasFinerThanCentiseconds, hasMillisecondPrecision, isUtc, splitDuration } from "../model/internal.js";
+import {
+  hasFinerThanCentiseconds,
+  hasMillisecondPrecision,
+  isUtc,
+  STATEMENT_VERSIONS,
+  splitDuration,
+} from "../model/internal.js";
 import { error, warning } from "./finding.js";
 import { item, member } from "./path.js";
-
-/** The version that a Learning Record Provider writes in a Statement when it writes one (5.2.4.1; 1.0.3 Data 2.4.10). */
-const PROVIDER_VERSIONS: Readonly<Record<XapiVersion, string>> = { "2.0.0": "2.0.0", "1.0.3": "1.0.0" };
 
 /**
  * Judges a time of a Statement of 1.0.3: ISO 8601 allows forms that RFC 3339 does not, such as the basic format, and a
@@ -66,7 +69,7 @@ export function providerTimeIssues(
  * does send is in the form of its version.
  */
 export function providerStatementIssues(statement: Statement, version: XapiVersion): StatementIssue[] {
-  const expected = PROVIDER_VERSIONS[version];
+  const expected = STATEMENT_VERSIONS[version];
   const issues: StatementIssue[] = [];
   if (statement.id === undefined) {
     issues.push(

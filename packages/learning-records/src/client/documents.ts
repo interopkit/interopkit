@@ -1,5 +1,5 @@
 import { type CallOptions, DataError, type ServiceResponse } from "@interopkit/core";
-import { dateTimeSchema, guardSchema, jsonObjectSchema, parseWith, strictRecord } from "@interopkit/core/checks";
+import { dateTimeSchema, jsonObjectSchema, parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type {
   DocumentScope,
@@ -9,10 +9,9 @@ import type {
   Precondition,
   StateScope,
 } from "../model/index.js";
-import { isMediaType } from "../model/internal.js";
-import { scopeSchema, stateScopeSchema, targetSchema } from "../read/internal.js";
+import { bytesSchema, mediaTypeSchema, scopeSchema, stateScopeSchema, targetSchema } from "../read/internal.js";
 import type { Settings } from "./config.js";
-import { callOptionsSchema, signalEntry } from "./options.js";
+import { callOptionsSchema, readCallOptions, signalEntry } from "./options.js";
 import { isHeaderValue, jsonOf, readAnswer, send, urlOf } from "./request.js";
 
 /** What happened to a write: it was made, the precondition failed, or the LRS found a conflict with the current document. */
@@ -82,16 +81,7 @@ const deleteOptionsSchema = strictRecord({
 
 const listOptionsSchema = strictRecord({ since: v.optional(dateTimeSchema), ...signalEntry });
 
-const documentSchema = strictRecord({
-  contentType: v.pipe(
-    v.string(),
-    v.check(
-      isMediaType,
-      (issue) => `expected an Internet media type, such as application/json, found ${issue.received}`,
-    ),
-  ),
-  body: guardSchema((value): value is Uint8Array => value instanceof Uint8Array, "a Uint8Array"),
-});
+const documentSchema = strictRecord({ contentType: mediaTypeSchema, body: bytesSchema });
 
 /** The parameters that name a document or the documents of a context. */
 function parametersOf(key: DocumentTarget | DocumentScope): URLSearchParams {
@@ -151,7 +141,7 @@ export async function getDocument(
   target: DocumentTarget,
   options: unknown,
 ): Promise<LrsDocument | undefined> {
-  const { signal } = parseWith(callOptionsSchema, options === undefined ? {} : options, "The options object");
+  const { signal } = readCallOptions(callOptionsSchema, options);
   const checked = parseWith(targetSchema, target, "The target");
   const url = urlOf(settings, PATHS[checked.resource], parametersOf(checked));
   const response = await send(settings, signal, url, { method: "GET", headers: { accept: "*/*" } }, [200, 404]);
@@ -173,11 +163,7 @@ async function write(
   document: { readonly contentType: string; readonly body: Uint8Array<ArrayBuffer> },
   options: unknown,
 ): Promise<WriteOutcome> {
-  const { precondition, signal } = parseWith(
-    writeOptionsSchema,
-    options === undefined ? {} : options,
-    "The options object",
-  );
+  const { precondition, signal } = readCallOptions(writeOptionsSchema, options);
   requirePrecondition(settings, method, target.resource, precondition !== undefined);
   const url = urlOf(settings, PATHS[target.resource], parametersOf(target));
   const headers = { "content-type": document.contentType, ...conditionOf(precondition) };
@@ -216,11 +202,7 @@ export async function deleteDocument(
   options: unknown,
 ): Promise<WriteOutcome> {
   const checked = parseWith(targetSchema, target, "The target");
-  const { precondition, signal } = parseWith(
-    deleteOptionsSchema,
-    options === undefined ? {} : options,
-    "The options object",
-  );
+  const { precondition, signal } = readCallOptions(deleteOptionsSchema, options);
   requirePrecondition(settings, "DELETE", checked.resource, precondition !== undefined);
   const url = urlOf(settings, PATHS[checked.resource], parametersOf(checked));
   const response = await send(
@@ -239,7 +221,7 @@ export async function listDocumentIds(
   scope: DocumentScope,
   options: unknown,
 ): Promise<readonly string[]> {
-  const { since, signal } = parseWith(listOptionsSchema, options === undefined ? {} : options, "The options object");
+  const { since, signal } = readCallOptions(listOptionsSchema, options);
   const checked = parseWith(scopeSchema, scope, "The scope");
   const parameters = parametersOf(checked);
   if (since !== undefined) parameters.set("since", since);
@@ -250,7 +232,7 @@ export async function listDocumentIds(
 
 /** Removes every state of an Agent in an Activity. */
 export async function deleteStates(settings: Settings, scope: StateScope, options: unknown): Promise<void> {
-  const { signal } = parseWith(callOptionsSchema, options === undefined ? {} : options, "The options object");
+  const { signal } = readCallOptions(callOptionsSchema, options);
   const checked = parseWith(stateScopeSchema, scope, "The scope");
   const url = urlOf(settings, PATHS.state, parametersOf(checked));
   await send(settings, signal, url, { method: "DELETE" }, [204]);

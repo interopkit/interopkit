@@ -3,8 +3,8 @@ import { type HttpRequest, readText } from "@interopkit/core/http";
 import { readMultipart } from "../../attachments/index.js";
 import type { AttachmentData } from "../../model/index.js";
 import { mediaTypeOf } from "../../model/internal.js";
-import { readStatementJson } from "../../read/index.js";
 import type { LrsSettingsLimits } from "../options.js";
+import { readRequestJson } from "../parameters.js";
 import { attempt, isRefusal, refused, type Verdict } from "../verdict.js";
 
 /** The body of a request that stores Statements: their JSON, and the data of the Attachments that came with it. */
@@ -37,12 +37,6 @@ export function readBody(request: HttpRequest, limits: LrsSettingsLimits): Verdi
       `The content type must be application/json or multipart/mixed, found ${describe(contentType)}.`,
     );
   }
-  const read = attempt(() =>
-    readStatementJson(readText(request), {
-      maxBytes: limits.maxBodyBytes,
-      maxDepth: limits.maxDepth,
-      maxTokens: limits.maxTokens,
-    }),
-  );
+  const read = attempt(() => readRequestJson(readText(request), limits));
   return isRefusal(read) ? read : { value: { json: read.value, parts: new Map() } };
 }

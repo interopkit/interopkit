@@ -10,7 +10,7 @@ import {
   type Statement,
 } from "../src/index.js";
 import { copyOf, sharesNothing } from "./fixture.js";
-import { fullStatement, fullStatementAbout, subStatementStatement, uuid } from "./full-statement.js";
+import { fullStatement, fullStatementAbout, minimalStatement, subStatementStatement, uuid } from "./full-statement.js";
 import { ROLES, RUNS } from "./fuzz.js";
 
 /** Every key that a format `ids` removes, wherever it is. */
@@ -23,6 +23,13 @@ function keysOf(value: unknown, found: Set<string> = new Set()): Set<string> {
   }
   return found;
 }
+
+describe("formatStatement of a Statement of 1.0.3", () => {
+  it("takes a form of a time that 2.0 does not take, and writes it as it came", () => {
+    const basic = { ...minimalStatement(), timestamp: "20240613T184603Z" };
+    expect(formatStatement(basic, "exact").timestamp).toBe("20240613T184603Z");
+  });
+});
 
 describe("formatStatement", () => {
   describe("the format exact", () => {

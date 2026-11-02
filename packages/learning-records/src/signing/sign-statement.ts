@@ -1,5 +1,5 @@
 import { type CallOptions, DataError, type Signer, signCompactJws } from "@interopkit/core";
-import { checkRecord, describe, guardSchema, parseWith, strictRecord } from "@interopkit/core/checks";
+import { abortSignalSchema, checkRecord, describe, parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { attachmentHash } from "../attachments/index.js";
 import {
@@ -55,7 +55,7 @@ const optionsSchema = strictRecord({
     ),
   ),
   version: v.optional(v.picklist(XAPI_VERSIONS)),
-  signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
+  signal: v.optional(abortSignalSchema),
 });
 
 /** Checks that the signer signs with an algorithm that a signature of a Statement may use. */

@@ -4,7 +4,7 @@ import { type HttpRequest, readQuery } from "@interopkit/core/http";
 import type { StatementFormat, StatementQuery, XapiVersion } from "../../model/index.js";
 import { statementQuerySchema } from "../../read/internal.js";
 import type { LrsSettingsLimits } from "../options.js";
-import { checkNames, readIsoParameter, readJsonParameter } from "../parameters.js";
+import { checkNames, readIsoParameter, readRequestJson } from "../parameters.js";
 import { attempt, type Verdict } from "../verdict.js";
 
 /** What a GET on the Statements resource asks for. */
@@ -79,7 +79,7 @@ function readFilters(
     if (BOOLEANS.has(name)) raw[property] = readBoolean(name, text);
     else if (name === "limit") raw[property] = readCount(name, text);
     else if (TIMES.has(name) && version === "1.0.3") raw[property] = readIsoParameter(name, text);
-    else raw[property] = name === "agent" ? readJsonParameter(text, limits) : text;
+    else raw[property] = name === "agent" ? readRequestJson(text, limits) : text;
   }
   return parseWith(statementQuerySchema, raw, "The query");
 }

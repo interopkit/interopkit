@@ -1,8 +1,7 @@
-import { absoluteUriSchema, guardSchema, isRecord, nonEmptyStringSchema, uuidSchema } from "@interopkit/core/checks";
+import { absoluteUriSchema, nonEmptyStringSchema, uuidSchema } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { identifiedAgentSchema } from "./identified.js";
-
-const objectGuard = guardSchema(isRecord, "an object");
+import { objectGuard } from "./schemas.js";
 
 const RESOURCES = (issue: { readonly received: string }): string =>
   `expected "state", "agent-profile" or "activity-profile", found ${issue.received}`;

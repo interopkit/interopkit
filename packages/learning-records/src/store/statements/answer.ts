@@ -5,13 +5,13 @@ import { writeMultipart } from "../../attachments/index.js";
 import { toStatementVersion } from "../../compare/index.js";
 import { formatStatement } from "../../format/index.js";
 import type { ActivityDefinition, Statement, StatementFormat, StatementResult } from "../../model/index.js";
+import { attachmentHeadersOf } from "../../read/internal.js";
 import type { StoredStatement } from "../ports.js";
 import { activitiesIn } from "../query.js";
+import { FAILED } from "../status.js";
 import { type Context, isRefusal, refused, type Verdict } from "../verdict.js";
 import { CURSOR, type StatementsGet } from "./parameters.js";
 import { consistentThrough } from "./through.js";
-
-const FAILED = "The LRS could not answer the request.";
 
 /** The languages that an `Accept-Language` header names, in the order of preference, without the ranges that weigh 0. */
 function languagesOf(header: string | undefined): readonly string[] | undefined {
@@ -73,7 +73,7 @@ function headersOf(through: string, stored: readonly StoredStatement[]): Record<
   const times = stored.map((each) => Date.parse(each.stored)).filter((time) => !Number.isNaN(time));
   return {
     "x-experience-api-consistent-through": through,
-    ...(times.length === 0 ? {} : { "last-modified": new Date(Math.max(...times)).toUTCString() }),
+    ...(times.length === 0 ? {} : { "last-modified": new Date(times.reduce((a, b) => Math.max(a, b))).toUTCString() }),
   };
 }
 
@@ -87,16 +87,7 @@ async function present(
 ): Promise<HttpResponse> {
   if (!attachments) return jsonResponse(200, document, headers);
   const { signal } = context.settings;
-  const hashes = [
-    ...new Set(
-      statements
-        .flatMap((statement) => [
-          ...(statement.attachments ?? []),
-          ...(statement.object.objectType === "SubStatement" ? (statement.object.attachments ?? []) : []),
-        ])
-        .map(({ sha2 }) => sha2.toLowerCase()),
-    ),
-  ];
+  const hashes = [...new Set(statements.flatMap(attachmentHeadersOf).map(({ sha2 }) => sha2.toLowerCase()))];
   const asked = await callPort(() => context.settings.statements.attachments(hashes, { signal }), signal);
   if (asked === undefined) return context.refuse(500, FAILED);
   const message = writeMultipart(document, [...asked.value.values()]);

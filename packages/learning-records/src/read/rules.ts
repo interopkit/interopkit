@@ -1,5 +1,6 @@
 import type { FindingSink } from "@interopkit/core/checks";
 import type { Statement, StatementIssue } from "../model/index.js";
+import { VERSION_PATTERNS } from "../model/internal.js";
 import { error } from "./finding.js";
 import { identifierIssues } from "./identifiers.js";
 import { interactionIssues } from "./interaction.js";
@@ -15,16 +16,13 @@ import { relationIssues } from "./relations.js";
 import { resultIssues } from "./results.js";
 import { isSubStatement, walkStatement } from "./walk.js";
 
-/** The versions of a Statement that an LRS of 1.0.3 takes: `1.0` and `1.0.x` (1.0.3 Data 2.4.10, Communication 3.3). */
-const VERSION_1_0 = /^1\.0(?:\.\d+)?$/u;
-
 /**
  * Judges the `version` of a Statement for an LRS of 1.0.3, which rejects a version that does not start with `1.0` (1.0.3 Data
  * 2.4.10). An LRS of 2.0 should not reject a Statement for its version (4.2.4.2), and a provider has rules of its own.
  */
 function versionIssues(statement: Statement): StatementIssue[] {
   const { version } = statement;
-  if (version === undefined || VERSION_1_0.test(version)) return [];
+  if (version === undefined || VERSION_PATTERNS["1.0.3"].test(version)) return [];
   return [error("version", "invalid-value", `expected 1.0 or 1.0.x, found ${JSON.stringify(version)}.`)];
 }
 

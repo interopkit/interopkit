@@ -45,6 +45,27 @@ export const XAPI_VERSIONS = ["2.0.0", "1.0.3"] as const;
 /** A version of xAPI. */
 export type XapiVersion = (typeof XAPI_VERSIONS)[number];
 
+/**
+ * The `version` that a Statement of each version of xAPI carries when it carries its own: 2.0.0, and 1.0.0, which every Statement
+ * of 1.0.x conforms to (4.2.4.3, 5.2.4.1; 1.0.3 Data 2.4.10).
+ */
+export const STATEMENT_VERSIONS: Readonly<Record<XapiVersion, string>> = { "2.0.0": "2.0.0", "1.0.3": "1.0.0" };
+
+/**
+ * The versions that belong to each version of xAPI, in a header or a Statement: 2.0 and 2.0.x (4.1.7), and 1.0 and 1.0.x (1.0.3
+ * Communication 3.3, Data 2.4.10).
+ */
+export const VERSION_PATTERNS: Readonly<Record<XapiVersion, RegExp>> = {
+  "2.0.0": /^2\.0(?:\.\d+)?$/u,
+  "1.0.3": /^1\.0(?:\.\d+)?$/u,
+};
+
+/** The lists of components of an interaction, in the order of the table (4.2.2.3). */
+export const COMPONENT_LISTS = ["choices", "scale", "source", "target", "steps"] as const;
+
+/** A list of components of an interaction. */
+export type ComponentList = (typeof COMPONENT_LISTS)[number];
+
 /** The formats of the Statements that an LRS returns (4.1.6.1). */
 export const STATEMENT_FORMATS = ["ids", "exact", "canonical"] as const;
 

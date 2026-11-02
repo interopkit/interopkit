@@ -1,14 +1,15 @@
 import { callPort } from "@interopkit/core";
-import { guardSchema, looseRecord, nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
+import { looseRecord, nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type { DocumentScope, DocumentTarget, LrsDocument, StateScope } from "../../model/index.js";
+import { bytesSchema } from "../../read/internal.js";
 import type { WriteCondition } from "../ports.js";
 import { FAILED } from "../status.js";
 import { type Context, refused, type Verdict } from "../verdict.js";
 
 const storedSchema = looseRecord({
   contentType: v.string(),
-  body: guardSchema((value): value is Uint8Array => value instanceof Uint8Array, "a Uint8Array"),
+  body: bytesSchema,
   etag: nonEmptyStringSchema,
   updated: v.pipe(
     v.string(),

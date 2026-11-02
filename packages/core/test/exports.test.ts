@@ -51,6 +51,7 @@ describe("the public API", () => {
         "dateTimeSchema",
         "describe",
         "finiteSchema",
+        "abortSignalSchema",
         "findingsOf",
         "guardSchema",
         "hasMoreTokensThan",

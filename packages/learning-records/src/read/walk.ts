@@ -1,4 +1,4 @@
-import type { Activity, Actor, Result, Statement, StatementObject, SubStatement } from "../model/index.js";
+import type { Activity, Actor, Attachment, Result, Statement, StatementObject, SubStatement } from "../model/index.js";
 import { item, member } from "./path.js";
 
 /** What a walk reports, each with its path: the parts of a Statement that the rules look at. */
@@ -16,6 +16,12 @@ export interface Visitor {
 /** Tells a SubStatement from a Statement: only a SubStatement has an `objectType`. */
 export function isSubStatement(statement: Statement | SubStatement): statement is SubStatement {
   return "objectType" in statement;
+}
+
+/** Lists the headers of the Attachments of a Statement and of the SubStatement that is its Object. */
+export function attachmentHeadersOf(statement: Statement): readonly Attachment[] {
+  const inner = statement.object.objectType === "SubStatement" ? (statement.object.attachments ?? []) : [];
+  return [...(statement.attachments ?? []), ...inner];
 }
 
 /** Tells the kind of an Object apart: an Activity when `objectType` is absent or `Activity`. */

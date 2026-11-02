@@ -30,7 +30,7 @@ import {
   readEitherVersion,
 } from "../read/internal.js";
 import type { Settings } from "./config.js";
-import { signalEntry } from "./options.js";
+import { readCallOptions, signalEntry } from "./options.js";
 import { readQuery } from "./query.js";
 import { jsonOf, readAnswer, send, urlOf } from "./request.js";
 
@@ -172,11 +172,7 @@ export async function sendStatement(
   statement: Statement,
   options: unknown,
 ): Promise<"stored" | "conflict"> {
-  const {
-    attachments,
-    role = "provider",
-    signal,
-  } = parseWith(sendOptionsSchema, options === undefined ? {} : options, "The options object");
+  const { attachments, role = "provider", signal } = readCallOptions(sendOptionsSchema, options);
   const read = readStatement(statement, { role, version: settings.version });
   if (read.id === undefined) {
     throw new DataError(
@@ -228,11 +224,7 @@ export async function sendStatements(
   statements: readonly Statement[],
   options: unknown,
 ): Promise<readonly string[]> {
-  const {
-    attachments,
-    role = "provider",
-    signal,
-  } = parseWith(sendOptionsSchema, options === undefined ? {} : options, "The options object");
+  const { attachments, role = "provider", signal } = readCallOptions(sendOptionsSchema, options);
   const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
   const batch = inspectBatch(statements, { role, version: settings.version }, sink);
   const errors = sink.list();
@@ -273,11 +265,7 @@ export async function getStatement(
   id: string,
   options: unknown,
 ): Promise<Statement | StatementWithAttachments | undefined> {
-  const { format, voided, attachments, languages, signal } = parseWith(
-    getOptionsSchema,
-    options === undefined ? {} : options,
-    "The options object",
-  );
+  const { format, voided, attachments, languages, signal } = readCallOptions(getOptionsSchema, options);
   const parameters = new URLSearchParams({
     [voided === true ? "voidedStatementId" : "statementId"]: parseWith(uuidSchema, id, "The statement id"),
   });
@@ -368,11 +356,7 @@ export function queryStatements(
   query: StatementQuery,
   options: unknown,
 ): AsyncIterable<StatementPage> {
-  const { languages, signal } = parseWith(
-    readOptionsSchema,
-    options === undefined ? {} : options,
-    "The options object",
-  );
+  const { languages, signal } = readCallOptions(readOptionsSchema, options);
   const { parameters, attachments } = readQuery(query);
   const headers = { accept: attachments ? ACCEPT_WITH_DATA : "application/json", ...languageHeader(languages) };
   return pagesOf(settings, urlOf(settings, "statements", parameters), { headers, signal });
@@ -383,11 +367,7 @@ export function queryStatements(
  * whether the answer holds the data of Attachments, so the request takes either form.
  */
 export function moreStatements(settings: Settings, more: string, options: unknown): AsyncIterable<StatementPage> {
-  const { languages, signal } = parseWith(
-    readOptionsSchema,
-    options === undefined ? {} : options,
-    "The options object",
-  );
+  const { languages, signal } = readCallOptions(readOptionsSchema, options);
   checkString(more, "The address of the page");
   const first = nextUrl(settings, settings.root, more, new Set());
   return pagesOf(settings, first, { headers: { accept: ACCEPT_WITH_DATA, ...languageHeader(languages) }, signal });

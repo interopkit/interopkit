@@ -1,5 +1,5 @@
 import type { Statement, StatementFormat } from "../model/index.js";
-import { readStatement } from "../read/index.js";
+import { readEitherVersion } from "../read/internal.js";
 import { canonicalMappers } from "./format-canonical.js";
 import { IDS } from "./format-ids.js";
 import { type FormatOptions, readFormat, readFormatOptions } from "./options.js";
@@ -13,7 +13,7 @@ import { mapStatement } from "./transform.js";
  * @remarks
  * The result shares nothing with the input. Properties other than Agents, Groups, Activities and Verbs are the same in every
  * format; an Agent as the Object keeps its `objectType`, since the Statement would otherwise read as an Activity. The Statement
- * is read as an LRS reads it first, so one that breaks a rule is refused.
+ * is read as an LRS of either version reads it first, so one that breaks a rule is refused.
  *
  * @param statement - The Statement, as an LRS holds it.
  * @param format - `ids`, `exact` or `canonical`.
@@ -25,7 +25,7 @@ import { mapStatement } from "./transform.js";
 export function formatStatement(statement: Statement, format: StatementFormat, options?: FormatOptions): Statement {
   const checkedFormat = readFormat(format);
   const { activities = new Map(), languages = [] } = readFormatOptions(options);
-  const read = readStatement(statement);
+  const read = readEitherVersion(statement);
   if (checkedFormat === "exact") return read;
   return mapStatement(read, checkedFormat === "ids" ? IDS : canonicalMappers(activities, languages));
 }

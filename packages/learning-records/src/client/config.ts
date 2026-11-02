@@ -1,5 +1,6 @@
 import { type CallOptions, DataError, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
 import {
+  abortSignalSchema,
   describe,
   guardSchema,
   MAX_JSON_TOKENS,
@@ -83,7 +84,7 @@ const configSchema = strictRecord({
   timeoutMs: v.optional(positiveIntegerSchema),
   maxBytes: v.optional(positiveIntegerSchema),
   maxTokens: v.optional(positiveIntegerSchema),
-  signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
+  signal: v.optional(abortSignalSchema),
 });
 
 /** Reads the address of the LRS: HTTPS, ending in a slash, with no credentials, query or fragment. */

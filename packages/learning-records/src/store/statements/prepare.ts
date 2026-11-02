@@ -1,15 +1,8 @@
 import { callPort, DataError } from "@interopkit/core";
 import { isUuid, refusalOf } from "@interopkit/core/checks";
-import {
-  type Attachment,
-  type AttachmentData,
-  formatTimestamp,
-  type Statement,
-  type StatementIssue,
-  type XapiVersion,
-} from "../../model/index.js";
-import { mediaTypeOf } from "../../model/internal.js";
-import { inspectBatch, issueSink } from "../../read/internal.js";
+import { type AttachmentData, formatTimestamp, type Statement, type StatementIssue } from "../../model/index.js";
+import { mediaTypeOf, STATEMENT_VERSIONS, VERSION_PATTERNS } from "../../model/internal.js";
+import { attachmentHeadersOf, inspectBatch, issueSink } from "../../read/internal.js";
 import { SIGNATURE_USAGE_TYPE, verifyStatementSignature } from "../../signing/index.js";
 import { type Context, isRefusal, type Refusal, refused, type Verdict } from "../verdict.js";
 import type { StatementsBody } from "./body.js";
@@ -28,14 +21,13 @@ export interface Prepared {
   readonly attachments: readonly AttachmentData[];
 }
 
-/** The version a Statement gets when it brings none, by the route (4.2.4.3; 1.0.3 Data 2.4.10). */
-const DEFAULT_VERSIONS: Readonly<Record<XapiVersion, string>> = { "2.0.0": "2.0.0", "1.0.3": "1.0.0" };
-
 /**
- * The versions of a Statement that the route of 2.0 takes: 2.0 and 2.0.x, and 1.0 and 1.0.x, which are the Statements of xAPI
- * 1.0.3. The rules of 1.0.3 take 1.0 and 1.0.x alone, and refuse the others with the path of the Statement.
+ * Tells whether the route of 2.0 takes a version of a Statement: 2.0 and 2.0.x, and 1.0 and 1.0.x, which are the Statements of
+ * xAPI 1.0.3. The rules of 1.0.3 take 1.0 and 1.0.x alone, and refuse the others with the path of the Statement.
  */
-const TAKEN_VERSION = /^(?:1\.0|2\.0)(?:\.\d+)?$/u;
+function isTakenVersion(version: string): boolean {
+  return Object.values(VERSION_PATTERNS).some((pattern) => pattern.test(version));
+}
 
 /** The messages about a signature that is not good, by the reason that `verifyStatementSignature` gives. */
 const SIGNATURE_PROBLEMS = {
@@ -44,12 +36,6 @@ const SIGNATURE_PROBLEMS = {
   signature: "does not verify against the certificate in its header",
   "not-equivalent": "signs another Statement than the one received",
 } as const;
-
-/** Lists the headers of the Attachments of a Statement and of the SubStatement that is its Object. */
-function attachmentsOf(statement: Statement): readonly Attachment[] {
-  const inner = statement.object.objectType === "SubStatement" ? (statement.object.attachments ?? []) : [];
-  return [...(statement.attachments ?? []), ...inner];
-}
 
 /** Gives a Statement what the LRS sets (4.2.4.2). */
 function completed(statement: Statement, stored: string, context: Context): IdentifiedStatement {
@@ -65,7 +51,7 @@ function completed(statement: Statement, stored: string, context: Context): Iden
     timestamp: statement.timestamp ?? stored,
     authority:
       context.settings.keepSubmittedAuthority && statement.authority !== undefined ? statement.authority : authority,
-    version: statement.version ?? DEFAULT_VERSIONS[context.version],
+    version: statement.version ?? STATEMENT_VERSIONS[context.version],
   };
 }
 
@@ -80,7 +66,7 @@ function matchAttachments(
   parts: ReadonlyMap<string, AttachmentData>,
 ): Verdict<readonly AttachmentData[]> {
   const matched = new Map<string, AttachmentData>();
-  for (const header of statements.flatMap(attachmentsOf)) {
+  for (const header of statements.flatMap(attachmentHeadersOf)) {
     const hash = header.sha2.toLowerCase();
     const data = parts.get(hash);
     if (data === undefined) {
@@ -165,7 +151,7 @@ async function acceptable(statements: readonly Statement[], context: Context): P
 /** Refuses a Statement of a version that the LRS does not take, and a Statement whose id is not the `statementId` of a PUT. */
 function checkIdentity(read: readonly Statement[], single: { readonly id: string } | undefined): Refusal | undefined {
   for (const [index, statement] of read.entries()) {
-    if (statement.version !== undefined && !TAKEN_VERSION.test(statement.version)) {
+    if (statement.version !== undefined && !isTakenVersion(statement.version)) {
       return refused(
         400,
         `The version of the Statement at [${index}], ${JSON.stringify(statement.version)}, is not one that the LRS takes: write 2.0.x, or 1.0.x for a Statement of xAPI 1.0.`,

@@ -88,7 +88,7 @@ function readOne(
   if (parameters.has("since")) {
     throw new DataError("The parameter since goes with a request for the ids, not with one for a document.");
   }
-  const target = parseWith(targetSchema, placeOf(resource, parameters, true, limits), "The parameters");
+  const target = parseWith(targetSchema, placeOf(resource, parameters, true, limits), "The query");
   return { kind: "one", target: normalized(target) };
 }
 
@@ -111,10 +111,10 @@ function readContext(
     throw new DataError(`A ${method} needs the parameter ${ID[resource]}, the id of the document.`);
   }
   if (method === "DELETE") {
-    const scope = parseWith(stateScopeSchema, placeOf("state", parameters, false, limits), "The parameters");
+    const scope = parseWith(stateScopeSchema, placeOf("state", parameters, false, limits), "The query");
     return { kind: "all", scope: normalized(scope) };
   }
-  const scope = parseWith(scopeSchema, placeOf(resource, parameters, false, limits), "The parameters");
+  const scope = parseWith(scopeSchema, placeOf(resource, parameters, false, limits), "The query");
   return { kind: "many", scope: normalized(scope), since: readSince(parameters.get("since"), version) };
 }
 

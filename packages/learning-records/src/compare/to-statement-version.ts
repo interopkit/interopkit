@@ -7,14 +7,8 @@ import {
   type StatementObject,
   type SubStatement,
 } from "../model/index.js";
-import { isIsoTimestamp } from "../model/internal.js";
+import { isIsoTimestamp, STATEMENT_VERSIONS, VERSION_PATTERNS } from "../model/internal.js";
 import { readEitherVersion } from "../read/internal.js";
-
-/** The versions of a Statement of xAPI 1.0.x (1.0.3 Data 2.4.10). */
-const VERSION_1_0 = /^1\.0(?:\.\d+)?$/u;
-
-/** The `version` that a Statement of another version gets in the form of 1.0.3: every Statement of 1.0.x conforms to 1.0.0. */
-const VERSION_1_0_0 = "1.0.0";
 
 /** Writes a time as a Timestamp of 1.0.3: as it is when ISO 8601 takes it, and otherwise in UTC, such as `2024-06-13T18:46:03.250Z`. */
 function isoTime(time: string): string {
@@ -70,6 +64,8 @@ export function toStatementVersion(statement: Statement, version: "1.0.3"): Stat
     ...partsV1(read),
     object: objectV1(object),
     ...(stored === undefined ? {} : { stored: isoTime(stored) }),
-    ...(written === undefined ? {} : { version: VERSION_1_0.test(written) ? written : VERSION_1_0_0 }),
+    ...(written === undefined
+      ? {}
+      : { version: VERSION_PATTERNS["1.0.3"].test(written) ? written : STATEMENT_VERSIONS["1.0.3"] }),
   };
 }

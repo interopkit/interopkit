@@ -13,7 +13,10 @@ export {
   aboutSchema,
   activitySchema,
   attachmentDataSchema,
+  bytesSchema,
   languageRangesSchema,
+  mediaTypeSchema,
   personSchema,
 } from "./schemas.js";
 export { statementQuerySchema } from "./statement-query.js";
+export { attachmentHeadersOf } from "./walk.js";

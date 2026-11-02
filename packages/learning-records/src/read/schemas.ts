@@ -59,13 +59,17 @@ const sha2 = v.pipe(
   ),
 );
 
-const mediaType = v.pipe(
+/** An Internet media type with its parameters. */
+export const mediaTypeSchema: Schema<string> = v.pipe(
   v.string(),
   v.check(
     isMediaType,
     (issue) => `expected an Internet media type, such as text/plain; charset=utf-8, found ${issue.received}`,
   ),
 );
+
+/** Bytes. */
+export const bytesSchema = guardSchema((value): value is Uint8Array => value instanceof Uint8Array, "a Uint8Array");
 
 /** The issue of a key of a map that is not allowed, which points at the key. */
 function keyIssue(
@@ -130,7 +134,7 @@ function oneOrMany<T>(item: Schema<T>): Schema<readonly T[]> {
 }
 
 /** Refuses what is not an object before a variant looks for its discriminator, since valibot reads an array as an object. */
-const objectGuard = guardSchema(isRecord, "an object");
+export const objectGuard = guardSchema(isRecord, "an object");
 
 const account = strictRecord({ homePage: iri, name: text });
 
@@ -265,7 +269,7 @@ const attachment = strictRecord({
   usageType: iri,
   display: languageMap,
   description: v.optional(languageMap),
-  contentType: mediaType,
+  contentType: mediaTypeSchema,
   length: v.pipe(v.number(), v.safeInteger(), v.minValue(0)),
   sha2,
   fileUrl: v.optional(iri),
@@ -274,8 +278,8 @@ const attachment = strictRecord({
 /** Reads the data of an Attachment: the hash that names them, their media type and the bytes. */
 export const attachmentDataSchema: Schema<AttachmentData> = strictRecord({
   sha2,
-  contentType: mediaType,
-  body: guardSchema((value): value is Uint8Array => value instanceof Uint8Array, "a Uint8Array"),
+  contentType: mediaTypeSchema,
+  body: bytesSchema,
 });
 
 /** Reads an Agent, as a request names one for a query or a document. */

@@ -1,5 +1,5 @@
 import type { Statement } from "../model/index.js";
-import { readStatement } from "../read/index.js";
+import { readEitherVersion } from "../read/internal.js";
 import { equivalenceKey } from "./canonical.js";
 
 /**
@@ -19,5 +19,5 @@ import { equivalenceKey } from "./canonical.js";
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
 export function sameStatement(a: Statement, b: Statement): boolean {
-  return equivalenceKey(readStatement(a)) === equivalenceKey(readStatement(b));
+  return equivalenceKey(readEitherVersion(a)) === equivalenceKey(readEitherVersion(b));
 }

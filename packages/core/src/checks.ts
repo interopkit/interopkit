@@ -464,6 +464,12 @@ export function methodsSchema<TObject extends object>(...names: readonly (keyof 
 /** A finite number. */
 export const finiteSchema = v.pipe(v.number(), v.finite());
 
+/** An `AbortSignal`, the `signal` of a call that waits on I/O. */
+export const abortSignalSchema: Schema<AbortSignal> = guardSchema(
+  (value): value is AbortSignal => value instanceof AbortSignal,
+  "an AbortSignal",
+);
+
 /** An absolute `https` URL, which LTI Core (section 3.5) and Caliper (section 5.4) require of every URL of a message and a service. */
 export const httpsUrlSchema = v.pipe(
   v.string(),

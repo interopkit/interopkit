@@ -2,8 +2,8 @@ import { DataError } from "@interopkit/core";
 import { checkArray, checkProperties, checkString, isRecord, parseWith } from "@interopkit/core/checks";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
-import type { Attachment, AttachmentData, Statement, StatementResult } from "../model/index.js";
-import { attachmentDataSchema, readEitherVersion } from "../read/internal.js";
+import type { AttachmentData, Statement, StatementResult } from "../model/index.js";
+import { attachmentDataSchema, attachmentHeadersOf, readEitherVersion } from "../read/internal.js";
 import { hashesTo } from "./attachment-hash.js";
 
 const encoder = new TextEncoder();
@@ -51,13 +51,6 @@ function readStatementsPart(document: unknown): StatementsPart {
   return { text: JSON.stringify(statement), statements: [statement] };
 }
 
-/** Lists the headers of the Attachments of a Statement and of its SubStatement. */
-function attachmentsOf(statement: Statement): readonly Attachment[] {
-  const own = statement.attachments ?? [];
-  const inner = statement.object.objectType === "SubStatement" ? (statement.object.attachments ?? []) : [];
-  return [...own, ...inner];
-}
-
 /** Reads the parts, and checks that each holds the data of its hash and that the parts and the Attachments belong together. */
 function readParts(parts: unknown, statements: readonly Statement[]): readonly AttachmentData[] {
   checkArray(parts, "The parts must be an array");
@@ -70,7 +63,7 @@ function readParts(parts: unknown, statements: readonly Statement[]): readonly A
     }
     held.add(sha2.toLowerCase());
   }
-  const headers = statements.flatMap(attachmentsOf);
+  const headers = statements.flatMap(attachmentHeadersOf);
   const named = new Set(headers.map(({ sha2 }) => sha2.toLowerCase()));
   for (const sha2 of held) {
     if (!named.has(sha2))

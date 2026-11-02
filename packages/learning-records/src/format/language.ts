@@ -1,7 +1,5 @@
 import type { ActivityDefinition, InteractionComponent, LanguageMap } from "../model/index.js";
-
-/** The lists of components of an Activity Definition (4.2.2.3). */
-const COMPONENT_LISTS = ["choices", "scale", "source", "target", "steps"] as const;
+import { COMPONENT_LISTS } from "../model/internal.js";
 
 /** Keeps one entry of a language map: the first one that a preferred language asks for, or the first of the map. */
 export function oneLanguage(map: LanguageMap, languages: readonly string[]): LanguageMap {

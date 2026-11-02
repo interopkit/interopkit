@@ -243,6 +243,11 @@ describe("sameStatement", () => {
     });
   });
 
+  it("compares Statements of 1.0.3 that have a form of a time that 2.0 does not take", () => {
+    const basic = { ...minimalStatement(), timestamp: "20240613T184603Z" };
+    expect(sameStatement(basic, minimalStatement())).toBe(true);
+  });
+
   describe("IRIs with no authority", () => {
     it("holds the case of the scheme to be nothing, and the case of the rest to be something", () => {
       const urn = (id: string) => changed((s) => (s.verb.id = id));

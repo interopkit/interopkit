@@ -5,19 +5,14 @@ import type {
   InteractionType,
   StatementIssue,
 } from "../model/index.js";
+import { COMPONENT_LISTS, type ComponentList } from "../model/internal.js";
 import { error, warning } from "./finding.js";
 import type { RuleSet } from "./options.js";
 import { item, member } from "./path.js";
 import { patternProblem } from "./response-pattern.js";
 
-/** Every list of components, in the order of the table (4.2.2.3). */
-const ALL_LISTS = ["choices", "scale", "source", "target", "steps"] as const;
-
-/** A list of components of an interaction. */
-type ComponentList = (typeof ALL_LISTS)[number];
-
 /** The lists of components that a definition may have, by the type of the interaction (4.2.2.3). */
-const COMPONENT_LISTS: Readonly<Record<InteractionType, readonly ComponentList[]>> = {
+const LISTS_OF_TYPE: Readonly<Record<InteractionType, readonly ComponentList[]>> = {
   "true-false": [],
   choice: ["choices"],
   "fill-in": [],
@@ -70,8 +65,8 @@ function* listIssues(
   path: string,
   rules: RuleSet,
 ): Generator<StatementIssue> {
-  const allowed = COMPONENT_LISTS[type];
-  for (const name of ALL_LISTS) {
+  const allowed = LISTS_OF_TYPE[type];
+  for (const name of COMPONENT_LISTS) {
     const list = definition[name];
     if (list === undefined) continue;
     if (allowed.includes(name)) {
@@ -98,7 +93,8 @@ export function* interactionIssues(activity: Activity, path: string, rules: Rule
   const { interactionType, correctResponsesPattern = [] } = definition;
   if (interactionType === undefined) {
     const interactive =
-      definition.correctResponsesPattern !== undefined || ALL_LISTS.some((name) => definition[name] !== undefined);
+      definition.correctResponsesPattern !== undefined ||
+      COMPONENT_LISTS.some((name) => definition[name] !== undefined);
     if (interactive) {
       yield error(
         member(base, "interactionType"),

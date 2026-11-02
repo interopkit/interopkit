@@ -1,5 +1,13 @@
 import { type CallOptions, DataError, untilAborted } from "@interopkit/core";
-import { describe, guardSchema, isRecord, parseDateTime, parseWith, strictRecord } from "@interopkit/core/checks";
+import {
+  abortSignalSchema,
+  describe,
+  guardSchema,
+  isRecord,
+  parseDateTime,
+  parseWith,
+  strictRecord,
+} from "@interopkit/core/checks";
 import {
   base64url,
   compactVerify,
@@ -90,7 +98,7 @@ const optionsSchema = strictRecord({
     ),
   ),
   version: v.optional(v.picklist(XAPI_VERSIONS)),
-  signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
+  signal: v.optional(abortSignalSchema),
 });
 
 /** Tells whether the header names the certificate chain as a list of certificates, of which the first is the leaf. */

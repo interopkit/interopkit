@@ -18,10 +18,10 @@ export function checkNames(parameters: ReadonlyMap<string, string>, known: Reado
 }
 
 /**
- * Reads the JSON in a parameter, such as an Agent, within the size, depth and tokens that the limits give to the JSON of a
- * request, and refuses a property that occurs twice.
+ * Reads the JSON of a request, a body or a parameter such as an Agent, within the size, depth and tokens that the limits give
+ * it, and refuses a property that occurs twice.
  */
-export function readJsonParameter(text: string, limits: LrsSettingsLimits): unknown {
+export function readRequestJson(text: string, limits: LrsSettingsLimits): unknown {
   return readStatementJson(text, {
     maxBytes: limits.maxBodyBytes,
     maxDepth: limits.maxDepth,
@@ -46,5 +46,5 @@ export function readIsoParameter(name: string, text: string): string {
 /** Reads the parameter `agent`, the JSON of an Agent with exactly one identifier. */
 export function readAgent(text: string | undefined, limits: LrsSettingsLimits): Agent {
   if (text === undefined) throw new DataError("The request needs the parameter agent, the JSON of an Agent.");
-  return parseWith(identifiedAgentSchema, readJsonParameter(text, limits), "The parameter agent");
+  return parseWith(identifiedAgentSchema, readRequestJson(text, limits), "The parameter agent");
 }

@@ -21,10 +21,8 @@ import {
   XAPI_VERSIONS,
   type XapiVersion,
 } from "../model/index.js";
+import { STATEMENT_VERSIONS } from "../model/internal.js";
 import { inspectStatement, issueSink } from "../read/internal.js";
-
-/** The `version` that a built Statement carries: 2.0.0, or 1.0.0, which every Statement of 1.0.x carries (1.0.3 Data 2.4.10). */
-const STATEMENT_VERSIONS: Readonly<Record<XapiVersion, string>> = { "2.0.0": "2.0.0", "1.0.3": "1.0.0" };
 
 /** The properties that a Statement is built from. */
 const INPUT_PROPERTIES = ["id", "actor", "verb", "object", "timestamp", "result", "context", "attachments"] as const;
