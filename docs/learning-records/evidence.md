@@ -19,7 +19,7 @@ flowchart LR
 | Rules        | Does each sentence of the standard make the reader find what it says?             | `scripts/xapi-rules.ts`, `packages/learning-records/test/rules.test.ts` | `pnpm test`    |
 | Example      | Does a host serve, send and read all seven resources with the package?            | `examples/learning-records/test/*.test.ts`                              | `pnpm test`    |
 | Conformance  | Does an LRS built on the handler pass the suite that ADL publishes?               | `validation/adl-lrs/`                                                   | `pnpm adl-lrs` |
-| Oracle       | Does another LRS take and refuse the same Statements as the reader?               | `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts`                  | `pnpm sql-lrs` |
+| Oracle       | Does another LRS take and refuse the same Statements as the reader?               | `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts`         | `pnpm sql-lrs` |
 | Counterparty | Does the client work against another LRS, in both versions, with what it answers? | `examples/learning-records/test/sqllrs.corpus.test.ts`                  | `pnpm sql-lrs` |
 | Speed        | How long does checking take, against the validator that Learning Locker ships?    | `packages/learning-records/test/validate.bench.ts`                      | `pnpm bench`   |
 | Runtimes     | Does the example give the same results everywhere?                                | `compat/`                                                               | `pnpm compat`  |
@@ -68,12 +68,12 @@ as a server that the package must live with:
 
 `validateStatement` checks 1,000 Statements of 771 KB in about 5 ms, and the validator of Learning Locker takes about 10 ms on
 the same Statements, which both accept: a ratio of 0.5, where the design asks for parity or better. `readStatementJson`, which
-also finds a property that occurs twice, takes 15 to 20 times what `JSON.parse` takes on the same text.
+also finds a property that occurs twice, takes 14 to 26 times what `JSON.parse` takes on the same text; the ratio moves with the load of the machine, since the two do different work.
 
 | Budget                                                       | Value | How it was set                                                                                                   |
 | ------------------------------------------------------------ | ----- | ---------------------------------------------------------------------------------------------------------------- |
 | `validateStatement` against the validator of Learning Locker | 1     | Parity, as the design asks; measured 0.48 to 0.53 on a laptop, and the ratio holds on any machine                |
-| `readStatementJson` against `JSON.parse`                     | 100   | Five times the highest ratio measured, 20.5, rounded up to one significant digit                                 |
+| `readStatementJson` against `JSON.parse`                     | 200   | Five times the highest ratio measured, 25.5, rounded up to one significant digit                                 |
 | The time of each, in milliseconds                            | none  | Pending: a budget in time is five times the fastest sample of the runner of CI, and there is no sample of it yet |
 
 ## Runtimes

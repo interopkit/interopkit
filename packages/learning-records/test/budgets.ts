@@ -15,7 +15,7 @@ export const RATIOS = {
   /** `validateStatement` of the Statements of the batch, as a multiple of the validator of Learning Locker on the same Statements: parity or better. */
   validateAgainstLearningLocker: 1,
   /** `readStatementJson` of the text of the batch, as a multiple of `JSON.parse` of it. */
-  readJsonAgainstParse: 100,
+  readJsonAgainstParse: 200,
 } as const;
 
 /**
