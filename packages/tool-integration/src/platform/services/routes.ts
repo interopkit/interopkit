@@ -11,6 +11,7 @@ import { GRADES } from "./grades.js";
 import { GROUPS } from "./groups.js";
 import { ROSTER } from "./members.js";
 import { PREFERENCES } from "./preferences.js";
+import { REGISTRATIONS } from "./registration.js";
 import { type ClaimRequest, type RouteCall, type Service, StoreFailed } from "./service.js";
 
 /** A route of a service whose store the host gave, with the store bound to its methods. */
@@ -65,6 +66,7 @@ const SERVICES: readonly ListedService[] = [
   listed(GROUPS),
   listed(PREFERENCES),
   listed(CONTROL),
+  listed(REGISTRATIONS),
 ];
 
 /** Returns the services whose store the host gave. */
@@ -150,7 +152,8 @@ export async function answerService(
   url: URL,
   settings: PlatformSettings,
 ): Promise<HttpResponse | undefined> {
-  const found = findRoute(boundServices(settings), url.pathname);
+  const services = boundServices(settings);
+  const found = findRoute(services, url.pathname);
   if (found === undefined) return undefined;
   const { route, params } = found;
   const method = Object.hasOwn(route.methods, request.method) ? route.methods[request.method] : undefined;
@@ -158,7 +161,8 @@ export async function answerService(
   const caller = await authorizeService(request, settings, method.scopes);
   if ("status" in caller) return caller;
   try {
-    return await method.handle({ request, url, params, caller, settings });
+    const offered = services.flatMap((service) => service.scopes);
+    return await method.handle({ request, url, params, caller, settings, offered });
   } catch (error) {
     if (error instanceof StoreFailed) return serverError();
     throw error;

@@ -33,13 +33,15 @@ export const AGS_SCOPES = [
 
 /**
  * The scopes of the other services of the platform: Names and Role Provisioning, Context Groups, the AfA PNP Connector and the
- * Assessment Control Service of Proctoring Services.
+ * Assessment Control Service of Proctoring Services and the client configuration endpoint of Dynamic Registration.
  */
 const OTHER_SCOPES = [
   "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly",
   "https://purl.imsglobal.org/spec/lti-gs/scope/contextgroup.readonly",
   "https://purl.imsglobal.org/spec/afapnp/v1p0/scope/afapnprecord.lti.readonly",
   "https://purl.imsglobal.org/spec/lti-ap/scope/control.all",
+  "https://purl.imsglobal.org/spec/lti-reg/scope/registration.readonly",
+  "https://purl.imsglobal.org/spec/lti-reg/scope/registration",
 ];
 
 const CLAIM = "https://purl.imsglobal.org/spec/lti/claim/";

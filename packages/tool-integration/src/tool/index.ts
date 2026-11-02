@@ -7,7 +7,9 @@
  * the services of the platform with `createServiceClient`: the line items, results and scores of the Assignment and Grade
  * Services, the members of a context, its groups, the preferences record of a user and the Assessment Control Service of a
  * proctored attempt, with access tokens that its signer asks for and that it reuses. A proctoring tool sends the candidate back to
- * start the assessment with `createStartAssessmentPage`.
+ * start the assessment with `createStartAssessmentPage`. A tool registers itself with a platform through Dynamic Registration:
+ * `readRegistrationInitiation`, `discoverPlatform`, `registerTool`, `toPlatformRegistration` and `createRegistrationClosePage`, and
+ * reads and changes its registration later through the same service client.
  *
  * @module @interopkit/tool-integration/tool
  */
@@ -18,6 +20,13 @@ export { ltiLogin } from "./login.js";
 export type { LtiLaunchOptions, LtiLoginOptions, ToolOptions } from "./options.js";
 export { createStartAssessmentPage, type StartAssessmentInput } from "./proctoring/start-assessment.js";
 export type { PlatformRegistration } from "./registration.js";
+export { createRegistrationClosePage } from "./registration-flow/close-page.js";
+export { discoverPlatform } from "./registration-flow/discover.js";
+export { type RegistrationInitiation, readRegistrationInitiation } from "./registration-flow/initiation.js";
+export type { DiscoverPlatformOptions, RegisterToolOptions } from "./registration-flow/options.js";
+export { type PlatformRegistrationInput, toPlatformRegistration } from "./registration-flow/platform-registration.js";
+export { registerTool } from "./registration-flow/register.js";
+export type { ToolConfigurationInput } from "./registration-flow/tool-configuration.js";
 export type { Page } from "./services/access.js";
 export type { ControlClient } from "./services/control.js";
 export { advanceScoreTimestamp, type GradesClient } from "./services/grades.js";
@@ -26,4 +35,5 @@ export type { MemberPage, MembersClient } from "./services/members.js";
 export type { ServiceClientOptions } from "./services/options.js";
 export { createServiceClient, type ServiceClient } from "./services/parts.js";
 export type { PreferencesClient } from "./services/preferences.js";
+export type { RegistrationClient } from "./services/registration.js";
 export type { LoginRecord, LtiStore } from "./store.js";

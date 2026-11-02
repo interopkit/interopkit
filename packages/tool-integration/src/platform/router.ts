@@ -2,8 +2,10 @@ import { checkHttpRequest, type HttpRequest, type HttpResponse } from "@interopk
 import { keySetResponse } from "../protocol/internal.js";
 import { methodNotAllowed, notFound, refusal } from "./answers.js";
 import { answerAuthorization } from "./authorize.js";
-import { PATHS } from "./config.js";
+import { configurationUrl, PATHS } from "./config.js";
 import { type PlatformRequestOptions, readRequestOptions } from "./options.js";
+import { answerConfiguration } from "./registration-flow/configuration.js";
+import { answerRegistration } from "./registration-flow/register.js";
 import { answerService } from "./services/routes.js";
 import { storagePage } from "./storage.js";
 import { answerToken } from "./token.js";
@@ -32,6 +34,9 @@ const KEY_SET_MAX_AGE_SECONDS = 3600;
  * | `/contexts/{context}/group-sets` | GET | The group sets of a context (Context Groups 1.0) |
  * | `/ims/afapnp/v1p0/users/{user}/activities/{activity}/afapnprecords` | GET | The preferences record of a user for an activity (AfA PNP Connector 1.0), over `services.preferences` |
  * | `/assessment-control` | POST | An action on a proctored attempt and its status (Proctoring Services 1.0 section 5), over `services.control` |
+ * | The issuer's path, then `/.well-known/openid-configuration` | GET | The OpenID configuration of the platform (Dynamic Registration 1.0 section 2.1), with `services.registrations` |
+ * | `/registration` | POST | A registration request with its registration token (Dynamic Registration 1.0 section 3.5), over `services.registrations` |
+ * | `/registration/{client}` | GET, PUT | The registration of the calling tool, read and changed with a token of a scope of `lti-reg` (section 4) |
  *
  * A route of a service exists only when its store is given. A request to it needs a bearer token of `/token` with one of the
  * scopes of the method among those that the registration still grants: 401 with `WWW-Authenticate: Bearer` without one, 403
@@ -71,7 +76,17 @@ export async function handlePlatformRequest(
     case PATHS.storage:
       if (request.method !== "GET") return methodNotAllowed(request.method, "GET");
       return storagePage(settings.config.frameOrigin, settings.toolFrame);
+    case PATHS.registration: {
+      const store = settings.services?.registrations;
+      return store === undefined ? notFound() : answerRegistration(request, store, settings);
+    }
     default:
+      if (
+        settings.services?.registrations !== undefined &&
+        url.pathname === new URL(configurationUrl(settings.config)).pathname
+      ) {
+        return answerConfiguration(request, settings);
+      }
       return (await answerService(request, url, settings)) ?? notFound();
   }
 }

@@ -1,4 +1,4 @@
-import type { CallOptions, Clock } from "@interopkit/core";
+import { type CallOptions, type Clock, DataError } from "@interopkit/core";
 import {
   abortSignalSchema,
   guardSchema,
@@ -10,7 +10,7 @@ import {
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
-import type { JwksCache } from "../protocol/index.js";
+import type { JwksCache, MessageSupported } from "../protocol/index.js";
 import { checkPlatformConfig, type PlatformConfig } from "./config.js";
 import type { MessageInput } from "./messages/input.js";
 import type {
@@ -20,6 +20,7 @@ import type {
   LaunchStore,
   PlatformServices,
   PreferencesStore,
+  RegistrationStore,
   RosterStore,
   Substitution,
 } from "./ports.js";
@@ -57,6 +58,32 @@ export interface LaunchToCheck {
   readonly deploymentId: string;
   /** The `sub` of the launch; absent in an anonymous launch. */
   readonly principal?: string;
+}
+
+/**
+ * What the OpenID configuration of the platform says beyond what the library derives from the options (Dynamic Registration 1.0
+ * section 2.1): the endpoints, the algorithms, the scopes of the services whose stores are given, the variables and the product
+ * of `config.instance` come from the options.
+ */
+export interface PlatformDiscovery {
+  /**
+   * The message types that the platform launches, each with the placements where it adds links of that type.
+   *
+   * @defaultValue the five message types of `MessageInput`, without placements
+   */
+  readonly messagesSupported?: readonly MessageSupported[];
+  /**
+   * The OpenID claims of a user that the platform's messages carry.
+   *
+   * @defaultValue `["iss", "sub", "name", "given_name", "family_name", "middle_name", "email", "email_verified", "picture", "locale"]`
+   */
+  readonly claimsSupported?: readonly string[];
+  /**
+   * The kinds of `sub`: `public` when a user has one `sub` for every tool, `pairwise` when each tool sees another.
+   *
+   * @defaultValue `["public"]`
+   */
+  readonly subjectTypesSupported?: readonly string[];
 }
 
 /** The options of `handlePlatformRequest`. */
@@ -139,6 +166,19 @@ export interface PlatformRequestOptions extends PlatformOptions, CallOptions {
    * @defaultValue `86400`
    */
   readonly deepLinkingLifetimeSeconds?: number;
+  /**
+   * Accepts a registration request without a registration token (Dynamic Registration 1.0 section 3.5 allows it), so that
+   * anyone may ask for a registration; the `RegistrationStore` then caps the registrations that wait for review.
+   *
+   * @defaultValue `false`: a registration needs a token of `createRegistrationInitiation`, used once
+   */
+  readonly openRegistration?: boolean;
+  /**
+   * What the OpenID configuration says of the platform beyond what the library derives.
+   *
+   * @defaultValue the defaults of each property
+   */
+  readonly discovery?: PlatformDiscovery;
 }
 
 /** The options of `handlePlatformRequest` with their defaults filled in. */
@@ -269,6 +309,7 @@ const requestOptionsSchema = strictRecord({
       groups: v.optional(methodsSchema<GroupStore>("groups", "groupSets")),
       preferences: v.optional(methodsSchema<PreferencesStore>("record")),
       control: v.optional(methodsSchema<AssessmentControl>("control")),
+      registrations: v.optional(methodsSchema<RegistrationStore>("register", "get", "update")),
     }),
   ),
   pageSize: v.optional(positiveIntegerSchema),
@@ -277,8 +318,72 @@ const requestOptionsSchema = strictRecord({
   maxBodyBytes: v.optional(positiveIntegerSchema),
   sessionDataLifetimeSeconds: v.optional(positiveIntegerSchema),
   deepLinkingLifetimeSeconds: v.optional(positiveIntegerSchema),
+  openRegistration: v.optional(v.boolean()),
+  discovery: v.optional(
+    strictRecord({
+      messagesSupported: v.optional(
+        v.array(strictRecord({ type: nonEmptyStringSchema, placements: v.optional(v.array(nonEmptyStringSchema)) })),
+      ),
+      claimsSupported: v.optional(v.array(nonEmptyStringSchema)),
+      subjectTypesSupported: v.optional(v.pipe(v.array(v.picklist(["public", "pairwise"])), v.minLength(1))),
+    }),
+  ),
   signal: v.optional(abortSignalSchema),
 });
+
+/** The algorithm that Dynamic Registration 1.0 section 2.1.1 requires among those that sign an `id_token`. */
+const REGISTRATION_ALGORITHM = "RS256";
+
+/**
+ * Checks what Dynamic Registration needs of the platform: an issuer on the platform's origin, below which its OpenID
+ * configuration lies (section 3.4), a signer of RS256, which section 2.1.1 requires among the algorithms of an `id_token`, and the
+ * product family code of `config.instance`, which the configuration names (section 2.1.2).
+ */
+function checkRegistrationConfig(config: PlatformConfig): void {
+  if (new URL(config.issuer).origin !== config.origin) {
+    throw new DataError(
+      `Dynamic Registration needs the issuer of the platform on its origin ${config.origin}, below which the OpenID configuration lies, found ${config.issuer}.`,
+    );
+  }
+  if (config.keys.signer.algorithm !== REGISTRATION_ALGORITHM) {
+    throw new DataError(
+      `Dynamic Registration needs a platform that signs with ${REGISTRATION_ALGORITHM}, which its OpenID configuration must name, found ${config.keys.signer.algorithm}.`,
+    );
+  }
+  if (config.instance?.productFamilyCode === undefined) {
+    throw new DataError(
+      "Dynamic Registration needs the productFamilyCode of config.instance, which the OpenID configuration names.",
+    );
+  }
+}
+
+/** The options of `createRegistrationInitiation`. */
+export interface RegistrationInitiationOptions extends PlatformOptions {
+  /**
+   * How long the registration token is valid, in seconds: the time that the tool's administrator may take on the tool's pages
+   * before it registers.
+   *
+   * @defaultValue `3600`
+   */
+  readonly ttlSeconds?: number;
+}
+
+const initiationOptionsSchema = strictRecord({
+  config: configSchema,
+  clock: methodsSchema<Clock>("now"),
+  ttlSeconds: v.optional(positiveIntegerSchema),
+});
+
+/**
+ * Checks the options of `createRegistrationInitiation`, and that the platform can serve Dynamic Registration.
+ *
+ * @throws `DataError` that names the option and what it must be.
+ */
+export function readInitiationOptions(options: unknown): RegistrationInitiationOptions {
+  const read = parseWith(initiationOptionsSchema, options, "The options");
+  checkRegistrationConfig(read.config);
+  return read;
+}
 
 /**
  * Checks the options of `ltiPlatformLogin` and `ltiPlatformFrame`.
@@ -296,6 +401,7 @@ export function checkLoginOptions(options: unknown): asserts options is Platform
  */
 export function readRequestOptions(options: unknown): PlatformSettings {
   const read = parseWith(requestOptionsSchema, options, "The options");
+  if (read.services?.registrations !== undefined) checkRegistrationConfig(read.config);
   return {
     ...read,
     toolFrame: read.toolFrame ?? DEFAULT_TOOL_FRAME,
@@ -304,6 +410,8 @@ export function readRequestOptions(options: unknown): PlatformSettings {
     maxBodyBytes: read.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES,
     sessionDataLifetimeSeconds: read.sessionDataLifetimeSeconds ?? DEFAULT_SESSION_DATA_LIFETIME_SECONDS,
     deepLinkingLifetimeSeconds: read.deepLinkingLifetimeSeconds ?? DEFAULT_DEEP_LINKING_LIFETIME_SECONDS,
+    openRegistration: read.openRegistration ?? false,
+    discovery: read.discovery ?? {},
   };
 }
 

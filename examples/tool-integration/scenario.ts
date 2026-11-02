@@ -2,15 +2,19 @@
 
 import type { Clock } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
+import { SCOPES } from "@interopkit/tool-integration";
 import type { MessageInput, PlatformFrame } from "@interopkit/tool-integration/platform";
-import { generateSigningKeys } from "./src/keys.ts";
+import { generateSigningKeys, toolKeySet } from "./src/keys.ts";
 import { connect, type Handler, plainRequest, textOf } from "./src/network.ts";
 import { createPlatform, type Platform } from "./src/platform.ts";
 import { DEEP_LINKING_PATH, START_ASSESSMENT_PATH, setupPlatform } from "./src/platform-setup.ts";
+import { createRegisteringTool } from "./src/registering-tool.ts";
 import { createTool } from "./src/tool.ts";
 import { setupTool } from "./src/tool-setup.ts";
 
 const TOOL_ORIGIN = "https://tool.example";
+const QUIZ_ORIGIN = "https://quiz.example";
+const QUIZ_DEPLOYMENT_ID = "deployment-quiz-1";
 const CLIENT_ID = "962fa4d8-bcbf-49a0-94b2-2de05ad274af";
 const DEPLOYMENT_ID = "07940580-b309-415e-a37c-914d387c1150";
 const KEY_ID = "tool-1";
@@ -30,6 +34,7 @@ export interface Outcome {
   readonly roster: Readonly<Record<string, unknown>>;
   readonly deepLinked: Readonly<Record<string, unknown>>;
   readonly proctored: Readonly<Record<string, unknown>>;
+  readonly registered: Readonly<Record<string, unknown>>;
   readonly replay: { readonly status: number; readonly error: string };
 }
 
@@ -104,26 +109,33 @@ async function browse(platform: Platform, tool: Handler, message: MessageInput):
  * browser asks the tool, then the platform to authenticate, then posts the `id_token` to the tool. The tool then reads its line
  * item, posts the score and reads the results back through the grade services. A Deep Linking request goes the same way, and
  * the tool answers it with a page that posts the signed response to the platform, which reads it. A Start Proctoring message too:
- * the proctoring tool sends the candidate back with a signed Start Assessment message, then pauses the attempt as a proctor.
+ * the proctoring tool sends the candidate back with a signed Start Assessment message, then pauses the attempt as a proctor. A
+ * second tool registers itself through Dynamic Registration, and reads its registration back once both sides activated it.
  *
  * @returns What each side saw.
  */
 export async function runScenario(): Promise<Outcome> {
   const clock: Clock = { now: () => NOW };
   const toolKeys = await generateSigningKeys();
-  const platform = createPlatform(
-    await setupPlatform(clock, {
-      clientId: CLIENT_ID,
-      deploymentId: DEPLOYMENT_ID,
-      loginUrl: `${TOOL_ORIGIN}/lti/login`,
-      redirectUri: `${TOOL_ORIGIN}/lti/launch`,
-      keyId: KEY_ID,
-      publicKey: toolKeys.publicKey,
-    }),
-  );
-  // The two systems reach each other through one network; the tool's calls to the platform are made through it.
-  const systems: Parameters<typeof connect>[0] = { [platform.origin]: platform.handle };
+  // The systems reach each other through one network; the tools' calls to the platform, and the platform's to a tool's key set,
+  // are made through it.
+  const systems: Record<string, Handler> = {};
   const network = connect(systems);
+  const platform = createPlatform(
+    await setupPlatform(
+      clock,
+      {
+        clientId: CLIENT_ID,
+        deploymentId: DEPLOYMENT_ID,
+        loginUrl: `${TOOL_ORIGIN}/lti/login`,
+        redirectUri: `${TOOL_ORIGIN}/lti/launch`,
+        keyId: KEY_ID,
+        publicKey: toolKeys.publicKey,
+      },
+      network,
+    ),
+  );
+  systems[platform.origin] = platform.handle;
   const tool = createTool(
     setupTool(
       clock,
@@ -222,6 +234,26 @@ export async function runScenario(): Promise<Outcome> {
   const paused = await tool.pause(proctoredLaunch);
   const [started] = platform.started;
 
+  // A second tool registers itself: the platform's administrator opens the tool's initiation URL with the address of the
+  // platform's configuration and a registration token; the tool discovers the platform, registers, and closes the window. Each
+  // administrator then activates its side, and the tool reads its registration back with a token of registration.readonly.
+  const quiz = createRegisteringTool(
+    QUIZ_ORIGIN,
+    await toolKeySet(await generateSigningKeys(), "quiz-1"),
+    network,
+    clock,
+  );
+  systems[QUIZ_ORIGIN] = quiz.handle;
+  const closed = await quiz.handle(plainRequest("GET", await platform.initiateRegistration(quiz.initiationUrl)));
+  const recorded = quiz.registered.result;
+  if (recorded === undefined) throw new Error("The tool did not register.");
+  platform.registrations.activate(recorded.clientId, {
+    scopes: [SCOPES.registrationReadonly],
+    deploymentIds: [QUIZ_DEPLOYMENT_ID],
+  });
+  const record = quiz.activate(QUIZ_DEPLOYMENT_ID);
+  const readBack = await quiz.readRegistration(record, QUIZ_DEPLOYMENT_ID);
+
   return {
     login: { toolHost: new URL(frame.url).host, storageUrl: frame.storageUrl },
     launch: JSON.parse(textOf(launched)),
@@ -262,6 +294,20 @@ export async function runScenario(): Promise<Outcome> {
       verifiedName: started?.verifiedUser?.name,
       paused: paused.status,
       kept: platform.attempts.statusOf("candidate-7", "exam-1", 1),
+    },
+    registered: {
+      closes: textOf(closed).includes('postMessage({ subject: "org.imsglobal.lti.close" }, "*")'),
+      clientId: recorded.clientId,
+      scope: recorded.scope,
+      registrationClientUri: recorded.registrationClientUri,
+      platform: {
+        issuer: record.issuer,
+        authenticationUrl: record.authenticationUrl,
+        accessTokenUrl: record.accessTokenUrl,
+        jwksUrl: record.jwksUrl,
+        deploymentIds: record.deploymentIds,
+      },
+      readBack: { clientId: readBack.clientId, clientName: readBack.clientName },
     },
     replay,
   };

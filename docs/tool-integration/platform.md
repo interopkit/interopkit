@@ -5,7 +5,8 @@
 `ltiPlatformLogin` keeps it in the host's `LaunchStore` and returns the URL of the tool's login; one handler,
 `handlePlatformRequest`, answers every request to the platform's origin: the tool's authentication request with the `id_token`
 of the kept message, the key set, the token requests, the storage page and the routes of the services whose stores the host
-gives ([grade services](grades.md), [roster services](roster.md), [proctoring](proctoring.md)). It runs on a server or an edge runtime, signs with a
+gives ([grade services](grades.md), [roster services](roster.md), [proctoring](proctoring.md)), and Dynamic Registration over a
+`RegistrationStore` ([registration](registration.md)). It runs on a server or an edge runtime, signs with a
 `Signer` of [`@interopkit/core`](../core/signer.md), and verifies the tools' tokens with [jose](https://github.com/panva/jose).
 
 ```mermaid
@@ -38,6 +39,8 @@ sequenceDiagram
 | `buildCapabilitiesScript(options)`         | Returns the inline script, with its CSP hash, that answers `lti.capabilities` on the host's frame page     |
 | `readDeepLinkingResponse(request, options)` | Reads and verifies the form that a tool posts to the return URL of a Deep Linking request ([Deep Linking](deep-linking.md)) |
 | `readStartAssessment(request, options)`    | Reads and verifies the form that a proctoring tool posts to the start assessment URL ([proctoring](proctoring.md)) |
+| `createRegistrationInitiation(url, options)` | Returns the tool's initiation URL with the configuration and a single-use registration token ([registration](registration.md)) |
+| `toToolRegistration(registered, grant)`    | Returns the `ToolRegistration` of a tool that registered itself, with what the administrator grants ([registration](registration.md)) |
 
 Handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md). The host owns the
 routes, the sessions and the stores: `check` confirms that a message is the caller's, `launches` keeps the messages, `once` records
@@ -141,6 +144,7 @@ refuses a tool whose `targetLinkUri`, login URL or redirect URIs are on any of t
 | Grade services | `/contexts/{context}/line-items`, and below it | With `services.gradebook`: see [grade services](grades.md) |
 | Roster services | `/contexts/{context}/memberships`, `/groups`, `/group-sets`, and `/ims/afapnp/v1p0/users/{user}/activities/{activity}/afapnprecords` | With `services.roster`, `groups` and `preferences`: see [roster services](roster.md) |
 | Assessment Control Service | `/assessment-control` | POST, with `services.control`: see [proctoring](proctoring.md) |
+| Dynamic Registration | the issuer's path with `/.well-known/openid-configuration`, `/registration`, `/registration/{client}` | With `services.registrations`: see [registration](registration.md) |
 
 A path that names nothing is 404, and a method that a route does not serve is 405 with `Allow`.
 
@@ -324,7 +328,9 @@ the origin that asked.
 | `checkLaunch(launch, options)`        | none                   | A last check of `{ clientId, deploymentId, principal }` before the message is taken      |
 | `substitution`                        | none                   | `names` and `resolve` of the variables the host resolves                                 |
 | `migrationSecret(consumerKey, options)` | none                 | The LTI 1.1 secret that signs the migration claim                                        |
-| `services`                            | none                   | The stores of the services: `gradebook` ([grade services](grades.md)), `roster`, `groups` and `preferences` ([roster services](roster.md)), `control` ([proctoring](proctoring.md)) |
+| `services`                            | none                   | The stores of the services: `gradebook` ([grade services](grades.md)), `roster`, `groups` and `preferences` ([roster services](roster.md)), `control` ([proctoring](proctoring.md)), `registrations` ([registration](registration.md)) |
+| `openRegistration`                    | `false`                | Accepts a registration without a registration token ([registration](registration.md))   |
+| `discovery`                           | the defaults of each   | What the OpenID configuration says of the messages, the claims and the kinds of subject ([registration](registration.md)) |
 | `pageSize`                            | 100                    | The items of a page of a service when the request names no `limit`                       |
 | `maxPageSize`                         | 1,000                  | The most items of a page of a service                                                    |
 | `toolFrame`                           | `"lti-tool"`           | The frame of the tool that the storage page answers                                      |
@@ -406,6 +412,7 @@ signal.
 | The Deep Linking response: items, titles, texts, addresses   | The tool, in a form the browser posts | The host, from `readDeepLinkingResponse`                | No                  |
 | The members of a context, their groups, the needs of a user  | The host's `RosterStore`, `GroupStore`, `PreferencesStore` | The tool, for the tool's token, as the store gives them | No      |
 | A control request: the candidate, the attempt, the incident  | The proctoring tool           | The host's `AssessmentControl`                                | No                  |
+| The configuration of a tool that registers itself            | The tool                      | The host's `RegistrationStore`                                | No                  |
 | The verified claims of a candidate                           | The proctoring tool, in a form the browser posts | The host, from `readStartAssessment`              | No                  |
 | The nonce of a message of a tool                             | The tool                      | The host's `once`                                             | No                  |
 
@@ -419,5 +426,4 @@ package. Where a specification disagrees with an example, see [spec-gaps](spec-g
 
 | What                                                                                         | Reason                                                       |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Dynamic Registration                                                                         | Not yet: see [supported](supported.md)                       |
 | Sessions, routes beyond the handler, a database, the page that frames the tool, a picker     | The host's                                                   |

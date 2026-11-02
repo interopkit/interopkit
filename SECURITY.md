@@ -448,6 +448,14 @@ platform's key, to the tool's client and deployment, and to one use.
   unchanged, and a claim that the tool says it verified must be one that the platform sent, with the same value; a `picture` must
   be one that the tool took. The control requests of `control` are read back against Proctoring Services 5.1 before the token goes
   with them, to the same origins as every service token.
+- **Dynamic Registration.** The initiation route is public by nature: put it behind the session of the tool's administrator, or
+  anyone can make the tool register with a platform of their choosing. `discoverPlatform` refuses an `openid_configuration` that names
+  no public host before it fetches it, sends the registration token only there and to the registration endpoint, and accepts the
+  configuration only below its issuer: the same origin after parsing, so a look-alike such as `platform.example.com.evil.io` or a
+  user part is not the issuer's, a path equal to the issuer's or below it at a slash, and no fragment. Every endpoint of the
+  configuration must name a public host. `registerTool` sends the token only to a registration endpoint on the issuer's origin or on
+  one of `registrationOrigins`, and refuses an answer whose `registration_client_uri` is elsewhere. The host activates the platform's
+  record only after its own review.
 - **LTI 1.1 secrets.** `legacySecret` gives the secret of a consumer key for one HMAC of the migration claim; the package keeps it
   nowhere. Trust the 1.1 identifiers of a launch only when `migration.verified` is `true`.
 - **Service tokens.** `createServiceClient` keeps one access token for each scope in memory until it is about to expire, asks for
@@ -505,6 +513,16 @@ them ([platform role](docs/tool-integration/platform.md)).
 - **Assessment Control Service.** `/assessment-control` exists only with `services.control`, and takes a token of `control.all`
   that the registration still grants. A request for a user of another issuer is 404 without asking the store, and the store
   decides whether the attempt is one that the calling tool proctors, so that a tool cannot pause another tool's attempt.
+- **Dynamic Registration.** The routes exist only with `services.registrations`. A registration needs the token of
+  `createRegistrationInitiation`: sealed under the hint key with its own `typ`, valid for `ttlSeconds` (3,600), and spent through
+  `once` before the body is read, so it allows one registration and a refused or repeated request starts again from the initiation.
+  `openRegistration` lets anyone register: the store then caps the registrations that wait for review. Before the store sees a
+  configuration, every address in it names a public host (`checkRemoteUrl`) on none of the platform's own or reserved origins, so the
+  platform never fetches a tool's key set from an internal host or launches a tool on its own origins; a public name may still
+  resolve to an internal address, so the `fetch` of `jwks` refuses private addresses after resolution. The scopes are narrowed to
+  those the platform offers, and a tool is active only when the host gives `toToolRegistration` of it to its lookup. The answer
+  carries no `registration_access_token`: `/registration/{client}` takes an access token of an `lti-reg` scope whose client is the
+  one of the path. The texts and the logo of a configuration are data for the administrator's page, which escapes them.
 - **Access tokens are stateless.** A token holds the client, the deployment, the granted scopes and the expiry, sealed with the
   hint key, and grants only the scopes that the request asks for, the registration grants and a service of the platform offers.
 - **Keys.** The `id_token`s are signed through the `Signer` of `config.keys`, so the private key may stay in a KMS or an HSM; the
@@ -649,6 +667,10 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `tool-integration`        | `maxFormBytes` of `ltiLaunch`                                            | 65,536                            | bytes                  | The form that the platform posts, measured before it is decoded; `form-too-large` above it                                                               |
 | `tool-integration`        | `maxFormBytes` of `readDeepLinkingResponse`                              | 1,048,576                         | bytes                  | The form that a tool posts, measured before it is decoded; `form-too-large` above it                                                                     |
 | `tool-integration`        | `maxFormBytes` of `readStartAssessment`                                  | 65,536                            | bytes                  | The form that a proctoring tool posts, measured before it is decoded; `form-too-large` above it                                                          |
+| `tool-integration`        | `ttlSeconds` of `createRegistrationInitiation`                           | 3,600                             | seconds                | The registration token, which is used once                                                                                                                |
+| `tool-integration`        | `timeoutMs` of `discoverPlatform` and `registerTool`                     | 10,000                            | milliseconds           | One call to the platform                                                                                                                                  |
+| `tool-integration`        | `maxBytes` of `discoverPlatform` and `registerTool`                      | 65,536                            | bytes                  | The configuration or the registration that the platform answers; `ServiceError` above it                                                                 |
+| `tool-integration`        | `maxTokens` of `discoverPlatform` and `registerTool`                     | 1,000,000                         | tokens                 | The JSON of an answer, counted before it is parsed; `DataError` above it                                                                                  |
 | `tool-integration`        | `maxTokens` of `readDeepLinkingResponse`                                 | 1,000,000                         | tokens                 | The JSON of the tool's message, counted before it is parsed; `token-malformed` above it                                                                  |
 | `tool-integration`        | `maxContentItems` of `readDeepLinkingResponse`                           | 100                               | items                  | The items of a response, counted before one is read; `content-items-limit` above it                                                                      |
 | `tool-integration`        | Most bytes of a login initiation form                                    | 65,536                            | bytes                  | A POST to the login URL; `DataError` above it; not replaceable                                                                                           |

@@ -7,7 +7,10 @@
  * `RosterStore`, its groups and group sets over a `GroupStore`, the preferences records over a `PreferencesStore` and the Assessment
  * Control Service of a proctored attempt over an `AssessmentControl`. The host's route at the `deep_link_return_url` of a Deep
  * Linking request reads the tool's response with `readDeepLinkingResponse`, and its route at the `start_assessment_url` of a Start
- * Proctoring message reads the proctoring tool's Start Assessment message with `readStartAssessment`.
+ * Proctoring message reads the proctoring tool's Start Assessment message with `readStartAssessment`. With a `RegistrationStore`, the
+ * handler serves Dynamic Registration: the OpenID configuration, the registration endpoint, which takes the token of
+ * `createRegistrationInitiation`, and the client configuration endpoint; `toToolRegistration` turns a reviewed registration into the
+ * registration of a tool.
  *
  * @module @interopkit/tool-integration/platform
  */
@@ -28,9 +31,11 @@ export type {
 } from "./messages/input.js";
 export type {
   LaunchToCheck,
+  PlatformDiscovery,
   PlatformLoginOptions,
   PlatformOptions,
   PlatformRequestOptions,
+  RegistrationInitiationOptions,
   ToolMessageOptions,
 } from "./options.js";
 export type {
@@ -41,6 +46,9 @@ export type {
   PlatformServices,
   PreferencesStore,
   ReceivedScore,
+  RegisteredTool,
+  RegistrationRefusal,
+  RegistrationStore,
   RosterStore,
   ServiceCaller,
   StoredLineItem,
@@ -55,4 +63,6 @@ export type {
 } from "./ports.js";
 export { type ReceivedStartAssessment, readStartAssessment } from "./proctoring/start-assessment.js";
 export type { ToolRegistration } from "./registration.js";
+export { createRegistrationInitiation } from "./registration-flow/initiation.js";
+export { type RegistrationGrant, toToolRegistration } from "./registration-flow/tool-registration.js";
 export { handlePlatformRequest } from "./router.js";

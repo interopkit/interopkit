@@ -47,6 +47,14 @@ export interface SessionData {
   readonly exp: number;
 }
 
+/** What a registration token of Dynamic Registration names: one registration, until a time. */
+export interface RegistrationToken {
+  /** A random identifier, which `once` records when the token is used. */
+  readonly id: string;
+  /** The time in seconds since 1970-01-01T00:00:00Z at which the token expires. */
+  readonly exp: number;
+}
+
 /** What the data of a Deep Linking request carries: the settings of the request and the host's own data. */
 export interface DeepLinkingData {
   /** The client identifier of the tool. */
@@ -84,6 +92,8 @@ const sessionDataSchema = v.object({
   subject: v.optional(IDENTIFIER),
   exp: NUMBER,
 });
+
+const registrationTokenSchema = v.object({ id: STRING, exp: NUMBER });
 
 const deepLinkingDataSchema = v.object({
   client: STRING,
@@ -152,5 +162,20 @@ export async function openDeepLinkingData(
 ): Promise<DeepLinkingData | undefined> {
   const claims = await openToken(token, "deep-linking-data", keys);
   const parsed = v.safeParse(deepLinkingDataSchema, claims);
+  return parsed.success ? parsed.output : undefined;
+}
+
+/** Seals a registration token (Dynamic Registration 1.0 section 3.3), which the tool sends with its registration request. */
+export function sealRegistrationToken(token: RegistrationToken, key: CryptoKey): Promise<string> {
+  return sealToken("registration", { ...token }, key);
+}
+
+/** Opens a registration token, or returns `undefined` when it is not one that this platform sealed. */
+export async function openRegistrationToken(
+  token: string,
+  keys: readonly CryptoKey[],
+): Promise<RegistrationToken | undefined> {
+  const claims = await openToken(token, "registration", keys);
+  const parsed = v.safeParse(registrationTokenSchema, claims);
   return parsed.success ? parsed.output : undefined;
 }

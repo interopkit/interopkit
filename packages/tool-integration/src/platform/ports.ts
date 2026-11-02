@@ -10,6 +10,7 @@ import type {
   PreferencesRecord,
   Result,
   Score,
+  ToolConfiguration,
 } from "../protocol/index.js";
 import type { MessageInput } from "./messages/input.js";
 import type { ToolRegistration } from "./registration.js";
@@ -320,6 +321,55 @@ export interface AssessmentControl {
   control(caller: ServiceCaller, request: ControlRequest, options?: CallOptions): Promise<ControlStatus | undefined>;
 }
 
+/** A tool that the platform registered through Dynamic Registration, as its store keeps it. */
+export interface RegisteredTool {
+  /** The client identifier that the platform gave the tool, which an update never changes. */
+  readonly clientId: string;
+  /**
+   * The configuration as the platform recorded it, which may differ from the one the tool asked for (Dynamic Registration 1.0
+   * section 3.6.1); its `lti.deploymentId` names the deployment when the platform combines registration and deployment.
+   */
+  readonly configuration: ToolConfiguration;
+}
+
+/** What a `RegistrationStore` answers when it refuses a configuration. */
+export interface RegistrationRefusal {
+  /** Why, in words, which the platform answers as the `error_description` of 400 `invalid_client_metadata`. */
+  readonly refusal: string;
+}
+
+/**
+ * The registrations of tools behind Dynamic Registration: a registration that a tool asks for, which the platform grants or
+ * denies at once and an administrator then reviews and activates (Dynamic Registration 1.0 section 3), and the reads and updates
+ * of it (section 4). The library has validated each configuration before the store receives it.
+ */
+export interface RegistrationStore {
+  /**
+   * Records a new registration. The tool is not active yet: an administrator reviews it, and the host then gives
+   * `toToolRegistration` of it to its lookup of tools. A store of a platform with `openRegistration` caps the registrations that
+   * wait for review, since anyone may then ask for one.
+   *
+   * @param configuration - The configuration, valid, with its scopes narrowed to those that the platform offers.
+   * @returns The tool with its new client identifier, or a refusal in words, which the route answers with 400
+   * `invalid_client_metadata`.
+   */
+  register(configuration: ToolConfiguration, options?: CallOptions): Promise<RegisteredTool | RegistrationRefusal>;
+  /** Returns the registration of a tool, or `undefined` when there is none. */
+  get(clientId: string, options?: CallOptions): Promise<RegisteredTool | undefined>;
+  /**
+   * Records a change that a tool asks for. The change may stay provisional until an administrator accepts it (Dynamic
+   * Registration 1.0 section 4), and the answer then shows the pending configuration.
+   *
+   * @param configuration - The configuration, valid, with its scopes narrowed to those that the platform offers.
+   * @returns The registration with the same client identifier, a refusal in words, or `undefined` when there is none.
+   */
+  update(
+    clientId: string,
+    configuration: ToolConfiguration,
+    options?: CallOptions,
+  ): Promise<RegisteredTool | RegistrationRefusal | undefined>;
+}
+
 /** The stores of the services of the platform. A service whose store is absent is neither offered in a claim nor routed. */
 export interface PlatformServices {
   /**
@@ -352,4 +402,11 @@ export interface PlatformServices {
    * @defaultValue none
    */
   readonly control?: AssessmentControl;
+  /**
+   * The registrations behind Dynamic Registration: the OpenID configuration, the registration endpoint and the client
+   * configuration endpoint.
+   *
+   * @defaultValue none
+   */
+  readonly registrations?: RegistrationStore;
 }

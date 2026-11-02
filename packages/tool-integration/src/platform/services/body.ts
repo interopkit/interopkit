@@ -14,6 +14,7 @@ function mediaTypeOf(request: HttpRequest): string | undefined {
  *
  * @param mediaType - The media type of the body, such as `application/vnd.ims.lis.v1.score+json`.
  * @param read - The reader of the model, which throws `DataError`.
+ * @param invalid - The error code of a body that is not the model.
  * @returns The model, or the answer to send.
  */
 export function readBody<T>(
@@ -21,6 +22,7 @@ export function readBody<T>(
   mediaType: string,
   maxBytes: number,
   read: (value: unknown) => T,
+  invalid = "invalid_request",
 ): { readonly value: T } | HttpResponse {
   if (mediaTypeOf(request) !== mediaType) {
     return jsonResponse(415, errorBody("unsupported_media_type", `The body must be ${mediaType}.`), {
@@ -31,7 +33,7 @@ export function readBody<T>(
   try {
     return { value: read(readJson(request, { maxBytes })) };
   } catch (error) {
-    if (error instanceof DataError) return refusal(400, "invalid_request", error.message);
+    if (error instanceof DataError) return refusal(400, invalid, error.message);
     throw error;
   }
 }

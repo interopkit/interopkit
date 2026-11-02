@@ -18,7 +18,11 @@ registration's service origins or to a public host, follows only `next` links of
 `maxBytes` and `maxTokens` into its model; the same client reads the members of a context or a resource link in pages, with
 their group enrollments, the message of the link and the link to the differences (Names and Role Provisioning 2.0), the groups
 and group sets of a context (Context Groups 1.0), the record of a user for an activity (AfA PNP Connector 1.0), and the Assessment
-Control Service of a proctored attempt, whose request it reads back against Proctoring Services 5.1 before it sends it. The platform role launches tools: `ltiPlatformLogin` keeps a message of five types (a resource link
+Control Service of a proctored attempt, whose request it reads back against Proctoring Services 5.1 before it sends it, and the
+tool's registration at its client configuration endpoint. A tool registers itself with a platform through Dynamic Registration in
+steps: `readRegistrationInitiation`, `discoverPlatform`, which fetches no address of a private host and accepts the configuration only
+below its issuer, `registerTool`, which sends the registration token only to the issuer's origin or the host's `registrationOrigins`,
+`toPlatformRegistration`, which makes the tool's record of the platform, and `createRegistrationClosePage`. The platform role launches tools: `ltiPlatformLogin` keeps a message of five types (a resource link
 launch, a submission review request, a Deep Linking request whose data seals its settings and the host's data, a Start Proctoring message whose session data
 seals the attempt, and an End Assessment message) in the host's `LaunchStore` for 300 seconds and starts the tool's login, and
 `handlePlatformRequest` answers every request to the platform's origin: the tool's authentication request, with the `id_token`
@@ -37,7 +41,12 @@ tool's token as an assertion is verified, accepts its `nonce` once, opens the `d
 the host's own data, and holds the items, each read by its type, to those settings and to `maxContentItems`.
 `readStartAssessment` reads the Start Assessment message that a proctoring tool posts in the same way, opens the session data that
 the Start Proctoring message sealed, holds the resource link and the attempt to it, and returns the subject that the host compares
-with its session. It substitutes the variables of LTI
+with its session. With a `RegistrationStore`, the platform serves Dynamic Registration: `createRegistrationInitiation` gives a tool's
+initiation URL a registration token for one registration, the OpenID configuration lies below the issuer with the scopes of the
+services that the platform offers, `/registration` spends the token before it reads the body, refuses an address of the tool that
+names no public host or lies on an origin of the platform, and narrows the scopes before the store registers the tool, and
+`/registration/{client}` reads and updates the calling tool's registration with a token of `lti-reg`; `toToolRegistration` makes the
+record of a reviewed tool. It substitutes the variables of LTI
 Core Appendix B that the message answers and those that the host resolves, signs the LTI 1.1 migration claim with a secret that
 it does not keep, opens what an earlier hint key sealed, and refuses an algorithm that the tool's registration does not list.
 `buildCapabilitiesScript` answers `lti.capabilities` on the host's frame page. Handlers take an `HttpRequest` and return

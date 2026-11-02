@@ -51,6 +51,13 @@ interface ServiceRequestInit {
    * @defaultValue none
    */
   readonly expect?: readonly number[];
+  /**
+   * A bearer token that the platform gave for the URL, such as the registration access token of Dynamic Registration, which the
+   * call sends in place of a token of its scopes.
+   *
+   * @defaultValue none: a token of the narrowest scope
+   */
+  readonly bearer?: string;
 }
 
 /** What the clients of the services share: the calls with a token, the limits, and the reading of answers and pages. */
@@ -63,7 +70,8 @@ export interface ServiceAccess {
    * @remarks
    * The URL comes from a launch or an answer of the platform, so it must lie on one of the `serviceOrigins` of the
    * registration, or, without them, be an `https` URL that names a public host: the token goes nowhere else. The token is one
-   * of the cache of its scope, and a 401 drops it, so that the next call asks for a new one; nothing retries.
+   * of the cache of its scope, and a 401 drops it, so that the next call asks for a new one; nothing retries. A `bearer` of the
+   * request goes in its place, to the same addresses.
    *
    * @throws `LtiError` (`scope-unavailable`) when the platform offered none of the scopes, (`scope-denied`) when it did not
    * grant the one asked for, (`service-origin-refused`) when the URL may not receive the token, and (`platform-unknown`,
@@ -86,6 +94,38 @@ export interface ServiceAccess {
 const DECODER = new TextDecoder("utf-8", { fatal: true });
 /** The statuses of a success, which a call that also expects another status lists beside it. */
 const SUCCESS: readonly number[] = Array.from({ length: 100 }, (_, offset) => 200 + offset);
+
+/**
+ * Reads the body of an answer as JSON within a number of tokens, then with the reader of its model.
+ *
+ * @param what - Names the service in the error, such as `The line item at https://...`.
+ * @throws `DataError` when the body is not UTF-8 JSON, has more than `maxTokens` tokens, or breaks the model.
+ */
+export function readAnswer<T>(
+  response: ServiceResponse,
+  what: string,
+  maxTokens: number,
+  reader: (value: unknown) => T,
+): T {
+  let text: string;
+  try {
+    text = DECODER.decode(response.body);
+  } catch {
+    throw new DataError(`${what} answered with a body that is not UTF-8 text.`);
+  }
+  if (hasMoreTokensThan(text, maxTokens)) {
+    throw new DataError(
+      `${what} answered with a body of more than ${maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
+    );
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new DataError(`${what} answered with a body that is not JSON.`);
+  }
+  return reader(json);
+}
 
 /** Returns the narrowest scope of a call that the platform offered. */
 function scopeOf(scopes: readonly string[], offered: readonly string[]): string {
@@ -164,19 +204,23 @@ export function createServiceAccess(deployment: LtiDeployment, settings: Service
       const signal = call.signal ?? options.signal;
       const registration = await findDeployment({ ...options, signal }, deployment);
       checkServiceUrl(url, registration, `The URL ${url}`);
-      const scope = scopeOf(init.scopes, offered);
-      const cache = cacheOf(scope);
-      const token = await cache({ signal });
       const service = {
         fetch: options.fetch,
         timeoutMs: settings.timeoutMs,
         ...(signal === undefined ? {} : { signal }),
       };
+      const limits = {
+        maxBytes: settings.maxBytes,
+        ...(init.expect === undefined ? {} : { expect: [...SUCCESS, ...init.expect] }),
+      };
+      if (init.bearer !== undefined) {
+        return requestService(service, nameOf(url), url, requestOf(init, init.bearer), limits);
+      }
+      const scope = scopeOf(init.scopes, offered);
+      const cache = cacheOf(scope);
+      const token = await cache({ signal });
       try {
-        return await requestService(service, nameOf(url), url, requestOf(init, token), {
-          maxBytes: settings.maxBytes,
-          ...(init.expect === undefined ? {} : { expect: [...SUCCESS, ...init.expect] }),
-        });
+        return await requestService(service, nameOf(url), url, requestOf(init, token), limits);
       } catch (error) {
         // The platform no longer takes the token: the next call of the scope asks for a new one.
         if (error instanceof ServiceError && error.status === 401 && caches.get(scope) === cache) caches.delete(scope);
@@ -184,24 +228,7 @@ export function createServiceAccess(deployment: LtiDeployment, settings: Service
       }
     },
     read(response, what, reader) {
-      let text: string;
-      try {
-        text = DECODER.decode(response.body);
-      } catch {
-        throw new DataError(`${what} answered with a body that is not UTF-8 text.`);
-      }
-      if (hasMoreTokensThan(text, settings.maxTokens)) {
-        throw new DataError(
-          `${what} answered with a body of more than ${settings.maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
-        );
-      }
-      let json: unknown;
-      try {
-        json = JSON.parse(text);
-      } catch {
-        throw new DataError(`${what} answered with a body that is not JSON.`);
-      }
-      return reader(json);
+      return readAnswer(response, what, settings.maxTokens, reader);
     },
     next(response, url) {
       return linkTarget(response.headers, "next", url);

@@ -96,6 +96,25 @@ describe("the scenario", () => {
     });
   });
 
+  it("registers a second tool through Dynamic Registration, which reads its registration back once both sides activated it", async () => {
+    const { registered } = await runScenario();
+    expect(registered).toStrictEqual({
+      closes: true,
+      clientId: "registered-tool-1",
+      scope:
+        "https://purl.imsglobal.org/spec/lti-reg/scope/registration.readonly https://purl.imsglobal.org/spec/lti-ags/scope/score",
+      registrationClientUri: "https://lms.example/registration/registered-tool-1",
+      platform: {
+        issuer: "https://lms.example",
+        authenticationUrl: "https://lms.example/authorize",
+        accessTokenUrl: "https://lms.example/token",
+        jwksUrl: "https://lms.example/jwks",
+        deploymentIds: ["deployment-quiz-1"],
+      },
+      readBack: { clientId: "registered-tool-1", clientName: "Quiz tool" },
+    });
+  });
+
   it("answers the same authentication request a second time with the authentication error response", async () => {
     expect((await runScenario()).replay).toStrictEqual({ status: 403, error: "login_required" });
   });

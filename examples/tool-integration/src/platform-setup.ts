@@ -1,4 +1,4 @@
-import type { Clock } from "@interopkit/core";
+import type { Clock, Fetch } from "@interopkit/core";
 import { createJwksCache, SCOPES } from "@interopkit/tool-integration";
 import {
   buildPlatformEndpoints,
@@ -14,6 +14,7 @@ import {
 import { createGradebook, type Gradebook } from "./gradebook.ts";
 import { generateHintKey, generatePlatformKeys } from "./keys.ts";
 import { type Attempts, createAttempts } from "./proctoring.ts";
+import { createRegistrations, type Registrations } from "./registration.ts";
 import { courseOf, createRosterStores } from "./roster.ts";
 
 /** What the platform knows of the tool: the tool's side of the registration. */
@@ -45,6 +46,8 @@ export interface PlatformSetup {
   readonly gradebook: Gradebook;
   /** The attempts of proctored assessments behind the Assessment Control Service. */
   readonly attempts: Attempts;
+  /** The registrations of the tools that registered themselves through Dynamic Registration. */
+  readonly registrations: Registrations;
 }
 
 /** The path of the platform's route that reads the response of a Deep Linking request, on the platform's origin. */
@@ -65,8 +68,11 @@ function launchStore(): LaunchStore {
   };
 }
 
-/** Configures a platform with the keys it generates and the one tool that it launches. */
-export async function setupPlatform(clock: Clock, side: ToolSide): Promise<PlatformSetup> {
+/**
+ * Configures a platform with the keys it generates, the one tool that its administrator registered by hand, and the tools that
+ * register themselves. `fetch` reaches the key sets of the tools that registered themselves.
+ */
+export async function setupPlatform(clock: Clock, side: ToolSide, fetch: Fetch): Promise<PlatformSetup> {
   const config: PlatformConfig = {
     issuer: ISSUER,
     origin: ISSUER,
@@ -74,6 +80,8 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
     reservedOrigins: [],
     keys: await generatePlatformKeys("platform-1"),
     hintKey: await generateHintKey(),
+    // Dynamic Registration names the product of the platform in its OpenID configuration.
+    instance: { guid: "lms-example-1", productFamilyCode: "lms-example", version: "1.0" },
   };
   const registration: ToolRegistration = {
     clientId: side.clientId,
@@ -93,7 +101,9 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
       SCOPES.assessmentControl,
     ],
   };
-  const tools = async (clientId: string) => (clientId === registration.clientId ? registration : undefined);
+  const registrations = createRegistrations();
+  const tools = async (clientId: string) =>
+    clientId === registration.clientId ? registration : registrations.active(clientId);
   // The ledger of single-use identifiers: a client assertion is accepted once.
   const used = new Set<string>();
   const once = async (id: string): Promise<boolean> => {
@@ -105,8 +115,8 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
   const gradebook = createGradebook();
   const { roster, groups, preferences } = createRosterStores(courseOf(side.clientId));
   const attempts = createAttempts();
-  // The tool gave its key, so the platform never fetches a key set of the tool.
-  const jwks = createJwksCache({ fetch: () => Promise.reject(new Error("The tool gave its key.")) });
+  // The tool registered by hand gave its key; a tool that registered itself names its key set, which the platform fetches.
+  const jwks = createJwksCache({ fetch });
   return {
     login: { config, clock, registration: tools, check: async () => undefined, launches },
     requests: {
@@ -116,11 +126,19 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
       launches,
       once,
       jwks,
-      services: { gradebook: gradebook.store, roster, groups, preferences, control: attempts.store },
+      services: {
+        gradebook: gradebook.store,
+        roster,
+        groups,
+        preferences,
+        control: attempts.store,
+        registrations: registrations.store,
+      },
     },
     toolMessage: { config, clock, client: tools, jwks, once },
     endpoints: buildPlatformEndpoints(config),
     gradebook,
     attempts,
+    registrations,
   };
 }

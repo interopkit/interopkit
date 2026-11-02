@@ -7,7 +7,7 @@ competency frameworks that a provider publishes (CASE 1.1), the learning records
 nothing of QTI or of any product. A host passes in its storage, its `fetch`
 and its clock.
 
-Version 0.1 is not the whole of LTI Advantage: both roles have the launch, access tokens, the Assignment and Grade Services, Names and Role Provisioning, Context Groups, the AfA PNP Connector and Deep Linking, and neither role has Dynamic Registration ([what is supported](docs/tool-integration/supported.md)).
+Both roles of `@interopkit/tool-integration` have the launch of every message type, access tokens, the Assignment and Grade Services, Names and Role Provisioning, Context Groups, the AfA PNP Connector, Deep Linking, Proctoring Services and Dynamic Registration ([what is supported](docs/tool-integration/supported.md)).
 
 ```mermaid
 flowchart LR

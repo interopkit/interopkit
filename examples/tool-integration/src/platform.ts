@@ -1,5 +1,6 @@
 import { LtiError } from "@interopkit/tool-integration";
 import {
+  createRegistrationInitiation,
   handlePlatformRequest,
   ltiPlatformFrame,
   type MessageInput,
@@ -14,6 +15,7 @@ import type { Gradebook } from "./gradebook.ts";
 import type { Handler } from "./network.ts";
 import { DEEP_LINKING_PATH, ISSUER, type PlatformSetup, START_ASSESSMENT_PATH } from "./platform-setup.ts";
 import type { Attempts } from "./proctoring.ts";
+import type { Registrations } from "./registration.ts";
 
 /** The platform: the handler of its origin, and the launches it prepares. */
 export interface Platform {
@@ -33,6 +35,10 @@ export interface Platform {
   readonly attempts: Attempts;
   /** The Start Assessment messages that the platform accepted, in order: each started an attempt. */
   readonly started: readonly ReceivedStartAssessment[];
+  /** The registrations of the tools that registered themselves. */
+  readonly registrations: Registrations;
+  /** Returns the address with which the platform's administrator starts the registration of a tool. */
+  initiateRegistration(initiationUrl: string): Promise<string>;
 }
 
 /** Answers a route of the host with text, or with the status of a refusal of the library. */
@@ -49,7 +55,7 @@ async function answerWith(read: () => Promise<string>): Promise<Awaited<ReturnTy
 
 /** Creates the platform that a setup configures: one handler serves every route of its origin. */
 export function createPlatform(setup: PlatformSetup): Platform {
-  const { login, requests, toolMessage, endpoints, gradebook, attempts } = setup;
+  const { login, requests, toolMessage, endpoints, gradebook, attempts, registrations } = setup;
   const deepLinked: ReceivedDeepLinkingResponse[] = [];
   const started: ReceivedStartAssessment[] = [];
   // The routes at the `deep_link_return_url` of a request and at the `start_assessment_url` of a Start Proctoring message are the
@@ -81,5 +87,8 @@ export function createPlatform(setup: PlatformSetup): Platform {
     deepLinked,
     attempts,
     started,
+    registrations,
+    initiateRegistration: (initiationUrl) =>
+      createRegistrationInitiation(initiationUrl, { config: requests.config, clock: requests.clock }),
   };
 }

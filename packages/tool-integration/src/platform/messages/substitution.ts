@@ -76,6 +76,14 @@ const MESSAGE_VARIABLES: ReadonlyMap<string, (view: LaunchView) => string | numb
   ["LineItem.url", ({ services }) => services?.grades?.lineitem],
 ]);
 
+/**
+ * Returns the variables that the platform substitutes: those that the message answers, then those that the host resolves, each
+ * once, as the OpenID configuration lists them (Dynamic Registration 1.0 section 2.1.2).
+ */
+export function supportedVariables(substitution: Substitution | undefined): string[] {
+  return [...new Set([...MESSAGE_VARIABLES.keys(), ...(substitution?.names ?? [])])];
+}
+
 /** What the substitution of a launch needs beside the custom properties. */
 export interface SubstitutionCall extends CallOptions {
   /** The message and the instance of the platform. */

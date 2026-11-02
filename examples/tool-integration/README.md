@@ -1,7 +1,7 @@
 # A platform and a tool
 
 A platform that launches a tool, and the tool that validates the launch, publishes a score through the grade services, reads the roster of the course, answers
-a Deep Linking request and proctors an attempt, in one process. The platform uses
+a Deep Linking request and proctors an attempt, and a second tool that registers itself through Dynamic Registration, in one process. The platform uses
 the platform role of `@interopkit/tool-integration`, the tool uses the tool role, and both use `@interopkit/core`. They reach each
 other through an in-memory network, so the example needs no server, and each handler is the one a host would route a request to.
 
@@ -36,6 +36,13 @@ sequenceDiagram
   H->>P: readStartAssessment: the attempt starts
   T->>P: control: pause (handlePlatformRequest)
   P->>H: AssessmentControl.control
+  H->>P: createRegistrationInitiation(the second tool's initiation URL)
+  B->>T: initiation URL with openid_configuration and registration_token
+  T->>P: discoverPlatform, registerTool (handlePlatformRequest)
+  P->>H: RegistrationStore.register
+  T-->>B: createRegistrationClosePage
+  H->>H: toToolRegistration: the administrator activates the tool
+  T->>P: getToolRegistration, with a token of registration.readonly
 ```
 
 | File              | Holds                                                                                                                                     |
@@ -47,8 +54,10 @@ sequenceDiagram
 | `src/gradebook.ts` | A `GradebookStore` in memory, which keeps a score unless a later one is kept                                                            |
 | `src/roster.ts`   | A `RosterStore`, a `GroupStore` and a `PreferencesStore` in memory, over one course                                                       |
 | `src/proctoring.ts` | An `AssessmentControl` in memory over the attempts of proctored assessments                                                             |
+| `src/registration.ts` | A `RegistrationStore` in memory, and the activation of a registered tool with `toToolRegistration`                                    |
+| `src/registering-tool.ts` | A second tool that registers itself: its initiation route, its key set, its record of the platform and the read of its registration |
 | `src/tool-setup.ts` | The tool's registration of the platform, its store of logins and its key set cache                                                      |
-| `src/keys.ts`     | The keys that each side generates for itself: RS256 for the tool, ES256 and HMAC for the platform                                         |
+| `src/keys.ts`     | The keys that each side generates for itself: ES256 for the tools, RS256 and HMAC for the platform, since Dynamic Registration needs RS256 |
 | `scenario.ts`     | `runScenario`: the steps of the browser, and what each side saw                                                                           |
 | `test/`           | The tests, which CI runs                                                                                                                  |
 
@@ -56,7 +65,7 @@ sequenceDiagram
 
 | Rule                      | Value                                                                                                                                   |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Keys                      | Generated at each run with Web Crypto; the platform has the tool's public key, not a URL of the tool's key set                          |
+| Keys                      | Generated at each run with Web Crypto; the platform has the first tool's public key, and fetches the key set of the tool that registered itself |
 | Time                      | A fixed `Clock`, so that the tokens of both sides agree                                                                                 |
 | Single use                | The platform's store of launches gives a message once: the same authentication request a second time gets `login_required`             |
 | Where a real host differs | Its stores are shared across processes, its routes sit behind its own sessions, and the page of the client-side login runs in a browser |

@@ -5,7 +5,7 @@ import { type Claims, hasCanonicalParts } from "../protocol/internal.js";
 const ALGORITHM = "HS256";
 
 /** The uses of a sealed token, each the `typ` of its header. */
-export type SealUse = "hint" | "login" | "access" | "session-data" | "deep-linking-data";
+export type SealUse = "hint" | "login" | "access" | "session-data" | "deep-linking-data" | "registration";
 
 /**
  * Seals claims as a compact JWS signed with HMAC-SHA-256 (RFC 7515). The sealed token is signed and not encrypted, so

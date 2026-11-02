@@ -7,9 +7,15 @@ import { type GroupsClient, groupsClient } from "./groups.js";
 import { type MembersClient, membersClient } from "./members.js";
 import { readServiceClientOptions, type ServiceClientOptions } from "./options.js";
 import { type PreferencesClient, preferencesClient } from "./preferences.js";
+import { type RegistrationClient, registrationClient } from "./registration.js";
 
 /** The client of the services of a platform for one deployment: one interface for each service. */
-export type ServiceClient = GradesClient & MembersClient & GroupsClient & PreferencesClient & ControlClient;
+export type ServiceClient = GradesClient &
+  MembersClient &
+  GroupsClient &
+  PreferencesClient &
+  ControlClient &
+  RegistrationClient;
 
 /**
  * Creates the client of the services of a platform for one deployment: each call asks for a token of the narrowest scope that
@@ -26,6 +32,7 @@ export type ServiceClient = GradesClient & MembersClient & GroupsClient & Prefer
  * @see {@link https://standards.1edtech.org/lti/specifications/services/names_roles/names-role-provisioning-spec | LTI Names and Role Provisioning Services 2.0}
  * @see {@link https://www.imsglobal.org/spec/lti-gs/v1p0 | LTI Context Groups Service 1.0}
  * @see {@link https://www.imsglobal.org/spec/proctoring/v1p0 | Proctoring Services 1.0}
+ * @see {@link https://www.imsglobal.org/spec/lti-dr/v1p0 | LTI Dynamic Registration 1.0}
  * @param deployment - The platform, the client and the deployment, as a launch gives them.
  * @param options - The registrations, the clock, the `fetch`, the scopes that the platform offered and the limits.
  * @returns The client.
@@ -44,5 +51,6 @@ export function createServiceClient(deployment: LtiDeployment, options: ServiceC
     ...groupsClient(access),
     ...preferencesClient(access),
     ...controlClient(access),
+    ...registrationClient(access),
   };
 }

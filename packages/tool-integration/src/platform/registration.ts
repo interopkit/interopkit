@@ -80,7 +80,7 @@ const registrationSchema = v.pipe(
  * is not 1 to 255 characters, an algorithm is not approved, a key is not a public key of an approved algorithm, or the tool has
  * both or neither of `jwksUrl` and `keys`.
  */
-function checkToolRegistration(value: unknown): asserts value is ToolRegistration {
+export function checkToolRegistration(value: unknown): asserts value is ToolRegistration {
   parseWith(registrationSchema, value, "The registration of the tool");
   if (isRecord(value) && value.allow !== undefined) checkAllowList(value.allow, "The allow list of a tool");
 }

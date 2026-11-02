@@ -10,7 +10,7 @@ flowchart LR
   launch --> ags["AGS<br/>createServiceClient: line items,<br/>results, scores, cached tokens"]
   launch --> roster["Roster services<br/>members, groups, preferences record"]
   launch --> proctoring["Proctoring<br/>createStartAssessmentPage, control"]
-  launch -.-> missing["Not yet:<br/>registration"]
+  registration["Dynamic Registration<br/>discoverPlatform, registerTool,<br/>getToolRegistration"] --> login
 ```
 
 | Area                                | Specification              | Tool role                                                                 | Not yet                                                                                                                                                                                |
@@ -41,7 +41,7 @@ flowchart LR
 | postMessage Storage                 | PM Storage 0.1             | The two pages                                                             |                                                                                                                                                                                        |
 | Capabilities | postMessages 0.1 | Both pages ask `lti.capabilities` and use the frame that the answer names, else `lti_storage_target` |  |
 | Names and Role Provisioning         | NRPS 2.0                   | `services.roster`, the claim; `members`: role, limit, resource link with its message section, groups, differences, `next` and `differences` links |  |
-| Dynamic Registration                | DR 1.0                     |                                                                           | All                                                                                                                                                                                    |
+| Dynamic Registration | DR 1.0 | `readRegistrationInitiation`, `discoverPlatform` (the address checked before the fetch, the configuration below its issuer, every endpoint a public host), `registerTool` (the registration endpoint on the issuer's origin or `registrationOrigins`), `toPlatformRegistration`, `createRegistrationClosePage`; `getToolRegistration` and `updateToolRegistration` with the registration access token or a token of `lti-reg` |  |
 | Submission Review                   | SR 1.0                     | The request, as `SubmissionReviewMessage`; `submissionReview` of a line item | |
 | Proctoring | Proctoring 1.0 | `LtiStartProctoring` and `LtiEndAssessment`, as messages; `createStartAssessmentPage`: the Start Assessment message with the session data, the resource link and the attempt copied, the verified claims held to the values that the platform sent; `control` of the Assessment Control Service |  |
 | Context Groups                      | Groups 1.0                 | `services.groups`, the claim; `groups` with the user filter, `groupSets`, paging |  |
@@ -57,7 +57,7 @@ flowchart LR
   token --> ags["/contexts/.../line-items<br/>GradebookStore"]
   token --> roster["/contexts/.../memberships, groups<br/>/ims/afapnp/...<br/>RosterStore, GroupStore, PreferencesStore"]
   token --> control["/assessment-control<br/>AssessmentControl;<br/>readStartAssessment"]
-  token -.-> missing["Not yet:<br/>registration"]
+  registration["/.well-known/openid-configuration,<br/>/registration<br/>RegistrationStore"] --> token
 ```
 
 | Area                                | Specification              | Platform role                                                                                                   | Not yet                                                    |
@@ -86,7 +86,7 @@ flowchart LR
 | Capabilities                        | postMessages 0.1           | `buildCapabilitiesScript` for the host's frame page                                                             |                                                            |
 | AGS                                 | AGS 2.0                    | Over a `GradebookStore`: the claim with `lineitems` and `lineitem`, line items with filters and pages, results, scores kept by AGS 3.4.9; the client and the scopes checked again on every call | |
 | Names and Role Provisioning         | NRPS 2.0                   | Over a `RosterStore`: the claim, `role`, `limit`, `rlid` with the message section, `groups`, the `differences` link and `since`, `next` links, `lti11_legacy_user_id`; only what the request asked for is shared | |
-| Dynamic Registration                | DR 1.0                     |                                                                                                                 | All                                                        |
+| Dynamic Registration                | DR 1.0                     | Over a `RegistrationStore`: `createRegistrationInitiation` with a single-use token, the OpenID configuration below the issuer, `/registration` (the token spent before the body is read, every address a public host on no origin of the platform, the scopes narrowed), `/registration/{client}` with a token of `lti-reg`, `toToolRegistration` | |
 | Submission Review                   | SR 1.0                     | The request, with the line item of its message | |
 | Context Groups                      | Groups 1.0                 | Over a `GroupStore`: the claim with the sets URL on request, groups and groups of a user, group sets, `next` links | |
 | AfA PNP connector                   | PNP Connector 1.0          | Over a `PreferencesStore`: the claim, the record of a user for an activity below `/ims/afapnp/v1p0`, held to the `fields` asked for | |
@@ -97,8 +97,7 @@ Rubric Service and others) are not assessed.
 ## Models of the service bodies
 
 Both roles share the models of [the bodies of the services](services.md). The reader and the writer of each are built and
-tested, and the client of the tool role and the handler of the platform role use them, but for the configurations of Dynamic
-Registration.
+tested, and the client of the tool role and the handler of the platform role use them.
 
 | Service                    | Specification     | Modeled                                                                                          | Not yet                    |
 | -------------------------- | ----------------- | ------------------------------------------------------------------------------------------------ | -------------------------- |
@@ -108,6 +107,6 @@ Registration.
 | Memberships                | NRPS 2.0          | Container, member, message of a resource link, group enrollments, filters                        | |
 | Groups                     | Groups 1.0        | Groups, group sets, filters                                                                      | |
 | Content items              | DL 3              | The five types, their extensions and other types; the check against the settings of the request | |
-| Configurations             | DR 2              | Platform, tool, acknowledgment, translations, extensions                                         | Steps, routes              |
+| Configurations             | DR 2              | Platform, tool, acknowledgment, translations, extensions                                         | |
 | Assessment Control Service | Proctoring 5      | Control request and status                                                                       | |
 | Preferences                | PNP Connector 1.0 | The record as JSON, the `fields` filter                                                          | |

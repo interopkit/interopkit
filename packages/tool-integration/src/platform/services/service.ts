@@ -21,6 +21,8 @@ export interface ServiceRequest<TStore> {
   readonly store: TStore;
   /** The options of the handler. */
   readonly settings: PlatformSettings;
+  /** The scopes that the platform offers: those of every service whose store the host gave. */
+  readonly offered: readonly string[];
 }
 
 /** A request to a route before the store of its service is bound to it. */

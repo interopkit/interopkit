@@ -39,7 +39,7 @@ export function setupTool(
     accessTokenUrl: platform.accessTokenUrl,
     redirectUri: `${origin}${LAUNCH_PATH}`,
     // The signer could as well call a KMS that holds the key; the platform reads the public key under the keyId.
-    signer: signerFromCryptoKey(keys.signingKey, { algorithm: "RS256", keyId: keys.keyId }),
+    signer: signerFromCryptoKey(keys.signingKey, { algorithm: "ES256", keyId: keys.keyId }),
   };
   // The tool keeps the logins in progress in memory; a real tool keeps them where every process can reach them.
   const logins = new Map<string, LoginRecord>();

@@ -17,6 +17,7 @@ export {
   NON_EMPTY_STRING,
   NUMBER,
   optional,
+  PLATFORM_MESSAGE_TYPES,
   parseZonedDateTime,
   required,
   STRING,

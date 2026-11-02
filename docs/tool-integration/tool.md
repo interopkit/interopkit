@@ -38,7 +38,8 @@ sequenceDiagram
 | `serveToolJwks(request, keys, options)`       | Answers the request for the tool's key set: the public keys of its `KeySet`                   |
 | `createDeepLinkResponse(launch, response, options)` | Checks the items, signs the response to a Deep Linking request and returns the page that posts it ([Deep Linking](deep-linking.md)) |
 | `createStartAssessmentPage(launch, input, options)` | Signs the Start Assessment message of a proctored attempt and returns the page that posts it ([proctoring](proctoring.md)) |
-| `createServiceClient(deployment, options)`    | Returns the client of the services of a platform: grades ([grade services](grades.md)), members, groups and preferences ([roster services](roster.md)), and the control of an attempt ([proctoring](proctoring.md)) |
+| `createServiceClient(deployment, options)`    | Returns the client of the services of a platform: grades ([grade services](grades.md)), members, groups and preferences ([roster services](roster.md)), the control of an attempt ([proctoring](proctoring.md)), and the tool's registration ([registration](registration.md)) |
+| `readRegistrationInitiation`, `discoverPlatform`, `registerTool`, `toPlatformRegistration`, `createRegistrationClosePage` | The steps of Dynamic Registration ([registration](registration.md)) |
 | `advanceScoreTimestamp(lastSent, now)`        | Returns a timestamp of a score strictly later than the last one sent                          |
 | `createJwksCache(options)`                    | Creates the cache of the platforms' key sets that `ltiLaunch` verifies signatures with        |
 
@@ -277,6 +278,15 @@ session data, the resource link and the attempt of the launch, to `launch.startA
 calls the Assessment Control Service of `launch.assessmentControl` with `control` of `createServiceClient`. The
 [proctoring guide](proctoring.md) has the verified claims, the actions and the platform's side.
 
+## Dynamic Registration
+
+A tool registers itself with a platform in steps, so that the host may show its own pages between them:
+`readRegistrationInitiation(request)` at the initiation route, behind the session of the tool's administrator;
+`discoverPlatform(initiation, { fetch })`, which checks that the configuration lies below its issuer; `registerTool(platform, tool,
+initiation, { fetch })`; `toPlatformRegistration(platform, result, { signer, redirectUri })`, the record that the host keeps; and the
+page of `createRegistrationClosePage()`. The [registration guide](registration.md) has the checks, the options and the platform's
+side.
+
 ## The tool's key set
 
 The platform verifies the tool's client assertions and Deep Linking responses with the tool's public keys. `serveToolJwks(request,
@@ -456,5 +466,4 @@ an example disagree.
 | What                                                                                                            | Reason                                                                       |
 | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | LTI 1.0 to 1.2, Basic Outcomes                                                                                  | 1EdTech retired them; a launch of that form is refused                       |
-| Dynamic Registration                                                                                            | See [supported](supported.md)                                                |
 | Sessions, routes, a database, a UI for Deep Linking                                                             | The host's                                                                   |

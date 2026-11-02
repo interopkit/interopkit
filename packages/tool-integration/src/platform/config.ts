@@ -10,7 +10,12 @@ export const PATHS = {
   jwks: "/jwks",
   token: "/token",
   storage: "/storage",
+  registration: "/registration",
 } as const;
+
+/** The path that the OpenID configuration of a platform has below its issuer (Dynamic Registration 1.0 section 3.4). */
+const CONFIGURATION_PATH = "/.well-known/openid-configuration";
+const TRAILING_SLASH = /\/$/u;
 
 /** What the platform is: its identity, its origins and its keys. */
 export interface PlatformConfig {
@@ -168,6 +173,14 @@ export function endpointsOf(config: PlatformConfig): PlatformEndpoints {
 export function buildPlatformEndpoints(config: PlatformConfig): PlatformEndpoints {
   checkPlatformConfig(config);
   return endpointsOf(config);
+}
+
+/**
+ * Returns the URL of the OpenID configuration of a platform: its issuer with `/.well-known/openid-configuration` appended, which
+ * a tool accepts only below the issuer (Dynamic Registration 1.0 section 3.4).
+ */
+export function configurationUrl(config: PlatformConfig): string {
+  return `${config.issuer.replace(TRAILING_SLASH, "")}${CONFIGURATION_PATH}`;
 }
 
 /** Returns the keys that open a sealed token: the hint key, then the earlier ones of a rotation. */
