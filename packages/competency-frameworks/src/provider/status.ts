@@ -47,6 +47,15 @@ export const unauthorized = (): HttpResponse =>
 /** The answer for a request that the host refuses to serve: 403. */
 export const forbidden = (): HttpResponse => failure(403, "The request is not allowed.", "forbidden");
 
+/** The answer for a consumer that asks too often: 429 with the statement that the binding gives, and `Retry-After` when known. */
+export const serverBusy = (retryAfterSeconds: number | undefined): HttpResponse =>
+  failure(
+    429,
+    "The provider is busy: retry at a later time.",
+    "server_busy",
+    retryAfterSeconds === undefined ? {} : { "retry-after": String(retryAfterSeconds) },
+  );
+
 /** The answer for a port that failed: 500, with nothing of the failure in it. */
 export const internalError = (): HttpResponse =>
   failure(500, "The provider could not answer the request.", "internal_server_error");

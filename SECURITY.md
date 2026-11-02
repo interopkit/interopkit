@@ -151,7 +151,8 @@ It reads a query and no body, keeps nothing between requests and makes no reques
 
 - A host that serves frameworks to anyone leaves `authorize` out. A host that serves some frameworks to some consumers
   decides in `authorize` from the request, or filters in its store: the provider has no notion of an owner.
-- Limit the rate in front of the handler; the provider never answers 429.
+- Limit the rate of requests: count them in the host, and refuse the request over the limit in `authorize` with 429 and
+  `retryAfterSeconds`, which the provider answers as `server_busy` with `Retry-After`.
 
 ## Achievement credentials
 

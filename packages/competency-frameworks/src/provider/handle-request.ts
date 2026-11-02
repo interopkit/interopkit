@@ -1,5 +1,5 @@
 import { callPort, DataError } from "@interopkit/core";
-import { isUuid, parseWith } from "@interopkit/core/checks";
+import { isUuid, nonNegativeIntegerSchema, parseWith } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse, readQuery } from "@interopkit/core/http";
 import * as v from "valibot";
 import type { CaseEntity, CasePackage, CaseVersion, CFDocumentSet } from "../model/index.js";
@@ -15,6 +15,7 @@ import {
   internalError,
   invalidUuid,
   methodNotAllowed,
+  serverBusy,
   unauthorized,
   unknownObject,
 } from "./status.js";
@@ -22,7 +23,11 @@ import { lookupSchema, pageSchema } from "./store.js";
 
 const decisionSchema = v.variant("allowed", [
   v.object({ allowed: v.literal(true) }),
-  v.object({ allowed: v.literal(false), status: v.picklist([401, 403]) }),
+  v.object({
+    allowed: v.literal(false),
+    status: v.picklist([401, 403, 429]),
+    retryAfterSeconds: v.optional(nonNegativeIntegerSchema),
+  }),
 ]);
 
 /** Returns an object of the model in the form of a version of CASE. It is `undefined` when 1.0 has no form for it. */
@@ -39,6 +44,7 @@ async function refusalOf(request: HttpRequest, settings: ProviderSettings): Prom
   if (asked === undefined) return internalError();
   const decision = parseWith(decisionSchema, asked.value, "The decision of authorize");
   if (decision.allowed) return undefined;
+  if (decision.status === 429) return serverBusy(decision.retryAfterSeconds);
   return decision.status === 401 ? unauthorized() : forbidden();
 }
 
@@ -104,7 +110,7 @@ async function answerEntity(
  * Only GET is served (405 for another method). `/CFDocuments` takes `limit`, `offset`, `sort`, `orderBy`, `filter` and
  * `fields`; the other endpoints take no parameters. The answers are the entities of the model, in the form of the version of
  * the path, with `imsx_StatusInfo` for every failure: 400 for a filter or a list of fields that cannot be used, or a `limit`
- * or `offset` that is not a whole number, 401 and 403 from `authorize`, 404 for an unknown path, an unknown identifier and
+ * or `offset` that is not a whole number, 401, 403 and 429 from `authorize`, 404 for an unknown path, an unknown identifier and
  * an identifier that is not a UUID, 405, and 500 when the store or `authorize` rejects. The list of documents sends the
  * number that match in `X-Total-Count` and the first, previous, next and last pages in `Link`. A page past the end, and a
  * list with no match, are an empty `CFDocuments`, which the schema does not allow but a consumer that pages needs. On the 1.0

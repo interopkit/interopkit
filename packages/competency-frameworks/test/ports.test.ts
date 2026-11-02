@@ -61,6 +61,20 @@ describe("authorize", () => {
     });
   });
 
+  it("answers 429 server_busy for one request too many, with Retry-After when it gives the seconds", async () => {
+    const busy = await serve(LIST, { authorize: () => Promise.resolve(JSON.parse('{"allowed":false,"status":429}')) });
+    expect(busy.status).toBe(429);
+    expect(busy.headers["retry-after"]).toBeUndefined();
+    expect(jsonOf(busy)).toMatchObject({
+      imsx_codeMinor: { imsx_codeMinorField: [{ imsx_codeMinorFieldValue: "server_busy" }] },
+    });
+    const later = await serve(ITEM, {
+      authorize: () => Promise.resolve(JSON.parse('{"allowed":false,"status":429,"retryAfterSeconds":30}')),
+    });
+    expect(later.status).toBe(429);
+    expect(later.headers["retry-after"]).toBe("30");
+  });
+
   it("is not asked for a request to a path that is no endpoint, or a method that is not served", async () => {
     let asks = 0;
     const authorize = () => {
@@ -93,7 +107,8 @@ describe("authorize", () => {
     ["null", "null"],
     ["a boolean", "true"],
     ["a decision with no status", '{"allowed":false}'],
-    ["a status that is not 401 or 403", '{"allowed":false,"status":500}'],
+    ["a status that is not 401, 403 or 429", '{"allowed":false,"status":500}'],
+    ["a wait that is not a whole number of seconds", '{"allowed":false,"status":429,"retryAfterSeconds":1.5}'],
     ["a decision that is not allowed or refused", '{"allowed":"yes"}'],
   ])("is a broken contract when it answers %s", async (_, json) => {
     const authorize = () => Promise.resolve(json === "undefined" ? undefined : JSON.parse(json));

@@ -7,7 +7,10 @@ import { openApiSchema } from "../read/internal.js";
 import { canonicalLocale, DEFAULT_COLLATION } from "./query-entities.js";
 import { type FrameworkStore, storeSchema } from "./store.js";
 
-/** The decision of `authorize`: the request may go on, or it is refused as unauthenticated (401) or as forbidden (403). */
+/**
+ * The decision of `authorize`: the request may go on, or it is refused as unauthenticated (401), as forbidden (403), or as one
+ * request too many (429).
+ */
 export type AccessDecision =
   | {
       /** The request may be served. */
@@ -16,8 +19,14 @@ export type AccessDecision =
   | {
       /** The request is refused. */
       readonly allowed: false;
-      /** 401 when the request is not authenticated, 403 when it is not allowed. */
-      readonly status: 401 | 403;
+      /** 401 when the request is not authenticated, 403 when it is not allowed, 429 when the consumer asks too often. */
+      readonly status: 401 | 403 | 429;
+      /**
+       * The seconds that a refused consumer should wait, sent as `Retry-After` with 429.
+       *
+       * @defaultValue none: no `Retry-After`
+       */
+      readonly retryAfterSeconds?: number;
     };
 
 /** The options of `handleCaseRequest`. */
@@ -41,8 +50,9 @@ export interface CaseProviderOptions extends CallOptions {
    */
   readonly versions?: readonly CaseVersion[];
   /**
-   * Decides whether a request may be served, from its headers. It is not asked for the discovery file, which a consumer
-   * reads to learn how to authenticate.
+   * Decides whether a request may be served, from its headers, and refuses one that is not authenticated, not allowed, or one
+   * too many for the host's limit of rate. It is not asked for the discovery file, which a consumer reads to learn how to
+   * authenticate.
    *
    * @defaultValue every request allowed
    */
