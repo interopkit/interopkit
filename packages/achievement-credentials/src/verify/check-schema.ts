@@ -96,7 +96,8 @@ async function loadSchema(url: string, context: Context): Promise<SchemaLoad> {
     // The validator reads the schema as it reads the credential: through the meter, which starts again for each credential.
     return { validator: new Validator(meter.wrap(schema), draftOf(schema.$schema)), meter };
   } catch (error) {
-    if (error instanceof WorkLimitError) return { reason: `${label} is larger than a verifier reads.` };
+    // The validator indexes the schema as it is built: an $id that is no address, or one given twice, cannot be indexed, and
+    // the reads of indexing, which grow with the size of the schema that the fetch bounds, may pass the budget.
     return { reason: `${label} cannot be used: ${error instanceof Error ? error.message : "it is not a schema"}.` };
   }
 }

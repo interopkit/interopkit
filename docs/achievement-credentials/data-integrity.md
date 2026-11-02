@@ -263,7 +263,7 @@ canonicalized once for all of them. Bounded as it is, a credential at the token 
 | The credential to sign is not valid, or its graph cannot be canonicalized                    | `DataError`: `The credential is invalid ...`, `... cannot be processed as JSON-LD: ...` |
 | The credential has more tokens than `maxJsonLdTokens`, or needs more than 1,000 runs of Hash N-Degree Quads | While signing, deriving or validating: `DataError` that names the limit. While verifying: `valid: false` with the same sentence |
 | A context has no pin or is not the pinned document                                           | While signing or deriving: `DataError`. While verifying: `valid: false` |
-| A context cannot be fetched                                                                  | `ServiceError`                                                     |
+| A context, a key or what the issuer publishes cannot be fetched                              | `ServiceError`                                                     |
 | A disclosure hides what the model requires                                                   | `DataError` that names the pointers to add                         |
 | The signal aborts                                                                            | The `reason` of the signal                                         |
 

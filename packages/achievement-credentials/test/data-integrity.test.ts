@@ -14,7 +14,7 @@ import {
   withProofList,
   withProofObject,
 } from "../src/data-integrity/internal.js";
-import { type IssuableCredential, readCredential } from "../src/index.js";
+import { type IssuableCredential, type KeyResolver, readCredential } from "../src/index.js";
 import { createKeyResolver } from "../src/keys/index.js";
 import { CLOSED, memoryContexts } from "./context-fixtures.js";
 import { achievementCredential, clrCredential, endorsementCredential } from "./fixtures.js";
@@ -173,6 +173,25 @@ describe("verifying an eddsa-rdfc-2022 proof", () => {
       reason: expect.stringContaining("controlled by"),
     });
     expect(await verifyProof(forged, { ...read, allowUnboundKeys: true })).toMatchObject({ valid: true, bound: false });
+  });
+
+  it("rejects with a ServiceError when what the issuer publishes cannot be read", async () => {
+    const w = world();
+    // The key names an issuer at an address as its controller, which the documents of that issuer, which do not answer, confirm.
+    const controller = "https://example.edu/issuers/1";
+    const credential = await addProof(credentialOf(controller), issuer.signer, w.options);
+    const keys: KeyResolver = {
+      resolve: async (method, options) => {
+        const key = await w.keys.resolve(method, options);
+        return key === undefined ? key : { ...key, controller };
+      },
+      issuerKeys: async () => {
+        throw new ServiceError("The document did not answer.", 0, "");
+      },
+    };
+    await expect(verifyProof(credential, { keys, clock: w.clock, contexts: w.contexts.load })).rejects.toBeInstanceOf(
+      ServiceError,
+    );
   });
 
   it("looks nothing up for the binding when the host allows unbound keys", async () => {
