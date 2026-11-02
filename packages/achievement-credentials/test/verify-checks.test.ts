@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { ServiceError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { hashIdentifier } from "../src/issue/index.js";
 import { createKeyResolver } from "../src/keys/index.js";
@@ -216,6 +217,32 @@ describe("the refresh of a credential", () => {
     expect(outcomes(result).refresh).toBe("unavailable");
     expect(detailOf(result, "refresh")).toContain("not authentic");
     expect(result.credential).toMatchObject({ name: "Original" });
+  });
+
+  it("goes on with the original when the key of the refreshed credential cannot be tied to its issuer", async () => {
+    const refreshed = await jwsOf({ ...badge(), name: "Refreshed" });
+    const { options } = world({ [REFRESH_URL]: refreshed });
+    // What the issuer publishes is read for the original and cannot be read for the refreshed credential.
+    let reads = 0;
+    const keys = {
+      resolve: options.keys.resolve,
+      issuerKeys: async (issuer: string) => {
+        reads += 1;
+        if (reads > 1) throw new ServiceError("The keys of the issuer could not be read.", 503, "");
+        return await options.keys.issuerKeys(issuer);
+      },
+    };
+    for (const unavailable of ["fail", "warn"] as const) {
+      reads = 0;
+      const result = await verifyCredential(await jwsOf(refreshing({ name: "Original" })), {
+        ...options,
+        keys,
+        unavailable,
+      });
+      expect(outcomes(result)).toMatchObject({ issuer: "passed", refresh: "unavailable" });
+      expect(detailOf(result, "refresh")).toContain("not authentic");
+      expect(result.credential).toMatchObject({ name: "Original" });
+    }
   });
 
   it("goes on with the original when the service gives another credential, which would swap one for another", async () => {

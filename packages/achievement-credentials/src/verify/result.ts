@@ -24,12 +24,19 @@ export interface Parts {
 }
 
 /**
+ * The checks that make a credential authentic: a proof that could not be checked, or a key that could not be tied to the issuer,
+ * proves nothing about who issued the credential, whatever the host accepts as unavailable.
+ */
+const AUTHENTICITY: readonly VerificationCheckName[] = ["proof", "issuer"];
+
+/**
  * Tells whether a check lets a credential be verified: it passed, it did not apply, or what it needs could not be read and the
- * host accepts that. A proof that cannot be checked never lets a credential be verified.
+ * host accepts that. A check of authenticity that could not be made never lets a credential be verified: an issuer whose
+ * documents a forger can make unreadable would otherwise be forged.
  */
 function accepts(check: VerificationCheck, unavailable: "fail" | "warn"): boolean {
   if (check.outcome === "passed" || check.outcome === "skipped") return true;
-  return check.outcome === "unavailable" && unavailable === "warn" && check.check !== "proof";
+  return check.outcome === "unavailable" && unavailable === "warn" && !AUTHENTICITY.includes(check.check);
 }
 
 /**

@@ -5575,8 +5575,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A refreshed credential is verified before it takes the place of the original.",
     file: "packages/achievement-credentials/src/verify/check-refresh.ts",
-    find: "if (refreshed.authentic === undefined) {",
-    replace: "if (false) {",
+    find: 'if (refreshed.authentic === undefined || refreshed.checks.issuer?.outcome === "unavailable") {',
+    replace: 'if (refreshed.checks.issuer?.outcome === "unavailable") {',
+    test: "packages/achievement-credentials/test/verify-checks.test.ts",
+  },
+  {
+    rule: "A refreshed credential whose key could not be tied to its issuer does not take the place of the original.",
+    file: "packages/achievement-credentials/src/verify/check-refresh.ts",
+    find: 'if (refreshed.authentic === undefined || refreshed.checks.issuer?.outcome === "unavailable") {',
+    replace: "if (refreshed.authentic === undefined) {",
     test: "packages/achievement-credentials/test/verify-checks.test.ts",
   },
   {
@@ -5673,8 +5680,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A proof that could not be checked never lets a credential be verified, whatever the host accepts as unavailable.",
     file: "packages/achievement-credentials/src/verify/result.ts",
-    find: 'unavailable === "warn" && check.check !== "proof"',
-    replace: 'unavailable === "warn"',
+    find: 'const AUTHENTICITY: readonly VerificationCheckName[] = ["proof", "issuer"];',
+    replace: 'const AUTHENTICITY: readonly VerificationCheckName[] = ["issuer"];',
+    test: "packages/achievement-credentials/test/verify.test.ts",
+  },
+  {
+    rule: "A key that could not be tied to the issuer never lets a credential be verified, whatever the host accepts as unavailable.",
+    file: "packages/achievement-credentials/src/verify/result.ts",
+    find: 'const AUTHENTICITY: readonly VerificationCheckName[] = ["proof", "issuer"];',
+    replace: 'const AUTHENTICITY: readonly VerificationCheckName[] = ["proof"];',
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {

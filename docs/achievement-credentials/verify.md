@@ -106,8 +106,9 @@ others.
 | `recipient` | The subject is the known recipient, by `id` or by an identifier (`matchesIdentifier`)                                                                                          | `passed`, `failed`, `skipped` (none known)                 |
 
 `verified` is true when every check passed or did not apply, and so does every endorsement and every credential that a CLR holds.
-`unavailable` fails the verification unless `unavailable` is `"warn"`, which applies to `schema`, `issuer`, `refresh` and
-`status`. A proof that cannot be checked always fails it.
+`unavailable` fails the verification unless `unavailable` is `"warn"`, which applies to `schema`, `refresh` and `status`. A
+proof that cannot be checked, and a key that cannot be tied to the issuer, always fail it: a forger who signs in the name of an
+issuer whose documents cannot be read would otherwise pass.
 
 | Result field   | Holds                                                                                                                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -260,7 +261,7 @@ revocation list the `status` `unavailable`, which `unavailable: "warn"` accepts.
 | `statusIssuers`        | Issuers other than a credential's that may publish its status list                                        | None                                                 |
 | `recipient`            | The known recipient: `{ id }`, `{ identifier: { type, value } }` or both; either is a match               | None: the check is `skipped`                         |
 | `refresh`              | Whether to follow the refresh service                                                                     | `true`                                               |
-| `unavailable`          | `"fail"` or `"warn"`: whether `schema`, `issuer`, `refresh` and `status` that cannot be read fail the verification | `"fail"`                                  |
+| `unavailable`          | `"fail"` or `"warn"`: whether `schema`, `refresh` and `status` that cannot be read fail the verification; `proof` and `issuer` always do | `"fail"`                                  |
 | `allowUnboundKeys`     | Accept keys that the issuer does not publish, for the credential and its status lists                      | `false`                                              |
 | `legacyProofs`         | Accept `Ed25519Signature2020` proofs                                                                      | `false`                                              |
 | `suites`               | More Data Integrity suites beside `eddsa-rdfc-2022`, `ecdsa-rdfc-2019` and `ecdsa-sd-2023`                | None                                                 |

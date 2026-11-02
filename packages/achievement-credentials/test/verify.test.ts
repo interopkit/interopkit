@@ -304,15 +304,15 @@ describe("the issuer's hold on the key", () => {
     expect(result.credential).toBeDefined();
   });
 
-  it("is unavailable when what the issuer publishes cannot be read, and unavailable says whether that fails", async () => {
+  it("is unavailable when what the issuer publishes cannot be read, which fails the verification whatever unavailable says", async () => {
+    // A forger signs with a key of their own in the name of an issuer whose documents cannot be read.
     const jws = await signCredentialJwt(badge(), signerOf(KEYS.other), { jwk: KEYS.other.publicJwk });
     const { options } = world({ [ISSUER]: 503, "https://example.edu/.well-known/jwks.json": 503 });
-    const failing = await verifyCredential(jws, options);
-    expect(outcomes(failing)).toMatchObject({ proof: "passed", issuer: "unavailable" });
-    expect(failing.verified).toBe(false);
-    const warning = await verifyCredential(jws, { ...options, unavailable: "warn" });
-    expect(warning.verified).toBe(true);
-    expect(outcomes(warning).issuer).toBe("unavailable");
+    for (const unavailable of ["fail", "warn"] as const) {
+      const result = await verifyCredential(jws, { ...options, unavailable });
+      expect(outcomes(result)).toMatchObject({ proof: "passed", issuer: "unavailable" });
+      expect(result.verified).toBe(false);
+    }
   });
 });
 

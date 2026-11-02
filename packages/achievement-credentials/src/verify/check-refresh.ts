@@ -55,7 +55,8 @@ export async function refresh(authentic: Authentic, context: Context): Promise<R
   if (prepared.prepared.form === "address")
     return unavailable("The refresh service answered an address and no credential.");
   const refreshed = await authenticate(prepared.prepared, context);
-  if (refreshed.authentic === undefined) {
+  // A candidate whose key could not be tied to its issuer is not known to be authentic, so the original stays.
+  if (refreshed.authentic === undefined || refreshed.checks.issuer?.outcome === "unavailable") {
     return unavailable(`The refreshed credential is not authentic: ${firstProblem(refreshed.checks)}`);
   }
   if (!sameCredential(authentic.credential, refreshed.authentic.credential)) {

@@ -70,8 +70,8 @@ export interface VerifyOptions extends CallOptions {
    */
   readonly refresh?: boolean;
   /**
-   * Whether a status list, a refresh or a schema that cannot be read, or an issuer whose keys cannot be read, fails the
-   * verification. A proof that cannot be checked always fails it.
+   * Whether a status list, a refresh or a schema that cannot be read fails the verification. A proof that cannot be checked,
+   * and an issuer whose keys cannot be read, always fail it: a key that is not tied to the issuer proves nothing.
    *
    * @defaultValue `"fail"`
    */
