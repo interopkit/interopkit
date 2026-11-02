@@ -17,7 +17,6 @@ import type {
   PlatformInstance,
   PreferencesClaim,
   ProctoringSettings,
-  ResourceLink,
   RosterClaim,
   UserIdentity,
 } from "./model.js";
@@ -90,12 +89,6 @@ export const actualUserSchema = v.pipe(
       locale: claim.locale,
     }),
   ),
-);
-
-/** The resource link claim (LTI 1.3 Core section 5.3.5). */
-export const resourceLinkSchema = v.pipe(
-  looseRecord({ id: IDENTIFIER, title: TEXT, description: TEXT }),
-  v.transform((claim): ResourceLink => ({ id: claim.id, title: claim.title, description: claim.description })),
 );
 
 /** The context claim (LTI 1.3 Core section 5.4.1). */

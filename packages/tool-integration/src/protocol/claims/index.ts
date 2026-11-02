@@ -6,6 +6,20 @@
  */
 export { APPROVED_ALGORITHMS, type JwsAlgorithm } from "./algorithms.js";
 export {
+  checkLimit,
+  compact,
+  DATE_TIME,
+  extensionsOf,
+  isExtensionName,
+  type Members,
+  OPTIONAL_DATE_TIME,
+  OPTIONAL_TEXT,
+  searchLimit,
+  searchOf,
+  searchValue,
+  writeExtensions,
+} from "./body.js";
+export {
   LTI_VERSION,
   MESSAGE_TYPES,
   type MessageType,
@@ -13,6 +27,7 @@ export {
   TOOL_MESSAGE_TYPES,
 } from "./message-types.js";
 export { CLAIM } from "./names.js";
+export { type ResourceLink, resourceLinkSchema } from "./resource-link.js";
 export {
   BOOLEAN,
   type Claims,
@@ -32,6 +47,7 @@ export {
   STRING_RECORD,
 } from "./schemas.js";
 export { SCOPES } from "./scopes.js";
+export { type SubmissionReview, submissionReviewSchema, writeSubmissionReview } from "./submission-review.js";
 export {
   CONTEXT_ROLES,
   CONTEXT_SUB_ROLES,

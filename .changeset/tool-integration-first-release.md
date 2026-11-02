@@ -19,3 +19,11 @@ response and a Start Assessment message. The role and context type vocabularies 
 `APPROVED_ALGORITHMS`. A token is verified with RS256, RS384, RS512, ES256, ES384 or ES512 and no other algorithm; its audiences
 must be the tool and parties that the registration trusts, and a token with several audiences must name its authorized party.
 `KeySet` is the signer and the public keys of one party.
+
+The bodies of the services have one model too, in both roles. A line item (with `activityId`, `gradesReleased` and
+`submissionReview`), a score, a result, the members of a context or a resource link with their messages and group enrollments,
+the groups and group sets of a context, the five content items of Deep Linking with their extensions, the configuration of a
+platform, the registration that a tool asks for and its acknowledgment, the request and the status of the Assessment Control
+Service, and the record of the AfA PNP Connector, each with the filters of its request. A body that breaks its specification is a
+`DataError` that names the path of the first invalid member.
+

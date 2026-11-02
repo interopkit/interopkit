@@ -413,6 +413,91 @@
       }
     },
     {
+      "includes": [
+        "packages/tool-integration/src/protocol/grades/**",
+        "packages/tool-integration/src/protocol/roster/**",
+        "packages/tool-integration/src/protocol/groups/**",
+        "packages/tool-integration/src/protocol/content-items/**",
+        "packages/tool-integration/src/protocol/registration/**",
+        "packages/tool-integration/src/protocol/proctoring/**",
+        "packages/tool-integration/src/protocol/preferences/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "../grades",
+                      "../grades/**",
+                      "../roster",
+                      "../roster/**",
+                      "../groups",
+                      "../groups/**",
+                      "../content-items",
+                      "../content-items/**",
+                      "../registration",
+                      "../registration/**",
+                      "../proctoring",
+                      "../proctoring/**",
+                      "../preferences",
+                      "../preferences/**",
+                      "../message",
+                      "../message/**",
+                      "../jwt.js",
+                      "../jwks.js",
+                      "../key-set.js",
+                      "../page.js",
+                      "../keys.js"
+                    ],
+                    "message": "A service folder of protocol/ builds on claims/ and @interopkit/core only, and never imports another folder of protocol/."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/tool-integration/src/protocol/message/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "../grades",
+                      "../grades/**",
+                      "../roster",
+                      "../roster/**",
+                      "../groups",
+                      "../groups/**",
+                      "../content-items",
+                      "../content-items/**",
+                      "../registration",
+                      "../registration/**",
+                      "../proctoring",
+                      "../proctoring/**",
+                      "../preferences",
+                      "../preferences/**"
+                    ],
+                    "message": "message/ builds on claims/ and @interopkit/core only: the service folders and the token rules never meet it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["packages/tool-integration/src/tool/**"],
       "linter": {
         "rules": {

@@ -5,6 +5,8 @@
  *
  * @module
  */
+
+export type { ResourceLink } from "../claims/index.js";
 export { signConsumerKey, verifyMigration } from "./migration.js";
 export type {
   ActualUser,
@@ -28,7 +30,6 @@ export type {
   PlatformInstance,
   PreferencesClaim,
   ProctoringSettings,
-  ResourceLink,
   ResourceLinkMessage,
   RosterClaim,
   StartAssessmentMessage,

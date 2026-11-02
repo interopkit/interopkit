@@ -25,8 +25,38 @@ export {
   STRING_RECORD,
 } from "./claims/index.js";
 export { CLOCK_SKEW_SECONDS } from "./clock-skew.js";
+export {
+  readContentItem,
+  writeContentItem,
+} from "./content-items/index.js";
 export { readCookie } from "./cookie.js";
 export { errorBody } from "./error-body.js";
+export {
+  readLineItem,
+  readLineItemInput,
+  readLineItemQuery,
+  readLineItems,
+  readResult,
+  readResultQuery,
+  readResults,
+  readScore,
+  writeLineItem,
+  writeLineItemInput,
+  writeLineItemQuery,
+  writeLineItems,
+  writeResult,
+  writeResultQuery,
+  writeResults,
+  writeScore,
+} from "./grades/index.js";
+export {
+  readGroupContainer,
+  readGroupQuery,
+  readGroupSetContainer,
+  writeGroupContainer,
+  writeGroupQuery,
+  writeGroupSetContainer,
+} from "./groups/index.js";
 export { escapeHtml, pagePolicy } from "./html.js";
 export { checkJwksCache, type JwksCache } from "./jwks.js";
 export { hasCanonicalParts, rs256Header, unverifiedClaims, verifyJwt } from "./jwt.js";
@@ -43,7 +73,34 @@ export {
   writeToolMessage,
 } from "./message/index.js";
 export { renderPage } from "./page.js";
+export {
+  readPreferencesQuery,
+  readPreferencesRecord,
+  writePreferencesQuery,
+} from "./preferences/index.js";
+export {
+  readControlRequest,
+  readControlStatus,
+  writeControlRequest,
+  writeControlStatus,
+} from "./proctoring/index.js";
 export { randomToken } from "./random.js";
+export {
+  readPlatformConfiguration,
+  readToolConfiguration,
+  readToolRegistrationResult,
+  writePlatformConfiguration,
+  writeToolConfiguration,
+  writeToolRegistrationResult,
+} from "./registration/index.js";
+export {
+  readMember,
+  readMemberQuery,
+  readMembership,
+  writeMember,
+  writeMemberQuery,
+  writeMembership,
+} from "./roster/index.js";
 export { MILLISECONDS, toSeconds } from "./time.js";
 export {
   CLIENT_CREDENTIALS_GRANT,

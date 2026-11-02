@@ -1,4 +1,5 @@
 import type { JsonObject, JsonValue } from "@interopkit/core/checks";
+import type { ResourceLink } from "../claims/index.js";
 
 /** The deployment that a message belongs to: the platform, the tool's client at the platform, and the deployment. */
 export interface LtiDeployment {
@@ -38,16 +39,6 @@ export interface ActualUser extends Omit<UserIdentity, "subject"> {
   readonly id: string;
   /** The roles of the person acting in the context, as the `roles` claim has them. */
   readonly roles?: readonly string[];
-}
-
-/** The resource link a message comes from (LTI 1.3 Core section 5.3.5). */
-export interface ResourceLink {
-  /** The identifier of the link within the deployment. */
-  readonly id: string;
-  /** The title of the link. */
-  readonly title?: string;
-  /** The description of the link. */
-  readonly description?: string;
 }
 
 /** The context a message comes from, usually a course (LTI 1.3 Core section 5.4.1). */

@@ -13,6 +13,13 @@ export interface SpecPage {
   readonly file: string;
   /** The SHA-256 of the examples as `jsonBlocks` finds them, written as JSON, as lowercase hexadecimal. */
   readonly sha256: string;
+  /**
+   * Whether the examples are the JSON bodies that `httpBodyBlocks` finds, those of HTTP exchanges included, and not only the
+   * blocks that are JSON as a whole.
+   *
+   * @defaultValue `false`
+   */
+  readonly bodies?: boolean;
 }
 
 /** The examples of the specifications that the tests read, by role in the tests. */
@@ -58,6 +65,50 @@ export function jsonBlocks(html: string): unknown[] {
   return values;
 }
 
+/** The tokens that matter for finding where a JSON value ends: a string, with its escapes, and a bracket. */
+const BRACKET_OR_STRING = /"(?:[^"\\]|\\.)*"|[{}[\]]/gu;
+
+/** Returns the index after the JSON value that starts at `from`, which is a `{` or a `[`, or `-1` when the text ends inside it. */
+function endOfValue(text: string, from: number): number {
+  let depth = 0;
+  BRACKET_OR_STRING.lastIndex = from;
+  for (let match = BRACKET_OR_STRING.exec(text); match !== null; match = BRACKET_OR_STRING.exec(text)) {
+    if (match[0] === "{" || match[0] === "[") depth += 1;
+    else if (!match[0].startsWith('"')) depth -= 1;
+    if (depth === 0) return match.index + match[0].length;
+  }
+  return -1;
+}
+
+/**
+ * Returns the JSON values that the preformatted blocks of a page hold, in order: a block that is JSON as a whole, and a block
+ * that prints an HTTP exchange, with request or status lines and headers around its JSON, a request body and the body of its
+ * answer among them. A value starts at a line that begins with `{` or `[` and ends where its brackets close; one that is not
+ * JSON, or is an ellipsis, is skipped.
+ */
+export function httpBodyBlocks(html: string): unknown[] {
+  const values: unknown[] = [];
+  for (const [, block] of html.matchAll(/<pre[^>]*>([\s\S]*?)<\/pre>/gu)) {
+    // The examples of some pages indent with no-break spaces, which JSON does not take as white space.
+    const text = decodeEntities((block ?? "").replace(/<[^>]+>/gu, "").replaceAll("&nbsp;", " "))
+      .replaceAll("\u00a0", " ")
+      .trim();
+    for (let at = 0; at < text.length; ) {
+      const start = text.slice(at).search(/^[{[]/mu);
+      if (start < 0) break;
+      const end = endOfValue(text, at + start);
+      if (end < 0) break;
+      try {
+        values.push(JSON.parse(text.slice(at + start, end)));
+      } catch {
+        // A block of another language, a fragment with an ellipsis or an example with a mistake is not an example to read.
+      }
+      at = end;
+    }
+  }
+  return values;
+}
+
 /**
  * Returns the JSON values that the fenced blocks of a Markdown page hold, in order. A block of members, such as
  * `"definition": { ... }`, is read as an object; a block that is not JSON is skipped.
@@ -98,7 +149,8 @@ async function readPage(page: SpecPage): Promise<unknown[]> {
   const response = await fetch(page.url);
   if (!response.ok) throw new Error(`Downloading ${page.url} failed: HTTP ${response.status}.`);
   const text = await response.text();
-  return page.url.endsWith(".md") ? markdownJsonBlocks(text) : jsonBlocks(text);
+  if (page.url.endsWith(".md")) return markdownJsonBlocks(text);
+  return page.bodies === true ? httpBodyBlocks(text) : jsonBlocks(text);
 }
 
 /**

@@ -343,5 +343,20 @@
     "url": "https://standards.1edtech.org/lti/specifications/core/lti-spec",
     "file": "lti-core-portal.html",
     "sha256": "c7c08a50ce15e139b8a5a86b1138bca3480f55f2443f90723525df1439ca38ff"
+  },
+  {
+    "url": "https://standards.1edtech.org/lti/specifications/services/assignments_grades/assignment-grade-services-spec",
+    "file": "lti-ags-portal.html",
+    "sha256": "d696e9be38ef94a437c3a898fccae4bbe5d4f6962e2c94eb976cffe9d9b9fb03"
+  },
+  {
+    "url": "https://www.imsglobal.org/sites/default/files/specs/lti/1p3/openapi/openapi_full_0.yaml",
+    "file": "lti-ags-openapi.yaml",
+    "sha256": "a18563c2c9cc00c81b1b02dc6a9da6e743eb5cc6aeb6c6f072723d1348dad35f"
+  },
+  {
+    "url": "https://purl.imsglobal.org/spec/afapnp/v1p0/schema/openapi/imsafapnpv1p0_openapi3_v1p0p0.json",
+    "file": "afapnp-openapi.json",
+    "sha256": "4f99adb2a576a85ebe3e4649bfc9f31de7232bc0668577d0d69d6494406d9de1"
   }
 ]

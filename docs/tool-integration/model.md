@@ -167,4 +167,4 @@ The writer holds a platform to the rules that a receiver does not enforce, and t
 | `@lti-tool/core`, `@ltikit/core`, `@longsightgroup/lti-tool`                               | They have no allow-list of algorithms; here the six of Security Framework 7.2 are the only ones |
 | Canvas, which is not a reference but a platform that tools meet                            | A `null` string is read as absent, a number in `custom` as its text, and the context type `Account` as sent |
 
-See the [gaps in the specifications](spec-gaps.md) for where the examples and the text disagree.
+The bodies of the services are in [Service bodies](services.md). See the [gaps in the specifications](spec-gaps.md) for where the examples and the text disagree.

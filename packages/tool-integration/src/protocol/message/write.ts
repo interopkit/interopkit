@@ -5,11 +5,13 @@ import { checkHttpsUrl, describe, type JsonValue } from "@interopkit/core/checks
 import {
   CLAIM,
   canonicalizeRole,
+  compact,
   isVocabularyContextType,
   isVocabularyRole,
   LTI_VERSION,
   MAX_IDENTIFIER_LENGTH,
   MENTOR_ROLE,
+  type Members,
   PLATFORM_MESSAGE_TYPES,
 } from "../claims/index.js";
 import type {
@@ -27,11 +29,6 @@ import type {
   ToolMessage,
   UserIdentity,
 } from "./model.js";
-
-/** A JSON object whose members may be absent. */
-interface Members {
-  readonly [name: string]: JsonValue | undefined;
-}
 
 /** What the writer takes of a message beside the model: no claims read back, and the vendor claims of the sender. */
 interface WriteExtras {
@@ -69,13 +66,6 @@ export type ToolMessageToWrite = ToolMessage extends infer TMessage
       }
     : never
   : never;
-
-/** Drops the members that are absent. */
-function compact(members: Members): Record<string, JsonValue> {
-  return Object.fromEntries(
-    Object.entries(members).filter((entry): entry is [string, JsonValue] => entry[1] !== undefined),
-  );
-}
 
 /** Returns whether a claim name is a fully qualified URL. */
 function isUrl(name: string): boolean {

@@ -10,7 +10,7 @@
     "sha256": "209d7518008ad13343d2b8d7c2464f6975d443c7c1939c7d33d6afe6a1dab55f"
   },
   {
-    "url": "https://www.imsglobal.org/spec/lti-ags/v2p0",
+    "url": "https://standards.1edtech.org/lti/specifications/services/assignments_grades/assignment-grade-services-spec",
     "file": "lti-ags-2p0.json",
     "sha256": "9ec5fa93be215303da13ea73cb24c040eeb25502c964a8947a0b695ecbaea18e"
   },
@@ -73,5 +73,26 @@
     "url": "https://www.imsglobal.org/sites/default/files/spec/afa/3p0/connector_service/1edtech-ltipnp-servicev1.html",
     "file": "lti-pnp-connector-1p0.json",
     "sha256": "83b7049c1019e0e4b2dd6360f4a9ac76e5b1a72b9b177b2146c22fca5f7bf155"
+  },
+  {
+    "url": "https://standards.1edtech.org/lti/specifications/services/names_roles/names-role-provisioning-spec",
+    "file": "lti-nrps-2p0.json",
+    "sha256": "21ea0dfee0494481971df2d2110b05bef6b6686afd428f215a53e15c400557b1"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/lti-gs/v1p0",
+    "file": "lti-context-groups-1p0.json",
+    "sha256": "6fa40c80d0b77918819968219c4b554e42079bb412134f72881dcaf03a980c6f"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/lti-dr/v1p0",
+    "file": "lti-dynamic-registration-1p0.json",
+    "sha256": "3e1d02ab8fd505591b34f2f3cc2ce6ae02e3b953054964f1e16ec6ec26fa303d"
+  },
+  {
+    "url": "https://www.imsglobal.org/spec/proctoring/v1p0",
+    "file": "lti-proctoring-1p0.json",
+    "sha256": "fe1a869f63d33c5a75a6918962649e6153b940ac31d7864df4f494c31e0ef26c",
+    "bodies": true
   }
 ]

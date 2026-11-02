@@ -6,7 +6,7 @@ registrations, `fetch`, the time) and receives plain results. The package has no
 ```mermaid
 flowchart BT
   core["@interopkit/core<br/>errors, checks, clock, service calls, http, signals"]
-  proto["protocol/<br/>claims, message model, jwt,<br/>key sets, pages"]
+  proto["protocol/<br/>claims, message model, service bodies,<br/>jwt, key sets, pages"]
   tool["tool/<br/>login, launch, Deep Linking,<br/>access tokens, scores"]
   platformRole["platform/<br/>login, authorization, tokens,<br/>line items, scores"]
   host["Your application"]
@@ -24,7 +24,7 @@ flowchart BT
 | Layer       | Holds                                                                                                                                                  | Imports                                      |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
 | `errors.ts` | `LtiError`, with a kebab-case `reason` and an HTTP `status`                                                                                            | `@interopkit/core`                           |
-| `protocol/` | What the roles share: the names and vocabularies of the claims, the model of the messages with its readers and writers, the JWT check, the keys of a party, the key set cache, the pages of the client-side login | `errors.ts`, `@interopkit/core`              |
+| `protocol/` | What the roles share: the names and vocabularies of the claims, the model of the messages and of the bodies of the services with their readers and writers, the JWT check, the keys of a party, the key set cache, the pages of the client-side login | `errors.ts`, `@interopkit/core`              |
 | `tool/`     | The tool role                                                                                                                                          | `errors.ts`, `protocol/`, `@interopkit/core` |
 | `platform/` | The platform role                                                                                                                                      | `errors.ts`, `protocol/`, `@interopkit/core` |
 

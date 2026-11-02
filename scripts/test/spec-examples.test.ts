@@ -6,6 +6,7 @@ import {
   examplesDirectory,
   examplesHash,
   fetchSpecExamples,
+  httpBodyBlocks,
   jsonBlocks,
   loadLock,
   markdownJsonBlocks,
@@ -32,6 +33,43 @@ const PAGE = `<html><body>
 <pre>{ ... "ellipsis": 1 }</pre>
 <pre>npm install</pre>
 </body></html>`;
+
+describe("httpBodyBlocks", () => {
+  it("reads the blocks that are JSON and the JSON that follows the lines and headers of an HTTP example, and skips the rest", () => {
+    const page = `<pre>POST lineitems URL
+Content-Type: application/vnd.ims.lis.v2.lineitem+json
+
+{
+  "label": "Chapter &amp; verse",
+  "scoreMaximum": 60
+}</pre>
+<pre>HTTP/1.1 GET lineitems URL
+200 OK
+[]</pre>
+<pre>{ "whole": "block" }</pre>
+<pre>POST x
+{ ... "ellipsis": 1 }</pre>
+<pre>GET only a request line</pre>
+<pre>POST y
+{
+&nbsp;&nbsp;"indented": "with no-break spaces",
+  "literal": "too"}</pre>
+<pre>POST z
+{"request": "a } in a string and an \\" escape"}
+HTTP/1.1 201 Created
+{"response": [1]}
+HTTP/1.1 204 No Content</pre>
+<pre>[ {"missing": "comma"} {"x": 1} ]</pre>`;
+    expect(httpBodyBlocks(page)).toEqual([
+      { label: "Chapter & verse", scoreMaximum: 60 },
+      [],
+      { whole: "block" },
+      { indented: "with no-break spaces", literal: "too" },
+      { request: 'a } in a string and an " escape' },
+      { response: [1] },
+    ]);
+  });
+});
 
 describe("jsonBlocks", () => {
   it("returns the JSON of the preformatted blocks in order, with entities decoded and tags removed", () => {

@@ -90,3 +90,20 @@ flowchart LR
 
 Specifications whose text is behind a sign-in at 1EdTech (the Asset Processor family, EULA, Context Message, Data Privacy,
 Rubric Service and others) are not assessed.
+
+## Models of the service bodies
+
+Both roles share the models of [the bodies of the services](services.md). The reader and the writer of each are built and
+tested; the client of the tool role and the handler of the platform role that use them are not yet.
+
+| Service                    | Specification     | Modeled                                                                                          | Not yet                    |
+| -------------------------- | ----------------- | ------------------------------------------------------------------------------------------------ | -------------------------- |
+| Line items                 | AGS 3.2           | Line item with `activityId`, `gradesReleased` and `submissionReview`, its container, its filters | Client, handler, paging    |
+| Scores                     | AGS 3.4           | Score with `scoringUserId`, `submission` and extensions                                          | Client, handler            |
+| Results                    | AGS 3.3           | Result and its container, its filters                                                            | Client, handler            |
+| Memberships                | NRPS 2.0          | Container, member, message of a resource link, group enrollments, filters                        | Client, handler, differences |
+| Groups                     | Groups 1.0        | Groups, group sets, filters                                                                      | Client, handler            |
+| Content items              | DL 3              | The five types, their extensions and other types                                                 | The check against the request |
+| Configurations             | DR 2              | Platform, tool, acknowledgment, translations, extensions                                         | Steps, routes              |
+| Assessment Control Service | Proctoring 5      | Control request and status                                                                       | Client, handler            |
+| Preferences                | PNP Connector 1.0 | The record as JSON, the `fields` filter                                                          | Client, handler            |
