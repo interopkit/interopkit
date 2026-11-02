@@ -45,6 +45,6 @@ export function readForm(request: HttpRequest): ReadonlyMap<string, string> {
   // A `+` is a space. Written so here, on the bytes, it costs a form of 10 MiB no memory: URLSearchParams joins a rope with a node
   // for each `+` in Node.js, and a replacement in a string keeps a part for each.
   const body = request.body.slice();
-  for (const [index, byte] of body.entries()) if (byte === PLUS) body[index] = SPACE;
+  for (let index = 0; index < body.length; index += 1) if (body[index] === PLUS) body[index] = SPACE;
   return collect(new URLSearchParams(readText({ ...request, body })), "The form of the request");
 }
