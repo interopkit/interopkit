@@ -18,6 +18,7 @@
     "opensalt": "node validation/opensalt/run.ts",
     "adl-lrs": "node validation/adl-lrs/run.ts",
     "sql-lrs": "node validation/sql-lrs/run.ts",
+    "w3c-suites": "node validation/w3c-suites/run.ts",
     "lint": "biome check . && cspell --no-progress",
     "check:standards": "node scripts/check-standards.ts",
     "check:rules": "node scripts/check-rules.ts",

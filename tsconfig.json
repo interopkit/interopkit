@@ -7,5 +7,12 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["scripts", "validation/adl-lrs", "validation/opensalt", "validation/sql-lrs", "vitest.config.ts"]
+  "include": [
+    "scripts",
+    "validation/adl-lrs",
+    "validation/opensalt",
+    "validation/sql-lrs",
+    "validation/w3c-suites",
+    "vitest.config.ts"
+  ]
 }

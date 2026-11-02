@@ -1,0 +1,60 @@
+diff --git a/tests/mocks/achievement/vc2.0/document.json b/tests/mocks/achievement/vc2.0/document.json
+index 62cdbfc..b10463a 100644
+--- a/tests/mocks/achievement/vc2.0/document.json
++++ b/tests/mocks/achievement/vc2.0/document.json
+@@ -37,6 +37,7 @@
+       }
+     }
+   ],
++  "validFrom": "2025-01-01T00:00:00Z",
+   "type": ["VerifiableCredential", "ExampleAchievementCredential"],
+   "credentialSubject": {
+     "name": "Jane Doe",
+diff --git a/tests/mocks/achievement/vc2.0/mandatoryPointers.json b/tests/mocks/achievement/vc2.0/mandatoryPointers.json
+index 3f5dc00..27256be 100644
+--- a/tests/mocks/achievement/vc2.0/mandatoryPointers.json
++++ b/tests/mocks/achievement/vc2.0/mandatoryPointers.json
+@@ -1,3 +1,4 @@
+ [
+-  "/issuer"
++  "/issuer",
++  "/validFrom"
+ ]
+diff --git a/tests/mocks/valid/vc2.0/document.json b/tests/mocks/valid/vc2.0/document.json
+index b485e69..9a049fe 100644
+--- a/tests/mocks/valid/vc2.0/document.json
++++ b/tests/mocks/valid/vc2.0/document.json
+@@ -2,6 +2,7 @@
+   "@context": [
+     "https://www.w3.org/ns/credentials/v2"
+   ],
++  "validFrom": "2025-01-01T00:00:00Z",
+   "id": "urn:uuid:36245ee9-9074-4b05-a777-febff2e69757",
+   "type": ["VerifiableCredential"],
+   "credentialSubject": {
+diff --git a/tests/mocks/valid/vc2.0/mandatoryPointers.json b/tests/mocks/valid/vc2.0/mandatoryPointers.json
+index 3f5dc00..27256be 100644
+--- a/tests/mocks/valid/vc2.0/mandatoryPointers.json
++++ b/tests/mocks/valid/vc2.0/mandatoryPointers.json
+@@ -1,3 +1,4 @@
+ [
+-  "/issuer"
++  "/issuer",
++  "/validFrom"
+ ]
+--- a/node_modules/data-integrity-test-suite-assertion/validVc.json
++++ b/node_modules/data-integrity-test-suite-assertion/validVc.json
+@@ -1,11 +1,11 @@
+ {
+   "@context": [
+-    "https://www.w3.org/2018/credentials/v1"
++    "https://www.w3.org/ns/credentials/v2"
+   ],
+   "id": "urn:uuid:86294362-4254-4f36-854f-3952fe42555d",
+   "type": ["VerifiableCredential"],
+   "issuer": "did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b",
+-  "issuanceDate": "2020-03-16T22:37:26.544Z",
++  "validFrom": "2025-01-01T00:00:00Z",
+   "credentialSubject": {
+     "id": "did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b"
+   }

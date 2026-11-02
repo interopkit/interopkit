@@ -1,0 +1,12 @@
+diff --git a/tests/vc-generator/validVc.js b/tests/vc-generator/validVc.js
+index 50d8c68..3390732 100644
+--- a/tests/vc-generator/validVc.js
++++ b/tests/vc-generator/validVc.js
+@@ -5,6 +5,7 @@
+ export const validVc = {
+   '@context': ['https://www.w3.org/ns/credentials/v2'],
+   id: 'urn:uuid:86294362-4254-4f36-854f-3952fe42555d',
++  validFrom: '2025-01-01T00:00:00Z',
+   type: ['VerifiableCredential'],
+   credentialSubject: {
+     id: 'did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b',

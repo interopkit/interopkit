@@ -1,0 +1,149 @@
+[
+  {
+    "name": "eddsa",
+    "kind": "eddsa",
+    "repository": "w3c/vc-di-eddsa-test-suite",
+    "commit": "1e86cc4ca16d77eb76cd15e3905a624bc16c0879",
+    "sha256": "2c89794ffe0e1c2458c8423f4794230f5433f0057359c630a0717d5110ff44fd",
+    "patch": "eddsa.patch",
+    "tests": 44,
+    "pending": 0,
+    "expected": [
+      {
+        "title": "An OPTIONAL string value (proof.previousProof) or unordered list of string values",
+        "reason": "A proof chain is optional in Data Integrity, and verifyProof checks each proof of a set on its own, so a proof that names a previousProof does not verify."
+      }
+    ]
+  },
+  {
+    "name": "ecdsa",
+    "kind": "ecdsa",
+    "repository": "w3c/vc-di-ecdsa-test-suite",
+    "commit": "94dca21d8c1c7ad3dc31f21144d4d957567726b5",
+    "sha256": "55535dee3d9762e03da7f1657c98e0670e3bc1696dfbbf338950f4702597dc9e",
+    "patch": "ecdsa.patch",
+    "vectors": {
+      "repository": "w3c/vc-di-ecdsa",
+      "commit": "59df72ca8cdb275d97eb496086fea6fac4fa7f0f",
+      "sha256": "c53b628f6c189fd23fdab59ce7da430869261326f96aa6067c6ab2690327b3be",
+      "into": "tests/input/vc-di-ecdsa"
+    },
+    "tests": 59,
+    "pending": 1,
+    "expected": [
+      {
+        "title": "Algorithms - Verify Proof (ecdsa-rdfc-2019) interopkit The following algorithm specifies how to verify a data integrity proof",
+        "reason": "The test posts the example credential of the specification, signed by its authors. It has no validFrom, which Open Badges requires, and adding one would break the signature."
+      },
+      {
+        "title": "Algorithms - Verify Derived Proof (ecdsa-sd-2023) interopkit If the length of signatures does not match the length of nonMandatory",
+        "reason": "The test posts the example credential of the specification, signed by its authors. It has no validFrom, which Open Badges requires, and adding one would break the signature."
+      },
+      {
+        "title": "Functions - ecdsa-sd-2023 interopkit If the proofValue string does not start with u",
+        "reason": "The test posts the example credential of the specification, signed by its authors. It has no validFrom, which Open Badges requires, and adding one would break the signature."
+      },
+      {
+        "title": "Functions - ecdsa-sd-2023 interopkit If the decodedProofValue does not start with the ECDSA-SD disclosure proof header bytes",
+        "reason": "The test posts the example credential of the specification, signed by its authors. It has no validFrom, which Open Badges requires, and adding one would break the signature."
+      }
+    ]
+  },
+  {
+    "name": "status",
+    "kind": "status",
+    "repository": "w3c/vc-bitstring-status-list-test-suite",
+    "commit": "960ab9a3ad275bb5e56dd3f300939f83cba759b7",
+    "sha256": "f31a375fcc959a751bb74c9950d699a16d501643c40ce1cb83ed11cd8601be22",
+    "tests": 56,
+    "pending": 16,
+    "expected": []
+  },
+  {
+    "name": "model",
+    "kind": "model",
+    "repository": "w3c/vc-data-model-2.0-test-suite",
+    "commit": "62836458636bd1b8309214626ec8fc85de43f8bd",
+    "sha256": "da3b0a126d7d5dd1f6cb45e92037bd385eaccb938ab4e1a02939269018412fbf",
+    "tests": 59,
+    "pending": 0,
+    "expected": [
+      {
+        "title": "Basic Conformance interopkit A conforming verifier implementation MUST produce errors when non-conforming documents are detected.",
+        "reason": "Verifiable presentations are not defined by Open Badges or CLR, so the service has no presentation verifier."
+      },
+      {
+        "title": "Contexts interopkit Verifiable presentations MUST include a @context property.",
+        "reason": "Verifiable presentations are not defined by Open Badges or CLR, so the service has no presentation verifier."
+      },
+      {
+        "title": "Contexts interopkit Verifiable presentations: The value of the @context property MUST be an ordered set",
+        "reason": "Verifiable presentations are not defined by Open Badges or CLR, so the service has no presentation verifier."
+      },
+      {
+        "title": "Contexts interopkit Verifiable Presentation `@context`",
+        "reason": "Verifiable presentations are not defined by Open Badges or CLR, so the service has no presentation verifier."
+      },
+      {
+        "title": "Types interopkit Verifiable presentations MUST contain a type property",
+        "reason": "Verifiable presentations are not defined by Open Badges or CLR, so the service has no presentation verifier."
+      },
+      {
+        "title": "Types interopkit Verifiable Presentation objects MUST have a type specified.",
+        "reason": "Verifiable presentations are not defined by Open Badges or CLR, so the service has no presentation verifier."
+      },
+      {
+        "title": "Algorithms interopkit This section contains an algorithm that conforming verifier implementations MUST run",
+        "reason": "Verifiable presentations are not defined by Open Badges or CLR, so the service has no presentation verifier."
+      },
+      {
+        "title": "Types interopkit `evidence` objects MUST have a type specified.",
+        "reason": "Open Badges narrows the data model: an Evidence has the type Evidence (OB B.1.9)."
+      },
+      {
+        "title": "If present (on `issuer`), the value of the name property MUST be a string",
+        "reason": "Open Badges narrows the data model: an issuer is a Profile and has the type Profile (OB B.1.7)."
+      },
+      {
+        "title": "If present (on `issuer`), the value of the description property MUST be a string",
+        "reason": "Open Badges narrows the data model: an issuer is a Profile and has the type Profile (OB B.1.7)."
+      },
+      {
+        "title": "Issuer interopkit The value of the issuer property MUST be either a URL or an object",
+        "reason": "Open Badges narrows the data model: an issuer is a Profile and has the type Profile (OB B.1.7)."
+      },
+      {
+        "title": "Credential Subject interopkit The value of the credentialSubject property is a set of objects",
+        "reason": "Open Badges narrows the data model: a credential has one subject (OB B.1.2)."
+      },
+      {
+        "title": "Advanced Concepts interopkit The value of the refreshService property MUST be one or more refresh services",
+        "reason": "Open Badges narrows the data model: a credential has at most one refresh service (OB B.1.2)."
+      },
+      {
+        "title": "Advanced Concepts interopkit If present, the value associated with the evidence property is a single object",
+        "reason": "Open Badges narrows the data model: an Evidence has the type Evidence (OB B.1.9)."
+      },
+      {
+        "title": "Advanced Concepts interopkit The value of the relatedResource property MUST be one or more objects",
+        "reason": "relatedResource is a property of the data model that Open Badges does not define, so the package carries it as an extension and checks neither its form nor its digests."
+      },
+      {
+        "title": "Advanced Concepts interopkit The identifier for the resource is REQUIRED",
+        "reason": "relatedResource is a property of the data model that Open Badges does not define, so the package carries it as an extension and checks neither its form nor its digests."
+      },
+      {
+        "title": "Advanced Concepts interopkit The value MUST be unique among the list of related resource objects.",
+        "reason": "relatedResource is a property of the data model that Open Badges does not define, so the package carries it as an extension and checks neither its form nor its digests."
+      },
+      {
+        "title": "Advanced Concepts interopkit Each object associated with relatedResource MUST contain at least a digestSRI",
+        "reason": "relatedResource is a property of the data model that Open Badges does not define, so the package carries it as an extension and checks neither its form nor its digests."
+      },
+      {
+        "title": "Advanced Concepts interopkit If the digest provided by the issuer does not match",
+        "reason": "relatedResource is a property of the data model that Open Badges does not define, so the package carries it as an extension and checks neither its form nor its digests."
+      }
+    ]
+  }
+]
