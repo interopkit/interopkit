@@ -3,5 +3,8 @@
  *
  * @module
  */
-export { ENTITY_SCHEMAS, entitySchema } from "./entity-schemas.js";
-export { iri, time } from "./primitives.js";
+export { ENTITY_SCHEMAS } from "./entity-schemas.js";
+export { EVENT_SCHEMAS } from "./event-schemas.js";
+export { iri } from "./primitives.js";
+export { readEntity } from "./read-entity.js";
+export { readEvent } from "./read-event.js";

@@ -115,6 +115,14 @@ function rangeOf(types: readonly string[], schemaProperty?: unknown): unknown {
   return { anyOf: [{ type: "string", format: IRI_FORMAT }, ...terms.map((term) => ({ $ref: BASE + term }))] };
 }
 
+/** The terms of the events of the tables. */
+export const EVENT_TERMS: readonly string[] = [...TABLES.events, ...LIBRARY_TABLES.events].map((table) => table.term);
+
+/** Writes an action as the vocabulary of Appendix D does: two pages spell `MarkedAsUnread` as `MarkedAsUnRead`. */
+export function spelled(action: string): string {
+  return action === "MarkedAsUnRead" ? "MarkedAsUnread" : action;
+}
+
 /** The part of a table row's type that names classes of entities with an `id`; `Entity` names all of them. */
 function entityTypes(row: PropertyRow): string[] {
   return row.types.filter((type) => type === "Entity" || ENTITY_TERMS.includes(type));
@@ -130,8 +138,12 @@ export function narrowedDefinitions(): Record<string, unknown> {
   const definitions: Record<string, unknown> = {};
   const base = "https://schemas.invalid/set/";
   for (const [name, schema] of SCHEMA_1_2) definitions[name] = localize(schema, base);
-  for (const term of ENTITY_TERMS.filter((name) => SCHEMA_1_2.has(name))) {
-    const rows = inheritedRows(term, TABLES.entityProperties);
+  const classes: [string, readonly PropertyRow[]][] = [
+    ...ENTITY_TERMS.map((term): [string, readonly PropertyRow[]] => [term, TABLES.entityProperties]),
+    ...["Event", ...EVENT_TERMS].map((term): [string, readonly PropertyRow[]] => [term, TABLES.eventProperties]),
+  ];
+  for (const [term, baseRows] of classes.filter(([name]) => SCHEMA_1_2.has(name))) {
+    const rows = inheritedRows(term, baseRows);
     const original = definitions[term] as { properties?: Record<string, unknown> };
     const properties: Record<string, unknown> = {};
     // A property that the table requires and the schema does not define is generated too, from the table alone.
@@ -150,6 +162,7 @@ export function narrowedDefinitions(): Record<string, unknown> {
       } else if (isList && name === "items") {
         properties[name] = { type: "array", items: rangeOf(["Entity"], property) };
       } else if (entities.length > 0) properties[name] = rangeOf(entities, property);
+      else if (row?.actions !== undefined) properties[name] = { enum: row.actions.map(spelled) };
       else if (row?.types.some((type) => type.toLowerCase() === "integer")) properties[name] = { type: "integer" };
       else if (property !== undefined) properties[name] = property;
     }
@@ -168,10 +181,11 @@ export function narrowedDefinitions(): Record<string, unknown> {
   return definitions;
 }
 
-/** The generator of entities of one class, from the narrowed schema, with every property and a few levels of entities. */
-export function entityArbitrary(
+/** The generator of documents of one class, from the narrowed schema, with every property and a few levels of entities. */
+export function documentArbitrary(
   term: string,
   definitions: Record<string, unknown>,
+  identifier: fc.Arbitrary<string> = fc.webUrl(),
 ): fc.Arbitrary<Record<string, unknown>> {
   const time = fc
     .date({ min: new Date(0), max: new Date(4e12), noInvalidDate: true })
@@ -185,7 +199,7 @@ export function entityArbitrary(
         duration: fc.constantFrom("PT1S", "PT10M30S", "P1D", "P2W", "P1Y2M3DT4H5M6S"),
       },
       properties: {
-        id: fc.webUrl(),
+        id: identifier,
         "@context": fc.constant("http://purl.imsglobal.org/ctx/caliper/v1p2"),
         extensions: fc.dictionary(fc.string({ minLength: 1, maxLength: 6 }), fc.jsonValue({ maxDepth: 2 }), {
           maxKeys: 2,

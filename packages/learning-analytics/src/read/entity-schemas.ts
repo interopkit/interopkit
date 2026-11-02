@@ -5,7 +5,8 @@ import { createEntitySchema, createRanges, type EntitySchemas } from "./range.js
 import { recordSchemas } from "./record-schemas.js";
 import { resourceSchemas } from "./resource-schemas.js";
 
-const to = createRanges(() => ENTITY_SCHEMAS);
+/** Makes the schema of a range of entities, which events use as the entities do. */
+export const to = createRanges(() => ENTITY_SCHEMAS);
 
 /** The schemas of the entities, by the term of their type. */
 export const ENTITY_SCHEMAS = {

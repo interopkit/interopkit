@@ -72,17 +72,27 @@ export type {
 } from "./questionnaire.js";
 export {
   AGENT_TYPES,
+  ANNOTATION_TYPES,
   type AnyAgent,
+  type AnyAnnotation,
+  type AnyAssignable,
   type AnyCourseOffering,
   type AnyDigitalResource,
+  type AnyMediaObject,
   type AnyOrganization,
   type AnyQuestion,
+  type AnyResponse,
   type AnyScale,
+  type AnySession,
+  ASSIGNABLE_TYPES,
   COURSE_OFFERING_TYPES,
   DIGITAL_RESOURCE_TYPES,
+  MEDIA_OBJECT_TYPES,
   ORGANIZATION_TYPES,
   QUESTION_TYPES,
+  RESPONSE_TYPES,
   SCALE_TYPES,
+  SESSION_TYPES,
 } from "./ranges.js";
 export type {
   AssignableDigitalResource,

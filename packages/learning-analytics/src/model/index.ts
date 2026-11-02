@@ -7,5 +7,5 @@
 export { CALIPER_CONTEXT, type Context, LIBRARY_PROFILE_CONTEXT } from "./context.js";
 export * from "./entities/index.js";
 export type { EntityDocument } from "./entity-document.js";
-export type { CaliperEvent } from "./event.js";
+export * from "./events/index.js";
 export * from "./terms.js";

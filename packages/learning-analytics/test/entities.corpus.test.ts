@@ -5,8 +5,8 @@ import { ENTITY_TYPES, readEntity } from "../src/index.js";
 import { ENTITY_SCHEMAS } from "../src/read/internal.js";
 import {
   closure,
+  documentArbitrary,
   ENTITY_TERMS,
-  entityArbitrary,
   fixtures,
   narrowedDefinitions,
   SCHEMA_1_2,
@@ -161,7 +161,7 @@ describe("the entity reader against schema_1_2", () => {
     (term) => {
       const accepts = schemaAccepts(term);
       fc.assert(
-        fc.property(entityArbitrary(term, definitions), mutations, (entity, mutation) => {
+        fc.property(documentArbitrary(term, definitions), mutations, (entity, mutation) => {
           expect(accepts(entity), JSON.stringify(entity)).toBe(true);
           expect(reads(entity), JSON.stringify(entity)).toBe(true);
           const changed = mutate(entity, mutation, BAD_STRINGS);

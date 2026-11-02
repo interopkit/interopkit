@@ -191,9 +191,8 @@ describe("buildEvent", () => {
 
   it("writes the same bytes for the same event whatever the order of the properties in the input", () => {
     const input = startedInput();
-    const reversed = Object.fromEntries(Object.entries(input).reverse()) as unknown as EventInput;
-    const entity = Object.fromEntries(Object.entries(input.object).reverse()) as unknown as CaliperEntity;
-    expect(JSON.stringify(buildEvent({ ...reversed, object: entity }))).toBe(JSON.stringify(buildEvent(input)));
+    const reversed = fromJson<EventInput>(JSON.stringify(Object.fromEntries(Object.entries(input).reverse())));
+    expect(JSON.stringify(buildEvent(reversed))).toBe(JSON.stringify(buildEvent(input)));
   });
 
   it("shares nothing with the input and does not change it", () => {
@@ -226,6 +225,7 @@ describe("buildEvent", () => {
       type: "GradeEvent",
       profile: "GradingProfile",
       action: "Graded",
+      object: { id: urnOf("attempt", SESSION), type: "Attempt" },
       generated: entity,
     });
     expect(event.generated).toStrictEqual(entity);
@@ -242,10 +242,10 @@ describe("buildEvent", () => {
   const changes: [string, (input: Record<string, unknown>) => Record<string, unknown>, string][] = [
     ["an id that is not a UUID URN", (i) => ({ ...i, id: "https://exam.example/events/1" }), "at id"],
     ["an id as a number", (i) => ({ ...i, id: 5 }), "at id"],
-    ["a type that is not built", (i) => ({ ...i, type: "MediaEvent" }), "at type"],
+    ["a type that is not an event of Caliper", (i) => ({ ...i, type: "RobotEvent" }), "expected an event of any class"],
     ["a profile that is not a profile of Caliper", (i) => ({ ...i, profile: "PlayProfile" }), "at profile"],
     ["an action that is not built", (i) => ({ ...i, action: "Began" }), "at action"],
-    ["an actor that is an IRI", (i) => ({ ...i, actor: ACTOR }), "at actor"],
+    ["an actor that is not an agent", (i) => ({ ...i, actor: { id: ACTOR, type: "Document" } }), "at actor"],
     ["an actor whose id is relative", (i) => ({ ...i, actor: { id: "person-1", type: "Person" } }), "at actor.id"],
     ["an actor of an unknown type", (i) => ({ ...i, actor: { id: ACTOR, type: "Robot" } }), "at actor"],
     [
@@ -261,7 +261,7 @@ describe("buildEvent", () => {
     [
       "a generated entity with a score that is not finite",
       (i) => ({ ...i, generated: { id: ASSESSMENT, type: "Score", scoreGiven: Number.NaN } }),
-      "at generated.scoreGiven",
+      "generated.scoreGiven is the number NaN",
     ],
     [
       "a name as a number",
@@ -273,7 +273,7 @@ describe("buildEvent", () => {
     ["a time that is not a date", (i) => ({ ...i, eventTime: "2023-02-30T10:00:00.000Z" }), "at eventTime"],
     ["a time as epoch milliseconds", (i) => ({ ...i, eventTime: EVENT_TIME }), "at eventTime"],
     ["an application that is not an IRI", (i) => ({ ...i, edApp: "exam" }), "at edApp"],
-    ["a property that is not built", (i) => ({ ...i, membership: {} }), "unexpected property"],
+    ["a property that is not built", (i) => ({ ...i, nickname: 1 }), "unexpected property"],
     ["no actor", (i) => without(i, "actor"), "missing the property"],
     ["no object", (i) => without(i, "object"), "missing the property"],
     ["no time", (i) => without(i, "eventTime"), "missing the property"],
@@ -289,7 +289,9 @@ describe("buildEvent", () => {
     for (const bad of [fromJson("null"), fromJson("[]"), "event", 5, undefined]) {
       expect(() => buildEvent(bad as never), String(bad)).toThrow(DataError);
     }
-    expect(() => buildEvent(fromJson("[]"))).toThrow("The event is invalid: expected an object, found an array.");
+    expect(() => buildEvent(fromJson("[]"))).toThrow(
+      "The event is invalid: expected an event of any class, found an array.",
+    );
   });
 
   it("builds an event that is valid JSON-LD input for any valid time, identifier and score", () => {
@@ -300,7 +302,11 @@ describe("buildEvent", () => {
           ...startedInput(),
           id: mintUrn(["event", session, at]),
           eventTime: time,
-          generated: { id: urnOf("attempt", SESSION), type: "Score", scoreGiven: score, dateCreated: time },
+          type: "GradeEvent",
+          profile: "GradingProfile",
+          action: "Graded",
+          object: { id: urnOf("attempt", SESSION), type: "Attempt" },
+          generated: { id: "https://exam.example/scores/1", type: "Score", scoreGiven: score, dateCreated: time },
         });
         expect(JSON.parse(JSON.stringify(event))).toStrictEqual(event);
         expect(event.eventTime).toBe(time);

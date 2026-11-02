@@ -80,8 +80,9 @@ describe("the model against the tables of Caliper 1.2 and of the Library Use Pro
     expect(sorted(ROLES)).toStrictEqual(sorted([...TABLES.roles, "Mentor#Auditor"]));
     expect(sorted(STATUSES)).toStrictEqual(sorted(TABLES.statuses));
     expect(sorted(LTI_MESSAGE_TYPES)).toStrictEqual(sorted(TABLES.ltiMessageTypes));
+    // The published context defines CaseItemUri, which Appendix I leaves out and a fixture uses.
     expect(sorted(SYSTEM_IDENTIFIER_TYPES)).toStrictEqual(
-      sorted([...TABLES.systemIdentifierTypes, ...LIBRARY_TABLES.systemIdentifierTypes]),
+      sorted([...TABLES.systemIdentifierTypes, "CaseItemUri", ...LIBRARY_TABLES.systemIdentifierTypes]),
     );
     expect(sorted(METRICS)).toStrictEqual(sorted(TABLES.metrics));
   });

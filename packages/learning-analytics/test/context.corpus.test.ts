@@ -39,7 +39,11 @@ const FULL_ENTITY: Required<Omit<Score, "@context">> = {
 describe("the published JSON-LD context of Caliper 1.2", () => {
   it("defines every term of the model, but those that the context and the specification disagree on", () => {
     const missing = (terms: readonly string[]) => terms.filter((term) => !TERMS.has(term));
-    expect(missing(EVENT_TYPES)).toStrictEqual([]);
+    expect(missing(EVENT_TYPES)).toStrictEqual([
+      "LibraryParticipationEvent",
+      "LibraryResourceUseEvent",
+      "LibraryUseEvent",
+    ]);
     expect(missing(PROFILES)).toStrictEqual(["LibraryProfile", "SurveyProfile"]);
     expect(missing(ROLES)).toStrictEqual(["Manager#Manager"]);
     // The context of the Library Use Profile answers 404, and the context of Caliper 1.2 lacks two actions of Appendix D.
@@ -72,25 +76,54 @@ describe("the published JSON-LD context of Caliper 1.2", () => {
   });
 
   it("accepts an event with every property of an entity and every property of an event", () => {
-    const event = buildEvent({ ...startedInput(), generated: FULL_ENTITY });
+    const event = buildEvent({
+      ...startedInput(),
+      type: "GradeEvent",
+      profile: "GradingProfile",
+      action: "Graded",
+      object: { id: urnOf("attempt", "s-1"), type: "Attempt" },
+      generated: FULL_ENTITY,
+    });
     expect(eventProblems(event)).toStrictEqual([]);
     expect(Object.keys(event.generated ?? {}).sort()).toStrictEqual(Object.keys(FULL_ENTITY).sort());
   });
 
-  it("accepts an event of each type with its profile and an action that the profile allows", () => {
+  it("accepts an event of each type that the builder is given with its profile and an action that the profile allows", () => {
+    const { eventTime, edApp } = startedInput();
     const actor = { id: ACTOR, type: "Person" } as const;
+    const item = { id: "https://exam.example/tests/42/items/3", type: "AssessmentItem" } as const;
     const events: CaliperEvent[] = [
-      buildEvent({ ...startedInput(), type: "AssessmentItemEvent", action: "Skipped" }),
-      buildEvent({ ...startedInput(), type: "NavigationEvent", action: "NavigatedTo" }),
       buildEvent({
-        ...startedInput(),
+        id: mintUrn(["event", "s-1", 2, 1]),
+        type: "AssessmentItemEvent",
+        profile: "AssessmentProfile",
+        actor,
+        action: "Skipped",
+        object: item,
+        eventTime,
+        edApp,
+      }),
+      buildEvent({
+        id: mintUrn(["event", "s-1", 2, 2]),
+        type: "NavigationEvent",
+        profile: "AssessmentProfile",
+        actor,
+        action: "NavigatedTo",
+        object: { id: "https://exam.example/tests/42/items/4", type: "AssessmentItem" },
+        referrer: item,
+        eventTime,
+        edApp,
+      }),
+      buildEvent({
         id: mintUrn(["event", "s-1", 2, 0]),
         type: "GradeEvent",
         profile: "GradingProfile",
-        action: "Graded",
         actor,
+        action: "Graded",
         object: { id: urnOf("attempt", "s-1"), type: "Attempt" },
         generated: FULL_ENTITY,
+        eventTime,
+        edApp,
       }),
     ];
     for (const event of events) expect(eventProblems(event), event.type).toStrictEqual([]);

@@ -9,17 +9,27 @@ const CALIPER_CONTEXTS: readonly string[] = [CALIPER_CONTEXT, LIBRARY_PROFILE_CO
 /** The context of a sender's own: the address of one, or the terms it defines inline (Caliper 1.2 section 4.1). */
 const localContext = v.union([iri, jsonObjectSchema]);
 
+const NOT_CALIPER = "expected the context of Caliper 1.2, or a list of contexts that ends with it";
+
+/** Tells whether a context is one of Caliper. */
+function isCaliperContext(context: string): boolean {
+  return CALIPER_CONTEXTS.includes(context);
+}
+
 /**
- * The schema of the `@context` of an event or an entity document. One context must be a context of Caliper; a list must end with
- * one, so that the terms of Caliper keep their meaning (Caliper 1.2 section 4.1).
+ * The schema of the `@context` of an event or an entity document: the context of Caliper, a list of contexts that ends with
+ * it, so that the terms of Caliper keep their meaning, or the terms of one context defined inline, as Figure 5 of Caliper 1.2
+ * and one of its fixtures write them (section 4.1).
  */
-export const contextSchema: Schema<Context> = v.pipe(
-  v.union([iri, v.pipe(v.array(localContext), v.nonEmpty())]),
-  v.check(
-    (context) => CALIPER_CONTEXTS.includes(typeof context === "string" ? context : String(context.at(-1))),
-    "expected the context of Caliper 1.2, or a list of contexts that ends with it",
+export const contextSchema: Schema<Context> = v.union([
+  v.pipe(iri, v.check(isCaliperContext, NOT_CALIPER)),
+  jsonObjectSchema,
+  v.pipe(
+    v.array(localContext),
+    v.nonEmpty(),
+    v.check((list) => isCaliperContext(String(list.at(-1))), NOT_CALIPER),
   ),
-);
+]);
 
 /**
  * The schema of the `@context` of an entity inside another entity or an event: any context, as the specification lets a

@@ -1,94 +1,89 @@
-import { parseWith } from "@interopkit/core/checks";
+import { DataError } from "@interopkit/core";
+import { isRecord, type JsonObject, jsonObjectSchema, parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import {
-  ACTIONS,
   CALIPER_CONTEXT,
-  type CaliperAction,
   type CaliperEntity,
   type CaliperEvent,
-  type CaliperEventType,
-  type CaliperProfile,
-  EVENT_TYPES,
-  PROFILES,
+  type Context,
+  type EntityDocument,
+  type EventInput,
+  LIBRARY_PROFILE_CONTEXT,
 } from "../model/index.js";
-import { entitySchema, iri, time } from "../read/internal.js";
+import { LIBRARY_ENTITY_TYPES, LIBRARY_EVENT_TYPES } from "../model/internal.js";
+import { iri, readEntity, readEvent } from "../read/internal.js";
 
-/** What one event says: the properties that Caliper 1.2 section 2.1 requires, and the entity that the action made. */
-export interface EventInput {
-  /** A UUID URN, from `mintUrn`. */
-  readonly id: string;
-  /** The term of the event's type. */
-  readonly type: CaliperEventType;
-  /** The profile that governs the event. */
-  readonly profile: CaliperProfile;
-  /** The agent who acted. */
-  readonly actor: CaliperEntity;
-  /** What the actor did. */
-  readonly action: CaliperAction;
-  /** What the actor acted on. */
-  readonly object: CaliperEntity;
+/** What `buildEvent` and `buildEntity` take beside the document. */
+export interface BuildOptions {
   /**
-   * What the action made.
+   * The contexts of the sender's own that are written before the context of Caliper, each the address of a context or the
+   * terms of one defined inline.
    *
    * @defaultValue none
    */
-  readonly generated?: CaliperEntity;
-  /** When it happened, in the form of `caliperTime`. */
-  readonly eventTime: string;
-  /** The IRI of the application that the event happened in. */
-  readonly edApp: string;
+  readonly contexts?: readonly (string | JsonObject)[];
 }
 
-const urnSchema = v.pipe(
-  v.string(),
-  v.regex(
-    /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu,
-    (issue) => `expected a UUID URN, \`urn:uuid:\` and a UUID, found ${issue.received}`,
-  ),
-);
-
-const eventInputSchema = v.strictObject({
-  id: urnSchema,
-  type: v.picklist(EVENT_TYPES),
-  profile: v.picklist(PROFILES),
-  actor: entitySchema,
-  action: v.picklist(ACTIONS),
-  object: entitySchema,
-  generated: v.optional(entitySchema),
-  eventTime: time,
-  edApp: iri,
+const buildOptionsSchema = strictRecord({
+  contexts: v.optional(v.array(v.union([iri, jsonObjectSchema]))),
 });
 
 /**
- * Builds a Caliper event: writes the `@context` and checks every property.
+ * Writes the `@context` of a document: the context of Caliper, or of the Library Use Profile for the terms that profile
+ * defines, after the contexts of the sender.
+ */
+function contextOf(
+  document: unknown,
+  libraryTypes: readonly string[],
+  options: BuildOptions | undefined,
+  label: string,
+): Context {
+  const { contexts = [] } = parseWith(buildOptionsSchema, options === undefined ? {} : options, "The options");
+  if (isRecord(document) && "@context" in document) {
+    throw new DataError(
+      `${label} is invalid at ["@context"]: the builder writes the context, so give the contexts of your own in the option contexts.`,
+    );
+  }
+  const type = isRecord(document) ? document.type : undefined;
+  const caliper = libraryTypes.some((term) => term === type) ? LIBRARY_PROFILE_CONTEXT : CALIPER_CONTEXT;
+  return contexts.length === 0 ? caliper : [...contexts, caliper];
+}
+
+/**
+ * Builds a Caliper event: writes the `@context` and checks every property, as `readEvent` does.
  *
  * @remarks
- * The identifier is the caller's, so that reporting the same thing again gives the same identifier: make it with
- * `mintUrn` from what identifies the event. The result shares nothing with the input, and its properties are in a fixed
- * order, so the same event always serializes to the same bytes.
+ * The identifier is the caller's, so that reporting the same thing again gives the same identifier: make it with `mintUrn` from
+ * what identifies the event. The result shares nothing with the input, and its properties are in a fixed order, so the same
+ * event always serializes to the same bytes. The context is that of Caliper, or that of the Library Use Profile for its events,
+ * after the contexts in the options.
  *
- * @param input - What the event says.
+ * @param input - What the event says: the properties of its class, without `@context`.
+ * @param options - The contexts of the sender's own.
  * @returns The event.
  * @throws `DataError` that names the path of the first property that is not valid, such as an entity whose `id` is not an
- * absolute IRI, or one that has a property that this version does not build.
+ * absolute IRI, an action that the event does not allow, or an input that has an `@context`.
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2 | Caliper Analytics 1.2}
  */
-export function buildEvent(input: EventInput): CaliperEvent {
-  const { id, type, profile, actor, action, object, generated, eventTime, edApp } = parseWith(
-    eventInputSchema,
-    input,
-    "The event",
-  );
-  return {
-    "@context": CALIPER_CONTEXT,
-    id,
-    type,
-    profile,
-    actor,
-    action,
-    object,
-    ...(generated === undefined ? {} : { generated }),
-    eventTime,
-    edApp,
-  };
+export function buildEvent(input: EventInput, options?: BuildOptions): CaliperEvent {
+  const context = contextOf(input, LIBRARY_EVENT_TYPES, options, "The event");
+  return readEvent(isRecord(input) ? { "@context": context, ...input } : input);
+}
+
+/**
+ * Builds an entity describe: writes the `@context` and checks every property, as `readEntity` does.
+ *
+ * @remarks
+ * The result shares nothing with the input, and its properties are in a fixed order. The context is that of Caliper, or that of
+ * the Library Use Profile for its entities, after the contexts in the options.
+ *
+ * @param input - What the entity says: the properties of its class, without `@context`.
+ * @param options - The contexts of the sender's own.
+ * @returns The entity, with its `@context` first.
+ * @throws `DataError` that names the path of the first property that is not valid, or an input that has an `@context`.
+ * @see {@link https://www.imsglobal.org/spec/caliper/v1p2 | Caliper Analytics 1.2}
+ */
+export function buildEntity(input: CaliperEntity, options?: BuildOptions): EntityDocument {
+  const context = contextOf(input, LIBRARY_ENTITY_TYPES, options, "The entity");
+  return readEntity(isRecord(input) ? { "@context": context, ...input } : input);
 }

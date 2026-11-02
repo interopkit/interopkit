@@ -10,7 +10,7 @@ import {
   describe,
 } from "@interopkit/core/checks";
 import { caliperTime, checkIri } from "../build/index.js";
-import { CALIPER_CONTEXT, type CaliperEvent } from "../model/index.js";
+import { CALIPER_CONTEXT, type CaliperEvent, LIBRARY_PROFILE_CONTEXT } from "../model/index.js";
 
 /** The time that a call to the endpoint may take when the host sets none, in milliseconds. */
 export const DEFAULT_CALIPER_TIMEOUT_MS = 10_000;
@@ -49,9 +49,11 @@ function checkEvents(events: unknown): asserts events is readonly CaliperEvent[]
   if (events.length === 0) throw new DataError("The Caliper events must have at least one event, as an envelope does.");
   events.forEach((event, at) => {
     checkRecord(event, `The Caliper event ${at} must be an object`);
-    if (event["@context"] !== CALIPER_CONTEXT) {
+    const context = event["@context"];
+    const last = Array.isArray(context) ? context.at(-1) : context;
+    if (last !== CALIPER_CONTEXT && last !== LIBRARY_PROFILE_CONTEXT) {
       throw new DataError(
-        `The @context of the Caliper event ${at} must be ${CALIPER_CONTEXT}, found ${describe(event["@context"])}.`,
+        `The @context of the Caliper event ${at} must be ${CALIPER_CONTEXT}, the context of the Library Use Profile, or a list that ends with one of them, found ${describe(context)}.`,
       );
     }
     checkNonEmptyString(event.id, `The id of the Caliper event ${at}`);

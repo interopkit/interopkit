@@ -4,4 +4,5 @@
  * @module
  */
 export type { Context } from "./context.js";
+export { LIBRARY_ENTITY_TYPES, LIBRARY_EVENT_TYPES } from "./library.js";
 export * from "./terms.js";

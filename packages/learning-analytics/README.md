@@ -10,9 +10,9 @@ which Caliper event is the host's mapping.
 flowchart LR
   host["Your application<br/>attempts, scores, sessions"]
   subgraph pkg["@interopkit/learning-analytics"]
-    model["model: 76 entity types,<br/>vocabularies, contexts"]
-    read["readEntity"]
-    build["buildEvent, mintUrn,<br/>caliperTime, checkIri"]
+    model["model: 76 entity and 25 event types,<br/>vocabularies, contexts"]
+    read["readEntity, readEvent"]
+    build["buildEvent, buildEntity, mintUrn,<br/>caliperTime, checkIri"]
     send["sendCaliper"]
   end
   core["@interopkit/core<br/>errors, checks, callService"]
@@ -39,11 +39,11 @@ npm install @interopkit/learning-analytics
 
 | Subpath                          | Exports                                                                                                                                       |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/learning-analytics` | `readEntity`: an entity describe from outside, checked against its class and returned as a copy                                               |
-|                                  | `buildEvent`, `EventInput`: a checked event with its `@context`                                                                               |
+| `@interopkit/learning-analytics` | `readEntity`, `readEvent`: an entity describe or an event from outside, checked against its class and returned as a copy                      |
+|                                  | `buildEvent`, `buildEntity`, `BuildOptions`: a checked event or entity with its `@context`                                                    |
 |                                  | `mintUrn`: the identifier of an event from the parts that identify it. `caliperTime`: epoch milliseconds as Caliper writes a time. `checkIri` |
 |                                  | `sendCaliper`, `SendCaliperOptions`, `CaliperSender`, `DEFAULT_CALIPER_TIMEOUT_MS`: the sensor                                                |
-|                                  | An interface for each of the 76 entity types (`Person`, `CourseSection`, `AssessmentItem`, `Score` and the rest), `CaliperEntity`, `EntityDocument`, `Ref`, `Context`, `CaliperEvent` |
+|                                  | An interface for each of the 76 entity types (`Person`, `CourseSection`, `AssessmentItem`, `Score` and the rest), `CaliperEntity`, `EntityDocument`, `Ref`, `Context`, an interface for each of the 25 event types, `CaliperEvent`, `EventInput` |
 |                                  | `CALIPER_CONTEXT`, `LIBRARY_PROFILE_CONTEXT`, and the vocabularies `ACTIONS`, `PROFILES`, `ROLES`, `STATUSES`, `LTI_MESSAGE_TYPES`, `SYSTEM_IDENTIFIER_TYPES`, `METRICS`, `ENTITY_TYPES`, `EVENT_TYPES` and the ranges `AGENT_TYPES`, `ORGANIZATION_TYPES`, `COURSE_OFFERING_TYPES`, `DIGITAL_RESOURCE_TYPES`, `QUESTION_TYPES`, `SCALE_TYPES` |
 
 ```ts
@@ -85,8 +85,8 @@ resend sends the same events, so with the same identifiers, and a new `sendTime`
 | ---------------------------- | --------------------------------------------------------------------------------------------------- |
 | Entities                     | All 69 of Appendix B, the 2 of Appendix C and the 4 of the Library Use Profile, read and built      |
 | Vocabularies                 | The 82 actions, the 16 profile terms, 57 roles, statuses, LTI message types, identifier types, metrics |
-| Event types                  | `AssessmentEvent`, `AssessmentItemEvent`, `NavigationEvent`, `GradeEvent`: 4 of 21                  |
-| Profiles                     | Their terms; the rules of their tables are not checked yet                                          |
+| Event types                  | All 21 of Appendix A and the 3 of the Library Use Profile, with their actions, actors and objects    |
+| Profiles                     | Their terms; the rules of their tables that go across events are not checked yet                    |
 | Sensor                       | One envelope of events, `POST` with a bearer token, as in section 5                                 |
 
 The guides say what each part holds: the [architecture](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/architecture.md),

@@ -59,6 +59,47 @@ export const DIGITAL_RESOURCE_TYPES = [
   "WebPage",
 ] as const satisfies readonly CaliperEntityType[];
 
+/** The terms of the assignable digital resources: `AssignableDigitalResource` and its subtypes. */
+export const ASSIGNABLE_TYPES = [
+  "Assessment",
+  "AssessmentItem",
+  "AssignableDigitalResource",
+] as const satisfies readonly CaliperEntityType[];
+
+/** The terms of the media objects: `MediaObject` and its subtypes. */
+export const MEDIA_OBJECT_TYPES = [
+  "AudioObject",
+  "ImageObject",
+  "MediaObject",
+  "VideoObject",
+] as const satisfies readonly CaliperEntityType[];
+
+/** The terms of the sessions: `Session` and `LtiSession`. */
+export const SESSION_TYPES = ["LtiSession", "Session"] as const satisfies readonly CaliperEntityType[];
+
+/** The terms of the responses: `Response` and its subtypes. */
+export const RESPONSE_TYPES = [
+  "DateTimeResponse",
+  "FillinBlankResponse",
+  "MultipleChoiceResponse",
+  "MultipleResponseResponse",
+  "MultiselectResponse",
+  "OpenEndedResponse",
+  "RatingScaleResponse",
+  "Response",
+  "SelectTextResponse",
+  "TrueFalseResponse",
+] as const satisfies readonly CaliperEntityType[];
+
+/** The terms of the annotations: `Annotation` and its subtypes. */
+export const ANNOTATION_TYPES = [
+  "Annotation",
+  "BookmarkAnnotation",
+  "HighlightAnnotation",
+  "SharedAnnotation",
+  "TagAnnotation",
+] as const satisfies readonly CaliperEntityType[];
+
 /** The terms of the questions: `Question` and its subtypes. */
 export const QUESTION_TYPES = [
   "DateTimeQuestion",
@@ -87,6 +128,21 @@ export type AnyCourseOffering = EntityOf<(typeof COURSE_OFFERING_TYPES)[number]>
 
 /** A digital resource or any of its subtypes, as an object. */
 export type AnyDigitalResource = EntityOf<(typeof DIGITAL_RESOURCE_TYPES)[number]>;
+
+/** An assignable digital resource or any of its subtypes, as an object. */
+export type AnyAssignable = EntityOf<(typeof ASSIGNABLE_TYPES)[number]>;
+
+/** A media object or any of its subtypes, as an object. */
+export type AnyMediaObject = EntityOf<(typeof MEDIA_OBJECT_TYPES)[number]>;
+
+/** A session or an LTI session, as an object. */
+export type AnySession = EntityOf<(typeof SESSION_TYPES)[number]>;
+
+/** A response or any of its subtypes, as an object. */
+export type AnyResponse = EntityOf<(typeof RESPONSE_TYPES)[number]>;
+
+/** An annotation or any of its subtypes, as an object. */
+export type AnyAnnotation = EntityOf<(typeof ANNOTATION_TYPES)[number]>;
 
 /** A question or any of its subtypes, as an object. */
 export type AnyQuestion = EntityOf<(typeof QUESTION_TYPES)[number]>;

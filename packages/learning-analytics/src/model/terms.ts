@@ -192,9 +192,13 @@ export const LTI_MESSAGE_TYPES = ["LtiDeepLinkingRequest", "LtiResourceLinkReque
 /** The LTI message type by which a link was reached. */
 export type LtiMessageType = (typeof LTI_MESSAGE_TYPES)[number];
 
-/** The types of a system identifier: Appendix I, then those of the Library Use Profile. */
+/**
+ * The types of a system identifier: Appendix I, `CaseItemUri`, which the published context defines and the fixtures use, and
+ * those of the Library Use Profile.
+ */
 export const SYSTEM_IDENTIFIER_TYPES = [
   "AccountUserName",
+  "CaseItemUri",
   "EmailAddress",
   "LisSourcedId",
   "LtiContextId",
@@ -333,8 +337,36 @@ export const ENTITY_TYPES = [
 /** The term of an entity type: the `type` of an entity. */
 export type CaliperEntityType = (typeof ENTITY_TYPES)[number];
 
-/** The terms of the events that `buildEvent` builds. */
-export const EVENT_TYPES = ["AssessmentEvent", "AssessmentItemEvent", "NavigationEvent", "GradeEvent"] as const;
+/**
+ * The terms of the events: the generic `Event`, the 21 events of Appendix A and the 3 of the Library Use Profile.
+ */
+export const EVENT_TYPES = [
+  "Event",
+  "AnnotationEvent",
+  "AssessmentEvent",
+  "AssessmentItemEvent",
+  "AssignableEvent",
+  "FeedbackEvent",
+  "ForumEvent",
+  "GradeEvent",
+  "LibraryParticipationEvent",
+  "LibraryResourceUseEvent",
+  "LibraryUseEvent",
+  "MediaEvent",
+  "MessageEvent",
+  "NavigationEvent",
+  "QuestionnaireEvent",
+  "QuestionnaireItemEvent",
+  "ResourceManagementEvent",
+  "SearchEvent",
+  "SessionEvent",
+  "SurveyEvent",
+  "SurveyInvitationEvent",
+  "ThreadEvent",
+  "ToolLaunchEvent",
+  "ToolUseEvent",
+  "ViewEvent",
+] as const;
 
 /** The term of an event type: the `type` of an event. */
 export type CaliperEventType = (typeof EVENT_TYPES)[number];

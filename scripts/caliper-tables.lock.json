@@ -2,11 +2,11 @@
   {
     "url": "https://www.imsglobal.org/spec/caliper/v1p2",
     "file": "caliper-1p2.json",
-    "sha256": "40865e77a07a9152b4921e248369aa89fd209fd36fe276bcac22a949f70719c4"
+    "sha256": "be1b7ceea14190515c0095e2440c4c3df77afc347644a8dce6e643e9e0ef97dd"
   },
   {
     "url": "https://www.imsglobal.org/spec/caliper-library/v1p2",
     "file": "caliper-library-1p2.json",
-    "sha256": "39196c6353c3ee74cf853ed4de7050e83528e3c02029622a11becc4dd943a6d9"
+    "sha256": "9ffeee02d509cdb511a13c84f9776cb6d616d52977e427153793b0333f88e91f"
   }
 ]

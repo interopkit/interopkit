@@ -29,6 +29,8 @@ ROLES.includes("Mentor#Auditor"); // => true
 | Appendix D lists `EnabledClosedCaptioning` and `DisabledClosedCaptioning`                     | The published context defines neither term                                                                    | `ACTIONS` has both                                        |
 | The Library Use Profile adds the actions `Accessed` and `Attended`                            | The context of Caliper 1.2 lacks them, and the context of the profile cannot be fetched                       | `ACTIONS` has both                                        |
 | The Library Use Profile adds ten types of system identifier                                   | Its context cannot be fetched                                                                                 | `SYSTEM_IDENTIFIER_TYPES` has them                        |
+| Appendix I lists 12 types of system identifier                                                | The context defines `CaseItemUri`, and a fixture of the types uses it                                         | `SYSTEM_IDENTIFIER_TYPES` has it                          |
+| The tables A.9 and A.18 of Appendix A spell an action `MarkedAsUnRead`                             | Appendix D, the context and the schemas spell it `MarkedAsUnread`                                             | `ACTIONS` has `MarkedAsUnread`                            |
 
 ## Properties
 
@@ -47,7 +49,22 @@ ROLES.includes("Mentor#Auditor"); // => true
 | An identifier that is a blank node                                                                  | Section 4.2 allows it; the schemas take any string                                                                        | Read                                                                 |
 | The two examples of a library activity that write a duration as `18m` and `1h`                       | The page says the form is ISO 8601                                                                                        | Refused; a test pins the two examples as refused                     |
 
+## Events
+
+| Place                                                                                              | What the sources say                                                                                                           | Reading                                                                                         |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `AssessmentItemEvent.generated`                                                                    | The table names a `Response`; a fixture of the event with the action `Started` generates an `Attempt`                          | A response or an attempt                                                                        |
+| Section 4.1 says the context of Caliper is required at the top and its terms must not be defined inline | Figure 5 and a fixture write a context of inline terms alone                                                                   | The terms of one context defined inline are read as a whole context; a string or a list must be, or end with, Caliper's |
+| The tables name one action or a set of them for each event                                         | The schemas allow any action for every event                                                                                   | The set of the table                                                                            |
+| The tables name the class of `actor`, `object`, `target`, `generated` and `referrer`               | The schemas allow every entity there, and their lists of classes differ from event to event                                    | The class of the table and every class below it                                                 |
+| A launch needs the session of its platform, and a copy the resource that it made                   | The tables say so in a cell; the schemas cannot                                                                                | Refused, with the path of the missing property                                                  |
+| An example of the Library Use Profile gives `ISBN` as the type of an identifier                    | The profile's term is `InternationalStandardBookNumber`                                                                        | Refused; a test pins the example as refused                                                     |
+
 ## The schemas against the fixtures
+
+`schema_1_2` accepts 62 of the 86 malformed events that the fixtures name: those whose entity is of another class, whose action
+is not the event's, whose reference is not a string, and the launch without the session of its platform. The package refuses all
+86.
 
 `schema_1_2` accepts 29 of the malformed entities that the fixtures name, because it leaves open what the tables and the fixtures
 close: an `id` that is no IRI, a list that holds an entity of the wrong class, a decimal written without a fraction, a metric

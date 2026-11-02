@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Fetch } from "@interopkit/core";
-import { buildEvent, type CaliperEvent, caliperTime, type EventInput, mintUrn } from "../src/index.js";
+import { type AssessmentEvent, buildEvent, type CaliperEvent, caliperTime, mintUrn } from "../src/index.js";
 
 /** The names and the UUIDs that Python's `uuid.uuid5` computed (`validation/caliper_ids.py`). */
 interface IdFixture {
@@ -40,7 +40,7 @@ const APPLICATION = "https://exam.example";
 export const EVENT_TIME = 1_700_000_000_000;
 
 /** The input of an event: the candidate starts the test. A test changes one property at a time. */
-export function startedInput(): EventInput {
+export function startedInput(): Omit<AssessmentEvent, "@context"> {
   return {
     id: urnOf("event", SESSION, "start", 0),
     type: "AssessmentEvent",
@@ -59,6 +59,9 @@ export function startedInput(): EventInput {
     edApp: APPLICATION,
   };
 }
+
+/** The event that the candidate starts the test, as a document with its context: what a sender writes. */
+export const STARTED_DOCUMENT = { "@context": "http://purl.imsglobal.org/ctx/caliper/v1p2", ...startedInput() };
 
 /** An event of the tests, with the identifier of its index in a step. */
 export function eventAt(index: number): CaliperEvent {

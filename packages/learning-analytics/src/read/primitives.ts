@@ -35,6 +35,15 @@ export const iri = v.pipe(
   ),
 );
 
+/** The identifier of an event: a UUID as a URN, `urn:uuid:` and a UUID of either case, as RFC 4122 reads one (section 3). */
+export const urn = v.pipe(
+  v.string(),
+  v.regex(
+    /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu,
+    (issue) => `expected a UUID URN, \`urn:uuid:\` and a UUID, found ${issue.received}`,
+  ),
+);
+
 /** A time as `YYYY-MM-DDTHH:mm:ss.SSSZ`, in UTC. */
 export const time = v.pipe(
   v.string(),

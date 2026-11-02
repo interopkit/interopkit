@@ -24,6 +24,8 @@ export interface PropertyRow {
   readonly disposition: string;
   /** The class that the members of a list belong to, when the description names it: `AssessmentItem` for the items of an assessment. */
   readonly collectionOf?: string;
+  /** The actions that the description of an `action` row limits the event to, in the spelling of the page. */
+  readonly actions?: readonly string[];
 }
 
 /** An event or an entity as a page lists it: its term, its supertypes and the rows of its table of properties. */
@@ -78,6 +80,15 @@ interface Chunk {
 
 /** How a description names the class of the members of a list: `collection of AssessmentItem entities`, `array of one or more Questionnaire entities`. */
 const COLLECTION_OF = /(?:collection|array) of (?:one or more )?([A-Z]\w+) entities/u;
+
+/** The words that start a sentence of a description and are no action. */
+const NOT_ACTIONS = new Set(["The", "Term"]);
+
+/** Reads the actions from the sentence of an `action` row that says which ones the event is limited to. */
+function actionsOf(description: string): string[] {
+  const limited = /limited to (?!the set)([\s\S]*)/u.exec(description)?.[1] ?? "";
+  return [...limited.matchAll(/\b[A-Z][A-Za-z]*\b/gu)].map(([word]) => word).filter((word) => !NOT_ACTIONS.has(word));
+}
 
 /** Decodes the entities of the pages: the five that HTML text needs, and numeric references. */
 function decodeEntities(text: string): string {
@@ -134,12 +145,14 @@ function rowsOf(body: string): PropertyRow[] {
     if (name === undefined || type === undefined || description === undefined || disposition === undefined) continue;
     const parts = type.split("|").map((part) => part.trim());
     const collectionOf = COLLECTION_OF.exec(description)?.[1];
+    const actions = name === "action" ? actionsOf(description) : [];
     rows.push({
       name,
       types: parts.filter((part) => part !== "IRI"),
       iri: parts.includes("IRI"),
       disposition,
       ...(collectionOf === undefined ? {} : { collectionOf }),
+      ...(actions.length === 0 ? {} : { actions }),
     });
   }
   return rows;
