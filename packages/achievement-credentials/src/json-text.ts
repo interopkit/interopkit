@@ -79,3 +79,11 @@ export function textWithinLimits(
   const over = overLimit(text, limits, what);
   return over === undefined ? { text } : { reason: over };
 }
+
+/**
+ * The most tokens of JSON in a credential that a JSON-LD processor reads unless the caller sets another limit. The processor adds
+ * each value of a property after a search of the values that the property already holds, so its work grows with the square of
+ * the values of one property, and `maxTokens` of a parse is far too generous for it: 20,000 values of one property take about
+ * four seconds. The largest example of Open Badges 3.0 has 2,053 tokens, and `selective-disclosure` uses the same default.
+ */
+export const DEFAULT_MAX_JSON_LD_TOKENS = 20_000;

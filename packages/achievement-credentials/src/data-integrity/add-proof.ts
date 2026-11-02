@@ -1,5 +1,4 @@
 import { DataIntegrityProof } from "@interop/data-integrity-proof";
-import { eddsaRdfc2022 } from "@interop/ed25519-signature";
 import jsigs from "@interop/jsonld-signatures";
 import { DataError, readClock, type Signer } from "@interopkit/core";
 import { checkRecord, describe } from "@interopkit/core/checks";
@@ -9,7 +8,9 @@ import { credentialOrReason } from "../read/internal.js";
 import { documentLoaderOf, failOperation } from "./document-loader.js";
 import { defaultMandatoryPointers } from "./mandatory-pointers.js";
 import { type ProofOptions, proofSettings } from "./options.js";
+import { processingProblem } from "./processing-limits.js";
 import { withProofList } from "./proof-list.js";
+import { EDDSA_RDFC_2022_CRYPTOSUITE } from "./suites.js";
 
 /** The JOSE algorithm of the signer, and the name that the Data Integrity library gives the same algorithm. */
 const ED25519 = { jose: "EdDSA", library: "Ed25519" } as const;
@@ -38,16 +39,22 @@ function proofKeyId(signer: Signer, algorithm: string): string {
  *
  * @remarks
  * `eddsa-rdfc-2022` signs the canonical form of the credential with Ed25519 and writes a proof that names the signer's `keyId`
- * as its verification method and the clock's time as `created`. `ecdsa-sd-2023` writes a base proof with ES256 for a holder to
- * derive disclosures from; it never goes to a verifier (`verifyProof` refuses it). The credential is checked as the readers
- * check it before it is signed, every context is loaded through `contexts` and no other way, and the result is a new
- * credential: the input is not changed.
+ * as its verification method and the clock's time as `created`; it adds the proof to the proofs that the credential has, which
+ * makes a set of proofs. `ecdsa-sd-2023` writes a base proof with ES256 for a holder to derive disclosures from, and refuses a
+ * credential that has a proof already: a disclosure carries one derived proof. The base proof never goes to a verifier
+ * (`verifyProof` refuses it). The credential is checked as the readers check it before it is signed, every context is loaded
+ * through `contexts` and no other way, and the result is a new credential: the input is not changed.
+ *
+ * A credential of more than `maxJsonLdTokens` tokens is refused before any processor reads it, and so is one that needs more
+ * than 1,000 runs of the Hash N-Degree Quads algorithm to canonicalize, such as a long list of alike items.
  *
  * @param credential - The credential to sign.
  * @param signer - Signs the bytes, and its `keyId` is the verification method.
- * @param options - The cryptosuite, the loader of contexts and the clock.
- * @returns The credential with a proof added to any it had.
- * @throws `DataError` when the credential, the signer or an option is not valid, or a context is not pinned.
+ * @param options - The cryptosuite, the loader of contexts, the clock and the limit of tokens.
+ * @returns The credential with the proof added: to the proofs that it had with `eddsa-rdfc-2022`, as its only proof with
+ * `ecdsa-sd-2023`.
+ * @throws `DataError` when the credential, the signer or an option is not valid, a context is not pinned, the credential is
+ * over a limit, or an `ecdsa-sd-2023` base proof is asked of a credential that has a proof.
  * @throws `ServiceError` when a context cannot be fetched.
  * @throws The `reason` of the signal when it aborts.
  * @see {@link https://www.w3.org/TR/vc-di-eddsa/ | Data Integrity EdDSA Cryptosuites}
@@ -61,6 +68,8 @@ export async function addProof(
   settings.signal?.throwIfAborted();
   const checked = credentialOrReason(credential, "The credential");
   if ("reason" in checked) throw new DataError(checked.reason);
+  const tooLarge = processingProblem(credential, settings.maxJsonLdTokens);
+  if (tooLarge !== undefined) throw new DataError(tooLarge);
   const document = { ...structuredClone(credential) };
   const { signal, contexts } = settings;
   const withSignal = signal === undefined ? {} : { signal };
@@ -72,13 +81,14 @@ export async function addProof(
         contexts,
         created: createdAt(readClock(settings.clock)),
         mandatoryPointers: settings.mandatoryPointers ?? defaultMandatoryPointers(document),
+        maxTokens: settings.maxJsonLdTokens,
         ...withSignal,
       });
       return withProofList(signed) as unknown as IssuableCredential;
     }
     const keyId = proofKeyId(signer, ED25519.jose);
     const suite = new DataIntegrityProof({
-      cryptosuite: eddsaRdfc2022,
+      cryptosuite: EDDSA_RDFC_2022_CRYPTOSUITE,
       date: readClock(settings.clock),
       signer: {
         id: keyId,

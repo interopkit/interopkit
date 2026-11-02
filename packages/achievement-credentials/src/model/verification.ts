@@ -66,6 +66,28 @@ export interface KeyResolver {
 /** Returns the JSON-LD context behind a URL, or rejects. The processors of JSON-LD read no context from anywhere else. */
 export type ContextLoader = (url: string, options?: CallOptions) => Promise<unknown>;
 
+/** What a Data Integrity suite is given besides the document and the proof. */
+export interface SuiteVerifyOptions extends CallOptions {
+  /** The public key that verifies the proof, which the glue has resolved and bound to the issuer. */
+  readonly publicKeyJwk: JsonWebKey;
+  /** The loader of the contexts of the document: the only way a suite reads a context. */
+  readonly contexts: ContextLoader;
+  /**
+   * The most bytes of the document and its proof as JSON. The glue has checked it, so a suite that counts them does not refuse a
+   * document that the glue let through.
+   *
+   * @defaultValue none: the suite's own
+   */
+  readonly maxBytes?: number;
+  /**
+   * The most tokens of JSON in the document and its proof, which bound the work of a JSON-LD processor. The glue has checked
+   * it, as for `maxBytes`.
+   *
+   * @defaultValue none: the suite's own
+   */
+  readonly maxTokens?: number;
+}
+
 /** A Data Integrity cryptosuite. The glue resolves and binds the key first, so a suite only checks the proof. */
 export interface DataIntegritySuite {
   /** The `cryptosuite` of the proofs that it verifies, such as `eddsa-rdfc-2022`. */
@@ -73,15 +95,20 @@ export interface DataIntegritySuite {
   /**
    * Checks a proof.
    *
-   * @param document - The credential, with or without its proof.
+   * @remarks
+   * A suite answers `false` for a proof that does not verify. It rejects with a `DataError` for a document that it refuses
+   * for a reason the caller should read, such as a limit: the glue reports the message as the reason of the `proof` check. A
+   * `ServiceError` of a context and the abort of the signal reach the caller as they are.
+   *
+   * @param document - The credential without its proof.
    * @param proof - The proof to check.
-   * @param options - The public key that verifies it, and the loader of the contexts of the document.
+   * @param options - The public key that verifies it, the loader of the contexts of the document and the limits.
    * @returns Whether the proof is valid for the document under the key.
    */
   verify(
     document: Readonly<Record<string, unknown>>,
     proof: Readonly<Record<string, unknown>>,
-    options: { readonly publicKeyJwk: JsonWebKey; readonly contexts: ContextLoader } & CallOptions,
+    options: SuiteVerifyOptions,
   ): Promise<boolean>;
 }
 

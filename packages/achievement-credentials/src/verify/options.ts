@@ -11,6 +11,7 @@ import {
   parseWith,
 } from "@interopkit/core/checks";
 import type { KnownIdentity } from "../issue/index.js";
+import { DEFAULT_MAX_JSON_LD_TOKENS } from "../json-text.js";
 import { type ReadSettings, readSettings } from "../jwt/internal.js";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
 import { checkFlag } from "../option-checks.js";
@@ -129,6 +130,14 @@ export interface VerifyOptions extends CallOptions {
    */
   readonly maxTokens?: number;
   /**
+   * The most tokens of JSON in a credential with a Data Integrity proof, which a JSON-LD processor reads to check it. The work
+   * of a processor grows with the square of the values of one property, which `maxTokens` does not bound. A credential over it
+   * has a `proof` that failed, and says so. A CLR that holds many credentials as objects can need more.
+   *
+   * @defaultValue `20000`
+   */
+  readonly maxJsonLdTokens?: number;
+  /**
    * The time that each fetch may take, in milliseconds.
    *
    * @defaultValue `10000`
@@ -172,6 +181,7 @@ export interface VerifySettings {
   readonly unavailable: "fail" | "warn";
   readonly legacyProofs: boolean;
   readonly suites: readonly DataIntegritySuite[];
+  readonly maxJsonLdTokens: number;
   readonly maxEndorsements: number;
   readonly maxNestedCredentials: number;
   readonly timeoutMs: number;
@@ -211,6 +221,7 @@ export function verifySettings(options: unknown): VerifySettings {
   const { refresh = true, unavailable = "fail", legacyProofs = false } = options;
   const { maxEndorsements = DEFAULT_MAX_ENDORSEMENTS, maxNestedCredentials = DEFAULT_MAX_NESTED_CREDENTIALS } = options;
   const { timeoutMs = DEFAULT_TIMEOUT_MS, maxBytes = DEFAULT_MAX_BYTES } = options;
+  const { maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS } = options;
   if (contexts !== undefined) checkFunction(contexts, "The option contexts must be a function");
   if (fetch !== undefined) checkFunction(fetch, "The option fetch must be a function");
   if (statusLists !== undefined) {
@@ -224,6 +235,7 @@ export function verifySettings(options: unknown): VerifySettings {
   if (unavailable !== "fail" && unavailable !== "warn") {
     throw new DataError(`The option unavailable must be "fail" or "warn", found ${describe(unavailable)}.`);
   }
+  checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
   checkPositiveInteger(maxEndorsements, "The option maxEndorsements");
   checkPositiveInteger(maxNestedCredentials, "The option maxNestedCredentials");
   checkPositiveInteger(timeoutMs, "The option timeoutMs");
@@ -247,6 +259,7 @@ export function verifySettings(options: unknown): VerifySettings {
     unavailable,
     legacyProofs,
     suites: checkedSuites,
+    maxJsonLdTokens,
     maxEndorsements,
     maxNestedCredentials,
     timeoutMs,

@@ -130,6 +130,7 @@ async function dataIntegrityProof(
       maxInputBytes: jwt.maxInputBytes,
       maxDepth: jwt.maxDepth,
       maxTokens: jwt.maxTokens,
+      maxJsonLdTokens: settings.maxJsonLdTokens,
       ...(jwt.signal === undefined ? {} : { signal: jwt.signal }),
     });
     if (verdict.valid) return { secured: { credential, kind, raw: value, key: verdict.key, timeFault: undefined } };

@@ -163,6 +163,7 @@ is withheld. The status lists of one call are fetched once, and so is each schem
 | `maxInputBytes`        | The most characters of the input, and of each JWS that it holds                                           | `1048576`                                            |
 | `maxDepth`             | The most levels that the JSON of the input nests                                                          | `64`                                                 |
 | `maxTokens`            | The most tokens of JSON of the input, counted before it is parsed                                         | `1000000`                                            |
+| `maxJsonLdTokens`      | The most tokens of JSON in a credential with a Data Integrity proof, which a JSON-LD processor reads to check it; a CLR that holds many credentials as objects can need more | `20000` |
 | `timeoutMs`            | The time of each fetch                                                                                    | `10000`                                              |
 | `maxBytes`             | The most bytes of each fetch                                                                              | `1048576`                                            |
 | `signal`               | Ends the caller's wait. A call has no deadline of its own: a CLR may hold 1,000 credentials, and each may name a status list, a refresh service and a schema, so a host passes `AbortSignal.timeout(...)` | None |
@@ -174,6 +175,9 @@ is withheld. The status lists of one call are fetched once, and so is each schem
 | Characters of the input                            | `maxInputBytes`        | `format` `failed`                                 |
 | Tokens of JSON of the input                        | `maxTokens`            | `format` `failed`                                 |
 | Levels of JSON of the input                        | `maxDepth`             | `format` `failed`                                 |
+| Tokens of a credential that a JSON-LD processor reads | `maxJsonLdTokens` | `proof` `failed`, with the limit in the detail |
+| Runs of Hash N-Degree Quads in a canonicalization  | 1,000, fixed           | `proof` `failed`, with the limit in the detail    |
+| Proofs of a credential that are checked            | 4, fixed               | The rest are not looked at, and the detail says so |
 | Endorsements of one credential                     | `maxEndorsements`      | `format` `failed`                                 |
 | Credentials of one CLR                             | `maxNestedCredentials` | `format` `failed`                                 |
 | Bytes of a schema, a status list or a refresh      | `maxBytes`             | `schema`, `status` or `refresh` `unavailable`      |

@@ -5,6 +5,7 @@ import type { IssuableCredential } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
 import { failOperation } from "./document-loader.js";
 import { type DisclosureOptions, disclosureSettings } from "./options.js";
+import { processingProblem } from "./processing-limits.js";
 import { withProofList, withProofObject } from "./proof-list.js";
 
 /**
@@ -15,12 +16,14 @@ import { withProofList, withProofObject } from "./proof-list.js";
  * A holder calls it; the base proof never goes to a verifier, because it holds the key that relabels the blank nodes and the
  * signature of every statement. Disclosures of one credential can be linked to each other, since they share the base signature
  * and the key of the proof. The disclosure is checked as the readers check a credential: one that hides what the model
- * requires is refused with the pointers to add.
+ * requires is refused with the pointers to add. A credential of more tokens than `maxJsonLdTokens` is refused before any
+ * processor reads it.
  *
  * @param credential - The credential with its base proof.
- * @param options - The pointers to reveal and the loader of contexts.
+ * @param options - The pointers to reveal, the loader of contexts and the limit of tokens.
  * @returns The disclosure.
- * @throws `DataError` when the credential has no base proof, a pointer selects nothing, or the disclosure is not a credential.
+ * @throws `DataError` when the credential has no base proof, has more tokens than `maxJsonLdTokens`, a pointer selects nothing, or
+ * the disclosure is not a credential.
  * @throws `ServiceError` when a context cannot be fetched.
  * @throws The `reason` of the signal when it aborts.
  */
@@ -28,14 +31,17 @@ export async function deriveDisclosure(
   credential: IssuableCredential,
   options: DisclosureOptions,
 ): Promise<IssuableCredential> {
-  const { selectivePointers, contexts, signal } = disclosureSettings(options);
+  const { selectivePointers, contexts, maxJsonLdTokens, signal } = disclosureSettings(options);
   checkRecord(credential, "The credential must be an object");
   signal?.throwIfAborted();
+  const tooLarge = processingProblem(credential, maxJsonLdTokens);
+  if (tooLarge !== undefined) throw new DataError(tooLarge);
   let derived: Readonly<Record<string, unknown>>;
   try {
     derived = await deriveProof(withProofObject({ ...structuredClone(credential) }), {
       selectivePointers,
       contexts,
+      maxTokens: maxJsonLdTokens,
       ...(signal === undefined ? {} : { signal }),
     });
   } catch (error) {

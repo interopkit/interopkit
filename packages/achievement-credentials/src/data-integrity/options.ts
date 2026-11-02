@@ -12,6 +12,7 @@ import {
   methodsSchema,
   parseWith,
 } from "@interopkit/core/checks";
+import { DEFAULT_MAX_JSON_LD_TOKENS } from "../json-text.js";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
 import { checkFlag } from "../option-checks.js";
 
@@ -41,6 +42,14 @@ export interface ProofOptions extends CallOptions {
   readonly contexts: ContextLoader;
   /** Gives the time that the proof's `created` is written from. */
   readonly clock: Clock;
+  /**
+   * The most tokens of JSON in the credential that a JSON-LD processor reads. The work of a processor grows with the square of
+   * the values of one property, which `maxTokens` does not bound: 20,000 values of one property take about four seconds. A
+   * CLR that holds many credentials as objects can need more.
+   *
+   * @defaultValue `20000`
+   */
+  readonly maxJsonLdTokens?: number;
 }
 
 /** The options of `deriveDisclosure`. */
@@ -49,6 +58,14 @@ export interface DisclosureOptions extends CallOptions {
   readonly selectivePointers: readonly string[];
   /** Returns the contexts of the credential and of the proof. */
   readonly contexts: ContextLoader;
+  /**
+   * The most tokens of JSON in the credential that a JSON-LD processor reads. The work of a processor grows with the square of
+   * the values of one property, which `maxTokens` does not bound: 20,000 values of one property take about four seconds. A
+   * CLR that holds many credentials as objects can need more.
+   *
+   * @defaultValue `20000`
+   */
+  readonly maxJsonLdTokens?: number;
 }
 
 /** The options of `verifyProof`. */
@@ -84,7 +101,7 @@ export interface DataIntegrityVerifyOptions extends CallOptions {
    */
   readonly suites?: readonly DataIntegritySuite[];
   /**
-   * The most bytes of the credential as JSON.
+   * The most characters of the credential as JSON. A suite that counts bytes is given the same number.
    *
    * @defaultValue `1048576`
    */
@@ -101,6 +118,14 @@ export interface DataIntegrityVerifyOptions extends CallOptions {
    * @defaultValue `1000000`
    */
   readonly maxTokens?: number;
+  /**
+   * The most tokens of JSON in the credential that a JSON-LD processor reads. The work of a processor grows with the square of
+   * the values of one property, which `maxTokens` does not bound: 20,000 values of one property take about four seconds. A
+   * CLR that holds many credentials as objects can need more.
+   *
+   * @defaultValue `20000`
+   */
+  readonly maxJsonLdTokens?: number;
 }
 
 /** The seconds by which the time of a proof may differ from the clock of the verifier. */
@@ -118,6 +143,7 @@ export interface ProofSettings {
   readonly mandatoryPointers: readonly string[] | undefined;
   readonly contexts: ContextLoader;
   readonly clock: Clock;
+  readonly maxJsonLdTokens: number;
   readonly signal: AbortSignal | undefined;
 }
 
@@ -125,6 +151,7 @@ export interface ProofSettings {
 export function proofSettings(options: unknown): ProofSettings {
   checkRecord(options, "The options of addProof must be an object");
   const { cryptosuite = "eddsa-rdfc-2022", mandatoryPointers, contexts, clock, signal } = options;
+  const { maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS } = options;
   if (!SIGNING_CRYPTOSUITES.find((name) => name === cryptosuite)) {
     throw new DataError(
       `The option cryptosuite must be ${SIGNING_CRYPTOSUITES.join(" or ")}, found ${describe(cryptosuite)}.`,
@@ -133,12 +160,14 @@ export function proofSettings(options: unknown): ProofSettings {
   if (mandatoryPointers !== undefined) checkPointers(mandatoryPointers, "The option mandatoryPointers");
   checkFunction(contexts, "The option contexts must be a function");
   checkClock(clock);
+  checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   return {
     cryptosuite: cryptosuite as SigningCryptosuite,
     mandatoryPointers: mandatoryPointers as readonly string[] | undefined,
     contexts: contexts as ContextLoader,
     clock,
+    maxJsonLdTokens,
     signal,
   };
 }
@@ -159,17 +188,19 @@ function checkPointers(value: unknown, label: string): asserts value is readonly
 export interface DisclosureSettings {
   readonly selectivePointers: readonly string[];
   readonly contexts: ContextLoader;
+  readonly maxJsonLdTokens: number;
   readonly signal: AbortSignal | undefined;
 }
 
 /** Checks the options of `deriveDisclosure` as a host passes them from JavaScript. */
 export function disclosureSettings(options: unknown): DisclosureSettings {
   checkRecord(options, "The options of deriveDisclosure must be an object");
-  const { selectivePointers, contexts, signal } = options;
+  const { selectivePointers, contexts, signal, maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS } = options;
   checkPointers(selectivePointers, "The option selectivePointers");
   checkFunction(contexts, "The option contexts must be a function");
+  checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
-  return { selectivePointers, contexts: contexts as ContextLoader, signal };
+  return { selectivePointers, contexts: contexts as ContextLoader, maxJsonLdTokens, signal };
 }
 
 /** The options of a verification, checked and with their defaults. */
@@ -184,6 +215,7 @@ export interface VerifySettings {
   readonly maxInputBytes: number;
   readonly maxDepth: number;
   readonly maxTokens: number;
+  readonly maxJsonLdTokens: number;
   readonly signal: AbortSignal | undefined;
 }
 
@@ -196,10 +228,12 @@ export function verifySettings(options: unknown): VerifySettings {
   checkFunction(contexts, "The option contexts must be a function");
   const { clockSkewSeconds = DEFAULT_CLOCK_SKEW_SECONDS, allowUnboundKeys = false, legacyProofs = false } = options;
   const { maxInputBytes = DEFAULT_MAX_INPUT_BYTES, maxDepth = MAX_JSON_DEPTH, maxTokens = MAX_JSON_TOKENS } = options;
+  const { maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS } = options;
   checkNonNegativeInteger(clockSkewSeconds, "The option clockSkewSeconds");
   checkPositiveInteger(maxInputBytes, "The option maxInputBytes");
   checkPositiveInteger(maxDepth, "The option maxDepth");
   checkPositiveInteger(maxTokens, "The option maxTokens");
+  checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
   checkFlag(allowUnboundKeys, "The option allowUnboundKeys");
   checkFlag(legacyProofs, "The option legacyProofs");
   checkArray(suites, "The option suites must be an array");
@@ -222,6 +256,7 @@ export function verifySettings(options: unknown): VerifySettings {
     maxInputBytes,
     maxDepth,
     maxTokens,
+    maxJsonLdTokens,
     signal,
   };
 }

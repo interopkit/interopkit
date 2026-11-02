@@ -82,3 +82,11 @@ refused when it runs a regular expression; a refreshed credential must be authen
 whether a status list, a refresh, a schema or an issuer's keys that cannot be read fail the verification, and a proof that cannot
 be checked always does. A credential has at most `maxEndorsements` (32) endorsements and a CLR `maxNestedCredentials` (1,000)
 credentials, and the input is limited in characters, tokens and levels before it is parsed.
+
+A credential with a Data Integrity proof is also limited for what a JSON-LD processor reads, because the work of a processor grows
+with the square of the values of one property: `addProof`, `deriveDisclosure`, `verifyProof`, `validateJsonLd` and
+`verifyCredential` take `maxJsonLdTokens` (20,000 by default) and refuse a credential over it before any processor reads it, and
+the canonicalization of the cryptosuites stops after 1,000 runs of Hash N-Degree Quads, as in `selective-disclosure`. `verifyProof`
+checks the first four proofs of a credential and canonicalizes the credential once for all of them. A limit is the reason of the
+`proof` check and not a signature that fails. A `DataIntegritySuite` is given the credential without its proof and the limits that
+the glue checked (`maxBytes`, `maxTokens`), and a `DataError` that it rejects with becomes that reason.

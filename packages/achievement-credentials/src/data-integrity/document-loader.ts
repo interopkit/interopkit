@@ -1,5 +1,6 @@
 import { DataError, ServiceError } from "@interopkit/core";
 import type { ContextLoader } from "../model/index.js";
+import { MAX_DEEP_ITERATIONS } from "./canonize.js";
 
 /** The most levels of `cause` that are followed to find the failure of a service under the error of a processor. */
 const MAX_CAUSE_DEPTH = 8;
@@ -44,12 +45,33 @@ export function rethrowOperational(error: unknown, signal?: AbortSignal): void {
   if (service !== undefined) throw service;
 }
 
+/** The message that `rdf-canonize` gives when a canonicalization runs the Hash N-Degree Quads algorithm more often than it may. */
+const DEEP_ITERATIONS_MESSAGE = /^Maximum deep iterations exceeded/u;
+
+/**
+ * Says what a limit of the canonicalization means, when the error of a processor is one: the sentence that names the limit, or
+ * `undefined` for any other error.
+ */
+export function limitOf(error: unknown): string | undefined {
+  let current: unknown = error;
+  for (let depth = 0; depth < MAX_CAUSE_DEPTH && current instanceof Error; depth += 1) {
+    if (DEEP_ITERATIONS_MESSAGE.test(current.message)) {
+      return `The credential needs more than ${MAX_DEEP_ITERATIONS} runs of the Hash N-Degree Quads algorithm to canonicalize: too many blank nodes look alike, as the items of a long list do.`;
+    }
+    current = wrapped(current);
+  }
+  return undefined;
+}
+
 /**
  * Throws what a failed JSON-LD operation means to a caller that signs, derives or validates: the abort, the `ServiceError` of
- * a context, the `DataError` of a context that is not pinned, or a `DataError` that says that the credential cannot be processed.
+ * a context, the `DataError` of a context that is not pinned or of a limit, or a `DataError` that says that the credential
+ * cannot be processed.
  */
 export function failOperation(error: unknown, signal?: AbortSignal): never {
   rethrowOperational(error, signal);
+  const limit = limitOf(error);
+  if (limit !== undefined) throw new DataError(limit);
   const refused = causeOf(error, DataError);
   if (refused !== undefined) throw refused;
   const message = error instanceof Error ? error.message : String(error);

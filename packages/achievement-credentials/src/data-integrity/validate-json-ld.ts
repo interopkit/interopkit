@@ -1,8 +1,11 @@
 import jsonld from "@interop/jsonld";
 import type { CallOptions } from "@interopkit/core";
-import { checkAbortSignal, checkFunction, checkRecord, isRecord } from "@interopkit/core/checks";
+import { DataError } from "@interopkit/core";
+import { checkAbortSignal, checkFunction, checkPositiveInteger, checkRecord, isRecord } from "@interopkit/core/checks";
+import { DEFAULT_MAX_JSON_LD_TOKENS } from "../json-text.js";
 import type { ContextLoader, IssuableCredential, JsonLdIssue } from "../model/index.js";
 import { documentLoaderOf, failOperation } from "./document-loader.js";
+import { processingProblem } from "./processing-limits.js";
 
 /** The most events that are collected, so that a credential of ten thousand unknown terms costs no more than this. */
 const MAX_ISSUES = 100;
@@ -48,22 +51,26 @@ function pathOf(value: unknown, term: string, path = ""): string | undefined {
  * reported.
  *
  * @param credential - The credential.
- * @param options - The loader of contexts, and the signal that ends the caller's wait.
+ * @param options - The loader of contexts, the most tokens of JSON that the processor reads (`maxJsonLdTokens`, 20,000 by default),
+ * and the signal that ends the caller's wait.
  * @returns The findings, none when nothing would be lost.
- * @throws `DataError` when an argument is not valid, or a context is not pinned.
+ * @throws `DataError` when an argument is not valid, the credential has more tokens than `maxJsonLdTokens`, or a context is not pinned.
  * @throws `ServiceError` when a context cannot be fetched.
  * @throws The `reason` of the signal when it aborts.
  */
 export async function validateJsonLd(
   credential: IssuableCredential,
-  options: { readonly contexts: ContextLoader } & CallOptions,
+  options: { readonly contexts: ContextLoader; readonly maxJsonLdTokens?: number } & CallOptions,
 ): Promise<readonly JsonLdIssue[]> {
   checkRecord(credential, "The credential must be an object");
   checkRecord(options, "The options of validateJsonLd must be an object");
-  const { contexts, signal } = options;
+  const { contexts, signal, maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS } = options;
   checkFunction(contexts, "The option contexts must be a function");
+  checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   signal?.throwIfAborted();
+  const tooLarge = processingProblem(credential, maxJsonLdTokens);
+  if (tooLarge !== undefined) throw new DataError(tooLarge);
   const issues: JsonLdIssue[] = [];
   const document = structuredClone(credential);
   const load = documentLoaderOf(contexts as ContextLoader, signal);

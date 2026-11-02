@@ -342,6 +342,16 @@ describe("verifying a credential with a Data Integrity proof", () => {
     expect(detailOf(await verifyCredential(late.signed, late.options), "validity")).toContain("expired");
   });
 
+  it("fails with a reason that names maxJsonLdTokens for a credential of more tokens than the processors may read", async () => {
+    const { signed, options, contexts } = await sign();
+    contexts.requested.length = 0;
+    const result = await verifyCredential(signed, { ...options, maxJsonLdTokens: 50 });
+    expect(outcomes(result)).toMatchObject({ format: "passed", proof: "failed", issuer: "skipped" });
+    expect(detailOf(result, "proof")).toContain("maxJsonLdTokens");
+    expect(contexts.requested).toStrictEqual([]);
+    expect(outcomes(await verifyCredential(signed, options)).proof).toBe("passed");
+  });
+
   it("is unavailable without a loader of contexts, and nothing is loaded", async () => {
     const { signed, options } = await sign();
     const { contexts: _unused, ...withoutContexts } = options;

@@ -10,6 +10,7 @@ declare module "@interop/jsonld" {
         }) => void;
       },
     ): Promise<unknown[]>;
+    canonize(input: object, options: Readonly<Record<string, unknown>>): Promise<string>;
   };
   // biome-ignore lint/style/noDefaultExport: the library has no other export, and this declares it.
   export default jsonld;

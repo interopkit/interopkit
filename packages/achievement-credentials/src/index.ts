@@ -140,6 +140,7 @@ export {
   type StatusCodeMajor,
   type StatusCodeMinorValue,
   type StatusSeverity,
+  type SuiteVerifyOptions,
   type TermsOfUse,
   TOKEN_ERRORS,
   type TokenError,

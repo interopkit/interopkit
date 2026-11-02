@@ -99,8 +99,9 @@ result.valid; // => true
 
 ## Signing
 
-`addProof(credential, signer, options)` checks the credential as `readCredential` checks it, signs a copy and returns the credential
-with a proof added to any it had. The proof names the signer's `keyId` as its `verificationMethod`, has the purpose
+`addProof(credential, signer, options)` checks the credential as `readCredential` checks it, signs a copy and returns the
+credential with the proof. `eddsa-rdfc-2022` adds it to the proofs the credential had, which makes a set of proofs;
+`ecdsa-sd-2023` refuses a credential that has a proof already, since a disclosure carries one derived proof. The proof names the signer's `keyId` as its `verificationMethod`, has the purpose
 `assertionMethod`, and its `created` is the time of the clock. The result holds the proof as a list, as the model does.
 
 | Option              | Meaning                                                                                                                                         | Default                                    |
@@ -109,6 +110,7 @@ with a proof added to any it had. The proof names the signer's `keyId` as its `v
 | `mandatoryPointers` | For `ecdsa-sd-2023`: the JSON Pointers to what a holder can never hide                                                                          | The required properties that the credential holds, so that a disclosure stays a valid credential |
 | `contexts`          | The `ContextLoader` that returns the contexts of the credential and of the proof                                                                | Required                                   |
 | `clock`             | The `Clock` that `created` is written from                                                                                                       | Required                                   |
+| `maxJsonLdTokens`   | The most tokens of JSON in the credential, counted before a JSON-LD processor reads it (see Limits)                                              | `20000`                                    |
 | `signal`            | Ends the caller's wait, and reaches the signer                                                                                                   | None                                       |
 
 The default mandatory pointers are `/@context`, `/id`, `/type`, `/issuer/id`, `/issuer/type`, `/validFrom`, `/name`,
@@ -120,18 +122,21 @@ nothing would then identify.
 
 A base proof holds the key that relabels the blank nodes of the credential and the signature of every statement, so it goes to
 the holder and never to a verifier: `verifyProof` answers that the proof is not valid and says to derive a disclosure first.
-`deriveDisclosure(credential, { selectivePointers, contexts })` returns a credential with the mandatory parts, the selected parts
+`deriveDisclosure(credential, { selectivePointers, contexts, maxJsonLdTokens })` returns a credential with the mandatory parts, the selected parts
 and a derived proof. It refuses a disclosure that is not a valid credential, and names the fix. Disclosures of one credential
 can be linked to each other, since they share the base signature and the key of the proof.
 
 ## Verifying
 
 `verifyProof(credential, options)` returns a `ProofResult`. The credential is checked for its size and depth, then as the readers
-check a credential. Each proof is looked at in order, and the result is the first that is valid.
+check a credential, and then for what a JSON-LD processor may read (see Limits). The first four proofs are looked at in order,
+and the result is the first that is valid; a proof after the fourth is not looked at, and the reason says so. The credential is
+canonicalized once for all of them.
 
 | A proof is not valid when                                                                         | Reason                                        |
 | ------------------------------------------------------------------------------------------------- | --------------------------------------------- |
 | The credential has no proof, or is not a credential                                                | Said in the reason                            |
+| It has more tokens of JSON than a JSON-LD processor may read, or needs more than 1,000 runs of Hash N-Degree Quads to canonicalize | The limit, and the option that sets it |
 | Its type is not `DataIntegrityProof` (or `Ed25519Signature2020` with `legacyProofs`)               | Said in the reason                            |
 | No suite verifies its cryptosuite                                                                  | `eddsa-rdfc-2022`, `ecdsa-rdfc-2019`, `ecdsa-sd-2023` and `suites` |
 | It is an `ecdsa-sd-2023` base proof                                                                | Derive a disclosure first                     |
@@ -151,8 +156,18 @@ check a credential. Each proof is looked at in order, and the result is the firs
 | `suites`           | More `DataIntegritySuite`s beside the built-in ones; a suite only checks the proof, the glue resolves and binds the key | None          |
 | `maxInputBytes`    | The most characters of the credential as JSON                                                                         | `1048576`     |
 | `maxTokens`        | The most tokens of JSON in the credential, counted before the readers walk it                                          | `1000000`     |
+| `maxJsonLdTokens`  | The most tokens of JSON in the credential that a JSON-LD processor reads to check a proof (see Limits)                 | `20000`       |
 | `maxDepth`         | The most levels that the credential nests                                                                             | `64`          |
 | `signal`           | Ends the caller's wait                                                                                                | None          |
+
+### A suite of the host
+
+A `DataIntegritySuite` is given the credential **without its proof**, the proof, the public key that the glue resolved and bound,
+the loader of contexts, and the limits that the glue has already checked: `maxBytes` (the number of `maxInputBytes`, which the glue
+counts as characters) and `maxTokens` (`maxJsonLdTokens`). A suite that counts them itself, as `ecdsa-sd-2023` does, therefore refuses nothing that the glue let
+through, and counts the proof once. A suite answers `false` for a proof that does not verify. It rejects with a `DataError` for a
+document it refuses for a reason the caller should read, such as a limit, and the message becomes the reason of the `proof` check.
+Any other error is the host's and reaches the caller.
 
 ## Contexts
 
@@ -178,7 +193,7 @@ or keeps them in `cache`. A verified context stays in memory (100 at most), and 
 
 ## JSON-LD safe mode
 
-`validateJsonLd(credential, { contexts })` expands the credential with safe mode's checks and returns a `JsonLdIssue` for each
+`validateJsonLd(credential, { contexts, maxJsonLdTokens })` expands the credential with safe mode's checks and returns a `JsonLdIssue` for each
 event: a property that no context defines, a relative `id` or `type`. At most 100 are reported. Issuer conformance asks that a
 credential survive safe mode. The builders write the context of the 1EdTech extensions, which defines the type of the
 `credentialSchema`, so that a built credential loses no term.
@@ -212,15 +227,28 @@ a Profile or an address.
 | Characters of the credential as JSON                    | `maxInputBytes`, 1,048,576 | `valid: false`, before it is read |
 | Levels that the credential nests                        | `maxDepth`, 64       | `valid: false`, before it is read       |
 | Tokens of JSON in the credential                        | `maxTokens`, 1,000,000 | `valid: false`, before it is read     |
-| RDF canonicalization work factor (`rdf-canonize` default) | 1                  | The signature does not verify; signing is refused with a `DataError` |
+| Tokens of JSON in a credential that a JSON-LD processor reads | `maxJsonLdTokens`, 20,000 | `valid: false` with the limit; signing, deriving and validating: `DataError` |
+| Runs of Hash N-Degree Quads in one canonicalization     | 1,000, fixed         | `valid: false` with the limit; signing: `DataError` |
+| Proofs of a credential that are checked                 | 4, fixed             | The rest are not looked at, and the reason says so |
 | Bytes of a context, levels of a context                 | `maxBytes`, 64       | `ServiceError`, `DataError`             |
 | Tokens of JSON in a context                             | `maxTokens`, 1,000,000 | `DataError`, before it is parsed      |
 | Contexts kept in memory                                 | 100                  | The oldest goes first                   |
 | Findings of `validateJsonLd`                            | 100                  | The rest are not reported               |
 
-The work factor is the default of the adopted canonicalization, which the cryptosuites keep: a graph of blank nodes that look
-alike makes the labelling cost more than the limit allows, and it is refused (`Maximum deep iterations exceeded`). A test pins
-the default with such a graph.
+`maxTokens` bounds what a parse builds, and it is far too generous for a JSON-LD processor, whose work grows with the square of the
+values of one property: 10,000 values of one property take about a second, 20,000 take four seconds and 60,000 take 35. So a
+credential with a proof is also counted against `maxJsonLdTokens` before any processor reads it. A CLR that holds many credentials
+as objects can need a higher value; a CLR whose credentials are compact JWS counts each as one token.
+
+The canonicalization of the adopted cryptosuites has no bound of its own, and the work factor of `rdf-canonize` allows one run of
+Hash N-Degree Quads for each blank node that looks like another, with each run copying its path: a list of 5,000 items took 1.7
+seconds and 900 MiB. The package canonicalizes with a fixed count of 1,000 runs instead, as `selective-disclosure` does. The
+examples of Open Badges 3.0 and CLR 2.0 need at most 16. A test pins it with a clique of blank nodes, with a graph of 1,500 alike
+nodes that the allowance of the library would let pass, and with a list of 5,000 items whose peak of memory it measures.
+
+Each proof is checked on its own and may name another key to fetch, so the work and the requests grow with their number: 5,000
+values of one property and 300 proofs took 95 seconds. Only the first four proofs are looked at, and the credential is
+canonicalized once for all of them. Bounded as it is, a credential at the token limit costs about two seconds to verify.
 
 ## Errors
 
@@ -228,6 +256,7 @@ the default with such a graph.
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | An option or an argument has the wrong type; a signer of another algorithm or with no `keyId` | `DataError` that names it                                         |
 | The credential to sign is not valid, or its graph cannot be canonicalized                    | `DataError`: `The credential is invalid ...`, `... cannot be processed as JSON-LD: ...` |
+| The credential has more tokens than `maxJsonLdTokens`, or needs more than 1,000 runs of Hash N-Degree Quads | While signing, deriving or validating: `DataError` that names the limit. While verifying: `valid: false` with the same sentence |
 | A context has no pin or is not the pinned document                                           | While signing or deriving: `DataError`. While verifying: `valid: false` |
 | A context cannot be fetched                                                                  | `ServiceError`                                                     |
 | A disclosure hides what the model requires                                                   | `DataError` that names the pointers to add                         |
@@ -251,3 +280,5 @@ the default with such a graph.
 | A base proof of `ecdsa-sd-2023`  | Verify Derived Proof is the only algorithm defined                                                  | A credential that carries a base proof is not valid, and the reason says to derive a disclosure first      |
 | Contexts                         | A processor loads a context by its address                                                           | Only at a pinned hash                                                                                    |
 | Proofs                           | The compacted form writes a single proof as an object                                                | The result of `addProof` holds a list of one                                                              |
+| The number of proofs             | A verifier may check all of them                                                                     | The first four; each costs a canonicalization of its options and may cost a fetch of a key                  |
+| Canonicalization                 | RDF Dataset Canonicalization 4.8: a work factor bounds the runs of Hash N-Degree Quads                | A fixed count of 1,000 runs, and a count of the tokens that a processor reads                             |

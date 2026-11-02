@@ -1,12 +1,27 @@
 import { DataIntegrityProof } from "@interop/data-integrity-proof";
 import { ecdsaRdfc2019 } from "@interop/ecdsa-signature";
 import { Ed25519Signature2020, eddsaRdfc2022 } from "@interop/ed25519-signature";
+import { DataError } from "@interopkit/core";
 import { selectiveDisclosureSuite } from "@interopkit/selective-disclosure";
 import type { DataIntegritySuite } from "../model/index.js";
-import { documentLoaderOf, rethrowOperational } from "./document-loader.js";
+import { boundedCanonize } from "./canonize.js";
+import { documentLoaderOf, limitOf, rethrowOperational } from "./document-loader.js";
 
 /** A cryptosuite of the adopted library. */
 type Cryptosuite = ConstructorParameters<typeof DataIntegrityProof>[0]["cryptosuite"];
+
+/**
+ * Takes the cryptosuites of the library as they are, except for the canonicalization, which stops at a fixed count of deep
+ * iterations: the library passes no bound of its own.
+ */
+function bounded(cryptosuite: Cryptosuite): Cryptosuite {
+  return { ...cryptosuite, canonize: boundedCanonize } as Cryptosuite;
+}
+
+/** The cryptosuite `eddsa-rdfc-2022` with the bounded canonicalization, for signing and for verifying. */
+export const EDDSA_RDFC_2022_CRYPTOSUITE = bounded(eddsaRdfc2022);
+
+const ECDSA_RDFC_2019_CRYPTOSUITE = bounded(ecdsaRdfc2019);
 
 /** The verification method of the library, which describes a key. */
 type LibraryMethod = Parameters<DataIntegrityProof["verifySignature"]>[0]["verificationMethod"];
@@ -24,6 +39,12 @@ function methodOf(proof: Readonly<Record<string, unknown>>, publicKeyJwk: JsonWe
   } as LibraryMethod;
 }
 
+/** Returns a document without its `proof`. */
+function withoutProof(document: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
+  const { proof: _secured, ...unsecured } = document;
+  return unsecured;
+}
+
 /**
  * Makes the suite of a cryptosuite of the adopted library: the data that the proof signs, as the Data Integrity algorithm
  * builds it, and the check of the signature with the key that the glue resolved.
@@ -36,7 +57,8 @@ function libraryGlue(name: string, make: () => DataIntegrityProof, cryptosuite: 
   return {
     cryptosuite: name,
     async verify(document, proof, { publicKeyJwk, contexts, signal }) {
-      const { proof: _secured, ...unsecured } = document;
+      // The glue gives the credential without its proof, and the same object for each proof, so that it is canonized once.
+      const unsecured = "proof" in document ? withoutProof(document) : document;
       const instance = make();
       const verificationMethod = methodOf(proof, publicKeyJwk);
       try {
@@ -54,6 +76,9 @@ function libraryGlue(name: string, make: () => DataIntegrityProof, cryptosuite: 
         return await instance.verifySignature({ verifyData, verificationMethod, proof });
       } catch (error) {
         rethrowOperational(error, signal);
+        // A limit is not a signature that fails: the caller reports it as the limit that it is.
+        const limit = limitOf(error);
+        if (limit !== undefined) throw new DataError(limit);
         return false;
       }
     },
@@ -63,22 +88,27 @@ function libraryGlue(name: string, make: () => DataIntegrityProof, cryptosuite: 
 /** The suite of `eddsa-rdfc-2022`. */
 export const EDDSA_RDFC_2022: DataIntegritySuite = libraryGlue(
   "eddsa-rdfc-2022",
-  () => new DataIntegrityProof({ cryptosuite: eddsaRdfc2022 }),
-  eddsaRdfc2022,
+  () => new DataIntegrityProof({ cryptosuite: EDDSA_RDFC_2022_CRYPTOSUITE }),
+  EDDSA_RDFC_2022_CRYPTOSUITE,
 );
 
 /** The suite of `ecdsa-rdfc-2019`, over P-256 and P-384. */
 const ECDSA_RDFC_2019: DataIntegritySuite = libraryGlue(
   "ecdsa-rdfc-2019",
-  () => new DataIntegrityProof({ cryptosuite: ecdsaRdfc2019 }),
-  ecdsaRdfc2019,
+  () => new DataIntegrityProof({ cryptosuite: ECDSA_RDFC_2019_CRYPTOSUITE }),
+  ECDSA_RDFC_2019_CRYPTOSUITE,
 );
 
 /** The suite of the legacy proof type `Ed25519Signature2020`. */
 export const ED25519_SIGNATURE_2020: DataIntegritySuite = libraryGlue(
   "Ed25519Signature2020",
-  () => new Ed25519Signature2020(),
-  eddsaRdfc2022,
+  () => {
+    const suite = new Ed25519Signature2020();
+    // The class takes its canonicalization from its own cryptosuite when it is made.
+    suite.canonize = boundedCanonize;
+    return suite;
+  },
+  EDDSA_RDFC_2022_CRYPTOSUITE,
 );
 
 /** The suites that `verifyProof` has beside those a host passes: the cryptosuites that Open Badges names. */

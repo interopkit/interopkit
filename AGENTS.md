@@ -340,10 +340,10 @@ Where the code departs from `STANDARDS.md`, with the reason.
   that every entry still matches its file. So does each behavior of a reader or a converter that refuses or changes a value,
   guarded by a test that is not a corpus test, because the scratch copy has no download.
 - Every public function has a test of input of other types, as JavaScript or JSON pass it: `null` options and arguments, a
+  string for a number, an object for an array. Pass such input with `JSON.parse`, not a cast.
 - Verification is tested with forged credentials: a good signature by a key that the issuer does not publish, for a credential,
   an endorsement, a credential of a CLR and a status list, each `verified: false` with its check `failed`, and the order of the
   work is a test of the requests that a credential whose proof fails causes (none).
-  string for a number, an object for an array. Pass such input with `JSON.parse`, not a cast.
 - Properties that hold for any input are tested with fast-check, with a fixed seed and a bounded number of runs. Every parser
   and decoder is fuzzed.
 - Tests wait for events, never for time: a deadline test uses a short `timeoutMs` and waits for the rejection. No retries, no

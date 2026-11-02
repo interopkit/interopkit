@@ -13,9 +13,18 @@ import type {
 import { credentialOrReason } from "../read/internal.js";
 import { rethrowOperational } from "./document-loader.js";
 import { type DataIntegrityVerifyOptions, type VerifySettings, verifySettings } from "./options.js";
+import { processingProblem } from "./processing-limits.js";
 import { BUILT_IN_SUITES, ED25519_SIGNATURE_2020 } from "./suites.js";
 
 const MILLISECONDS_PER_SECOND = 1000;
+
+/**
+ * The most proofs of one credential that are checked, in order. Each proof is checked on its own, canonizes its options and may
+ * name another key to fetch, so the work and the requests grow with their number: 5,000 values of one property and 300 proofs took
+ * 95 seconds before the credential was canonized once for all. Open Badges allows one or more Linked Data proofs, and a
+ * credential has one or two in practice.
+ */
+const MAX_CHECKED_PROOFS = 4;
 
 /** The `proofPurpose` of a proof that makes a credential an assertion of its issuer. */
 const ASSERTION = "assertionMethod";
@@ -64,9 +73,34 @@ function proofProblem(proof: Readonly<Record<string, unknown>>, settings: Verify
   return undefined;
 }
 
+/**
+ * Asks a suite whether a proof verifies. A suite that refuses the document with a `DataError`, as for a limit, gives the reason
+ * of the check; any other error is the host's and passes through.
+ */
+async function suiteVerdict(
+  suite: DataIntegritySuite,
+  unsecured: Readonly<Record<string, unknown>>,
+  proof: Readonly<Record<string, unknown>>,
+  key: VerificationKey,
+  settings: VerifySettings,
+): Promise<boolean | Refusal> {
+  try {
+    return await suite.verify(unsecured, proof, {
+      publicKeyJwk: key.publicKeyJwk,
+      contexts: settings.contexts,
+      maxBytes: settings.maxInputBytes,
+      maxTokens: settings.maxJsonLdTokens,
+      ...(settings.signal === undefined ? {} : { signal: settings.signal }),
+    });
+  } catch (error) {
+    if (error instanceof DataError) return { reason: error.message, unavailable: false };
+    throw error;
+  }
+}
+
 /** Checks one proof of a credential, and returns the key that verified it or the reason that it did not. */
 async function checkProof(
-  document: Readonly<Record<string, unknown>>,
+  unsecured: Readonly<Record<string, unknown>>,
   candidate: unknown,
   issuer: string,
   settings: VerifySettings,
@@ -90,11 +124,8 @@ async function checkProof(
   );
   if (resolved === undefined)
     return { reason: `No key is named by the verificationMethod ${method}.`, unavailable: false };
-  const verdict = await suite.verify(document, proof, {
-    publicKeyJwk: resolved.publicKeyJwk,
-    contexts: settings.contexts,
-    ...(settings.signal === undefined ? {} : { signal: settings.signal }),
-  });
+  const verdict = await suiteVerdict(suite, unsecured, proof, resolved, settings);
+  if (typeof verdict !== "boolean") return verdict;
   if (!verdict) return { reason: `The proof does not verify with the key ${resolved.id}.`, unavailable: false };
   const binding = await bindKey(resolved, issuer, settings);
   return "reason" in binding ? { reason: binding.reason, unavailable: false } : { key: resolved, bound: binding.bound };
@@ -129,12 +160,16 @@ async function proofsOf(
   credential: AnyVerifiableCredential,
   settings: VerifySettings,
 ): Promise<ProofVerdict> {
-  const proofs = Array.isArray(document.proof) ? document.proof : document.proof === undefined ? [] : [document.proof];
+  const { proof: secured, ...unsecured } = document;
+  const proofs = Array.isArray(secured) ? secured : secured === undefined ? [] : [secured];
   const issuer = typeof credential.issuer === "string" ? credential.issuer : credential.issuer.id;
   let first: Refusal = { reason: "The credential has no proof.", unavailable: false };
-  for (const [index, proof] of proofs.entries()) {
+  // A credential that is too large for the processors costs no work, whatever the number of its proofs.
+  const tooLarge = proofs.length === 0 ? undefined : processingProblem(document, settings.maxJsonLdTokens);
+  if (tooLarge !== undefined) return { valid: false, reason: tooLarge, unavailable: false };
+  for (const [index, proof] of proofs.slice(0, MAX_CHECKED_PROOFS).entries()) {
     try {
-      const checked = await checkProof(document, proof, issuer, settings);
+      const checked = await checkProof(unsecured, proof, issuer, settings);
       if ("key" in checked) return { valid: true, credential, key: checked.key, bound: checked.bound };
       if (index === 0) first = checked;
     } catch (error) {
@@ -142,7 +177,11 @@ async function proofsOf(
       throw error;
     }
   }
-  return { valid: false, ...first };
+  const ignored =
+    proofs.length > MAX_CHECKED_PROOFS
+      ? ` Only the first ${MAX_CHECKED_PROOFS} of its ${proofs.length} proofs are checked.`
+      : "";
+  return { valid: false, ...first, reason: `${first.reason}${ignored}` };
 }
 
 /**
@@ -171,12 +210,16 @@ export async function inspectProofs(
  * Verifies the Data Integrity proofs of a credential: the signature, with a key that belongs to the issuer.
  *
  * @remarks
- * The credential is checked for its size and depth before anything reads it, and as the readers check a credential. Every proof
- * is looked at in order, and the result is the first that is valid; if none is, the reason of the first. A proof must have the
+ * The credential is checked for its size and depth before anything reads it, and as the readers check a credential. A credential
+ * that has more tokens or bytes than `maxJsonLdTokens` and `maxInputBytes` allow a JSON-LD processor, or needs more than 1,000
+ * runs of the Hash N-Degree Quads algorithm to canonicalize, is not valid, and the reason names the limit. The first four proofs
+ * are looked at in order, and the result is the first that is valid; if none is, the reason of the first. The credential is
+ * canonicalized once for all of them. A proof must have the
  * purpose `assertionMethod`, a cryptosuite that a suite verifies (the built-in `eddsa-rdfc-2022`, `ecdsa-rdfc-2019`
  * and `ecdsa-sd-2023`, those of `suites`, and `Ed25519Signature2020` with `legacyProofs`), and a key that the resolver finds and
  * that the issuer publishes, unless `allowUnboundKeys` is set. A credential that still carries an `ecdsa-sd-2023` base proof is
- * not valid: the holder derives a disclosure first. Every context is loaded through `contexts`.
+ * not valid: the holder derives a disclosure first. Every context is loaded through `contexts`. A suite of `suites` is given the
+ * credential without its proof and the limits, and may refuse a document with a `DataError`, which becomes the reason.
  *
  * @param credential - The credential, as an object.
  * @param options - The resolver, the clock, the loader of contexts and the other options.

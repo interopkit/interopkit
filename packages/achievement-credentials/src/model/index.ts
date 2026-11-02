@@ -110,6 +110,7 @@ export {
   type KeyRelationship,
   type KeyResolver,
   type ProofResult,
+  type SuiteVerifyOptions,
   VERIFICATION_CHECKS,
   type VerificationCheck,
   type VerificationCheckName,
