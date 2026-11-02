@@ -288,6 +288,7 @@ revocation list the `status` `unavailable`, which `unavailable: "warn"` accepts.
 | Runs of Hash N-Degree Quads in a canonicalization  | 1,000, fixed           | `proof` `failed`, with the limit in the detail    |
 | Proofs of a credential that are checked            | 4, fixed, those of a chain among them | The rest are not looked at, and the detail says so |
 | Endorsements of one credential                     | `maxEndorsements`      | `format` `failed`                                 |
+| Credentials refreshed in one call                  | 16, fixed              | `refresh` `skipped` for the rest, which are verified as they are: a CLR of 1,000 credentials that each name a refresh service would otherwise make the verifier fetch 1,000 of them and keep about 700 MiB |
 | Credentials of one CLR                             | `maxNestedCredentials` | `format` `failed`                                 |
 | Bytes of a schema, a status list or a refresh      | `maxBytes`             | `schema`, `status` or `refresh` `unavailable`      |
 | Time of each fetch                                 | `timeoutMs`            | `unavailable`                                     |

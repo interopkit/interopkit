@@ -206,6 +206,28 @@ describe("the credentials that a CLR holds", () => {
     expect(result.nested[0]?.verified).toBe(true);
   });
 
+  it("are refreshed no more than 16 times in one call, and the rest are verified as they are", async () => {
+    const refreshing = (index: number) => ({
+      ...badge(),
+      id: `https://example.edu/credentials/${index}`,
+      refreshService: { id: `https://example.edu/refresh/${index}`, type: "1EdTechCredentialRefresh" },
+    });
+    const indexes = Array.from({ length: 20 }, (_, index) => index);
+    const routes = Object.fromEntries(
+      await Promise.all(
+        indexes.map(async (index) => [`https://example.edu/refresh/${index}`, await jwsOf(refreshing(index))]),
+      ),
+    );
+    const { options, requests } = world(routes);
+    const held = await Promise.all(indexes.map((index) => jwsOf(refreshing(index))));
+    const result = await verifyCredential(await clrJws(held), options);
+    const refreshes = result.nested.map((nested) => outcomes(nested).refresh);
+    expect(refreshes.filter((outcome) => outcome === "passed")).toHaveLength(16);
+    expect(refreshes.slice(16)).toStrictEqual(["skipped", "skipped", "skipped", "skipped"]);
+    expect(requests.filter((url) => url.includes("/refresh/"))).toHaveLength(16);
+    expect(result.verified).toBe(true);
+  });
+
   it("share a status list that several name, which is fetched once for the call", async () => {
     const { options, requests } = world({ [LIST_URL]: await listJws(listWith()) });
     const entry = credentialWithStatus();

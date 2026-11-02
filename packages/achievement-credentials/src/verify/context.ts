@@ -9,6 +9,8 @@ export interface Context {
   readonly statusLists: StatusListCache;
   /** The schemas that credentials name, by address, each fetched once for the call. */
   readonly schemas: Map<string, Promise<SchemaLoad>>;
+  /** The refreshes that the call has made, which it bounds. */
+  readonly refreshes: { count: number };
 }
 
 /** Makes the context of a call. */
@@ -17,5 +19,6 @@ export function contextOf(settings: VerifySettings): Context {
     settings,
     statusLists: settings.statusLists ?? createStatusListCache({ clock: settings.jwt.clock }),
     schemas: new Map(),
+    refreshes: { count: 0 },
   };
 }

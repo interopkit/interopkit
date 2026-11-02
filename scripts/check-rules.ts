@@ -5643,6 +5643,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/verify-held.test.ts",
   },
   {
+    rule: "One call refreshes no more than a fixed number of credentials, so that a CLR cannot make the verifier fetch and keep one for each that it holds.",
+    file: "packages/achievement-credentials/src/verify/check-refresh.ts",
+    find: "if (context.refreshes.count >= MAX_REFRESHES) {",
+    replace: "if (false) {",
+    test: "packages/achievement-credentials/test/verify-held.test.ts",
+  },
+  {
     rule: "A refresh gives the same credential and no other.",
     file: "packages/achievement-credentials/src/verify/check-refresh.ts",
     find: "if (!sameCredential(authentic.credential, refreshed.authentic.credential)) {",

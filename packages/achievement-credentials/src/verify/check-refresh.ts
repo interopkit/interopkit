@@ -14,6 +14,13 @@ export interface Refreshed {
   readonly replacement?: Authenticated & { readonly authentic: Authentic };
 }
 
+/**
+ * The most credentials that one call refreshes. Each refresh fetches an address that the credential names and keeps what it
+ * gives, up to `maxBytes`, in the result: a CLR of 1,000 credentials that each name a refresh service would otherwise fetch 1,000
+ * of them and keep about 700 MiB. The credential that was passed and its endorsements fit in it.
+ */
+const MAX_REFRESHES = 16;
+
 /** Says which check of a credential did not pass. */
 function firstProblem(checks: Checks): string {
   const found = VERIFICATION_CHECKS.map((name) => checks[name]).find(
@@ -31,6 +38,18 @@ export async function refresh(authentic: Authentic, context: Context): Promise<R
   const { settings } = context;
   const unavailable = (detail: string): Refreshed => ({ check: checkOf("refresh", "unavailable", detail) });
   if (!settings.refresh) return { check: checkOf("refresh", "skipped", "The option refresh is false.") };
+  if ("refreshService" in authentic.credential) {
+    if (context.refreshes.count >= MAX_REFRESHES) {
+      return {
+        check: checkOf(
+          "refresh",
+          "skipped",
+          `The call has refreshed ${MAX_REFRESHES} credentials, the most that one call refreshes, so this one is verified as it is.`,
+        ),
+      };
+    }
+    context.refreshes.count += 1;
+  }
   const { jwt } = settings;
   let candidate: Awaited<ReturnType<typeof refreshCredential>>;
   try {
