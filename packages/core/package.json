@@ -1,7 +1,7 @@
 {
   "name": "@interopkit/core",
   "version": "0.0.0",
-  "description": "The foundation that the interopkit packages share: their errors, the checks of their arguments, a clock, the call to a service over HTTP with a deadline, a size limit and no redirects, and requests and answers as plain data.",
+  "description": "The foundation that the interopkit packages share: their errors, the checks of their arguments and the findings of their readers, a clock and a random source, the call to a service over HTTP with a deadline, a size limit and no redirects, requests and answers as plain data, a signer port with compact JWS, and OAuth 2.0 clients.",
   "keywords": [
     "interopkit",
     "interoperability",

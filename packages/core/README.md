@@ -1,19 +1,18 @@
 # @interopkit/core
 
-The shared foundation of the interopkit packages: their errors, the checks of their arguments, a clock, the call to a
-service over HTTP with a deadline, a size limit and no redirects, requests and answers as plain data, the signing port, and OAuth 2.0 clients. Most users install
+The shared foundation of the interopkit packages: their errors, the checks of their arguments and the findings of their
+readers, a clock and a random source, the call to a service over HTTP with a deadline, a size limit and no redirects, requests
+and answers as plain data, the signing port, and OAuth 2.0 clients. Most users install the package of a standard, such as
 [`@interopkit/tool-integration`](https://github.com/interopkit/interopkit/tree/main/packages/tool-integration#readme) or
-[`@interopkit/learning-analytics`](https://github.com/interopkit/interopkit/tree/main/packages/learning-analytics#readme),
-which depend on it.
+[`@interopkit/competency-frameworks`](https://github.com/interopkit/interopkit/tree/main/packages/competency-frameworks#readme),
+which depends on it.
 
 ```mermaid
 flowchart BT
   core["@interopkit/core<br/>errors, checks, clock, service calls,<br/>http, signer, oauth"]
-  tool["@interopkit/tool-integration"] --> core
-  analytics["@interopkit/learning-analytics"] --> core
-  host["Your application"] --> tool
-  host --> analytics
-  host -.->|"service calls, errors, Clock,<br/>HttpRequest, HttpResponse"| core
+  standards["The package of each standard:<br/>tool-integration, learning-analytics,<br/>competency-frameworks and the others"] --> core
+  host["Your application"] --> standards
+  host -.->|"service calls, errors, Clock,<br/>HttpRequest, HttpResponse, Signer"| core
 ```
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
@@ -30,12 +29,14 @@ npm install @interopkit/core
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@interopkit/core`        | `InteropkitError`, the base class; `DataError`, for invalid input; `ServiceError`, for a service that fails, with `status` and `body`                                                                                                                                                                                                                                                  |
 |                           | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`; `Random`, `SYSTEM_RANDOM`; `Signer`, `signerFromCryptoKey`, `signCompactJws`                                                                                                                                                                                                                                                       |
-|                           | `CallOptions`, the `signal` that ends a caller's wait, `untilAborted`, and `callPort` with `PortOutcome`, which turns the failure of a port into a value; `Fetch`, `ServiceCall`, `ServiceInit`, `ServiceResponse`, `RequestOptions`, `HttpMethod`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`, `DEFAULT_MAX_BYTES`                                                         |
-| `@interopkit/core/oauth`  | `clientCredentialsToken`, `authorizationRequest`, `exchangeCode`, `refreshAccessToken`, `revokeToken`, `registerClient`, `createTokenCache`, `GRANT_TYPES`; `AuthorizationServer`, `OAuthClient`, `ClientAuthentication`, `OAuthCallOptions`, `AccessToken`, `PendingAuthorization`, `ClientMetadata`, `RegisteredClient`                                                              |
-| `@interopkit/core/http`   | `HttpRequest`, `HttpResponse`, `checkHttpRequest`; `readText`, `readJson`, `readQuery`, `readForm`; `jsonResponse`; `negotiate`                                                                                                                                                                                                                                                        |
+|                           | `CallOptions`, the `signal` that ends a caller's wait, `untilAborted`, and `callPort` with `PortOutcome`, which turns the failure of a port into a value; `Fetch`, `ServiceCall`, `ServiceInit`, `ServiceResponse`, `RequestOptions`, `HttpMethod`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`, `DEFAULT_MAX_BYTES`                                                                                                                                        |
+|                           | `totalCountOf`, `hasNextLink`, `retryAfterSeconds`: the paging and retry headers of an answer; `ServiceErrorOptions`, `CryptoKeySignerOptions` |
+| `@interopkit/core/oauth`  | `clientCredentialsToken`, `authorizationRequest`, `exchangeCode`, `refreshAccessToken`, `revokeToken`, `registerClient`, `createTokenCache`, `TokenCacheOptions`, `GRANT_TYPES`, `GrantType`; `AuthorizationServer`, `OAuthClient`, `ClientAuthentication`, `OAuthCallOptions`, `AccessToken`, `PendingAuthorization`, `AuthorizationRequestParameters`, `ClientMetadata`, `RegisteredClient`                                                                             |
+| `@interopkit/core/http`   | `HttpRequest`, `HttpResponse`, `checkHttpRequest`; `readText`, `readJson`, `ReadJsonOptions`, `readQuery`, `readForm`; `jsonResponse`; `negotiate`                                                                                                                                                                                                                                                        |
 | `@interopkit/core/checks` | Checks of one value: `describe`, `isRecord`, `checkRecord`, `checkArray`, `checkFunction`, `checkProperties`, `checkString`, `checkNonEmptyString`, `checkHttpsUrl`, `checkNonNegativeInteger`, `checkPositiveInteger`, `checkAbortSignal`                                                                                                                                             |
 |                           | Schemas: `parseWith`, `pathOf`, `issueText`, `findingsOf`, `Finding`, `guardSchema`, `looseRecord`, `openRecord`, `strictRecord`, `jsonObjectSchema`, `mapSchema`, `methodsSchema`, `finiteSchema`, `httpsUrlSchema`, `nonEmptyStringSchema`, `nonNegativeIntegerSchema`, `positiveIntegerSchema`, `positiveSchema`, `uuidSchema`, `dateSchema`, `dateTimeSchema`, `absoluteUriSchema` |
-|                           | Formats: `isDate`, `parseDateTime`, `isDateTime`, `isUuid`, `isAbsoluteUri`. JSON: `copyJson`, `JsonValue`, `JsonObject`, `MAX_JSON_DEPTH`                                                                                                                                                                                                                                             |
+|                           | Formats: `isDate`, `parseDateTime`, `isDateTime`, `isUuid`, `isAbsoluteUri`, `isLanguageTag`, `languageTagSchema`. JSON: `copyJson`, `JsonValue`, `JsonObject`, `JsonValueCopy`, `JsonObjectCopy`, `MAX_JSON_DEPTH`, `MAX_JSON_TOKENS`, `nestsDeeperThan`, `hasMoreTokensThan`; `Schema` |
+|                           | Findings: `Finding`, `findingsOf`, `refusalOf`, `createFindingSink`, `FindingSink`, `safeParseBounded`, `BoundedParse`, `DEFAULT_MAX_FINDINGS` |
 
 ```ts
 import { callService, DEFAULT_TIMEOUT_MS } from "@interopkit/core";
