@@ -25,9 +25,10 @@ function* mismatch(link: unknown, path: string, document: string | undefined): G
 /** Warns once for a list whose entities carry `CFDocumentURI`, and for each such link that names another document. */
 function* listIssues(list: unknown, path: string, what: string, document: string | undefined): Generator<CaseIssue> {
   if (!Array.isArray(list)) return;
-  const linked: [number, unknown][] = list.flatMap((entity, at) =>
-    isRecord(entity) && entity.CFDocumentURI !== undefined ? [[at, entity.CFDocumentURI]] : [],
-  );
+  const linked: [number, unknown][] = [];
+  for (const [at, entity] of list.entries()) {
+    if (isRecord(entity) && entity.CFDocumentURI !== undefined) linked.push([at, entity.CFDocumentURI]);
+  }
   const [first] = linked;
   if (first === undefined) return;
   yield {

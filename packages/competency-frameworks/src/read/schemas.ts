@@ -44,9 +44,13 @@ function nonEmpty<const TItem extends v.GenericSchema>(item: TItem) {
   return v.pipe(v.array(item), v.minLength(1));
 }
 
-/** Returns a function that copies an object without one member, which the schema of the object has read. */
+/**
+ * Returns a function that leaves one member out of an object that the schema of the object has read: a copy without it, or the
+ * object itself when it has no such member.
+ */
 function leaveOut<const TKey extends string>(key: TKey) {
   return <TValue extends { readonly [K in TKey]?: unknown }>(value: TValue): Omit<TValue, TKey> => {
+    if (!Object.hasOwn(value, key)) return value;
     const { [key]: _left, ...rest } = value;
     return rest;
   };
