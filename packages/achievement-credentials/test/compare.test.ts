@@ -159,6 +159,15 @@ describe("credentialSummary", () => {
     });
   });
 
+  it("shows the date of the award beside validFrom, which a reissue moves", () => {
+    const reissued = badge({ validFrom: "2025-01-01T00:00:00Z", awardedDate: "2024-06-13T10:00:00Z" });
+    expect(credentialSummary(reissued)).toMatchObject({
+      validFrom: "2025-01-01T00:00:00Z",
+      awardedDate: "2024-06-13T10:00:00Z",
+    });
+    expect(credentialSummary(badge())).not.toHaveProperty("awardedDate");
+  });
+
   it("shows the name, description and image of the credential before those of the achievement", () => {
     const own = badge({
       name: "Course badge",

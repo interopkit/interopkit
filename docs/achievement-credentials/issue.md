@@ -129,8 +129,9 @@ received compares the credentials of both models alike.
 
 `credentialSummary(credential)` returns what a wallet shows: the `kind` (`badge`, `clr` or `endorsement`), the `name`,
 `description` and `image` of the credential or, for an achievement credential that has none, of its achievement, the `issuer`
-and its name, and the dates. It reads a credential under either Verifiable Credentials data model; `validFrom` is
-`issuanceDate` under 1.1.
+and its name, and the dates: `validFrom`, `validUntil` and, when the credential names one, the `awardedDate`, which a displayer
+shows as the date of issue since a reissue moves `validFrom` (OB B.1.2). It reads a credential under either Verifiable
+Credentials data model; `validFrom` is `issuanceDate` under 1.1.
 
 ## Errors
 

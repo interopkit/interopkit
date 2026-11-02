@@ -31,6 +31,13 @@ export interface CredentialSummary {
    * `issuedOn` of a 2.0 assertion.
    */
   readonly validFrom: string;
+  /**
+   * When the achievement was awarded, which a displayer shows as the date of issue: the `awardedDate` of a credential that names
+   * one, which stays when a reissue moves `validFrom` (OB B.1.2).
+   *
+   * @defaultValue none: show `validFrom`
+   */
+  readonly awardedDate?: string;
   /** When the credential stops being valid: `validUntil`, `expirationDate`, or the `expires` of a 2.0 assertion. */
   readonly validUntil?: string;
 }
@@ -89,8 +96,6 @@ function summaryOf(read: AnyVerifiableCredential): CredentialSummary {
     );
   }
   const achievement = achievementOf(read);
-  const [validFrom, validUntil] =
-    "issuanceDate" in read ? [read.issuanceDate, read.expirationDate] : [read.validFrom, read.validUntil];
   const issuer = read.issuer;
   const name = ("name" in read ? read.name : undefined) ?? achievement?.name;
   const description = ("description" in read ? read.description : undefined) ?? achievement?.description;
@@ -103,7 +108,18 @@ function summaryOf(read: AnyVerifiableCredential): CredentialSummary {
     ...(image === undefined ? {} : { image: image.id }),
     ...(typeof issuer === "string" || issuer.name === undefined ? {} : { issuerName: issuer.name }),
     issuer: typeof issuer === "string" ? issuer : issuer.id,
+    ...datesOf(read),
+  };
+}
+
+/** The dates of a credential that a displayer shows, under either data model. */
+function datesOf(read: AnyVerifiableCredential): Pick<CredentialSummary, "validFrom" | "awardedDate" | "validUntil"> {
+  const [validFrom, validUntil] =
+    "issuanceDate" in read ? [read.issuanceDate, read.expirationDate] : [read.validFrom, read.validUntil];
+  const awardedDate = "awardedDate" in read ? read.awardedDate : undefined;
+  return {
     validFrom,
+    ...(awardedDate === undefined ? {} : { awardedDate }),
     ...(validUntil === undefined ? {} : { validUntil }),
   };
 }
