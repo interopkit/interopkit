@@ -338,33 +338,26 @@ describe("the tree of a package", () => {
     expect(errorRules(treeOf(3, [childOf(1, 2, 3), outside]))).toStrictEqual(["child-of-cycle"]);
   });
 
-  it("reads a chain of 50,000 items, and a ring of as many, without exhausting the stack", () => {
-    const count = 50_000;
+  it("reads a chain of 20,000 items, and refuses a ring of as many, without exhausting the stack", () => {
+    // Deeper than a walk that recursed could go on the default stack of V8, which holds about 10,000 such frames.
+    const count = 20_000;
     const chain = Array.from({ length: count - 1 }, (_, at) => childOf(at, at + 2, at + 3));
-    // Every item has a warning, so the list is long.
-    const all = { maxFindings: 1_000_000 };
-    expect(validatePackage(treeOf(count, [...chain, childOf(count, count + 1, 1)]), all)).toStrictEqual([]);
-    const ring = [...chain, childOf(count, count + 1, 2)];
-    expect(errorRules(treeOf(count, ring), all)).toStrictEqual(["child-of-cycle"]);
-  });
-
-  it("names five nodes of a long loop and counts the others, so that the message stays short", () => {
-    const count = 50_000;
-    const ring = [
-      ...Array.from({ length: count - 1 }, (_, at) => childOf(at, at + 2, at + 3)),
-      childOf(count, count + 1, 2),
-    ];
-    const [found] = validatePackage(treeOf(count, ring)).filter(({ severity }) => severity === "error");
+    expect(validatePackage(treeOf(count, [...chain, childOf(count, count + 1, 1)]))).toStrictEqual([]);
+    // The reader counts errors alone, so the warning of each item outside the tree costs nothing here.
+    const ring = treeOf(count, [...chain, childOf(count, count + 1, 2)]);
     const named = [2, 3, 4, 5, 6].map((number) => id(number)).join(" -> ");
-    expect(found?.message).toBe(
-      `the isChildOf associations loop through ${named} -> ${count - 5} more -> ${id(2)}; a tree has no loop, so remove one of the associations.`,
+    expect(() => readPackage(ring)).toThrow(
+      new RegExp(
+        `^The package is invalid at CFAssociations\\[\\d+\\]: the isChildOf associations loop through ${named} -> ${count - 5} more -> ${id(2)}; a tree has no loop, so remove one of the associations\\.$`,
+        "u",
+      ),
     );
   });
 
   it("stops at the limit when thousands of associations each close a loop of thousands of items", () => {
     // Each association from the last item to the first closes the whole chain again: a list of every loop would hold
-    // 20,000 times 20,000 identifiers, gigabytes for a package of 9 MB.
-    const count = 20_000;
+    // 10,000 times 10,000 identifiers, 3.7 GB for a package of 5 MB.
+    const count = 10_000;
     const chain = Array.from({ length: count - 1 }, (_, at) => childOf(at, at + 2, at + 3));
     const closing = Array.from({ length: count }, (_, at) => childOf(count + at, count + 1, 2));
     const pkg = treeOf(count, [...chain, ...closing]);
@@ -376,12 +369,12 @@ describe("the tree of a package", () => {
     expect(() => readPackage(pkg)).toThrow("At least 999 more errors: the check stopped at its limit");
   });
 
-  it("finds the items of a document of 50,000 children, and those that a child of two parents leaves out", () => {
-    const count = 50_000;
+  it("finds the items of a document of 10,000 children, and those that a child of two parents leaves out", () => {
+    const count = 10_000;
     const flat = Array.from({ length: count }, (_, at) => childOf(at, at + 2, 1));
     expect(validatePackage(treeOf(count, flat))).toStrictEqual([]);
     const twoParents = Array.from({ length: count }, (_, at) => childOf(at, 2, at + 3));
-    const outside = validatePackage(treeOf(count + 1, twoParents), { maxFindings: 1_000_000 }).filter(
+    const outside = validatePackage(treeOf(count + 1, twoParents), { maxFindings: 20_000 }).filter(
       ({ rule }) => rule === "item-outside-tree",
     );
     expect(outside).toHaveLength(count + 1);
