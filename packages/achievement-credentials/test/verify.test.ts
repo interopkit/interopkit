@@ -5,9 +5,10 @@ import { addProof } from "../src/data-integrity/index.js";
 import { type IssuableCredential, type KeyResolver, VERIFICATION_CHECKS } from "../src/index.js";
 import { signCredentialJwt } from "../src/jwt/index.js";
 import { createKeyResolver } from "../src/keys/index.js";
-import { type VerifyOptions, verifyCredential } from "../src/verify/index.js";
+import { verifyCredential } from "../src/verify/index.js";
 import { memoryContexts } from "./context-fixtures.js";
 import { achievementCredential, achievementCredentialV1p1, PROFILE } from "./fixtures.js";
+import { abortsWhileWaiting, hangingPort } from "./hanging-port.js";
 import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { clockAt, KEYS, serve, signerOf } from "./key-fixtures.js";
 import { ISSUER, METHOD, NOW, world } from "./status-fixtures.js";
@@ -433,45 +434,20 @@ describe("the options that unavailable and the signal govern", () => {
     expect(requests).toStrictEqual([]);
   });
 
-  describe("with a key resolver that never answers", () => {
-    /** A resolver whose methods are the real ones except for the named one, which gets the signal and never settles. */
+  describe("with a port of the host that never answers", () => {
+    /** A resolver whose methods are the real ones except for the named one, which never settles. */
     const hangingAt = (real: KeyResolver, method: "resolve" | "issuerKeys") => {
-      const seen: (AbortSignal | undefined)[] = [];
-      const hang = (_name: string, call?: { readonly signal?: AbortSignal }) => {
-        seen.push(call?.signal);
-        return new Promise<never>(() => undefined);
-      };
+      const { hang, seen } = hangingPort();
       const keys: KeyResolver =
         method === "resolve"
           ? { resolve: hang, issuerKeys: real.issuerKeys }
           : { resolve: real.resolve, issuerKeys: hang };
       return { keys, seen };
     };
-
-    /** Aborts once the resolver has been called, and expects the verification to reject with the reason of the signal. */
-    const abortsWhileWaiting = async (
-      input: string | object,
-      options: VerifyOptions,
-      seen: readonly (AbortSignal | undefined)[],
-    ) => {
-      const controller = new AbortController();
-      const pending = verifyCredential(input, { ...options, signal: controller.signal });
-      const rejected = expect(pending).rejects.toThrow("The caller gave up.");
-      await expect.poll(() => seen.length).toBe(1);
-      controller.abort(new Error("The caller gave up."));
-      await rejected;
-      expect(seen[0]?.aborted).toBe(true);
-    };
-
-    it("ends the wait for the key of a JWS when the signal aborts", async () => {
-      const { options } = world();
-      const { keys, seen } = hangingAt(options.keys, "resolve");
-      await abortsWhileWaiting(await jwsOf(), { ...options, keys }, seen);
-    });
-
-    it("ends the wait for the key of a Data Integrity proof when the signal aborts", async () => {
-      const did = `did:key:${KEYS.ed25519.multikey}`;
-      const method = `${did}#${KEYS.ed25519.multikey}`;
+    const did = `did:key:${KEYS.ed25519.multikey}`;
+    const method = `${did}#${KEYS.ed25519.multikey}`;
+    /** A credential of the did:key issuer with a Data Integrity proof, and the options that verify it. */
+    const signedByDid = async () => {
       const contexts = memoryContexts();
       const clock = clockAt(NOW);
       const signed = await addProof(
@@ -479,14 +455,46 @@ describe("the options that unavailable and the signal govern", () => {
         signerOf(KEYS.ed25519, method),
         { clock, contexts: contexts.load },
       );
-      const { keys, seen } = hangingAt(createKeyResolver({ clock }), "resolve");
-      await abortsWhileWaiting(signed, { keys, clock, contexts: contexts.load }, seen);
+      return { signed, clock, contexts, keys: createKeyResolver({ clock }) };
+    };
+
+    it("ends the wait for the key of a JWS when the signal aborts", async () => {
+      const { options } = world();
+      const { keys, seen } = hangingAt(options.keys, "resolve");
+      const jws = await jwsOf();
+      await abortsWhileWaiting((signal) => verifyCredential(jws, { ...options, keys, signal }), seen);
+    });
+
+    it("ends the wait for the key of a Data Integrity proof when the signal aborts", async () => {
+      const { signed, clock, contexts, keys: real } = await signedByDid();
+      const { keys, seen } = hangingAt(real, "resolve");
+      await abortsWhileWaiting(
+        (signal) => verifyCredential(signed, { keys, clock, contexts: contexts.load, signal }),
+        seen,
+      );
     });
 
     it("ends the wait for what the issuer publishes when the signal aborts", async () => {
       const { options } = world();
       const { keys, seen } = hangingAt(options.keys, "issuerKeys");
-      await abortsWhileWaiting(await jwsOf(), { ...options, keys }, seen);
+      const jws = await jwsOf();
+      await abortsWhileWaiting((signal) => verifyCredential(jws, { ...options, keys, signal }), seen);
+    });
+
+    it("ends the wait for a context when the signal aborts", async () => {
+      const { signed, clock, keys } = await signedByDid();
+      const { hang, seen } = hangingPort();
+      await abortsWhileWaiting((signal) => verifyCredential(signed, { keys, clock, contexts: hang, signal }), seen);
+    });
+
+    it("ends the wait for a suite of the host when the signal aborts", async () => {
+      const { signed, clock, contexts, keys } = await signedByDid();
+      const { hang, seen } = hangingPort();
+      const suites = [{ cryptosuite: "eddsa-rdfc-2022", verify: hang as never }];
+      await abortsWhileWaiting(
+        (signal) => verifyCredential(signed, { keys, clock, contexts: contexts.load, suites, signal }),
+        seen,
+      );
     });
   });
 

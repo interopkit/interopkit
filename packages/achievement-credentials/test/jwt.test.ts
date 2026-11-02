@@ -12,6 +12,7 @@ import {
   endorsementCredential,
   verifiableCredential,
 } from "./fixtures.js";
+import { abortsWhileWaiting, hangingPort } from "./hanging-port.js";
 import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { clockAt, KEYS, serve, signerOf, type TestKey } from "./key-fixtures.js";
 
@@ -58,6 +59,16 @@ async function forge(payload: unknown, key: TestKey, header: Record<string, unkn
 }
 
 const badge = () => achievementCredential() as unknown as IssuableCredential;
+
+describe("reading a credential in a JWT whose key resolver never answers", () => {
+  it("ends the wait for the key when the signal aborts", async () => {
+    const { options } = world();
+    const { hang, seen } = hangingPort();
+    const jws = await signCredentialJwt(badge(), signerOf(KEYS.es256), { kid: `${ISSUER}#es256` });
+    const keys = { resolve: hang, issuerKeys: options.keys.issuerKeys };
+    await abortsWhileWaiting((signal) => readCredentialJwt(jws, { ...options, keys, signal }), seen);
+  });
+});
 
 describe("signing a credential as a JWT", () => {
   it.each([

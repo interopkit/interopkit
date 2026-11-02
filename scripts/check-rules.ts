@@ -1873,13 +1873,6 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/provider-verify.test.ts",
   },
   {
-    rule: "The wait for the verifier ends when the signal of the provider aborts, whatever its ports do.",
-    file: "packages/achievement-credentials/src/provider/receive.ts",
-    find: "const result = await untilAborted(verifying, signal);",
-    replace: "const result = await verifying;",
-    test: "packages/achievement-credentials/test/provider-verify.test.ts",
-  },
-  {
     rule: "The wait for the key of a JWS ends when the signal aborts, whatever the resolver does.",
     file: "packages/achievement-credentials/src/jwt/read-credential-jwt.ts",
     find: "await untilAborted(settings.keys.resolve(kid, call), settings.signal);",
@@ -1898,6 +1891,20 @@ export const RULES: readonly Rule[] = [
     file: "packages/achievement-credentials/src/keys/verify-issuer-key.ts",
     find: "await untilAborted(options.keys.issuerKeys(issuer, call), options.signal);",
     replace: "await options.keys.issuerKeys(issuer, call);",
+    test: "packages/achievement-credentials/test/verify.test.ts",
+  },
+  {
+    rule: "The wait for a context ends when the signal aborts, whatever the loader of the host does.",
+    file: "packages/achievement-credentials/src/data-integrity/document-loader.ts",
+    find: "document: await untilAborted(",
+    replace: "document: await Promise.resolve(",
+    test: "packages/achievement-credentials/test/data-integrity.test.ts",
+  },
+  {
+    rule: "The wait for a suite of the host ends when the signal aborts, whatever the suite does.",
+    file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
+    find: "return await untilAborted(",
+    replace: "return await Promise.resolve(",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {

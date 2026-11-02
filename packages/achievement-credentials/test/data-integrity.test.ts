@@ -18,6 +18,7 @@ import { type IssuableCredential, readCredential } from "../src/index.js";
 import { createKeyResolver } from "../src/keys/index.js";
 import { CLOSED, memoryContexts } from "./context-fixtures.js";
 import { achievementCredential, clrCredential, endorsementCredential } from "./fixtures.js";
+import { abortsWhileWaiting, hangingPort } from "./hanging-port.js";
 import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { clockAt, KEYS, serve, signerOf, type TestKey } from "./key-fixtures.js";
 
@@ -574,6 +575,44 @@ describe("an ecdsa-rdfc-2019 proof", () => {
     expect(await verifyProof(signed, read)).toMatchObject({ valid: true, bound: true });
     const changed = { ...signed, name: "Another badge" } as unknown as IssuableCredential;
     expect((await verifyProof(changed, read)).valid).toBe(false);
+  });
+});
+
+describe("a port of the host that never answers", () => {
+  const issuer = issuerOf(KEYS.ed25519);
+  const signedBy = async () => {
+    const w = world();
+    const signed = await addProof(credentialOf(issuer.did), issuer.signer, w.options);
+    return { signed, w, read: { keys: w.keys, clock: w.clock, contexts: w.contexts.load } };
+  };
+
+  it("ends the wait of verifyProof for the key when the signal aborts", async () => {
+    const { signed, read } = await signedBy();
+    const { hang, seen } = hangingPort();
+    const keys = { resolve: hang, issuerKeys: read.keys.issuerKeys };
+    await abortsWhileWaiting((signal) => verifyProof(signed, { ...read, keys, signal }), seen);
+  });
+
+  it("ends the wait for a context, of verifyProof and of addProof, when the signal aborts", async () => {
+    const { signed, read } = await signedBy();
+    const verifying = hangingPort();
+    await abortsWhileWaiting(
+      (signal) => verifyProof(signed, { ...read, contexts: verifying.hang, signal }),
+      verifying.seen,
+    );
+    const signing = hangingPort();
+    await abortsWhileWaiting(
+      (signal) =>
+        addProof(credentialOf(issuer.did), issuer.signer, { clock: read.clock, contexts: signing.hang, signal }),
+      signing.seen,
+    );
+  });
+
+  it("ends the wait of verifyProof for a suite of the host when the signal aborts", async () => {
+    const { signed, read } = await signedBy();
+    const { hang, seen } = hangingPort();
+    const suites = [{ cryptosuite: "eddsa-rdfc-2022", verify: hang as never }];
+    await abortsWhileWaiting((signal) => verifyProof(signed, { ...read, suites, signal }), seen);
   });
 });
 

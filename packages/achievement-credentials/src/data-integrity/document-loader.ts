@@ -1,4 +1,4 @@
-import { DataError, ServiceError } from "@interopkit/core";
+import { DataError, ServiceError, untilAborted } from "@interopkit/core";
 import type { ContextLoader } from "../model/index.js";
 import { MAX_DEEP_ITERATIONS } from "./canonize.js";
 
@@ -17,7 +17,8 @@ export function documentLoaderOf(contexts: ContextLoader, signal?: AbortSignal) 
   return async (url: string) => ({
     contextUrl: null,
     documentUrl: url,
-    document: await contexts(url, signal === undefined ? undefined : { signal }),
+    // A loader is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
+    document: await untilAborted(Promise.resolve(contexts(url, signal === undefined ? undefined : { signal })), signal),
   });
 }
 

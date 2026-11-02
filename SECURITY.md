@@ -249,7 +249,7 @@ the address that the connection resolves to.
 `verifyCredential` ([verification guide](docs/achievement-credentials/verify.md)) joins the checks of a credential, its endorsements
 and the credentials of a CLR. It fetches only through the host's `fetch`, and only for a credential whose proof is valid: the
 keys and the contexts of the proof first, then the refresh, the schema and the status list that the credential names. It keeps
-nothing across calls but the caches that the host passes. A host passes a `signal` with a deadline: a call has none of its own, and it ends the wait for a `KeyResolver` of the host that ignores it.
+nothing across calls but the caches that the host passes. A host passes a `signal` with a deadline: a call has none of its own, and it ends the wait for a `KeyResolver`, a loader of contexts or a suite of the host that ignores it.
 
 | Threat                                                                                     | Control                                                                                                                                                                                                  |
 | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

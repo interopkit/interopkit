@@ -1,4 +1,4 @@
-import { DataError, untilAborted } from "@interopkit/core";
+import { DataError } from "@interopkit/core";
 import { isRecord, MAX_JSON_DEPTH } from "@interopkit/core/checks";
 import { type HttpRequest, type HttpResponse, readText } from "@interopkit/core/http";
 import * as v from "valibot";
@@ -81,10 +81,12 @@ async function verificationFault(received: string | object, settings: ProviderSe
   if (settings.verify === undefined) return undefined;
   const { verifyCredential } = await import("../verify/index.js");
   const signal = signalOf(settings);
-  // The refresh service is not followed: the store keeps the credential that the request carried, not a newer one. The wait
-  // is raced against the signal, so that a port of the verifier that does not heed it cannot hold the request.
-  const verifying = verifyCredential(received, { ...settings.verify, refresh: false, ...(signal ? { signal } : {}) });
-  const result = await untilAborted(verifying, signal);
+  // The refresh service is not followed: the store keeps the credential that the request carried, not a newer one.
+  const result = await verifyCredential(received, {
+    ...settings.verify,
+    refresh: false,
+    ...(signal ? { signal } : {}),
+  });
   return result.verified ? undefined : `The credential does not verify: ${faultOf(result)}.`;
 }
 

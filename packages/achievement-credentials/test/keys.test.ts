@@ -1,8 +1,9 @@
 import { DataError, ServiceError } from "@interopkit/core";
 import { base64url, calculateJwkThumbprint } from "jose";
 import { describe, expect, it } from "vitest";
-import { createKeyResolver } from "../src/keys/index.js";
+import { createKeyResolver, verifyIssuerKey } from "../src/keys/index.js";
 import { publicJwk } from "../src/keys/internal.js";
+import { abortsWhileWaiting, hangingPort } from "./hanging-port.js";
 import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { clockAt, KEYS, multibase, serve } from "./key-fixtures.js";
 
@@ -356,6 +357,15 @@ describe("what a document may hold", () => {
   it("reads text that is not a JSON object as holding nothing", async () => {
     const { fetch } = serve({ [ISSUER]: "<html></html>", [SET_URL]: "[1,2]" });
     expect(await createKeyResolver({ clock, fetch }).issuerKeys(ISSUER)).toStrictEqual([]);
+  });
+});
+
+describe("a resolver of the host that never answers", () => {
+  it("ends the wait of verifyIssuerKey for what the issuer publishes when the signal aborts", async () => {
+    const { hang, seen } = hangingPort();
+    const key = { id: `${ISSUER}#key-1`, publicKeyJwk: KEYS.es256.publicJwk, relationships: [] };
+    const keys = { resolve: hang, issuerKeys: hang };
+    await abortsWhileWaiting((signal) => verifyIssuerKey(key, ISSUER, { keys, signal }), seen);
   });
 });
 

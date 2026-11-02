@@ -84,7 +84,7 @@ nothing that a credential names is fetched before its proof is valid; a schema o
 refused when it runs a regular expression; a refreshed credential must be authentic and the same credential. `unavailable` says
 whether a status list, a refresh, a schema or an issuer's keys that cannot be read fail the verification, and a proof that cannot
 be checked always does. A credential has at most `maxEndorsements` (32) endorsements and a CLR `maxNestedCredentials` (1,000)
-credentials, and the input is limited in characters, tokens and levels before it is parsed. A `KeyResolver` that never answers does not hold a verification past its `signal`.
+credentials, and the input is limited in characters, tokens and levels before it is parsed. A `KeyResolver`, a loader of contexts or a suite of the host that never answers does not hold a verification, a proof or a signature past its `signal`.
 
 `verifyCredential` also verifies an Open Badges 2.0 badge as its Verification section says, from the address of a hosted assertion,
 an assertion or a `BadgeAssertionV2`, a compact JWS or what `readPng` and `readSvg` return. A hosted assertion is fetched at its

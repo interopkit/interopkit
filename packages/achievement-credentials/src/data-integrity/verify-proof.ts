@@ -90,13 +90,15 @@ async function suiteVerdict(
   settings: VerifySettings,
 ): Promise<boolean | Refusal> {
   try {
-    return await suite.verify(unsecured, proof, {
+    const verifying = suite.verify(unsecured, proof, {
       publicKeyJwk: key.publicKeyJwk,
       contexts: settings.contexts,
       maxBytes: settings.maxInputBytes,
       maxTokens: settings.maxJsonLdTokens,
       ...(settings.signal === undefined ? {} : { signal: settings.signal }),
     });
+    // A suite of the host may ignore the signal it is given: the wait ends at the signal either way.
+    return await untilAborted(Promise.resolve(verifying), settings.signal);
   } catch (error) {
     if (error instanceof DataError) return { reason: error.message, unavailable: false };
     throw error;
