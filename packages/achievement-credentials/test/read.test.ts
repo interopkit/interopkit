@@ -312,18 +312,15 @@ describe("judging a credential", () => {
       },
       { id: "urn:rd:status", type: ["ResultDescription"], name: "Status", resultType: "Status" },
     ];
-    const resulting = (...result: Record<string, unknown>[]) => {
-      const credential = achievementCredential();
-      const { credentialSubject } = credential;
-      return {
-        ...credential,
-        credentialSubject: {
-          ...credentialSubject,
-          achievement: { ...credentialSubject.achievement, resultDescription: descriptions },
-          result: result.map((each) => ({ type: ["Result"], ...each })),
-        },
-      };
-    };
+    const resulting = (...result: Record<string, unknown>[]) => ({
+      ...achievementCredential(),
+      credentialSubject: {
+        type: ["AchievementSubject"],
+        id: "did:example:learner",
+        achievement: { ...ACHIEVEMENT, resultDescription: descriptions },
+        result: result.map((each) => ({ type: ["Result"], ...each })),
+      },
+    });
     const warningsOf = (value: unknown) =>
       validateCredential(value)
         .filter(({ severity }) => severity === "warning")
@@ -344,13 +341,15 @@ describe("judging a credential", () => {
       "credentialSubject.result[1].achievedLevel achieved-level-unknown",
       "credentialSubject.result[2] result-status-missing",
     ]);
-    expect(readVerifiable(unsound)).toMatchObject({ id: unsound.id });
+    expect(readVerifiable(unsound)).toMatchObject({ id: "https://example.edu/credentials/1" });
   });
 
   it("warns of criteria that say nothing, of the achievement of a credential and of an achievement on its own", () => {
-    const credential = achievementCredential();
-    const achievement = { ...credential.credentialSubject.achievement, criteria: {} };
-    const vague = { ...credential, credentialSubject: { ...credential.credentialSubject, achievement } };
+    const achievement = { ...ACHIEVEMENT, criteria: {} };
+    const vague = {
+      ...achievementCredential(),
+      credentialSubject: { type: ["AchievementSubject"], id: "did:example:learner", achievement },
+    };
     expect(validateCredential(vague).map(({ path, rule, severity }) => `${path} ${rule} ${severity}`)).toStrictEqual([
       "credentialSubject.achievement.criteria criteria-undescribed warning",
     ]);

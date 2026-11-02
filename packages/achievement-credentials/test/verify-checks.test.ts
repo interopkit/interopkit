@@ -84,6 +84,10 @@ describe("the schema that a credential names", () => {
     ["is not an object", { [SCHEMA_URL]: "[1]" }],
     ["holds a regular expression", { [SCHEMA_URL]: { type: "object", properties: { id: { pattern: "^(a+)+$" } } } }],
     ["holds patternProperties", { [SCHEMA_URL]: { type: "object", patternProperties: { "^x": {} } } }],
+    [
+      "holds a format, which the validator checks by a regular expression",
+      { [SCHEMA_URL]: { properties: { id: { format: "url" } } } },
+    ],
     ["refers to another document", { [SCHEMA_URL]: { $ref: "https://example.edu/schemas/other.json" } }],
   ])("is unavailable when it %s, and a host may accept that", async (_name, routes) => {
     const { options } = world(routes);
@@ -132,6 +136,56 @@ describe("the schema that a credential names", () => {
     };
     const jws = await jwsOf(naming(SCHEMA_URL));
     await expect(verifyCredential(jws, { ...options, fetch, signal: controller.signal })).rejects.toThrow("stop");
+  });
+
+  it.each([
+    [
+      "applies many schemas to each item of a long list",
+      { properties: { extra: { items: { allOf: Array.from({ length: 1000 }, () => ({ type: "number" })) } } } },
+    ],
+    ["compares each item of a long list with every other", { properties: { extra: { uniqueItems: true } } }],
+    [
+      "refers to its definitions ten times at each of ten levels",
+      {
+        $defs: Object.fromEntries(
+          Array.from({ length: 10 }, (_, level) => [
+            `l${level}`,
+            level === 9
+              ? { type: "number" }
+              : { allOf: Array.from({ length: 10 }, () => ({ $ref: `#/$defs/l${level + 1}` })) },
+          ]),
+        ),
+        properties: { extra: { items: { $ref: "#/$defs/l0" } } },
+      },
+    ],
+  ])(
+    "is unavailable when judging would read more than a verifier gives, as a schema that %s",
+    async (_name, schema) => {
+      const { options } = world({ [SCHEMA_URL]: schema });
+      const credential = { ...naming(SCHEMA_URL), extra: Array.from({ length: 5000 }, (_, index) => index) };
+      const result = await verifyCredential(await jwsOf(credential), options);
+      expect(outcomes(result).schema).toBe("unavailable");
+      expect(detailOf(result, "schema")).toContain("more than 10000000 values");
+    },
+  );
+
+  it("reads a schema that refers to its own definitions and judges with it", async () => {
+    const schema = {
+      $defs: { text: { type: "string" } },
+      properties: { id: { $ref: "#/$defs/text" } },
+      required: ["id"],
+    };
+    const { options } = world({ [SCHEMA_URL]: schema });
+    expect(outcomes(await verifyCredential(await jwsOf(naming(SCHEMA_URL)), options)).schema).toBe("passed");
+  });
+
+  it("is unavailable when the credential names more schemas than a verifier fetches, and none is fetched", async () => {
+    const addresses = [1, 2, 3, 4, 5].map((at) => `https://example.edu/schemas/${at}.json`);
+    const { options, requests } = world(Object.fromEntries(addresses.map((address) => [address, { type: "object" }])));
+    const result = await verifyCredential(await jwsOf(naming(...addresses)), options);
+    expect(outcomes(result).schema).toBe("unavailable");
+    expect(detailOf(result, "schema")).toContain("more than the 4");
+    expect(requests.filter((url) => addresses.includes(url))).toStrictEqual([]);
   });
 
   it("is fetched once for a call, whatever number of credentials name it", async () => {

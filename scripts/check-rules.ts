@@ -5713,6 +5713,27 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/verify-checks.test.ts",
   },
   {
+    rule: "A schema that a credential names is refused when it holds a format, which the validator checks by a regular expression.",
+    file: "packages/achievement-credentials/src/verify/check-schema.ts",
+    find: '(keyword === "pattern" || keyword === "format") && typeof value === "string"',
+    replace: 'keyword === "pattern" && typeof value === "string"',
+    test: "packages/achievement-credentials/test/verify-checks.test.ts",
+  },
+  {
+    rule: "The validator reads a credential through a meter, which ends a judgment that would read more than a verifier gives it.",
+    file: "packages/achievement-credentials/src/verify/check-schema.ts",
+    find: "validator.validate(meter.wrap(raw))",
+    replace: "validator.validate(raw)",
+    test: "packages/achievement-credentials/test/verify-checks.test.ts",
+  },
+  {
+    rule: "A credential that names more schemas than a verifier fetches has none of them fetched.",
+    file: "packages/achievement-credentials/src/verify/check-schema.ts",
+    find: "if (others.length > MAX_SCHEMAS) {",
+    replace: "if (false) {",
+    test: "packages/achievement-credentials/test/verify-checks.test.ts",
+  },
+  {
     rule: "A schema that a credential names is fetched over HTTPS only.",
     file: "packages/achievement-credentials/src/verify/check-schema.ts",
     find: '!url.startsWith("https://") || !URL.canParse(url)',

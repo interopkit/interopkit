@@ -23,7 +23,7 @@ import { verifyOne } from "./verify-one.js";
  *
  * A key counts only when the issuer publishes it (`verifyIssuerKey`), unless `allowUnboundKeys` is set. A status list is
  * verified as strictly: its proof, its issuer and its key. A schema other than 1EdTech's is fetched, and refused when it runs a
- * regular expression. A host that wants a deadline for the whole call passes a `signal`: a CLR may hold 1,000 credentials, and
+ * regular expression or would read more than a verifier gives it. A host that wants a deadline for the whole call passes a `signal`: a CLR may hold 1,000 credentials, and
  * each may name a status list, a refresh service and a schema.
  *
  * A 2.0 badge is verified from the documents that its issuer hosts: its assertion when it is hosted, its BadgeClass, its issuer,
