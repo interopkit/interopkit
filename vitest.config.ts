@@ -311,6 +311,8 @@ export default defineConfig({
         test: {
           name: "scripts",
           include: ["scripts/test/**/*.test.ts"],
+          // The test of check-rules runs Vitest twice in a copy of the repository for each rule it checks.
+          testTimeout: HANG_LIMIT,
         },
       },
     ],
