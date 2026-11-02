@@ -236,7 +236,8 @@ jobs:
       - if: needs.changes.outputs.projects != ''
         run: pnpm test:corpus
 
-  # The tests that read the examples of the specifications, downloaded at the hashes that scripts/spec-examples.lock.json pins.
+  # The tests that read the examples of the specifications, downloaded at the hashes that scripts/spec-examples.lock.json pins,
+  # and the files that they are compared with.
   spec:
     needs: changes
     if: needs.changes.outputs.spec == 'true'
@@ -254,6 +255,9 @@ jobs:
       - run: pnpm caliper-tables
       # The test vectors of the cryptosuite read the contexts that pnpm schemas downloads.
       - run: pnpm schemas
+      # The oracle of the tests of learning-analytics reads the JSON schemas of Caliper from the repository that pnpm corpus
+      # downloads.
+      - run: pnpm corpus
       - run: pnpm test:spec
 
   # The pages of the client-side login, in the current Chromium, Firefox and WebKit.
