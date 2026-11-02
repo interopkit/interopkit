@@ -42,8 +42,13 @@ export interface BaseProofOptions extends CallOptions {
    * @defaultValue none
    */
   readonly mandatoryPointers?: readonly string[];
-  /** The `created` of the proof, as a date and time with an offset, such as `2026-11-01T09:30:00Z`. */
-  readonly created: string;
+  /**
+   * The `created` of the proof, as a date and time with an offset, such as `2026-11-01T09:30:00Z`. The proof options are
+   * signed, so a holder cannot hide it: every verifier reads it in every disclosure, whatever else the disclosure hides.
+   *
+   * @defaultValue none: the proof has no `created`, which Data Integrity leaves optional
+   */
+  readonly created?: string;
 }
 
 /** Checks the signer, as a host passes it from JavaScript, and returns the verification method it names. */
@@ -107,9 +112,10 @@ export async function addBaseProofWith(
   const limits = readCommonOptions(options, "The options of addBaseProof");
   const { contexts, signal } = limits;
   const verificationMethod = verificationMethodOf(options.signer);
-  if (typeof options.created !== "string" || !isDateTime(options.created)) {
+  const { created } = options;
+  if (created !== undefined && (typeof created !== "string" || !isDateTime(created))) {
     throw new DataError(
-      `The option created must be a date and time with an offset, such as 2026-11-01T09:30:00Z, found ${describe(options.created)}.`,
+      `The option created must be a date and time with an offset, such as 2026-11-01T09:30:00Z, found ${describe(created)}.`,
     );
   }
   checkRecord(document, "The document must be an object");
@@ -130,7 +136,7 @@ export async function addBaseProofWith(
   const proofOptions = {
     type: PROOF_TYPE,
     cryptosuite: CRYPTOSUITE,
-    created: options.created,
+    ...(created === undefined ? {} : { created }),
     verificationMethod,
     proofPurpose: PROOF_PURPOSE,
   };

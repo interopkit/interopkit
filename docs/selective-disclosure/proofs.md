@@ -92,7 +92,7 @@ the verification method into the JWK that `verify` takes, binding that key to th
 | Option              | Function       | Default   | Meaning                                                                                                                                    |
 | ------------------- | -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `signer`            | `addBaseProof` | required  | A `Signer` of `@interopkit/core` with `algorithm` `"ES256"`; its `keyId` is the `verificationMethod` of the proof                          |
-| `created`           | `addBaseProof` | required  | The `created` of the proof, a date and time with an offset, such as `2026-11-01T09:30:00Z`                                                 |
+| `created`           | `addBaseProof` | none      | The `created` of the proof, a date and time with an offset, such as `2026-11-01T09:30:00Z`. Without it, the proof has none; see [what a disclosure shows](#what-a-disclosure-shows) |
 | `mandatoryPointers` | `addBaseProof` | none      | JSON pointers to what a holder can never hide. The empty pointer `""` makes the whole document mandatory                                   |
 | `selectivePointers` | `deriveProof`  | required  | JSON pointers to what to reveal besides the mandatory parts. `[]` reveals the mandatory parts alone                                        |
 | `publicKeyJwk`      | `verify`       | required  | The public key of the issuer's verification method, a P-256 key as a JWK. A JWK with `d` is a `DataError`                                  |
@@ -128,7 +128,10 @@ blank nodes to the labels that were signed, and the positions of the mandatory s
 Disclosures of one credential are **linkable**. They carry the same issuer signature and the same public key, so two verifiers,
 or one verifier twice, can tell that they saw the same credential, whatever each disclosure hides ([section 5.1 of the
 Recommendation](https://www.w3.org/TR/vc-di-ecdsa/#unlinkable-disclosure)). A holder who needs unlinkable disclosure needs another
-suite, which this package does not implement. A **base proof** never goes to a verifier: it holds the HMAC key and the signature
+suite, which this package does not implement. The **`created`** of a proof, like the other proof options, shows in every
+disclosure: it is signed, so a holder cannot hide it, and every verifier reads when the credential was signed, whatever dates
+the disclosure hides. Data Integrity leaves it optional, so an issuer to whom that matters leaves it out, and the dates that a
+credential needs go in claims that a holder can hide. A **base proof** never goes to a verifier: it holds the HMAC key and the signature
 of every statement, so whoever has it can see which statements exist. `verify` answers `false` for it, and `isBaseProof` lets
 the caller say why.
 

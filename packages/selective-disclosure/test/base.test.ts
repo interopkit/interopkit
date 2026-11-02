@@ -58,6 +58,14 @@ describe("addBaseProof", () => {
     expect(isBaseProof(proofOf(signed))).toBe(true);
   });
 
+  it("writes no created unless the caller gives one, which Data Integrity leaves optional", async () => {
+    const issuer = await createIssuer();
+    const signed = await addBaseProof(sampleCredential(), { signer: issuer.signer, contexts: memoryContexts().load });
+    expect(Object.keys(proofOf(signed)).sort()).toStrictEqual(
+      ["cryptosuite", "proofPurpose", "proofValue", "type", "verificationMethod"].sort(),
+    );
+  });
+
   it("has no mandatory pointers unless the caller names them", async () => {
     const issuer = await createIssuer();
     const signed = await addBaseProof(sampleCredential(), {

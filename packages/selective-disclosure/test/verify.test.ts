@@ -1,11 +1,11 @@
 import { DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { deepFreeze } from "../../../scripts/json-mutation.js";
-import { selectiveDisclosureSuite } from "../src/index.js";
+import { addBaseProof, deriveProof, selectiveDisclosureSuite } from "../src/index.js";
 import { createProofKey } from "../src/keys/index.js";
 import { parseDerivedProofValue } from "../src/proof-value/index.js";
 import { hangingContexts, memoryContexts } from "./contexts.js";
-import { tokensOf } from "./documents.js";
+import { CREATED, MANDATORY_POINTERS, SELECTIVE_POINTERS, sampleCredential, tokensOf } from "./documents.js";
 import { forgedLabels, proofWith, statementsOf } from "./forge.js";
 import { createIssuer } from "./keys.js";
 import { type Disclosure, disclosure, signedCredential } from "./setup.js";
@@ -108,6 +108,31 @@ describe("selectiveDisclosureSuite, given a disclosure that was changed", () => 
     ]) {
       expect(await check(shown, { proof: { ...shown.proof, ...change } })).toBe(false);
     }
+  });
+
+  it("accepts a proof without created, and rejects it when a created is added", async () => {
+    const issuer = await createIssuer();
+    const contexts = memoryContexts();
+    const base = await addBaseProof(sampleCredential(), {
+      signer: issuer.signer,
+      mandatoryPointers: MANDATORY_POINTERS,
+      contexts: contexts.load,
+    });
+    const { proof, ...document } = await deriveProof(base, {
+      selectivePointers: SELECTIVE_POINTERS,
+      contexts: contexts.load,
+    });
+    const shown = proof as Record<string, unknown>;
+    expect(shown).not.toHaveProperty("created");
+    const options = { publicKeyJwk: issuer.publicKeyJwk, contexts: contexts.load };
+    expect(await verify(document, shown, options)).toBe(true);
+    expect(await verify(document, { ...shown, created: CREATED }, options)).toBe(false);
+  });
+
+  it("rejects a proof that signed a created and no longer has it", async () => {
+    const shown = await disclosure();
+    const { created: _created, ...undated } = shown.proof;
+    expect(await check(shown, { proof: undated })).toBe(false);
   });
 
   it("rejects a proof under another key than the issuer's", async () => {

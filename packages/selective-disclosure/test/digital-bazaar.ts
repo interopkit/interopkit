@@ -46,11 +46,11 @@ export async function createSharedIssuer(): Promise<SharedIssuer> {
   };
 }
 
-/** Signs a document with Digital Bazaar's suite. */
+/** Signs a document with Digital Bazaar's suite, which writes no `created` for a date of `null`. */
 export async function dbSign(
   document: JsonDocument,
   issuer: SharedIssuer,
-  options: { readonly mandatoryPointers: readonly string[]; readonly created: string },
+  options: { readonly mandatoryPointers: readonly string[]; readonly created: string | null },
 ): Promise<JsonDocument> {
   const suite = new DataIntegrityProof({
     signer: issuer.keyPair.signer(),

@@ -1385,6 +1385,20 @@ export const RULES: readonly Rule[] = [
     test: "packages/selective-disclosure/test/base.test.ts",
   },
   {
+    rule: "A created that is no date and time with an offset is refused by the base proof.",
+    file: "packages/selective-disclosure/src/base/add-base-proof.ts",
+    find: 'if (created !== undefined && (typeof created !== "string" || !isDateTime(created))) {',
+    replace: "if (false) {",
+    test: "packages/selective-disclosure/test/base.test.ts",
+  },
+  {
+    rule: "A base proof has no created unless the caller gives one.",
+    file: "packages/selective-disclosure/src/base/add-base-proof.ts",
+    find: "...(created === undefined ? {} : { created }),",
+    replace: "created,",
+    test: "packages/selective-disclosure/test/base.test.ts",
+  },
+  {
     rule: "A document that has a proof already is refused by the base proof.",
     file: "packages/selective-disclosure/src/base/add-base-proof.ts",
     find: "if (copy.proof !== undefined) {",

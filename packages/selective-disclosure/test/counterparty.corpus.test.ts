@@ -19,11 +19,16 @@ const COMBINATIONS = PARTIES.flatMap((signer) =>
   PARTIES.flatMap((deriver) => PARTIES.map((verifier) => [signer, deriver, verifier] as const)),
 );
 
-async function sign(party: Party, issuer: SharedIssuer) {
-  const options = { mandatoryPointers: MANDATORY_POINTERS, created: CREATED };
+async function sign(party: Party, issuer: SharedIssuer, created: string | null = CREATED) {
+  const options = { mandatoryPointers: MANDATORY_POINTERS };
   return party === "we"
-    ? addBaseProof(vcCredential(), { ...options, signer: issuer.signer, contexts })
-    : dbSign(vcCredential(), issuer, options);
+    ? addBaseProof(vcCredential(), {
+        ...options,
+        ...(created === null ? {} : { created }),
+        signer: issuer.signer,
+        contexts,
+      })
+    : dbSign(vcCredential(), issuer, { ...options, created });
 }
 
 async function derive(party: Party, issuer: SharedIssuer, signed: Record<string, unknown>) {
@@ -48,6 +53,16 @@ describe("Digital Bazaar's ecdsa-sd-2023 suite as a counterparty", () => {
     async (signer, deriver, verifier) => {
       const issuer = await createSharedIssuer();
       const derived = await derive(deriver, issuer, await sign(signer, issuer));
+      expect(await verify(verifier, issuer, derived)).toBe(true);
+    },
+  );
+
+  it.each(COMBINATIONS)(
+    "accepts a proof without created that %s signed, %s derived and %s verified",
+    async (signer, deriver, verifier) => {
+      const issuer = await createSharedIssuer();
+      const derived = await derive(deriver, issuer, await sign(signer, issuer, null));
+      expect(derived.proof).not.toHaveProperty("created");
       expect(await verify(verifier, issuer, derived)).toBe(true);
     },
   );
