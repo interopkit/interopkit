@@ -3604,6 +3604,27 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-records/test/store-signatures.test.ts",
   },
   {
+    rule: "The check of the host refuses a batch with the status of acceptStatus.",
+    file: "packages/learning-records/src/store/statements/prepare.ts",
+    find: ': refused(context.settings.acceptStatus, refusalOf("The batch of Statements", errors, "accept"));',
+    replace: ': refused(400, refusalOf("The batch of Statements", errors, "accept"));',
+    test: "packages/learning-records/test/store-statements.test.ts",
+  },
+  {
+    rule: "The check of the host sees each timestamp as the request wrote it, not as the LRS stores it.",
+    file: "packages/learning-records/src/store/statements/prepare.ts",
+    find: "const accepted = await acceptable(withSentTimestamps(identified, submitted), context);",
+    replace: "const accepted = await acceptable(statements, context);",
+    test: "packages/learning-records/test/store-statements.test.ts",
+  },
+  {
+    rule: "The principal that access names reaches the check of the host.",
+    file: "packages/learning-records/src/store/router.ts",
+    find: "principal: v.optional(nonEmptyStringSchema),",
+    replace: "",
+    test: "packages/learning-records/test/store-statements.test.ts",
+  },
+  {
     rule: "A Statement with an id that the LRS holds is compared with the one held.",
     file: "packages/learning-records/src/store/statements/insert.ts",
     find: "if (!sameStatement(answered, sent)) {",

@@ -1,5 +1,5 @@
 import { isRecord, parseDateTime } from "@interopkit/core/checks";
-import type { XapiVersion } from "../../model/index.js";
+import type { Statement, XapiVersion } from "../../model/index.js";
 import { parseIsoTimestamp } from "../../model/internal.js";
 import { isRefusal, type Refusal, refused, type Verdict } from "../verdict.js";
 
@@ -72,4 +72,31 @@ export function inUtcTimestamps(list: readonly unknown[], version: XapiVersion):
     converted.push({ ...statement.value, object: sub.value });
   }
   return { value: converted };
+}
+
+/** The `timestamp` of an object of a request as it was written, or `undefined`. */
+function sentTimestamp(entry: unknown): string | undefined {
+  return isRecord(entry) && typeof entry.timestamp === "string" ? entry.timestamp : undefined;
+}
+
+/**
+ * Gives Statements that were read from their timestamps in UTC each `timestamp` as the request wrote it, a SubStatement's
+ * included, so that a check of a profile judges what was sent: cmi5 refuses a timestamp that is not in UTC, which the LRS
+ * converts.
+ *
+ * @param read - The Statements as read, in the order of the request.
+ * @param sent - The entries of the request, before `inUtcTimestamps`.
+ * @returns The Statements with the timestamps as written.
+ */
+export function withSentTimestamps(read: readonly Statement[], sent: readonly unknown[]): readonly Statement[] {
+  return read.map((statement, index) => {
+    const entry = sent[index];
+    const timestamp = sentTimestamp(entry);
+    const subTimestamp = isRecord(entry) ? sentTimestamp(entry.object) : undefined;
+    const object =
+      subTimestamp !== undefined && statement.object.objectType === "SubStatement"
+        ? { ...statement.object, timestamp: subTimestamp }
+        : statement.object;
+    return { ...statement, object, ...(timestamp === undefined ? {} : { timestamp }) };
+  });
 }

@@ -42,6 +42,13 @@ export interface LrsGrant {
   readonly authority: Actor;
   /** What the credentials allow. A request for an action that is not listed is refused with 403. */
   readonly actions: readonly LrsAction[];
+  /**
+   * Who the request is from, as the host names them, for `accept` to judge the Statements against, such as a session of a
+   * profile.
+   *
+   * @defaultValue none
+   */
+  readonly principal?: string;
 }
 
 /**

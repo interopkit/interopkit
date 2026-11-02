@@ -336,6 +336,8 @@ describe("handleLrsRequest: access", () => {
       { allowed: true },
       { allowed: true, authority: {}, actions: [] },
       { allowed: true, authority: AUTHORITY, actions: ["x"] },
+      { allowed: true, authority: AUTHORITY, actions: [], principal: "" },
+      { allowed: true, authority: AUTHORITY, actions: [], principal: 7 },
       { allowed: false, status: 404, reason: "x" },
       { allowed: false, status: 401, reason: 7 },
     ] as unknown[]) {
@@ -438,6 +440,8 @@ describe("handleLrsRequest: the options", () => {
       [{ ...valid, basePath: "/xapi/" }, "The configuration of the LRS is invalid at basePath"],
       [{ ...valid, newId: 5 }, "The configuration of the LRS is invalid at newId: expected a function, found 5."],
       [{ ...valid, accept: "x" }, "The configuration of the LRS is invalid at accept"],
+      [{ ...valid, acceptStatus: 401 }, "The configuration of the LRS is invalid at acceptStatus"],
+      [{ ...valid, acceptStatus: "403" }, "The configuration of the LRS is invalid at acceptStatus"],
       [{ ...valid, trustCertificate: "x" }, "The configuration of the LRS is invalid at trustCertificate"],
       [
         { ...valid, keepSubmittedAuthority: "yes" },
@@ -495,6 +499,7 @@ describe("handleLrsRequest: the options", () => {
       ...valid,
       basePath: "/xapi",
       accept: async () => [],
+      acceptStatus: 403,
       trustCertificate: async () => true,
       keepSubmittedAuthority: true,
       limits,

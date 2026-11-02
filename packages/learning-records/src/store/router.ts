@@ -1,4 +1,5 @@
 import { callPort } from "@interopkit/core";
+import { nonEmptyStringSchema } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse, readAccessDecision } from "@interopkit/core/http";
 import * as v from "valibot";
 import type { XapiVersion } from "../model/index.js";
@@ -66,7 +67,11 @@ const RESOURCES: readonly Resource[] = [
 ];
 
 /** What an allowed decision of `access` grants. */
-const grantSchema = v.object({ authority: authoritySchema, actions: v.array(v.picklist(LRS_ACTIONS)) });
+const grantSchema = v.object({
+  authority: authoritySchema,
+  actions: v.array(v.picklist(LRS_ACTIONS)),
+  principal: v.optional(nonEmptyStringSchema),
+});
 
 /** The sentence of a refusal for which `access` gives no reason. */
 const REFUSALS: Readonly<Record<401 | 403 | 429, string>> = {

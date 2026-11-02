@@ -28,6 +28,8 @@ holds with `role: "lrs"`. Statements are checked before they are sent and every 
 `access`, whose `AccessDecision` of `@interopkit/core/http` grants an `LrsGrant` or refuses with 401, 403 or 429, the limits, voiding, the filters with the Statement References that `matchesStatementQuery` judges, pages with
 `more`, the formats, Attachments and signatures, a batch stored whole or not at all, and `statements.read.mine`; State and both profiles, under ETags with `If-Match`, `If-None-Match`, JSON
 merge and the retry of lost races; Agents, Activities and About. `readBasicAuthorization` reads HTTP Basic.
+A profile such as cmi5 judges each batch with `accept`, which sees the Statements as the request sent them and the `principal` that
+`access` names, and refuses with `acceptStatus`, 400 or 403.
 An LRS that the handler answers for passes the 1,442 tests of the ADL conformance suite for xAPI 2.0, and the reader of an LRS
 agrees with SQL LRS on 147 of the 153 rules of the standard; the client takes the answer of a resend that an LRS gives with
 no ids.

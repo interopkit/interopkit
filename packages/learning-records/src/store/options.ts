@@ -132,8 +132,11 @@ export interface LrsOptions extends CallOptions {
    */
   readonly newId?: () => string;
   /**
-   * A check after the rules of the standard, for the rules of a profile such as cmi5. It lists the findings about the
-   * Statements of a request, and an error among them refuses the request with 400.
+   * A check after the rules of the standard, for the rules of a profile such as cmi5. It runs last, after the Attachments and
+   * signatures and before the store, and sees the Statements as the request sent them: without the `id`, `timestamp`,
+   * `stored`, `authority` and `version` that the LRS sets, but with the `statementId` of a PUT as the `id`, and with each
+   * `timestamp`, a SubStatement's included, as written. It lists the findings about them, and an error among them refuses the
+   * request with `acceptStatus`.
    *
    * @defaultValue none
    */
@@ -142,6 +145,12 @@ export interface LrsOptions extends CallOptions {
     access: Extract<Access, { readonly allowed: true }>,
     options?: CallOptions,
   ) => Promise<readonly StatementIssue[]>;
+  /**
+   * The status of a refusal by `accept`: 400, or 403 for a profile that refuses a Statement the standard takes, as cmi5 does.
+   *
+   * @defaultValue 400
+   */
+  readonly acceptStatus?: 400 | 403;
   /**
    * Decides whether the certificate chain of a signed Statement is trusted, leaf first, each as the base64 of its DER encoding.
    * A chain that it does not trust refuses the request with 400. A signature with no chain has no certificate to judge, and
@@ -187,6 +196,7 @@ export interface LrsSettings {
   readonly versions: Versions;
   readonly newId: () => string;
   readonly accept: LrsOptions["accept"];
+  readonly acceptStatus: 400 | 403;
   readonly trustCertificate: LrsOptions["trustCertificate"];
   readonly keepSubmittedAuthority: boolean;
   readonly aboutExtensions: About["extensions"];
@@ -242,6 +252,7 @@ const optionsSchema = strictRecord({
   versions: v.optional(guardSchema(isVersionList, 'a list of "2.0.0" and "1.0.3", with each once and at least one')),
   newId: v.optional(guardSchema(isFunction<() => string>, "a function")),
   accept: v.optional(guardSchema(isFunction<NonNullable<LrsOptions["accept"]>>, "a function")),
+  acceptStatus: v.optional(v.picklist([400, 403])),
   trustCertificate: v.optional(guardSchema(isFunction<NonNullable<LrsOptions["trustCertificate"]>>, "a function")),
   keepSubmittedAuthority: v.optional(v.boolean()),
   aboutExtensions: v.optional(jsonObjectSchema),
@@ -282,6 +293,7 @@ export function readLrsOptions(options: unknown): LrsSettings {
     versions: read.versions ?? XAPI_VERSIONS,
     newId: read.newId ?? (() => crypto.randomUUID()),
     accept: read.accept,
+    acceptStatus: read.acceptStatus ?? 400,
     trustCertificate: read.trustCertificate,
     keepSubmittedAuthority: read.keepSubmittedAuthority ?? false,
     aboutExtensions: read.aboutExtensions,

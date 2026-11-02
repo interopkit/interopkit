@@ -5,7 +5,7 @@ import { type Statement, VERB_VOIDED } from "../src/index.js";
 import { handleLrsRequest, type LrsOptions } from "../src/store/index.js";
 import { uuid } from "./full-statement.js";
 import { statementOf } from "./lrs-client.js";
-import { AUTHORITY, jsonOf, memory, NOW, optionsOf, reasonOf, requestOf } from "./memory-lrs.js";
+import { ALLOW_ALL, AUTHORITY, jsonOf, memory, NOW, optionsOf, reasonOf, requestOf } from "./memory-lrs.js";
 import { dataOf, messageOf, statementWithAttachments } from "./multipart.js";
 
 const JSON_TYPE = { "content-type": "application/json" };
@@ -418,20 +418,76 @@ describe("the Activities of the Statements that are stored", () => {
 });
 
 describe("the check of the host", () => {
-  const complete = (n: number) => ({ ...statementOf(n), stored: NOW, authority: AUTHORITY, version: "2.0.0" });
-
-  it("sees the Statements as the LRS stores them, with the access", async () => {
+  /** Sends a request whose check records what it sees, and answers it. */
+  async function seenBy(method: "PUT" | "POST", body: unknown, query: Record<string, string> = {}, changes = {}) {
     const seen: unknown[] = [];
-    const { response } = await send("POST", statementOf(1), {
+    const { response, store } = await send(method, body, {
+      query,
       changes: {
         accept: async (statements, access) => {
-          seen.push(statements, access.authority);
+          seen.push(statements, access);
           return [];
         },
+        ...changes,
       },
     });
+    return { response, store, seen };
+  }
+
+  it("sees the Statements as the request sent them, without what the LRS sets, and the access", async () => {
+    const { id: _id, timestamp: _timestamp, ...bare } = statementOf(2);
+    const { response, store, seen } = await seenBy("POST", [statementOf(1), bare]);
     expect(response.status).toBe(200);
-    expect(seen).toStrictEqual([[complete(1)], AUTHORITY]);
+    expect(seen).toStrictEqual([[statementOf(1), bare], ALLOW_ALL]);
+    expect(store.held.get(uuid(901))?.statement).toMatchObject({ id: uuid(901), timestamp: NOW, version: "2.0.0" });
+  });
+
+  it("sees the statementId of a PUT as the id of a Statement that has none", async () => {
+    const { id: _id, ...bare } = statementOf(1);
+    const { response, seen } = await seenBy("PUT", bare, { statementId: uuid(7) });
+    expect(response.status).toBe(204);
+    expect(seen[0]).toStrictEqual([{ ...bare, id: uuid(7) }]);
+  });
+
+  it("sees each timestamp as written, a SubStatement's included, while the LRS stores them in UTC", async () => {
+    const offset = "2026-01-15T17:30:00.000+07:00";
+    const spaced = "2026-01-15 10:30:00Z";
+    const sub: Statement = {
+      ...statementOf(1),
+      timestamp: offset,
+      object: {
+        objectType: "SubStatement",
+        actor: { mbox: "mailto:a@example.org" },
+        verb: { id: "http://adlnet.gov/expapi/verbs/answered" },
+        object: { id: "https://example.org/activities/inner" },
+        timestamp: spaced,
+      },
+    };
+    const { response, store, seen } = await seenBy("POST", sub);
+    expect(response.status).toBe(200);
+    expect(seen[0]).toStrictEqual([sub]);
+    expect(store.held.get(uuid(1))?.statement).toMatchObject({
+      timestamp: "2026-01-15T10:30:00.000Z",
+      object: { timestamp: "2026-01-15T10:30:00.000Z" },
+    });
+  });
+
+  it("receives the principal that access names, and no principal when access names none", async () => {
+    const principal = "session-1";
+    const named = await seenBy("POST", statementOf(1), {}, { access: async () => ({ ...ALLOW_ALL, principal }) });
+    expect(named.seen[1]).toStrictEqual({ ...ALLOW_ALL, principal });
+    const unnamed = await seenBy("POST", statementOf(1));
+    expect(unnamed.seen[1]).not.toHaveProperty("principal");
+  });
+
+  it("refuses with acceptStatus when it is 403", async () => {
+    const error = async () => [
+      { path: "[0].verb", rule: "profile", message: "is not allowed", severity: "error" as const },
+    ];
+    const { response, store } = await send("POST", statementOf(1), { changes: { accept: error, acceptStatus: 403 } });
+    expect(response.status).toBe(403);
+    expect(reasonOf(response)).toContain("The batch of Statements is invalid at [0].verb: is not allowed");
+    expect(store.held.size).toBe(0);
   });
 
   it("refuses with 400 when it finds an error, and goes on when it finds a warning", async () => {

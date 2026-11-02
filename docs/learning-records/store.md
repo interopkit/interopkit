@@ -202,6 +202,12 @@ part for each hash. A Statement is stored with the data that come in a multipart
 whose payload is the same Statement, whether the LRS holds a key or not, and when its header has an `x5c` it must verify against
 the leaf. Anyone can make a certificate: with `trustCertificate` a chain that it does not trust refuses the request with 400.
 
+`accept`, when the options give it, judges a batch last, after its Attachments and signatures and before the store, for the
+rules of a profile such as cmi5. It sees each Statement as the request sent it, so that a profile can refuse what the LRS would
+complete or convert: without the `id`, `stored`, `authority` and `version` that the LRS sets, with the `statementId` of a PUT as
+the `id`, and with each `timestamp`, a SubStatement's included, as written. It gets the access with its `principal`, and an
+error among its findings refuses the request with `acceptStatus` and stores nothing.
+
 ## Documents
 
 The State, Agent Profile and Activity Profile resources hold documents: any content with its Internet media type, named by an
@@ -289,7 +295,8 @@ every request and needs no action: a host that lets anyone ask About answers `{ 
 ## Who may do what
 
 `access` is asked about every request that names a resource and a method. It answers an `AccessDecision` of
-`@interopkit/core/http`: `{ allowed: true, authority, actions }`, or `{ allowed: false, status }` with 401, 403 or 429. A
+`@interopkit/core/http`: `{ allowed: true, authority, actions }`, with an optional `principal` that names who the request is
+from for `accept`, or `{ allowed: false, status }` with 401, 403 or 429. A
 refusal's `reason` is the message of the answer (by default a sentence of its status), a 401 carries `challenge` as
 `WWW-Authenticate`, and a 429 carries `retryAfterSeconds` as `Retry-After`. A request for an action that `actions` does not list is 403; the action of each
 method is in the table of [the resources](#the-resources).
@@ -323,7 +330,8 @@ The other scopes of 1.0.3 map to the actions as follows; OAuth itself, and `defi
 | `basePath`               | `LrsOptions` | `"/xapi"`                             | The path the LRS is mounted at: `""`, or a path that starts with `/` and does not end with one                 |
 | `versions`               | `LrsOptions` | `["2.0.0", "1.0.3"]`                  | The versions the LRS serves, the latest first; a request of another is 400, and About lists these              |
 | `newId`                  | `LrsOptions` | `crypto.randomUUID`                   | Makes the id of a Statement that has none                                                                      |
-| `accept`                 | `LrsOptions` | none                                  | A check after the standard's, for the rules of a profile; an error among its findings refuses with 400         |
+| `accept`                 | `LrsOptions` | none                                  | A check after the standard's, the Attachments and the signatures, for the rules of a profile; it sees the Statements as sent ([Statements](#statements)) and the access with its `principal`, and an error among its findings refuses with `acceptStatus` |
+| `acceptStatus`           | `LrsOptions` | 400                                   | The status of a refusal by `accept`: 400, or 403, which cmi5 asks for                                          |
 | `trustCertificate`       | `LrsOptions` | none: anyone's certificate is taken   | Whether the chain of a signed Statement is trusted; a chain that it does not trust is 400; the signature is checked against the leaf whatever it says |
 | `keepSubmittedAuthority` | `LrsOptions` | false                                 | Keeps the `authority` a Statement brings, which the standard allows only with a strong trust relationship      |
 | `aboutExtensions`        | `LrsOptions` | none                                  | A JSON object that About gives as `extensions`                                                                 |

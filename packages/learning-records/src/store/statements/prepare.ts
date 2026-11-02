@@ -6,7 +6,7 @@ import { attachmentHeadersOf, inspectBatch, issueSink } from "../../read/interna
 import { SIGNATURE_USAGE_TYPE, verifyStatementSignature } from "../../signing/index.js";
 import { type Context, isRefusal, type Refusal, refused, type Verdict } from "../verdict.js";
 import type { StatementsBody } from "./body.js";
-import { inUtcTimestamps } from "./timestamps.js";
+import { inUtcTimestamps, withSentTimestamps } from "./timestamps.js";
 
 /** A Statement that has its id. */
 type IdentifiedStatement = Statement & { readonly id: string };
@@ -133,7 +133,7 @@ async function checkSignature(
   return { value: undefined };
 }
 
-/** Runs the check of the host on the Statements. */
+/** Runs the check of the host on the Statements as the request sent them. */
 async function acceptable(statements: readonly Statement[], context: Context): Promise<Verdict<undefined>> {
   const { accept, signal } = context.settings;
   if (accept === undefined) return { value: undefined };
@@ -145,7 +145,7 @@ async function acceptable(statements: readonly Statement[], context: Context): P
   const errors = asked.value.filter((issue: StatementIssue) => issue.severity === "error");
   return errors.length === 0
     ? { value: undefined }
-    : refused(400, refusalOf("The batch of Statements", errors, "accept"));
+    : refused(context.settings.acceptStatus, refusalOf("The batch of Statements", errors, "accept"));
 }
 
 /** Refuses a Statement of a version that the LRS does not take, and a Statement whose id is not the `statementId` of a PUT. */
@@ -195,16 +195,17 @@ export async function prepare(
   const refusal = checkIdentity(read, single);
   if (refusal !== undefined) return refusal;
   const stored = formatTimestamp(readClock(context.settings.clock));
-  const statements = read.map((statement, index) =>
-    completed(index === 0 && single !== undefined ? { ...statement, id: single.id } : statement, stored, context),
+  const identified = read.map((statement, index) =>
+    index === 0 && single !== undefined ? { ...statement, id: single.id } : statement,
   );
+  const statements = identified.map((statement) => completed(statement, stored, context));
   const attachments = matchAttachments(statements, body.parts);
   if (isRefusal(attachments)) return attachments;
   for (const statement of statements) {
     const signed = await checkSignature(statement, body.parts, context);
     if (isRefusal(signed)) return signed;
   }
-  const accepted = await acceptable(statements, context);
+  const accepted = await acceptable(withSentTimestamps(identified, submitted), context);
   if (isRefusal(accepted)) return accepted;
   return { value: { statements, stored, attachments: attachments.value } };
 }
