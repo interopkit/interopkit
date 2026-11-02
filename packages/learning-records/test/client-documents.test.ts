@@ -204,12 +204,12 @@ describe("deleteDocument", () => {
     },
   );
 
-  it("resolves precondition-failed for 412, and rejects for 404 and 409, which it does not expect", async () => {
+  it("resolves precondition-failed for 412 and conflict for 409, what an LRS answers to a removal that loses its races, and rejects for 404", async () => {
     const remove = (status: number) =>
       clientOf(fakeLrs(() => ({ status }))).deleteDocument(STATE, { precondition: { ifMatch: ETAG } });
     expect(await remove(412)).toBe("precondition-failed");
+    expect(await remove(409)).toBe("conflict");
     expect(await failureOf(remove(404))).toBeInstanceOf(ServiceError);
-    expect(await failureOf(remove(409))).toBeInstanceOf(ServiceError);
   });
 });
 

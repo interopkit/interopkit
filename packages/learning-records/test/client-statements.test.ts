@@ -4,7 +4,7 @@ import { readMultipart, writeMultipart } from "../src/attachments/index.js";
 import type { Statement, StatementQuery } from "../src/index.js";
 import { fakeLrs, type Reply } from "./fake-lrs.js";
 import { uuid } from "./full-statement.js";
-import { CONSISTENT_THROUGH, clientOf, collect, failureOf, fromJson, statementOf } from "./lrs-client.js";
+import { CONSISTENT_THROUGH, clientOf, collect, ENDPOINT, failureOf, fromJson, statementOf } from "./lrs-client.js";
 import { dataOf, statementWithAttachments } from "./multipart.js";
 
 const decoder = new TextDecoder();
@@ -563,5 +563,96 @@ describe("queryStatements", () => {
       );
       expect(() => clientOf(lrs).queryStatements({}, fromJson("null"))).toThrow(DataError);
     });
+  });
+});
+
+describe("the languages of a reader", () => {
+  const PAGE = { "x-experience-api-consistent-through": "2026-01-15T10:30:00.000Z" };
+
+  it("sends them as Accept-Language with falling weights, on a query and on one Statement", async () => {
+    const lrs = fakeLrs(() => ({ body: { statements: [] }, headers: PAGE }));
+    const client = clientOf(lrs);
+    for await (const _page of client.queryStatements({ format: "canonical" }, { languages: ["fr-CA", "fr", "*"] }))
+      break;
+    await client.getStatement(uuid(1), { format: "canonical", languages: ["id"] }).catch(() => undefined);
+    const [query, single] = lrs.requests;
+    expect(query?.init.headers).toMatchObject({ "accept-language": "fr-CA, fr;q=0.9, *;q=0.8" });
+    expect(single?.init.headers).toMatchObject({ "accept-language": "id" });
+  });
+
+  it("sends no header for none, and keeps a weight above zero for a long list", async () => {
+    const lrs = fakeLrs(() => ({ body: { statements: [] }, headers: PAGE }));
+    const client = clientOf(lrs);
+    for await (const _page of client.queryStatements({}, { languages: [] })) break;
+    expect(lrs.requests[0]?.init.headers).not.toHaveProperty("accept-language");
+    const long = Array.from({ length: 12 }, () => "en");
+    for await (const _page of client.queryStatements({}, { languages: long })) break;
+    expect(lrs.requests[1]?.init.headers?.["accept-language"]).toContain(", en;q=0.1, en;q=0.1");
+  });
+
+  it("refuses what is no language before any request", async () => {
+    const lrs = fakeLrs(() => ({ status: 500 }));
+    const client = clientOf(lrs);
+    expect(() => client.queryStatements({}, { languages: ["not a tag"] })).toThrow("expected a language tag");
+    expect(lrs.requests).toHaveLength(0);
+  });
+});
+
+describe("moreStatements", () => {
+  const PAGE = { "x-experience-api-consistent-through": "2026-01-15T10:30:00.000Z" };
+
+  it("goes on from a page that a host kept, and follows the pages after it", async () => {
+    const lrs = fakeLrs((url) =>
+      url.searchParams.get("cursor") === "1"
+        ? { body: { statements: [], more: "/xapi/statements?cursor=2" }, headers: PAGE }
+        : { body: { statements: [] }, headers: PAGE },
+    );
+    const pages = [];
+    for await (const page of clientOf(lrs).moreStatements("/xapi/statements?cursor=1")) pages.push(page);
+    expect(pages).toHaveLength(2);
+    expect(lrs.paths()).toStrictEqual(["/xapi/statements?cursor=1", "/xapi/statements?cursor=2"]);
+  });
+
+  it("takes the absolute address of the same origin, and either form of an answer", async () => {
+    const lrs = fakeLrs(() => ({ body: { statements: [] }, headers: PAGE }));
+    for await (const _page of clientOf(lrs).moreStatements(`${ENDPOINT}statements?cursor=1`)) break;
+    expect(lrs.requests[0]?.init.headers).toMatchObject({ accept: "multipart/mixed, application/json" });
+  });
+
+  it("refuses an address on another origin before any request, so that the credential stays", async () => {
+    const lrs = fakeLrs(() => ({ status: 500 }));
+    expect(() => clientOf(lrs).moreStatements("https://other.example.org/xapi/statements")).toThrow(DataError);
+    expect(() => clientOf(lrs).moreStatements("//other.example.org/xapi/statements")).toThrow(DataError);
+    expect(() => clientOf(lrs).moreStatements(5 as never)).toThrow(DataError);
+    expect(lrs.requests).toHaveLength(0);
+  });
+});
+
+describe("the rules of what is forwarded", () => {
+  const statement = statementOf(1);
+  const held = {
+    ...statement,
+    stored: "2026-01-15T10:30:00.000Z",
+    authority: { mbox: "mailto:lrs@example.org" },
+    version: "1.0.0",
+  };
+
+  it("holds a Statement to the rules of a provider unless the host says otherwise", async () => {
+    const lrs = fakeLrs(() => ({ status: 204 }));
+    await expect(clientOf(lrs).sendStatement(held)).rejects.toThrow("invalid");
+    await expect(clientOf(lrs).sendStatements([held])).rejects.toThrow("invalid");
+    expect(lrs.requests).toHaveLength(0);
+  });
+
+  it("sends what another LRS holds with the role of an LRS, as it is", async () => {
+    const lrs = fakeLrs(() => ({ status: 204 }));
+    expect(await clientOf(lrs).sendStatement(held, { role: "lrs" })).toBe("stored");
+    expect(await clientOf(lrs).sendStatements([held], { role: "lrs" })).toStrictEqual([held.id]);
+    expect(JSON.parse(String(lrs.requests[0]?.init.body))).toStrictEqual(held);
+  });
+
+  it("refuses a role that does not exist", async () => {
+    const lrs = fakeLrs(() => ({ status: 204 }));
+    await expect(clientOf(lrs).sendStatement(statement, { role: "any" as never })).rejects.toThrow("role");
   });
 });

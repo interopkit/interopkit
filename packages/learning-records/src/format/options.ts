@@ -1,6 +1,7 @@
-import { guardSchema, isLanguageTag, parseWith, strictRecord } from "@interopkit/core/checks";
+import { guardSchema, parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { type ActivityDefinition, STATEMENT_FORMATS, type StatementFormat } from "../model/index.js";
+import { languageRangesSchema } from "../read/internal.js";
 
 /** The options of `formatStatement`. */
 export interface FormatOptions {
@@ -30,17 +31,7 @@ const optionsSchema = strictRecord({
       "a Map from an Activity id to its definition",
     ),
   ),
-  languages: v.optional(
-    v.array(
-      v.pipe(
-        v.string(),
-        v.check(
-          (range) => range === "*" || isLanguageTag(range),
-          (issue) => `expected a language tag of RFC 5646 or *, found ${issue.received}`,
-        ),
-      ),
-    ),
-  ),
+  languages: v.optional(languageRangesSchema),
 });
 
 /** Checks the format that a caller asks for. */

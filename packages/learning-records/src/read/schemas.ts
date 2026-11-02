@@ -103,6 +103,17 @@ const languageMap: Schema<LanguageMap> = v.pipe(
   keysAre<LanguageMap>(isLanguageTag, "a language tag of RFC 5646 as the key"),
 );
 
+/** The languages that a reader prefers, the first the most: language tags, or `*` for any. */
+export const languageRangesSchema: Schema<readonly string[]> = v.array(
+  v.pipe(
+    v.string(),
+    v.check(
+      (range) => range === "*" || isLanguageTag(range),
+      (issue) => `expected a language tag of RFC 5646 or *, found ${issue.received}`,
+    ),
+  ),
+);
+
 /** A list of at least one entry, which `relevantTypes` is when it is present (4.2.2.5). */
 function nonEmpty<const TItem extends v.GenericSchema>(item: TItem) {
   return v.pipe(v.array(item), v.minLength(1));

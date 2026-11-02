@@ -13,6 +13,7 @@ export {
   aboutSchema,
   activitySchema,
   attachmentDataSchema,
+  languageRangesSchema,
   personSchema,
 } from "./schemas.js";
 export { statementQuerySchema } from "./statement-query.js";

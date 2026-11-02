@@ -3,8 +3,7 @@ import { checkArray, checkProperties, checkString, isRecord, parseWith } from "@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import type { Attachment, AttachmentData, Statement, StatementResult } from "../model/index.js";
-import { readStatement } from "../read/index.js";
-import { attachmentDataSchema } from "../read/internal.js";
+import { attachmentDataSchema, readEitherVersion } from "../read/internal.js";
 import { hashesTo } from "./attachment-hash.js";
 
 const encoder = new TextEncoder();
@@ -32,23 +31,23 @@ interface StatementsPart {
   readonly statements: readonly Statement[];
 }
 
-/** Reads the first part from the three forms that it may take, checking every Statement as an LRS reads it. */
+/** Reads the first part from the three forms that it may take, checking every Statement as an LRS of either version reads it. */
 function readStatementsPart(document: unknown): StatementsPart {
   if (Array.isArray(document)) {
-    const statements = document.map((statement) => readStatement(statement));
+    const statements = document.map((statement) => readEitherVersion(statement));
     return { text: JSON.stringify(statements), statements };
   }
   if (isRecord(document) && "statements" in document) {
     checkProperties(document, "The result", ["statements", "more"]);
     checkArray(document.statements, "The property statements of the result must be an array");
     if (document.more !== undefined) checkString(document.more, "The property more of the result");
-    const statements = document.statements.map((statement) => readStatement(statement));
+    const statements = document.statements.map((statement) => readEitherVersion(statement));
     return {
       text: JSON.stringify({ statements, ...(document.more === undefined ? {} : { more: document.more }) }),
       statements,
     };
   }
-  const statement = readStatement(document);
+  const statement = readEitherVersion(document);
   return { text: JSON.stringify(statement), statements: [statement] };
 }
 
@@ -101,7 +100,7 @@ function join(chunks: readonly Uint8Array[]): Uint8Array<ArrayBuffer> {
  * data of each Attachment in a part with its `X-Experience-API-Hash`.
  *
  * @remarks
- * Every Statement is read as an LRS reads it, and the message must be one that an LRS accepts: each part holds the data of
+ * Every Statement is read as an LRS of either version reads it, and the message must be one that an LRS accepts: each part holds the data of
  * its hash, belongs to an Attachment of the Statements, and appears once; and each Attachment without a `fileUrl` has its part.
  * The boundary comes from the hash of the first part and of the hashes of the other parts, so the same input gives the same
  * message, and no part can hold the boundary, since it would have to hold its own hash. Each part after the first carries

@@ -228,7 +228,7 @@ export async function deleteDocument(
     signal,
     url,
     { method: "DELETE", headers: conditionOf(precondition) },
-    [204, 412],
+    [204, 409, 412],
   );
   return outcomeOf(response);
 }

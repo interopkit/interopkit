@@ -56,6 +56,7 @@ export async function send(
     {
       method: request.method,
       headers: {
+        accept: "application/json",
         "x-experience-api-version": settings.version,
         ...(authorization === undefined ? {} : { authorization }),
         ...request.headers,

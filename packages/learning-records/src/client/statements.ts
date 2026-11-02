@@ -1,10 +1,19 @@
 import { type CallOptions, DataError, type ServiceResponse } from "@interopkit/core";
-import { parseWith, refusalOf, strictRecord, uuidSchema } from "@interopkit/core/checks";
+import {
+  checkString,
+  DEFAULT_MAX_FINDINGS,
+  parseWith,
+  refusalOf,
+  strictRecord,
+  uuidSchema,
+} from "@interopkit/core/checks";
 import * as v from "valibot";
 import { readMultipart, writeMultipart } from "../attachments/index.js";
 import { toStatementVersion } from "../compare/index.js";
 import {
   type AttachmentData,
+  RULE_ROLES,
+  type RuleRole,
   STATEMENT_FORMATS,
   type Statement,
   type StatementFormat,
@@ -12,10 +21,16 @@ import {
   type XapiVersion,
 } from "../model/index.js";
 import { mediaTypeOf } from "../model/internal.js";
-import { readStatement, validateStatements } from "../read/index.js";
-import { attachmentDataSchema, readEitherVersion } from "../read/internal.js";
+import { readStatement } from "../read/index.js";
+import {
+  attachmentDataSchema,
+  inspectBatch,
+  issueSink,
+  languageRangesSchema,
+  readEitherVersion,
+} from "../read/internal.js";
 import type { Settings } from "./config.js";
-import { callOptionsSchema, signalEntry } from "./options.js";
+import { signalEntry } from "./options.js";
 import { readQuery } from "./query.js";
 import { jsonOf, readAnswer, send, urlOf } from "./request.js";
 
@@ -23,6 +38,9 @@ import { jsonOf, readAnswer, send, urlOf } from "./request.js";
 const MAX_PAGE_PARTS = 10_000;
 
 const CONSISTENT_THROUGH = "x-experience-api-consistent-through";
+
+/** The `Accept` of a request whose answer may hold the data of Attachments. */
+const ACCEPT_WITH_DATA = "multipart/mixed, application/json";
 
 /** What a call that sends Statements may carry. */
 export interface SendOptions extends CallOptions {
@@ -33,10 +51,28 @@ export interface SendOptions extends CallOptions {
    * @defaultValue none
    */
   readonly attachments?: readonly AttachmentData[];
+  /**
+   * Whose rules the Statements are read with before they are sent: `provider`, or `lrs` for a host that forwards what another
+   * LRS holds, whose Statements carry what that LRS set (`stored`, `authority`, `version`) and that a provider does not write.
+   *
+   * @defaultValue `"provider"`
+   */
+  readonly role?: RuleRole;
+}
+
+/** What a call that fetches Statements may carry. */
+export interface ReadStatementsOptions extends CallOptions {
+  /**
+   * The languages to prefer, the first the most, as language tags or `*`: the `Accept-Language` of the request, by which an LRS
+   * picks one language of each language map of the format `canonical`.
+   *
+   * @defaultValue none: the LRS picks
+   */
+  readonly languages?: readonly string[];
 }
 
 /** What a call that fetches one Statement may ask for. */
-export interface GetStatementOptions extends CallOptions {
+export interface GetStatementOptions extends ReadStatementsOptions {
   /**
    * How much of an Agent, Activity, Verb or Group the Statement shows.
    *
@@ -81,14 +117,34 @@ export interface StatementPage {
   readonly more?: string;
 }
 
-const sendOptionsSchema = strictRecord({ attachments: v.optional(v.array(attachmentDataSchema)), ...signalEntry });
+const sendOptionsSchema = strictRecord({
+  attachments: v.optional(v.array(attachmentDataSchema)),
+  role: v.optional(v.picklist(RULE_ROLES)),
+  ...signalEntry,
+});
+
+const readEntries = { languages: v.optional(languageRangesSchema), ...signalEntry };
+
+const readOptionsSchema = strictRecord(readEntries);
 
 const getOptionsSchema = strictRecord({
   format: v.optional(v.picklist(STATEMENT_FORMATS)),
   voided: v.optional(v.boolean()),
   attachments: v.optional(v.boolean()),
-  ...signalEntry,
+  ...readEntries,
 });
+
+/** The quality of the second language of an `Accept-Language` header, and how much less each next one has, in tenths. */
+const QUALITY_STEPS = 10;
+
+/** Writes the `Accept-Language` header of languages in the order of preference: `fr-CA, fr;q=0.9, en;q=0.8`. */
+function languageHeader(languages: readonly string[] | undefined): Readonly<Record<string, string>> {
+  if (languages === undefined || languages.length === 0) return {};
+  const ranges = languages.map((range, order) =>
+    order === 0 ? range : `${range};q=${Math.max(QUALITY_STEPS - order, 1) / QUALITY_STEPS}`,
+  );
+  return { "accept-language": ranges.join(", ") };
+}
 
 const resultSchema = strictRecord({ statements: v.array(v.unknown()), more: v.optional(v.string()) });
 
@@ -116,12 +172,12 @@ export async function sendStatement(
   statement: Statement,
   options: unknown,
 ): Promise<"stored" | "conflict"> {
-  const { attachments, signal } = parseWith(
-    sendOptionsSchema,
-    options === undefined ? {} : options,
-    "The options object",
-  );
-  const read = readStatement(statement, { role: "provider", version: settings.version });
+  const {
+    attachments,
+    role = "provider",
+    signal,
+  } = parseWith(sendOptionsSchema, options === undefined ? {} : options, "The options object");
+  const read = readStatement(statement, { role, version: settings.version });
   if (read.id === undefined) {
     throw new DataError(
       "The Statement needs an id to be stored with PUT: deriveStatementId makes one that a resend repeats.",
@@ -172,15 +228,15 @@ export async function sendStatements(
   statements: readonly Statement[],
   options: unknown,
 ): Promise<readonly string[]> {
-  const { attachments, signal } = parseWith(
-    sendOptionsSchema,
-    options === undefined ? {} : options,
-    "The options object",
-  );
-  const rules = { role: "provider", version: settings.version } as const;
-  const errors = validateStatements(statements, rules).filter(({ severity }) => severity === "error");
+  const {
+    attachments,
+    role = "provider",
+    signal,
+  } = parseWith(sendOptionsSchema, options === undefined ? {} : options, "The options object");
+  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const batch = inspectBatch(statements, { role, version: settings.version }, sink);
+  const errors = sink.list();
   if (errors.length > 0) throw new DataError(refusalOf("The batch of Statements", errors, "validateStatements"));
-  const batch = statements.map((statement) => readStatement(statement, rules));
   const { contentType, body } = bodyOf(batch, attachments);
   const url = urlOf(settings, "statements");
   const response = await send(
@@ -217,7 +273,7 @@ export async function getStatement(
   id: string,
   options: unknown,
 ): Promise<Statement | StatementWithAttachments | undefined> {
-  const { format, voided, attachments, signal } = parseWith(
+  const { format, voided, attachments, languages, signal } = parseWith(
     getOptionsSchema,
     options === undefined ? {} : options,
     "The options object",
@@ -228,8 +284,9 @@ export async function getStatement(
   if (format !== undefined) parameters.set("format", format);
   if (attachments !== undefined) parameters.set("attachments", String(attachments));
   const url = urlOf(settings, "statements", parameters);
-  const accept = attachments === true ? "multipart/mixed, application/json" : "application/json";
-  const response = await send(settings, signal, url, { method: "GET", headers: { accept } }, [200, 404]);
+  const accept = attachments === true ? ACCEPT_WITH_DATA : "application/json";
+  const headers = { accept, ...languageHeader(languages) };
+  const response = await send(settings, signal, url, { method: "GET", headers }, [200, 404]);
   if (response.status === 404) return undefined;
   return readAnswer(url, () => {
     const body = readBody(response, settings);
@@ -285,18 +342,20 @@ function nextUrl(settings: Settings, current: string, more: string, followed: Re
   return next.href;
 }
 
+/** What the requests of an iteration carry. */
+interface PageRequest {
+  /** The headers of each request. */
+  readonly headers: Readonly<Record<string, string>>;
+  readonly signal: AbortSignal | undefined;
+}
+
 /** The iteration of a query: one request for each page, until the LRS has no more. */
-async function* pagesOf(
-  settings: Settings,
-  first: string,
-  attachments: boolean,
-  signal: AbortSignal | undefined,
-): AsyncGenerator<StatementPage> {
+async function* pagesOf(settings: Settings, first: string, request: PageRequest): AsyncGenerator<StatementPage> {
+  const { headers, signal } = request;
   const followed = new Set<string>();
-  const accept = attachments ? "multipart/mixed, application/json" : "application/json";
   for (let url: string | undefined = first; url !== undefined; ) {
     followed.add(url);
-    const response = await send(settings, signal, url, { method: "GET", headers: { accept } }, [200]);
+    const response = await send(settings, signal, url, { method: "GET", headers }, [200]);
     const page: StatementPage = readAnswer(url, () => readPage(response, settings));
     yield page;
     url = page.more === undefined ? undefined : nextUrl(settings, url, page.more, followed);
@@ -309,7 +368,27 @@ export function queryStatements(
   query: StatementQuery,
   options: unknown,
 ): AsyncIterable<StatementPage> {
-  const { signal } = parseWith(callOptionsSchema, options === undefined ? {} : options, "The options object");
+  const { languages, signal } = parseWith(
+    readOptionsSchema,
+    options === undefined ? {} : options,
+    "The options object",
+  );
   const { parameters, attachments } = readQuery(query);
-  return pagesOf(settings, urlOf(settings, "statements", parameters), attachments, signal);
+  const headers = { accept: attachments ? ACCEPT_WITH_DATA : "application/json", ...languageHeader(languages) };
+  return pagesOf(settings, urlOf(settings, "statements", parameters), { headers, signal });
+}
+
+/**
+ * Goes on with a query from the address of a page, which a host kept. The iteration starts with that page. The address says
+ * whether the answer holds the data of Attachments, so the request takes either form.
+ */
+export function moreStatements(settings: Settings, more: string, options: unknown): AsyncIterable<StatementPage> {
+  const { languages, signal } = parseWith(
+    readOptionsSchema,
+    options === undefined ? {} : options,
+    "The options object",
+  );
+  checkString(more, "The address of the page");
+  const first = nextUrl(settings, settings.root, more, new Set());
+  return pagesOf(settings, first, { headers: { accept: ACCEPT_WITH_DATA, ...languageHeader(languages) }, signal });
 }

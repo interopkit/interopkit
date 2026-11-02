@@ -29,7 +29,9 @@ import { about, getActivity, getPerson } from "./resources.js";
 import {
   type GetStatementOptions,
   getStatement,
+  moreStatements,
   queryStatements,
+  type ReadStatementsOptions,
   type SendOptions,
   type StatementPage,
   type StatementWithAttachments,
@@ -70,7 +72,14 @@ export interface LrsClient {
    * Queries Statements and iterates over the pages. A page is one request; the next is made when the iteration asks for it.
    * The client follows `more` on the origin of the LRS only, and stops at the first page without it.
    */
-  queryStatements(query: StatementQuery, options?: CallOptions): AsyncIterable<StatementPage>;
+  queryStatements(query: StatementQuery, options?: ReadStatementsOptions): AsyncIterable<StatementPage>;
+  /**
+   * Goes on with a query from the `more` of a page that a host kept, across a restart for instance. The iteration starts with
+   * that page, and follows `more` as `queryStatements` does.
+   *
+   * @throws `DataError` when the address is not on the origin of the LRS.
+   */
+  moreStatements(more: string, options?: ReadStatementsOptions): AsyncIterable<StatementPage>;
   /** Fetches a document, or resolves `undefined` when the LRS has none (404). */
   getDocument(target: DocumentTarget, options?: CallOptions): Promise<LrsDocument | undefined>;
   /** Replaces a document, or creates it. A precondition that the version requires and `options` lacks throws `DataError`. */
@@ -136,6 +145,7 @@ export function createLrsClient(config: LrsClientConfig): LrsClient {
     sendStatements: (statements, options) => sendStatements(settings, statements, options),
     getStatement: statementGetter(settings),
     queryStatements: (query, options) => queryStatements(settings, query, options),
+    moreStatements: (more, options) => moreStatements(settings, more, options),
     getDocument: (target, options) => getDocument(settings, target, options),
     putDocument: (target, document, options) => putDocument(settings, target, document, options),
     postDocument: (target, json, options) => postDocument(settings, target, json, options),
