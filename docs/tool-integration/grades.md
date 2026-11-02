@@ -57,8 +57,8 @@ that its tokens are reused.
 | `results(lineItemUrl, query?)`             | 3.3   | `result.readonly`                               | A `Page<Result>`                              |
 | `publishScore(lineItemUrl, score)`         | 3.4   | `score`                                         | Nothing; the platform answers 2xx             |
 
-Each method also takes `{ signal }`. A query (`LineItemQuery`, `ResultQuery`) adds its filters, and a `limit` of `pageLimit` when
-neither it nor the URL names one. A `Page` has its `items` and, when the answer links to one on the origin of the request, the
+Each method also takes `{ signal }`. A query (`LineItemQuery`, `ResultQuery`) adds its filters. A request for a container adds a `limit` of `pageLimit` when
+neither the query nor the URL names one; a request for results adds none, since AGS 3.3 makes it optional. A `Page` has its `items` and, when the answer links to one on the origin of the request, the
 `next` page, which the same method takes as its URL and sends as it is (AGS 3.2.4: the tool does not apply the filters again). A
 `next` link to another origin ends the pages, so that the token never leaves the platform that answered. The results are below the
 path of the line item at `/results` and the scores at `/scores`, with the query of the line item kept (AGS 3.3 and 3.4).
@@ -102,7 +102,7 @@ among them) and its body.
 | `timeoutMs`          | 10,000    | The most time of one call, in milliseconds                                               |
 | `maxBytes`           | 1,048,576 | The most bytes of an answer                                                              |
 | `maxTokens`          | 1,000,000 | The most JSON tokens of an answer                                                        |
-| `pageLimit`          | 100       | The `limit` of a request for a container when neither its query nor its URL names one    |
+| `pageLimit`          | 100       | The `limit` of a request for a container when neither its query nor its URL names one; a request for results has none unless the caller names it |
 | `refreshSkewSeconds` | 60        | The seconds before its expiry at which a token is replaced                               |
 | `signal`             | none      | Ends this caller's wait in the registration lookup                                       |
 

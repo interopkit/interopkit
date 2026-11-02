@@ -195,8 +195,29 @@ describe("the line items and the results", () => {
     ]);
     await client.results(`${LINE_ITEM_URL}/results?user_id=x&limit=3`);
     expect(lms.calls.slice(1)).toEqual([
-      `GET ${LINE_ITEM_URL}/results?user_id=${SUBJECT}&limit=100`,
+      `GET ${LINE_ITEM_URL}/results?user_id=${SUBJECT}`,
       `GET ${LINE_ITEM_URL}/results?user_id=x&limit=3`,
+    ]);
+  });
+
+  // AGS 3.3 makes `limit` optional, and Moodle 5.3.0 answers 404 to a request for results that carries one, so the client sends it
+  // only when the caller names it, in the query or in the URL. The containers keep the `pageLimit` that bounds their pages.
+  it("sends a limit with a request for results only when the caller names one", async () => {
+    const { lms, launch, options } = await launched();
+    const client = createServiceClient(launch, { ...options, pageLimit: 7 });
+    await client.results(LINE_ITEM_URL);
+    await client.results(LINE_ITEM_URL, { limit: 5 });
+    await client.results(`${LINE_ITEM_URL}/results?limit=2`);
+    await client.lineItems(CONTAINER_URL);
+    expect(
+      lms.calls
+        .filter((call) => call.startsWith("GET"))
+        .map((call) => call.replace(LINE_ITEM_URL, "{item}").replace(CONTAINER_URL, "{container}")),
+    ).toEqual([
+      "GET {item}/results",
+      "GET {item}/results?limit=5",
+      "GET {item}/results?limit=2",
+      "GET {container}?limit=7",
     ]);
   });
 });

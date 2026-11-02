@@ -148,10 +148,13 @@ function requestOf(init: ServiceRequestInit, token: string): ServiceInit {
   return { method: init.method, headers, body: JSON.stringify(init.body.json) };
 }
 
-/** Adds the filters of a query to a URL, and a `limit` when neither the query nor the URL names one. */
-export function withQuery(url: URL, filters: URLSearchParams, pageLimit: number): string {
+/**
+ * Adds the filters of a query to a URL, and a `limit` of `pageLimit` when neither the query nor the URL names one. Without a
+ * `pageLimit` the request carries a `limit` only if the caller named it.
+ */
+export function withQuery(url: URL, filters: URLSearchParams, pageLimit?: number): string {
   for (const [name, value] of filters) url.searchParams.set(name, value);
-  if (!url.searchParams.has("limit")) url.searchParams.set("limit", String(pageLimit));
+  if (pageLimit !== undefined && !url.searchParams.has("limit")) url.searchParams.set("limit", String(pageLimit));
   return url.href;
 }
 

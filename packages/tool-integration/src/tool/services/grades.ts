@@ -58,8 +58,9 @@ export interface GradesClient {
    * Returns a page of the results of a line item (AGS 3.3), or the `next` of an earlier page.
    *
    * @param lineItemUrl - The line item, whose results are below its path at `/results` with its query kept; or the `next` of a
-   * page, whose path ends with `/results`, which is sent as it is but for a `limit` when it has none.
-   * @param query - The filters; a `limit` of none is the option `pageLimit`.
+   * page, whose path ends with `/results`, which is sent as it is.
+   * @param query - The filters; a `limit` of none sends none, since AGS 3.3 makes it optional and Moodle 5.3.0 answers 404 to a
+   * request for results that has one.
    */
   results(lineItemUrl: string, query?: ResultQuery, options?: CallOptions): Promise<Page<Result>>;
   /**
@@ -154,7 +155,7 @@ export function gradesClient(access: ServiceAccess): GradesClient {
       return response.status !== NOT_FOUND;
     },
     async results(lineItemUrl, query, options) {
-      const address = withQuery(belowLineItem(lineItemUrl, RESULTS_SUFFIX), writeResultQuery(query ?? {}), pageLimit);
+      const address = withQuery(belowLineItem(lineItemUrl, RESULTS_SUFFIX), writeResultQuery(query ?? {}));
       const init = { method: "GET", scopes: [SCOPES.resultReadonly], accept: RESULT_CONTAINER_MEDIA_TYPE } as const;
       const response = await access.request(address, init, options);
       const items = access.read(response, `The result container at ${address}`, readResults);

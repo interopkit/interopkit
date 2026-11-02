@@ -33,7 +33,7 @@ to read the gradebook afterwards.
 
 | Role of Moodle | Flow                                                                                                                                                                                  |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Platform       | Dynamic Registration from `startltiadvregistration.php` to the activation of the tool; the launch of an activity, with the login and the launch compared on `target_link_uri`; the line item, the container, a created line item and a score, read back in the gradebook; the members; a Deep Linking request answered with an item |
+| Platform       | Dynamic Registration from `startltiadvregistration.php` to the activation of the tool; the launch of an activity, with the login and the launch compared on `target_link_uri`; the line item, the container, a created line item, a score read back in the gradebook, and the results read without a `limit`; the members; a Deep Linking request answered with an item |
 | Tool           | Dynamic Registration from "Register a platform" to the activation of the platform; the launch of a published course, which provisions and enrols the learner; the members that Moodle reads from the platform; the grade that Moodle posts to the platform's line item |
 
 ## Running it

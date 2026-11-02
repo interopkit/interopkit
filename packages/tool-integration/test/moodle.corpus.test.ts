@@ -185,7 +185,7 @@ describe("Moodle as the platform", () => {
     expect(launched().targetLinkUri).toBe(target);
   });
 
-  it("reads the line item of the launch, lists the container, creates a line item and posts a score", async () => {
+  it("reads the line item of the launch, lists the container, creates a line item, posts a score and reads the results", async () => {
     const created = await setup<Activity>("add-activity", { typeid: typeId, name: "Quiz 2", toolurl: tool.launchUrl });
     gradeItem = created.gradeitem;
     const browser = new Browser(network.send);
@@ -224,10 +224,16 @@ describe("Moodle as the platform", () => {
       feedback: "Good work",
     });
 
+    // The client sends no `limit` with a request for results unless the caller names one, and Moodle answers such a request.
+    const results = await service.results(grades.lineitem);
+    expect(results.items).toHaveLength(1);
+    expect(results.items[0]).toMatchObject({ userId: "3", resultScore: 80, resultMaximum: 100, comment: "Good work" });
+    expect(results.next).toBeUndefined();
+
     // Moodle 5.3.0 answers a request for results that carries `limit` with 404 and an HTML page: for a line item of LTI 1.3 its
     // code takes the link to the first page from a variable that only the branch of LTI 2 sets (results.php, line 238, a call on
-    // null). AGS 3.3 makes `limit` optional and the client sends it, so a tool reads the score from the gradebook of Moodle.
-    await expect(service.results(grades.lineitem)).rejects.toMatchObject({ status: 404 });
+    // null). AGS 3.3 makes `limit` optional, which is why the request above has none.
+    await expect(service.results(grades.lineitem, { limit: 5 })).rejects.toMatchObject({ status: 404 });
   });
 
   it("reads the members of the course, whose roles are simple names where the launch has URIs", async () => {
