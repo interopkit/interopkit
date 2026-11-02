@@ -55,6 +55,17 @@ await wait.catch((error) => error.message);
 | `DataError`                | `signal` is not an `AbortSignal`              | Pass `AbortSignal.timeout(ms)` or the signal of an `AbortController` |
 | `DataError`                | An option of `createKeyedCache` is not valid  | Pass a `Clock`, a `lifetime` function and a positive `maxEntries`   |
 
+## Speed
+
+`pnpm bench` times the build that ships against the platform API that a function wraps, the least work of the same kind, in
+three rounds that alternate which runs first; the gate is the ratio of the fastest samples, five times the highest of three runs
+rounded up to one significant digit, which holds on any machine.
+
+| Benchmark | Reference | Ratio | Budget |
+| --- | --- | ---: | ---: |
+| `get` of each of 1,000 kept keys of `createKeyedCache` | a `Map` with an expiry | 1.06–1.17 | 6 |
+| `get` of one key by 100 callers while it loads once | 100 waits on one promise | 0.71–1.33 | 7 |
+
 ## Not included
 
 | What                               | Reason                                                               |

@@ -183,6 +183,25 @@ negotiate(ranges, ["text/html", "image/jpeg", "text/plain"]); // => "text/plain"
 The message of a `DataError` names the offending value, except for a text body, which it does not repeat, since a body may
 hold a token.
 
+## Speed and memory
+
+`pnpm bench` times the build that ships against the platform API that a function wraps, the least work of the same kind, in
+three rounds that alternate which runs first; the gate is the ratio of the fastest samples, five times the highest of three runs
+rounded up to one significant digit, which holds on any machine. Each peak is measured by `process.resourceUsage().maxRSS` in a
+test file of its own, on Node.js 22 and 24.
+
+| Benchmark or worst input | Reference or test | Ratio or peak | Budget |
+| --- | --- | ---: | ---: |
+| `readJson` of a body of 1 MiB | `TextDecoder` and `JSON.parse` | 1.81–1.84 | 10 |
+| `readForm` of 2,000 parameters | `URLSearchParams` | 0.86–0.90 | 5 |
+| A body at the size limit of the most empty objects that the tokens allow | `http-memory.test.ts` | 43–55 MiB | 96 MiB |
+| A form of 10 MiB of plus signs | `form-memory.test.ts` | 20 MiB | 64 MiB |
+
+`readJson` counts the levels and the tokens of the text in one reading, which finds the end of each string with `indexOf`, before
+`JSON.parse` builds anything; that reading is the work that the reference does not do. Two readings, each over the strings one
+unit at a time, take 3.6 ms for 1 MiB where it takes 2.4. `readForm` turns each `+` into a space on the bytes: URLSearchParams
+alone joins a node of a rope for each in Node.js, and raised the peak by 368 MiB on Node.js 22 and 467 MiB on 24 for that form.
+
 ## Data flows
 
 | Data                     | Comes from  | Goes to                   | Kept by the package |

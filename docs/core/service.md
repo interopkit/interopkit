@@ -153,6 +153,20 @@ page is an opaque address, such as the paging of LTI Advantage: it gives the add
 | The body                          | A stream                                  | Bytes, read whole                                                       |
 | A `fetch` that ignores its signal | The caller waits                          | The call ends at the deadline                                           |
 
+## Speed and memory
+
+`pnpm bench` times the build that ships against the platform API that a function wraps, the least work of the same kind, in
+three rounds that alternate which runs first; the gate is the ratio of the fastest samples, five times the highest of three runs
+rounded up to one significant digit, which holds on any machine. Each peak is measured by `process.resourceUsage().maxRSS` in a
+test file of its own, on Node.js 22 and 24.
+
+| Benchmark or worst input | Reference or test | Ratio or peak | Budget |
+| --- | --- | ---: | ---: |
+| `requestService` of an answer of 1 MiB in chunks of 16 KiB | `Response.arrayBuffer` of the same answer | 1.02–1.14 | 6 |
+| An answer without end, read to a limit of 1 MiB | `service-memory.test.ts` | 10–12 MiB | 32 MiB |
+
+The call reads the chunks up to `maxBytes`, cancels the rest and joins what it read once.
+
 ## Data flows
 
 | Data                           | Comes from  | Goes to                                                             | Kept by the package |
