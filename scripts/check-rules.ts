@@ -2637,7 +2637,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A credential whose type names no class of Open Badges or CLR is a VerifiableCredential.",
-    file: "packages/achievement-credentials/src/read/inspect.ts",
+    file: "packages/achievement-credentials/src/read/kinds.ts",
     find: '?.[0] ?? "VerifiableCredential"',
     replace: '?.[0] ?? "AchievementCredential"',
     test: "packages/achievement-credentials/test/read.test.ts",
