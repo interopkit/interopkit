@@ -2,7 +2,7 @@
 
 What shows that the package does what it says: the vocabularies and examples of the specifications, tokens that another library
 signs, a round trip between the two roles, tools of other authors that launch from the platform role and use its services, Moodle
-in both roles, the speed of every hot path, the peak memory of every reader, and four runtimes. Each layer answers a question that
+in both roles, the speed of every hot path, the size of each entry point, the peak memory of every reader, and four runtimes. Each layer answers a question that
 the one before cannot.
 
 ```mermaid
@@ -15,6 +15,7 @@ flowchart LR
   moodle --> hand["saLTIre and the reference tool<br/>by hand before a release"]
   trip --> rules["Mutation rules<br/>pnpm check:rules"]
   trip --> speed["Every hot path against jose, JSON,<br/>@lti-tool/core and lti-core<br/>pnpm bench"]
+  trip --> size["Each entry point alone<br/>pnpm test"]
   trip --> memory["Peak memory of each reader<br/>pnpm test"]
   trip --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
 ```
@@ -30,6 +31,7 @@ flowchart LR
 | Online testers     | Do the testers that 1EdTech and saLTIre host pass the platform and the tool?                           | The log below                                                                                   | By hand before a release |
 | Mutation rules     | Does the test of each rule that keeps a request from being forged, replayed or redirected fail without it? | `scripts/check-rules.ts`                                                                   | `pnpm check:rules`      |
 | Speed              | How long does each hot path take, against what it builds on and against the tools of other authors?  | `packages/tool-integration/test/*.bench.ts`, `test/budgets.ts`                                  | `pnpm bench`            |
+| Size               | Does each entry point hold only what it uses, within its budget?                                       | `packages/tool-integration/test/size.test.ts`                                                    | `pnpm test`             |
 | Memory             | Does each reader of untrusted input stay under its budget on its worst input?                         | `packages/tool-integration/test/*-memory.test.ts`, `packages/core/test/jwks-cache-memory.test.ts` | `pnpm test`             |
 | Runtimes           | Does the example give the same results on each runtime?                                               | `compat/`                                                                                       | `pnpm compat`           |
 
@@ -163,6 +165,21 @@ counts the JSON tokens of the payload before it parses it, and reads every claim
 fewer claims and verifies RS256 alone. The key set cache checks the URL of each call, 0.19 of its 0.40 µs, which jose checks once
 when it makes a set; a launch spends 0.5 percent of its time there. A handler of a page reads each item of the store with the
 schema of its class, as a reader does, and checks the addresses that it writes; a reader of line items checks two dates of each.
+
+## Size
+
+`size.test.ts` bundles each entry point alone with `scripts/entry-size.ts`: esbuild, minified, with every dependency inside. It
+fails above the budget after gzip, or when an entry point holds a module that its budget does not list. The root of core, which every
+entry point holds in part, holds jose for the key set cache.
+
+| Entry point | Bytes | Gzip | Budget | Holds, besides `protocol`, `errors`, `@interopkit/core`, jose and valibot |
+| --- | ---: | ---: | ---: | --- |
+| `@interopkit/tool-integration` | 23,264 | 8,361 | 10,500 | Nothing more: the models, the vocabularies, `LtiError` and the key set cache |
+| `@interopkit/tool-integration/platform` | 146,886 | 44,046 | 55,500 | Nothing more |
+| `@interopkit/tool-integration/tool` | 141,215 | 42,974 | 54,000 | oauth4webapi, through the OAuth 2.0 client of core that obtains the access tokens |
+
+The platform holds nothing of the tool, nor the tool of the platform. A host that imports one function of an entry point gets less:
+the package has no side effects, so a bundler drops the rest.
 
 ## Memory
 
