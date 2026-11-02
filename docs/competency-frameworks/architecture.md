@@ -10,7 +10,7 @@ only `model` and `@interopkit/core`. `client` builds on `model`, `read` and `@in
 ```mermaid
 flowchart BT
   core["@interopkit/core<br/>DataError, checks"]
-  model["model<br/>types, terms, copy of JSON"]
+  model["model<br/>types, terms, query, status"]
   read["read<br/>schemas, findings, rules of a package"]
   version["version<br/>toCaseVersion"]
   graph["graph<br/>tree, associations, crosswalk,<br/>diff, staleness, status, addresses"]
@@ -37,20 +37,20 @@ flowchart BT
 
 | Module     | Files                                                                                      | Holds                                                                                                                                                                 |
 | ---------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `model`    | `entities.ts`, `links.ts`, `sets.ts`, `status-info.ts`, `kinds.ts`, `issue.ts`, `terms.ts` | The types of every class, the vocabularies as tuples with their types, `ENTITY_KINDS` and `CaseIssue`                                                                 |
-|            | `json.ts`, `internal.ts`                                                                   | `Extensions`, and what the other modules and the tests share: the pattern and the key of an identifier, the service address and the discovery file, the status tuples |
-| `read`     | `schemas.ts`, `extension-term.ts`                                                          | The valibot schemas of each version, built once, and the form of an extension term                                                                                    |
-|            | `inspect.ts`, `issues.ts`, `integrity.ts`                                                  | The parse, the conversion of an issue to a `CaseIssue`, and the rules of a package                                                                                    |
+| `model`    | `entities.ts`, `links.ts`, `sets.ts`, `status-info.ts`, `kinds.ts`, `issue.ts`, `terms.ts`, `query.ts`, `open-api.ts` | The types of every class, the vocabularies as tuples with their types, `ENTITY_KINDS`, `CaseIssue`, the query types and `OpenApiDocument` |
+|            | `json.ts`, `internal.ts`                                                                   | `Extensions`, and what the other modules and the tests share: the pattern and the key of an identifier, the association types of 1.0, the address of a service and of an endpoint, and the name of the discovery file |
+| `read`     | `schemas.ts`, `extension-term.ts`, `open-api.ts`                                           | The valibot schemas of each version, built once, the form of an extension term, and the schema of an OpenAPI document                                                 |
+|            | `inspect.ts`, `issues.ts`, `integrity.ts`, `package-form.ts`                               | The parse, the conversion of an issue to a `CaseIssue`, the rules of a package, and the warnings of the links that the form of a package lacks                        |
 |            | `read-package.ts`, `read-entity.ts`, `options.ts`                                          | The readers, the validators and the check of their options                                                                                                            |
 | `version`  | `to-case-version.ts`                                                                       | The conversion of a package or an entity to the form of 1.0                                                                                                           |
 | `graph`    | `tree.ts`, `associations.ts`, `crosswalk.ts`, `diff.ts`                                    | `frameworkTree`, `associationsOf`, `crosswalk` and `diffPackages` over a package                                                                                      |
 |            | `staleness.ts`, `adoption-status.ts`, `entity-uri.ts`, `package-view.ts`                   | `isNewer`, `adoptionStatus`, `caseEntityUri`, and the check and the copy of a package that the others share                                                           |
 | `client`   | `client.ts`, `config.ts`                                                                   | `createCaseClient` with its twelve calls and the iteration of the documents, and the check of the configuration                                                       |
-|            | `query.ts`, `paging.ts`, `status.ts`                                                       | `caseFilter` and the parameters of a request, the reading of `X-Total-Count` and `Link`, and `readStatusInfo`                                                         |
+|            | `query.ts`, `status.ts`                                                                    | `caseFilter` and the parameters of a request, and `readStatusInfo`. `@interopkit/core` reads `X-Total-Count`, `Link` and `Retry-After`                                |
 | `provider` | `handle-request.ts`, `routes.ts`, `options.ts`, `store.ts`, `status.ts`, `paging.ts`       | The handler, the twelve routes, the options and the port, the `imsx_StatusInfo` answers, `limit`, `offset` and `Link`                                                 |
 |            | `parse-query.ts`, `filter-text.ts`, `fields.ts`                                            | The parameters of the list, the grammar of a filter, and the names of a CFDocument in each version                                                                    |
 |            | `query-entities.ts`, `values.ts`                                                           | The filter and the sort in memory, and the values at a path, with the order of text, numbers and times                                                                |
-|            | `discovery.ts`                                                                             | `localizeOpenApi` and the name of the discovery file                                                                                                                  |
+|            | `discovery.ts`                                                                             | `localizeOpenApi`                                                                                                                                                     |
 
 `@interopkit/core/http` holds the request and the answer of the handler. `@interopkit/core/checks` holds what other standards need as much: strict records, the formats of a date, a date and time, a UUID
 and a URI, the copy of JSON within a depth limit, and the conversion of the issues of a parse to findings that own their rule names.
@@ -59,8 +59,8 @@ Each module has an `index.ts`, its public API, and `model` and `read` have an `i
 share and the package does not export: the schemas, which the tests compare with the schemas of 1EdTech and the provider reads the
 names of a CFDocument from, and the tuples. The graph, the client and the provider are
 entry points of their own, `@interopkit/competency-frameworks/graph`, `.../client` and `.../provider`, so that a package that
-only reads frameworks does not load a router or a client. `client` has an `internal.ts` too, for the readers of the paging headers
-that its tests share.
+only reads frameworks does not load a router or a client. `client` has an `internal.ts` too, for the writer of the parameters of a
+request, which its tests share.
 `pnpm check:standards` and Biome keep modules from importing by a deep path or against the layers.
 
 ## Reading
@@ -76,14 +76,14 @@ sequenceDiagram
   R->>S: parse every property
   alt an error of the shape
     S-->>R: findings
-    R-->>H: DataError: the first error and how many follow
+    R-->>H: DataError: the first error and how many follow, up to maxFindings
   else the shape is right
     S-->>R: a copy of the package
     R->>I: identifiers, links, tree
     I-->>R: findings
     R-->>H: the copy, or DataError when one is an error
   end
-  Note over H,R: validatePackage runs the same steps and returns every finding
+  Note over H,R: validatePackage runs the same steps and returns the findings, at most maxFindings
 ```
 
 The schemas are written once as the 1.1 classes and once as the 1.0 classes: the 1.0 form leaves out what 1.1 adds and holds

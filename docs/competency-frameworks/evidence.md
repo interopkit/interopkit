@@ -147,6 +147,6 @@ results must equal those of Node.js.
 ## Differences from the references
 
 The reference of a real framework is the official schema of its version, applied by `@cfworker/json-schema`; the reader and the
-schema agree on every file above. The reference of the example provider is the OpenAPI file of CASE 1.1, whose schemas are
+schema agree on every file above but the two of South Carolina, which the schema refuses and the reader reads with warnings. The reference of the example provider is the OpenAPI file of CASE 1.1, whose schemas are
 stricter than the JSON schemas about identifiers and URIs, as [spec-gaps](spec-gaps.md) lists. The reference of OpenSALT is itself: the table
 of its differences is what it does at the pinned image, not a claim about its other builds.

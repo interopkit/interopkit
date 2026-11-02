@@ -30,7 +30,7 @@ flowchart LR
 | `adoptionStatus(document)`                 | The adoption status of a framework, in the vocabulary that the working group recommends                          |
 | `caseEntityUri(baseUrl, kind, identifier)` | The address at which the REST binding serves an entity, which is the `uri` that the guide recommends             |
 
-All of them come from `@interopkit/competency-frameworks/graph`, and they depend on `@interopkit/core` only.
+All of them come from `@interopkit/competency-frameworks/graph`, and they depend on `@interopkit/core` and `valibot`.
 
 ## Quick start
 

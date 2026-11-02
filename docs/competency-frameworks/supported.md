@@ -41,7 +41,7 @@ flowchart LR
 | Sorting                              | REST binding 3.2                   | `sort` and `orderBy` with the Unicode collation of a locale                                                                                                                            |
 | Filtering                            | REST binding 3.3                   | `=`, `!=`, `>`, `>=`, `<`, `<=`, `~`, one `AND` or `OR`, dot paths, case-insensitive values, lists; `queryEntities` for a store in memory                                              |
 | Field selection                      | REST binding 3.4                   | `fields`                                                                                                                                                                               |
-| Failures                             | REST binding 2.4                   | `imsx_StatusInfo` with `invalid_selection_field`, `invalid_filter_field`, `unauthorised_request`, `forbidden`, `unknownobject`, `invalid_uuid`, `internal_server_error`                |
+| Failures                             | REST binding 2.4                   | `imsx_StatusInfo` with `invalid_selection_field`, `invalid_filter_field`, `unauthorised_request`, `forbidden`, `server_busy`, `unknownobject`, `invalid_uuid`, `internal_server_error` |
 | Service discovery                    | REST binding 2.5                   | The localized OpenAPI file at `/ims/case/v1p1/discovery/imscasev1p1_openapi3_v1p0.json`, and `localizeOpenApi`                                                                         |
 | Security                             | REST binding 4                     | The `authorize` port: the host checks TLS and tokens                                                                                                                                   |
 | JSON schemas                         | The schemas of 1EdTech             | Every class of both versions, compared in the tests with the published files at pinned hashes, and every answer of the provider against the OpenAPI file of 1.1 and the schemas of 1.0 |
@@ -52,6 +52,5 @@ flowchart LR
 | -------------------------------------------- | --------------------------------------------------------------- |
 | Rendering Markdown and LaTeX                 | The consumer's interface does it, through a sanitizing renderer |
 | The JSON-LD form of CASE 1.0                 | A document form of 1.0 that 1.1 does not have                   |
-| Writing identifiers and URIs for a framework | The host's identifiers are its own; the readers check them      |
-| A client of the endpoints                    | Not part of the model                                           |
+| Writing identifiers for a framework          | The host's identifiers are its own; the readers check them, and `caseEntityUri` writes the address of one |
 | A store, writing a framework, authentication | The host's: the provider takes a store and an `authorize`       |

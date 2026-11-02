@@ -99,7 +99,7 @@ take: parsed text, or a value that is already in the model.
 | Function                            | Result                                                                                                                       |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `readPackage`, `readEntity`         | The copy, when the value has no error. A warning is not reported. Otherwise a `DataError`: see Errors                        |
-| `validatePackage`, `validateEntity` | A list of `CaseIssue`, the errors and the warnings, in the order of the package. An empty list means that the value is sound |
+| `validatePackage`, `validateEntity` | A list of `CaseIssue`, the errors and the warnings, at most `maxFindings`. Those of the shape come in the order of the package and those of the rules rule by rule. An empty list means that the value is sound |
 
 A finding is a `CaseIssue`: its `path` as code writes it (`CFItems[3].humanCodingScheme`; the empty string is the value as a
 whole), its `rule`, a `message` that is a sentence that reads after the path and does not repeat it, and its `severity`. An
@@ -236,6 +236,7 @@ of the schemas, except in the cases below, each of which a test pins.
 
 | Case                                                                   | The JSON schemas, as a validator reads them                                                                                    | The readers                                                                                              |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| A link to the document or the package in the form of a package        | `additionalProperties: false` refuses `CFDocumentURI` and `CFPackageURI` there                                                 | Read with a `package-form-link` warning and left out, because real providers write them ([spec gaps](spec-gaps.md)) |
 | Several properties that a class does not have                          | A validator reports every one                                                                                                  | One is reported for each object; the verdict is the same                                                 |
 | An identifier of 1.0                                                   | `pattern` without anchors accepts text around a UUID                                                                           | Anchored                                                                                                 |
 | An identifier of 1.1 with the prefix `urn:uuid:`                       | The validator that the tests use accepts it                                                                                    | Refused: the form is 8-4-4-4-12 digits                                                                   |
