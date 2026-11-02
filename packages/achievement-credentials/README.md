@@ -164,6 +164,9 @@ that the compacted form of JSON-LD writes as its only member is a list in it.
 their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
 why, and the differences from the references.
 
+[The comparators](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/comparators.md) map what the
+validator of 1EdTech and other verifiers of verifiable credentials do against the package.
+
 ## License
 
 [Apache-2.0](LICENSE). Copyright Fariz Wakan. Open Badges, CLR and 1EdTech are trademarks of 1EdTech Consortium, Inc.; see

@@ -318,7 +318,7 @@ A service that fails is never an error of the call: it makes its check `unavaila
 | The endorsements of a 2.0 badge                                 | They are read with the badge and not verified: the verification of Open Badges 2.0 is that of an assertion       |
 | A `verificationProperty` other than `id`                         | Open Badges 2.0 supports `id` only: the `issuer` check fails                                                     |
 | Validation: whether an issuer is trusted                        | Open Badges 9 leaves it outside verification                                                                    |
-| Verifiable presentations                                        | Open Badges and CLR define none                                                                                 |
+| Verifiable presentations                                        | Open Badges 9 and CLR 8 verify credentials; a presentation is the envelope of a protocol of delivery (OpenID for Verifiable Presentations, the VC API, the Credential Handler API) that the host speaks, and it passes each credential to `verifyCredential` |
 | JSON text as input                                              | Parse it into an object first; a string is a compact JWS                                                        |
 | A deadline for the whole call                                   | The host's `signal`                                                                                             |
 

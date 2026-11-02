@@ -63,4 +63,9 @@ flowchart LR
 | An authorization server for the APIs                                 | An application: the provider asks the host's `authorize` about each token                                    |
 | Issuing, signing and baking Open Badges 2.0                          | Open Badges 3.0 supersedes it: a 2.0 badge is read, verified and found in an image only                      |
 | The endorsements of a 2.0 badge                                      | They are read and not verified: the verification of Open Badges 2.0 is that of an assertion                  |
+| Verifiable presentations                                             | Open Badges 9 and CLR 8 verify credentials; a presentation is the envelope of a protocol of delivery that the host speaks, and it passes each credential to `verifyCredential` |
+| Registries of trusted issuers                                        | Validation, which Open Badges 9 leaves to the verifier's policy: a host checks the issuer of the result against its registry |
 | JSON-LD processing, a map of languages for a text, a single context | The compacted form is read as JSON; the contexts give no language container and a credential needs both contexts |
+
+[The comparators](comparators.md) map what the validator of 1EdTech and the verifiers of verifiable credentials do against the
+package, with the reason for each exclusion.
