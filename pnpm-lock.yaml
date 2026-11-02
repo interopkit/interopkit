@@ -223,9 +223,6 @@ importers:
 
   compat:
     devDependencies:
-      '@interopkit/achievement-credentials':
-        specifier: workspace:^
-        version: link:../packages/achievement-credentials
       '@interopkit/core':
         specifier: workspace:^
         version: link:../packages/core
@@ -365,12 +362,6 @@ importers:
       fast-check:
         specifier: ^4.10.2
         version: 4.10.2
-      jsonld:
-        specifier: 9.0.0
-        version: 9.0.0
-      jsonld-signatures:
-        specifier: 11.6.0
-        version: 11.6.0
       oidc-provider:
         specifier: 9.12.2
         version: 9.12.2(supports-color@7.2.0)

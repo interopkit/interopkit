@@ -199,6 +199,11 @@
     "pkeyopt",
     "paramgen",
     "addext",
-    "keyout"
+    "keyout",
+    "fatals",
+    "digitalcredentials",
+    "Dskip",
+    "libsodium",
+    "edtech"
   ]
 }

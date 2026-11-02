@@ -28,7 +28,7 @@ export interface UniversityConfig {
 }
 
 /** A credential to award. */
-export interface Award {
+interface Award {
   /** The address of the credential. */
   readonly id: string;
   /** The name of the credential, for a wallet to show. */
@@ -42,7 +42,7 @@ export interface Award {
 }
 
 /** A credential as the university gives it to the earner. */
-export type Secured = string | IssuableCredential;
+type Secured = string | IssuableCredential;
 
 /** The registrar of a university: it awards credentials, revokes and reissues them, and publishes what a verifier needs. */
 export interface University {
