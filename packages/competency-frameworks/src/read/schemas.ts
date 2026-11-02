@@ -44,6 +44,14 @@ function nonEmpty<const TItem extends v.GenericSchema>(item: TItem) {
   return v.pipe(v.array(item), v.minLength(1));
 }
 
+/** Returns a function that copies an object without one member, which the schema of the object has read. */
+function leaveOut<const TKey extends string>(key: TKey) {
+  return <TValue extends { readonly [K in TKey]?: unknown }>(value: TValue): Omit<TValue, TKey> => {
+    const { [key]: _left, ...rest } = value;
+    return rest;
+  };
+}
+
 const informationModelUuid = v.pipe(
   v.string(),
   v.regex(
@@ -147,9 +155,31 @@ function build(version: CaseVersion): CaseSchemas {
   };
   const associationAdded = { notes: optionalText, ...added };
 
-  const pckgDocument = object("CFPckgDocument", documentEntries, documentAdded);
-  const pckgItem = object("CFPckgItem", itemEntries, itemAdded);
-  const pckgAssociation = object("CFPckgAssociation", associationEntries, associationAdded);
+  // The package form has no link to its document or to its package, and some providers write one all the same: the link is read
+  // as the class outside a package has it, and left out (spec-gaps.md); `packageFormIssues` warns of it.
+  const packageLink = { CFPackageURI: optionalLink };
+  const documentLink = { CFDocumentURI: optionalLink };
+  classes.set("CFPckgDocument", is11 ? { ...documentEntries, ...documentAdded } : documentEntries);
+  classes.set("CFPckgItem", is11 ? { ...itemEntries, ...itemAdded } : itemEntries);
+  classes.set("CFPckgAssociation", is11 ? { ...associationEntries, ...associationAdded } : associationEntries);
+  const pckgDocument = v.pipe(
+    is11
+      ? strictRecord({ ...documentEntries, ...documentAdded, ...packageLink })
+      : strictRecord({ ...documentEntries, ...packageLink }),
+    v.transform(leaveOut("CFPackageURI")),
+  );
+  const pckgItem = v.pipe(
+    is11
+      ? strictRecord({ ...itemEntries, ...itemAdded, ...documentLink })
+      : strictRecord({ ...itemEntries, ...documentLink }),
+    v.transform(leaveOut("CFDocumentURI")),
+  );
+  const pckgAssociation = v.pipe(
+    is11
+      ? strictRecord({ ...associationEntries, ...associationAdded, ...documentLink })
+      : strictRecord({ ...associationEntries, ...documentLink }),
+    v.transform(leaveOut("CFDocumentURI")),
+  );
   const grouping = object(
     "CFAssociationGrouping",
     { identifier, uri, title: text, description: optionalText, lastChangeDateTime: dateTimeSchema },

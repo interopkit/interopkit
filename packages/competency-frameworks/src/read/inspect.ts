@@ -2,6 +2,7 @@ import { createFindingSink, type FindingSink, safeParseBounded } from "@interopk
 import type { CaseEntity, CaseEntityKind, CaseIssue, CasePackage, CaseVersion } from "../model/index.js";
 import { entityIssues, packageIssues } from "./integrity.js";
 import { toIssues } from "./issues.js";
+import { packageFormIssues } from "./package-form.js";
 import { SCHEMAS } from "./schemas.js";
 
 /**
@@ -17,7 +18,8 @@ export function issueSink(maxFindings: number, errorsOnly: boolean): FindingSink
 }
 
 /**
- * Reads a package of a version into a sink of findings, and checks its identifiers, links and tree when its shape is right.
+ * Reads a package of a version into a sink of findings, and checks its identifiers, links and tree when its shape is right. The
+ * links that the form of a package lacks and a provider wrote all the same are warnings, and are left out of the package.
  *
  * @returns The package, a copy that shares nothing with the input, when its shape is right, whatever else is found.
  */
@@ -31,6 +33,7 @@ export function inspectPackage(
     sink.add(toIssues(result.issues));
     return undefined;
   }
+  sink.add(packageFormIssues(value));
   sink.add(packageIssues(result.output));
   return result.output;
 }
@@ -47,6 +50,7 @@ export function inspectEntity(
     sink.add(toIssues(result.issues));
     return undefined;
   }
+  sink.add(packageFormIssues(value));
   sink.add(entityIssues(result.output));
   return result.output;
 }

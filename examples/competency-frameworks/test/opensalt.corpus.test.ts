@@ -248,13 +248,15 @@ describe("the client reading OpenSALT", () => {
     expect(await client.item(id(9999))).toBeUndefined();
   });
 
-  it("answers the associations of an item with a link to the document in each, which the schema of the set does not have", async () => {
-    const error = await client.itemAssociations(id(MATHEMATICS.numberLine)).catch((reason: unknown) => reason);
-    expect(error).toBeInstanceOf(DataError);
-    expect((error as DataError).message).toContain("CFDocumentURI");
+  it("answers the associations of an item with a link to the document in each, which the client reads and leaves out", async () => {
+    const found = await client.itemAssociations(id(MATHEMATICS.numberLine));
+    const fromProvider = await ministry().client.itemAssociations(id(MATHEMATICS.numberLine));
+    const identifiers = (set: typeof found) => (set?.CFAssociations ?? []).map(({ identifier }) => identifier).sort();
+    expect(found?.CFAssociations.some((association) => "CFDocumentURI" in association)).toBe(false);
+    expect(identifiers(found)).toStrictEqual(identifiers(fromProvider));
   });
 
-  it("leaves the associations of an item to the package, which holds the same ones as the provider's set", async () => {
+  it("holds in the package the same associations of an item as the provider's set", async () => {
     const found = await client.package(id(MATHEMATICS.document));
     const { origin, destination } = associationsOf(found ?? sent.mathematics, id(MATHEMATICS.numberLine));
     const fromProvider = await ministry().client.itemAssociations(id(MATHEMATICS.numberLine));

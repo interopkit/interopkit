@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { deepFreeze } from "../../../scripts/json-mutation.js";
 import {
   type CaseEntityKind,
+  type CasePackage,
   ENTITY_KINDS,
   readEntity,
   readPackage,
@@ -466,6 +467,87 @@ describe("validatePackage", () => {
         },
       ]);
     });
+  });
+});
+
+describe("the links that the form of a package lacks", () => {
+  const link = (number: number, kind: string) => ({
+    title: "Framework",
+    identifier: id(number),
+    uri: uri(kind, number),
+  });
+  /** A package with the links to its document and package that South Carolina's provider writes. */
+  function linkedPackage(base: CasePackage = fullPackage(), document = 1): Record<string, any> {
+    const pkg: Record<string, any> = copyOf(base);
+    pkg.CFDocument.CFPackageURI = link(document, "CFPackages");
+    for (const list of [pkg.CFItems, pkg.CFAssociations]) {
+      for (const entity of list) entity.CFDocumentURI = link(document, "CFDocuments");
+    }
+    return pkg;
+  }
+
+  it.each(["1.0", "1.1"] as const)(
+    "are read in %s with a warning for each list that has them, and left out of the package",
+    (version) => {
+      const pkg = version === "1.0" ? toCaseVersion(fullPackage(), "1.0").value : fullPackage();
+      const linked = linkedPackage(pkg);
+      const findings = validatePackage(linked, { version });
+      expect(findings.map(({ path, rule, severity, message }) => ({ path, rule, severity, message }))).toStrictEqual([
+        {
+          path: "CFDocument.CFPackageURI",
+          rule: "package-form-link",
+          severity: "warning",
+          message:
+            "the document of a package heads the package and has no CFPackageURI in the form of a package; it is left out.",
+        },
+        {
+          path: "CFItems",
+          rule: "package-form-link",
+          severity: "warning",
+          message: `${linked.CFItems.length} of the items have a CFDocumentURI, the first at CFItems[0], which the form of a package does not have; it is left out.`,
+        },
+        {
+          path: "CFAssociations",
+          rule: "package-form-link",
+          severity: "warning",
+          message: `${linked.CFAssociations.length} of the associations have a CFDocumentURI, the first at CFAssociations[0], which the form of a package does not have; it is left out.`,
+        },
+      ]);
+      expect(readPackage(linked, { version })).toStrictEqual(pkg);
+    },
+  );
+
+  it("say which link names another document than the package's, and the entity is still read as a part of it", () => {
+    const pkg = linkedPackage();
+    pkg.CFItems[1].CFDocumentURI = link(77, "CFDocuments");
+    expect(summary(validatePackage(pkg))).toStrictEqual([
+      { path: "CFDocument.CFPackageURI", rule: "package-form-link", severity: "warning" },
+      { path: "CFItems", rule: "package-form-link", severity: "warning" },
+      { path: "CFItems[1].CFDocumentURI", rule: "reference-mismatch", severity: "warning" },
+      { path: "CFAssociations", rule: "package-form-link", severity: "warning" },
+    ]);
+    expect(readPackage(pkg)).toStrictEqual(fullPackage());
+    const other = linkedPackage(fullPackage(), 78);
+    expect(validatePackage(other).filter(({ rule }) => rule === "reference-mismatch")).toHaveLength(
+      1 + other.CFItems.length + other.CFAssociations.length,
+    );
+  });
+
+  it("are refused when they are not links, as anywhere else", () => {
+    const pkg = linkedPackage();
+    pkg.CFItems[0].CFDocumentURI = "https://case.example.org/ims/case/v1p1/CFDocuments/1";
+    expect(summary(validatePackage(pkg))).toStrictEqual([
+      { path: "CFItems[0].CFDocumentURI", rule: "wrong-type", severity: "error" },
+    ]);
+  });
+
+  it("are read in the associations of an item's set, as OpenSALT writes them, and left out", () => {
+    const set: Record<string, any> = copyOf(fullEntities().CFAssociationSet);
+    for (const association of set.CFAssociations) association.CFDocumentURI = link(1, "CFDocuments");
+    expect(summary(validateEntity("CFAssociationSet", set))).toStrictEqual([
+      { path: "CFAssociations", rule: "package-form-link", severity: "warning" },
+    ]);
+    expect(readEntity("CFAssociationSet", set)).toStrictEqual(fullEntities().CFAssociationSet);
   });
 });
 

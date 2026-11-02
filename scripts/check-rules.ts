@@ -1055,6 +1055,20 @@ export const RULES: readonly Rule[] = [
     test: "packages/competency-frameworks/test/read.test.ts",
   },
   {
+    rule: "A link to the package that the document of a package carries, which the form of a package lacks, is left out.",
+    file: "packages/competency-frameworks/src/read/schemas.ts",
+    find: 'v.transform(leaveOut("CFPackageURI")),',
+    replace: "v.transform((document) => document),",
+    test: "packages/competency-frameworks/test/read.test.ts",
+  },
+  {
+    rule: "A reader warns of the links to the document that the items of a package carry and it leaves out.",
+    file: "packages/competency-frameworks/src/read/package-form.ts",
+    find: 'yield* listIssues(value.CFItems, "CFItems", "items", documentIdentifier);',
+    replace: "",
+    test: "packages/competency-frameworks/test/read.test.ts",
+  },
+  {
     rule: "A package whose version is 1.0 holds every identifier to the form of the Information Model.",
     file: "packages/competency-frameworks/src/read/schemas.ts",
     find: "const identifier = is11 ? uuidSchema : informationModelUuid;",

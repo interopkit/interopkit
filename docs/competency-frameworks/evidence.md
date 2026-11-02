@@ -34,17 +34,18 @@ not committed. Each is read as CASE 1.0, which both providers speak, and written
 | Norm Webb's Depth of Knowledge Levels (`c5fb3436-d7cb-11e8-824f-0242ac160002`)          | opensalt.net        |    15 |           15 | yes                | yes                       |
 | AP Computer Science Principles (`4f37094a-cf04-11e7-b9f8-2ff5c05be24b`)                 | opensalt.net        |   266 |          266 | yes                | yes                       |
 | Next Generation Science Standards (`c608881b-d7cb-11e8-824f-0242ac160002`)              | opensalt.net        | 1,037 |        1,045 | yes                | yes                       |
-| South Carolina Teacher Standards 4.0 (`fb7db201-fcf7-4187-b42b-8272e3d01270`)           | standards.ed.sc.gov |   119 |          209 | no, see below      | yes, without those links  |
-| South Carolina World Language (`4f146ce5-efd0-4d73-b920-9aac07fb0db0`)                  | standards.ed.sc.gov |   605 |          605 | no, see below      | yes, without those links  |
+| South Carolina Teacher Standards 4.0 (`fb7db201-fcf7-4187-b42b-8272e3d01270`)           | standards.ed.sc.gov |   119 |          209 | yes, with warnings | yes, without those links  |
+| South Carolina World Language (`4f146ce5-efd0-4d73-b920-9aac07fb0db0`)                  | standards.ed.sc.gov |   605 |          605 | yes, with warnings | yes, without those links  |
 
 Written back as published means equal after the keys of every object are sorted, with nothing dropped. For every framework the
 tree holds each item once, and a framework differs from itself in nothing.
 
 The package schema of CASE 1.0 has no `CFDocumentURI` in an item or an association and no `CFPackageURI` in the document,
-since a package is one document. The provider of South Carolina writes them, so the official schema refuses its packages, and
-so does `readPackage`: the findings are an `unknown-property` error for the document and one for each item and association, and
-no other error. Without those links the schema accepts them and they read. The teacher standards also have five items whose
-`licenseURI` points to a license that the package does not hold, which `validatePackage` reports as a warning.
+since a package is one document. The provider of South Carolina writes them, so the official schema refuses its packages. The
+readers read them with three `package-form-link` warnings, one for the document and one for each list, and leave the links out
+([spec gaps](spec-gaps.md)); each link names the package's own document. The package that the reader returns equals the
+published one without those links, which the schema accepts. The teacher standards also have five items whose `licenseURI`
+points to a license that the package does not hold, which `validatePackage` reports as a warning.
 
 A provider can change a framework, and then the download fails its hash. The frameworks are the ones last changed in 2018 to
 2024, which a provider rarely edits; run `pnpm schemas:pin` to take a new version, and read what changed in the diff of the lock.
@@ -85,7 +86,7 @@ OpenSALT differs from the references, and the flows pin each difference, so that
 | ------------------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | `extensions` of a rubric level | A list of objects in the schema of 1EdTech                                           | The import route refuses a list: it expects one object                                                      | Leaves them out of a package it sends to OpenSALT                          |
 | `filter` on `/CFDocuments`     | The binding defines the grammar                                                      | Not applied: every document comes back                                                                      | Filters what it gets                                                       |
-| `/CFItemAssociations/{id}`     | An item and associations in the form of a package                                    | Each association also has `CFDocumentURI`, so `readEntity` refuses the set                                  | Reads the package and asks `associationsOf`                                |
+| `/CFItemAssociations/{id}`     | An item and associations in the form of a package                                    | Each association also has `CFDocumentURI`, which the form of a package lacks                                | Reads the set with a `package-form-link` warning, without the links        |
 | Discovery file                 | Served at `/discovery/imscasev1p1_openapi3_v1p0.json`                                | 404                                                                                                         | Does not depend on it for OpenSALT                                         |
 | `targetType` on the 1.0 path   | A property of 1.1 only                                                               | Written for a node in another kind of system on `/ims/case/v1p0`                                            | Reads such a package as 1.1                                                |
 | Status dates of an item        | Optional                                                                             | An item with none gets the dates of the document                                                            | Reads them as the item's own                                               |

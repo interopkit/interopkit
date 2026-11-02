@@ -118,8 +118,9 @@ departs from what the specification or its guide asks for. Where a user can act,
 | `child-of-cycle`              | error    | The `isChildOf` associations loop. The association that closes the loop is named, and the message names five nodes of the loop at most |
 | `identifier-form`             | warning  | An identifier is not lower case, of version 1 to 5 and of variant 8 to b, which the Information Model gives                       |
 | `unresolved-reference`        | warning  | A link to a definition, a grouping or a criterion's item points to nothing in the package                                         |
-| `reference-mismatch`          | warning  | A link, or a node of an association, names an entity of the package with another URI; a criterion or a level names another parent |
+| `reference-mismatch`          | warning  | A link, or a node of an association, names an entity of the package with another URI; a criterion or a level names another parent; a link to the document in the form of a package names another document |
 | `association-outside-package` | warning  | Neither node of an association is the package's document or one of its items                                                      |
+| `package-form-link`           | warning  | The document of a package has a `CFPackageURI`, or its items, its associations or the associations of an item's set have a `CFDocumentURI`, which the form of a package lacks. One finding for each list; the readers leave the links out ([spec gaps](spec-gaps.md)) |
 | `item-outside-tree`           | warning  | An item has no chain of `isChildOf` associations to the document, which its items are components of                               |
 
 The rules of a package look at the package as a whole, so they run only when its shape is right. `isChildOf` is followed only

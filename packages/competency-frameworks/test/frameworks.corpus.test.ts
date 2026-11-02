@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { requireSchemas } from "../../../scripts/schemas.js";
 import { diffPackages, frameworkTree } from "../src/graph/index.js";
@@ -16,7 +15,10 @@ interface PublicFramework {
   /** The name in the lock of the downloads: the identifier of the document. */
   readonly file: string;
   readonly provider: string;
-  /** Whether the provider puts the address of the document in each item and association, which a package does not have. */
+  /**
+   * Whether the provider puts the address of the document in each item and association and of the package in the document,
+   * which the form of a package does not have: the official schema refuses such a package, and the reader warns and reads it.
+   */
   readonly linksTheDocument: boolean;
   /** The warnings of the package without those addresses, by rule and path with the numbers of the members left out. */
   readonly warnings: readonly string[];
@@ -101,53 +103,37 @@ const countNodes = (nodes: ReturnType<typeof frameworkTree>): number =>
 describe.each(FRAMEWORKS)("the framework $title of $provider", ({ file, linksTheDocument, warnings }) => {
   const published = download(file);
   const items = (published.CFItems as unknown[]).length;
-  const associations = (published.CFAssociations as unknown[]).length;
-  const asRead = (): CasePackage => readPackage(asPackage(published), { version: "1.0" });
+  const read = (): CasePackage => readPackage(published, { version: "1.0" });
 
-  it("is judged by the reader as the official schema of CASE 1.0 judges it", () => {
-    const errors = validatePackage(published, { version: "1.0" }).filter(({ severity }) => severity === "error");
-    expect(officialValidator("1.0", "package")(published)).toBe(errors.length === 0);
+  it("is judged by the reader as the official schema of CASE 1.0 judges it, but for the links to its document", () => {
+    expect(officialValidator("1.0", "package")(published)).toBe(!linksTheDocument);
     expect(officialValidator("1.0", "package")(asPackage(published))).toBe(true);
-    const findings = validatePackage(asPackage(published), { version: "1.0" });
+    const findings = validatePackage(published, { version: "1.0" });
     expect(findings.filter(({ severity }) => severity === "error")).toStrictEqual([]);
-    expect(findings.map(({ rule, path }) => `${rule} ${path.replace(/\[\d+\]/gu, "[]")}`)).toStrictEqual(warnings);
+    const links = linksTheDocument ? ["CFDocument.CFPackageURI", "CFItems", "CFAssociations"] : [];
+    expect(findings.map(({ rule, path }) => `${rule} ${path.replace(/\[\d+\]/gu, "[]")}`)).toStrictEqual([
+      ...links.map((path) => `package-form-link ${path}`),
+      ...warnings,
+    ]);
+    expect(validatePackage(asPackage(published), { version: "1.0" })).toStrictEqual(
+      findings.filter(({ rule }) => rule !== "package-form-link"),
+    );
   });
 
   it("reads into the model and is written back as it was published, apart from the order of the keys", () => {
-    const framework = asRead();
+    const framework = read();
     const written = toCaseVersion(framework, "1.0");
     expect(written.dropped).toStrictEqual([]);
     expect(sortKeys(written.value)).toStrictEqual(sortKeys(asPackage(published)));
+    expect(framework).toStrictEqual(readPackage(asPackage(published), { version: "1.0" }));
   });
 
   it("has a tree that holds each item once, and no difference from itself", () => {
-    const framework = asRead();
+    const framework = read();
     expect(countNodes(frameworkTree(framework))).toBe(items);
     const diff = diffPackages(framework, framework);
     expect([diff.added, diff.removed, diff.changed, diff.replaced].map((list) => list.length)).toStrictEqual([
       0, 0, 0, 0,
     ]);
   });
-
-  it(
-    linksTheDocument
-      ? "is refused as published, for the addresses of the document that its items and associations carry"
-      : "is accepted as published",
-    () => {
-      if (!linksTheDocument) {
-        expect(validatePackage(published, { version: "1.0" })).toHaveLength(warnings.length);
-        expect(readPackage(published, { version: "1.0" }).CFItems).toHaveLength(items);
-        return;
-      }
-      // A finding for each item and association, which are more than the default limit.
-      const findings = validatePackage(published, { version: "1.0", maxFindings: 1_000_000 });
-      expect(findings.every(({ severity, rule }) => severity === "error" && rule === "unknown-property")).toBe(true);
-      expect(findings.map(({ path }) => path.replace(/\[\d+\]/gu, "[]"))).toStrictEqual([
-        "CFDocument.CFPackageURI",
-        ...Array.from({ length: items }, () => "CFItems[].CFDocumentURI"),
-        ...Array.from({ length: associations }, () => "CFAssociations[].CFDocumentURI"),
-      ]);
-      expect(() => readPackage(published, { version: "1.0" })).toThrow(DataError);
-    },
-  );
 });
