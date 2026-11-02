@@ -4,6 +4,8 @@ import { readText } from "./body.js";
 import type { HttpRequest } from "./request.js";
 
 const FORM_TYPE = "application/x-www-form-urlencoded";
+const PLUS = 0x2b;
+const SPACE = 0x20;
 
 /** Collects the parameters of a query or a form into a map. */
 function collect(parameters: URLSearchParams, where: string): ReadonlyMap<string, string> {
@@ -40,6 +42,9 @@ export function readForm(request: HttpRequest): ReadonlyMap<string, string> {
   if (type !== FORM_TYPE) {
     throw new DataError(`The content type of the request must be ${FORM_TYPE}, found ${describe(type)}.`);
   }
-  // URLSearchParams joins a string of ropes, a node of 40 bytes for each `+` in Node.js, where `%20` costs nothing of the kind.
-  return collect(new URLSearchParams(readText(request).replaceAll("+", "%20")), "The form of the request");
+  // A `+` is a space. Written so here, on the bytes, it costs a form of 10 MiB no memory: URLSearchParams joins a rope with a node
+  // for each `+` in Node.js, and a replacement in a string keeps a part for each.
+  const body = request.body.slice();
+  for (const [index, byte] of body.entries()) if (byte === PLUS) body[index] = SPACE;
+  return collect(new URLSearchParams(readText({ ...request, body })), "The form of the request");
 }
