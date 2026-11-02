@@ -11,8 +11,8 @@ CASE model, its readers, what a consumer asks of a framework, and a client and a
 `@interopkit/learning-records` implements the xAPI Statement of 2.0 and 1.0.3 and its readers, the message of its Attachments, its signature, a client of an LRS and the handler of its requests,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
 implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client and the provider of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists, their refresh and their verification, and it reads and verifies Open Badges 2.0.
-`@interopkit/course-launch` implements cmi5: its vocabularies, the course structure with its reader, validator and writer, and
-course packages in ZIP or XML.
+`@interopkit/course-launch` implements cmi5: its vocabularies, the course structure with its reader, validator and writer,
+course packages in ZIP or XML, and the rules of the statements of a session with the readers of what a launch gives.
 
 ```mermaid
 flowchart BT
@@ -25,7 +25,7 @@ flowchart BT
   lr["learning-records<br/>model, read, build, compare, format,<br/>attachments, signing, client, store"]
   sd["selective-disclosure<br/>proof-value, keys, document,<br/>base, derive, verify"]
   ac["achievement-credentials<br/>model, read, issue, compare, baking, client,<br/>keys, jwt, data-integrity,<br/>status, refresh, verify, provider"]
-  cl["course-launch<br/>model, structure, package"]
+  cl["course-launch<br/>model, structure, package, rules"]
   proto --> core
   tool --> proto
   plat --> proto
@@ -36,6 +36,7 @@ flowchart BT
   ac --> core
   ac --> sd
   cl --> core
+  cl --> lr
   gates["pnpm lint, check:standards, check:rules,<br/>typecheck, test, knip"] --> merge["Merge"]
 ```
 
@@ -100,7 +101,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
 | `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading and verification of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/`, `verify/`, `provider/` |
-| `packages/course-launch/`            | cmi5: `model/`, `structure/` (the course structure, its schema enforced by the reader), `package/` (ZIP and XML packages through zip.js) |
+| `packages/course-launch/`            | cmi5: `model/`, `structure/` (the course structure, its schema enforced by the reader), `package/` (ZIP and XML packages through zip.js), `rules/` (the launch URL, the launch data, the preferences and the rules of a session) |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
 | `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
@@ -204,7 +205,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
   `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
   `model/`, `read/`, `compare/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. In `learning-analytics`, `model/`
-  imports no other module, `v1p1/` builds on `model/` alone, `read/` on both, `validate/` on those and `read/`, `build/` on `model/`, `read/` and `validate/`, `send/` on `model/` and `build/`, and `endpoint/` on `model/`, `v1p1/`, `read/` and `validate/`; `send/` and `endpoint/` never import each other, and `build/` and `send/` never import `v1p1/`, since 1.1 is read and never written. In `course-launch`, `model/` imports no other module, `structure/` imports `model/` alone and never zip.js, so that a host that reads a structure from elsewhere never loads the ZIP code, and `package/` builds on both. Imports never form cycles.
+  imports no other module, `v1p1/` builds on `model/` alone, `read/` on both, `validate/` on those and `read/`, `build/` on `model/`, `read/` and `validate/`, `send/` on `model/` and `build/`, and `endpoint/` on `model/`, `v1p1/`, `read/` and `validate/`; `send/` and `endpoint/` never import each other, and `build/` and `send/` never import `v1p1/`, since 1.1 is read and never written. In `course-launch`, `model/` imports no other module, `structure/` imports `model/` alone and never zip.js, so that a host that reads a structure from elsewhere never loads the ZIP code, `package/` builds on both, and `rules/` imports `model/` and `learning-records` alone; `structure/` and `rules/` never import each other, and `package/` imports no rule. Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.

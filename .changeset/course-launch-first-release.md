@@ -18,5 +18,11 @@ package, a ZIP archive of 32 or 64 bits or the XML alone, told apart by their fi
 `maxEntries` (100,000) and `maxDirectoryBytes` (64 MiB), only `cmi5.xml` is inflated, and an archive is refused for a link, an
 encrypted entry, names that fold to one, a header that lies, every warning of zip.js but a wrapped count of entries, no
 `cmi5.xml` at its root, and a relative URL that names none of its files. `writeCoursePackage` writes a ZIP package that the
-reader takes back, the same bytes for the same course. The examples of the specification and the course packages of CATAPULT
-are read, and the 305 requirements of CATAPULT are mapped to the package.
+reader takes back, the same bytes for the same course. `readLaunchUrl`, `readLaunchData` and
+`readLearnerPreferences` read what a launch gives an assignable unit, and `writeLearnerPreferences` writes the preferences of a
+learner. `classifyStatement` tells a statement that cmi5 defines from one it allows and one it does not, and
+`validateSessionStatements` judges the statements of a session against its launch data and its registration: the rules of xAPI
+1.0.3, then the id, the time in UTC, the actor, the registration, the session id and the context template of each statement, its
+place between initialized and terminated, and for a statement that cmi5 defines its verb, object, result, score, mastery score
+and launch mode. The examples of the specification and the course packages of CATAPULT are read, and the 305 requirements of
+CATAPULT are mapped to the package.

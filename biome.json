@@ -1663,8 +1663,62 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/structure", "**/structure/**", "**/package", "**/package/**"],
+                    "group": [
+                      "**/structure",
+                      "**/structure/**",
+                      "**/package",
+                      "**/package/**",
+                      "**/rules",
+                      "**/rules/**"
+                    ],
                     "message": "model/ holds the vocabularies and the types of cmi5 and imports no module that builds on it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/course-launch/src/rules/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/structure",
+                      "**/structure/**",
+                      "**/package",
+                      "**/package/**",
+                      "@zip.js/zip.js",
+                      "@zip.js/zip.js/**"
+                    ],
+                    "message": "rules/ builds on model/, @interopkit/learning-records and @interopkit/core only."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/course-launch/src/package/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/rules", "**/rules/**"],
+                    "message": "package/ builds on model/ and structure/ only: reading a package needs none of the rules of statements."
                   }
                 ]
               }
@@ -1683,7 +1737,14 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["**/package", "**/package/**", "@zip.js/zip.js", "@zip.js/zip.js/**"],
+                    "group": [
+                      "**/package",
+                      "**/package/**",
+                      "**/rules",
+                      "**/rules/**",
+                      "@zip.js/zip.js",
+                      "@zip.js/zip.js/**"
+                    ],
                     "message": "structure/ builds on model/ and @interopkit/core only: a host that reads a structure from elsewhere never loads the ZIP code."
                   }
                 ]
@@ -1724,6 +1785,9 @@
         "packages/learning-records/test/**",
         "scripts/xapi-rules.ts",
         "scripts/xapi-v1-rules.ts",
+        "packages/course-launch/src/rules/launch-documents.ts",
+        "packages/course-launch/test/**",
+        "scripts/cmi5-rules.ts",
         "scripts/test/schema-arbitrary.test.ts",
         "scripts/test/schema-oracle.test.ts"
       ],

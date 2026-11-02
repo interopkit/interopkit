@@ -9,12 +9,19 @@ flowchart LR
   spec["cmi5 Quartz"] --> structure["13 Course structure<br/>model, reader, validator, writer"]
   spec --> package["14 Course package<br/>ZIP32, ZIP64, XML"]
   spec --> vocab["9, 10, 11 Vocabularies<br/>verbs, categories, extensions,<br/>activity types, State, preferences"]
+  spec --> rules["7.1, 8.1, 9, 10, 11 Rules of a session<br/>launch URL, launch data, preferences,<br/>statements"]
 ```
 
 | Section of cmi5                                  | Supported                                                                                                                  |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | 3.0 IRIs                                         | Every `id`, `idref` and `activityType` of a structure is a fully qualified IRI                                             |
 | 8.1 Launch parameters                            | The url of an assignable unit names none of the five parameters of the launch in its query                                 |
+| 7.1 Types of statements                          | `classifyStatement`: defined, allowed, not allowed                                                                         |
+| 8.1 The launch URL                               | `readLaunchUrl`: the five parameters in any order                                                                          |
+| 9.1 to 9.7 Statements                            | `validateSessionStatements`: every rule of a statement of an assignable unit and of its session ([rules](rules.md))       |
+| 10.0 `LMS.LaunchData`                            | `readLaunchData`                                                                                                           |
+| 10.2.2 Launch modes                              | No completed, passed or failed in Browse and Review                                                                       |
+| 11.0 Learner preferences                         | `readLearnerPreferences`, `writeLearnerPreferences`; initialized after the preferences were read, when the facts say so    |
 | 9.3, 9.6, 10.0, 11.0 Vocabularies                | `CMI5_VERBS`, `CMI5_CATEGORIES`, `CMI5_EXTENSIONS`, `CMI5_ACTIVITY_TYPES`, `LAUNCH_MODES`, `LAUNCH_DATA_STATE_ID`, `LEARNER_PREFERENCES_PROFILE_ID` |
 | 13.1 Course structure data model                 | Every element and attribute of the course, the objectives, the blocks and the assignable units; values trimmed             |
 | 13.1.2 to 13.1.4 Ids                             | Unique among the blocks, the objectives and the assignable units, each kind apart; an `idref` names a declared objective   |

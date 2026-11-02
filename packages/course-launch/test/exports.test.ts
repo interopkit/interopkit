@@ -6,6 +6,13 @@ describe("the public API", () => {
   it("exports only what the package documents", () => {
     expect(Object.keys(root).sort()).toStrictEqual(
       [
+        "AUDIO_PREFERENCES",
+        "classifyStatement",
+        "readLaunchData",
+        "readLaunchUrl",
+        "readLearnerPreferences",
+        "validateSessionStatements",
+        "writeLearnerPreferences",
         "CMI5_ACTIVITY_TYPES",
         "CMI5_CATEGORIES",
         "CMI5_EXTENSIONS",

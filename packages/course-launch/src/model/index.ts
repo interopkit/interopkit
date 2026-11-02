@@ -9,6 +9,13 @@ export type {
   Objective,
 } from "./course-structure.js";
 export {
+  AUDIO_PREFERENCES,
+  type AudioPreference,
+  type LaunchData,
+  type LaunchParameters,
+  type LearnerPreferences,
+} from "./launch-data.js";
+export {
   CMI5_ACTIVITY_TYPES,
   CMI5_CATEGORIES,
   CMI5_EXTENSIONS,

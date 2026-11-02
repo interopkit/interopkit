@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CMI5_REQUIREMENTS } from "../../../scripts/cmi5-requirements.js";
+import { REFUSALS } from "../../../scripts/cmi5-rules.js";
 import { catapult } from "./cmi5-corpus.js";
 
 /** The requirements of cmi5 that CATAPULT lists, by id, at its pinned commit. */
@@ -27,6 +28,12 @@ describe("the map of the requirements of cmi5", () => {
   it("gives a reason for every requirement it excludes or meets in part", () => {
     for (const { met } of CMI5_REQUIREMENTS) {
       if (met.state === "excluded" || met.state === "in-part") expect(met.reason.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("names in the rules of the statements of a session only requirements that CATAPULT lists", () => {
+    for (const { ids } of REFUSALS) {
+      for (const id of ids) expect(Object.hasOwn(LISTED, id), id).toBe(true);
     }
   });
 });

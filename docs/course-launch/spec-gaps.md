@@ -36,6 +36,19 @@ flowchart LR
 | How a relative URL names a file                             | The text says nothing; CATAPULT looks up the text before `?`                                                         | The path without its query and fragment, its escapes decoded and its `.` and `..` resolved, as a browser reads it |
 | Links, encrypted entries, names that fold to one, data around the archive | The APPNOTE allows each; CATAPULT's `node-stream-zip` takes them                                      | Refused: an extractor could serve another file than the one judged                                             |
 
+## The statements of a session
+
+| Case                                                        | The sources                                                                                                                  | The package                                                                                                     |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `raw`, `min` and `max` of a score                           | 9.5.1 calls them integers; xAPI takes any number, and CATAPULT judges none                                                   | Integers (`score-range`)                                                                                        |
+| The actor of a statement                                    | The AU MUST use the actor of the launch (8.1.3); CATAPULT compares the JSON                                                  | The same identifier of xAPI and the same `objectType`, so that a name may be left out                          |
+| The context template                                        | The AU MUST NOT overwrite its values (10.2.1); CATAPULT compares each activity of a list at its index                        | Each activity of a list of the template anywhere in that list, and every other value equal by content           |
+| The order of the statements                                 | 9.3 orders by `timestamp`; CATAPULT judges in the order of arrival                                                            | The order of the timestamps, and a statement timestamped before initialized is refused                          |
+| A time in UTC                                               | 9.7 asks for UTC; CATAPULT takes `Z`, `+00`, `+0000` and `+00:00`                                                             | The same forms, and `z`                                                                                         |
+| `progress`                                                  | 9.5.5.1: an integer from 0 to 100 in any statement, and SHOULD NOT in completed                                              | An error for another value, and a warning in completed                                                          |
+| `masteryScore: null` and `entitlementKey: {}` in the launch data | 10.2 names neither; CATAPULT's player writes both for a unit that has no mastery score or entitlement key              | Read as absent                                                                                                  |
+| The languages of the preferences                            | 11.1: a list of RFC 5646 tags separated by commas; CATAPULT's pattern takes letters, digits and hyphens                    | Well-formed tags of RFC 5646 without spaces; an empty text is no language                                      |
+
 ## The list of requirements
 
 `requirements.json` of CATAPULT dates from 2021 and lags the text in places: its ids of 13.2 follow an older numbering, and

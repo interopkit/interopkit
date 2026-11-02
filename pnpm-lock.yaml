@@ -418,6 +418,9 @@ importers:
       '@interopkit/core':
         specifier: workspace:^
         version: link:../core
+      '@interopkit/learning-records':
+        specifier: workspace:^
+        version: link:../learning-records
       '@zip.js/zip.js':
         specifier: 2.24.0
         version: 2.24.0
