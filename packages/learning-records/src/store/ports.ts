@@ -1,4 +1,5 @@
 import type { CallOptions } from "@interopkit/core";
+import type { AccessDecision } from "@interopkit/core/http";
 import type {
   Activity,
   Actor,
@@ -35,36 +36,20 @@ export const LRS_ACTIONS = [
  */
 export type LrsAction = (typeof LRS_ACTIONS)[number];
 
-/** The decision of `access` about a request: who it is from and what it may do, or why it is refused. */
-export type Access =
-  | {
-      /** The request may go on. */
-      readonly allowed: true;
-      /** The Agent or Group that the LRS gives as the `authority` of the Statements that the request stores. */
-      readonly authority: Actor;
-      /** What the credentials allow. A request for an action that is not listed is refused with 403. */
-      readonly actions: readonly LrsAction[];
-    }
-  | {
-      /** The request is refused. */
-      readonly allowed: false;
-      /** 401 when the request is not authenticated, 403 when it is not allowed, 429 when it came too often. */
-      readonly status: 401 | 403 | 429;
-      /** Says why, as a sentence. It is the message of the answer. */
-      readonly reason: string;
-      /**
-       * The `WWW-Authenticate` header of a 401, such as `Basic realm="xAPI"`.
-       *
-       * @defaultValue none
-       */
-      readonly challenge?: string;
-      /**
-       * The seconds that a 429 asks the client to wait, for `Retry-After`.
-       *
-       * @defaultValue none
-       */
-      readonly retryAfterSeconds?: number;
-    };
+/** What `access` grants a request that may go on: who it is from and what it may do. */
+export interface LrsGrant {
+  /** The Agent or Group that the LRS gives as the `authority` of the Statements that the request stores. */
+  readonly authority: Actor;
+  /** What the credentials allow. A request for an action that is not listed is refused with 403. */
+  readonly actions: readonly LrsAction[];
+}
+
+/**
+ * The decision of `access` about a request, an `AccessDecision` of `@interopkit/core/http`: who it is from and what it may do,
+ * or that it is refused with 401, 403 or 429, and optionally the sentence of the answer (`reason`), the `WWW-Authenticate` of a
+ * 401 (`challenge`, such as `Basic realm="xAPI"`) and the `Retry-After` of a 429 (`retryAfterSeconds`).
+ */
+export type Access = AccessDecision<LrsGrant>;
 
 /** What `insert` did: nothing, when the store held a Statement of the batch already, and then these are the ones it held. */
 export interface InsertResult {

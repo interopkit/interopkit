@@ -17,16 +17,7 @@ import { selectFields } from "./fields.js";
 import { type CaseProviderOptions, type ProviderSettings, readProviderOptions } from "./options.js";
 import { parseQuery } from "./parse-query.js";
 import { type Route, routeOf } from "./routes.js";
-import {
-  failure,
-  forbidden,
-  internalError,
-  invalidUuid,
-  methodNotAllowed,
-  serverBusy,
-  unauthorized,
-  unknownObject,
-} from "./status.js";
+import { failure, internalError, invalidUuid, methodNotAllowed, refused, unknownObject } from "./status.js";
 import { lookupSchema, pageSchema } from "./store.js";
 
 /** Returns an object of the model in the form of a version of CASE. It is `undefined` when 1.0 has no form for it. */
@@ -50,8 +41,7 @@ async function refusalOf(request: HttpRequest, settings: ProviderSettings): Prom
   if (asked === undefined) return internalError();
   const decision = readAccessDecision(asked.value, "The decision of authorize");
   if (decision.allowed) return undefined;
-  if (decision.status === 429) return serverBusy(decision.retryAfterSeconds);
-  return decision.status === 401 ? unauthorized() : forbidden();
+  return refused(decision);
 }
 
 /** Answers a request for the list of documents (REST binding 2.1, 3.1 to 3.4). */

@@ -82,7 +82,7 @@ that has no body, such as 204, takes `null`.
 | `OffsetPage`   | `limit`, at least 1; `offset`, from 0                                                                                                        |
 | `PageSizes`    | `pageSize`, the items of a page without a `limit`; `maxPageSize`, the most items of a page                                                   |
 | `ListExtent`   | `{ total }`, the number of items in the list; or `{ more }`, whether items may follow the page when the store cannot count them               |
-| `AccessDecision` | `{ allowed: true }` with what the host grants, or an `AccessRefusal`: `{ allowed: false, status, retryAfterSeconds? }`, with 401, 403 or 429 |
+| `AccessDecision` | `{ allowed: true }` with what the host grants, or an `AccessRefusal`: `{ allowed: false, status, reason?, challenge?, retryAfterSeconds? }`, with 401, 403 or 429. A handler sends `reason` as the message of its answer, `challenge` as the `WWW-Authenticate` of a 401 and `retryAfterSeconds` as the `Retry-After` of a 429, and its own sentence and challenge when they are absent |
 | `ReadAccessDecisionOptions` | `grant`: the schema of what an allowed decision carries besides `allowed` |
 
 ## Options and limits

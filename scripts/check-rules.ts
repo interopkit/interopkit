@@ -1831,10 +1831,10 @@ export const RULES: readonly Rule[] = [
     test: "packages/competency-frameworks/test/query.test.ts",
   },
   {
-    rule: "A 401 carries the challenge of a bearer token.",
+    rule: "A 401 carries the challenge of the host, or of a bearer token.",
     file: "packages/competency-frameworks/src/provider/status.ts",
-    find: '{ "www-authenticate": "Bearer" }',
-    replace: "{}",
+    find: '"www-authenticate": challenge ?? "Bearer",',
+    replace: "",
     test: "packages/competency-frameworks/test/ports.test.ts",
   },
   {
@@ -1922,10 +1922,10 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/provider.test.ts",
   },
   {
-    rule: "A 401 of the credentials API carries the challenge of a bearer token.",
+    rule: "A 401 of the credentials API carries the challenge of the host, or of a bearer token.",
     file: "packages/achievement-credentials/src/provider/status.ts",
-    find: '{ "www-authenticate": "Bearer" }',
-    replace: "{}",
+    find: '"www-authenticate": challenge ?? "Bearer",',
+    replace: "",
     test: "packages/achievement-credentials/test/provider.test.ts",
   },
   {

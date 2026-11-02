@@ -15,7 +15,7 @@ and the answer of a handler as plain data with bodies as bytes, `readText`, `rea
 `jsonResponse`, and `negotiate`, which chooses a media type from `Accept`. For the providers of the 1EdTech services it reads
 the `limit` and `offset` of a query (`readOffsetPage`), builds the `Link` header of a page with or without a known total
 (`offsetPageLinks`) and the `imsx_StatusInfo` answer of a failure (`statusInfoResponse`), and reads the decision of a host's
-`authorize` port, allowed with what it grants or refused with 401, 403 or 429 and `Retry-After` (`AccessDecision`,
+`authorize` port, allowed with what it grants or refused with 401, 403 or 429, a reason, a challenge and `Retry-After` (`AccessDecision`,
 `readAccessDecision`). A `Signer` signs with a key that the host holds,
 in the process or in a KMS or an HSM, `signerFromCryptoKey` makes one from a `CryptoKey`, and `signCompactJws` assembles a
 compact JWS and refuses a signature of the wrong form. `Random` and `SYSTEM_RANDOM` are the source of random picks.

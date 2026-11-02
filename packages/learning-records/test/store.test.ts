@@ -231,6 +231,20 @@ describe("handleLrsRequest: access", () => {
     }
   });
 
+  it("refuses with the sentence of the status when access gives no reason", async () => {
+    for (const [status, message] of [
+      [401, "The request is not authenticated."],
+      [403, "The request is not allowed."],
+      [429, "The client sends too many requests: retry later."],
+    ] as const) {
+      const response = await handleLrsRequest(
+        request(),
+        optionsOf(memory(), { access: async () => ({ allowed: false, status }) }),
+      );
+      expect([response.status, jsonOf(response)]).toStrictEqual([status, { message }]);
+    }
+  });
+
   it("sends WWW-Authenticate with a 401 that has a challenge and Retry-After with a 429 that has a delay", async () => {
     const ask401 = (challenge?: string) =>
       handleLrsRequest(
@@ -323,7 +337,7 @@ describe("handleLrsRequest: access", () => {
       { allowed: true, authority: {}, actions: [] },
       { allowed: true, authority: AUTHORITY, actions: ["x"] },
       { allowed: false, status: 404, reason: "x" },
-      { allowed: false, status: 401 },
+      { allowed: false, status: 401, reason: 7 },
     ] as unknown[]) {
       const asking = handleLrsRequest(request(), optionsOf(memory(), { access: async () => decision as Access }));
       await expect(asking).rejects.toBeInstanceOf(DataError);

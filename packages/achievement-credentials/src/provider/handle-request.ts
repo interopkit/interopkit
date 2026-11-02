@@ -18,7 +18,7 @@ import {
 } from "./options.js";
 import { answerProfile, answerProfileUpdate } from "./profile.js";
 import { routeOf } from "./routes.js";
-import { forbidden, internalError, notAllowed, notFound, serverBusy, unauthorized } from "./status.js";
+import { internalError, notAllowed, notFound, refused } from "./status.js";
 
 /** What an allowed decision of `authorize` carries: the owner of the resources that the token reaches. */
 const grantSchema = v.object({ owner: nonEmptyStringSchema });
@@ -34,8 +34,7 @@ async function ownerOf(
   if (asked === undefined) return { refusal: internalError() };
   const decision = readAccessDecision(asked.value, "The decision of authorize", { grant: grantSchema });
   if (decision.allowed) return { owner: decision.owner };
-  if (decision.status === 429) return { refusal: serverBusy(decision.retryAfterSeconds) };
-  return { refusal: decision.status === 401 ? unauthorized() : forbidden(scope) };
+  return { refusal: refused(decision, scope) };
 }
 
 /** Answers an operation that needs a scope, for the owner that `authorize` named. */

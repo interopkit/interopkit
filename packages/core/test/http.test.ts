@@ -700,12 +700,21 @@ describe("readAccessDecision", () => {
       retryAfterSeconds: 30,
     });
     expect(readAccessDecision({ allowed: true, owner: "x" }, "The decision")).toStrictEqual({ allowed: true });
+    const refusal = {
+      allowed: false,
+      status: 401,
+      reason: "The token expired.",
+      challenge: 'Bearer error="invalid_token"',
+    };
+    expect(read(refusal)).toStrictEqual(refusal);
   });
 
   it("refuses another shape: a status outside 401, 403 and 429, a delay that is not whole, an allowed one without its grant", () => {
     const bad = [
       { allowed: false, status: 500 },
       { allowed: false, status: 429, retryAfterSeconds: 1.5 },
+      { allowed: false, status: 401, reason: 5 },
+      { allowed: false, status: 401, challenge: ["Basic"] },
       { allowed: true },
       { allowed: true, owner: "" },
       { allowed: "yes", owner: "x" },

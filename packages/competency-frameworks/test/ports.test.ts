@@ -53,6 +53,18 @@ describe("authorize", () => {
     });
   });
 
+  it("answers with the reason and the challenge that it gives", async () => {
+    const decision =
+      '{"allowed":false,"status":401,"reason":"The token expired.","challenge":"Bearer error=\\"invalid_token\\""}';
+    const response = await serve(ITEM, { authorize: () => Promise.resolve(JSON.parse(decision)) });
+    expect(response.headers["www-authenticate"]).toBe('Bearer error="invalid_token"');
+    expect(jsonOf(response)).toMatchObject({ imsx_description: "The token expired." });
+    const denied = await serve(LIST, {
+      authorize: () => Promise.resolve(JSON.parse('{"allowed":false,"status":403,"reason":"Not for this tenant."}')),
+    });
+    expect(jsonOf(denied)).toMatchObject({ imsx_description: "Not for this tenant." });
+  });
+
   it("answers 403 when the request is not allowed", async () => {
     const response = await serve(LIST, { authorize: () => Promise.resolve(JSON.parse(DENIED)) });
     expect(response.status).toBe(403);

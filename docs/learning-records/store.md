@@ -288,9 +288,10 @@ every request and needs no action: a host that lets anyone ask About answers `{ 
 
 ## Who may do what
 
-`access` is asked about every request that names a resource and a method. It answers `{ allowed: false, status, reason }` with
-401, 403 or 429, or `{ allowed: true, authority, actions }`. A 401 carries `challenge` as `WWW-Authenticate`, and a 429
-carries `retryAfterSeconds` as `Retry-After`. A request for an action that `actions` does not list is 403; the action of each
+`access` is asked about every request that names a resource and a method. It answers an `AccessDecision` of
+`@interopkit/core/http`: `{ allowed: true, authority, actions }`, or `{ allowed: false, status }` with 401, 403 or 429. A
+refusal's `reason` is the message of the answer (by default a sentence of its status), a 401 carries `challenge` as
+`WWW-Authenticate`, and a 429 carries `retryAfterSeconds` as `Retry-After`. A request for an action that `actions` does not list is 403; the action of each
 method is in the table of [the resources](#the-resources).
 
 A credential with `statements.read.mine` and not `statements.read` reads only the Statements whose `authority` is the one that

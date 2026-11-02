@@ -1,4 +1,4 @@
-import { type HttpResponse, statusInfoResponse } from "@interopkit/core/http";
+import { type AccessRefusal, type HttpResponse, statusInfoResponse } from "@interopkit/core/http";
 import type { StatusCodeMinorValue } from "../model/index.js";
 
 /**
@@ -25,27 +25,30 @@ export const notAllowed = (method: string, allowed: readonly string[]): HttpResp
     allow: allowed.join(", "),
   });
 
-/** The answer for a request without an access token that the host accepts: 401 with the challenge of a bearer token (RFC 6750). */
-export const unauthorized = (): HttpResponse =>
-  failure(401, "The request was not authorized.", "unauthorizedrequest", { "www-authenticate": "Bearer" });
-
 /**
- * The answer for a request that the host refuses: 403, with the challenge of RFC 6750 that names the scope the operation needs,
- * since a token that does not hold it is the refusal that this API knows.
+ * The answer for a request that the host's `authorize` refuses, with the host's reason when it gives one: 401 with its challenge,
+ * or that of a bearer token (RFC 6750); 403 with the challenge of RFC 6750 that names the scope the operation needs, since a
+ * token that does not hold it is the refusal that this API knows; or 429 with `Retry-After` when the host gives the seconds.
  */
-export const forbidden = (scope: string): HttpResponse =>
-  failure(403, "The request is not allowed.", "forbidden", {
-    "www-authenticate": `Bearer error="insufficient_scope", scope="${scope}"`,
-  });
-
-/** The answer for a client that asks too often: 429, and `Retry-After` when the host gives the seconds. */
-export const serverBusy = (retryAfterSeconds: number | undefined): HttpResponse =>
-  failure(
+export function refused(refusal: AccessRefusal, scope: string): HttpResponse {
+  const { status, reason, challenge, retryAfterSeconds } = refusal;
+  if (status === 401) {
+    return failure(401, reason ?? "The request was not authorized.", "unauthorizedrequest", {
+      "www-authenticate": challenge ?? "Bearer",
+    });
+  }
+  if (status === 403) {
+    return failure(403, reason ?? "The request is not allowed.", "forbidden", {
+      "www-authenticate": `Bearer error="insufficient_scope", scope="${scope}"`,
+    });
+  }
+  return failure(
     429,
-    "The server is receiving too many requests: retry at a later time.",
+    reason ?? "The server is receiving too many requests: retry at a later time.",
     "server_busy",
     retryAfterSeconds === undefined ? {} : { "retry-after": String(retryAfterSeconds) },
   );
+}
 
 /** The answer for a port that failed: 500, with nothing of the failure in it. */
 export const internalError = (): HttpResponse =>

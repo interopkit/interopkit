@@ -15,6 +15,7 @@ export {
   type InsertResult,
   LRS_ACTIONS,
   type LrsAction,
+  type LrsGrant,
   type StatementStore,
   type StatementsPage,
   type StoredStatement,

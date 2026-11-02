@@ -197,6 +197,31 @@ describe("the scopes of the operations", () => {
     expect((await handle(busy(), "GET", `${OB}/credentials`)).headers["retry-after"]).toBeUndefined();
   });
 
+  it("answers a refusal with the reason and the challenge that authorize gives", async () => {
+    const refusing = (decision: object) => serving("badges", { authorize: async () => decision as never }).options;
+    const expired = await handle(
+      refusing({
+        allowed: false,
+        status: 401,
+        reason: "The token expired.",
+        challenge: 'Bearer error="invalid_token"',
+      }),
+      "GET",
+      `${OB}/credentials`,
+    );
+    expect(expired.headers["www-authenticate"]).toBe('Bearer error="invalid_token"');
+    expect(JSON.parse(String(expired.body))).toMatchObject({ imsx_description: "The token expired." });
+    const plain = await handle(refusing({ allowed: false, status: 401 }), "GET", `${OB}/credentials`);
+    expect(plain.headers["www-authenticate"]).toBe("Bearer");
+    const denied = await handle(
+      refusing({ allowed: false, status: 403, reason: "Not yours." }),
+      "GET",
+      `${OB}/profile`,
+    );
+    expect(JSON.parse(String(denied.body))).toMatchObject({ imsx_description: "Not yours." });
+    expect(denied.headers["www-authenticate"]).toContain("insufficient_scope");
+  });
+
   it("gives each user only their own credentials and profile, as authorize names the owner", async () => {
     const { options } = serving();
     await handle(options, "POST", `${OB}/credentials`, { body: json(achievementCredential()), type: JSON_TYPE });

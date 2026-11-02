@@ -8,6 +8,18 @@ export interface AccessRefusal {
   /** 401 when the request is not authenticated, 403 when it is not allowed, 429 when the client asks too often. */
   readonly status: 401 | 403 | 429;
   /**
+   * Says why, as a sentence, which the handler sends as the message of its answer.
+   *
+   * @defaultValue none: the handler's sentence for the status
+   */
+  readonly reason?: string;
+  /**
+   * The `WWW-Authenticate` header of a 401, such as `Basic realm="xAPI"` or `Bearer error="invalid_token"`.
+   *
+   * @defaultValue none: the handler's challenge, or no header where its protocol names none
+   */
+  readonly challenge?: string;
+  /**
    * The seconds that a refused client should wait, sent as `Retry-After` with 429.
    *
    * @defaultValue none: no `Retry-After`
@@ -42,13 +54,15 @@ const decisionSchema = v.variant("allowed", [
   v.object({
     allowed: v.literal(false),
     status: v.picklist([401, 403, 429]),
+    reason: v.optional(v.string()),
+    challenge: v.optional(v.string()),
     retryAfterSeconds: v.optional(nonNegativeIntegerSchema),
   }),
 ]);
 
 /**
  * Reads the decision that a host's port, such as `authorize`, gave about a request: `{ allowed: true }`, or an `AccessRefusal`
- * with a status of 401, 403 or 429 and, optionally, the whole seconds of `Retry-After`.
+ * with a status of 401, 403 or 429 and, optionally, its reason, the challenge of a 401 and the whole seconds of `Retry-After`.
  *
  * @remarks
  * A handler reads what its port answered with it, so that a port that answers another shape is a `DataError` that names the

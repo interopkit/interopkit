@@ -1,6 +1,5 @@
 import { callPort } from "@interopkit/core";
-import { parseWith } from "@interopkit/core/checks";
-import { checkHttpRequest, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
+import { checkHttpRequest, type HttpRequest, type HttpResponse, readAccessDecision } from "@interopkit/core/http";
 import * as v from "valibot";
 import type { XapiVersion } from "../model/index.js";
 import { authoritySchema } from "../read/internal.js";
@@ -66,16 +65,15 @@ const RESOURCES: readonly Resource[] = [
   { path: "about", actions: { GET: null, HEAD: null }, versioned: false, handle: handleAbout },
 ];
 
-const accessSchema = v.variant("allowed", [
-  v.object({ allowed: v.literal(true), authority: authoritySchema, actions: v.array(v.picklist(LRS_ACTIONS)) }),
-  v.object({
-    allowed: v.literal(false),
-    status: v.picklist([401, 403, 429]),
-    reason: v.string(),
-    challenge: v.optional(v.string()),
-    retryAfterSeconds: v.optional(v.pipe(v.number(), v.safeInteger(), v.minValue(0))),
-  }),
-]);
+/** What an allowed decision of `access` grants. */
+const grantSchema = v.object({ authority: authoritySchema, actions: v.array(v.picklist(LRS_ACTIONS)) });
+
+/** The sentence of a refusal for which `access` gives no reason. */
+const REFUSALS: Readonly<Record<401 | 403 | 429, string>> = {
+  401: "The request is not authenticated.",
+  403: "The request is not allowed.",
+  429: "The client sends too many requests: retry later.",
+};
 
 /** Tells whether the actions of a credential allow an action: reading its own Statements lets it ask to read Statements. */
 function grants(actions: readonly LrsAction[], action: LrsAction): boolean {
@@ -96,7 +94,7 @@ function denial(decision: Extract<Access, { readonly allowed: false }>, refuse: 
   if (decision.status === 429 && decision.retryAfterSeconds !== undefined) {
     headers["retry-after"] = String(decision.retryAfterSeconds);
   }
-  return refuse(decision.status, decision.reason, headers);
+  return refuse(decision.status, decision.reason ?? REFUSALS[decision.status], headers);
 }
 
 /** The request that the LRS answers, after the alternate syntax: what it asks, and the version whose rules answer it. */
@@ -142,7 +140,7 @@ async function serve(
   const { signal } = settings;
   const asked = await callPort(() => settings.access(request, signal === undefined ? undefined : { signal }), signal);
   if (asked === undefined) return refuse(500, FAILED);
-  const decision = parseWith(accessSchema, asked.value, "The decision of access");
+  const decision = readAccessDecision(asked.value, "The decision of access", { grant: grantSchema });
   if (!decision.allowed) return denial(decision, refuse);
   if (action !== null && !grants(decision.actions, action)) {
     return refuse(403, `The credentials do not allow ${action}.`);
