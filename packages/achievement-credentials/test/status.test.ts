@@ -340,7 +340,7 @@ describe("checking the status of a credential", () => {
       type: ["VerifiableCredential"],
       issuer: ISSUER,
       validFrom: "2024-06-14T00:00:00Z",
-      credentialSubject: {},
+      credentialSubject: { id: "did:example:learner" },
     };
     const jws = await signCredentialJwt(plain as never, signer, { kid: METHOD });
     expect(await status({}, { [LIST_URL]: jws }).run()).toMatchObject({

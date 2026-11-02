@@ -10,6 +10,7 @@ import {
   validateEntity,
 } from "../src/index.js";
 import { CLASS_SCHEMAS } from "../src/read/internal.js";
+import { RULES_BEYOND_SCHEMAS } from "./rules-beyond-schemas.js";
 
 const FIXTURES = new URL("fixtures/", import.meta.url);
 
@@ -21,7 +22,8 @@ const fixtures = readdirSync(FIXTURES)
   .filter((file) => file.endsWith(".json"))
   .map((file) => [file.replace(/\.json$/u, ""), JSON.parse(readFileSync(new URL(file, FIXTURES), "utf8"))] as const);
 
-const isError = ({ severity }: { readonly severity: string }) => severity === "error";
+const isError = ({ severity, rule }: { readonly severity: string; readonly rule: string }) =>
+  severity === "error" && !RULES_BEYOND_SCHEMAS.has(rule);
 
 const entities = fixtures.filter((fixture): fixture is readonly [EntityKind, unknown] =>
   (ENTITY_KINDS as readonly string[]).includes(fixture[0]),

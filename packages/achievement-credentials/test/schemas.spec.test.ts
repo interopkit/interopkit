@@ -10,14 +10,23 @@ import {
   validateEntity,
 } from "../src/index.js";
 import { CLASS_SCHEMAS } from "../src/read/internal.js";
-import { classOf, heldClass, oracleOf, PAGE_CASES, pageSchemaNamed, schemaExportName } from "./official.js";
+import {
+  classOf,
+  heldClass,
+  oracleOf,
+  PAGE_CASES,
+  pageSchemaNamed,
+  schemaExportName,
+  withOrderedPeriod,
+} from "./official.js";
+import { RULES_BEYOND_SCHEMAS } from "./rules-beyond-schemas.js";
 
 /** The runs of each property, and the seed that makes them the same on every run. */
 const RUNS = { numRuns: 120, seed: 2024, endOnFailure: true };
 
 const reads = (name: string, value: unknown): boolean =>
   validateEntity(name as EntityKind, value).every(
-    ({ severity, rule }) => severity !== "error" || rule === "subject-unidentified",
+    ({ severity, rule }) => severity !== "error" || RULES_BEYOND_SCHEMAS.has(rule),
   );
 
 describe.each(PAGE_CASES)("$name, which only a page prints", ({ name, schema }) => {
@@ -71,6 +80,6 @@ describe("the vocabularies of OAuth errors", () => {
 describe.each(PAGE_CASES)("$name, which only a page prints", ({ name, schema }) => {
   it("has the full value that the schema generates in the fixtures that the offline tests read", async () => {
     const [value] = fc.sample(oracleOf(schema(), { full: true, depth: 2 }).arbitrary, { numRuns: 1, seed: 1 });
-    await expect(`${JSON.stringify(value, null, 1)}\n`).toMatchFileSnapshot(`fixtures/${name}.json`);
+    await expect(`${JSON.stringify(withOrderedPeriod(value), null, 1)}\n`).toMatchFileSnapshot(`fixtures/${name}.json`);
   });
 });

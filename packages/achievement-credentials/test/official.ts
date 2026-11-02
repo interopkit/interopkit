@@ -170,6 +170,18 @@ export function oracleOf(schema: Json, { full = false, depth = 3 }: { full?: boo
   };
 }
 
+/**
+ * Gives a full value a validity period that ends after it begins. The schemas generate both times independently, and the
+ * readers refuse a credential that ends before it begins, which the schemas do not state.
+ */
+export function withOrderedPeriod(value: Json | undefined): Json | undefined {
+  if (value === undefined) return value;
+  const [begins, ends] = "validFrom" in value ? ["validFrom", "validUntil"] : ["issuanceDate", "expirationDate"];
+  const [from, until] = [value[begins ?? ""], value[ends ?? ""]];
+  if (typeof from !== "string" || typeof until !== "string" || Date.parse(until) >= Date.parse(from)) return value;
+  return { ...value, [ends ?? ""]: from };
+}
+
 /** Reads the properties and the required properties of a schema, of its definition, or of the class it refers to. */
 export function classOf(schema: Json): SchemaClass {
   const target = typeof schema.$ref === "string" ? lookup(schema, schema.$ref) : schema;

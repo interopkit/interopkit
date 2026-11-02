@@ -475,7 +475,7 @@ describe("the options that unavailable and the signal govern", () => {
       const contexts = memoryContexts();
       const clock = clockAt(NOW);
       const signed = await addProof(
-        { ...achievementCredential(), issuer: { id: did, type: ["Profile"] } } as IssuableCredential,
+        { ...achievementCredential(), issuer: { id: did, type: ["Profile"] } } as unknown as IssuableCredential,
         signerOf(KEYS.ed25519, method),
         { clock, contexts: contexts.load },
       );

@@ -93,7 +93,10 @@ describe("signing a credential as a JWT", () => {
   });
 
   it("leaves out the claims of what the credential does not have", async () => {
-    const plain = verifiableCredential() as unknown as IssuableCredential;
+    const plain = {
+      ...verifiableCredential(),
+      credentialSubject: { name: "Learner" },
+    } as unknown as IssuableCredential;
     const jws = await signCredentialJwt(plain, signerOf(KEYS.es256), { kid: `${ISSUER}#es256` });
     const payload = jsonOf(partsOf(jws)[1]);
     expect(payload).toMatchObject({ iss: ISSUER, nbf: VALID_FROM });

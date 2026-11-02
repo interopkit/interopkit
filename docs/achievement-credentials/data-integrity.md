@@ -116,7 +116,7 @@ credential with the proof. `eddsa-rdfc-2022` adds it to the proofs the credentia
 The default mandatory pointers are `/@context`, `/id`, `/type`, `/issuer/id`, `/issuer/type`, `/validFrom`, `/name`,
 `/credentialSubject/type`, the `id` and `identifier` of the subject, and for an achievement credential the `id`, `type`, `criteria`,
 `description` and `name` of the achievement. A holder cannot hide a property that the model requires, or the subject that
-nothing would then identify.
+nothing would then identify. An issuer that is an address is pointed at as a whole (`/issuer`), and so is a subject that holds only its `id` (`/credentialSubject`): a pointer to the `id` of a node that has no other property selects no statement of the document.
 
 ## Disclosure
 

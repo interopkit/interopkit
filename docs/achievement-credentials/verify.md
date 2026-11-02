@@ -274,7 +274,7 @@ revocation list the `status` `unavailable`, which `unavailable: "warn"` accepts.
 | `maxJsonLdTokens`      | The most tokens of JSON in a credential with a Data Integrity proof, which a JSON-LD processor reads to check it; a CLR that holds many credentials as objects can need more | `20000` |
 | `timeoutMs`            | The time of each fetch                                                                                    | `10000`                                              |
 | `maxBytes`             | The most bytes of each fetch                                                                              | `1048576`                                            |
-| `signal`               | Ends the caller's wait. A call has no deadline of its own: a CLR may hold 1,000 credentials, and each may name a status list, a refresh service and a schema, so a host passes `AbortSignal.timeout(...)` | None |
+| `signal`               | Ends the caller's wait, and so a wait for a `KeyResolver` that ignores the signal it is given. A call has no deadline of its own: a CLR may hold 1,000 credentials, and each may name a status list, a refresh service and a schema, so a host passes `AbortSignal.timeout(...)` | None |
 
 ## Limits
 

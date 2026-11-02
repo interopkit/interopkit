@@ -80,6 +80,6 @@ export function verifiableCredential(): Value {
     type: ["VerifiableCredential"],
     issuer: "https://example.edu/issuers/1",
     validFrom: "2024-06-13T10:00:00Z",
-    credentialSubject: {},
+    credentialSubject: { id: "did:example:learner" },
   };
 }

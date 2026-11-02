@@ -259,6 +259,37 @@ describe("judging a credential", () => {
     ).toStrictEqual([]);
   });
 
+  it("finds an error in a validity period that ends before it begins, in either data model, and none when it ends when it begins", () => {
+    const period = (from: string, until: string) => ({
+      ...achievementCredential(),
+      validFrom: from,
+      validUntil: until,
+    });
+    expect(errorsOf(period("2024-06-13T18:46:03Z", "2024-06-13T18:46:02Z"))).toStrictEqual([
+      "validUntil validity-period",
+    ]);
+    expect(errorsOf(period("2024-06-13T18:46:03Z", "2024-06-13T20:46:02+02:00"))).toStrictEqual([
+      "validUntil validity-period",
+    ]);
+    expect(errorsOf(period("2024-06-13T18:46:03Z", "2024-06-13T20:46:03+02:00"))).toStrictEqual([]);
+    expect(errorsOf(period("2024-06-13T18:46:03Z", "2024-06-13T18:46:04Z"))).toStrictEqual([]);
+    const old = { ...achievementCredentialV1p1(), expirationDate: "2020-01-01T00:00:00Z" };
+    expect(errorsOf(old)).toStrictEqual(["expirationDate validity-period"]);
+  });
+
+  it("finds an error in a credential of no class of Open Badges whose subject says nothing", () => {
+    const plain = (subject: object) => ({
+      "@context": ["https://www.w3.org/ns/credentials/v2"],
+      type: ["VerifiableCredential"],
+      issuer: "https://example.edu/issuers/1",
+      validFrom: "2024-06-13T18:46:03Z",
+      credentialSubject: subject,
+    });
+    expect(errorsOf(plain({}))).toStrictEqual(["credentialSubject subject-empty"]);
+    expect(errorsOf(plain({ id: "did:example:a" }))).toStrictEqual([]);
+    expect(errorsOf(plain({ name: "Alice" }))).toStrictEqual([]);
+  });
+
   it("finds the same error in a subject of a CLR, in either data model", () => {
     const clr = clrCredential();
     expect(

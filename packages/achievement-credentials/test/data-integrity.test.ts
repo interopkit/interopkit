@@ -355,6 +355,24 @@ describe("a base proof of ecdsa-sd-2023 and its disclosures", () => {
     expect(await verifyProof(disclosure, read)).toMatchObject({ valid: true, bound: true });
   });
 
+  it("is written for a credential of any class whose issuer is an address and whose subject holds only its id", async () => {
+    const { options, contexts } = world();
+    const w = world();
+    const plain = {
+      "@context": ["https://www.w3.org/ns/credentials/v2"],
+      type: ["VerifiableCredential"],
+      issuer: issuer.did,
+      validFrom: "2024-06-13T18:46:03Z",
+      credentialSubject: { id: "did:example:learner" },
+    } as unknown as IssuableCredential;
+    const credential = await addProof(plain, issuer.signer, { ...options, cryptosuite: "ecdsa-sd-2023" });
+    const disclosure = await deriveDisclosure(credential, { selectivePointers: [], contexts: contexts.load });
+    expect(await verifyProof(disclosure, { keys: w.keys, clock: w.clock, contexts: contexts.load })).toMatchObject({
+      valid: true,
+      bound: true,
+    });
+  });
+
   it("is refused as a disclosure that hides what the model requires, and the reason names the fix", async () => {
     const { options, contexts } = world();
     const bare = await addProof(credentialOf(issuer.did), issuer.signer, {
@@ -498,6 +516,26 @@ describe("the mandatory pointers of a credential", () => {
     expect(pointers).toContain("/credentialSubject/achievement/criteria");
     expect(pointers).not.toContain("/issuer/id");
     expect(pointers).not.toContain("/credentialSubject/identifier");
+  });
+
+  it("name an issuer that is an address as a whole, and a subject that holds only its id as a whole", () => {
+    const credential = {
+      "@context": ["https://www.w3.org/ns/credentials/v2"],
+      type: ["VerifiableCredential"],
+      issuer: "https://example.edu/issuers/1",
+      validFrom: "2024-06-13T18:46:03Z",
+      credentialSubject: { id: "did:example:learner" },
+    };
+    expect(defaultMandatoryPointers(credential)).toStrictEqual([
+      "/@context",
+      "/type",
+      "/issuer",
+      "/validFrom",
+      "/credentialSubject",
+    ]);
+    const described = { ...credential, credentialSubject: { id: "did:example:learner", name: "Learner" } };
+    expect(defaultMandatoryPointers(described)).toContain("/credentialSubject/id");
+    expect(defaultMandatoryPointers(described)).not.toContain("/credentialSubject");
   });
 
   it("leave out the achievement of a CLR and of an endorsement, whose subjects have none", () => {

@@ -1,3 +1,4 @@
+import { parseDateTime } from "@interopkit/core/checks";
 import type { CredentialIssue, IdentityObject } from "../model/index.js";
 
 /** The form of an `IdentityHash` that the specification names: `sha256$` and 64 hexadecimal digits, or `md5$` and 32 (OB B.7). */
@@ -39,4 +40,45 @@ export function subjectIssues(subject: Identified, path: string): CredentialIssu
     }
   }
   return issues;
+}
+
+/**
+ * Judges the validity period of a credential: it does not end before it begins (Verifiable Credentials Data Model 2.0 4.9,
+ * and 1.1 for `issuanceDate` and `expirationDate`). The two times are compared as instants, so an offset does not matter.
+ *
+ * @param credential - The credential, as the schemas read it.
+ */
+export function periodIssues(credential: object): CredentialIssue[] {
+  const [begins, ends] = "validFrom" in credential ? ["validFrom", "validUntil"] : ["issuanceDate", "expirationDate"];
+  const [from, until] = [Reflect.get(credential, begins ?? ""), Reflect.get(credential, ends ?? "")];
+  if (typeof from !== "string" || typeof until !== "string") return [];
+  const [start, end] = [parseDateTime(from), parseDateTime(until)];
+  if (start === undefined || end === undefined || start <= end) return [];
+  return [
+    {
+      path: ends ?? "",
+      rule: "validity-period",
+      message: `is earlier than ${begins}: a credential cannot end before it begins.`,
+      severity: "error",
+    },
+  ];
+}
+
+/**
+ * Judges the subject of a credential of no class of Open Badges or CLR: it says something, which is an `id` or any claim
+ * (Verifiable Credentials Data Model 2.0 4.8: each subject is the subject of one or more claims).
+ *
+ * @param subject - The subject, as the schemas read it.
+ */
+export function emptySubjectIssues(subject: object): CredentialIssue[] {
+  return Object.keys(subject).length > 0
+    ? []
+    : [
+        {
+          path: "credentialSubject",
+          rule: "subject-empty",
+          message: "has no property, so it is the subject of no claim: give it an id or a claim.",
+          severity: "error",
+        },
+      ];
 }

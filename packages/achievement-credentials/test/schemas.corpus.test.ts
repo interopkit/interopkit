@@ -19,18 +19,16 @@ import {
 } from "../src/index.js";
 import { CLASS_SCHEMAS } from "../src/read/internal.js";
 import { definitionsOf, FILE_CASES, fileSchema, heldClass, isClosed, oracleOf, schemaExportName } from "./official.js";
+import { RULES_BEYOND_SCHEMAS } from "./rules-beyond-schemas.js";
 
 /** The runs of each property, and the seed that makes them the same on every run. */
 const RUNS = { numRuns: 120, seed: 2024, endOnFailure: true };
-
-/** The rules that the schemas do not state, which the readers add: a value with such an error is a valid value of a schema. */
-const NOT_IN_SCHEMAS = new Set(["subject-unidentified"]);
 
 function reads(name: string, credential: boolean, value: unknown): boolean {
   const issues = credential
     ? validateCredential(value, { kind: name.replace(/V1p1$/u, "") as CredentialKind })
     : validateEntity(name as EntityKind, value);
-  return issues.every(({ severity, rule }) => severity !== "error" || NOT_IN_SCHEMAS.has(rule));
+  return issues.every(({ severity, rule }) => severity !== "error" || RULES_BEYOND_SCHEMAS.has(rule));
 }
 
 describe.each(FILE_CASES)("$name", ({ name, credential, schema }) => {

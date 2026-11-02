@@ -21,7 +21,7 @@ import {
 } from "../model/index.js";
 import { clrCredentialJwtPayloadSchema } from "./clr-schemas.js";
 import { CREDENTIAL_SCHEMAS, ENTITY_SCHEMAS } from "./registry.js";
-import { subjectIssues } from "./rules.js";
+import { emptySubjectIssues, periodIssues, subjectIssues } from "./rules.js";
 
 /**
  * Makes the list of findings of a call that stops at a limit. A reader keeps the errors alone, because it does not report
@@ -151,12 +151,17 @@ export function credentialOrReason(
     : { value: credential };
 }
 
-/** Judges the subject of a credential, or the subject of a CLR in a JWT, that the specification wants identified. */
+/**
+ * Judges what the schemas leave to the specifications: the subject of a credential, or of a CLR in a JWT, which the specification
+ * wants identified or to say something, and the validity period.
+ */
 export function ruleIssues(value: AnyVerifiableCredential | Entity): CredentialIssue[] {
   if ("verifiableCredential" in value) return subjectIssues(value, "");
   if (!("credentialSubject" in value)) return [];
   const subject = value.credentialSubject;
-  return "achievement" in subject || "verifiableCredential" in subject
-    ? subjectIssues(subject, "credentialSubject")
-    : [];
+  const subjectRules =
+    "achievement" in subject || "verifiableCredential" in subject
+      ? subjectIssues(subject, "credentialSubject")
+      : emptySubjectIssues(subject);
+  return [...periodIssues(value), ...subjectRules];
 }
