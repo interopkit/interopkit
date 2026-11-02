@@ -132,3 +132,27 @@ export function readPage(response: HttpResponse): {
     hash: createHash("sha256").update(script).digest("base64"),
   };
 }
+
+/** What the page that posts a form to the tool holds: its action, its fields, its scripts and the hash of its script. */
+export interface Post {
+  readonly action: string;
+  readonly fields: Map<string, string>;
+  readonly scripts: number;
+  readonly hash: string;
+}
+
+/** Reads the page that posts the `id_token`, or the authentication error response, to the tool. */
+export function readPost(response: HttpResponse): Post {
+  const text = textOf(response.body);
+  const fields = new Map<string, string>();
+  for (const [, name = "", value = ""] of text.matchAll(/<input type="hidden" name="([^"]*)" value="([^"]*)">/gu)) {
+    fields.set(unescapeHtml(name), unescapeHtml(value));
+  }
+  const script = /<script>([\s\S]*)<\/script>/u.exec(text)?.[1] ?? "";
+  return {
+    action: unescapeHtml(/<form id="form" method="post" action="([^"]*)">/u.exec(text)?.[1] ?? ""),
+    fields,
+    scripts: text.split("<script").length - 1,
+    hash: createHash("sha256").update(script).digest("base64"),
+  };
+}

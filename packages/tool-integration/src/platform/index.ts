@@ -3,12 +3,14 @@
  * `ltiPlatformFrame`, whose URL its page opens in the tool's frame, and routes every request to the platform's origin to
  * `handlePlatformRequest`: the tool's authentication request, which receives the `id_token` of the kept message, the key set,
  * the token requests, the storage page of the client-side login, and the routes of the services whose stores the host gives:
- * the line items, results and scores of the Assignment and Grade Services over a `GradebookStore`.
+ * the line items, results and scores of the Assignment and Grade Services over a `GradebookStore`. The host's route at the
+ * `deep_link_return_url` of a Deep Linking request reads the tool's response with `readDeepLinkingResponse`.
  *
  * @module @interopkit/tool-integration/platform
  */
 export { buildCapabilitiesScript, type CapabilitiesScript, type CapabilitiesScriptOptions } from "./capabilities.js";
 export { buildPlatformEndpoints, type PlatformConfig, type PlatformEndpoints } from "./config.js";
+export { type ReceivedDeepLinkingResponse, readDeepLinkingResponse } from "./deep-linking/response.js";
 export { ltiPlatformFrame, ltiPlatformLogin, type PlatformFrame } from "./login.js";
 export type {
   DeepLinkingInputSettings,
@@ -21,7 +23,13 @@ export type {
   StartProctoringInput,
   SubmissionReviewInput,
 } from "./messages/input.js";
-export type { LaunchToCheck, PlatformLoginOptions, PlatformOptions, PlatformRequestOptions } from "./options.js";
+export type {
+  LaunchToCheck,
+  PlatformLoginOptions,
+  PlatformOptions,
+  PlatformRequestOptions,
+  ToolMessageOptions,
+} from "./options.js";
 export type {
   GradebookStore,
   LaunchStore,

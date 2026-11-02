@@ -24,6 +24,7 @@ export {
 } from "./claims/index.js";
 export { CLOCK_SKEW_SECONDS } from "./clock-skew.js";
 export {
+  findRefusal,
   readContentItem,
   writeContentItem,
 } from "./content-items/index.js";
@@ -70,7 +71,7 @@ export {
   writeMessage,
   writeToolMessage,
 } from "./message/index.js";
-export { renderPage } from "./page.js";
+export { renderPage, renderPostPage } from "./page.js";
 export {
   readPreferencesQuery,
   readPreferencesRecord,

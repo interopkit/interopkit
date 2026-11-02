@@ -293,6 +293,21 @@ const baseEntries = {
   ),
 };
 
+const deepLinkingSettingsEntries = {
+  returnUrl: HTTPS_URL,
+  acceptTypes: STRING_ARRAY,
+  acceptPresentationDocumentTargets: STRING_ARRAY,
+  acceptMediaTypes: v.optional(STRING_ARRAY),
+  acceptMultiple: v.optional(v.boolean()),
+  acceptLineItem: v.optional(v.boolean()),
+  autoCreate: v.optional(v.boolean()),
+  title: TEXT,
+  text: TEXT,
+};
+
+/** The settings of a Deep Linking request without the host's own data, as the sealed data of the request keeps them. */
+export const deepLinkingSettingsSchema = strictRecord(deepLinkingSettingsEntries);
+
 /** The attempt number of a proctored assessment: a whole number from 0 (Proctoring Services 1.0 section 4.2.1.6). */
 const ATTEMPT_NUMBER = nonNegativeIntegerSchema;
 
@@ -307,18 +322,7 @@ const messageInputSchema = v.pipe(
     v.strictObject({
       ...baseEntries,
       messageType: v.literal("LtiDeepLinkingRequest"),
-      settings: strictRecord({
-        returnUrl: HTTPS_URL,
-        acceptTypes: STRING_ARRAY,
-        acceptPresentationDocumentTargets: STRING_ARRAY,
-        acceptMediaTypes: v.optional(STRING_ARRAY),
-        acceptMultiple: v.optional(v.boolean()),
-        acceptLineItem: v.optional(v.boolean()),
-        autoCreate: v.optional(v.boolean()),
-        title: TEXT,
-        text: TEXT,
-        data: v.optional(jsonObjectSchema),
-      }),
+      settings: strictRecord({ ...deepLinkingSettingsEntries, data: v.optional(jsonObjectSchema) }),
     }),
     v.strictObject({
       ...baseEntries,

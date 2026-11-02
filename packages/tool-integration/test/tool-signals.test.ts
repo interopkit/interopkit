@@ -3,10 +3,10 @@
 import { type CallOptions, DataError } from "@interopkit/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createJwksCache } from "../src/index.js";
-import { deepLinkResponse, type LtiStore, ltiLaunch, ltiLogin } from "../src/tool/index.js";
+import { type LtiStore, ltiLaunch, ltiLogin } from "../src/tool/index.js";
 import { requestServiceToken } from "../src/tool/internal.js";
 import { DEPLOYMENT_ID, JWKS_URL } from "./fake-platform.js";
-import { cookieLogin, deepLinkingOf, type Setup, setup } from "./tool-setup.js";
+import { cookieLogin, type Setup, setup } from "./tool-setup.js";
 import { waitFor } from "./wait.js";
 
 afterEach(() => vi.useRealTimers());
@@ -178,18 +178,6 @@ describe("the request of a service token and a signal", () => {
     await waitFor(() => expect(ctx.platform.requests.length).toBeGreaterThan(0));
     controller.abort(REASON);
     await expect(wait).rejects.toBe(REASON);
-  });
-});
-
-describe("deepLinkResponse and a signal", () => {
-  it("hands the signal to the registration lookup", async () => {
-    const ctx = setup();
-    const { request: post } = await cookieLogin(ctx, { message: "deep-linking" });
-    const launch = deepLinkingOf(await ltiLaunch(post, ctx.options));
-    const { signal } = new AbortController();
-    const { options, seen } = spying(ctx, signal);
-    await deepLinkResponse(launch, [], options);
-    expect(seen.lookup).toStrictEqual([signal]);
   });
 });
 

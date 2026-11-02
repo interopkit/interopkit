@@ -7,7 +7,8 @@ with a cookie or with the platform's browser storage, whose pages ask the platfo
 validates the launch of every message type, with the versions, the message types, the audiences and the algorithms that the
 host accepts, binds it to the deployment and the target of its login, refuses the platform's authentication error and a form
 above `maxFormBytes`, and verifies the LTI 1.1 migration claim with the host's secret. It signs with the `Signer` of each
-registration, serves its key set with every key of a rotation (`serveToolJwks`), answers a Deep Linking request, and calls the Assignment and
+registration, serves its key set with every key of a rotation (`serveToolJwks`), answers a Deep Linking request with the page that posts
+the signed response (`createDeepLinkResponse`, which holds the items of the five types and of others to what the request accepts), and calls the Assignment and
 Grade Services with `createServiceClient`: the line items of a context in pages, created, read, replaced and deleted, their
 results, and scores, with `advanceScoreTimestamp` for strictly later timestamps. It asks for the narrowest scope that a call
 needs, keeps one access token of `@interopkit/core/oauth` for each scope until it is about to expire, sends it only to the
@@ -21,7 +22,9 @@ with every key of a rotation; the token requests, whose stateless token grants t
 registration grants and a service offers; the storage page of the client-side login; and the Assignment and Grade Services over
 the host's `GradebookStore`, offered in a claim, at the token endpoint and in their routes only when the store is given, with the
 tool and its scopes checked again on every request, pages with `next` links, and the timestamp of each score for the store to
-keep the latest. It substitutes the variables of LTI
+keep the latest. `readDeepLinkingResponse` reads the form that a tool posts to the return URL of a Deep Linking request: it verifies the
+tool's token as an assertion is verified, accepts its `nonce` once, opens the `data` that the request sealed with its settings and
+the host's own data, and holds the items, each read by its type, to those settings and to `maxContentItems`. It substitutes the variables of LTI
 Core Appendix B that the message answers and those that the host resolves, signs the LTI 1.1 migration claim with a secret that
 it does not keep, opens what an earlier hint key sealed, and refuses an algorithm that the tool's registration does not list.
 `buildCapabilitiesScript` answers `lti.capabilities` on the host's frame page. Handlers take an `HttpRequest` and return

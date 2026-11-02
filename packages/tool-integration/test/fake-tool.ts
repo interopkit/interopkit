@@ -226,3 +226,43 @@ export function tokenRequest(
     body: form.toString(),
   });
 }
+
+/** The claims of a message that a tool sends (Security Framework section 5.2.2), with `exp` five minutes after `iat`. */
+function messageClaims(audience: string, clock: TestClock, change: Assertion): Record<string, unknown> {
+  const iat = Math.floor(clock.now() / 1000);
+  return { iss: TOOL_CLIENT_ID, aud: audience, iat, exp: iat + 300, nonce: crypto.randomUUID(), ...change };
+}
+
+/** Signs a message of a tool with an RSA key for RS256; `header` replaces fields of the default header. */
+export function toolMessage(
+  tool: KeyPair,
+  audience: string,
+  clock: TestClock,
+  change: Assertion = {},
+  header: Readonly<Record<string, unknown>> = {},
+): Promise<string> {
+  return signToken(messageClaims(audience, clock, change), tool, header);
+}
+
+/** Signs a message of a tool with an elliptic curve key, with jose. */
+export function ecToolMessage(
+  tool: EcKey,
+  audience: string,
+  clock: TestClock,
+  change: Assertion = {},
+): Promise<string> {
+  return new SignJWT(messageClaims(audience, clock, change))
+    .setProtectedHeader({ alg: tool.algorithm, kid: tool.kid, typ: "JWT" })
+    .sign(tool.privateKey);
+}
+
+/** The form that a tool posts to a URL of the host: the parameter `JWT` (Security Framework section 5.2.2). */
+export function messageForm(url: string, jwt: string | undefined, overrides: Readonly<Record<string, string>> = {}) {
+  const fields = new URLSearchParams([...(jwt === undefined ? [] : [["JWT", jwt]]), ...Object.entries(overrides)]);
+  return request({
+    method: "POST",
+    url,
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: fields.toString(),
+  });
+}

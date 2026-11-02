@@ -1,10 +1,12 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the form fields are those of LTI, in snake_case.
 
 import type { Clock } from "@interopkit/core";
+import type { HttpResponse } from "@interopkit/core/http";
+import type { MessageInput, PlatformFrame } from "@interopkit/tool-integration/platform";
 import { generateSigningKeys } from "./src/keys.ts";
-import { connect, plainRequest, textOf } from "./src/network.ts";
-import { createPlatform } from "./src/platform.ts";
-import { setupPlatform } from "./src/platform-setup.ts";
+import { connect, type Handler, plainRequest, textOf } from "./src/network.ts";
+import { createPlatform, type Platform } from "./src/platform.ts";
+import { DEEP_LINKING_PATH, setupPlatform } from "./src/platform-setup.ts";
 import { createTool } from "./src/tool.ts";
 import { setupTool } from "./src/tool-setup.ts";
 
@@ -13,13 +15,16 @@ const CLIENT_ID = "962fa4d8-bcbf-49a0-94b2-2de05ad274af";
 const DEPLOYMENT_ID = "07940580-b309-415e-a37c-914d387c1150";
 const KEY_ID = "tool-1";
 const NOW = 1_700_000_000_000;
+const LEARNER = "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner";
+const INSTRUCTOR = "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor";
 
-/** What the scenario shows: the launch the tool accepted, the grading, and the replay the platform refused. */
+/** What the scenario shows: the launch the tool accepted, the grading, the content the tool placed, and the replay the platform refused. */
 export interface Outcome {
   readonly login: { readonly toolHost: string; readonly storageUrl: string };
   readonly launch: Readonly<Record<string, unknown>>;
   readonly graded: Readonly<Record<string, unknown>>;
   readonly kept: readonly Readonly<Record<string, unknown>>[];
+  readonly deepLinked: Readonly<Record<string, unknown>>;
   readonly replay: { readonly status: number; readonly error: string };
 }
 
@@ -38,22 +43,62 @@ function configOf(page: string): Record<string, string> {
   return JSON.parse(decodeAttribute(/data-config="([^"]*)"/u.exec(page)?.[1] ?? "{}"));
 }
 
-/** Reads the form that the platform's page posts: the `id_token` and the `state`, or the `error`, and where they go. */
-function formOf(page: string): { action: string; idToken: string; state: string; error: string } {
-  const field = (name: string) => new RegExp(`name="${name}" value="([^"]*)"`, "u").exec(page)?.[1] ?? "";
-  return {
-    action: /<form id="form" method="post" action="([^"]*)"/u.exec(page)?.[1] ?? "",
-    idToken: field("id_token"),
-    state: field("state"),
-    error: field("error"),
-  };
+/** Reads the form that a page posts: its action and its hidden fields, decoded. */
+function postOf(page: string): { readonly action: string; readonly fields: ReadonlyMap<string, string> } {
+  const fields = new Map<string, string>();
+  for (const [, name = "", value = ""] of page.matchAll(/<input type="hidden" name="([^"]*)" value="([^"]*)">/gu)) {
+    fields.set(decodeAttribute(name), decodeAttribute(value));
+  }
+  return { action: decodeAttribute(/<form id="form" method="post" action="([^"]*)"/u.exec(page)?.[1] ?? ""), fields };
+}
+
+const FORM_TYPE = { "content-type": "application/x-www-form-urlencoded" };
+
+/** What the browser did for a message: the frame of the tool, the authentication request, and the tool's answer to the launch. */
+interface Visit {
+  readonly frame: PlatformFrame;
+  readonly authenticationRequest: string;
+  readonly launched: HttpResponse;
 }
 
 /**
- * Launches a tool from a platform and takes its score, each side with the role of this package, over an in-memory network.
- * The steps are those of the browser: the platform keeps the message and prepares the login URL, the browser asks the tool,
- * then the platform to authenticate, then posts the `id_token` to the tool; the tool then reads its line item, posts the score
- * and reads the results back through the grade services.
+ * Plays the browser for a message that the platform keeps: it opens the frame of the tool, which answers the platform's
+ * request for client-side login with a page that keeps its `state` and `nonce` in the platform's storage and then sends the
+ * browser to the platform to authenticate; the platform answers with the page that posts the `id_token`; the tool's page
+ * fetches the stored values, and the browser posts them with the token to the tool's launch URL.
+ */
+async function browse(platform: Platform, tool: Handler, message: MessageInput): Promise<Visit> {
+  const frame = await platform.frame(message);
+  const login = await tool(plainRequest("GET", frame.url));
+  const stored = configOf(textOf(login));
+  const storage = new Map([
+    [`state_${stored.state}`, stored.state ?? ""],
+    [`nonce_${stored.nonce}`, stored.nonce ?? ""],
+  ]);
+  const authenticationRequest = stored.authenticationRequest ?? "";
+  const authentication = await platform.handle(plainRequest("GET", authenticationRequest));
+  const { action, fields: posted } = postOf(textOf(authentication));
+  const fields = { id_token: posted.get("id_token") ?? "", state: posted.get("state") ?? "" };
+  // The platform's post is answered with a page that fetches the stored values; the browser posts them back from the tool's origin.
+  const verification = await tool(
+    plainRequest("POST", action, { ...FORM_TYPE, origin: platform.origin }, new URLSearchParams(fields).toString()),
+  );
+  const fetched = configOf(textOf(verification));
+  const verified = new URLSearchParams({
+    ...fields,
+    stored_state: storage.get(`state_${fetched.state}`) ?? "",
+    stored_nonce: storage.get(`nonce_${fetched.nonce}`) ?? "",
+  });
+  const launched = await tool(plainRequest("POST", action, { ...FORM_TYPE, origin: TOOL_ORIGIN }, verified.toString()));
+  return { frame, authenticationRequest, launched };
+}
+
+/**
+ * Launches a tool from a platform, takes its score and lets it place content, each side with the role of this package, over
+ * an in-memory network. The steps are those of the browser: the platform keeps the message and prepares the login URL, the
+ * browser asks the tool, then the platform to authenticate, then posts the `id_token` to the tool. The tool then reads its line
+ * item, posts the score and reads the results back through the grade services. A Deep Linking request goes the same way, and
+ * the tool answers it with a page that posts the signed response to the platform, which reads it.
  *
  * @returns What each side saw.
  */
@@ -93,44 +138,21 @@ export async function runScenario(): Promise<Outcome> {
 
   // The platform's gradebook has a line item for the quiz in the course, and the launch offers it to the tool.
   platform.gradebook.add(CLIENT_ID, "course-1", { id: "quiz-1", label: "Drawing quiz", scoreMaximum: 10 });
-  const frame = await platform.frame({
-    messageType: "LtiResourceLinkRequest",
+  const base = {
     clientId: CLIENT_ID,
     deploymentId: DEPLOYMENT_ID,
     targetLinkUri: `${TOOL_ORIGIN}/lti/launch`,
-    user: { subject: "candidate-7" },
-    roles: ["http://purl.imsglobal.org/vocab/lis/v2/membership#Learner"],
     context: { id: "course-1", title: "Tryout" },
+  };
+  const { frame, authenticationRequest, launched } = await browse(platform, tool.handle, {
+    ...base,
+    messageType: "LtiResourceLinkRequest",
+    user: { subject: "candidate-7" },
+    roles: [LEARNER],
     resourceLink: { id: "session-1-question-4", title: "Drawing tool" },
     custom: { exam: "tryout-1", user: "$User.id", lineItem: "$LineItem.url" },
     services: { grades: { lineItemId: "quiz-1", container: false } },
   });
-  // The browser opens the frame. The platform asks for client-side login, so the tool answers with a page that keeps its
-  // `state` and `nonce` in the platform's storage and then sends the browser to the platform to authenticate.
-  const login = await tool.handle(plainRequest("GET", frame.url));
-  const stored = configOf(textOf(login));
-  const storage = new Map([
-    [`state_${stored.state}`, stored.state ?? ""],
-    [`nonce_${stored.nonce}`, stored.nonce ?? ""],
-  ]);
-  const authenticationRequest = stored.authenticationRequest ?? "";
-  const authentication = await platform.handle(plainRequest("GET", authenticationRequest));
-  const form = formOf(textOf(authentication));
-  const formType = { "content-type": "application/x-www-form-urlencoded" };
-  const fields = { id_token: form.idToken, state: form.state };
-  // The platform's post is answered with a page that fetches the stored values; the browser posts them back from the tool's origin.
-  const verification = await tool.handle(
-    plainRequest("POST", form.action, { ...formType, origin: platform.origin }, new URLSearchParams(fields).toString()),
-  );
-  const fetched = configOf(textOf(verification));
-  const verified = new URLSearchParams({
-    ...fields,
-    stored_state: storage.get(`state_${fetched.state}`) ?? "",
-    stored_nonce: storage.get(`nonce_${fetched.nonce}`) ?? "",
-  });
-  const launched = await tool.handle(
-    plainRequest("POST", form.action, { ...formType, origin: TOOL_ORIGIN }, verified.toString()),
-  );
   const launch = tool.launches[0];
   if (launch === undefined) throw new Error(`The tool did not accept the launch: ${launched.status}.`);
 
@@ -140,7 +162,29 @@ export async function runScenario(): Promise<Outcome> {
   // The authentication request of a launch is answered once: the message is taken, so the same request a second time gets
   // the authentication error response, which the page posts to the tool.
   const again = await platform.handle(plainRequest("GET", authenticationRequest));
-  const replay = { status: again.status, error: formOf(textOf(again)).error };
+  const replay = { status: again.status, error: postOf(textOf(again)).fields.get("error") ?? "" };
+
+  // An instructor adds content to the course: the platform asks the tool for it, with data of its own that comes back sealed,
+  // the tool answers with a page that posts its response to the platform's return URL, and the platform reads the response.
+  const returnUrl = `${platform.origin}${DEEP_LINKING_PATH}`;
+  const picking = await browse(platform, tool.handle, {
+    ...base,
+    messageType: "LtiDeepLinkingRequest",
+    user: { subject: "instructor-1" },
+    roles: [INSTRUCTOR],
+    settings: {
+      returnUrl,
+      acceptTypes: ["ltiResourceLink"],
+      acceptPresentationDocumentTargets: ["iframe"],
+      acceptLineItem: true,
+      data: { placement: "week-3" },
+    },
+  });
+  const answer = postOf(textOf(picking.launched));
+  const received = await platform.handle(
+    plainRequest("POST", answer.action, FORM_TYPE, new URLSearchParams([...answer.fields]).toString()),
+  );
+  const [placed] = platform.deepLinked;
 
   return {
     login: { toolHost: new URL(frame.url).host, storageUrl: frame.storageUrl },
@@ -152,6 +196,27 @@ export async function runScenario(): Promise<Outcome> {
       scoreGiven: score.scoreGiven,
       timestamp: score.timestamp,
     })),
+    deepLinked: {
+      posted: { to: answer.action, fields: [...answer.fields.keys()] },
+      status: received.status,
+      data: placed?.data,
+      message: placed?.message,
+      items: (placed?.items ?? []).map((item) =>
+        "properties" in item || item.type !== "ltiResourceLink"
+          ? { type: item.type }
+          : {
+              type: item.type,
+              title: item.title,
+              url: item.url,
+              custom: Object.fromEntries(item.custom ?? []),
+              lineItem: item.lineItem && {
+                scoreMaximum: item.lineItem.scoreMaximum,
+                label: item.lineItem.label,
+                resourceId: item.lineItem.resourceId,
+              },
+            },
+      ),
+    },
     replay,
   };
 }

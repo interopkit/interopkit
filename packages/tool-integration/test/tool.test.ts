@@ -6,15 +6,9 @@ import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
 import { jwtVerify } from "jose";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createJwksCache, type DeepLinkingRequestMessage, type LtiMessage } from "../src/index.js";
+import { createJwksCache, type LtiMessage } from "../src/index.js";
 import { randomToken } from "../src/protocol/internal.js";
-import {
-  type DeepLinkItem,
-  deepLinkResponse,
-  ltiLaunch,
-  ltiLogin,
-  type PlatformRegistration,
-} from "../src/tool/index.js";
+import { ltiLaunch, ltiLogin, type PlatformRegistration } from "../src/tool/index.js";
 import { getDataPage, requestServiceToken } from "../src/tool/internal.js";
 import {
   ACCESS_TOKEN_URL,
@@ -25,7 +19,6 @@ import {
   DEPLOYMENT_ID,
   formPost,
   ISSUER,
-  type Issue,
   JWKS_URL,
   LOGIN_URL,
   REDIRECT_URI,
@@ -33,17 +26,7 @@ import {
   TARGET_LINK_URI,
   TOOL_ORIGIN,
 } from "./fake-platform.js";
-import {
-  base64url,
-  generateKeyPair,
-  type KeyPair,
-  NOW,
-  readPage,
-  readToken,
-  request,
-  signToken,
-  verifyToken,
-} from "./fixture.js";
+import { base64url, generateKeyPair, type KeyPair, NOW, readPage, request, signToken } from "./fixture.js";
 import { textOf } from "./text-of.js";
 import {
   attackerKey,
@@ -190,199 +173,6 @@ describe("the request of a service token", () => {
       ctx.platform.tokenResponse = answer;
       await expect(tokenFor(ctx, scopes)).rejects.toBeInstanceOf(ServiceError);
     }
-  });
-});
-
-describe("deepLinkResponse", () => {
-  const exam = new Map([["exam", "tryout-1"]]);
-
-  /** A Deep Linking request through the whole login, as the platform sends it. */
-  async function deepLinkingRequest(ctx: Setup, claims: Issue["claims"] = {}): Promise<DeepLinkingRequestMessage> {
-    const { request: post } = await cookieLogin(ctx, { message: "deep-linking", claims });
-    return deepLinkingOf(await ltiLaunch(post, ctx.options));
-  }
-
-  it("signs a response that places a test, which the platform accepts", async () => {
-    const ctx = setup();
-    const launch = await deepLinkingRequest(ctx);
-    const jwt = await deepLinkResponse(
-      launch,
-      [
-        {
-          title: "Tryout 1",
-          text: "A timed tryout",
-          url: `${TOOL_ORIGIN}/lti/tests/tryout-1`,
-          custom: exam,
-          lineItem: { scoreMaximum: 100, label: "Tryout 1", resourceId: "tryout-1", tag: "exam" },
-        },
-      ],
-      ctx.options,
-    );
-    const claims = await ctx.platform.acceptDeepLinking(jwt, "deep-link-data-1");
-    expect(claims).toMatchObject({
-      iss: CLIENT_ID,
-      aud: ISSUER,
-      iat: SECONDS,
-      exp: SECONDS + 300,
-      "https://purl.imsglobal.org/spec/lti/claim/message_type": "LtiDeepLinkingResponse",
-      "https://purl.imsglobal.org/spec/lti/claim/version": "1.3.0",
-      "https://purl.imsglobal.org/spec/lti/claim/deployment_id": DEPLOYMENT_ID,
-      "https://purl.imsglobal.org/spec/lti-dl/claim/content_items": [
-        {
-          type: "ltiResourceLink",
-          title: "Tryout 1",
-          text: "A timed tryout",
-          url: `${TOOL_ORIGIN}/lti/tests/tryout-1`,
-          custom: { exam: "tryout-1" },
-          lineItem: { scoreMaximum: 100, label: "Tryout 1", resourceId: "tryout-1", tag: "exam" },
-        },
-      ],
-    });
-    expect(readToken(jwt).header).toEqual({ alg: "RS256", typ: "JWT", kid: "tool-1" });
-  });
-
-  it("places no item with an empty list, and leaves out the data when the request had none", async () => {
-    const ctx = setup();
-    const launch = await deepLinkingRequest(ctx, {
-      "https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings": {
-        deep_link_return_url: RETURN_URL,
-        accept_types: ["ltiResourceLink"],
-        accept_presentation_document_targets: ["iframe"],
-      },
-    });
-    const claims = await ctx.platform.acceptDeepLinking(await deepLinkResponse(launch, [], ctx.options), undefined);
-    expect(claims["https://purl.imsglobal.org/spec/lti-dl/claim/content_items"]).toEqual([]);
-    expect("https://purl.imsglobal.org/spec/lti-dl/claim/data" in claims).toBe(false);
-  });
-
-  it("gives each response its own nonce and writes only the properties that the item has", async () => {
-    const ctx = setup();
-    const launch = await deepLinkingRequest(ctx);
-    const first = readToken(await deepLinkResponse(launch, [{ url: TARGET_LINK_URI }], ctx.options)).payload;
-    const second = readToken(await deepLinkResponse(launch, [{ url: TARGET_LINK_URI }], ctx.options)).payload;
-    expect(first.nonce).not.toBe(second.nonce);
-    expect(first["https://purl.imsglobal.org/spec/lti-dl/claim/content_items"]).toEqual([
-      { type: "ltiResourceLink", url: TARGET_LINK_URI },
-    ]);
-  });
-
-  it("places several items only when the platform accepts several", async () => {
-    const ctx = setup();
-    const several = await deepLinkingRequest(ctx);
-    const jwt = await deepLinkResponse(several, [{ title: "a" }, { title: "b" }], ctx.options);
-    expect(readToken(jwt).payload["https://purl.imsglobal.org/spec/lti-dl/claim/content_items"]).toHaveLength(2);
-    for (const accept of [{ accept_multiple: false }, {}]) {
-      const one = await deepLinkingRequest(ctx, {
-        "https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings": {
-          deep_link_return_url: RETURN_URL,
-          accept_types: ["ltiResourceLink"],
-          accept_presentation_document_targets: ["iframe"],
-          ...accept,
-        },
-      });
-      await expect(deepLinkResponse(one, [{ title: "a" }], ctx.options)).resolves.toEqual(expect.any(String));
-      await expect(deepLinkResponse(one, [{ title: "a" }, { title: "b" }], ctx.options)).rejects.toThrow(
-        new DataError("The platform does not say that it accepts several items, and 2 were given."),
-      );
-    }
-  });
-
-  it("refuses items of a type that the platform does not accept", async () => {
-    const ctx = setup();
-    const launch = await deepLinkingRequest(ctx, {
-      "https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings": {
-        deep_link_return_url: RETURN_URL,
-        accept_types: ["link", "file"],
-        accept_presentation_document_targets: ["iframe"],
-      },
-    });
-    await expect(deepLinkResponse(launch, [{ title: "a" }], ctx.options)).rejects.toThrow(
-      new DataError('The platform accepts the types "link, file", and not ltiResourceLink.'),
-    );
-    await expect(deepLinkResponse(launch, [], ctx.options)).resolves.toEqual(expect.any(String));
-  });
-
-  it("refuses a launch that is not a Deep Linking request, or whose registration changed", async () => {
-    const ctx = setup();
-    const resourceLink = launchOf(await ltiLaunch((await cookieLogin(ctx)).request, ctx.options));
-    await expect(deepLinkResponse(JSON.parse(JSON.stringify(resourceLink)), [], ctx.options)).rejects.toThrow(
-      new DataError('The launch must be a LtiDeepLinkingRequest, found the message type "LtiResourceLinkRequest".'),
-    );
-    const launch = await deepLinkingRequest(ctx);
-    await expect(deepLinkResponse({ ...launch, deploymentId: "other" }, [], ctx.options)).rejects.toMatchObject({
-      name: "LtiError",
-      reason: "deployment-unknown",
-    });
-    await expect(
-      deepLinkResponse({ ...launch, issuer: "https://other.example" }, [], ctx.options),
-    ).rejects.toMatchObject({ name: "LtiError", reason: "platform-unknown" });
-  });
-
-  it("throws DataError for an item that is malformed", async () => {
-    const ctx = setup();
-    const launch = await deepLinkingRequest(ctx);
-    const properties = '"title", "text", "url", "custom" and "lineItem"';
-    const bad: readonly [string, DeepLinkItem][] = [
-      [`A Deep Linking item has the properties ${properties}, found "type".`, JSON.parse('{"type":"link"}')],
-      ["The title of a Deep Linking item must be a string, found 5.", JSON.parse('{"title":5}')],
-      ["The text of a Deep Linking item must be a string, found null.", JSON.parse('{"text":null}')],
-      [
-        'The url of a Deep Linking item must be an absolute https URL, found "http://tool.example/t".',
-        { url: "http://tool.example/t" },
-      ],
-      [
-        "The custom properties of a Deep Linking item must be a Map of strings, found an object.",
-        JSON.parse('{"custom":{"exam":"t"}}'),
-      ],
-      [
-        "The custom properties of a Deep Linking item must be a Map of strings, found an object.",
-        { custom: new Map([["exam", JSON.parse("1")]]) },
-      ],
-      ["The line item of a Deep Linking item must be an object, found 5.", JSON.parse('{"lineItem":5}')],
-      ["The scoreMaximum of a line item must be a number above 0, found 0.", { lineItem: { scoreMaximum: 0 } }],
-      ["The scoreMaximum of a line item must be a number above 0, found -1.", { lineItem: { scoreMaximum: -1 } }],
-      [
-        "The scoreMaximum of a line item must be a number above 0, found NaN.",
-        { lineItem: { scoreMaximum: Number.NaN } },
-      ],
-      [
-        'The scoreMaximum of a line item must be a number above 0, found "100".',
-        JSON.parse('{"lineItem":{"scoreMaximum":"100"}}'),
-      ],
-      ["The label of a line item must be a string, found 1.", JSON.parse('{"lineItem":{"scoreMaximum":1,"label":1}}')],
-      [
-        'A line item has the properties "scoreMaximum", "label", "resourceId" and "tag", found "gradesReleased".',
-        JSON.parse('{"lineItem":{"scoreMaximum":1,"gradesReleased":true}}'),
-      ],
-      ["A Deep Linking item must be an object, found null.", JSON.parse("null")],
-    ];
-    for (const [message, item] of bad) {
-      await expect(deepLinkResponse(launch, [item], ctx.options), message).rejects.toThrow(new DataError(message));
-    }
-  });
-
-  it("throws DataError for arguments of other types", async () => {
-    const ctx = setup();
-    const launch = await deepLinkingRequest(ctx);
-    await expect(deepLinkResponse(JSON.parse("null"), [], ctx.options)).rejects.toThrow(
-      new DataError("The launch must be an object, found null."),
-    );
-    await expect(deepLinkResponse(launch, JSON.parse('{"length":0}'), ctx.options)).rejects.toThrow(
-      new DataError("The items must be an array, found an object."),
-    );
-    await expect(deepLinkResponse(launch, [], JSON.parse("null"))).rejects.toThrow(
-      new DataError("The options must be an object, found null."),
-    );
-    await expect(deepLinkResponse({ ...launch, settings: JSON.parse("5") }, [], ctx.options)).rejects.toThrow(
-      new DataError("The settings of the launch must be an object, found 5."),
-    );
-    await expect(
-      deepLinkResponse(
-        { ...launch, settings: { ...launch.settings, acceptTypes: JSON.parse('"x"') } },
-        [],
-        ctx.options,
-      ),
-    ).rejects.toThrow(new DataError('The accepted types of the launch must be an array, found "x".'));
   });
 });
 
@@ -1543,25 +1333,6 @@ describe("ltiLogin", () => {
 });
 
 describe("properties", () => {
-  it("signs the response to any Deep Linking text so that its claims decode and its signature verifies with the key of the tool, and with no other", async () => {
-    const ctx = setup();
-    const { request: post } = await cookieLogin(ctx, { message: "deep-linking" });
-    const launch = deepLinkingOf(await ltiLaunch(post, ctx.options));
-    await fc.assert(
-      fc.asyncProperty(fc.string({ maxLength: 40 }), async (title) => {
-        const jwt = await deepLinkResponse(launch, [{ title }], ctx.options);
-        const { header, payload } = readToken(jwt);
-        expect(header).toEqual({ alg: "RS256", typ: "JWT", kid: "tool-1" });
-        expect(payload["https://purl.imsglobal.org/spec/lti-dl/claim/content_items"]).toEqual([
-          { type: "ltiResourceLink", title },
-        ]);
-        expect(await verifyToken(jwt, toolKey)).toBe(true);
-        expect(await verifyToken(jwt, platformKey)).toBe(false);
-      }),
-      { numRuns: 25 },
-    );
-  });
-
   it("makes tokens of 160 random bits in base64url that do not repeat", () => {
     const tokens = Array.from({ length: 500 }, () => randomToken());
     expect(new Set(tokens).size).toBe(500);

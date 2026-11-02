@@ -8,6 +8,7 @@ import {
   type PlatformEndpoints,
   type PlatformLoginOptions,
   type PlatformRequestOptions,
+  type ToolMessageOptions,
   type ToolRegistration,
 } from "@interopkit/tool-integration/platform";
 import { createGradebook, type Gradebook } from "./gradebook.ts";
@@ -36,9 +37,14 @@ export interface PlatformSetup {
   readonly requests: PlatformRequestOptions;
   /** The URLs of the endpoints, which the administrator of the tool registers with it. */
   readonly endpoints: PlatformEndpoints;
+  /** The options of `readDeepLinkingResponse`, which reads what the tool posts to the return URL of a Deep Linking request. */
+  readonly toolMessage: ToolMessageOptions;
   /** The gradebook behind the grade services. */
   readonly gradebook: Gradebook;
 }
+
+/** The path of the platform's route that reads the response of a Deep Linking request, on the platform's origin. */
+export const DEEP_LINKING_PATH = "/deep-linking";
 
 /** The launches in progress, in memory: a real host keeps them where every process can reach them, for 300 seconds. */
 function launchStore(): LaunchStore {
@@ -82,18 +88,12 @@ export async function setupPlatform(clock: Clock, side: ToolSide): Promise<Platf
   };
   const launches = launchStore();
   const gradebook = createGradebook();
+  // The tool gave its key, so the platform never fetches a key set of the tool.
+  const jwks = createJwksCache({ fetch: () => Promise.reject(new Error("The tool gave its key.")) });
   return {
     login: { config, clock, registration: tools, check: async () => undefined, launches },
-    requests: {
-      config,
-      clock,
-      client: tools,
-      launches,
-      once,
-      // The tool gave its key, so the platform never fetches a key set of the tool.
-      jwks: createJwksCache({ fetch: () => Promise.reject(new Error("The tool gave its key.")) }),
-      services: { gradebook: gradebook.store },
-    },
+    requests: { config, clock, client: tools, launches, once, jwks, services: { gradebook: gradebook.store } },
+    toolMessage: { config, clock, client: tools, jwks, once },
     endpoints: buildPlatformEndpoints(config),
     gradebook,
   };

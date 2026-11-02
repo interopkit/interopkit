@@ -7,7 +7,7 @@ Provisioning Services are absent.
 ```mermaid
 flowchart LR
   login["Third-party login<br/>+ client-side login"] --> launch["Launch<br/>id_token validation, claims"]
-  launch --> dl["Deep Linking<br/>response"]
+  launch --> dl["Deep Linking<br/>createDeepLinkResponse,<br/>readDeepLinkingResponse"]
   launch --> ags["AGS<br/>createServiceClient: line items,<br/>results, scores, cached tokens"]
   launch -.-> missing["Not yet:<br/>the services of NRPS, groups and PNP,<br/>registration, proctoring"]
 ```
@@ -31,7 +31,7 @@ flowchart LR
 | Key sets | Security 6.3, 6.4 | Reads the platform's with `createJwksCache`; serves the tool's with `serveToolJwks`, every key of a rotation with `max-age` |  |
 | Service tokens | Core 6.2, Security 4.1 | `clientCredentialsToken` of `core/oauth` with `private_key_jwt` and the deployment claim; one token for each scope, kept until it is about to expire, dropped on a 401 |  |
 | Deep Linking request                | DL 4.4                     | The ten settings of DL 4.4.1                                              |                                                                                                                                                                                        |
-| Deep Linking response               | DL 3, 4.5                  | `ltiResourceLink` with title, text, url, custom, `lineItem`               | `link`, `file`, `html`, `image`, `gradesReleased` of a line item, extensions, `icon`, `thumbnail`, `window`, `iframe`, `available`, `submission`, `msg`, `log`, `errormsg`, `errorlog` |
+| Deep Linking response               | DL 3, 4.5                  | `createDeepLinkResponse`: the five item types and the types that others define, with their extensions, `lineItem` with `gradesReleased`, `available`, `submission`, `msg`, `log`, `errormsg`, `errorlog`; the items held to the settings of the request |                                                                                                                                                                                        |
 | AGS claim                           | AGS 3.1                    | `services.grades` of the launch                                           |                                                                                                                                                                                        |
 | Line item service                   | AGS 3.2                    | `createServiceClient`: container with filters and pages, read, create, update, delete | |
 | Result service                      | AGS 3.3                    | `results`, by user, in pages | |
@@ -76,7 +76,7 @@ flowchart LR
 | Key sets                            | Security 6.3, 6.4          | `/jwks`: every public key of the key set, `max-age` of an hour; `previousHintKeys` for the hint key            |                                                            |
 | Service tokens                      | Core 6.2, Security 4.1     | `/token`: the scopes that the request asks for, the registration grants and a service offers; the deployment of the assertion; replay check of the `jti` | |
 | Deep Linking request                | DL 4.4                     | The ten settings; `data` seals the settings and the host's data                                                |                                                            |
-| Deep Linking response               | DL 4.5                     |                                                                                                                 | The reader                                                 |
+| Deep Linking response               | DL 4.5                     | `readDeepLinkingResponse`: the tool, the signature, the `nonce` once, the sealed `data`, each item by its type, held to the settings of the request |                                                            |
 | Proctoring                          | Proctoring 4               | `LtiStartProctoring` with sealed session data, `LtiEndAssessment`                                              | The Start Assessment reader, the Assessment Control Service |
 | Client-side login                   | OIDC with postMessages 0.1 | `/storage`                                                                                                      |                                                            |
 | postMessage Storage                 | PM Storage 0.1             | The minimum limits, and `storage_exhaustion`                                                                    |                                                            |
@@ -104,7 +104,7 @@ tested; the client of the tool role and the handler of the platform role use tho
 | Results                    | AGS 3.3           | Result and its container, its filters                                                            | |
 | Memberships                | NRPS 2.0          | Container, member, message of a resource link, group enrollments, filters                        | Client, handler, differences |
 | Groups                     | Groups 1.0        | Groups, group sets, filters                                                                      | Client, handler            |
-| Content items              | DL 3              | The five types, their extensions and other types                                                 | The check against the request |
+| Content items              | DL 3              | The five types, their extensions and other types; the check against the settings of the request | |
 | Configurations             | DR 2              | Platform, tool, acknowledgment, translations, extensions                                         | Steps, routes              |
 | Assessment Control Service | Proctoring 5      | Control request and status                                                                       | Client, handler            |
 | Preferences                | PNP Connector 1.0 | The record as JSON, the `fields` filter                                                          | Client, handler            |

@@ -5,4 +5,4 @@
  */
 export { LAUNCH_TTL_SECONDS } from "./login.js";
 export { openToken, sealToken } from "./seal.js";
-export { openHint, sealHint } from "./tokens.js";
+export { openDeepLinkingData, openHint, sealDeepLinkingData, sealHint } from "./tokens.js";

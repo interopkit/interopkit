@@ -1,6 +1,12 @@
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
-import type { LtiMessage, Result } from "@interopkit/tool-integration";
-import { advanceScoreTimestamp, createServiceClient, ltiLaunch, ltiLogin } from "@interopkit/tool-integration/tool";
+import type { DeepLinkingRequestMessage, LtiMessage, Result } from "@interopkit/tool-integration";
+import {
+  advanceScoreTimestamp,
+  createDeepLinkResponse,
+  createServiceClient,
+  ltiLaunch,
+  ltiLogin,
+} from "@interopkit/tool-integration/tool";
 import type { Handler } from "./network.ts";
 import { LAUNCH_PATH, LOGIN_PATH, type ToolSetup } from "./tool-setup.ts";
 
@@ -32,12 +38,32 @@ export function createTool({ options }: ToolSetup): Tool {
     const launch = await ltiLaunch(request, options);
     if ("status" in launch) return launch;
     launches.push(launch);
+    if (launch.messageType === "LtiDeepLinkingRequest") return chooseContent(launch);
     return {
       status: 200,
       headers: { "content-type": "application/json" },
       body: JSON.stringify(launchSummary(launch)),
     };
   };
+  // A real tool shows its content and lets the user choose; here the user picks the second tryout. The answer is a page that
+  // posts the signed response to the platform's return URL.
+  const chooseContent = (launch: DeepLinkingRequestMessage): Promise<HttpResponse> =>
+    createDeepLinkResponse(
+      launch,
+      {
+        items: [
+          {
+            type: "ltiResourceLink",
+            title: "Drawing tryout 2",
+            url: new URL(LAUNCH_PATH, launch.targetLinkUri).href,
+            custom: new Map([["exam", "tryout-2"]]),
+            lineItem: { scoreMaximum: 20, label: "Drawing tryout 2", resourceId: "tryout-2" },
+          },
+        ],
+        message: "The tryout is placed in the course.",
+      },
+      options,
+    );
   const grade = async (launch: LtiMessage, scoreGiven: number): Promise<Graded> => {
     const grades = launch.services.grades;
     const userId = launch.user.subject;

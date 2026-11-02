@@ -1,5 +1,5 @@
 import type { HttpResponse } from "@interopkit/core/http";
-import { pagePolicy } from "./html.js";
+import { escapeHtml, pagePolicy } from "./html.js";
 
 /** What a page that one script drives consists of. */
 export interface PageOptions {
@@ -46,4 +46,44 @@ ${body}<script>${script}</script>
     },
     body: html,
   };
+}
+
+// The form submits itself; requestSubmit runs the form's validation and its submit event, which submit() does not.
+const POST_SCRIPT = `document.getElementById("form").requestSubmit();`;
+
+/** What a page that posts a form to another party consists of. */
+export interface PostPage {
+  /** The address to which the page posts the form: an `https` URL. */
+  readonly action: string;
+  /** The fields of the form, in order, as hidden inputs. */
+  readonly fields: readonly (readonly [string, string])[];
+  /**
+   * The origin that may frame the page; the policy leaves out `frame-ancestors` when there is none to name.
+   *
+   * @defaultValue none
+   */
+  readonly frameAncestors?: string;
+}
+
+/**
+ * Builds the page that posts a form of hidden fields to an address as soon as it loads, for a message that has to go from the
+ * browser to the other party (Security Framework sections 5.1.1.3 and 5.2.2: `form_post` and the `JWT` of a tool's message). Its
+ * policy allows its one script by hash and forms only to the origin of the address, every value in it is HTML-encoded, and it
+ * is not cached and sends no referrer.
+ */
+export function renderPostPage(post: PostPage): Promise<HttpResponse> {
+  const { action, fields, frameAncestors } = post;
+  const inputs = fields
+    .map(([name, value]) => `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(value)}">\n`)
+    .join("");
+  const body = `<form id="form" method="post" action="${escapeHtml(action)}">
+${inputs}<noscript><button type="submit">Continue</button></noscript>
+</form>
+`;
+  return renderPage({
+    body,
+    script: POST_SCRIPT,
+    formAction: new URL(action).origin,
+    ...(frameAncestors === undefined ? {} : { frameAncestors }),
+  });
 }

@@ -45,6 +45,25 @@ describe("the scenario", () => {
     });
   });
 
+  it("places the content that the tool chose, which the platform reads with the data that it sealed into the request", async () => {
+    const { deepLinked } = await runScenario();
+    expect(deepLinked).toStrictEqual({
+      posted: { to: "https://lms.example/deep-linking", fields: ["JWT"] },
+      status: 200,
+      data: { placement: "week-3" },
+      message: "The tryout is placed in the course.",
+      items: [
+        {
+          type: "ltiResourceLink",
+          title: "Drawing tryout 2",
+          url: "https://tool.example/lti/launch",
+          custom: { exam: "tryout-2" },
+          lineItem: { scoreMaximum: 20, label: "Drawing tryout 2", resourceId: "tryout-2" },
+        },
+      ],
+    });
+  });
+
   it("answers the same authentication request a second time with the authentication error response", async () => {
     expect((await runScenario()).replay).toStrictEqual({ status: 403, error: "login_required" });
   });

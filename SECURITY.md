@@ -420,6 +420,9 @@ platform's key, to the tool's client and deployment, and to one use.
   and refuses a key with a private member, a `kid` used twice and a signer whose key is not published. Rotate by adding the new
   public key one `max-age` before the signer uses it, and remove the old one a `max-age` after its last token expired (Security
   Framework section 6.4).
+- **Deep Linking responses.** `createDeepLinkResponse` returns a page that posts the signed response to the `deep_link_return_url`
+  of the verified request, and nowhere else: its policy allows one script by hash and a form to that origin alone, it is not cached,
+  and every value is HTML-encoded. The items are checked against the request's settings before they are signed.
 - **LTI 1.1 secrets.** `legacySecret` gives the secret of a consumer key for one HMAC of the migration claim; the package keeps it
   nowhere. Trust the 1.1 identifiers of a launch only when `migration.verified` is `true`.
 - **Service tokens.** `createServiceClient` keeps one access token for each scope in memory until it is about to expire, asks for
@@ -461,6 +464,15 @@ them ([platform role](docs/tool-integration/platform.md)).
   platform's issuer may stand; no `message_type`, so a message of the tool never passes as an assertion; a lifetime of at most
   3,600 seconds; the deployment, when named, the tool's; and a `jti` accepted once and remembered through the clock-skew leeway
   after the assertion's expiry. A `once` that rejects fails closed.
+- **Messages of a tool.** `readDeepLinkingResponse` reads the form that a tool posts to the host's return URL. It measures the form
+  before it decodes it (`maxFormBytes`), counts the JSON tokens before it parses them (`maxTokens`) and the items before it reads
+  one (`maxContentItems`), and verifies the token as a client assertion is verified: an algorithm of the tool's registration, a key
+  of its key set, the platform's issuer as the audience and as the authorized party when one is named, `iat`, `exp` and `nonce`
+  present, an expiry within 3,600 seconds. The `nonce` is accepted once through `once` and remembered through the leeway, and is
+  spent only by a message of the type that the route reads. The `data` claim must be the data this platform sealed into the
+  request, for that tool and deployment and unexpired, and the items are held to the settings sealed in it and not to anything the
+  tool says. The platform renders nothing of an item: the host fetches the `url` of a file through its guarded `fetch` and
+  sanitizes `html`.
 - **Access tokens are stateless.** A token holds the client, the deployment, the granted scopes and the expiry, sealed with the
   hint key, and grants only the scopes that the request asks for, the registration grants and a service of the platform offers.
 - **Keys.** The `id_token`s are signed through the `Signer` of `config.keys`, so the private key may stay in a KMS or an HSM; the
@@ -591,6 +603,9 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `tool-integration`        | `refreshSkewSeconds` of `createServiceClient`                            | 60                                | seconds                | How long before its expiry a cached access token is replaced                                                                                             |
 | `tool-integration`        | `pageSize` and `maxPageSize` of `handlePlatformRequest`                  | 100 and 1,000                     | items                  | A page of a service of the platform: without a `limit`, and at most                                                                                      |
 | `tool-integration`        | `maxFormBytes` of `ltiLaunch`                                            | 65,536                            | bytes                  | The form that the platform posts, measured before it is decoded; `form-too-large` above it                                                               |
+| `tool-integration`        | `maxFormBytes` of `readDeepLinkingResponse`                              | 1,048,576                         | bytes                  | The form that a tool posts, measured before it is decoded; `form-too-large` above it                                                                     |
+| `tool-integration`        | `maxTokens` of `readDeepLinkingResponse`                                 | 1,000,000                         | tokens                 | The JSON of the tool's message, counted before it is parsed; `token-malformed` above it                                                                  |
+| `tool-integration`        | `maxContentItems` of `readDeepLinkingResponse`                           | 100                               | items                  | The items of a response, counted before one is read; `content-items-limit` above it                                                                      |
 | `tool-integration`        | Most bytes of a login initiation form                                    | 65,536                            | bytes                  | A POST to the login URL; `DataError` above it; not replaceable                                                                                           |
 | `tool-integration`        | `maxAgeSeconds` of `serveToolJwks`                                       | 3,600                             | seconds                | The `max-age` of the tool's key set                                                                                                                      |
 | `tool-integration`        | Wait for the answer to `lti.capabilities`                                | 100                               | milliseconds           | The pages of the storage path; then `lti_storage_target`; not replaceable                                                                                |
@@ -603,7 +618,7 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `tool-integration`        | `deepLinkingLifetimeSeconds` of `handlePlatformRequest`                  | 86,400                            | seconds                | The sealed data of a Deep Linking request                                                                                                                 |
 | `tool-integration`        | Cache lifetime of the platform's key set                                 | 3,600                             | seconds                | The `max-age` of `/jwks`; not replaceable                                                                                                                 |
 | `tool-integration`        | `toolFrame` of `handlePlatformRequest`                                   | `"lti-tool"`                      |                        | The frame that the storage page answers                                                                                                                   |
-| `tool-integration`        | Longest accepted lifetime of a client assertion                          | 3,600                             | seconds                | `exp` after `iat`; not replaceable                                                                                                                        |
+| `tool-integration`        | Longest accepted lifetime of a client assertion and of a message of a tool | 3,600                             | seconds                | `exp` after `iat`; not replaceable                                                                                                                        |
 | `tool-integration`        | Lifetime of an access token                                              | 3,600                             | seconds                | Not replaceable                                                                                                                                           |
 | `tool-integration`        | Smallest key                                                             | 2,048 bits (RSA), P-256 (EC), 256 bits (HMAC) |            | The keys of a platform, a tool and a registration; not replaceable                                                                                        |
 | `tool-integration`        | `storageTarget` of the login                                             | `"lti-storage"`                   |                        | The frame that shows the storage page                                                                                                                     |

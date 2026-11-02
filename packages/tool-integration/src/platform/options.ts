@@ -2,6 +2,7 @@ import type { CallOptions, Clock } from "@interopkit/core";
 import {
   abortSignalSchema,
   guardSchema,
+  MAX_JSON_TOKENS,
   methodsSchema,
   nonEmptyStringSchema,
   parseWith,
@@ -143,6 +144,46 @@ export interface PlatformSettings
   readonly signal?: AbortSignal;
 }
 
+/** The options of `readDeepLinkingResponse`: the platform, and the ports and limits that checking a message of a tool needs. */
+export interface ToolMessageOptions extends PlatformOptions, CallOptions {
+  /**
+   * Looks up the registration of a tool by its client identifier, or returns `undefined` when there is none. It is called for
+   * each message, so that a removed tool is refused at once.
+   */
+  readonly client: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
+  /** The cache of the key sets of tools, from `createJwksCache`. */
+  readonly jwks: JwksCache;
+  /**
+   * Records that an identifier is used until a time (milliseconds since 1970-01-01T00:00:00Z), and returns `false` when it
+   * was used already. It is atomic across processes. The `nonce` of a message is recorded until its expiry, rounded up to a
+   * whole second, plus the clock-skew leeway of 60 seconds.
+   */
+  readonly once: (id: string, expiresAt: number, options?: CallOptions) => Promise<boolean>;
+  /**
+   * The most bytes of the form that the tool posts, measured before it is decoded.
+   *
+   * @defaultValue `1048576` for a Deep Linking response, which may list many items
+   */
+  readonly maxFormBytes?: number;
+  /**
+   * The most JSON tokens of the message, counted before it is parsed.
+   *
+   * @defaultValue `1000000`
+   */
+  readonly maxTokens?: number;
+  /**
+   * The most content items of a Deep Linking response.
+   *
+   * @defaultValue `100`
+   */
+  readonly maxContentItems?: number;
+}
+
+/** The options of `readDeepLinkingResponse` with their defaults filled in. */
+export interface ToolMessageSettings extends Required<Omit<ToolMessageOptions, "signal">> {
+  readonly signal?: AbortSignal;
+}
+
 /** The name of the frame of the tool, which the storage page answers, when the host names none. */
 const DEFAULT_TOOL_FRAME = "lti-tool";
 /**
@@ -154,6 +195,8 @@ const DEFAULT_MAX_BODY_BYTES = 65_536;
 const DEFAULT_PAGE_SIZE = 100;
 /** The most items of a page of a service, which bounds the work of one request. */
 const DEFAULT_MAX_PAGE_SIZE = 1000;
+/** The most content items of a Deep Linking response: a selection of a person, far more than a page of choices. */
+const DEFAULT_MAX_CONTENT_ITEMS = 100;
 /** How long the session data of a proctored attempt is valid, in seconds: the hour that the attempt may take to start. */
 const DEFAULT_SESSION_DATA_LIFETIME_SECONDS = 3600;
 /** How long the data of a Deep Linking request is valid, in seconds: a day for the person who picks the content. */
@@ -245,5 +288,33 @@ export function readRequestOptions(options: unknown): PlatformSettings {
     maxBodyBytes: read.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES,
     sessionDataLifetimeSeconds: read.sessionDataLifetimeSeconds ?? DEFAULT_SESSION_DATA_LIFETIME_SECONDS,
     deepLinkingLifetimeSeconds: read.deepLinkingLifetimeSeconds ?? DEFAULT_DEEP_LINKING_LIFETIME_SECONDS,
+  };
+}
+
+const toolMessageOptionsSchema = strictRecord({
+  config: configSchema,
+  clock: methodsSchema<Clock>("now"),
+  client: functionSchema<ToolMessageOptions["client"]>(),
+  jwks: methodsSchema<JwksCache>("keySet"),
+  once: functionSchema<ToolMessageOptions["once"]>(),
+  maxFormBytes: v.optional(positiveIntegerSchema),
+  maxTokens: v.optional(positiveIntegerSchema),
+  maxContentItems: v.optional(positiveIntegerSchema),
+  signal: v.optional(abortSignalSchema),
+});
+
+/**
+ * Checks the options of `readDeepLinkingResponse` and fills in their defaults.
+ *
+ * @param defaultMaxFormBytes - The `maxFormBytes` of the message that is read, when the host names none.
+ * @throws `DataError` that names the option and what it must be.
+ */
+export function readToolMessageOptions(options: unknown, defaultMaxFormBytes: number): ToolMessageSettings {
+  const read = parseWith(toolMessageOptionsSchema, options, "The options");
+  return {
+    ...read,
+    maxFormBytes: read.maxFormBytes ?? defaultMaxFormBytes,
+    maxTokens: read.maxTokens ?? MAX_JSON_TOKENS,
+    maxContentItems: read.maxContentItems ?? DEFAULT_MAX_CONTENT_ITEMS,
   };
 }

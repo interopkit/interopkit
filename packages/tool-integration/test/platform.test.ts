@@ -30,7 +30,7 @@ import {
   tokenRequest,
   toolRegistration,
 } from "./fake-tool.js";
-import { NOW, readToken, request } from "./fixture.js";
+import { NOW, readPost, readToken, request } from "./fixture.js";
 import { MemoryGradebook } from "./gradebook.js";
 import {
   ASSET_ORIGIN,
@@ -54,7 +54,6 @@ import {
   PLAYER_ORIGIN,
   platformKeys,
   previousHintKey,
-  readPost,
   type Setup,
   setup,
   toolKeys,

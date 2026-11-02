@@ -24,7 +24,7 @@ sequenceDiagram
   T->>T: ltiLaunch: signature, claims, nonce, deployment and target; delete the login
   T-->>B: the launch
   opt Deep Linking request
-    T->>P: deepLinkResponse: a signed JWT posted to the return URL
+    T->>P: createDeepLinkResponse: a page that posts the signed JWT to the return URL
   end
   opt Grade services
     T->>P: createServiceClient: a cached access token, then the line item, the score, the results
@@ -36,7 +36,7 @@ sequenceDiagram
 | `ltiLogin(request, options)`                  | Answers the platform's third-party initiated login with the authentication request            |
 | `ltiLaunch(request, options)`                 | Validates the `id_token` and returns the launch, or the verification page of the storage path |
 | `serveToolJwks(request, keys, options)`       | Answers the request for the tool's key set: the public keys of its `KeySet`                   |
-| `deepLinkResponse(launch, items, options)`    | Signs the response to a Deep Linking request                                                  |
+| `createDeepLinkResponse(launch, response, options)` | Checks the items, signs the response to a Deep Linking request and returns the page that posts it ([Deep Linking](deep-linking.md)) |
 | `createServiceClient(deployment, options)`    | Returns the client of the grade services of a platform ([grade services](grades.md))          |
 | `advanceScoreTimestamp(lastSent, now)`        | Returns a timestamp of a score strictly later than the last one sent                          |
 | `createJwksCache(options)`                    | Creates the cache of the platforms' key sets that `ltiLaunch` verifies signatures with        |
@@ -263,24 +263,10 @@ is `true`. The secret is used for one HMAC and kept nowhere.
 
 ## Deep Linking
 
-When `ltiLaunch` returns a Deep Linking request, the host lets the user choose, then calls `deepLinkResponse(launch, items,
-options)`. The result is the signed `LtiDeepLinkingResponse`, the value of the form parameter `JWT`. The host sends the browser
-to `launch.settings.returnUrl` with an auto-submitted form POST (Deep Linking 2.0 section 2.3), also when no item was chosen.
-
-An item is an LTI resource link:
-
-| Property   | Meaning                                                                                                     |
-| ---------- | ----------------------------------------------------------------------------------------------------------- |
-| `title`    | The title of the link                                                                                       |
-| `text`     | A description                                                                                               |
-| `url`      | The URL to launch, sent back as `target_link_uri`; the tool's base LTI URL when absent                      |
-| `custom`   | A `Map` of strings that the platform sends with each launch of the link, such as the identifier of the test |
-| `lineItem` | `scoreMaximum` (above 0), `label`, `resourceId` and `tag`: the line item that the platform may create       |
-
-The response has `iss` (the client identifier), `aud` (the platform), `exp` (300 seconds after `iat`), `iat`, a `nonce`, the
-deployment, the message type, the version, the `data` of the request when it had one, and `content_items`. The registration's
-`signer` signs it, with its algorithm, and its header names the signer's `keyId` as `kid`. `deepLinkResponse` throws `DataError` when the platform does not accept
-`ltiResourceLink` or, for several items, does not say `accept_multiple: true`.
+When `ltiLaunch` returns a Deep Linking request, the host lets the user choose, then answers with `createDeepLinkResponse(launch,
+response, options)`: the items are checked against what the request accepts, the response is signed with the registration's
+`signer`, and the result is the page that posts it to `launch.settings.returnUrl`, also when no item was chosen (Deep Linking 2.0
+section 2.3). The [Deep Linking guide](deep-linking.md) has the five item types, the checks and the platform's reader.
 
 ## The tool's key set
 
@@ -418,7 +404,7 @@ except that the key set cache of jose reads the time of the system.
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `ltiLogin`, before `put`                       | Rejects with `signal.reason`; nothing is saved. After `put`, an orphan record expires                                       |
 | `ltiLaunch`, before `store.delete`             | Rejects with `signal.reason`; the login stays, and the platform may post again. After `delete` starts, the launch completes |
-| `deepLinkResponse`, in the registration lookup | Rejects with `signal.reason`                                                                                                |
+| `createDeepLinkResponse`, in the registration lookup or the signer | Rejects with `signal.reason`                                                                                |
 | `ltiLaunch`, in `legacySecret`                 | Rejects with `signal.reason`; the login stays                                                                               |
 | A call of the service client                   | Rejects with `signal.reason`; a token request it shares runs on. A score in flight is in doubt: resend with a later timestamp |
 | A key set fetch                                | One caller's abort ends that caller's wait. The fetch runs on for the others, to `timeoutMs`                                |

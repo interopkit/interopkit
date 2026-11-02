@@ -5,8 +5,9 @@ import { createLocalJWKSet, exportJWK } from "jose";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readSpecExamples, readSpecPage } from "../../../scripts/spec-examples.js";
 import { type DeepLinkingRequestMessage, type LtiMessage, SCOPES } from "../src/index.js";
-import type { ResourceLinkInput } from "../src/platform/index.js";
+import { type ResourceLinkInput, readDeepLinkingResponse } from "../src/platform/index.js";
 import {
+  readContentItem,
   readMessage,
   readScore,
   readToolMessage,
@@ -14,21 +15,38 @@ import {
   writeMessage,
   writeToolMessage,
 } from "../src/protocol/internal.js";
-import { createServiceClient, deepLinkResponse, ltiLaunch, type PlatformRegistration } from "../src/tool/index.js";
+import {
+  createDeepLinkResponse,
+  createServiceClient,
+  ltiLaunch,
+  type PlatformRegistration,
+} from "../src/tool/index.js";
 import { FakeLms, LINE_ITEM_URL } from "./fake-lms.js";
 import { registrationOf } from "./fake-platform.js";
-import { authenticationRequest, clientAssertion, TOOL_CLIENT_ID, tokenRequest, toolRegistration } from "./fake-tool.js";
-import { request as fixtureRequest, generateKeyPair, readToken, signToken } from "./fixture.js";
+import {
+  authenticationRequest,
+  clientAssertion,
+  messageForm,
+  TOOL_CLIENT_ID,
+  TOOL_DEPLOYMENT_ID,
+  tokenRequest,
+  toolMessage,
+  toolRegistration,
+} from "./fake-tool.js";
+import { request as fixtureRequest, generateKeyPair, readPost, readToken, signToken } from "./fixture.js";
 import { MemoryGradebook } from "./gradebook.js";
 import {
+  baseFields,
+  ISSUER as PLATFORM_ISSUER,
   PLATFORM_ORIGIN,
   begin as platformBegin,
   config as platformConfig,
   endpoints as platformEndpoints,
   handle as platformHandle,
+  launch as platformLaunch,
   setup as platformSetup,
-  readPost,
   toolKeys,
+  toolMessageOptions,
 } from "./platform-setup.js";
 import { textOf } from "./text-of.js";
 import { cookieLogin, setup, toolKey } from "./tool-setup.js";
@@ -204,28 +222,68 @@ describe("the Deep Linking response of Deep Linking Appendix B", () => {
     expect(writeToolMessage(read)).toEqual(withoutEnvelope(response));
   });
 
-  it("places the resource link of the example as the example says, as far as the tool role supports it", async () => {
+  it("places the seven items of the example as the example says, with the data of the request, in a page that posts them", async () => {
     const request = deepLinkingRequest;
     const registration = registrationFor(request, String(request.aud));
     const launch = readExample(request, String(request.aud)) as DeepLinkingRequestMessage;
-    const example = items.find((item) => item.type === "ltiResourceLink") ?? {};
-    const { type, title, text, url, custom } = example;
-    // `gradesReleased` of a line item is not supported yet (supported.md).
-    const { gradesReleased: _gradesReleased, ...lineItem } = example.lineItem as Record<string, unknown>;
-    const item = {
-      title,
-      text,
-      url,
-      lineItem,
-      custom: custom === undefined ? undefined : new Map(Object.entries(custom as Record<string, string>)),
-    };
+    const placing = { items: items.map((item) => readContentItem(item)) };
     const { clock } = setup();
-    const jwt = await deepLinkResponse(launch, [item as never], { registration: async () => registration, clock });
-    const [placed] = readToken(jwt).payload[`${DL}content_items`] as readonly Record<string, unknown>[];
-    expect(placed).toEqual({ type, title, text, url, custom, lineItem });
-    expect(readToken(jwt).payload[`${DL}data`]).toBe(
-      (request[`${DL}deep_linking_settings`] as Record<string, unknown>).data,
+    const options = { registration: async () => registration, clock };
+    // The example response is not within its request: it places a PDF where the request accepts the media types `image/*` and
+    // `text/html` (which the portal prints with `:::asterisk:::` for the asterisk), and an item of a type that `accept_types`
+    // does not list (spec-gaps.md). The tool refuses the example as printed, one reason at a time.
+    await expect(createDeepLinkResponse(launch, placing, options)).rejects.toThrow(
+      'The item 6 is a file of the media type "application/pdf"',
     );
+    const withPdf = { ...launch, settings: { ...launch.settings, acceptMediaTypes: ["image/*", "application/pdf"] } };
+    await expect(createDeepLinkResponse(withPdf, placing, options)).rejects.toThrow(
+      'The item 7 has the type "https://www.example.com/custom_type"',
+    );
+    const accepting = {
+      ...withPdf,
+      settings: {
+        ...withPdf.settings,
+        acceptTypes: [...launch.settings.acceptTypes, "https://www.example.com/custom_type"],
+      },
+    };
+    const page = await createDeepLinkResponse(accepting, placing, options);
+    const { fields, action } = readPost(page);
+    expect(action).toBe((request[`${DL}deep_linking_settings`] as Record<string, unknown>).deep_link_return_url);
+    const { payload } = readToken(fields.get("JWT") ?? "");
+    expect(payload[`${DL}content_items`]).toEqual(items);
+    expect(payload[`${DL}data`]).toBe((request[`${DL}deep_linking_settings`] as Record<string, unknown>).data);
+  });
+});
+
+describe("the Deep Linking response of Deep Linking Appendix B at the platform", () => {
+  const response = examples.deepLinkingResponse;
+  const items = response[`${DL}content_items`] as readonly Record<string, unknown>[];
+
+  it("reads the seven items of the example, for a request that accepts them, and returns the host's data", async () => {
+    const ctx = platformSetup();
+    const { claims } = await platformLaunch(ctx, {
+      ...baseFields,
+      messageType: "LtiDeepLinkingRequest",
+      settings: {
+        returnUrl: "https://lms.platform.example/deep-linking",
+        acceptTypes: ["link", "file", "html", "ltiResourceLink", "image", "https://www.example.com/custom_type"],
+        acceptPresentationDocumentTargets: ["iframe", "window", "embed"],
+        acceptMediaTypes: ["image/*", "application/pdf"],
+        acceptMultiple: true,
+        data: { placement: "example" },
+      },
+    });
+    const data = (claims[`${DL}deep_linking_settings`] as { data: string }).data;
+    const jwt = await toolMessage(toolKeys, PLATFORM_ISSUER, ctx.clock, {
+      ...withoutEnvelope(response),
+      [`${DL}data`]: data,
+      [`${CLAIM}deployment_id`]: TOOL_DEPLOYMENT_ID,
+    });
+    const form = messageForm("https://lms.platform.example/deep-linking", jwt);
+    const read = await readDeepLinkingResponse(form, toolMessageOptions(ctx));
+    expect(read.items).toEqual(items.map((item) => readContentItem(item)));
+    expect(read.items).toHaveLength(7);
+    expect(read.data).toEqual({ placement: "example" });
   });
 });
 

@@ -1,7 +1,7 @@
 # A platform and a tool
 
-A platform that launches a tool, and the tool that validates the launch and publishes a score through the grade services, in one
-process. The platform uses
+A platform that launches a tool, and the tool that validates the launch, publishes a score through the grade services and answers
+a Deep Linking request, in one process. The platform uses
 the platform role of `@interopkit/tool-integration`, the tool uses the tool role, and both use `@interopkit/core`. They reach each
 other through an in-memory network, so the example needs no server, and each handler is the one a host would route a request to.
 
@@ -22,12 +22,17 @@ sequenceDiagram
   B->>T: id_token, state and the stored values
   T->>P: the key set, a token, the line item, the score, the results (handlePlatformRequest)
   P->>H: GradebookStore: lineItem, keepScore, results
+  H->>P: ltiPlatformFrame(LtiDeepLinkingRequest)
+  B->>T: the same login and launch
+  T-->>B: createDeepLinkResponse: page that posts the signed JWT to the return URL
+  B->>H: POST JWT to the host's route
+  H->>P: readDeepLinkingResponse: the items and the data of the host
 ```
 
 | File              | Holds                                                                                                                                     |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/platform.ts` | `createPlatform`: one handler for the platform's origin, and the frame of a message                                                       |
-| `src/tool.ts`     | `createTool`: one handler for the tool's routes, and the grading of a launch through `createServiceClient`                                |
+| `src/platform.ts` | `createPlatform`: one handler for the platform's origin, with the route at the return URL of Deep Linking, and the frame of a message     |
+| `src/tool.ts`     | `createTool`: one handler for the tool's routes, which answers a Deep Linking request, and the grading of a launch through `createServiceClient` |
 | `src/network.ts`  | `connect`: a `fetch` that reaches the handler of an origin, and `plainRequest`                                                            |
 | `src/platform-setup.ts` | The platform's keys, its registration of the tool, its store of launches, its ledger of single-use identifiers and its gradebook   |
 | `src/gradebook.ts` | A `GradebookStore` in memory, which keeps a score unless a later one is kept                                                            |

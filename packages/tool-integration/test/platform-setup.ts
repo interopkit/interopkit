@@ -1,6 +1,5 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 requests are snake_case.
 
-import { createHash } from "node:crypto";
 import { signerFromCryptoKey } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import { createJwksCache, type KeySet } from "../src/index.js";
@@ -15,6 +14,7 @@ import {
   type PlatformLoginOptions,
   type PlatformRequestOptions,
   type ResourceLinkInput,
+  type ToolMessageOptions,
   type ToolRegistration,
 } from "../src/platform/index.js";
 import {
@@ -32,7 +32,7 @@ import {
   TOOL_LOGIN_URL,
   toolRegistration,
 } from "./fake-tool.js";
-import { createClock, generateKeyPair, type TestClock } from "./fixture.js";
+import { createClock, generateKeyPair, readPost, type TestClock } from "./fixture.js";
 import { textOf } from "./text-of.js";
 
 export const ISSUER = "https://platform.example";
@@ -180,38 +180,10 @@ export function setup(overrides: { readonly tools?: readonly ToolRegistration[] 
   });
 }
 
-/** Decodes the text of an HTML attribute value. */
-function decodeEntities(text: string): string {
-  return text
-    .replaceAll("&quot;", '"')
-    .replaceAll("&#39;", "'")
-    .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">")
-    .replaceAll("&amp;", "&");
-}
-
-/** What the page that posts a form to the tool holds: its action, its fields, its scripts and the hash of its script. */
-export interface Post {
-  readonly action: string;
-  readonly fields: Map<string, string>;
-  readonly scripts: number;
-  readonly hash: string;
-}
-
-/** Reads the page that posts the `id_token`, or the authentication error response, to the tool. */
-export function readPost(response: HttpResponse): Post {
-  const text = textOf(response.body);
-  const fields = new Map<string, string>();
-  for (const [, name = "", value = ""] of text.matchAll(/<input type="hidden" name="([^"]*)" value="([^"]*)">/gu)) {
-    fields.set(decodeEntities(name), decodeEntities(value));
-  }
-  const script = /<script>([\s\S]*)<\/script>/u.exec(text)?.[1] ?? "";
-  return {
-    action: decodeEntities(/<form id="form" method="post" action="([^"]*)">/u.exec(text)?.[1] ?? ""),
-    fields,
-    scripts: text.split("<script").length - 1,
-    hash: createHash("sha256").update(script).digest("base64"),
-  };
+/** The options of `readDeepLinkingResponse`, as a host takes them from its options for `handlePlatformRequest`. */
+export function toolMessageOptions(ctx: Setup, change: Partial<ToolMessageOptions> = {}): ToolMessageOptions {
+  const { config: platform, clock, client, jwks, once } = ctx.requests;
+  return { config: platform, clock, client, jwks, once, ...change };
 }
 
 /** Sends a request to the platform's handler. */

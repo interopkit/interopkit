@@ -3,7 +3,7 @@ import { describe } from "@interopkit/core/checks";
 import { type HttpRequest, type HttpResponse, readForm, readQuery } from "@interopkit/core/http";
 import { LtiError } from "../errors.js";
 import type { MigrationClaim } from "../protocol/index.js";
-import { signConsumerKey, toSeconds, writeMessage } from "../protocol/internal.js";
+import { renderPostPage, signConsumerKey, toSeconds, writeMessage } from "../protocol/internal.js";
 import { methodNotAllowed, refusal, serverError, tooLarge } from "./answers.js";
 import { openingKeys } from "./config.js";
 import { LAUNCH_TTL_SECONDS } from "./login.js";
@@ -11,7 +11,6 @@ import { type MessageInput, readMessageInput } from "./messages/input.js";
 import { substitute } from "./messages/substitution.js";
 import { toWrite } from "./messages/write.js";
 import type { PlatformSettings } from "./options.js";
-import { autoPostPage } from "./page.js";
 import { readToolRegistration, type ToolRegistration } from "./registration.js";
 import { serviceClaims } from "./services/routes.js";
 import { type Hint, openHint, openLoginHint, sealDeepLinkingData, sealSessionData } from "./tokens.js";
@@ -327,7 +326,7 @@ export async function answerAuthorization(request: HttpRequest, settings: Platfo
   try {
     const fields = await authorize(parameters, registration, settings);
     if (fields === FAILED) return serverError();
-    return await autoPostPage({ redirectUri, fields, frameOrigin, status: 200 });
+    return await renderPostPage({ action: redirectUri, fields, frameAncestors: frameOrigin });
   } catch (error) {
     if (!(error instanceof LtiError)) throw error;
     const state = parameters.get("state");
@@ -336,6 +335,9 @@ export async function answerAuthorization(request: HttpRequest, settings: Platfo
       ["error_description", error.message],
     ];
     if (state !== undefined) fields.push(["state", state]);
-    return autoPostPage({ redirectUri, fields, frameOrigin, status: error.status });
+    return {
+      ...(await renderPostPage({ action: redirectUri, fields, frameAncestors: frameOrigin })),
+      status: error.status,
+    };
   }
 }

@@ -1,7 +1,8 @@
-import type { JsonObject } from "@interopkit/core/checks";
+import { type JsonObject, jsonObjectSchema } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type { DeepLinkingSettings } from "../protocol/index.js";
 import { IDENTIFIER, NUMBER, STRING, STRING_ARRAY } from "../protocol/internal.js";
+import { deepLinkingSettingsSchema } from "./messages/input.js";
 import { openToken, sealToken } from "./seal.js";
 
 /** What the hint of a login names: the launch kept in the `LaunchStore`, for one tool, deployment and user, until a time. */
@@ -75,6 +76,14 @@ const accessSchema = v.object({
   exp: NUMBER,
 });
 
+const deepLinkingDataSchema = v.object({
+  client: STRING,
+  deployment: STRING,
+  settings: deepLinkingSettingsSchema,
+  data: v.optional(jsonObjectSchema),
+  exp: NUMBER,
+});
+
 /** Seals a hint. */
 export function sealHint(hint: Hint, key: CryptoKey): Promise<string> {
   return sealToken("hint", { ...hint }, key);
@@ -118,4 +127,14 @@ export function sealSessionData(session: SessionData, key: CryptoKey): Promise<s
 /** Seals the data of a Deep Linking request (Deep Linking 2.0 section 4.4.1), which the tool's response returns. */
 export function sealDeepLinkingData(data: DeepLinkingData, key: CryptoKey): Promise<string> {
   return sealToken("deep-linking-data", { ...data }, key);
+}
+
+/** Opens the data of a Deep Linking request, or returns `undefined` when it is not data that this platform sealed. */
+export async function openDeepLinkingData(
+  token: string,
+  keys: readonly CryptoKey[],
+): Promise<DeepLinkingData | undefined> {
+  const claims = await openToken(token, "deep-linking-data", keys);
+  const parsed = v.safeParse(deepLinkingDataSchema, claims);
+  return parsed.success ? parsed.output : undefined;
 }

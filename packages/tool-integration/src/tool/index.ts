@@ -3,13 +3,13 @@
  *
  * @remarks
  * The tool starts the OpenID Connect login (with a cookie, or with the platform's browser storage in an iframe), validates
- * the launch of every message type, serves its key set, answers a Deep Linking request, and calls the services of the platform
- * with `createServiceClient`: the line items, results and scores of the Assignment and Grade Services, with access tokens
- * that its signer asks for and that it reuses.
+ * the launch of every message type, serves its key set, answers a Deep Linking request with `createDeepLinkResponse`, and calls
+ * the services of the platform with `createServiceClient`: the line items, results and scores of the Assignment and Grade
+ * Services, with access tokens that its signer asks for and that it reuses.
  *
  * @module @interopkit/tool-integration/tool
  */
-export { type DeepLinkItem, type DeepLinkLineItem, deepLinkResponse } from "./deep-link.js";
+export { createDeepLinkResponse, type DeepLinkingResponseInput } from "./deep-linking.js";
 export { type ServeToolJwksOptions, serveToolJwks } from "./jwks.js";
 export { ltiLaunch } from "./launch.js";
 export { ltiLogin } from "./login.js";

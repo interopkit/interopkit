@@ -1,12 +1,12 @@
 # @interopkit/tool-integration
 
-Version 0.1 is not the whole of LTI Advantage: both roles have the launch of every message type, key sets, access tokens and the Assignment and Grade Services, the tool role also has Deep Linking, and neither role has Names and Role Provisioning or Dynamic Registration ([what is supported](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/supported.md)).
+Version 0.1 is not the whole of LTI Advantage: both roles have the launch of every message type, key sets, access tokens, the Assignment and Grade Services and Deep Linking, and neither role has Names and Role Provisioning or Dynamic Registration ([what is supported](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/supported.md)).
 
 LTI 1.3 for learning platforms and tools, in both roles. In the tool role your application is launched by a learning
 platform: it answers its login, validates the launch of every message type, serves its key set, answers a Deep Linking request,
 and reads and writes the platform's gradebook through its services. In the platform role your application launches tools: it keeps the message of a launch in your store and starts the
 tool's login, and one handler answers the tool's authentication request with the `id_token`, publishes the key set, issues
-access tokens, serves the storage page and the grade services over your gradebook. A handler takes an `HttpRequest` and returns an `HttpResponse` of [`@interopkit/core/http`](https://github.com/interopkit/interopkit/blob/main/docs/core/http.md): plain objects that any web framework can build.
+access tokens, serves the storage page and the grade services over your gradebook, and a function reads the tool's Deep Linking response. A handler takes an `HttpRequest` and returns an `HttpResponse` of [`@interopkit/core/http`](https://github.com/interopkit/interopkit/blob/main/docs/core/http.md): plain objects that any web framework can build.
 You pass in the stores, the registrations, a `fetch` and a clock.
 
 ```mermaid
@@ -17,7 +17,7 @@ flowchart LR
     ports["Ports<br/>LtiStore, LaunchStore, GradebookStore,<br/>registration lookup, fetch, Clock"]
   end
   subgraph pkg["@interopkit/tool-integration"]
-    tool["/tool<br/>ltiLogin, ltiLaunch, serveToolJwks,<br/>deepLinkResponse, createServiceClient"]
+    tool["/tool<br/>ltiLogin, ltiLaunch, serveToolJwks,<br/>createDeepLinkResponse, createServiceClient"]
     platformRole["/platform<br/>ltiPlatformFrame,<br/>handlePlatformRequest"]
     root["root<br/>LtiError, createJwksCache,<br/>the model of messages, vocabularies"]
   end
@@ -47,8 +47,8 @@ npm install @interopkit/tool-integration
 | Subpath                                 | Exports                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@interopkit/tool-integration`          | `LtiError`, with a `reason` and an HTTP `status`; `createJwksCache`, `JwksCache`, `JwksCacheOptions`; the model of the messages: `LtiMessage`, `ToolMessage`, the seven message types (`ResourceLinkMessage`, `DeepLinkingRequestMessage`, `SubmissionReviewMessage`, `StartProctoringMessage`, `EndAssessmentMessage`, `DeepLinkingResponseMessage`, `StartAssessmentMessage`, `OtherMessage`) and their parts; `KeySet`; the vocabularies `SYSTEM_ROLES`, `INSTITUTION_ROLES`, `CONTEXT_ROLES`, `CONTEXT_SUB_ROLES`, `LTI_SYSTEM_ROLES`, `CONTEXT_TYPES`; `canonicalizeRole`, `canonicalizeContextType`, `APPROVED_ALGORITHMS`, `SCOPES`, `MESSAGE_TYPES`; the models of the bodies of the services: `LineItem`, `LineItemInput`, `Score`, `Result`, `Membership`, `Member`, `GroupContainer`, `GroupSetContainer`, `ContentItem` and its five types, `PlatformConfiguration`, `ToolConfiguration`, `ToolRegistrationResult`, `ControlRequest`, `ControlStatus`, `PreferencesRecord`, their queries, and the vocabularies `ACTIVITY_PROGRESS`, `GRADING_PROGRESS`, `MEMBER_STATUSES`, `CONTENT_ITEM_TYPES`, `CONTROL_ACTIONS`, `ATTEMPT_STATUSES` |
-| `@interopkit/tool-integration/platform` | `ltiPlatformLogin`, `ltiPlatformFrame`, `handlePlatformRequest`, `buildPlatformEndpoints`, `buildCapabilitiesScript`; `MessageInput` and its five types (`ResourceLinkInput`, `DeepLinkingRequestInput`, `SubmissionReviewInput`, `StartProctoringInput`, `EndAssessmentInput`) with `MessageInputBase`, `MessageServicesInput` and `DeepLinkingInputSettings`; `ToolRegistration`, `PlatformConfig`, `PlatformEndpoints`, `PlatformFrame`, `CapabilitiesScript`, `LaunchToCheck`; the ports `LaunchStore`, `Substitution`, `GradebookStore` and `PlatformServices`, with `ServiceCaller`, `StorePage`, `StoredLineItem`, `StoredResult`, `ReceivedScore`, `StoreLineItemQuery`, `StoreResultQuery`; the options `PlatformOptions`, `PlatformLoginOptions`, `PlatformRequestOptions`, `CapabilitiesScriptOptions` |
-| `@interopkit/tool-integration/tool`     | `ltiLogin`, `ltiLaunch`, `serveToolJwks`, `deepLinkResponse`, `createServiceClient`, `advanceScoreTimestamp`; `PlatformRegistration`, `LtiStore`, `LoginRecord`, `DeepLinkItem`, `DeepLinkLineItem`, `ServiceClient`, `GradesClient`, `Page`; the options `ToolOptions`, `LtiLoginOptions`, `LtiLaunchOptions`, `ServeToolJwksOptions`, `ServiceClientOptions` |
+| `@interopkit/tool-integration/platform` | `ltiPlatformLogin`, `ltiPlatformFrame`, `handlePlatformRequest`, `readDeepLinkingResponse`, `buildPlatformEndpoints`, `buildCapabilitiesScript`; `MessageInput` and its five types (`ResourceLinkInput`, `DeepLinkingRequestInput`, `SubmissionReviewInput`, `StartProctoringInput`, `EndAssessmentInput`) with `MessageInputBase`, `MessageServicesInput` and `DeepLinkingInputSettings`; `ToolRegistration`, `PlatformConfig`, `PlatformEndpoints`, `PlatformFrame`, `CapabilitiesScript`, `LaunchToCheck`; the ports `LaunchStore`, `Substitution`, `GradebookStore` and `PlatformServices`, with `ServiceCaller`, `StorePage`, `StoredLineItem`, `StoredResult`, `ReceivedScore`, `StoreLineItemQuery`, `StoreResultQuery`; `ReceivedDeepLinkingResponse`; the options `PlatformOptions`, `PlatformLoginOptions`, `PlatformRequestOptions`, `ToolMessageOptions`, `CapabilitiesScriptOptions` |
+| `@interopkit/tool-integration/tool`     | `ltiLogin`, `ltiLaunch`, `serveToolJwks`, `createDeepLinkResponse`, `createServiceClient`, `advanceScoreTimestamp`; `PlatformRegistration`, `LtiStore`, `LoginRecord`, `DeepLinkingResponseInput`, `ServiceClient`, `GradesClient`, `Page`; the options `ToolOptions`, `LtiLoginOptions`, `LtiLaunchOptions`, `ServeToolJwksOptions`, `ServiceClientOptions` |
 
 ```ts
 import { signerFromCryptoKey } from "@interopkit/core";
@@ -95,8 +95,8 @@ logins.size; // => 1
 
 A failure throws `LtiError` for a check of the specifications (with its `reason`), `DataError` for a malformed request or
 option, and `ServiceError` for a platform that does not answer. The [guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/tool.md)
-has the routes, the store, every check of a launch, the key set and its rotation, Deep Linking, scores, the failure paths and the
-signals; the [platform guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/platform.md) has the same for the platform role.
+has the routes, the store, every check of a launch, the key set and its rotation, scores, the failure paths and the
+signals; the [Deep Linking guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/deep-linking.md) has the items and both roles; the [platform guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/platform.md) has the same for the platform role.
 
 ## License
 

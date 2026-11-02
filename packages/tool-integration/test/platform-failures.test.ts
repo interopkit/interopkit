@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ltiPlatformLogin, type MessageInput, type ToolRegistration } from "../src/platform/index.js";
 import { openToken, sealToken } from "../src/platform/internal.js";
 import { authenticationRequest, clientAssertion, TOOL_CLIENT_ID, tokenRequest, toolRegistration } from "./fake-tool.js";
-import { generateKeyPair } from "./fixture.js";
+import { generateKeyPair, readPost } from "./fixture.js";
 import {
   authorize,
   baseMessage,
@@ -13,7 +13,6 @@ import {
   endpoints,
   handle,
   hintKey,
-  readPost,
   type Setup,
   setup,
   toolKeys,

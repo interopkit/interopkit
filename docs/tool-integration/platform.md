@@ -36,6 +36,7 @@ sequenceDiagram
 | `handlePlatformRequest(request, options)`  | Answers every request to the platform's origin                                                            |
 | `buildPlatformEndpoints(config)`           | Returns the URLs of the endpoints, which the tool's administrator registers with the tool                 |
 | `buildCapabilitiesScript(options)`         | Returns the inline script, with its CSP hash, that answers `lti.capabilities` on the host's frame page     |
+| `readDeepLinkingResponse(request, options)` | Reads and verifies the form that a tool posts to the return URL of a Deep Linking request ([Deep Linking](deep-linking.md)) |
 
 Handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md). The host owns the
 routes, the sessions and the stores: `check` confirms that a message is the caller's, `launches` keeps the messages, `once` records
@@ -278,6 +279,17 @@ assertion, the scopes and the expiry, and lasts 3,600 seconds. A refusal is an O
 `unsupported_grant_type`, `invalid_scope`, `invalid_client`), and 500 when `client` or `once` rejects or the tool's key set
 cannot be fetched.
 
+## The messages of tools
+
+A tool sends the platform a message the other way too: a Deep Linking response posted to the `deep_link_return_url` of a request. The
+route is the host's, and `readDeepLinkingResponse(request, options)` reads the form: it verifies the tool's token as `/token` does
+(the algorithms of the registration, the key set, the times, an expiry within 3,600 seconds), with the platform's issuer as the
+audience and as the authorized party when the token names one, and requires an `iat` and a `nonce`. The `nonce` is the
+single-use identifier here, recorded in `once` until the token stops verifying. The `data` claim of the response must be the data
+that the platform sealed into the request, for that tool and deployment and not expired. The [Deep Linking
+guide](deep-linking.md) has the checks and the options (`config`, `clock`, `client`, `jwks`, `once`, `maxFormBytes`, `maxTokens` and
+`maxContentItems`).
+
 ## The frame page and the storage page
 
 `/storage` serves the page that keeps `state` and `nonce` for the tool: `lti.put_data` and `lti.get_data` of LTI Client Side
@@ -339,12 +351,12 @@ in the registration needs no fetch.
 | ------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------- |
 | `check`, `registration`  | The login rejects; nothing is kept or signed                              | `signal` reaches it                                                | Each login                                                  | Read-only calls of the host's session |
 | `launches.put`           | The login rejects; no URL, nothing signed                                 | `signal` reaches it                                                | Each login has a new identifier                             | Nothing                               |
-| `client`                 | 500; `undefined`: 400 to the browser, `invalid_client` at `/token`        | `signal`                                                           | On every request; a host may cache                          | Nothing                               |
+| `client`                 | 500; `undefined`: 400 to the browser, `invalid_client` at `/token`; `readDeepLinkingResponse` rejects with its error, and `undefined` is `client-unknown` | `signal`                                                           | On every request; a host may cache                          | Nothing                               |
 | `checkLaunch`            | 500, the message stays; `false`: `access_denied`, the message stays       | `signal`; the message stays                                        | Each authentication request                                 | Read-only calls                       |
 | `launches.take`          | 500; `undefined`: `login_required`                                        | `signal`; after `take` an abort fails closed and the tool starts again | Atomic: of two, one gets the message                    | Nothing                               |
 | `substitution.resolve`, `migrationSecret` | 500, nothing signed; the launch is spent                 | `signal`                                                           | Each launch                                                 | Read-only calls                       |
 | `config.keys.signer`     | 500, nothing half-signed                                                  | `signal`                                                           | ECDSA signatures differ between calls; both verify          | Nothing                               |
-| `once`                   | 500, no token                                                             | `signal`                                                           | `false`: `invalid_client` for a replayed assertion          | Nothing                               |
+| `once`                   | 500, no token; `readDeepLinkingResponse` rejects with its error          | `signal`                                                           | `false`: `invalid_client` for a replayed assertion, `nonce-replayed` for a replayed response | Nothing |
 
 A port that answers with something other than its contract (a registration that is not one, a message of another launch, a
 `checkLaunch` or `once` that does not give a boolean, a variable that is not a string) is a `DataError` that the handler throws.
@@ -358,6 +370,8 @@ A port that answers with something other than its contract (a registration that 
 | `/authorize`, after `take`                                   | Rejects with `signal.reason`; the launch is spent, so the tool starts again   |
 | `/token`, before `once`                                      | Rejects with `signal.reason`; the assertion is unspent                        |
 | `/token`, after `once`                                       | Rejects with `signal.reason`; the assertion is spent, so the tool asks again  |
+| `readDeepLinkingResponse`, before `once`                     | Rejects with `signal.reason`; the response is unspent                         |
+| `readDeepLinkingResponse`, after `once`                      | Rejects with `signal.reason`; the response is spent, so the tool sends a new one |
 
 ## Errors
 
@@ -365,6 +379,7 @@ A port that answers with something other than its contract (a registration that 
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `LtiError` `tool-unknown`, `deployment-unknown`         | `ltiPlatformLogin`: the tool or its deployment is not the platform's                  | Register the tool, or launch one of its deployments               |
 | `LtiError` `origin-refused`                             | `ltiPlatformLogin`: the target or the tool is on an origin of the platform            | Move the tool, or the platform's handler, to another origin       |
+| `LtiError` of `readDeepLinkingResponse`                 | A response fails a check: see [Deep Linking](deep-linking.md)                         | Answer with its `status`                                          |
 | `DataError`                                             | An argument, a message, a request or an option has the wrong shape, or a port broke its contract | Fix the caller or the port                              |
 | The error of a port                                     | `check`, `registration` or `launches.put` rejected during the login                  | The host's                                                        |
 
@@ -379,6 +394,8 @@ signal.
 | The single-use identifiers of assertions                     | The tool's assertions         | The host's `once`                                             | No                  |
 | The LTI 1.1 secret                                           | `migrationSecret`             | One HMAC, then dropped                                        | No                  |
 | The hints, access tokens, session data, Deep Linking data    | Sealed with the hint key      | The tool, which can read them; the host's `data` holds no secret and no personal data | No |
+| The Deep Linking response: items, titles, texts, addresses   | The tool, in a form the browser posts | The host, from `readDeepLinkingResponse`                | No                  |
+| The nonce of a message of a tool                             | The tool                      | The host's `once`                                             | No                  |
 
 ## Differences from the references
 
@@ -391,5 +408,5 @@ package. Where a specification disagrees with an example, see [spec-gaps](spec-g
 | What                                                                                         | Reason                                                       |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | Names and Role Provisioning, Context Groups, the PNP connector, the Assessment Control Service, Dynamic Registration | Not yet: see [supported](supported.md) |
-| The readers of the Deep Linking response and the Start Assessment message                    | Not yet: see [supported](supported.md)                       |
+| The reader of the Start Assessment message                                                   | Not yet: see [supported](supported.md)                       |
 | Sessions, routes beyond the handler, a database, the page that frames the tool, a picker     | The host's                                                   |

@@ -5,31 +5,23 @@ import { LtiError } from "../errors.js";
 import {
   CLAIM,
   CLIENT_CREDENTIALS_GRANT,
-  CLOCK_SKEW_SECONDS,
   IDENTIFIER,
   JWT_BEARER_ASSERTION_TYPE,
-  MILLISECONDS,
   NON_EMPTY_STRING,
-  NUMBER,
   optional,
   required,
-  STRING,
   toSeconds,
-  unverifiedClaims,
-  verifyJwt,
 } from "../protocol/internal.js";
 import { methodNotAllowed, NO_STORE, refusal, serverError } from "./answers.js";
 import { endpointsOf } from "./config.js";
 import type { PlatformSettings } from "./options.js";
-import { readToolRegistration, type ToolRegistration, toolKeySet } from "./registration.js";
+import type { ToolRegistration } from "./registration.js";
 import { offeredScopes } from "./services/routes.js";
 import { sealAccess } from "./tokens.js";
+import { checkLifetime, issuerOf, spentUntil, toolFrom, verifyToolJwt } from "./tool-message.js";
 
 // Security Framework sections 4.1.1 and 7.1.1: the recommended lifetime of an access token is one hour.
 const ACCESS_TOKEN_TTL_SECONDS = 3600;
-// RFC 7523 section 3 lets the authorization server refuse an assertion whose expiry is unreasonably far; the platform remembers a
-// `jti` until then, and the leeway after it. Security Framework section 4.1.1 has the assertion expire "typically five minutes" after `iat`.
-const MAX_ASSERTION_LIFETIME_SECONDS = 3600;
 const OWNER = "The client assertion";
 
 /** The error codes of RFC 6749 section 5.2 that the endpoint answers with, by the reason of the check that failed. */
@@ -74,15 +66,10 @@ interface Verified {
 
 /** Finds the tool that an assertion names as its issuer. */
 async function findTool(assertion: string, settings: PlatformSettings): Promise<ToolRegistration | typeof FAILED> {
-  const clientId = required(unverifiedClaims(assertion), "iss", OWNER, STRING);
+  const clientId = issuerOf(assertion, OWNER);
   const { signal } = settings;
   const asked = await callPort(() => settings.client(clientId, { signal }), signal);
-  if (asked === undefined) return FAILED;
-  const registration = readToolRegistration(asked.value, clientId);
-  if (registration === undefined) {
-    throw new LtiError(`The platform has no tool with the client identifier ${describe(clientId)}.`, "client-unknown");
-  }
-  return registration;
+  return asked === undefined ? FAILED : toolFrom(asked.value, clientId);
 }
 
 /**
@@ -99,29 +86,21 @@ async function verifyAssertion(assertion: string, settings: PlatformSettings): P
   const { clientId } = registration;
   const nowMilliseconds = readClock(settings.clock);
   const { signal } = settings;
-  const claims = await verifyJwt(
+  const claims = await verifyToolJwt(
     assertion,
-    toolKeySet(registration, settings.jwks, { signal }),
+    registration,
     {
-      issuer: clientId,
-      subject: clientId,
       audience: endpointsOf(settings.config).token,
       trustedAudiences: [settings.config.issuer],
+      subject: clientId,
       requiredClaims: ["exp"],
-      ...(registration.algorithms === undefined ? {} : { algorithms: registration.algorithms }),
     },
-    nowMilliseconds,
+    settings,
   );
   if (claims[CLAIM.messageType] !== undefined) {
     throw new LtiError("A client assertion must not be a message of the tool: it has a message_type.", "claim-invalid");
   }
-  const exp = required(claims, "exp", OWNER, NUMBER);
-  if (exp - nowMilliseconds / MILLISECONDS > MAX_ASSERTION_LIFETIME_SECONDS) {
-    throw new LtiError(
-      `The assertion must expire within ${MAX_ASSERTION_LIFETIME_SECONDS} seconds.`,
-      "assertion-lifetime",
-    );
-  }
+  const exp = checkLifetime(claims, nowMilliseconds, OWNER);
   const deployment = optional(claims, CLAIM.deploymentId, OWNER, IDENTIFIER);
   if (deployment !== undefined && !registration.deploymentIds.includes(deployment)) {
     throw new LtiError(
@@ -130,13 +109,12 @@ async function verifyAssertion(assertion: string, settings: PlatformSettings): P
     );
   }
   const jti = required(claims, "jti", OWNER, NON_EMPTY_STRING);
-  // The assertion still verifies until `exp` plus the leeway, so the `jti` is remembered that long: a host's `once` forgets it
-  // at `expiresAt`, and a captured assertion could otherwise be used again in the leeway. `exp` may have a fraction (RFC 7519
-  // section 2), and the check of the signature compares whole seconds, so the assertion verifies until the next whole second.
-  const expiresAt = (Math.ceil(exp) + CLOCK_SKEW_SECONDS) * MILLISECONDS;
   // An abort before `once` leaves the assertion unspent, since `callPort` checks the signal first. Once it is spent, a later
   // abort fails closed: the tool asks again.
-  const recorded = await callPort(() => settings.once(`assertion:${clientId}:${jti}`, expiresAt, { signal }), signal);
+  const recorded = await callPort(
+    () => settings.once(`assertion:${clientId}:${jti}`, spentUntil(exp), { signal }),
+    signal,
+  );
   if (recorded === undefined) return FAILED;
   if (typeof recorded.value !== "boolean") {
     throw new DataError(`The option once must resolve with a boolean, found ${describe(recorded.value)}.`);
