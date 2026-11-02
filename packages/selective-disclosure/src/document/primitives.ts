@@ -30,13 +30,6 @@ interface Group {
 
 /** The part of `@digitalbazaar/di-sd-primitives` that the package calls. Each function is as the Recommendation defines it. */
 interface Primitives {
-  createHmac(input: {
-    readonly algorithm?: "HS256";
-    readonly key: Uint8Array | null;
-  }): Promise<{ export(): Promise<Uint8Array>; sign(bytes: Uint8Array): Promise<Uint8Array> }>;
-  createHmacIdLabelMapFunction(input: {
-    readonly hmac: { sign(bytes: Uint8Array): Promise<Uint8Array> };
-  }): LabelMapFactory;
   createLabelMapFunction(input: { readonly labelMap: ReadonlyMap<string, string> }): LabelMapFactory;
   hashCanonizedProof(input: {
     readonly document: Document;
@@ -72,8 +65,6 @@ const primitives: Primitives = untyped;
 export const {
   canonicalize,
   canonicalizeAndGroup,
-  createHmac,
-  createHmacIdLabelMapFunction,
   createLabelMapFunction,
   hashCanonizedProof,
   hashMandatory,

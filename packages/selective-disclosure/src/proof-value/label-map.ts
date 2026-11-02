@@ -1,12 +1,9 @@
 import { DataError } from "@interopkit/core";
 import { base64urlnopad } from "@scure/base";
-import { LABEL_BYTES } from "../suite.js";
+import { LABEL_BYTES, MULTIBASE_BASE64URL } from "../suite.js";
 
 /** The text before the number of a canonical blank node label: `c14n0`, `c14n1`. */
 const CANONICAL_PREFIX = "c14n";
-
-/** The multibase prefix of base64url without padding, which opens the label that an HMAC gives a blank node. */
-const LABEL_PREFIX = "u";
 
 /**
  * Compresses a label map for a derived proof value (section 3.5.5): the number of each canonical label becomes the key and
@@ -17,7 +14,7 @@ export function compressLabelMap(labelMap: ReadonlyMap<string, string>): Map<num
   for (const [label, hmacLabel] of labelMap) {
     compressed.set(
       Number(label.slice(CANONICAL_PREFIX.length)),
-      base64urlnopad.decode(hmacLabel.slice(LABEL_PREFIX.length)),
+      base64urlnopad.decode(hmacLabel.slice(MULTIBASE_BASE64URL.length)),
     );
   }
   return compressed;
@@ -27,7 +24,7 @@ export function compressLabelMap(labelMap: ReadonlyMap<string, string>): Map<num
 export function decompressLabelMap(compressed: ReadonlyMap<number, Uint8Array>): Map<string, string> {
   const labelMap = new Map<string, string>();
   for (const [number, digest] of compressed) {
-    labelMap.set(`${CANONICAL_PREFIX}${number}`, `${LABEL_PREFIX}${base64urlnopad.encode(digest)}`);
+    labelMap.set(`${CANONICAL_PREFIX}${number}`, `${MULTIBASE_BASE64URL}${base64urlnopad.encode(digest)}`);
   }
   return labelMap;
 }

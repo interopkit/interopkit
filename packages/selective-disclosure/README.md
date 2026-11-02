@@ -26,9 +26,9 @@ flowchart LR
 ```
 
 It uses Web Crypto and no other platform API, reads no environment variable, writes no log and makes no request: the caller
-passes the loader of JSON-LD contexts, the signer and the key. The tests run on Node.js 22 and 24, and the built package runs on
-Deno. Its dependency `@digitalbazaar/di-sd-primitives` loads `node:crypto` on Node.js and has a `browser` field for bundlers;
-browsers, Bun and Cloudflare Workers are not tested for this package. Its dependencies are `@interopkit/core`,
+passes the loader of JSON-LD contexts, the signer and the key. Its dependency `@digitalbazaar/di-sd-primitives` loads
+`node:crypto` on Node.js and has a `browser` field that swaps in Web Crypto, which a bundler for browsers or workers applies
+(esbuild with `--platform=browser`); the bundle needs no Node.js compatibility. CI runs the tests on Node.js 22 and 24 only. Its dependencies are `@interopkit/core`,
 [`@digitalbazaar/di-sd-primitives`](https://github.com/digitalbazaar/di-sd-primitives), [cborg](https://github.com/rvagg/cborg),
 [@noble/curves](https://github.com/paulmillr/noble-curves) and [@scure/base](https://github.com/paulmillr/scure-base).
 

@@ -12,6 +12,7 @@ flowchart LR
 | Section of the Recommendation                                  | Where                             | Status                                                          |
 | -------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------- |
 | 3.4 Selective Disclosure Functions (3.4.1 to 3.4.17)           | `@digitalbazaar/di-sd-primitives` | Adopted; the package calls them with the options below          |
+| 3.4.4 createHmacIdLabelMapFunction                             | `document/labels.ts`              | Built on Web Crypto, so that a worker needs no `Buffer`         |
 | 3.5.1 serializeSignData                                        | `proof-value/sign-data.ts`        | Supported                                                       |
 | 3.5.2 serializeBaseProofValue, 3.5.3 parseBaseProofValue       | `proof-value/base.ts`             | Supported                                                       |
 | 3.5.4 createDisclosureData                                     | `derive/disclosure-data.ts`       | Supported                                                       |

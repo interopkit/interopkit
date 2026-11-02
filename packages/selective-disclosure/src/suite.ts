@@ -21,3 +21,9 @@ export const HMAC_KEY_BYTES = 32;
 
 /** The bytes of the HMAC digest that stands for one blank node in the label map of a derived proof. */
 export const LABEL_BYTES = 32;
+
+/**
+ * The multibase prefix of base64url without padding, which opens a proof value and the label that an HMAC gives a blank node
+ * (Controlled Identifiers v1.0, section 2.4).
+ */
+export const MULTIBASE_BASE64URL = "u";

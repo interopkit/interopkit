@@ -236,8 +236,10 @@ The measured ratios are the largest of three runs on a laptop with an Apple proc
 
 ## Runtimes and dependencies
 
-The tests run on Node.js 22 and 24, and the built package runs on Deno. The package uses Web Crypto and no other platform API.
-Its dependency `@digitalbazaar/di-sd-primitives` imports `node:crypto` on Node.js and has a `browser` field that swaps in Web
-Crypto, which a bundler for browsers or workers applies; browsers, Bun and Cloudflare Workers are not tested for this package.
-`jsonld` and `rdf-canonize` come with it. Each runtime dependency, its version, its license and its reason are in
-[SECURITY.md](../../SECURITY.md).
+The package uses Web Crypto and no other platform API. It makes the HMAC labels of blank nodes itself (section 3.4.4 of the
+Recommendation): the function of the primitives encodes them with a library that needs the `Buffer` of Node.js wherever a
+bundler does not apply the `browser` field of that library, as esbuild does not. `@digitalbazaar/di-sd-primitives` imports
+`node:crypto` for its hashes on Node.js and has a `browser` field that swaps in Web Crypto, which a bundler for browsers or
+workers applies (esbuild with `--platform=browser`); the bundle needs no Node.js compatibility. CI runs the tests on Node.js 22
+and 24 only. `jsonld` and `rdf-canonize` come with the primitives. Each runtime dependency, its version, its license and its
+reason are in [SECURITY.md](../../SECURITY.md).

@@ -1,5 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { base64urlnopad } from "@scure/base";
+import { MULTIBASE_BASE64URL } from "../suite.js";
 
 /**
  * The first bytes of a base proof value: the CBOR tag 0x5d00 (Data Integrity ECDSA Cryptosuites, section 3.5.2). 0xd9 is a
@@ -9,9 +10,6 @@ export const BASE_HEADER: Uint8Array = Uint8Array.of(0xd9, 0x5d, 0x00);
 
 /** The first bytes of a derived proof value (section 3.5.7): the same tag as the base proof, ending 0x01. */
 export const DERIVED_HEADER: Uint8Array = Uint8Array.of(0xd9, 0x5d, 0x01);
-
-/** The multibase prefix of base64url without padding. */
-const MULTIBASE_BASE64URL = "u";
 
 /**
  * The text that starts every proof value with a header. The 3 bytes of a header fill 4 characters exactly, so the text of
