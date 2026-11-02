@@ -56,39 +56,71 @@ export function entryPoints(name: string): readonly string[] {
   );
 }
 
+/** The prefix of the virtual module that re-exports an entry point, which the bundler starts from. */
+const ENTRY = "entry:";
+
+/** Resolves the virtual module of an entry point to a module that exports all of it. */
+const ENTRY_MODULE: Plugin = {
+  name: "entry",
+  setup(bundler) {
+    bundler.onResolve({ filter: /^entry:/ }, ({ path }) => ({ path: path.slice(ENTRY.length), namespace: "entry" }));
+    bundler.onLoad({ filter: /.*/, namespace: "entry" }, ({ path }) => ({
+      contents: `export * from ${JSON.stringify(path)};`,
+      resolveDir: ROOT,
+      loader: "js",
+    }));
+  },
+};
+
 /**
  * Bundles an entry point alone, as a host's bundler does for a page or a worker: esbuild, minified, for the browsers of ES2023,
- * with every dependency in the bundle. A module that the bundle holds and the entry point does not name is one that importing
- * it pulls in.
+ * with every dependency in the bundle, and a chunk of its own for what a dynamic `import()` loads. The size and the modules are
+ * those of the entry chunk and the chunks that it imports statically, which load with it. A module that they hold and the entry
+ * point does not name is one that importing it pulls in.
  *
  * @param specifier - The specifier of the entry point, such as `@interopkit/learning-records/store`.
  */
 export async function entrySize(specifier: string): Promise<EntrySize> {
   const result = await build({
-    stdin: { contents: `export * from ${JSON.stringify(specifier)};`, resolveDir: ROOT, loader: "js" },
+    entryPoints: [`${ENTRY}${specifier}`],
     absWorkingDir: ROOT,
+    outdir: "entry-size",
     bundle: true,
+    splitting: true,
     write: false,
     minify: true,
     format: "esm",
     platform: "browser",
     target: "es2023",
     metafile: true,
-    plugins: [SOURCES],
+    plugins: [ENTRY_MODULE, SOURCES],
     logLevel: "silent",
   });
-  const [output] = result.outputFiles;
-  const [meta] = Object.values(result.metafile.outputs);
-  if (output === undefined || meta === undefined) throw new Error(`esbuild wrote no bundle for ${specifier}.`);
+  const outputs = result.metafile.outputs;
+  const entry = Object.keys(outputs).find((path) => outputs[path]?.entryPoint !== undefined);
+  if (entry === undefined) throw new Error(`esbuild wrote no bundle for ${specifier}.`);
+  // The chunks that load with the entry: those that it, or a chunk that loads with it, imports statically.
+  const eager = new Set([entry]);
+  for (const path of eager) {
+    for (const { path: imported, kind } of outputs[path]?.imports ?? []) {
+      if (kind === "import-statement" && imported in outputs) eager.add(imported);
+    }
+  }
   const [, name = "", subpath = ""] = specifier.split("/");
   const own = moduleOf(`packages/${name}/src/${subpath === "" ? "index.ts" : `${subpath}/index.ts`}`);
-  const holds = Object.entries(meta.inputs)
-    .filter(([, { bytesInOutput }]) => bytesInOutput > 0)
-    .map(([file]) => moduleOf(file))
-    .filter((module) => module !== own);
+  const modulesOf = (paths: readonly string[]) =>
+    new Set(
+      paths.flatMap((path) =>
+        Object.entries(outputs[path]?.inputs ?? {})
+          .filter(([, { bytesInOutput }]) => bytesInOutput > 0)
+          .map(([file]) => moduleOf(file))
+          .filter((module) => module !== own),
+      ),
+    );
+  const files = result.outputFiles.filter(({ path }) => eager.has(relative(ROOT, path)));
   return {
-    bytes: output.contents.byteLength,
-    gzip: gzipSync(output.contents, { level: 9 }).byteLength,
-    holds: [...new Set(holds)].sort(),
+    bytes: files.reduce((sum, { contents }) => sum + contents.byteLength, 0),
+    gzip: files.reduce((sum, { contents }) => sum + gzipSync(contents, { level: 9 }).byteLength, 0),
+    holds: [...modulesOf([...eager])].sort(),
   };
 }

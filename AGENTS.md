@@ -392,8 +392,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   parse every SVG), and `test/baking.test.ts` compares the bytes and the text with the fixture. A reader of images has a test of the
   worst input of each limit.
 - The `test/size.test.ts` of a package bundles each entry point of its `exports` alone with `scripts/entry-size.ts` (esbuild,
-  minified, every dependency inside) and fails when one is above its budget after gzip, 1.25 times the size measured rounded up
-  to the next 500 bytes, or holds a module of the package or a dependency that its budget does not list.
+  minified, every dependency inside, and a chunk of its own for what a dynamic `import()` loads, which the entry does not count)
+  and fails when one is above its budget after gzip, 1.25 times the size measured rounded up to the next 500 bytes, or holds a
+  module of the package or a dependency that its budget does not list.
 - A benchmark is a `*.bench.ts` in a project named `*-bench` (`pnpm bench`); its budgets are in `test/budgets.ts`: five times the
   fastest sample, rounded up to one significant digit, and a ratio to a reference in the same run where one exists; a package that has no sample of the CI runner yet states its budgets in time as pending, and its ratios hold on any machine. It imports
   its package by name: `tsc` reads the name as the source through the `paths` of the `tsconfig.json`, which has an entry for
