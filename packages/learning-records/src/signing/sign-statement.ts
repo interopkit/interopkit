@@ -10,7 +10,7 @@ import {
   type XapiVersion,
 } from "../model/index.js";
 import { readStatement } from "../read/index.js";
-import { CERTIFICATE_BASE64, SIGNATURE_ALGORITHMS, SIGNATURE_CONTENT_TYPE, SIGNATURE_USAGE_TYPE } from "./constants.js";
+import { isCertificate, SIGNATURE_ALGORITHMS, SIGNATURE_CONTENT_TYPE, SIGNATURE_USAGE_TYPE } from "./constants.js";
 
 const encoder = new TextEncoder();
 
@@ -46,7 +46,7 @@ const optionsSchema = strictRecord({
         v.pipe(
           v.string(),
           v.check(
-            (certificate) => CERTIFICATE_BASE64.test(certificate),
+            isCertificate,
             (issue) => `expected a certificate as the base64 of its DER encoding, found ${issue.received}`,
           ),
         ),

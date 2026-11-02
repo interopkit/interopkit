@@ -271,6 +271,20 @@ describe("matchesStatementQuery: Statement References", () => {
   });
 });
 
+describe("matchesStatementQuery: a long chain of references", () => {
+  it("walks a chain longer than the stack could hold", () => {
+    const length = 200_000;
+    const held = new Map<string, Statement>();
+    for (let n = 0; n < length; n += 1) {
+      held.set(uuid(n), statement(n, { object: { objectType: "StatementRef", id: uuid(n + 1) } }));
+    }
+    held.set(uuid(length), statement(length, { verb: { id: "https://example.org/verbs/last" } }));
+    const first = held.get(uuid(0)) as Statement;
+    expect(matchesStatementQuery(first, { verb: "https://example.org/verbs/last" }, (id) => held.get(id))).toBe(true);
+    expect(matchesStatementQuery(first, { verb: "https://example.org/verbs/none" }, (id) => held.get(id))).toBe(false);
+  });
+});
+
 describe("readBasicAuthorization", () => {
   const headerOf = (credentials: string) => ({ headers: { authorization: `Basic ${btoa(credentials)}` } });
 

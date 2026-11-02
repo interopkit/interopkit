@@ -129,6 +129,12 @@ describe("isAbsoluteUri", () => {
 });
 
 describe("isLanguageTag", () => {
+  it("takes a tag of up to 1,024 characters and refuses a longer one, which no pattern could walk in millions of subtags", () => {
+    expect(isLanguageTag(`x${"-a".repeat(511)}`)).toBe(true);
+    expect(isLanguageTag(`x${"-a".repeat(512)}`)).toBe(false);
+    expect(isLanguageTag(`en${"-abcde".repeat(2_000_000)}`)).toBe(false);
+  });
+
   it.each([
     // The examples of RFC 5646 Appendix A, and the forms of section 2.1.
     "de",

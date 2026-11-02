@@ -131,20 +131,22 @@ function isInTime(statement: Statement, query: StatementQuery): boolean {
   return (since === undefined || stored > since) && (until === undefined || stored <= until);
 }
 
-/** Tells whether the Statement meets the filter, or a Statement that it refers to does, at any depth. */
-function meets(
-  statement: Statement,
-  condition: Condition,
-  target: (id: string) => Statement | undefined,
-  seen: Set<string>,
-): boolean {
-  if (condition(statement)) return true;
-  if (statement.object.objectType !== "StatementRef") return false;
-  const id = statement.object.id.toLowerCase();
-  if (seen.has(id)) return false;
-  seen.add(id);
-  const referred = target(id);
-  return referred !== undefined && meets(referred, condition, target, seen);
+/**
+ * Tells whether the Statement meets the filter, or a Statement that it refers to does, at any depth. A chain of references can
+ * be as long as the LRS holds Statements, so the walk is a loop, which the stack does not limit.
+ */
+function meets(statement: Statement, condition: Condition, target: (id: string) => Statement | undefined): boolean {
+  const seen = new Set<string>();
+  let current: Statement | undefined = statement;
+  while (current !== undefined) {
+    if (condition(current)) return true;
+    if (current.object.objectType !== "StatementRef") return false;
+    const id = current.object.id.toLowerCase();
+    if (seen.has(id)) return false;
+    seen.add(id);
+    current = target(id);
+  }
+  return false;
 }
 
 /**
@@ -170,8 +172,5 @@ export function matchesStatementQuery(
   query: StatementQuery,
   target: (id: string) => Statement | undefined,
 ): boolean {
-  return (
-    isInTime(statement, query) &&
-    conditionsOf(query).every((condition) => meets(statement, condition, target, new Set<string>()))
-  );
+  return isInTime(statement, query) && conditionsOf(query).every((condition) => meets(statement, condition, target));
 }

@@ -94,7 +94,8 @@ function numberOf(part: string | undefined): number {
  * A time of days, hours, minutes and seconds is `((days * 24 + hours) * 60 + minutes) * 60 + seconds` seconds.
  *
  * @param text - The duration, such as `PT1H30M`.
- * @returns The components, or `undefined` when the text is not a duration of that form.
+ * @returns The components, or `undefined` when the text is not a duration of that form. A component too large for a number is
+ * `Infinity`.
  */
 export function parseDuration(text: string): Duration | undefined {
   const parts = splitDuration(text);
@@ -139,6 +140,12 @@ export function formatDuration(milliseconds: number): string {
   return written === "" ? "PT0S" : `PT${written}`;
 }
 
+/**
+ * The longest duration whose time is added up for a comparison. A year of seconds has eight digits, so no measured time is
+ * near it, and the work of big numbers grows faster than their digits: a longer text is its own key.
+ */
+const MAX_COMPARED_LENGTH = 64;
+
 /** Counts the centiseconds of a component, cut at 0.01 second, from the decimal text and not from a number that rounds. */
 function centisecondsOf(part: string | undefined, centisecondsPerUnit: number): bigint {
   if (part === undefined) return 0n;
@@ -153,6 +160,7 @@ function centisecondsOf(part: string | undefined, centisecondsPerUnit: number): 
 export function durationKey(text: string): string | undefined {
   const parts = splitDuration(text);
   if (parts === undefined) return undefined;
+  if (text.length > MAX_COMPARED_LENGTH) return text;
   const { years, months, days } = componentsOf(parts);
   const time =
     centisecondsOf(parts.hours, CENTISECONDS_PER_HOUR) +

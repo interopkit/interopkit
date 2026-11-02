@@ -438,6 +438,31 @@ describe("the limit of findings", () => {
     expect(validateStatement(statement, { version: "1.0.3" })).toHaveLength(1001);
   });
 
+  it.each([
+    ["the parameters of a media type", "attachments[0].contentType", { contentType: `a/b${";c=d".repeat(3_000_000)}` }],
+    [
+      "a quoted parameter of a media type",
+      "attachments[0].contentType",
+      { contentType: `a/b;c="${"a".repeat(10_000_000)}"` },
+    ],
+  ])("finds %s of millions of characters invalid, with no stack overflow", (_name, path, changes) => {
+    const attachment = {
+      usageType: "https://example.org/usage",
+      display: { en: "x" },
+      contentType: "text/plain",
+      length: 1,
+      sha2: "a".repeat(64),
+    };
+    const findings = validateStatement({ ...minimalStatement(), attachments: [{ ...attachment, ...changes }] });
+    expect(findings.map((finding) => finding.path)).toStrictEqual([path]);
+  });
+
+  it("finds a language tag of millions of characters invalid, with no stack overflow", () => {
+    const language = `en${"-abcde".repeat(2_000_000)}`;
+    const findings = validateStatement({ ...minimalStatement(), context: { language } });
+    expect(findings.map((finding) => finding.path)).toStrictEqual(["context.language"]);
+  });
+
   it("counts the errors of a reader alone, and makes it refuse when they stopped the check", () => {
     expect(() => readStatement(withAgents(50), { maxFindings: 2 })).toThrow(
       "At least 1 more error: the check stopped at its limit, and validateStatement with a higher maxFindings lists more.",

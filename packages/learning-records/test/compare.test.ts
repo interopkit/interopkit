@@ -228,6 +228,21 @@ describe("sameStatement", () => {
     });
   });
 
+  describe("a duration too long to add up", () => {
+    const withDuration = (duration: string): Statement => ({ ...minimalStatement(), result: { duration } });
+
+    it("is compared as it is written", () => {
+      const seconds = `PT${"1".repeat(1_000_000)}S`;
+      expect(sameStatement(withDuration(seconds), withDuration(seconds))).toBe(true);
+      expect(sameStatement(withDuration(seconds), withDuration(`PT${"1".repeat(999_999)}2S`))).toBe(false);
+    });
+
+    it("is another Statement than the same time in fewer digits", () => {
+      expect(sameStatement(withDuration(`PT${"0".repeat(70)}1S`), withDuration("PT1S"))).toBe(false);
+      expect(sameStatement(withDuration(`PT${"0".repeat(50)}1S`), withDuration("PT1S"))).toBe(true);
+    });
+  });
+
   describe("IRIs with no authority", () => {
     it("holds the case of the scheme to be nothing, and the case of the rest to be something", () => {
       const urn = (id: string) => changed((s) => (s.verb.id = id));

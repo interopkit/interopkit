@@ -117,6 +117,12 @@ const LANGUAGE_PATTERN = [
   `(?:-[Xx](?:-${ALPHANUMERIC}{1,8})+)?`,
 ].join("");
 const LANGUAGE_TAG = new RegExp(`^(?:${LANGUAGE_PATTERN}|[Xx](?:-${ALPHANUMERIC}{1,8})+)$`, "u");
+/**
+ * The most characters of a language tag. RFC 5646 section 4.4.1 asks for room for 35, and a pattern with quantified groups runs
+ * out of stack at some millions of subtags, so a longer text is not read as a tag.
+ */
+const MAX_LANGUAGE_TAG_LENGTH = 1024;
+
 /** The tags that RFC 5646 section 2.2.8 keeps from RFC 3066 and that the grammar above does not produce, in lower case. */
 const GRANDFATHERED: ReadonlySet<string> = new Set([
   "en-gb-oed",
@@ -161,7 +167,7 @@ const GRANDFATHERED: ReadonlySet<string> = new Set([
  * @see {@link https://www.rfc-editor.org/rfc/rfc5646#section-2.1 | RFC 5646 section 2.1}
  */
 export function isLanguageTag(text: string): boolean {
-  return LANGUAGE_TAG.test(text) || GRANDFATHERED.has(text.toLowerCase());
+  return text.length <= MAX_LANGUAGE_TAG_LENGTH && (LANGUAGE_TAG.test(text) || GRANDFATHERED.has(text.toLowerCase()));
 }
 
 /** A UUID as 8-4-4-4-12 hexadecimal digits of either case: the form that the JSON schemas of 1EdTech ask for. */

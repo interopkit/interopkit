@@ -14,7 +14,7 @@ import { equivalenceKey } from "../compare/internal.js";
 import { type Statement, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 import { readStatement, readStatementJson } from "../read/index.js";
 import { readEitherVersion } from "../read/internal.js";
-import { CERTIFICATE_BASE64, SIGNATURE_ALGORITHMS } from "./constants.js";
+import { isCertificate, SIGNATURE_ALGORITHMS } from "./constants.js";
 
 const textDecoder = new TextDecoder("utf-8", { fatal: true });
 
@@ -93,7 +93,7 @@ function isChain(value: unknown): value is readonly [string, ...string[]] {
   return (
     Array.isArray(value) &&
     value.length > 0 &&
-    value.every((certificate) => typeof certificate === "string" && CERTIFICATE_BASE64.test(certificate))
+    value.every((certificate) => typeof certificate === "string" && isCertificate(certificate))
   );
 }
 

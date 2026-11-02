@@ -16,6 +16,12 @@ const MEDIA_TYPE = new RegExp(
   "u",
 );
 
+/**
+ * The most characters of an Internet media type. The two names are at most 127 characters each (RFC 6838 section 4.2), and a
+ * pattern with a quantified group runs out of stack at some millions of parameters, so a longer text is no media type.
+ */
+const MAX_MEDIA_TYPE_LENGTH = 1024;
+
 /** Returns the type and subtype of an Internet media type in lower case, without its parameters: `text/plain` for `Text/Plain; charset=utf-8`. */
 export function mediaTypeOf(text: string): string {
   const end = text.indexOf(";");
@@ -39,5 +45,5 @@ export function isSha2Hex(text: string): boolean {
 
 /** Tells whether text is an Internet media type, such as `text/plain; charset=utf-8`, the form of `contentType` (4.2.2.6). */
 export function isMediaType(text: string): boolean {
-  return MEDIA_TYPE.test(text);
+  return text.length <= MAX_MEDIA_TYPE_LENGTH && MEDIA_TYPE.test(text);
 }

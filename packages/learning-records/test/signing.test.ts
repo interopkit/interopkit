@@ -288,6 +288,8 @@ describe("signStatement", () => {
         "The options object is invalid at x5c[0]: expected a certificate as the base64 of its DER encoding",
       ],
       [{ x5c: ["AAA"] }, "The options object is invalid at x5c[0]: expected a certificate"],
+      [{ x5c: ["A==="] }, "The options object is invalid at x5c[0]: expected a certificate"],
+      [{ x5c: ["AA=A"] }, "The options object is invalid at x5c[0]: expected a certificate"],
       [{ x5c: [5] }, "The options object is invalid at x5c[0]: expected a string, found 5."],
       [{ signal: {} }, "The options object is invalid at signal: expected an AbortSignal, found an object."],
       [{ chain: [] }, 'The options object is invalid: unexpected property "chain".'],
