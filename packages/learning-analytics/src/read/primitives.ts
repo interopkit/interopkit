@@ -1,4 +1,4 @@
-import { finiteSchema, isAbsoluteUri, nonNegativeIntegerSchema, parseDateTime } from "@interopkit/core/checks";
+import { finiteSchema, isAbsoluteUri, isDate, nonNegativeIntegerSchema } from "@interopkit/core/checks";
 import * as v from "valibot";
 
 /** The greatest value of an unsigned 32-bit integer: the `uint32` format that the schemas of Caliper give to counts. */
@@ -16,11 +16,21 @@ const TIME_FORM = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u;
  */
 const DURATION = /^P(?:\d+W|(?!$)(?:\d+Y)?(?:\d+M)?(?:\d+D)?(?:T(?=\d)(?:\d+H)?(?:\d+M)?(?:\d+(?:\.\d+)?S)?)?)$/u;
 
-/** Tells whether text is a time in the form that `caliperTime` writes, and a date that exists. */
+/** The last hour of a day, minute of an hour and second of a minute: a leap second, which RFC 3339 allows, is never written. */
+const LAST_HOUR = 23;
+const LAST_MINUTE = 59;
+const LAST_SECOND = 59;
+
+/** Tells whether text is a time in the form that `caliperTime` writes, of a day that exists and a time of that day. */
 function isCaliperTime(text: string): boolean {
-  const at = parseDateTime(text);
-  // The comparison also rejects a leap second, which RFC 3339 allows and `caliperTime` never writes.
-  return at !== undefined && TIME_FORM.test(text) && new Date(at).toISOString() === text;
+  // The form fixes where each field is, so the fields are read without a pattern that captures them.
+  return (
+    TIME_FORM.test(text) &&
+    isDate(text.slice(0, 10)) &&
+    Number(text.slice(11, 13)) <= LAST_HOUR &&
+    Number(text.slice(14, 16)) <= LAST_MINUTE &&
+    Number(text.slice(17, 19)) <= LAST_SECOND
+  );
 }
 
 /** A string. Caliper gives names, descriptions and labels no more form than that. */

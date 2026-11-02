@@ -540,10 +540,17 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-analytics/test/read-entity.test.ts",
   },
   {
-    rule: "A time is the form that Caliper writes, and a leap second is no such time.",
+    rule: "A time that Caliper writes is of a day that exists.",
     file: "packages/learning-analytics/src/read/primitives.ts",
-    find: " && new Date(at).toISOString() === text",
+    find: "isDate(text.slice(0, 10)) &&",
     replace: "",
+    test: "packages/learning-analytics/test/read-entity.test.ts",
+  },
+  {
+    rule: "A leap second is no time that Caliper writes.",
+    file: "packages/learning-analytics/src/read/primitives.ts",
+    find: "Number(text.slice(17, 19)) <= LAST_SECOND",
+    replace: "true",
     test: "packages/learning-analytics/test/read-entity.test.ts",
   },
   {
@@ -655,8 +662,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The principal of an envelope is the one that authorize named, and never the sensor that the envelope names.",
     file: "packages/learning-analytics/src/endpoint/receive.ts",
-    find: "assembleEnvelope(fields, principal, settings.maxFindings, version)",
-    replace: "assembleEnvelope(fields, fields.sensor, settings.maxFindings, version)",
+    find: "assembleEnvelope(fields, principal, settings.maxFindings, version, true)",
+    replace: "assembleEnvelope(fields, fields.sensor, settings.maxFindings, version, true)",
     test: "packages/learning-analytics/test/endpoint.test.ts",
   },
   {
@@ -669,8 +676,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The endpoint reads an envelope as the version of its dataVersion.",
     file: "packages/learning-analytics/src/endpoint/receive.ts",
-    find: "assembleEnvelope(fields, principal, settings.maxFindings, version)",
-    replace: 'assembleEnvelope(fields, principal, settings.maxFindings, "1.2")',
+    find: "assembleEnvelope(fields, principal, settings.maxFindings, version, true)",
+    replace: 'assembleEnvelope(fields, principal, settings.maxFindings, "1.2", true)',
     test: "packages/learning-analytics/test/versions.test.ts",
   },
   {
@@ -781,8 +788,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The body is parsed within the limits of its tokens, and of its size and depth.",
     file: "packages/learning-analytics/src/endpoint/receive.ts",
-    find: "readJson(request, { maxBytes: settings.maxPayloadBytes, maxTokens: settings.maxTokens })",
-    replace: "readJson(request, { maxBytes: settings.maxPayloadBytes })",
+    find: "maxTokens: settings.maxTokens,\n    });",
+    replace: "});",
     test: "packages/learning-analytics/test/endpoint.test.ts",
   },
   {
@@ -846,6 +853,13 @@ export const RULES: readonly Rule[] = [
     file: "packages/learning-analytics/src/endpoint/envelope.ts",
     find: "sendTime: time,",
     replace: "sendTime: v.string(),",
+    test: "packages/learning-analytics/test/endpoint.test.ts",
+  },
+  {
+    rule: "readEnvelope copies the items of a host's envelope, and finds an item that JSON cannot hold.",
+    file: "packages/learning-analytics/src/endpoint/envelope.ts",
+    find: "assembleEnvelope(fields, who, settings.maxFindings, version, false)",
+    replace: "assembleEnvelope(fields, who, settings.maxFindings, version, true)",
     test: "packages/learning-analytics/test/endpoint.test.ts",
   },
   {
@@ -1657,8 +1671,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "Two entities of a package with one identifier are an error.",
     file: "packages/competency-frameworks/src/read/integrity.ts",
-    find: "if (earlier === undefined) first.set(key, path);",
-    replace: "if (true) first.set(key, path);",
+    find: "if (earlier === undefined) first.set(key, entry);",
+    replace: "if (true) first.set(key, entry);",
     test: "packages/competency-frameworks/test/integrity.test.ts",
   },
   {

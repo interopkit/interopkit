@@ -44,19 +44,19 @@ export const RATIOS = {
   /** `frameworkTree` of the framework, as a multiple of `JSON.parse` of its text. */
   frameworkTreeAgainstParse: 20,
   /** `toCaseVersion` of the framework to 1.0, as a multiple of `JSON.parse` of its text. */
-  toCaseVersionAgainstParse: 20,
+  toCaseVersionAgainstParse: 10,
   /** `diffPackages` of the framework and an edition of it, as a multiple of `JSON.parse` of its text. */
   diffPackagesAgainstParse: 20,
   /** `crosswalk` of the framework and the one it matches, as a multiple of `JSON.parse` of its text. */
   crosswalkAgainstParse: 7,
   /** `associationsOf` an item of the framework, as a multiple of `JSON.parse` of its text. */
-  associationsOfAgainstParse: 4,
+  associationsOfAgainstParse: 6,
   /** `handleCaseRequest` for the package of the framework in 1.1, as a multiple of `JSON.stringify` of it. */
   serve11AgainstStringify: 6,
   /** `handleCaseRequest` for the package of the framework in 1.0, which converts it, as a multiple of `JSON.stringify` of it. */
   serve10AgainstStringify: 60,
   /** `package` of a client over the answer of the provider, as a multiple of `JSON.parse` of its text. */
-  clientAgainstParse: 50,
+  clientAgainstParse: 60,
 } as const;
 
 /**

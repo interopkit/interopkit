@@ -3,9 +3,16 @@ import { INFORMATION_MODEL_UUID, identifierKey, isCaseNode } from "../model/inte
 
 /** An identifier of an entity, and where it is. */
 interface Identified {
-  /** The path of the `identifier` property. */
-  readonly path: string;
+  /** The path of the list that holds the entity, or of the `identifier` property itself when `index` is -1. */
+  readonly within: string;
+  /** The place of the entity in the list, or -1. */
+  readonly index: number;
   readonly identifier: string;
+}
+
+/** Writes the path of the `identifier` property, which a finding alone needs: a package has an identifier for each entity. */
+function pathOf({ within, index }: Identified): string {
+  return index < 0 ? within : `${within}[${index}].identifier`;
 }
 
 /** The URIs of the entities of one class that a package holds, by the identifier in lower case. */
@@ -17,16 +24,16 @@ function issue(path: string, rule: string, severity: CaseIssue["severity"], mess
 
 /** Lists the identifiers of the members of a list, with the path of the list. */
 function identifiersOfList(list: readonly { readonly identifier: string }[] | undefined, path: string): Identified[] {
-  return (list ?? []).map(({ identifier }, at) => ({ path: `${path}[${at}].identifier`, identifier }));
+  return (list ?? []).map(({ identifier }, index) => ({ within: path, index, identifier }));
 }
 
 /** Lists the identifiers of an entity, and of its criteria and their levels when it is a rubric. */
 function identifiersOfEntity(entity: Pick<CFRubric, "identifier" | "CFRubricCriteria">, path: string): Identified[] {
   const prefix = path === "" ? "" : `${path}.`;
-  const found: Identified[] = [{ path: `${prefix}identifier`, identifier: entity.identifier }];
+  const found: Identified[] = [{ within: `${prefix}identifier`, index: -1, identifier: entity.identifier }];
   for (const [at, criterion] of (entity.CFRubricCriteria ?? []).entries()) {
     const criterionPath = `${prefix}CFRubricCriteria[${at}]`;
-    found.push({ path: `${criterionPath}.identifier`, identifier: criterion.identifier });
+    found.push({ within: `${criterionPath}.identifier`, index: -1, identifier: criterion.identifier });
     found.push(...identifiersOfList(criterion.CFRubricCriterionLevels, `${criterionPath}.CFRubricCriterionLevels`));
   }
   return found;
@@ -66,22 +73,23 @@ function identifiersOfAnyEntity(entity: CaseEntity): Identified[] {
 
 /** Finds the identifiers that two entities share, and the identifiers that are not of the form of the Information Model. */
 function* identifierIssues(identified: readonly Identified[]): Generator<CaseIssue> {
-  const first = new Map<string, string>();
-  for (const { path, identifier } of identified) {
+  const first = new Map<string, Identified>();
+  for (const entry of identified) {
+    const { identifier } = entry;
     const key = identifierKey(identifier);
     const earlier = first.get(key);
-    if (earlier === undefined) first.set(key, path);
+    if (earlier === undefined) first.set(key, entry);
     else {
       yield issue(
-        path,
+        pathOf(entry),
         "duplicate-identifier",
         "error",
-        `the identifier ${JSON.stringify(identifier)} is also the identifier at ${earlier}; give each entity an identifier of its own.`,
+        `the identifier ${JSON.stringify(identifier)} is also the identifier at ${pathOf(earlier)}; give each entity an identifier of its own.`,
       );
     }
     if (!INFORMATION_MODEL_UUID.test(identifier)) {
       yield issue(
-        path,
+        pathOf(entry),
         "identifier-form",
         "warning",
         `the identifier ${JSON.stringify(identifier)} is not of the form that the Information Model gives: a UUID of lower-case digits, of version 1 to 5.`,
@@ -152,7 +160,7 @@ function* linksIssues(
 }
 
 /** Checks the nodes of an association: a node that names the package's own document or item agrees with it in URI. */
-function* nodeIssues(association: CFPckgAssociation, path: string, nodes: Targets): Generator<CaseIssue> {
+function* nodeIssues(association: CFPckgAssociation, at: number, nodes: Targets): Generator<CaseIssue> {
   let local = 0;
   for (const side of ["originNodeURI", "destinationNodeURI"] as const) {
     const node = association[side];
@@ -161,7 +169,7 @@ function* nodeIssues(association: CFPckgAssociation, path: string, nodes: Target
     local += 1;
     if (uri !== node.uri) {
       yield issue(
-        `${path}.${side}`,
+        `CFAssociations[${at}].${side}`,
         "reference-mismatch",
         "warning",
         `the node ${JSON.stringify(node.identifier)} has the URI ${JSON.stringify(node.uri)}, and the document or item of the package has ${JSON.stringify(uri)}; use the URI of the document or item.`,
@@ -170,7 +178,7 @@ function* nodeIssues(association: CFPckgAssociation, path: string, nodes: Target
   }
   if (local === 0) {
     yield issue(
-      path,
+      `CFAssociations[${at}]`,
       "association-outside-package",
       "warning",
       "neither node of the association is the document or an item of the package, which holds the associations of its own document and items; move the association to the package of its nodes.",
@@ -295,6 +303,9 @@ function* definitionLinkIssues(pkg: CasePackage, targets: PackageTargets): Gener
   yield* linksIssues(document.subjectURI, "CFDocument.subjectURI", targets.subjects, "subject");
   yield* linkIssues(document.licenseURI, "CFDocument.licenseURI", targets.licenses, "license");
   for (const [at, item] of (pkg.CFItems ?? []).entries()) {
+    // Most items link to no definition, and only those that do need their paths.
+    const { conceptKeywordsURI, subjectURI, CFItemTypeURI, licenseURI } = item;
+    if (!(conceptKeywordsURI || subjectURI || CFItemTypeURI || licenseURI)) continue;
     const path = `CFItems[${at}]`;
     yield* linkIssues(item.conceptKeywordsURI, `${path}.conceptKeywordsURI`, targets.concepts, "concept");
     yield* linksIssues(item.subjectURI, `${path}.subjectURI`, targets.subjects, "subject");
@@ -307,14 +318,15 @@ function* definitionLinkIssues(pkg: CasePackage, targets: PackageTargets): Gener
 function* associationIssues(pkg: CasePackage, targets: PackageTargets): Generator<CaseIssue> {
   const associations = pkg.CFAssociations ?? [];
   for (const [at, association] of associations.entries()) {
-    const path = `CFAssociations[${at}]`;
-    yield* linkIssues(
-      association.CFAssociationGroupingURI,
-      `${path}.CFAssociationGroupingURI`,
-      targets.groupings,
-      "grouping",
-    );
-    yield* nodeIssues(association, path, targets.nodes);
+    if (association.CFAssociationGroupingURI !== undefined) {
+      yield* linkIssues(
+        association.CFAssociationGroupingURI,
+        `CFAssociations[${at}].CFAssociationGroupingURI`,
+        targets.groupings,
+        "grouping",
+      );
+    }
+    yield* nodeIssues(association, at, targets.nodes);
   }
   const edges = childEdges(associations, targets.nodes);
   yield* cycleIssues(edges);

@@ -684,6 +684,12 @@ describe("readEnvelope", () => {
     }
   });
 
+  it("finds an item of a host's envelope that JSON cannot hold, and reads the others", () => {
+    const envelope = readEnvelope(envelopeOf([soundAt(0), { ...soundAt(1), eventTime: new Date(0) }]), "tool-7");
+    expect(envelope.data).toHaveLength(1);
+    expect(envelope.findings).toMatchObject([{ path: "data[1]", rule: "invalid-value", severity: "error" }]);
+  });
+
   it("does not change the value it is given", () => {
     const given = JSON.parse(JSON.stringify(envelopeOf([PERSON, soundAt(0)])));
     const before = JSON.stringify(given);

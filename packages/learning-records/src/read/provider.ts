@@ -133,7 +133,19 @@ function* emptyObjects(value: unknown, path: string): Generator<StatementIssue> 
  * Statement of 1.0.3 should not include (Data 2.2).
  */
 export function emptyObjectIssues(statement: Statement): Iterable<StatementIssue> {
-  return emptyObjects(statement, "");
+  // Most Statements have none, and the walk that finds them writes the path of each member that it passes.
+  return holdsEmptyObject(statement) ? emptyObjects(statement, "") : [];
+}
+
+/** Tells whether `emptyObjects` finds an empty object in a value, without writing a path. */
+function holdsEmptyObject(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(holdsEmptyObject);
+  if (!isRecord(value)) return false;
+  for (const [name, property] of Object.entries(value)) {
+    if (isRecord(property) && Object.keys(property).length === 0) return true;
+    if (name !== "extensions" && holdsEmptyObject(property)) return true;
+  }
+  return false;
 }
 
 /**

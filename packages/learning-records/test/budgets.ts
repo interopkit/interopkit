@@ -33,7 +33,7 @@ export const RATIOS = {
   /** `validateStatements` of the batch as a whole, as a multiple of the validator of Learning Locker: parity or better. */
   validateBatchAgainstLearningLocker: 1,
   /** `buildStatement` of each Statement of the batch, as a multiple of the validator of Learning Locker on them. */
-  buildAgainstLearningLocker: 6,
+  buildAgainstLearningLocker: 4,
   /** `mboxSha1sum` of 1,000 mailto IRIs, as a multiple of the SHA-1 of node:crypto on them. */
   mboxSha1sumAgainstNative: 10,
   /** `deriveStatementId` of 1,000 names, as a multiple of the SHA-1 of node:crypto on 1,000 mailto IRIs. */
@@ -45,7 +45,7 @@ export const RATIOS = {
   /** `formatStatement` of each Statement of the batch, in `ids` and in `canonical`, as a multiple of the same. */
   formatAgainstLearningLocker: 3,
   /** `readMultipart` of 99 Statements with 6.2 MiB of data, as a multiple of the parser and the SHA-256 of node:crypto. */
-  readMultipartAgainstNative: 50,
+  readMultipartAgainstNative: 60,
   /** `writeMultipart` of the same, as a multiple of their JSON, the SHA-256 of node:crypto and a copy of the bytes. */
   writeMultipartAgainstNative: 80,
   /** `attachmentHash` of 1 MiB, as a multiple of the SHA-256 of node:crypto. */

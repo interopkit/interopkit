@@ -86,11 +86,14 @@ function readItems(
   items: readonly unknown[],
   sink: FindingSink<CaliperFinding>,
   version: CaliperVersion,
+  parsed: boolean,
 ): (CaliperEvent | EntityDocument)[] {
   const data: (CaliperEvent | EntityDocument)[] = [];
   items.forEach((item, index) => {
     const inner = sink.within(placed(index));
-    const read = isEvent(item) ? inspectEvent(item, inner, version) : inspectEntity(item, inner, version);
+    const read = isEvent(item)
+      ? inspectEvent(item, inner, version, parsed)
+      : inspectEntity(item, inner, version, parsed);
     if (read !== undefined) data.push(read);
   });
   return data;
@@ -98,16 +101,18 @@ function readItems(
 
 /**
  * Makes the envelope that an endpoint hands to its host: the fields, the principal who sent it, and the items that read, as the
- * version of Caliper reads them, with what was found in them.
+ * version of Caliper reads them, with what was found in them. The items of an envelope that `JSON.parse` made of a request
+ * within the depth of `MAX_JSON_DEPTH` are JSON that nothing else holds, and are read without a copy; those of a host are copied.
  */
 export function assembleEnvelope(
   fields: EnvelopeFields,
   principal: string,
   maxFindings: number | undefined,
   version: CaliperVersion,
+  parsed: boolean,
 ): ReceivedEnvelope {
   const sink = findingSink(maxFindings ?? DEFAULT_MAX_FINDINGS);
-  const data = readItems(fields.data, sink, version);
+  const data = readItems(fields.data, sink, version, parsed);
   return {
     principal,
     sensor: fields.sensor,
@@ -158,7 +163,7 @@ export function readEnvelope(
       `The dataVersion of the envelope must be ${versions.map(contextOfVersion).join(" or ")}, the versions that the endpoint reads, found ${JSON.stringify(fields.dataVersion)}.`,
     );
   }
-  const envelope = assembleEnvelope(fields, who, settings.maxFindings, version);
+  const envelope = assembleEnvelope(fields, who, settings.maxFindings, version, false);
   const refusal = settings.strict === true ? strictRefusal(envelope) : undefined;
   if (refusal !== undefined) throw new DataError(refusal);
   return envelope;

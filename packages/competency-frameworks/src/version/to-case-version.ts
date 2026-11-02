@@ -99,12 +99,38 @@ function copyValue(value: unknown, path: string): unknown {
   return copy.value;
 }
 
+/**
+ * Copies the value of a member of an object that the conversion copies as it is. A string, a finite number, a boolean,
+ * `null` and a list of them need no deep copy, so that only another value writes the path of the member.
+ */
+function copyMember(value: unknown, path: string, name: string): unknown {
+  if (isPlain(value)) return value;
+  if (Array.isArray(value) && isPlainList(value)) return [...value];
+  return copyValue(value, member(path, name));
+}
+
+/** Tells whether each entry of a list, a hole included, is its own copy, as a list of keywords or of levels is. */
+function isPlainList(list: readonly unknown[]): boolean {
+  for (let index = 0; index < list.length; index += 1) if (!isPlain(list[index])) return false;
+  return true;
+}
+
+/** Tells whether a value is a string, a finite number, a boolean or `null`: a value of JSON that is its own copy. */
+function isPlain(value: unknown): boolean {
+  return (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    (typeof value === "number" && Number.isFinite(value))
+  );
+}
+
 /** Reports an identifier or a URI that 1.0 would refuse, and leaves it as it is. */
-function reportForms(name: string, value: unknown, path: string, dropped: CaseIssue[]): void {
+function reportForms(name: string, value: unknown, parent: string, dropped: CaseIssue[]): void {
   if (typeof value === "string" && IDENTIFIER_MEMBERS.has(name) && !INFORMATION_MODEL_UUID.test(value)) {
     dropped.push(
       warning(
-        path,
+        member(parent, name),
         "form-not-in-1.0",
         `the identifier ${JSON.stringify(value)} is not of the form that CASE 1.0 asks for, a UUID of lower-case digits, of version 1 to 5; it is kept as it is.`,
       ),
@@ -113,7 +139,7 @@ function reportForms(name: string, value: unknown, path: string, dropped: CaseIs
   if (typeof value === "string" && URI_MEMBERS.has(name) && !isAbsoluteUri(value)) {
     dropped.push(
       warning(
-        path,
+        member(parent, name),
         "form-not-in-1.0",
         `the URI ${JSON.stringify(value)} is not of the form that CASE 1.0 asks for, a URI with a scheme; it is kept as it is.`,
       ),
@@ -127,16 +153,17 @@ function reportLinkForms(value: unknown, path: string, dropped: CaseIssue[]): vo
   for (const [index, link] of links.entries()) {
     if (!isRecord(link)) continue;
     const at = Array.isArray(value) ? `${path}[${index}]` : path;
-    for (const name of ["identifier", "uri"]) reportForms(name, link[name], member(at, name), dropped);
+    for (const name of ["identifier", "uri"]) reportForms(name, link[name], at, dropped);
   }
 }
 
 /** Copies a node of an association without its `targetType`, which 1.0 has no property for. */
 function convertNode(node: unknown, path: string, dropped: CaseIssue[]): unknown {
-  checkRecord(node, `${path} must be an object`);
+  if (!isRecord(node)) checkRecord(node, `${path} must be an object`);
   const { targetType: _targetType, ...rest } = node;
-  reportForms("uri", rest.uri, member(path, "uri"), dropped);
-  return copyValue(rest, path);
+  reportForms("uri", rest.uri, path, dropped);
+  // The rest is a new object, so it is a copy when each of its values is its own copy: a node has a title, an identifier and a URI.
+  return Object.values(rest).every(isPlain) ? rest : copyValue(rest, path);
 }
 
 /** Why an association has no form in 1.0, or `undefined` when it has one. */
@@ -165,30 +192,34 @@ function whyNotIn10(association: Dictionary): { readonly rule: string; readonly 
 function convertObject(entity: Dictionary, path: string, dropped: CaseIssue[], depth: number): Record<string, unknown> {
   checkDepth(depth, path);
   const members: [string, unknown][] = [];
+  // The path of a member is written only where it is used: in a warning, in an error, and for what the member holds.
   for (const [name, value] of Object.entries(entity)) {
-    const at = member(path, name);
     if (isOnlyIn11(entity, name)) {
-      dropped.push(warning(at, "property-not-in-1.0", "CASE 1.0 has no such property here; it is left out."));
+      dropped.push(
+        warning(member(path, name), "property-not-in-1.0", "CASE 1.0 has no such property here; it is left out."),
+      );
     } else if (OBJECT_MEMBERS.has(name)) {
+      const at = member(path, name);
       checkRecord(value, `${at} must be an object`);
       members.push([name, convertObject(value, at, dropped, depth + 1)]);
     } else if (name === "CFAssociations") {
-      members.push([name, convertAssociations(value, at, dropped, depth + 1)]);
+      members.push([name, convertAssociations(value, member(path, name), dropped, depth + 1)]);
     } else if (LIST_MEMBERS.has(name)) {
+      const at = member(path, name);
       checkArray(value, `${at} must be an array`);
       members.push([
         name,
         value.map((each, index) => {
-          checkRecord(each, `${at}[${index}] must be an object`);
+          if (!isRecord(each)) checkRecord(each, `${at}[${index}] must be an object`);
           return convertObject(each, `${at}[${index}]`, dropped, depth + 1);
         }),
       ]);
     } else if (NODE_MEMBERS.has(name)) {
-      members.push([name, convertNode(value, at, dropped)]);
+      members.push([name, convertNode(value, member(path, name), dropped)]);
     } else {
-      members.push([name, copyValue(value, at)]);
-      reportForms(name, value, at, dropped);
-      if (LINK_MEMBERS.has(name)) reportLinkForms(value, at, dropped);
+      members.push([name, copyMember(value, path, name)]);
+      reportForms(name, value, path, dropped);
+      if (LINK_MEMBERS.has(name)) reportLinkForms(value, member(path, name), dropped);
     }
   }
   // `Object.fromEntries` defines each member, so that a member named `__proto__` stays a member and not a prototype.
@@ -220,7 +251,7 @@ function convertAssociations(
   checkArray(value, `${path} must be an array`);
   const kept: Record<string, unknown>[] = [];
   for (const [index, each] of value.entries()) {
-    checkRecord(each, `${path}[${index}] must be an object`);
+    if (!isRecord(each)) checkRecord(each, `${path}[${index}] must be an object`);
     const converted = convertAssociation(each, `${path}[${index}]`, dropped, depth);
     if (converted !== undefined) kept.push(converted);
   }

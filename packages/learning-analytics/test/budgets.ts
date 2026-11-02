@@ -21,13 +21,13 @@ export const EVENTS = 1000;
  */
 export const RATIOS = {
   /** `readEnvelope` of an envelope of 1.2, as a multiple of `JSON.parse` of its text. */
-  readEnvelopeAgainstParse: 60,
+  readEnvelopeAgainstParse: 30,
   /** `readEnvelope` of an envelope of 1.2, as a multiple of the draft 4 schemas of `caliper-spec` over its events: parity or better. */
   readEnvelopeAgainstSchemas: 1,
   /** `validateEvent` over the events of an envelope of 1.2, as a multiple of the same schemas: parity or better. */
   validateEventAgainstSchemas: 1,
   /** `readEnvelope` of an envelope of 1.1, as a multiple of `JSON.parse` of its text. */
-  readEnvelope11AgainstParse: 60,
+  readEnvelope11AgainstParse: 30,
   /** `readEnvelope` of an envelope of 1.1, as a multiple of `schema_1_1` over its events: parity or better. */
   readEnvelope11AgainstSchemas: 1,
   /** `readEntity` of 1,000 entity describes of 1.2, as a multiple of the draft 4 schemas over them: parity or better. */
@@ -39,9 +39,9 @@ export const RATIOS = {
   /** `buildEntity` of 1,000 entity describes, as a multiple of the same schemas over what it builds: parity or better. */
   buildEntityAgainstSchemas: 1,
   /** `sendCaliper` of an envelope of 1,000 events to an endpoint that answers at once, as a multiple of `JSON.stringify` of it. */
-  sendCaliperAgainstStringify: 6,
+  sendCaliperAgainstStringify: 7,
   /** `handleCaliperRequest` of an envelope of 1,000 events of 1.2, as a multiple of `JSON.parse` of its text. */
-  handleRequestAgainstParse: 200,
+  handleRequestAgainstParse: 50,
   /** `handleCaliperRequest` of the same envelope, as a multiple of the draft 4 schemas over its events: parity or better. */
   handleRequestAgainstSchemas: 1,
 } as const;

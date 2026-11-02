@@ -11,8 +11,16 @@ function shapeFindings(issues: readonly v.BaseIssue<unknown>[]): CaliperFinding[
   return findingsOf(issues).map((finding) => ({ ...finding, severity: "error" }));
 }
 
-/** Copies a value that must be JSON, which also limits how deep it nests, and says in a finding where it is not. */
-function copyOf(value: unknown, sink: FindingSink<CaliperFinding>): { readonly value: unknown } | undefined {
+/**
+ * Copies a value that must be JSON, which also limits how deep it nests, and says in a finding where it is not. A value that
+ * `JSON.parse` made of a request within the depth of `MAX_JSON_DEPTH` is JSON that nothing else holds, so it is read as it is.
+ */
+function copyOf(
+  value: unknown,
+  sink: FindingSink<CaliperFinding>,
+  parsed: boolean,
+): { readonly value: unknown } | undefined {
+  if (parsed) return { value };
   const copy = copyJson(value, "");
   if (!("problem" in copy)) return { value: copy.value };
   sink.add([error("", "invalid-value", `${copy.problem}.`)]);
@@ -23,14 +31,16 @@ function copyOf(value: unknown, sink: FindingSink<CaliperFinding>): { readonly v
  * Reads an event into a sink of findings, and judges its profile when its shape is right and the version is 1.2: the tables of the
  * profiles are those of 1.2, and an event of 1.1 names no profile.
  *
+ * @param parsed - Whether `JSON.parse` made the value of a request, so that it needs no copy.
  * @returns The event as the schema reads it, a copy that shares nothing with the input, when its shape is right.
  */
 export function inspectEvent(
   value: unknown,
   sink: FindingSink<CaliperFinding>,
   version: CaliperVersion,
+  parsed = false,
 ): CaliperEvent | undefined {
-  const copy = copyOf(value, sink);
+  const copy = copyOf(value, sink, parsed);
   if (copy === undefined) return undefined;
   const result = safeParseBounded(SCHEMA_SETS[version].event, copy.value, sink.room);
   if (!result.success) {
@@ -44,14 +54,16 @@ export function inspectEvent(
 /**
  * Reads an entity describe into a sink of findings, and judges the properties that Caliper advises when its shape is right.
  *
+ * @param parsed - Whether `JSON.parse` made the value of a request, so that it needs no copy.
  * @returns The entity, with its `@context` first, when its shape is right.
  */
 export function inspectEntity(
   value: unknown,
   sink: FindingSink<CaliperFinding>,
   version: CaliperVersion,
+  parsed = false,
 ): EntityDocument | undefined {
-  const copy = copyOf(value, sink);
+  const copy = copyOf(value, sink, parsed);
   if (copy === undefined) return undefined;
   const { entity, entityDocument } = SCHEMA_SETS[version];
   const document = safeParseBounded(entityDocument, copy.value, sink.room);

@@ -1,4 +1,5 @@
 import { callPort, DataError } from "@interopkit/core";
+import { MAX_JSON_DEPTH } from "@interopkit/core/checks";
 import { type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
 import { assembleEnvelope, type EnvelopeFields, parseEnvelope, strictRefusal } from "./envelope.js";
 import type { EndpointSettings } from "./options.js";
@@ -23,7 +24,11 @@ function fieldsOf(
   settings: EndpointSettings,
 ): { readonly fields: EnvelopeFields } | { readonly refusal: HttpResponse } {
   try {
-    const value = readJson(request, { maxBytes: settings.maxPayloadBytes, maxTokens: settings.maxTokens });
+    const value = readJson(request, {
+      maxBytes: settings.maxPayloadBytes,
+      maxDepth: MAX_JSON_DEPTH,
+      maxTokens: settings.maxTokens,
+    });
     return { fields: parseEnvelope(value) };
   } catch (error) {
     if (error instanceof DataError) return { refusal: badRequest(error.message) };
@@ -50,7 +55,8 @@ export async function receive(
   if (version === undefined) {
     return unsupportedVersion(fields.dataVersion, settings.versions.map(contextOfVersion));
   }
-  const envelope = assembleEnvelope(fields, principal, settings.maxFindings, version);
+  // `readJson` parsed the body within the depth of `MAX_JSON_DEPTH`, so the items need no copy.
+  const envelope = assembleEnvelope(fields, principal, settings.maxFindings, version, true);
   const fault = settings.strict ? strictRefusal(envelope) : undefined;
   if (fault !== undefined) return badRequest(fault);
   const { accept, signal } = settings;
