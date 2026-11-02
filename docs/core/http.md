@@ -63,7 +63,7 @@ that has no body, such as 204, takes `null`.
 | ------------------------------------------- | -------------------------------------------------------------------------------------- |
 | `checkHttpRequest(value)`                   | Checks the shape of a request that a host passes from JavaScript, and narrows its type |
 | `readText(request)`                         | Reads the body as UTF-8 text                                                           |
-| `readJson(request, options)`                | Reads the body as JSON within a limit on its size and its depth                        |
+| `readJson(request, options)`                | Reads the body as JSON within limits on its size, its depth and its tokens             |
 | `readQuery(request)`                        | Reads the parameters of the query into a map                                           |
 | `readForm(request)`                         | Reads the parameters of an `application/x-www-form-urlencoded` body into a map         |
 | `jsonResponse(status, body, headers, type)` | Builds an answer with a JSON body                                                      |

@@ -204,9 +204,10 @@ function readRegisteredClient(
  * Registers a client with an authorization server (RFC 7591).
  *
  * @remarks
- * The request carries the metadata and asks for the authorization code, refresh token and client credentials grants (all but the
- * last for a public client) and the `code` response type. The result holds the identifier and the secret that the server issued, as an `OAuthClient` that the
- * other calls take. The host stores it: the secret is shown once.
+ * The request carries the metadata and asks for the grants of `grantTypes`, the authorization code and refresh token grants
+ * unless the host names others, with the `code` response type when the authorization code grant is among them. The result holds
+ * the identifier and the secret that the server issued, as an `OAuthClient` that the other calls take. The host stores it: the
+ * secret is shown once.
  *
  * @param server - The authorization server, which needs a `registrationEndpoint`.
  * @param metadata - What the client tells the server about itself.
