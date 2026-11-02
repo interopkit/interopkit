@@ -5,12 +5,12 @@ import { LtiError } from "../errors.js";
 import { APPROVED_ALGORITHMS, type Claims, type JwsAlgorithm } from "./claims/index.js";
 import { CLOCK_SKEW_SECONDS } from "./clock-skew.js";
 
-// The algorithm the tool and the platform sign with until their keys are signers: a token that either accepts is verified
+// The algorithm the platform signs with until its keys are signers: a token that either role accepts is verified
 // against `algorithms`, which never holds `none` or an HMAC algorithm, so that a token cannot choose a weaker check than the
 // public key (Security Framework sections 5.1.3, 5.4 and 7.2).
 const SIGNING_ALGORITHM = "RS256";
 
-/** The protected header of a token that the tool or the platform signs with an RSA key: RS256 and the `kid` of the key set. */
+/** The protected header of a token that the platform signs with an RSA key: RS256 and the `kid` of the key set. */
 export function rs256Header(keyId: string): { readonly alg: "RS256"; readonly typ: "JWT"; readonly kid: string } {
   return { alg: SIGNING_ALGORITHM, typ: "JWT", kid: keyId };
 }

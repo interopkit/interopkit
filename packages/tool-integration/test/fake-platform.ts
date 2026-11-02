@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 responses are snake_case.
 
-import type { Fetch } from "@interopkit/core";
+import { type Fetch, signerFromCryptoKey } from "@interopkit/core";
 import type { HttpRequest } from "@interopkit/core/http";
 import { expect } from "vitest";
 import type { LoginRecord, LtiStore, PlatformRegistration } from "../src/tool/index.js";
@@ -110,6 +110,8 @@ export interface Issue {
   readonly header?: Readonly<Record<string, unknown>>;
   /** The key to sign with; default: the platform's. */
   readonly signer?: KeyPair;
+  /** Changes the claims after the others apply, with the nonce of the request in them, such as to sign an `lti1p1` claim. */
+  readonly amend?: (claims: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }
 
 /** Builds the form post of the platform to the tool's redirect URI. */
@@ -167,16 +169,25 @@ export class FakePlatform {
 
   /** A third-party initiated login (Security Framework section 5.1.1.1) to the tool's login URL. */
   initiation(
-    options: { storageTarget?: string; method?: "GET" | "POST"; clientId?: boolean; messageHint?: string } = {},
+    options: {
+      storageTarget?: string;
+      method?: "GET" | "POST";
+      clientId?: boolean;
+      messageHint?: string;
+      /** The `lti_deployment_id`, or `null` to leave it out. */
+      deploymentId?: string | null;
+      targetLinkUri?: string;
+    } = {},
   ): HttpRequest {
     const { storageTarget, method = "GET", clientId = false, messageHint = "opaque-message-hint" } = options;
+    const { deploymentId = DEPLOYMENT_ID, targetLinkUri = TARGET_LINK_URI } = options;
     const fields: [string, string][] = [
       ["iss", ISSUER],
       ["login_hint", "24400320"],
-      ["target_link_uri", TARGET_LINK_URI],
+      ["target_link_uri", targetLinkUri],
       ["lti_message_hint", messageHint],
-      ["lti_deployment_id", DEPLOYMENT_ID],
     ];
+    if (deploymentId !== null) fields.push(["lti_deployment_id", deploymentId]);
     if (clientId) fields.push(["client_id", CLIENT_ID]);
     if (storageTarget !== undefined) fields.push(["lti_storage_target", storageTarget]);
     const parameters = new URLSearchParams(fields);
@@ -213,7 +224,8 @@ export class FakePlatform {
     const nowSeconds = Math.floor(this.clock.now() / 1000);
     const launch =
       issue.message === "deep-linking" ? deepLinkingClaims(nonce, nowSeconds) : resourceLinkClaims(nonce, nowSeconds);
-    const claims = { ...launch, ...issue.claims };
+    const merged = { ...launch, ...issue.claims };
+    const claims = issue.amend === undefined ? merged : await issue.amend(merged);
     const idToken = await signToken(claims, issue.signer ?? this.signer, issue.header);
     return {
       state,
@@ -227,10 +239,17 @@ export class FakePlatform {
   /** The tool's token request (Security Framework section 4.1.1): checks the assertion and answers a token. */
   private async grant(init: Parameters<Fetch>[1]): Promise<Response> {
     expect(init.method).toBe("POST");
-    expect(init.headers["content-type"]).toBe("application/x-www-form-urlencoded");
+    expect(init.headers["content-type"]).toMatch(/^application\/x-www-form-urlencoded(;|$)/u);
     expect(init.headers.authorization).toBeUndefined();
     const form = new URLSearchParams(textOf(init.body));
-    expect([...form.keys()].sort()).toEqual(["client_assertion", "client_assertion_type", "grant_type", "scope"]);
+    expect([...form.keys()].sort()).toEqual([
+      "client_assertion",
+      "client_assertion_type",
+      "client_id",
+      "grant_type",
+      "scope",
+    ]);
+    expect(form.get("client_id")).toBe(CLIENT_ID);
     expect(form.get("grant_type")).toBe("client_credentials");
     expect(form.get("client_assertion_type")).toBe("urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
     const assertion = form.get("client_assertion") ?? "";
@@ -245,6 +264,7 @@ export class FakePlatform {
     const nowSeconds = Math.floor(this.clock.now() / 1000);
     expect(payload.iat).toBe(nowSeconds);
     expect(payload.exp).toBe(nowSeconds + 300);
+    expect(payload[`${CLAIM}deployment_id`]).toBe(DEPLOYMENT_ID);
     const jti = String(payload.jti);
     expect(jti).not.toBe("");
     if (this.usedJti.has(jti)) return Response.json({ error: "invalid_client" }, { status: 400 });
@@ -320,8 +340,7 @@ export function registrationOf(tool: KeyPair, overrides: Partial<PlatformRegistr
     jwksUrl: JWKS_URL,
     accessTokenUrl: ACCESS_TOKEN_URL,
     redirectUri: REDIRECT_URI,
-    keyId: tool.kid,
-    signingKey: tool.privateKey,
+    signer: signerFromCryptoKey(tool.privateKey, { algorithm: "RS256", keyId: tool.kid }),
     ...overrides,
   };
 }

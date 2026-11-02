@@ -220,7 +220,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
 | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The randomness of `state`, `nonce`, `jti` and hints is not injected                        | A source that a host or a test could replace could make secrets predictable; tests observe the values in the store instead                           |
 | `custom` is a `Map` in the tool role and a record in the platform role                     | The tool role reads claim names from a token, `__proto__` among them, and the platform role writes what its host gave it                             |
-| `tool-integration` signs with a `CryptoKey` through `jose`, not a `Signer`                 | Its registrations hold `CryptoKey`s; a `Signer` replaces them when its token calls move onto `core/oauth`                                            |
+| The platform role of `tool-integration` signs with a `CryptoKey` through `jose`, not a `Signer` | Its configuration holds a `CryptoKeyPair`; a `KeySet` with a `Signer` replaces it with the platform's messages                                   |
 | Some functions are named for what they serve, such as `platformJwks` and `agsScores`       | They are the handlers of an endpoint, and the specifications name the endpoint; a verb would not say which one                                       |
 | `ltiLaunch` throws an `LtiError` for a refused launch, and returns a page or a launch      | A refusal needs a reason and an HTTP status for the route; tell the results apart with `"status" in result`                                          |
 | `toCaseVersion` reads the structure that it converts and not every property that it copies | `readPackage` and `readEntity` check the properties; the conversion reports the forms that 1.0 refuses, and it cannot tell the kind of a lone entity |
@@ -269,6 +269,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
   signal.
 - Every call to a service goes through `requestService`, or `callService`, which decodes its text: `redirect` is `"manual"`,
   any 3xx is an error, an answer has at most `maxBytes`, 65,536 by default, and every wait is raced against the deadline.
+- A URL that a message or a document gives, which a server fetches or sends a token to, passes `checkRemoteUrl` of `core/checks`
+  in `tool-integration`, or an origin that the host lists; a URL that the host configures passes `checkHttpsUrl`.
 - A handler takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, checks the request with
   `checkHttpRequest` at its entry, and reads the body with `readText`, `readJson` or `readForm`. No package defines its own
   request or answer type. It answers with the status codes and bodies of its specification, answers 500 with nothing of the

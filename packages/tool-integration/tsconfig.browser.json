@@ -7,7 +7,8 @@
     "paths": {
       "@interopkit/core": ["../core/src/index.ts"],
       "@interopkit/core/checks": ["../core/src/checks.ts"],
-      "@interopkit/core/http": ["../core/src/http/index.ts"]
+      "@interopkit/core/http": ["../core/src/http/index.ts"],
+      "@interopkit/core/oauth": ["../core/src/oauth/index.ts"]
     }
   },
   "include": ["test/**/*.browser.test.ts", "test/wait.ts", "test/fixtures/provided.d.ts"]

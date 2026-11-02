@@ -3,7 +3,7 @@ import { describe } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse, readForm } from "@interopkit/core/http";
 import { LtiError } from "../errors.js";
 import type { LtiMessage } from "../protocol/index.js";
-import { callOptionsOf, readCookie, readMessage } from "../protocol/internal.js";
+import { callOptionsOf, readCookie, readMessage, verifyMigration } from "../protocol/internal.js";
 import { verifyIdToken } from "./id-token.js";
 import { stateCookieName } from "./login.js";
 import { checkLaunchOptions, findRegistration, type LtiLaunchOptions } from "./options.js";
@@ -13,6 +13,8 @@ import { checkLoginRecord, type LoginRecord } from "./store.js";
 
 // The states that ltiLogin creates are base64url; anything else is not one, and is not looked up in the store.
 const STATE_FORMAT = /^[A-Za-z0-9_-]{1,64}$/u;
+// The form of a launch holds an id_token and a state; an id_token with every claim of a launch is a few kilobytes.
+const DEFAULT_MAX_FORM_BYTES = 65_536;
 
 /** Reads a parameter of the launch that must be present, a non-empty string. */
 function requiredField(form: ReadonlyMap<string, string>, name: string): string {
@@ -23,8 +25,64 @@ function requiredField(form: ReadonlyMap<string, string>, name: string): string 
   return value;
 }
 
+/** Reads the form of a launch within its size limit. */
+function readLaunchForm(request: HttpRequest, maxBytes: number): ReadonlyMap<string, string> {
+  if (request.body.byteLength > maxBytes) {
+    throw new LtiError(
+      `The form of the launch has ${request.body.byteLength} bytes, above the limit of ${maxBytes} bytes of the option maxFormBytes.`,
+      "form-too-large",
+    );
+  }
+  return readForm(request);
+}
+
+/**
+ * Refuses the authentication error response of a platform (Security Framework section 5.1.1.5, OpenID Connect Core section
+ * 3.1.2.6): the form carries `error` in place of an `id_token`.
+ */
+function checkPlatformError(form: ReadonlyMap<string, string>): void {
+  const error = form.get("error");
+  if (error === undefined) return;
+  const description = form.get("error_description");
+  throw new LtiError(
+    `The platform answered the authentication request with the error ${describe(error)}${description === undefined ? "" : ` (${describe(description)})`}.`,
+    "platform-error",
+  );
+}
+
+/** Checks that a launch carries the deployment and the target of the login it answers (LTI 1.3 Core sections 4.1.2 and 5.3.4). */
+function checkLogin(launch: LtiMessage<string>, record: LoginRecord): void {
+  if (record.deploymentId !== undefined && launch.deploymentId !== record.deploymentId) {
+    throw new LtiError(
+      `The deployment of the launch, ${describe(launch.deploymentId)}, is not the deployment ${describe(record.deploymentId)} of its login.`,
+      "deployment-mismatch",
+    );
+  }
+  if (launch.targetLinkUri !== record.targetLinkUri) {
+    throw new LtiError(
+      `The target_link_uri of the launch, ${describe(launch.targetLinkUri)}, is not the target ${describe(record.targetLinkUri)} of its login.`,
+      "target-mismatch",
+    );
+  }
+}
+
+/** Decides the migration claim of a launch with the host's LTI 1.1 secret, when the host gives one for its consumer key. */
+async function withMigration<TMessage extends LtiMessage<string>>(
+  launch: TMessage,
+  options: LtiLaunchOptions<string>,
+): Promise<TMessage> {
+  const { migration } = launch;
+  if (migration === undefined || options.legacySecret === undefined) return launch;
+  const secret = await options.legacySecret(migration.oauthConsumerKey, callOptionsOf(options));
+  if (secret === undefined) return launch;
+  if (typeof secret !== "string") {
+    throw new DataError(`The option legacySecret must resolve with a string or undefined, found ${describe(secret)}.`);
+  }
+  return { ...launch, migration: { ...migration, verified: await verifyMigration(launch, secret) } };
+}
+
 /** Loads the record of the login that a launch answers. */
-async function loadLogin(state: string, options: LtiLaunchOptions): Promise<LoginRecord> {
+async function loadLogin(state: string, options: LtiLaunchOptions<string>): Promise<LoginRecord> {
   const record = STATE_FORMAT.test(state) ? await options.store.get(state, callOptionsOf(options)) : undefined;
   if (record === undefined) {
     throw new LtiError("The launch answers no login that the tool started, or one it has finished.", "state-unknown");
@@ -84,10 +142,15 @@ function checkVerification(
  * Completes a launch: validates the `id_token` that the platform posts to the redirect URI and returns the launch.
  *
  * @remarks
- * The checks, in order: the form has no `oauth_consumer_key` (an LTI 1.0 to 1.2 launch) and has `id_token` and `state`;
- * `state` names a login that the tool started and has not finished; the browser is the one that logged in (the state cookie, or the platform's storage); the signature, the
- * issuer, the audience, the authorized party and the times (Security Framework section 5.1.3); the `nonce` equals the login's;
- * the LTI claims (LTI 1.3 Core section 5.3, Deep Linking 2.0 section 4.4). The login is then deleted, so a launch completes once.
+ * The checks, in order: the form has at most `maxFormBytes`; it has no `oauth_consumer_key` (an LTI 1.0 to 1.2 launch) and no
+ * `error` (the platform's authentication error response, Security Framework section 5.1.1.5), and has `id_token` and
+ * `state`; `state` names a login that the tool started and has not finished; the browser is the one that logged in (the
+ * state cookie, or the platform's storage); an algorithm of the registration, the signature, the issuer, the audiences, the
+ * authorized party and the times (Security Framework section 5.1.3); the `nonce` equals the login's; the LTI claims of the
+ * message type, with a version of `versions` and a deployment of the registration (LTI 1.3 Core section 5, Deep Linking 2.0
+ * section 4.4, Submission Review 1.0 section 2, Proctoring Services 1.0 section 4); the deployment and the
+ * `target_link_uri` of the login. With `legacySecret` the migration claim is then verified. The login is deleted last, so a
+ * launch completes once.
  *
  * On the client-side storage path the platform's post is answered with a verification page and no launch; the page posts
  * again to the same URL, and that second request completes the launch. The host routes both to this function.
@@ -98,21 +161,26 @@ function checkVerification(
  * @param options - The registrations and the store of the tool, and its `fetch` and clock.
  * @returns The launch, or the verification page, which the host sends.
  * @throws `DataError` when the request is not a POST of a form with `id_token` and `state`.
- * @throws `LtiError` with the reason of the failed check: `legacy-launch`, `state-unknown`, `state-expired`,
- * `state-reused`, `state-cookie`, `origin-mismatch`, `storage-mismatch`, `platform-unknown`, `token-malformed`,
- * `algorithm-unsupported`, `key-unknown`, `signature-invalid`, `issuer-mismatch`, `audience-mismatch`,
- * `authorized-party-mismatch`, `token-expired`, `issued-in-future`, `nonce-mismatch`, `message-type-unsupported`,
- * `version-unsupported`, `deployment-unknown`, `claim-missing` or `claim-invalid`.
+ * @throws `LtiError` with the reason of the failed check: `form-too-large`, `legacy-launch`, `platform-error`,
+ * `state-unknown`, `state-expired`, `state-reused`, `state-cookie`, `origin-mismatch`, `storage-mismatch`, `platform-unknown`,
+ * `token-malformed`, `algorithm-unsupported`, `key-unknown`, `signature-invalid`, `issuer-mismatch`, `audience-mismatch`,
+ * `audience-untrusted`, `authorized-party-missing`, `authorized-party-mismatch`, `token-expired`, `issued-in-future`,
+ * `nonce-mismatch`, `message-type-unsupported`, `version-unsupported`, `deployment-unknown`, `deployment-mismatch`,
+ * `target-mismatch`, `claim-missing` or `claim-invalid`.
  * @throws `ServiceError` when the platform's key set cannot be fetched.
+ * @throws The rejection of `options.legacySecret`, and `DataError` when it resolves with something that is not a string.
  * @throws The `reason` of `options.signal` when it aborts before the login is deleted: the login stays.
  */
-export async function ltiLaunch(request: HttpRequest, options: LtiLaunchOptions): Promise<LtiMessage | HttpResponse> {
+export async function ltiLaunch<TOther extends string = never>(
+  request: HttpRequest,
+  options: LtiLaunchOptions<TOther>,
+): Promise<LtiMessage<TOther> | HttpResponse> {
   checkHttpRequest(request);
   checkLaunchOptions(options);
   if (request.method !== "POST") {
     throw new DataError(`A launch must be a POST request, found ${describe(request.method)}.`);
   }
-  const form = readForm(request);
+  const form = readLaunchForm(request, options.maxFormBytes ?? DEFAULT_MAX_FORM_BYTES);
   // 1EdTech retired LTI 1.0 to 1.2 on 2022-06-30; their launch is an OAuth 1.0a form with no id_token.
   if (form.has("oauth_consumer_key")) {
     throw new LtiError(
@@ -120,6 +188,7 @@ export async function ltiLaunch(request: HttpRequest, options: LtiLaunchOptions)
       "legacy-launch",
     );
   }
+  checkPlatformError(form);
   const idToken = requiredField(form, "id_token");
   const state = requiredField(form, "state");
   const record = await loadLogin(state, options);
@@ -143,11 +212,15 @@ export async function ltiLaunch(request: HttpRequest, options: LtiLaunchOptions)
   if (claims.nonce !== record.nonce) {
     throw new LtiError("The nonce of the token is not the nonce of the login.", "nonce-mismatch");
   }
-  const launch = readMessage(claims, {
+  const message = readMessage(claims, {
     issuer: registration.issuer,
     clientId: registration.clientId,
     deploymentIds: registration.deploymentIds,
+    ...(options.versions === undefined ? {} : { versions: options.versions }),
+    ...(options.otherMessageTypes === undefined ? {} : { otherMessageTypes: options.otherMessageTypes }),
   });
+  checkLogin(message, record);
+  const launch = await withMigration(message, options);
   // The store removes the login for one caller only, so of two launches that race with one token, one completes.
   // An abort before this point leaves the login in the store, and the platform may post again; the delete is the point of
   // no return, after which the launch completes.

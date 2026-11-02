@@ -3,8 +3,12 @@
 ---
 
 LTI 1.3 for learning platforms and tools. The tool role is a tool that a platform launches: it answers the platform's login
-with a cookie or with the platform's browser storage, validates the launch, answers a Deep Linking request, requests access
-tokens and publishes scores. The platform role launches tools: it starts their login, issues the `id_token`, publishes its key set,
+with a cookie or with the platform's browser storage, whose pages ask the platform's capabilities for the frame to use; it
+validates the launch of every message type, with the versions, the message types, the audiences and the algorithms that the
+host accepts, binds it to the deployment and the target of its login, refuses the platform's authentication error and a form
+above `maxFormBytes`, and verifies the LTI 1.1 migration claim with the host's secret. It signs with the `Signer` of each
+registration, serves its key set with every key of a rotation (`serveToolJwks`), answers a Deep Linking request, and publishes
+scores with an access token of `@interopkit/core/oauth`, sent only to the registration's service origins or to a public host. The platform role launches tools: it starts their login, issues the `id_token`, publishes its key set,
 issues access tokens, and serves the line item of a launch and receives its scores. Handlers take an `HttpRequest` and return
 an `HttpResponse` of `@interopkit/core/http`, with request bodies as bytes; stores, registrations, `fetch` and the clock are
 ports, and each takes a `signal` that ends the caller's wait. It is not certified by 1EdTech.

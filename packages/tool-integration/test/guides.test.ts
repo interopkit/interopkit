@@ -1,4 +1,5 @@
 import { readdirSync } from "node:fs";
+import * as core from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { runGuideSamples } from "../../../scripts/guide-samples.js";
 import * as root from "../src/index.js";
@@ -6,6 +7,7 @@ import * as platform from "../src/platform/index.js";
 import * as tool from "../src/tool/index.js";
 
 const modules = {
+  "@interopkit/core": core,
   "@interopkit/tool-integration": root,
   "@interopkit/tool-integration/platform": platform,
   "@interopkit/tool-integration/tool": tool,

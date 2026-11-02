@@ -1,4 +1,4 @@
-import type { Clock, Fetch } from "@interopkit/core";
+import { type Clock, type Fetch, signerFromCryptoKey } from "@interopkit/core";
 import { createJwksCache } from "@interopkit/tool-integration";
 import type { LoginRecord, LtiLaunchOptions, PlatformRegistration } from "@interopkit/tool-integration/tool";
 
@@ -38,8 +38,8 @@ export function setupTool(
     jwksUrl: platform.jwksUrl,
     accessTokenUrl: platform.accessTokenUrl,
     redirectUri: `${origin}${LAUNCH_PATH}`,
-    keyId: keys.keyId,
-    signingKey: keys.signingKey,
+    // The signer could as well call a KMS that holds the key; the platform reads the public key under the keyId.
+    signer: signerFromCryptoKey(keys.signingKey, { algorithm: "RS256", keyId: keys.keyId }),
   };
   // The tool keeps the logins in progress in memory; a real tool keeps them where every process can reach them.
   const logins = new Map<string, LoginRecord>();

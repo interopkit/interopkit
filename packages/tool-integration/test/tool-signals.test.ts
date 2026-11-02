@@ -3,8 +3,9 @@
 import { type CallOptions, DataError } from "@interopkit/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createJwksCache } from "../src/index.js";
-import { deepLinkResponse, type LtiStore, ltiAccessToken, ltiLaunch, ltiLogin } from "../src/tool/index.js";
-import { CLIENT_ID, DEPLOYMENT_ID, ISSUER, JWKS_URL } from "./fake-platform.js";
+import { deepLinkResponse, type LtiStore, ltiLaunch, ltiLogin } from "../src/tool/index.js";
+import { requestServiceToken } from "../src/tool/internal.js";
+import { DEPLOYMENT_ID, JWKS_URL } from "./fake-platform.js";
 import { cookieLogin, deepLinkingOf, type Setup, setup } from "./tool-setup.js";
 import { waitFor } from "./wait.js";
 
@@ -153,14 +154,19 @@ describe("a key set cache and a signal", () => {
   });
 });
 
-describe("ltiAccessToken and a signal", () => {
-  const deployment = { issuer: ISSUER, clientId: CLIENT_ID, deploymentId: DEPLOYMENT_ID };
+describe("the request of a service token and a signal", () => {
   const scopes = ["https://purl.imsglobal.org/spec/lti-ags/scope/score"];
+  const request = (ctx: ReturnType<typeof setup>, signal: AbortSignal) =>
+    requestServiceToken(ctx.registration, DEPLOYMENT_ID, scopes, {
+      fetch: ctx.platform.fetch,
+      timeoutMs: 10_000,
+      clock: ctx.clock,
+      signal,
+    });
 
   it("makes no request when the signal is aborted before the call", async () => {
     const ctx = setup();
-    const options = { ...ctx.options, signal: AbortSignal.abort(REASON) };
-    await expect(ltiAccessToken(deployment, scopes, options)).rejects.toBe(REASON);
+    await expect(request(ctx, AbortSignal.abort(REASON))).rejects.toBe(REASON);
     expect(ctx.platform.requests).toStrictEqual([]);
   });
 
@@ -168,7 +174,7 @@ describe("ltiAccessToken and a signal", () => {
     const ctx = setup();
     ctx.platform.tokenResponse = () => new Promise<Response>(() => undefined);
     const controller = new AbortController();
-    const wait = ltiAccessToken(deployment, scopes, { ...ctx.options, signal: controller.signal });
+    const wait = request(ctx, controller.signal);
     await waitFor(() => expect(ctx.platform.requests.length).toBeGreaterThan(0));
     controller.abort(REASON);
     await expect(wait).rejects.toBe(REASON);

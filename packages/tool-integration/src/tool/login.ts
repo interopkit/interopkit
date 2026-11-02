@@ -1,6 +1,7 @@
 import { DataError, readClock } from "@interopkit/core";
-import { describe } from "@interopkit/core/checks";
+import { checkHttpsUrl, describe } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse, readForm, readQuery } from "@interopkit/core/http";
+import { LtiError } from "../errors.js";
 import { callOptionsOf, MILLISECONDS, randomToken } from "../protocol/internal.js";
 import { checkLoginOptions, findRegistration, type LtiLoginOptions } from "./options.js";
 import { putDataPage } from "./pages.js";
@@ -10,6 +11,9 @@ import type { LoginRecord } from "./store.js";
 // Security Framework section 7.1.2 recommends 600 seconds for the lifetime of an authorization code. A login is the same kind of
 // short-lived credential: the platform answers a request with `prompt=none` at once.
 const LOGIN_TTL_SECONDS = 600;
+// The parameters of an initiation are a few identifiers and URLs, and a hint that the platform chooses; the limit of a launch
+// form bounds them too.
+const MAX_INITIATION_BYTES = 65_536;
 
 /** Returns the name of the cookie that holds the `state` of a login on the cookie path. */
 export function stateCookieName(state: string): string {
@@ -22,6 +26,8 @@ export function stateCookieName(state: string): string {
 interface LoginInitiation {
   readonly iss: string;
   readonly loginHint: string;
+  readonly targetLinkUri: string;
+  readonly deploymentId?: string;
   readonly ltiMessageHint?: string;
   readonly clientId?: string;
   readonly storageTarget?: string;
@@ -46,11 +52,15 @@ function readInitiation(request: HttpRequest): LoginInitiation {
   if (request.method !== "GET" && request.method !== "POST") {
     throw new DataError(`A login initiation must be a GET or a POST request, found ${describe(request.method)}.`);
   }
-  const parameters = request.method === "GET" ? readQuery(request) : readForm(request);
-  requiredParameter(parameters, "target_link_uri");
+  const parameters =
+    request.method === "GET" ? readQuery(request) : readForm(request, { maxBytes: MAX_INITIATION_BYTES });
+  const targetLinkUri = requiredParameter(parameters, "target_link_uri");
+  checkHttpsUrl(targetLinkUri, "The target_link_uri of the login initiation");
   return {
     iss: requiredParameter(parameters, "iss"),
     loginHint: requiredParameter(parameters, "login_hint"),
+    targetLinkUri,
+    deploymentId: optionalParameter(parameters, "lti_deployment_id"),
     ltiMessageHint: optionalParameter(parameters, "lti_message_hint"),
     clientId: optionalParameter(parameters, "client_id"),
     storageTarget: optionalParameter(parameters, "lti_storage_target"),
@@ -87,8 +97,9 @@ function authenticationRequest(
  * Framework sections 5.1.1.1 and 5.1.1.2).
  *
  * @remarks
- * It creates a `state` and a single-use `nonce` and saves them in `options.store`. Where the `state` also lives depends
- * on the initiation:
+ * It creates a `state` and a single-use `nonce` and saves them in `options.store` with the `target_link_uri` and the
+ * `lti_deployment_id` of the initiation, which the launch must carry (LTI 1.3 Core sections 4.1.2 and 5.3.4). Where the
+ * `state` also lives depends on the initiation:
  * - With `lti_storage_target`, the answer is a page that stores `state` and `nonce` in the platform's browser storage
  *   (`lti.put_data` of LTI Client Side OIDC 0.1) and then redirects to the authentication request. This works when the
  *   browser blocks third-party cookies, as it does in an iframe.
@@ -98,8 +109,10 @@ function authenticationRequest(
  * @param request - The initiation: a GET with the parameters in the query, or a POST with them in a form.
  * @param options - The registrations and the store of the tool.
  * @returns A redirect or the page. The host sends it.
- * @throws `DataError` when the request is not an initiation: a required parameter is missing or repeated.
- * @throws `LtiError` (`platform-unknown`) when the tool has no registration for the platform.
+ * @throws `DataError` when the request is not an initiation: a required parameter is missing or repeated, the
+ * `target_link_uri` is not an `https` URL, or a form has more than 65,536 bytes.
+ * @throws `LtiError` (`platform-unknown`) when the tool has no registration for the platform, and (`deployment-unknown`) when
+ * the initiation names a deployment that the registration does not list.
  * @throws The `reason` of `options.signal` when it aborts before the login is saved.
  */
 export async function ltiLogin(request: HttpRequest, options: LtiLoginOptions): Promise<HttpResponse> {
@@ -107,12 +120,23 @@ export async function ltiLogin(request: HttpRequest, options: LtiLoginOptions): 
   checkLoginOptions(options);
   const initiation = readInitiation(request);
   const registration = await findRegistration(options, initiation.iss, initiation.clientId);
+  const { deploymentId, targetLinkUri } = initiation;
+  // LTI 1.3 Core section 4.1.2: the launch carries the deployment that the initiation names, so a deployment that the
+  // registration does not list could never launch.
+  if (deploymentId !== undefined && !registration.deploymentIds.includes(deploymentId)) {
+    throw new LtiError(
+      `The deployment ${describe(deploymentId)} of the login initiation is not one of the deployments of the registration.`,
+      "deployment-unknown",
+    );
+  }
   const state = randomToken();
   const nonce = randomToken();
   const record: LoginRecord = {
     nonce,
     issuer: registration.issuer,
     clientId: registration.clientId,
+    ...(deploymentId === undefined ? {} : { deploymentId }),
+    targetLinkUri,
     storageTarget: initiation.storageTarget,
     expiresAt: readClock(options.clock) + LOGIN_TTL_SECONDS * MILLISECONDS,
   };

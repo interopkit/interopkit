@@ -1,5 +1,5 @@
 import { DataError, type Signer } from "@interopkit/core";
-import { checkRecord, checkString, describe, isRecord } from "@interopkit/core/checks";
+import { checkNonEmptyString, checkRecord, checkString, describe, isRecord } from "@interopkit/core/checks";
 import { base64url } from "jose";
 import { APPROVED_ALGORITHMS } from "./claims/index.js";
 import { MIN_RSA_MODULUS_BITS } from "./keys.js";
@@ -64,6 +64,26 @@ function checkPublicKey(key: unknown, index: number): string {
 }
 
 /**
+ * Checks a signer of LTI tokens as a host passes it from JavaScript: an approved algorithm, a function `sign`, and a `keyId`,
+ * which every token names as its `kid` (Security Framework 1.1 sections 6.3 and 7.2).
+ *
+ * @param label - Names the signer in the error message, such as `The signer of the key set`.
+ * @throws `DataError` when it is not.
+ */
+export function checkLtiSigner(value: unknown, label: string): asserts value is Signer {
+  checkRecord(value, `${label} must be an object`);
+  const { algorithm } = value;
+  const approved: readonly unknown[] = APPROVED_ALGORITHMS;
+  if (typeof algorithm !== "string" || !approved.includes(algorithm)) {
+    throw new DataError(
+      `The algorithm of ${label.toLowerCase()} must be one of ${APPROVED_ALGORITHMS.join(", ")} (Security Framework section 7.2), found ${describe(algorithm)}.`,
+    );
+  }
+  if (typeof value.sign !== "function") throw new DataError(`${label} must have a function sign.`);
+  checkNonEmptyString(value.keyId, `The keyId of ${label.toLowerCase()}`);
+}
+
+/**
  * Checks a key set as a host passes it from JavaScript, and that its signer can sign with its keys.
  *
  * @remarks
@@ -77,15 +97,8 @@ function checkPublicKey(key: unknown, index: number): string {
 export function checkKeySet(value: unknown): asserts value is KeySet {
   checkRecord(value, "The key set must be an object");
   const { signer, publicKeys } = value;
-  checkRecord(signer, "The signer of the key set must be an object");
+  checkLtiSigner(signer, "The signer of the key set");
   const { algorithm } = signer;
-  const approved: readonly unknown[] = APPROVED_ALGORITHMS;
-  if (typeof algorithm !== "string" || !approved.includes(algorithm)) {
-    throw new DataError(
-      `The algorithm of the signer must be one of ${APPROVED_ALGORITHMS.join(", ")} (Security Framework section 7.2), found ${describe(algorithm)}.`,
-    );
-  }
-  if (typeof signer.sign !== "function") throw new DataError("The signer of the key set must have a function sign.");
   if (!Array.isArray(publicKeys) || publicKeys.length === 0) {
     throw new DataError("The public keys of the key set must be a list of at least one key.");
   }
@@ -96,7 +109,7 @@ export function checkKeySet(value: unknown): asserts value is KeySet {
       `The public keys of the key set must have different kids, and ${describe(duplicate)} is used twice (Security Framework section 6.3).`,
     );
   }
-  const signing = publicKeys[keyIds.indexOf(String(signer.keyId))];
+  const signing = publicKeys[keyIds.indexOf(signer.keyId ?? "")];
   if (!isRecord(signing)) {
     throw new DataError(
       `The keyId of the signer must be the kid of one of the public keys, found ${describe(signer.keyId)}.`,

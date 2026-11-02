@@ -12,12 +12,14 @@ import {
   parseWith,
   positiveSchema,
 } from "@interopkit/core/checks";
+import type { AccessToken } from "@interopkit/core/oauth";
 import * as v from "valibot";
 import { LtiError } from "../errors.js";
-import type { LtiMessage } from "../protocol/index.js";
+import type { LtiDeployment, LtiMessage } from "../protocol/index.js";
 import { LINE_ITEM_MEDIA_TYPE, SCOPES, SCORE_MEDIA_TYPE, SCORES_SUFFIX } from "../protocol/internal.js";
-import { type AccessToken, ltiAccessToken } from "./access-token.js";
-import { type AccessTokenOptions, checkToolOptions } from "./options.js";
+import { checkPublishOptions, findDeployment, type PublishAgsScoreOptions } from "./options.js";
+import { checkServiceUrl } from "./registration.js";
+import { requestServiceToken } from "./token.js";
 
 const TRAILING_SLASH = /\/$/u;
 
@@ -99,6 +101,7 @@ function lineItemScope(offered: readonly string[]): string {
 
 /** Checks the launch that the score is published for, and returns the parts of it that the service calls use. */
 function serviceOf(launch: unknown): {
+  readonly deployment: LtiDeployment;
   readonly lineItem: string;
   readonly offered: readonly string[];
   readonly userId: string;
@@ -131,7 +134,16 @@ function serviceOf(launch: unknown): {
     throw new LtiError("The launch is anonymous, so the score has no user to be for.", "subject-unavailable");
   }
   checkNonEmptyString(subject, "The subject of the launch");
-  return { lineItem: grades.lineitem, offered: scopes, userId: subject };
+  const { issuer, clientId, deploymentId } = launch;
+  checkNonEmptyString(issuer, "The issuer of the launch");
+  checkNonEmptyString(clientId, "The client identifier of the launch");
+  checkNonEmptyString(deploymentId, "The deployment of the launch");
+  return {
+    deployment: { issuer, clientId, deploymentId },
+    lineItem: grades.lineitem,
+    offered: scopes,
+    userId: subject,
+  };
 }
 
 /** Checks that the token holds the scopes the calls need: the platform may grant fewer than were asked. */
@@ -168,7 +180,7 @@ export function readScoreMaximum(body: string): number {
 async function readLineItemMaximum(service: ServiceCall, lineItem: string, token: AccessToken): Promise<number> {
   const body = await callService(service, `The line item ${lineItem}`, lineItem, {
     method: "GET",
-    headers: { accept: LINE_ITEM_MEDIA_TYPE, authorization: `Bearer ${token.value}` },
+    headers: { accept: LINE_ITEM_MEDIA_TYPE, authorization: `Bearer ${token.accessToken}` },
   });
   return readScoreMaximum(body);
 }
@@ -202,37 +214,47 @@ function scoreBody(score: AgsScoreInput, userId: string, scoreMaximum: number | 
  *   and that timestamps increase strictly. The call is not idempotent: a resend, even when the first attempt is in doubt
  *   after a timeout, needs a later `timestamp`.
  * - **The maximum.** `scoreMaximum` is the one of the score, else the one of the line item, which the call reads.
- * - **The token.** The call requests an access token for the scopes it needs and does not keep it.
+ * - **The token.** The call requests an access token for the scopes it needs, with the deployment of the launch, and does not
+ *   keep it.
+ * - **The line item.** Its URL comes from the launch, so it must be on one of the `serviceOrigins` of the registration, else
+ *   an `https` URL that names a public host; the bearer token goes nowhere else.
  * - **The signal.** An abort while the request is in flight leaves it in doubt: the platform may have received the score.
  *
  * @see {@link https://www.imsglobal.org/spec/lti-ags/v2p0#score-publish-service | LTI AGS 2.0, score publish service}
  * @param score - The score.
  * @param launch - The resource link launch that started the activity, from `ltiLaunch`; a Deep Linking request is refused.
- * @param options - The registration lookup, the clock, the `fetch` of `ltiAccessToken` and the `signal`.
+ * @param options - The registration lookup, the clock, the `fetch`, the deadline and the `signal`.
  * @throws `DataError` when an argument has the wrong type, the score is not valid, or the line item has no `scoreMaximum`
  * above 0 where one is needed.
  * @throws `LtiError` (`line-item-unavailable`, `scope-unavailable`, `subject-unavailable`, `scope-denied`) when the launch
- * offers no line item, no scope for the calls, or no user, and when the platform grants fewer scopes than were asked.
+ * offers no line item, no scope for the calls, or no user, and when the platform grants fewer scopes than were asked;
+ * (`service-origin-refused`) when the line item is on an origin that may not receive the token; (`platform-unknown`,
+ * `deployment-unknown`) when the registration is gone or no longer lists the deployment.
  * @throws `ServiceError` when the token endpoint, the line item or the score service does not answer with a success.
  * @throws The `reason` of `options.signal` when it aborts.
  */
 export async function publishAgsScore(
   score: AgsScoreInput,
   launch: LtiMessage,
-  options: AccessTokenOptions,
+  options: PublishAgsScoreOptions,
 ): Promise<void> {
-  checkToolOptions(options);
+  checkPublishOptions(options);
   checkScore(score);
-  const { lineItem, offered, userId } = serviceOf(launch);
+  const { deployment, lineItem, offered, userId } = serviceOf(launch);
   const needsMaximum = score.scoreGiven !== undefined && score.scoreMaximum === undefined;
   const scopes = needsMaximum ? [SCOPES.score, lineItemScope(offered)] : [SCOPES.score];
-  const token = await ltiAccessToken(launch, scopes, options);
-  checkGranted(token, scopes);
+  const registration = await findDeployment(options, deployment);
+  checkServiceUrl(lineItem, registration, "The line item of the launch");
   const service = { fetch: options.fetch, timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS, signal: options.signal };
+  const token = await requestServiceToken(registration, deployment.deploymentId, scopes, {
+    ...service,
+    clock: options.clock,
+  });
+  checkGranted(token, scopes);
   const scoreMaximum = needsMaximum ? await readLineItemMaximum(service, lineItem, token) : score.scoreMaximum;
   await callService(service, `The score service of ${lineItem}`, scoresUrl(lineItem), {
     method: "POST",
-    headers: { "content-type": SCORE_MEDIA_TYPE, authorization: `Bearer ${token.value}` },
+    headers: { "content-type": SCORE_MEDIA_TYPE, authorization: `Bearer ${token.accessToken}` },
     body: JSON.stringify(scoreBody(score, userId, scoreMaximum)),
   });
 }

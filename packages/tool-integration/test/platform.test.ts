@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 requests are snake_case.
 
 import { createHash } from "node:crypto";
-import { DataError, ServiceError } from "@interopkit/core";
+import { DataError, ServiceError, signerFromCryptoKey } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -23,7 +23,8 @@ import {
   type ToolRegistration,
 } from "../src/platform/index.js";
 import { autoPostPage, LTI_HINT_TTL_SECONDS } from "../src/platform/internal.js";
-import { ltiAccessToken, ltiLaunch, ltiLogin, type PlatformRegistration } from "../src/tool/index.js";
+import { ltiLaunch, ltiLogin, type PlatformRegistration } from "../src/tool/index.js";
+import { requestServiceToken } from "../src/tool/internal.js";
 import { MemoryStore } from "./fake-platform.js";
 import {
   agsClaim,
@@ -1788,8 +1789,7 @@ describe("the tool role and the platform role together", () => {
       jwksUrl: endpoints.jwks,
       accessTokenUrl: endpoints.token,
       redirectUri: TOOL_REDIRECT_URI,
-      keyId: toolKeys.kid,
-      signingKey: toolKeys.privateKey,
+      signer: signerFromCryptoKey(toolKeys.privateKey, { algorithm: "RS256", keyId: toolKeys.kid }),
     };
     const fetchPlatform = async (
       url: string,
@@ -1849,9 +1849,13 @@ describe("the tool role and the platform role together", () => {
     expect(launched.custom).toEqual(new Map([["exam", "tryout-1"]]));
 
     const lineitem = launched.services.grades?.lineitem ?? "";
-    const granted = await ltiAccessToken(launched, launched.services.grades?.scopes ?? [], tool);
+    const granted = await requestServiceToken(toolSide, launched.deploymentId, launched.services.grades?.scopes ?? [], {
+      fetch: fetchPlatform,
+      timeoutMs: 10_000,
+      clock: ctx.clock,
+    });
     expect(granted.scopes).toEqual([LINEITEM_READONLY, SCORE]);
-    const read = await agsLineItem(service(lineitem, granted.value), ctx.token);
+    const read = await agsLineItem(service(lineitem, granted.accessToken), ctx.token);
     expect(JSON.parse(textOf(read.body))).toMatchObject({
       id: lineitem,
       label: "Drawing tool",
@@ -1859,7 +1863,11 @@ describe("the tool role and the platform role together", () => {
     });
     const body = scoreBody({ userId: launched.user.subject });
     const posted = await agsScores(
-      service(`${lineitem}/scores`, granted.value, { method: "POST", headers: { "content-type": SCORE_TYPE }, body }),
+      service(`${lineitem}/scores`, granted.accessToken, {
+        method: "POST",
+        headers: { "content-type": SCORE_TYPE },
+        body,
+      }),
       ctx.scoring,
     );
     expect(posted.status).toBe(204);

@@ -1,5 +1,6 @@
 import type { CallOptions } from "@interopkit/core";
 import {
+  httpsUrlSchema,
   looseRecord,
   methodsSchema,
   nonEmptyStringSchema,
@@ -16,6 +17,14 @@ export interface LoginRecord {
   readonly issuer: string;
   /** The client identifier of the tool at that platform. */
   readonly clientId: string;
+  /**
+   * The `lti_deployment_id` of the initiation, which the launch must carry (LTI 1.3 Core section 4.1.2).
+   *
+   * @defaultValue none, when the platform did not name the deployment
+   */
+  readonly deploymentId?: string;
+  /** The `target_link_uri` of the initiation, which the launch must carry (LTI 1.3 Core section 5.3.4). */
+  readonly targetLinkUri: string;
   /** The `lti_storage_target` of the initiation, absent when the state lives in a cookie. */
   readonly storageTarget?: string;
   /** The time in milliseconds since 1970-01-01T00:00:00Z at which the login stops being valid. */
@@ -48,6 +57,8 @@ const loginRecordSchema = looseRecord({
   nonce: nonEmptyStringSchema,
   issuer: nonEmptyStringSchema,
   clientId: nonEmptyStringSchema,
+  deploymentId: v.optional(nonEmptyStringSchema),
+  targetLinkUri: httpsUrlSchema,
   storageTarget: v.optional(nonEmptyStringSchema),
   expiresAt: nonNegativeIntegerSchema,
 });

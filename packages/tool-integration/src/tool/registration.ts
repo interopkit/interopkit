@@ -1,6 +1,17 @@
-import { guardSchema, httpsUrlSchema, looseRecord, nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
+import type { Signer } from "@interopkit/core";
+import {
+  checkRemoteUrl,
+  describe,
+  httpsUrlSchema,
+  isRecord,
+  looseRecord,
+  nonEmptyStringSchema,
+  parseWith,
+} from "@interopkit/core/checks";
 import * as v from "valibot";
-import { isRsaKey } from "../protocol/internal.js";
+import { LtiError } from "../errors.js";
+import { APPROVED_ALGORITHMS, type JwsAlgorithm } from "../protocol/index.js";
+import { checkLtiSigner } from "../protocol/internal.js";
 
 /** The host's record of one platform that the tool trusts, as the platform's administrator and the tool agreed on it. */
 export interface PlatformRegistration {
@@ -25,11 +36,42 @@ export interface PlatformRegistration {
   readonly audience?: string | undefined;
   /** The tool's launch URL, which the platform knows as a redirect URI. The authorization response is posted to it. */
   readonly redirectUri: string;
-  /** The `kid` that the tool's public key has in the key set that the platform fetches. */
-  readonly keyId: string;
-  /** The tool's private RSA key, with which it signs client assertions and Deep Linking responses (RS256). */
-  readonly signingKey: CryptoKey;
+  /**
+   * Signs the tool's client assertions and Deep Linking responses, with one of `APPROVED_ALGORITHMS` and a `keyId` that is the
+   * `kid` of the tool's public key in the key set that the platform reads. A key in a KMS or an HSM works.
+   */
+  readonly signer: Signer;
+  /**
+   * The algorithms that the tool accepts on the platform's tokens.
+   *
+   * @defaultValue `APPROVED_ALGORITHMS`
+   */
+  readonly algorithms?: readonly JwsAlgorithm[] | undefined;
+  /**
+   * The audiences besides the client identifier that an `id_token` of the platform may name (Security Framework section
+   * 5.1.3). Any other member of `aud` is refused.
+   *
+   * @defaultValue none
+   */
+  readonly trustedAudiences?: readonly string[] | undefined;
+  /**
+   * The origins, such as `https://lms.example.edu`, that the URLs of the platform's services may have. When given, a service
+   * URL of a launch on another origin is refused, and one on a listed origin passes even when `checkRemoteUrl` would refuse it,
+   * as for a platform on a private network.
+   *
+   * @defaultValue any origin that `checkRemoteUrl` of `@interopkit/core/checks` accepts
+   */
+  readonly serviceOrigins?: readonly string[] | undefined;
 }
+
+/** An `https` origin as `URL` writes it: a scheme, a host and a port that is not the default, with no path. */
+const originSchema = v.pipe(
+  httpsUrlSchema,
+  v.check(
+    (text) => new URL(text).origin === text,
+    (issue) => `expected an https origin such as "https://lms.example.edu", found ${issue.received}`,
+  ),
+);
 
 const registrationSchema = looseRecord({
   issuer: v.pipe(
@@ -46,19 +88,49 @@ const registrationSchema = looseRecord({
   accessTokenUrl: httpsUrlSchema,
   audience: v.optional(nonEmptyStringSchema),
   redirectUri: httpsUrlSchema,
-  keyId: nonEmptyStringSchema,
-  signingKey: guardSchema(
-    (key): key is CryptoKey => isRsaKey(key, "sign"),
-    "a private RSASSA-PKCS1-v1_5 key with SHA-256 of at least 2048 bits for signing",
-  ),
+  algorithms: v.optional(v.pipe(v.array(v.picklist(APPROVED_ALGORITHMS)), v.minLength(1))),
+  trustedAudiences: v.optional(v.array(nonEmptyStringSchema)),
+  serviceOrigins: v.optional(v.pipe(v.array(originSchema), v.minLength(1))),
 });
 
 /**
  * Checks a registration that the host's lookup returned.
  *
  * @throws `DataError` when it is not a registration: a field is missing or of the wrong type, a URL is not `https`, the
- * issuer has a query or a fragment, or the signing key is not a private RSA key of at least 2,048 bits for RS256.
+ * issuer has a query or a fragment, an algorithm is not approved, a service origin is not an `https` origin, or the signer has
+ * no approved algorithm, no function `sign` or no `keyId`.
  */
 export function checkPlatformRegistration(value: unknown): asserts value is PlatformRegistration {
   parseWith(registrationSchema, value, "The registration");
+  checkLtiSigner(isRecord(value) ? value.signer : undefined, "The signer of the registration");
+}
+
+/**
+ * Checks that a service URL of a launch may receive the tool's bearer token: on one of the registration's `serviceOrigins`
+ * when it has them, else an `https` URL that names a public host.
+ *
+ * @param url - The URL, from a claim of the launch.
+ * @param registration - The registration of the platform that sent the launch.
+ * @param label - Names the URL in the error message, such as `The line item of the launch`.
+ * @throws `LtiError` (`service-origin-refused`) when it may not.
+ */
+export function checkServiceUrl(url: string, registration: PlatformRegistration, label: string): void {
+  const { serviceOrigins } = registration;
+  if (serviceOrigins !== undefined) {
+    if (!serviceOrigins.includes(new URL(url).origin)) {
+      throw new LtiError(
+        `${label} must be on one of the service origins of the registration, ${serviceOrigins.join(", ")}, found ${describe(url)}.`,
+        "service-origin-refused",
+      );
+    }
+    return;
+  }
+  try {
+    checkRemoteUrl(url, label);
+  } catch (error) {
+    throw new LtiError(
+      `${error instanceof Error ? error.message : String(error)} A platform on a private network names its origins in the serviceOrigins of the registration.`,
+      "service-origin-refused",
+    );
+  }
 }

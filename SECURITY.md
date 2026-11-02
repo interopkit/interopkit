@@ -341,26 +341,39 @@ A learning platform launches the tool through the browser of the user, so the la
 checked it ([tool role](docs/tool-integration/tool.md)). The checks bind a launch to the browser that logged in, to the
 platform's key, to the tool's client and deployment, and to one use.
 
-- Serve the login URL and the launch URL over HTTPS, and limit the size of a request body: the handlers read what the host
-  gives them.
+- Serve the login URL and the launch URL over HTTPS, and limit the size of a request body before building the request. The
+  handlers measure what they are given before they decode it: a launch form has at most `maxFormBytes`, 65,536 bytes by
+  default (`form-too-large`), and a login initiation form 65,536 bytes.
+- **Binding to the login.** The login keeps the initiation's `target_link_uri` and `lti_deployment_id`, and a launch that carries
+  another target (`target-mismatch`) or another deployment (`deployment-mismatch`) is refused (LTI 1.3 Core sections 4.1.2 and
+  5.3.4), so a token issued for one placement cannot complete the login of another.
+- **Authentication errors.** A platform's error response (`error` in place of an `id_token`) is refused as `platform-error`, and
+  its text reaches the host only in the message of the error: escape it before showing it.
 - `LtiStore.delete` must be atomic, and expired logins deleted. A login completes once because only one caller's `delete`
   returns `true`.
 - **Login CSRF** (Security Framework 1.1 section 7.4.1). A launch is tied to the browser that logged in: by the
   `__Host-lti_state_<state>` cookie, or, without third-party cookies, by the platform's storage, and the tool accepts the second
   post of that path only from the origin of its own launch URL. Pass the `origin` header of the request to `ltiLaunch`.
 - The two pages of the storage path carry a content security policy that allows their one script by hash, and encode every
-  value. A host that adds headers must not weaken them.
+  value. A host that adds headers must not weaken them. Before the storage messages they ask the window that framed them for
+  its capabilities, to the wildcard origin as Client Side postMessages 0.1 section 4.1.2 asks: the request carries only a random
+  id, and only the answer to that id names a frame. Whichever frame it names, the `state` and the `nonce` go only to the origin
+  of the platform's authentication endpoint.
 - **Open redirect.** `targetLinkUri` is the signed claim of the launch, returned to the host. Check it against the host's own
   routes before redirecting to it.
 - The platform's key set is fetched from the URL of a registration, over HTTPS, through `callService`. A token cannot choose the
   URL, and only the six algorithms of Security Framework 7.2 verify, each with a key of its kind: RSA of 2,048 bits or more, or EC on P-256, P-384 or P-521. Past `ttlSeconds` a failed fetch fails the launch, and a
   stale key is never used.
-- **Audiences and payloads.** A token's `aud` holds the tool and nothing else unless the registration trusts the other member, and a
-  token with several audiences names its authorized party in `azp`. The payload of a token is counted in JSON tokens, at most
+- **Audiences and payloads.** A token's `aud` holds the tool and nothing else unless the registration's `trustedAudiences` name the
+  other member, and a token with several audiences names its authorized party in `azp`. A registration's `algorithms` narrow the
+  six that verify. The payload of a token is counted in JSON tokens, at most
   1,000,000, before it is parsed, so a small hostile payload cannot cost the memory of its syntax tree.
-- **Server-side requests.** The key set, the token endpoint and the line item URL come from a registration or from a claim of a
-  registered platform. Each must be `https`, and a redirect is refused, yet an `https` URL may still name an internal host: in a
-  multi-tenant tool a platform administrator could point the tool's server, with a bearer token, at one. Pass a `fetch` that
+- **Server-side requests.** The key set and the token endpoint come from a registration, and the line item URL from a claim of a
+  registered platform. Each must be `https`, and a redirect is refused. The bearer token goes to a line item only on the
+  registration's `serviceOrigins`, or, without them, on a URL that `checkRemoteUrl` accepts: no IP address in any spelling, no
+  single label such as `localhost`, no name under `localhost`, `local`, `home.arpa` or `internal`, and no user information
+  (`service-origin-refused`). A public name may still resolve to an internal host: in a multi-tenant tool a platform
+  administrator could point the tool's server, with a bearer token, at one. Pass a `fetch` that
   refuses private and link-local addresses, and treat `ServiceError.body` as untrusted text, since it returns the answer. Check
   the address that the connection resolves to, and not the host name: a name that is public when it is checked can be private
   when the connection is made (DNS rebinding), so resolve it once, refuse a loopback, private or link-local address (the cloud
@@ -369,8 +382,13 @@ platform's key, to the tool's client and deployment, and to one use.
   hook, block those ranges in the network that the server sends its requests through.
 - **Login initiation is open.** `ltiLogin` answers before anything is proven and writes one record per request, which lives 600
   seconds. Limit the rate of requests to the login URL and the size of the store.
-- The tool's private key is the host's to keep. It signs client assertions and Deep Linking responses, which expire after five
-  minutes.
+- The tool's private key is the host's to keep, behind the `Signer` of each registration, in the process or in a KMS or an HSM. It
+  signs client assertions and Deep Linking responses, which expire after five minutes. `serveToolJwks` publishes the public keys
+  and refuses a key with a private member, a `kid` used twice and a signer whose key is not published. Rotate by adding the new
+  public key one `max-age` before the signer uses it, and remove the old one a `max-age` after its last token expired (Security
+  Framework section 6.4).
+- **LTI 1.1 secrets.** `legacySecret` gives the secret of a consumer key for one HMAC of the migration claim; the package keeps it
+  nowhere. Trust the 1.1 identifiers of a launch only when `migration.verified` is `true`.
 - A score is not idempotent: AGS requires a strictly later `timestamp` for each update of a line item and user, and a platform
   may drop an equal or earlier one. After a timeout the first attempt is in doubt, and the resend takes a later time.
 - Launch claims (the `sub`, roles and custom properties) pass through the package to the host; it stores nothing.
@@ -507,7 +525,11 @@ that says "not replaceable" is fixed. Each package adds its rows when it adds th
 | `learning-analytics`      | Levels that an entity or an event nests                                              | 64                                | levels                 | Checked by `readEntity` and `readEvent` before they read; a `DataError`; not replaceable                                                                                   |
 | `tool-integration`        | `ttlSeconds` of `createJwksCache`                                        | 3,600                             | seconds                | How long a key set stays cached                                                                                                                           |
 | `tool-integration`        | `refreshSeconds` of `createJwksCache`                                    | 60                                | seconds                | The least time between two fetches of a key set that answers; a set that fails is fetched on every request that needs it                                  |
-| `tool-integration`        | `timeoutMs` of `createJwksCache`, `ltiAccessToken` and `publishAgsScore` | 10,000                            | milliseconds           | One call to the platform                                                                                                                                  |
+| `tool-integration`        | `timeoutMs` of `createJwksCache` and `publishAgsScore`                   | 10,000                            | milliseconds           | One call to the platform                                                                                                                                  |
+| `tool-integration`        | `maxFormBytes` of `ltiLaunch`                                            | 65,536                            | bytes                  | The form that the platform posts, measured before it is decoded; `form-too-large` above it                                                               |
+| `tool-integration`        | Most bytes of a login initiation form                                    | 65,536                            | bytes                  | A POST to the login URL; `DataError` above it; not replaceable                                                                                           |
+| `tool-integration`        | `maxAgeSeconds` of `serveToolJwks`                                       | 3,600                             | seconds                | The `max-age` of the tool's key set                                                                                                                      |
+| `tool-integration`        | Wait for the answer to `lti.capabilities`                                | 100                               | milliseconds           | The pages of the storage path; then `lti_storage_target`; not replaceable                                                                                |
 | `tool-integration`        | Lifetime of a login                                                      | 600                               | seconds                | The time in which a launch must answer a login; not replaceable                                                                                           |
 | `tool-integration`        | Lifetime of a client assertion and of a Deep Linking response            | 300                               | seconds                | `exp` after `iat`; not replaceable                                                                                                                        |
 | `tool-integration`        | Leeway for clock skew                                                    | 60                                | seconds                | `exp`, `nbf` and `iat` of an `id_token` and of a client assertion; not replaceable                                                                        |

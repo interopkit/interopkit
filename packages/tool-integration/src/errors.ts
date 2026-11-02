@@ -30,6 +30,7 @@ const STATUS_OF_REASON: ReadonlyMap<string, number> = new Map([
   ["state-expired", 403],
   ["state-reused", 403],
   ["state-cookie", 403],
+  ["deployment-mismatch", 403],
   ["origin-mismatch", 403],
   ["storage-mismatch", 403],
 ]);

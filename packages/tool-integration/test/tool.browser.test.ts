@@ -1,5 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
 
+import { signerFromCryptoKey } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
 import { afterEach, describe, expect, it } from "vitest";
 import { createJwksCache } from "../src/index.js";
@@ -35,8 +36,7 @@ const registration: PlatformRegistration = {
   jwksUrl: "https://lms.example.edu/jwks",
   accessTokenUrl: "https://lms.example.edu/token",
   redirectUri: "https://tool.example.com/lti/launch",
-  keyId: "tool-1",
-  signingKey: pair.privateKey,
+  signer: signerFromCryptoKey(pair.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
 };
 const clock = { now: () => 1_700_000_000_000 };
 
@@ -134,8 +134,44 @@ class PlatformStorage {
   }
 }
 
+/**
+ * The platform's answer to `lti.capabilities` (LTI Client Side postMessages 0.1 section 4.1): it lists the messages that it
+ * supports, with the frame of each, and answers the window that asked.
+ */
+class Capabilities {
+  /** The requests that reached the platform, with the origin of each. */
+  readonly asked: { readonly subject: string; readonly origin: string }[] = [];
+  private readonly stop: () => void;
+
+  /**
+   * @param supported - The supported messages of the answer.
+   * @param messageId - Answers with this `message_id` in place of the request's, as a stray answer to another request does.
+   */
+  constructor(supported: readonly Readonly<Record<string, string>>[], messageId?: string) {
+    const handle = (event: MessageEvent): void => {
+      const data: unknown = event.data;
+      if (typeof data !== "object" || data === null || !("subject" in data) || data.subject !== "lti.capabilities")
+        return;
+      this.asked.push({ subject: String(data.subject), origin: event.origin });
+      const id = messageId ?? ("message_id" in data ? data.message_id : undefined);
+      const answer = { subject: "lti.capabilities.response", message_id: id, supported_messages: supported };
+      event.source?.postMessage(answer, { targetOrigin: event.origin });
+    };
+    window.addEventListener("message", handle);
+    this.stop = () => window.removeEventListener("message", handle);
+    responders.push(this);
+  }
+
+  /** Stops answering. */
+  dispose(): void {
+    this.stop();
+  }
+}
+
+const responders: Capabilities[] = [];
 const frames: HTMLIFrameElement[] = [];
 afterEach(() => {
+  for (const responder of responders.splice(0)) responder.dispose();
   for (const frame of frames.splice(0)) frame.remove();
   for (const storage of storages.splice(0)) storage.dispose();
 });
@@ -267,10 +303,44 @@ describe("the page that stores state and nonce", () => {
     expect(frame.contentWindow?.location.href).toBe("about:srcdoc");
   });
 
-  it("tells the user at once when the platform has no frame of the given name", async () => {
+  it("tells the user, after the platform answers no capabilities, when it has no frame of the given name", async () => {
     const { page } = await login("no-such-frame");
     const frame = await load(page);
-    expect(frame.contentDocument?.getElementById("failure")?.hidden).toBe(false);
+    await waitFor(() => expect(frame.contentDocument?.getElementById("failure")?.hidden).toBe(false));
+  });
+
+  it("asks the window that framed it for its capabilities, and stores in the frame that the answer names", async () => {
+    const storage = new PlatformStorage(await storageFrame("named-by-capabilities"));
+    const capabilities = new Capabilities([
+      { subject: "lti.capabilities" },
+      { subject: "lti.put_data", frame: "named-by-capabilities" },
+    ]);
+    const { page, state, nonce } = await login("_parent");
+    const frame = await load(page);
+    storage.release();
+    await waitFor(() => expect(frame.contentWindow?.location.href).toContain(AUTHENTICATION_DOCUMENT));
+    expect(storage.get(`state_${state}`)).toBe(state);
+    expect(storage.get(`nonce_${nonce}`)).toBe(nonce);
+    expect(capabilities.asked).toStrictEqual([{ subject: "lti.capabilities", origin }]);
+  });
+
+  it("stores in the frame of lti_storage_target when the capabilities name no frame for the message", async () => {
+    const storage = new PlatformStorage(await storageFrame("lti-storage"));
+    new Capabilities([{ subject: "lti.put_data" }, { subject: "lti.get_data", frame: "elsewhere" }]);
+    const { page, state } = await login("lti-storage");
+    const frame = await load(page);
+    storage.release();
+    await waitFor(() => expect(frame.contentWindow?.location.href).toContain(AUTHENTICATION_DOCUMENT));
+    expect(storage.get(`state_${state}`)).toBe(state);
+  });
+
+  it("ignores an answer to the capabilities of another request", async () => {
+    const storage = new PlatformStorage(window);
+    new Capabilities([{ subject: "lti.put_data", frame: "no-such-frame" }], "another-request");
+    const { page } = await login("_parent");
+    const frame = await load(page);
+    storage.release();
+    await waitFor(() => expect(frame.contentWindow?.location.href).toContain(AUTHENTICATION_DOCUMENT));
   });
 
   it("does not go on when a frame of another origin answers for the platform", async () => {
@@ -289,6 +359,8 @@ describe("the page that stores state and nonce", () => {
     const storage = new PlatformStorage(window);
     const { page } = await login("_parent");
     const frame = await load(page);
+    // The page listens for answers once it has found the frame and asked it.
+    await waitFor(() => expect(storage.requests).toHaveLength(2));
     const unrelated = { subject: "lti.put_data.response", message_id: "unrelated", error: { code: "x", message: "y" } };
     frame.contentWindow?.postMessage(unrelated, "*");
     await quiet();
@@ -372,8 +444,22 @@ describe("the verification page", () => {
     const { page } = await verification("no-such-frame");
     const frame = await load(page);
     const { submitted } = submission(frame);
-    expect(frame.contentDocument?.getElementById("failure")?.hidden).toBe(false);
+    await waitFor(() => expect(frame.contentDocument?.getElementById("failure")?.hidden).toBe(false));
     expect(submitted()).toBeUndefined();
+  });
+
+  it("fetches the values from the frame that the platform names in its capabilities", async () => {
+    const storage = new PlatformStorage(await storageFrame("named-by-capabilities"));
+    const capabilities = new Capabilities([{ subject: "lti.get_data", frame: "named-by-capabilities" }]);
+    const { page, state, nonce } = await verification("_parent");
+    storage.put(`state_${state}`, state);
+    storage.put(`nonce_${nonce}`, nonce);
+    const frame = await load(page);
+    const { submitted } = submission(frame);
+    storage.release();
+    await waitFor(() => expect(submitted()).toBeDefined());
+    expect(Object.fromEntries(submitted() ?? [])).toMatchObject({ stored_state: state, stored_nonce: nonce });
+    expect(capabilities.asked).toStrictEqual([{ subject: "lti.capabilities", origin }]);
   });
 
   it("takes the values from the platform and not from a frame of another origin that answers first", async () => {
@@ -399,6 +485,8 @@ describe("the verification page", () => {
     storage.put(`nonce_${nonce}`, nonce);
     const frame = await load(page);
     const { submitted } = submission(frame);
+    // The page listens for answers once it has found the frame and asked it.
+    await waitFor(() => expect(storage.requests).toHaveLength(2));
     const unrelated = { subject: "lti.get_data.response", message_id: "unrelated", error: { code: "x", message: "y" } };
     frame.contentWindow?.postMessage(unrelated, "*");
     await quiet();

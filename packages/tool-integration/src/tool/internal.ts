@@ -3,6 +3,6 @@
  *
  * @module
  */
-export { readTokenResponse } from "./access-token.js";
 export { getDataPage } from "./pages.js";
 export { readScoreMaximum } from "./publish-ags-score.js";
+export { requestServiceToken } from "./token.js";

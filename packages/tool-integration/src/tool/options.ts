@@ -1,5 +1,13 @@
 import { type CallOptions, type Clock, checkClock, type Fetch } from "@interopkit/core";
-import { checkAbortSignal, checkFunction, checkRecord, describe } from "@interopkit/core/checks";
+import {
+  checkAbortSignal,
+  checkArray,
+  checkFunction,
+  checkNonEmptyString,
+  checkPositiveInteger,
+  checkRecord,
+  describe,
+} from "@interopkit/core/checks";
 import { LtiError } from "../errors.js";
 import type { LtiDeployment } from "../protocol/index.js";
 import { callOptionsOf, checkJwksCache, type JwksCache } from "../protocol/internal.js";
@@ -27,20 +35,51 @@ export interface LtiLoginOptions extends ToolOptions {
   readonly store: LtiStore;
 }
 
-/** The options of `ltiLaunch`. */
-export interface LtiLaunchOptions extends ToolOptions {
+/**
+ * The options of `ltiLaunch`.
+ *
+ * @typeParam TOther - The message types beyond the modeled ones that the tool accepts.
+ */
+export interface LtiLaunchOptions<TOther extends string = never> extends ToolOptions {
   /** Where the tool keeps the logins in progress. */
   readonly store: LtiStore;
   /** The cache of the platforms' key sets, from `createJwksCache`. */
   readonly jwks: JwksCache;
+  /**
+   * The values of the `version` claim that the tool accepts.
+   *
+   * @defaultValue `["1.3.0"]`
+   */
+  readonly versions?: readonly string[];
+  /**
+   * The message types beyond the five that the package models, which the launch returns as an `OtherMessage`, such as a
+   * message of a specification that the package does not implement.
+   *
+   * @defaultValue none
+   */
+  readonly otherMessageTypes?: readonly TOther[];
+  /**
+   * The most bytes of the form that the platform posts, measured before it is decoded.
+   *
+   * @defaultValue `65536`
+   */
+  readonly maxFormBytes?: number;
+  /**
+   * Returns the shared secret of LTI 1.1 for an `oauth_consumer_key`, so that the launch can check the
+   * `oauth_consumer_key_sign` of the migration claim. Returns `undefined` when the tool has none for the key. It receives the
+   * `signal` of the call.
+   *
+   * @defaultValue none, and then the migration claim is never verified
+   */
+  readonly legacySecret?: (consumerKey: string, options?: CallOptions) => Promise<string | undefined>;
 }
 
-/** The options of `ltiAccessToken`. */
-export interface AccessTokenOptions extends ToolOptions {
-  /** The `fetch` that calls the platform's token endpoint. */
+/** The options of `publishAgsScore`. */
+export interface PublishAgsScoreOptions extends ToolOptions {
+  /** The `fetch` that calls the platform's token endpoint and its services. */
   readonly fetch: Fetch;
   /**
-   * The most time that the call may take, in milliseconds.
+   * The most time that each call may take, in milliseconds.
    *
    * @defaultValue `10000`
    */
@@ -70,16 +109,40 @@ export function checkLoginOptions(options: unknown): asserts options is LtiLogin
   checkLtiStore(options.store);
 }
 
+/** Checks a list of non-empty strings that an option holds. */
+function checkStrings(value: unknown, name: string): void {
+  checkArray(value, `The option ${name} must be an array`);
+  for (const item of value) checkNonEmptyString(item, `An entry of the option ${name}`);
+}
+
 /**
  * Checks the options of `ltiLaunch`.
  *
  * @throws `DataError` when they are not.
  */
-export function checkLaunchOptions(options: unknown): asserts options is LtiLaunchOptions {
+export function checkLaunchOptions(options: unknown): asserts options is LtiLaunchOptions<string> {
   checkRecord(options, "The options must be an object");
   checkToolOptions(options);
   checkLtiStore(options.store);
   checkJwksCache(options.jwks);
+  if (options.versions !== undefined) checkStrings(options.versions, "versions");
+  if (options.otherMessageTypes !== undefined) checkStrings(options.otherMessageTypes, "otherMessageTypes");
+  if (options.maxFormBytes !== undefined) checkPositiveInteger(options.maxFormBytes, "The option maxFormBytes");
+  if (options.legacySecret !== undefined) {
+    checkFunction(options.legacySecret, "The option legacySecret must be a function");
+  }
+}
+
+/**
+ * Checks the options of `publishAgsScore`.
+ *
+ * @throws `DataError` when they are not.
+ */
+export function checkPublishOptions(options: unknown): asserts options is PublishAgsScoreOptions {
+  checkRecord(options, "The options must be an object");
+  checkToolOptions(options);
+  checkFunction(options.fetch, "The option fetch must be a function");
+  if (options.timeoutMs !== undefined) checkPositiveInteger(options.timeoutMs, "The option timeoutMs");
 }
 
 /**

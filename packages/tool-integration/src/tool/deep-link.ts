@@ -1,4 +1,4 @@
-import { DataError, readClock } from "@interopkit/core";
+import { DataError, readClock, signCompactJws } from "@interopkit/core";
 import {
   checkArray,
   checkHttpsUrl,
@@ -8,14 +8,14 @@ import {
   checkString,
   describe,
 } from "@interopkit/core/checks";
-import { SignJWT } from "jose";
 import type { DeepLinkingRequestMessage } from "../protocol/index.js";
-import { CLAIM, LTI_VERSION, randomToken, rs256Header, toSeconds } from "../protocol/internal.js";
+import { CLAIM, callOptionsOf, LTI_VERSION, randomToken, toSeconds } from "../protocol/internal.js";
 import { checkToolOptions, findDeployment, type ToolOptions } from "./options.js";
 
 // Security Framework section 4.1.1: a message of the tool expires "typically five minutes after the iat timestamp".
 const MESSAGE_TTL_SECONDS = 300;
 const ITEM_TYPE = "ltiResourceLink";
+const encoder = new TextEncoder();
 
 /** A line item that the platform may create for a placed resource (Deep Linking 2.0 section 3.2, `lineItem`). */
 export interface DeepLinkLineItem {
@@ -123,7 +123,8 @@ function contentItem(item: DeepLinkItem): Readonly<Record<string, unknown>> {
  *
  * @remarks
  * The response carries the `data` of the request when it had one, and a `nonce` and the times that the Security
- * Framework requires of a message of the tool (section 5.2.2). It is signed with the key of the registration (RS256).
+ * Framework requires of a message of the tool (section 5.2.2). The signer of the registration signs it, and its header names
+ * the signer's `keyId` as `kid`.
  *
  * @param launch - The Deep Linking request that `ltiLaunch` returned.
  * @param items - The resource links to place; an empty array places none.
@@ -133,6 +134,7 @@ function contentItem(item: DeepLinkItem): Readonly<Record<string, unknown>> {
  * accept `ltiResourceLink`, or several items.
  * @throws `LtiError` (`platform-unknown`, `deployment-unknown`) when the registration is gone or no longer lists the
  * deployment of the launch.
+ * @throws The error of the signer when it fails, and the `reason` of `options.signal` when it aborts.
  */
 export async function deepLinkResponse(
   launch: DeepLinkingRequestMessage,
@@ -146,18 +148,22 @@ export async function deepLinkResponse(
   checkAccepted(launch, items);
   const registration = await findDeployment(options, launch);
   const iat = toSeconds(readClock(options.clock));
-  return new SignJWT({
+  const claims = {
+    iss: registration.clientId,
+    aud: registration.issuer,
+    iat,
+    exp: iat + MESSAGE_TTL_SECONDS,
     nonce: randomToken(),
     [CLAIM.messageType]: "LtiDeepLinkingResponse",
     [CLAIM.version]: LTI_VERSION,
     [CLAIM.deploymentId]: launch.deploymentId,
     [CLAIM.data]: launch.settings.data,
     [CLAIM.contentItems]: items.map(contentItem),
-  })
-    .setProtectedHeader(rs256Header(registration.keyId))
-    .setIssuer(registration.clientId)
-    .setAudience(registration.issuer)
-    .setIssuedAt(iat)
-    .setExpirationTime(iat + MESSAGE_TTL_SECONDS)
-    .sign(registration.signingKey);
+  };
+  return signCompactJws(
+    { typ: "JWT" },
+    encoder.encode(JSON.stringify(claims)),
+    registration.signer,
+    callOptionsOf(options),
+  );
 }

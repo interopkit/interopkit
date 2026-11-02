@@ -60,7 +60,7 @@ export {
 export { escapeHtml, pagePolicy } from "./html.js";
 export { checkJwksCache, type JwksCache } from "./jwks.js";
 export { hasCanonicalParts, rs256Header, unverifiedClaims, verifyJwt } from "./jwt.js";
-export { checkKeySet } from "./key-set.js";
+export { checkKeySet, checkLtiSigner } from "./key-set.js";
 export { isRsaKey, MIN_RSA_MODULUS_BITS } from "./keys.js";
 export {
   type MessageToWrite,

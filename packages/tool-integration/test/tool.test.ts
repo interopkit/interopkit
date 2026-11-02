@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 responses are snake_case.
 
 import { createHmac } from "node:crypto";
-import { DataError, ServiceError } from "@interopkit/core";
+import { DataError, ServiceError, signerFromCryptoKey } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
 import { jwtVerify } from "jose";
@@ -9,15 +9,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createJwksCache, type DeepLinkingRequestMessage, type LtiMessage } from "../src/index.js";
 import { randomToken } from "../src/protocol/internal.js";
 import {
-  type AccessTokenOptions,
   type DeepLinkItem,
   deepLinkResponse,
-  ltiAccessToken,
   ltiLaunch,
   ltiLogin,
   type PlatformRegistration,
 } from "../src/tool/index.js";
-import { getDataPage, readTokenResponse } from "../src/tool/internal.js";
+import { getDataPage, requestServiceToken } from "../src/tool/internal.js";
 import {
   ACCESS_TOKEN_URL,
   AGS_SCOPES,
@@ -46,7 +44,6 @@ import {
   signToken,
   verifyToken,
 } from "./fixture.js";
-import { fuzzJson } from "./fuzz.js";
 import { textOf } from "./text-of.js";
 import {
   attackerKey,
@@ -66,199 +63,133 @@ import {
 
 afterEach(() => vi.useRealTimers());
 
-describe("ltiAccessToken", () => {
-  const deployment = { issuer: ISSUER, clientId: CLIENT_ID, deploymentId: DEPLOYMENT_ID };
+describe("the request of a service token", () => {
   const [lineitem, , score] = AGS_SCOPES;
   const scopes = [lineitem ?? "", score ?? ""];
 
-  it("requests a token with a signed client assertion, as the Security Framework describes", async () => {
-    const { options, platform } = setup();
-    const token = await ltiAccessToken(deployment, scopes, options);
-    expect(token).toEqual({ value: "access-token-1", expiresAt: NOW + 3_600_000, scopes });
-    expect(platform.requests).toEqual([`POST ${ACCESS_TOKEN_URL}`]);
-    const [grant] = platform.grants;
+  /** Requests a token as the tool role does, for the deployment of the fake platform. */
+  function tokenFor(ctx: Setup, asked: readonly string[], more: Partial<Options> = {}) {
+    const options = { ...ctx.options, ...more };
+    return requestServiceToken(ctx.registration, DEPLOYMENT_ID, asked, {
+      fetch: options.fetch,
+      timeoutMs: options.timeoutMs ?? 10_000,
+      clock: options.clock,
+    });
+  }
+
+  it("requests a token with a client assertion that the signer signs and that names the deployment", async () => {
+    const ctx = setup();
+    const token = await tokenFor(ctx, scopes);
+    expect(token).toEqual({ accessToken: "access-token-1", expiresAt: NOW + 3_600_000, scopes });
+    expect(ctx.platform.requests).toEqual([`POST ${ACCESS_TOKEN_URL}`]);
+    const [grant] = ctx.platform.grants;
     expect(grant?.scope).toBe(scopes.join(" "));
+    expect(grant?.header).toEqual({ alg: "RS256", typ: "JWT", kid: toolKey.kid });
     expect(grant?.payload["https://purl.imsglobal.org/spec/lti/claim/deployment_id"]).toBe(DEPLOYMENT_ID);
   });
 
   it("uses a new jti for each request", async () => {
-    const { options, platform } = setup();
-    await ltiAccessToken(deployment, scopes, options);
-    await ltiAccessToken(deployment, scopes, options);
-    const ids = platform.grants.map((grant) => grant.payload.jti);
+    const ctx = setup();
+    await tokenFor(ctx, scopes);
+    await tokenFor(ctx, scopes);
+    const ids = ctx.platform.grants.map((grant) => grant.payload.jti);
     expect(new Set(ids).size).toBe(2);
   });
 
   it("returns the scopes that the platform grants, a subset of those requested", async () => {
-    const { options } = setup();
-    const token = await ltiAccessToken(deployment, [score ?? "", "https://example.org/scope/other"], options);
+    const token = await tokenFor(setup(), [score ?? "", "https://example.org/scope/other"]);
     expect(token.scopes).toEqual([score]);
   });
 
-  it("takes the requested scopes when the response names none, and accepts the token type in any case", async () => {
-    const { options, platform } = setup();
-    platform.tokenResponse = () => Response.json({ access_token: "t1", token_type: "bearer", expires_in: 60 });
-    expect(await ltiAccessToken(deployment, scopes, options)).toEqual({
-      value: "t1",
-      expiresAt: NOW + 60_000,
-      scopes,
-    });
-  });
-
-  it("accepts a token response without expires_in, which RFC 6749 only recommends, and then has no expiry", async () => {
-    const { options, platform } = setup();
-    platform.tokenResponse = () => Response.json({ access_token: "t1", token_type: "Bearer" });
-    const token = await ltiAccessToken(deployment, scopes, options);
-    expect(token).toStrictEqual({ value: "t1", expiresAt: undefined, scopes });
-  });
-
-  it("gives the token its own list of scopes, not the array that the caller passed", async () => {
-    const { options, platform } = setup();
-    platform.tokenResponse = () => Response.json({ access_token: "t1", token_type: "Bearer", expires_in: 60 });
-    const asked = [...scopes];
-    const token = await ltiAccessToken(deployment, asked, options);
-    expect(token.scopes).not.toBe(asked);
-    asked.push("https://example.org/scope/later");
-    expect(token.scopes).toStrictEqual(scopes);
+  it("takes the requested scopes when the response names none, and has no expiry without expires_in", async () => {
+    const ctx = setup();
+    ctx.platform.tokenResponse = () => Response.json({ access_token: "t1", token_type: "bearer", expires_in: 60 });
+    expect(await tokenFor(ctx, scopes)).toEqual({ accessToken: "t1", expiresAt: NOW + 60_000, scopes });
+    ctx.platform.tokenResponse = () => Response.json({ access_token: "t2", token_type: "Bearer" });
+    expect(await tokenFor(ctx, scopes)).toStrictEqual({ accessToken: "t2", scopes });
   });
 
   it("puts the audience of the registration in the assertion when it has one, and the token endpoint when it has none", async () => {
     const named = setup({ audience: "https://lms.example.edu" });
     named.platform.audience = "https://lms.example.edu";
-    await ltiAccessToken(deployment, scopes, named.options);
+    await tokenFor(named, scopes);
     expect(named.platform.grants.at(-1)?.payload.aud).toBe("https://lms.example.edu");
     const plain = setup();
-    await ltiAccessToken(deployment, scopes, plain.options);
+    await tokenFor(plain, scopes);
     expect(plain.platform.grants.at(-1)?.payload.aud).toBe(ACCESS_TOKEN_URL);
   });
 
-  it("returns a token or throws a DataError for any token response, and for an example with any value replaced", () => {
-    const example = { access_token: "t", token_type: "Bearer", expires_in: 3600, scope: "a b" };
-    fuzzJson(
-      (json) => readTokenResponse(JSON.stringify(json), ["a"], 0),
-      [example, { access_token: "t", token_type: "bearer" }],
-    );
+  it("signs with the algorithm and the key of the signer, such as ES256 with a key that a KMS holds", async () => {
+    const pair = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, false, [
+      "sign",
+      "verify",
+    ])) as CryptoKeyPair;
+    const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "tool-ec-1" });
+    const ctx = setup({ signer });
+    let assertion = "";
+    const fetch: Options["fetch"] = async (_url, init) => {
+      assertion = new URLSearchParams(textOf(init.body)).get("client_assertion") ?? "";
+      return Response.json({ access_token: "t", token_type: "Bearer", expires_in: 60 });
+    };
+    await tokenFor(ctx, scopes, { fetch });
+    const { protectedHeader, payload } = await jwtVerify(assertion, pair.publicKey, { currentDate: new Date(NOW) });
+    expect(protectedHeader).toEqual({ alg: "ES256", typ: "JWT", kid: "tool-ec-1" });
+    expect(payload["https://purl.imsglobal.org/spec/lti/claim/deployment_id"]).toBe(DEPLOYMENT_ID);
   });
 
   it("sends the request to the token endpoint of the registration within the time limit", async () => {
-    const { options } = setup();
+    const ctx = setup();
     let seen: { url: string; signal: AbortSignal | undefined } | undefined;
-    const fetch: AccessTokenOptions["fetch"] = async (url, init) => {
+    const fetch: Options["fetch"] = async (url, init) => {
       seen = { url, signal: init.signal };
       return Response.json({ access_token: "t", token_type: "Bearer", expires_in: 1 });
     };
-    await ltiAccessToken(deployment, scopes, { ...options, fetch, timeoutMs: 5000 });
+    await tokenFor(ctx, scopes, { fetch, timeoutMs: 5000 });
     expect(seen?.url).toBe(ACCESS_TOKEN_URL);
     expect(seen?.signal?.aborted).toBe(false);
   });
 
-  it("throws ServiceError with the status and the body when the platform refuses", async () => {
-    const { options } = setup();
-    const error = await ltiAccessToken(deployment, ["https://example.org/scope/other"], options).catch(
-      (e: unknown) => e,
-    );
+  it("throws ServiceError with the status, the body and the OAuth error when the platform refuses", async () => {
+    const error = await tokenFor(setup(), ["https://example.org/scope/other"]).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ServiceError);
-    expect(error).toMatchObject({ status: 400, body: '{"error":"invalid_scope"}' });
+    expect(error).toMatchObject({
+      status: 400,
+      body: '{"error":"invalid_scope"}',
+      message: `The token endpoint ${ACCESS_TOKEN_URL} refused the request: invalid_scope.`,
+    });
   });
 
-  it("throws ServiceError with status 0 when the platform does not answer", async () => {
-    const { options, platform } = setup();
-    platform.tokenResponse = () => {
+  it("throws ServiceError with status 0 when the platform does not answer, or answers after the time limit", async () => {
+    const ctx = setup();
+    ctx.platform.tokenResponse = () => {
       throw new TypeError("network down");
     };
-    const error = await ltiAccessToken(deployment, scopes, options).catch((e: unknown) => e);
+    const error = await tokenFor(ctx, scopes).catch((e: unknown) => e);
     expect(error).toMatchObject({ name: "ServiceError", status: 0 });
     expect(String(error)).toContain("network down");
-  });
-
-  it("throws ServiceError with status 0 when the platform is slower than the time limit", async () => {
-    const { options } = setup();
-    const fetch: AccessTokenOptions["fetch"] = (_url, init) =>
+    const fetch: Options["fetch"] = (_url, init) =>
       new Promise((_resolve, reject) => {
         init.signal.addEventListener("abort", () => reject(init.signal.reason));
       });
-    await expect(ltiAccessToken(deployment, scopes, { ...options, fetch, timeoutMs: 20 })).rejects.toMatchObject({
+    await expect(tokenFor(ctx, scopes, { fetch, timeoutMs: 20 })).rejects.toMatchObject({
       name: "ServiceError",
       status: 0,
     });
   });
 
-  it("throws DataError for an answer that is not a token response", async () => {
-    const { options, platform } = setup();
-    const answers: readonly [string, () => Response][] = [
-      ["The token response must be JSON.", () => new Response("<html>")],
-      ["The token response is invalid: expected an object, found an array.", () => Response.json([])],
-      [
-        'The token response is invalid: missing the property "access_token".',
-        () => Response.json({ token_type: "Bearer", expires_in: 60 }),
-      ],
-      [
-        'The token response is invalid at token_type: expected "Bearer", found "mac".',
-        () => Response.json({ access_token: "t", token_type: "mac", expires_in: 60 }),
-      ],
-      [
-        'The token response is invalid at expires_in: expected a number, found "3600".',
-        () => Response.json({ access_token: "t", token_type: "Bearer", expires_in: "3600" }),
-      ],
-      [
-        "The token response is invalid at scope: expected a string, found 5.",
-        () => Response.json({ access_token: "t", token_type: "Bearer", expires_in: 60, scope: 5 }),
-      ],
+  it("throws ServiceError for an answer that is not a token response", async () => {
+    const ctx = setup();
+    const answers: readonly (() => Response)[] = [
+      () => new Response("<html>", { headers: { "content-type": "text/html" } }),
+      () => Response.json([]),
+      () => Response.json({ token_type: "Bearer", expires_in: 60 }),
+      () => Response.json({ access_token: "t", token_type: "mac", expires_in: 60 }),
+      () => Response.json({ access_token: "t", token_type: "Bearer", expires_in: 60, scope: 5 }),
     ];
-    for (const [message, answer] of answers) {
-      platform.tokenResponse = answer;
-      await expect(ltiAccessToken(deployment, scopes, options), message).rejects.toThrow(new DataError(message));
+    for (const answer of answers) {
+      ctx.platform.tokenResponse = answer;
+      await expect(tokenFor(ctx, scopes)).rejects.toBeInstanceOf(ServiceError);
     }
-  });
-
-  it("throws LtiError when the registration is gone or no longer lists the deployment", async () => {
-    const { options } = setup();
-    await expect(
-      ltiAccessToken({ ...deployment, issuer: "https://other.example" }, scopes, options),
-    ).rejects.toMatchObject({ name: "LtiError", reason: "platform-unknown" });
-    await expect(ltiAccessToken({ ...deployment, deploymentId: "other" }, scopes, options)).rejects.toMatchObject({
-      name: "LtiError",
-      reason: "deployment-unknown",
-    });
-  });
-
-  it("throws DataError for arguments and options of other types", async () => {
-    const { options } = setup();
-    const calls: readonly [string, () => Promise<unknown>][] = [
-      ["The deployment must be an object, found null.", () => ltiAccessToken(JSON.parse("null"), scopes, options)],
-      [
-        'The issuer of the deployment must be a non-empty string, found "".',
-        () => ltiAccessToken({ ...deployment, issuer: "" }, scopes, options),
-      ],
-      ['The scopes must be an array, found "a".', () => ltiAccessToken(deployment, JSON.parse('"a"'), options)],
-      ["The scopes must have at least one scope.", () => ltiAccessToken(deployment, [], options)],
-      [
-        'A scope must be a non-empty string without spaces, found "a b".',
-        () => ltiAccessToken(deployment, ["a b"], options),
-      ],
-      [
-        "A scope must be a non-empty string without spaces, found 5.",
-        () => ltiAccessToken(deployment, JSON.parse("[5]"), options),
-      ],
-      ["The options must be an object, found null.", () => ltiAccessToken(deployment, scopes, JSON.parse("null"))],
-      [
-        'The option fetch must be a function, found "x".',
-        () => ltiAccessToken(deployment, scopes, { ...options, fetch: JSON.parse('"x"') }),
-      ],
-      [
-        'The option timeoutMs must be a positive integer, found "5".',
-        () => ltiAccessToken(deployment, scopes, { ...options, timeoutMs: JSON.parse('"5"') }),
-      ],
-      [
-        "The option timeoutMs must be a positive integer, found null.",
-        () => ltiAccessToken(deployment, scopes, { ...options, timeoutMs: JSON.parse("null") }),
-      ],
-      [
-        "The option clock must be an object, found null.",
-        () => ltiAccessToken(deployment, scopes, { ...options, clock: JSON.parse("null") }),
-      ],
-    ];
-    for (const [message, call] of calls) await expect(call(), message).rejects.toThrow(new DataError(message));
   });
 });
 
@@ -874,7 +805,7 @@ describe("ltiLaunch", () => {
         `${base64url("not json")}.${payload}.${signature}`,
         `${header}.${base64url("[1]")}.${signature}`,
         `${header}.${base64url("null")}.${signature}`,
-        `${base64url(Buffer.from([0xff, 0xfe]).buffer)}.${payload}.${signature}`,
+        `${base64url(new Uint8Array([0xff, 0xfe]).buffer)}.${payload}.${signature}`,
       ];
       for (const token of tokens) {
         const post = formPost({ id_token: token, state: auth.state }, { cookie });
@@ -1158,6 +1089,7 @@ describe("ltiLaunch", () => {
       expect("status" in page).toBe(true);
       const view = readPage(page as HttpResponse);
       expect(view.config).toEqual({
+        subject: "lti.get_data",
         frame: "lti-storage",
         state: auth.state,
         nonce: config.nonce,
@@ -1165,6 +1097,7 @@ describe("ltiLaunch", () => {
         stateField: "stored_state",
         nonceField: "stored_nonce",
         timeoutMs: 10_000,
+        capabilitiesTimeoutMs: 100,
       });
       expect(Object.fromEntries(view.inputs)).toEqual({
         id_token: auth.idToken,
@@ -1336,6 +1269,8 @@ describe("ltiLogin", () => {
       nonce,
       issuer: ISSUER,
       clientId: CLIENT_ID,
+      deploymentId: DEPLOYMENT_ID,
+      targetLinkUri: TARGET_LINK_URI,
       storageTarget: undefined,
       expiresAt: NOW + 600_000,
     });
@@ -1393,18 +1328,22 @@ describe("ltiLogin", () => {
     const view = readPage(response);
     const request = new URL(view.config.authenticationRequest ?? "");
     expect(view.config).toEqual({
+      subject: "lti.put_data",
       frame: "_parent",
       state: request.searchParams.get("state"),
       nonce: request.searchParams.get("nonce"),
       origin: ISSUER,
       authenticationRequest: request.href,
       timeoutMs: 10_000,
+      capabilitiesTimeoutMs: 100,
     });
     expect(`${request.origin}${request.pathname}`).toBe(AUTHENTICATION_URL);
     expect(ctx.store.records.get(view.config.state ?? "")).toEqual({
       nonce: view.config.nonce,
       issuer: ISSUER,
       clientId: CLIENT_ID,
+      deploymentId: DEPLOYMENT_ID,
+      targetLinkUri: TARGET_LINK_URI,
       storageTarget: "_parent",
       expiresAt: NOW + 600_000,
     });
@@ -1524,8 +1463,7 @@ describe("ltiLogin", () => {
   it("throws DataError when the registration is not one", async () => {
     const ctx = setup();
     const { registration } = ctx;
-    const key =
-      "The registration is invalid at signingKey: expected a private RSASSA-PKCS1-v1_5 key with SHA-256 of at least 2048 bits for signing";
+    const { signer } = registration;
     const bad: readonly [string, PlatformRegistration][] = [
       ["The registration is invalid: expected an object, found null.", JSON.parse("null")],
       [
@@ -1561,12 +1499,41 @@ describe("ltiLogin", () => {
         { ...registration, redirectUri: "http://tool.example/l" },
       ],
       [
-        "The registration is invalid at keyId: expected a string, found null.",
-        { ...registration, keyId: JSON.parse("null") },
+        'The registration is invalid at algorithms[0]: expected "RS256", "RS384", "RS512", "ES256", "ES384" or "ES512", found "HS256".',
+        { ...registration, algorithms: JSON.parse('["HS256"]') },
       ],
-      [`${key}, found CryptoKey.`, { ...registration, signingKey: toolKey.publicKey }],
-      [`${key}, found CryptoKey.`, { ...registration, signingKey: (await generateKeyPair("weak", 1024)).privateKey }],
-      [`${key}, found "key".`, { ...registration, signingKey: JSON.parse('"key"') }],
+      [
+        "The registration is invalid at algorithms: expected a length of at least 1, found 0.",
+        { ...registration, algorithms: [] },
+      ],
+      [
+        "The registration is invalid at trustedAudiences[0]: expected a length of at least 1, found 0.",
+        { ...registration, trustedAudiences: [""] },
+      ],
+      [
+        'The registration is invalid at serviceOrigins[0]: expected an https origin such as "https://lms.example.edu", found "https://lms.example.edu/api".',
+        { ...registration, serviceOrigins: ["https://lms.example.edu/api"] },
+      ],
+      [
+        'The registration is invalid at serviceOrigins[0]: expected an absolute https URL, found "http://lms.example.edu".',
+        { ...registration, serviceOrigins: ["http://lms.example.edu"] },
+      ],
+      [
+        "The signer of the registration must be an object, found null.",
+        { ...registration, signer: JSON.parse("null") },
+      ],
+      [
+        'The algorithm of the signer of the registration must be one of RS256, RS384, RS512, ES256, ES384, ES512 (Security Framework section 7.2), found "PS256".',
+        { ...registration, signer: { ...signer, algorithm: "PS256" } },
+      ],
+      [
+        "The signer of the registration must have a function sign.",
+        { ...registration, signer: JSON.parse('{"algorithm":"RS256","keyId":"tool-1"}') },
+      ],
+      [
+        "The keyId of the signer of the registration must be a non-empty string, found undefined.",
+        { ...registration, signer: { algorithm: "RS256", sign: signer.sign } },
+      ],
     ];
     for (const [message, found] of bad) {
       const options = { ...ctx.options, registration: async () => found };

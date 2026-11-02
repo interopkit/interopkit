@@ -167,6 +167,8 @@ describe("tokens signed by PyJWT", () => {
       nonce: fixture.nonce,
       issuer: fixture.issuer,
       clientId: fixture.clientId,
+      deploymentId: fixture.deploymentId,
+      targetLinkUri: "https://tool.example.com/lti/launch",
       expiresAt: NOW_MS + 600_000,
     });
     const registration = registrationOf(toolKey, {

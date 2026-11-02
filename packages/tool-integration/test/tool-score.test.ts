@@ -3,7 +3,7 @@
 import { DataError, type Fetch, ServiceError } from "@interopkit/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GradesClaim, LtiMessage, ResourceLinkMessage } from "../src/index.js";
-import { type AccessTokenOptions, type AgsScoreInput, ltiLaunch, publishAgsScore } from "../src/tool/index.js";
+import { type AgsScoreInput, ltiLaunch, type PublishAgsScoreOptions, publishAgsScore } from "../src/tool/index.js";
 import { readScoreMaximum } from "../src/tool/internal.js";
 import { FakeLms, LINE_ITEM_URL, SUBJECT } from "./fake-lms.js";
 import { ACCESS_TOKEN_URL } from "./fake-platform.js";
@@ -34,7 +34,7 @@ async function launched(issue: Parameters<typeof cookieLogin>[1] = { claims: { s
   readonly ctx: Setup;
   readonly lms: FakeLms;
   readonly launch: ResourceLinkMessage;
-  readonly options: AccessTokenOptions;
+  readonly options: PublishAgsScoreOptions;
 }> {
   const ctx = setup();
   const lms = new FakeLms(ctx.platform);
@@ -91,6 +91,51 @@ describe("publishAgsScore", () => {
     };
     await expect(publishAgsScore(final, plain, options)).rejects.toThrow(DataError);
     expect(lms.calls).toStrictEqual([]);
+  });
+
+  it("sends the token to no line item on an IP address, a single label or a private name, before any request", async () => {
+    const { ctx, lms, launch, options } = await launched();
+    const before = [...ctx.platform.requests];
+    for (const lineitem of [
+      "https://169.254.169.254/latest/meta-data/",
+      "https://0x7f.1/li/1",
+      "https://localhost/li/1",
+      "https://grades.internal/li/1",
+    ]) {
+      const moved = { ...launch, services: { grades: { scopes: launch.services.grades?.scopes ?? [], lineitem } } };
+      await expect(publishAgsScore(final, moved, options), lineitem).rejects.toMatchObject({
+        name: "LtiError",
+        reason: "service-origin-refused",
+        status: 400,
+      });
+    }
+    expect(lms.calls).toStrictEqual([]);
+    expect(ctx.platform.requests).toStrictEqual(before);
+  });
+
+  it("sends the token only to the service origins of the registration when it has them, whatever their host", async () => {
+    const { ctx, lms, launch, options } = await launched();
+    const lookup = (registration: typeof ctx.registration) => ({
+      ...options,
+      registration: async () => registration,
+    });
+    const listed = lookup({ ...ctx.registration, serviceOrigins: [new URL(LINE_ITEM_URL).origin] });
+    await publishAgsScore(final, launch, listed);
+    expect(lms.calls).toStrictEqual([`POST ${LINE_ITEM_URL}/scores`]);
+    const elsewhere = lookup({ ...ctx.registration, serviceOrigins: ["https://grades.lms.example.edu"] });
+    await expect(publishAgsScore({ ...final, timestamp: LATER }, launch, elsewhere)).rejects.toMatchObject({
+      reason: "service-origin-refused",
+      message: `The line item of the launch must be on one of the service origins of the registration, https://grades.lms.example.edu, found "${LINE_ITEM_URL}".`,
+    });
+    const privateHost = "https://10.0.0.8:8443";
+    const inside = lookup({ ...ctx.registration, serviceOrigins: [privateHost] });
+    const moved = {
+      ...launch,
+      services: { grades: { scopes: launch.services.grades?.scopes ?? [], lineitem: `${privateHost}/li/1` } },
+    };
+    await expect(publishAgsScore({ ...final, timestamp: LATER }, moved, inside)).rejects.not.toMatchObject({
+      reason: "service-origin-refused",
+    });
   });
 
   it("posts a score that waits for a person without points, as the specification shows it", async () => {

@@ -4,6 +4,9 @@ import { escapeHtml, renderPage } from "../protocol/internal.js";
 // How long a page waits for the platform to answer a storage message before it tells the user. A storage message is a
 // local call between two frames of one browser, so a few seconds mean that the platform does not answer.
 const STORAGE_TIMEOUT_MS = 10_000;
+// LTI Client Side postMessages 0.1 section 4.1.1: a platform that supports the capabilities request answers it at once, and a
+// tool waits "a few milliseconds" before it takes the request as unsupported. A loaded browser takes longer than a few.
+const CAPABILITIES_TIMEOUT_MS = 100;
 
 /** The form parameter in which the verification page returns the `state` that it fetched from the platform's storage. */
 export const STORED_STATE = "stored_state";
@@ -13,6 +16,54 @@ export const STORED_NONCE = "stored_nonce";
 // The pages are small and static, so that the CSP names the hash of each script; the values go in a data attribute, which
 // the script parses. The messages follow LTI Client Side OIDC 0.1 sections 3.1 to 3.4: `lti.put_data` and `lti.get_data`, a
 // response `<subject>.response` with the same `message_id`, from the origin of the platform's authentication endpoint.
+//
+// Before them a page asks the window that framed or opened it for its capabilities (Client Side postMessages 0.1 section
+// 4.1), with the wildcard origin that section 4.1.2 asks for, since the request holds nothing but its id. A frame that the
+// answer names for the subject receives the storage messages; without an answer, or without a frame for the subject, the
+// `lti_storage_target` of the login does. Whichever frame it is, a storage message goes only to the platform's origin.
+const FIND_TARGET = `function findTarget(config, done) {
+    var base = null;
+    try {
+      base = window.parent !== window ? window.parent : window.opener;
+    } catch (error) {
+      base = null;
+    }
+    if (!base) {
+      done(null);
+      return;
+    }
+    var id = window.crypto.randomUUID();
+    var finished = false;
+    var wait;
+    function finish(name) {
+      if (finished) return;
+      finished = true;
+      window.removeEventListener("message", listen);
+      window.clearTimeout(wait);
+      var target = null;
+      try {
+        target = name === "_parent" ? base : base.frames[name];
+      } catch (error) {
+        target = null;
+      }
+      done(target || null);
+    }
+    function listen(event) {
+      var data = event.data;
+      if (event.source !== base || typeof data !== "object" || data === null) return;
+      if (data.subject !== "lti.capabilities.response" || data.message_id !== id) return;
+      var named = (Array.isArray(data.supported_messages) ? data.supported_messages : []).filter(function (each) {
+        return each !== null && typeof each === "object" && each.subject === config.subject && typeof each.frame === "string" && each.frame !== "";
+      });
+      finish(named.length > 0 ? named[0].frame : config.frame);
+    }
+    window.addEventListener("message", listen);
+    wait = window.setTimeout(function () {
+      finish(config.frame);
+    }, config.capabilitiesTimeoutMs);
+    base.postMessage({ subject: "lti.capabilities", message_id: id }, "*");
+  }`;
+
 const PUT_SCRIPT = `(function () {
   "use strict";
   var config = JSON.parse(document.getElementById("lti").dataset.config);
@@ -23,35 +74,31 @@ const PUT_SCRIPT = `(function () {
     window.clearTimeout(timer);
     failure.hidden = false;
   }
-  var target;
-  try {
-    var base = window.parent !== window ? window.parent : window.opener;
-    target = config.frame === "_parent" ? base : base.frames[config.frame];
-  } catch (error) {
-    target = null;
-  }
-  if (!target) {
-    fail();
-    return;
-  }
-  window.addEventListener("message", function (event) {
-    var data = event.data;
-    if (event.origin !== config.origin || typeof data !== "object" || data === null) return;
-    if (data.subject !== "lti.put_data.response" || !pending.has(data.message_id)) return;
-    if (data.error) {
+  ${FIND_TARGET}
+  findTarget(config, function (target) {
+    if (!target) {
       fail();
       return;
     }
-    pending.delete(data.message_id);
-    if (pending.size === 0) {
-      window.clearTimeout(timer);
-      window.location.replace(config.authenticationRequest);
-    }
-  });
-  [["state_" + config.state, config.state], ["nonce_" + config.nonce, config.nonce]].forEach(function (entry) {
-    var id = window.crypto.randomUUID();
-    pending.add(id);
-    target.postMessage({ subject: "lti.put_data", message_id: id, key: entry[0], value: entry[1] }, config.origin);
+    window.addEventListener("message", function (event) {
+      var data = event.data;
+      if (event.origin !== config.origin || typeof data !== "object" || data === null) return;
+      if (data.subject !== "lti.put_data.response" || !pending.has(data.message_id)) return;
+      if (data.error) {
+        fail();
+        return;
+      }
+      pending.delete(data.message_id);
+      if (pending.size === 0) {
+        window.clearTimeout(timer);
+        window.location.replace(config.authenticationRequest);
+      }
+    });
+    [["state_" + config.state, config.state], ["nonce_" + config.nonce, config.nonce]].forEach(function (entry) {
+      var id = window.crypto.randomUUID();
+      pending.add(id);
+      target.postMessage({ subject: "lti.put_data", message_id: id, key: entry[0], value: entry[1] }, config.origin);
+    });
   });
 })();`;
 
@@ -66,36 +113,32 @@ const GET_SCRIPT = `(function () {
     window.clearTimeout(timer);
     failure.hidden = false;
   }
-  var target;
-  try {
-    var base = window.parent !== window ? window.parent : window.opener;
-    target = config.frame === "_parent" ? base : base.frames[config.frame];
-  } catch (error) {
-    target = null;
-  }
-  if (!target) {
-    fail();
-    return;
-  }
-  window.addEventListener("message", function (event) {
-    var data = event.data;
-    if (event.origin !== config.origin || typeof data !== "object" || data === null) return;
-    if (data.subject !== "lti.get_data.response" || !pending.has(data.message_id)) return;
-    if (data.error || typeof data.value !== "string") {
+  ${FIND_TARGET}
+  findTarget(config, function (target) {
+    if (!target) {
       fail();
       return;
     }
-    form.elements.namedItem(pending.get(data.message_id)).value = data.value;
-    pending.delete(data.message_id);
-    if (pending.size === 0) {
-      window.clearTimeout(timer);
-      form.requestSubmit();
-    }
-  });
-  [["state_" + config.state, config.stateField], ["nonce_" + config.nonce, config.nonceField]].forEach(function (entry) {
-    var id = window.crypto.randomUUID();
-    pending.set(id, entry[1]);
-    target.postMessage({ subject: "lti.get_data", message_id: id, key: entry[0] }, config.origin);
+    window.addEventListener("message", function (event) {
+      var data = event.data;
+      if (event.origin !== config.origin || typeof data !== "object" || data === null) return;
+      if (data.subject !== "lti.get_data.response" || !pending.has(data.message_id)) return;
+      if (data.error || typeof data.value !== "string") {
+        fail();
+        return;
+      }
+      form.elements.namedItem(pending.get(data.message_id)).value = data.value;
+      pending.delete(data.message_id);
+      if (pending.size === 0) {
+        window.clearTimeout(timer);
+        form.requestSubmit();
+      }
+    });
+    [["state_" + config.state, config.stateField], ["nonce_" + config.nonce, config.nonceField]].forEach(function (entry) {
+      var id = window.crypto.randomUUID();
+      pending.set(id, entry[1]);
+      target.postMessage({ subject: "lti.get_data", message_id: id, key: entry[0] }, config.origin);
+    });
   });
 })();`;
 
@@ -104,7 +147,8 @@ const FAILURE =
 
 /** Builds a page with one script, for the browser to run in the frame of the platform. */
 function respond(script: string, config: object, body: string): Promise<HttpResponse> {
-  const page = `<div id="lti" data-config="${escapeHtml(JSON.stringify({ ...config, timeoutMs: STORAGE_TIMEOUT_MS }))}"></div>
+  const timeouts = { timeoutMs: STORAGE_TIMEOUT_MS, capabilitiesTimeoutMs: CAPABILITIES_TIMEOUT_MS };
+  const page = `<div id="lti" data-config="${escapeHtml(JSON.stringify({ ...config, ...timeouts }))}"></div>
 ${body}<p id="failure" role="alert" hidden>${FAILURE}</p>
 `;
   return renderPage({ body: page, script, formAction: "'self'" });
@@ -112,7 +156,10 @@ ${body}<p id="failure" role="alert" hidden>${FAILURE}</p>
 
 /** The values of a login that the page stores in the platform. */
 export interface StoragePut {
-  /** The `lti_storage_target` of the initiation: the name of the platform's frame, or `_parent`. */
+  /**
+   * The `lti_storage_target` of the initiation: the name of the platform's frame, or `_parent`. A frame that the platform
+   * names in its answer to `lti.capabilities` takes its place.
+   */
   readonly frame: string;
   /** The `state` of the authentication request. */
   readonly state: string;
@@ -123,13 +170,14 @@ export interface StoragePut {
 }
 
 /**
- * Builds the page that stores `state` and `nonce` in the platform with `lti.put_data` and then redirects the browser
- * to the authentication request (LTI Client Side OIDC 0.1 sections 2.3 and 2.5).
+ * Builds the page that asks the platform for its capabilities, stores `state` and `nonce` in the platform with
+ * `lti.put_data` and then redirects the browser to the authentication request (LTI Client Side OIDC 0.1 sections 2.3 and
+ * 2.5, Client Side postMessages 0.1 section 4.1).
  */
 export function putDataPage(put: StoragePut): Promise<HttpResponse> {
   const { frame, state, nonce, authenticationRequest } = put;
   const origin = new URL(authenticationRequest).origin;
-  return respond(PUT_SCRIPT, { frame, state, nonce, origin, authenticationRequest }, "");
+  return respond(PUT_SCRIPT, { subject: "lti.put_data", frame, state, nonce, origin, authenticationRequest }, "");
 }
 
 /** What the verification page needs to fetch the values and return them with the token. */
@@ -149,8 +197,9 @@ export interface StorageGet {
 }
 
 /**
- * Builds the verification page: it fetches `state` and `nonce` from the platform's storage with `lti.get_data` and
- * submits them with the token to the launch URL (LTI Client Side OIDC 0.1 section 2.7).
+ * Builds the verification page: it asks the platform for its capabilities, fetches `state` and `nonce` from the platform's
+ * storage with `lti.get_data` and submits them with the token to the launch URL (LTI Client Side OIDC 0.1 section 2.7,
+ * Client Side postMessages 0.1 section 4.1).
  */
 export function getDataPage(get: StorageGet): Promise<HttpResponse> {
   const { frame, state, nonce, authenticationUrl, redirectUri, idToken } = get;
@@ -160,6 +209,7 @@ export function getDataPage(get: StorageGet): Promise<HttpResponse> {
 ${field("id_token", idToken)}${field("state", state)}${field(STORED_STATE, "")}${field(STORED_NONCE, "")}</form>
 `;
   const config = {
+    subject: "lti.get_data",
     frame,
     state,
     nonce,
