@@ -7,6 +7,17 @@ export const BENCH_OPTIONS = { time: 500, iterations: 10, warmupTime: 100, warmu
 export const STATEMENTS = 1000;
 
 /**
+ * The most that the fastest sample of a benchmark may take, in milliseconds: five times the fastest sample of the runner of CI,
+ * rounded up to one significant digit, as docs/learning-records/evidence.md explains.
+ */
+export const BUDGETS = {
+  /** `validateStatement` of each of the Statements of the batch. */
+  validateStatement: 200,
+  /** `readStatementJson` of the text of the batch. */
+  readStatementJson: 700,
+} as const;
+
+/**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of a reference in the same run.
  * Both samples come from one run, so a ratio holds on any machine. A ratio is five times the measured one, rounded up to one
  * significant digit, as docs/learning-records/evidence.md explains, except the ratio to Learning Locker, which is parity.
@@ -17,6 +28,21 @@ export const RATIOS = {
   /** `readStatementJson` of the text of the batch, as a multiple of `JSON.parse` of it. */
   readJsonAgainstParse: 200,
 } as const;
+
+/**
+ * Reports the median and the fastest sample of a benchmark with its budget, and fails the test when the fastest sample is above
+ * the budget. The fastest sample is the least affected by the other work of a shared machine.
+ */
+export async function expectWithin(
+  annotate: TestContext["annotate"],
+  name: string,
+  result: { readonly latency: { readonly min: number; readonly p50: number } },
+  budget: number,
+): Promise<void> {
+  const { min, p50 } = result.latency;
+  await annotate(`${name}: fastest ${min.toFixed(2)} ms, median ${p50.toFixed(2)} ms, budget ${budget} ms`);
+  expect(min, `The fastest sample of "${name}" in milliseconds`).toBeLessThan(budget);
+}
 
 /**
  * Reports the fastest sample of two functions and their ratio, and fails the test when the ratio is above the budget. The

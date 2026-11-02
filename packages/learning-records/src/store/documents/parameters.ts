@@ -1,10 +1,10 @@
 import { DataError } from "@interopkit/core";
 import { dateTimeSchema, parseWith } from "@interopkit/core/checks";
 import { type HttpRequest, readQuery } from "@interopkit/core/http";
-import type { Agent, DocumentScope, DocumentTarget, StateScope } from "../../model/index.js";
+import type { Agent, DocumentScope, DocumentTarget, StateScope, XapiVersion } from "../../model/index.js";
 import { scopeSchema, stateScopeSchema, targetSchema } from "../../read/internal.js";
 import type { LrsSettingsLimits } from "../options.js";
-import { checkNames, readAgent } from "../parameters.js";
+import { checkNames, readAgent, readIsoParameter } from "../parameters.js";
 import { attempt, type Verdict } from "../verdict.js";
 
 /** The three resources that hold documents. */
@@ -92,12 +92,20 @@ function readOne(
   return { kind: "one", target: normalized(target) };
 }
 
+/** Reads the parameter `since` of a route as a time in UTC. */
+function readSince(text: string | undefined, version: XapiVersion): string | undefined {
+  if (text === undefined) return undefined;
+  if (version === "1.0.3") return readIsoParameter("since", text);
+  return new Date(parseWith(dateTimeSchema, text, "The parameter since")).toISOString();
+}
+
 /** Reads the parameters of a request that names no document: the ids of a context, or the removal of all its States. */
 function readContext(
   method: string,
   resource: DocumentResource,
   parameters: ReadonlyMap<string, string>,
   limits: LrsSettingsLimits,
+  version: XapiVersion,
 ): DocumentsRequest {
   if (method === "PUT" || method === "POST" || (method === "DELETE" && resource !== "state")) {
     throw new DataError(`A ${method} needs the parameter ${ID[resource]}, the id of the document.`);
@@ -107,10 +115,7 @@ function readContext(
     return { kind: "all", scope: normalized(scope) };
   }
   const scope = parseWith(scopeSchema, placeOf(resource, parameters, false, limits), "The parameters");
-  const text = parameters.get("since");
-  const since =
-    text === undefined ? undefined : new Date(parseWith(dateTimeSchema, text, "The parameter since")).toISOString();
-  return { kind: "many", scope: normalized(scope), since };
+  return { kind: "many", scope: normalized(scope), since: readSince(parameters.get("since"), version) };
 }
 
 /**
@@ -121,6 +126,7 @@ export function readDocumentsRequest(
   request: HttpRequest,
   resource: DocumentResource,
   limits: LrsSettingsLimits,
+  version: XapiVersion,
 ): Verdict<DocumentsRequest> {
   return attempt(() => {
     const parameters = readQuery(request);
@@ -130,6 +136,6 @@ export function readDocumentsRequest(
     checkNames(parameters, new Set([...CONTEXT[resource], id, ...since]));
     return parameters.has(id)
       ? readOne(resource, parameters, limits)
-      : readContext(method, resource, parameters, limits);
+      : readContext(method, resource, parameters, limits, version);
   });
 }

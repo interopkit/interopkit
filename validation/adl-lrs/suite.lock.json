@@ -1,8 +1,18 @@
-{
-  "repository": "adlnet/lrs-conformance-test-suite",
-  "branch": "LRS-2.0",
-  "commit": "d17a26a0139523db65909fe5e9fdd6701c786013",
-  "sha256": "33ea22333f1157e21946ea4399ac66177040e277be7182eb40540d1bf0f3f510",
-  "xapiVersion": "2.0.0",
-  "tests": 1442
-}
+[
+  {
+    "repository": "adlnet/lrs-conformance-test-suite",
+    "branch": "LRS-2.0",
+    "commit": "d17a26a0139523db65909fe5e9fdd6701c786013",
+    "sha256": "33ea22333f1157e21946ea4399ac66177040e277be7182eb40540d1bf0f3f510",
+    "xapiVersion": "2.0.0",
+    "tests": 1442
+  },
+  {
+    "repository": "adlnet/lrs-conformance-test-suite",
+    "branch": "master",
+    "commit": "5bc232d349c60faded8240da698f195106091638",
+    "sha256": "bd5875ad6d3b8ab65dd18650efbf56771392f2e2f9f571a0d9dac4770f3fcde0",
+    "xapiVersion": "1.0.3",
+    "tests": 1365
+  }
+]

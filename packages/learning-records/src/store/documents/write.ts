@@ -6,7 +6,7 @@ import { attempt, type Context, isRefusal, refused, type Verdict } from "../verd
 import { etagOf } from "./etag.js";
 import { merge, readObject } from "./merge.js";
 import { fetchDocument, storeDocument } from "./port.js";
-import { judge, type Preconditions, readPreconditions } from "./preconditions.js";
+import { type BarePut, judge, type Preconditions, readPreconditions } from "./preconditions.js";
 
 const JSON_TYPE = "application/json";
 
@@ -69,6 +69,15 @@ function merged(context: Context, contentType: string, current: LrsDocument | un
 }
 
 /**
+ * Says what the route does with a PUT without a precondition: xAPI 1.0.3 lets State go without concurrency headers, since
+ * conflicts of State are unlikely, and asks one of a PUT of a profile (1.0.3 Communication 3.1).
+ */
+function barePutOf(context: Context, target: DocumentTarget): BarePut {
+  if (context.version === "2.0.0") return "create";
+  return target.resource === "state" ? "replace" : "refuse";
+}
+
+/**
  * Changes a document under the preconditions of the request, and answers 204. The document the store holds is read, judged
  * against `If-Match` or `If-None-Match` (412 or 409), made into the new one, and written only if it is still the one that was
  * read. A write that loses a race to another writer is made again on the document that won, as the preconditions allow, and
@@ -82,10 +91,11 @@ async function change(
   make: (current: LrsDocument | undefined) => Verdict<LrsDocumentInput>,
 ): Promise<HttpResponse> {
   const { limits, clock } = context.settings;
+  const barePut = barePutOf(context, target);
   for (let attempts = 0; attempts < limits.mergeRetries; attempts += 1) {
     const current = await fetchDocument(context, target);
     if (isRefusal(current)) return context.refuse(current.status, current.message);
-    const condition = judge(preconditions, current.value, method);
+    const condition = judge(preconditions, current.value, method, barePut);
     if (isRefusal(condition)) return context.refuse(condition.status, condition.message);
     const made = make(current.value);
     if (isRefusal(made)) return context.refuse(made.status, made.message);
@@ -93,6 +103,11 @@ async function change(
     const outcome = await storeDocument(context, target, document, condition.value);
     if (isRefusal(outcome)) return context.refuse(outcome.status, outcome.message);
     if (outcome.value === "written") return { status: 204, headers: { etag: document.etag }, body: "" };
+    if ("unconditional" in condition.value) {
+      throw new DataError(
+        `The answer of DocumentStore.write must be "written" for an unconditional write, found "${outcome.value}".`,
+      );
+    }
   }
   return context.refuse(
     409,

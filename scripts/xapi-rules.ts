@@ -47,21 +47,21 @@ function change(path: string, edit: (parent: Json, key: string) => void): (state
 }
 
 /** Sets the value at a path, making the objects on the way when there are none. */
-function set(path: string, value: unknown): (statement: Json) => Json {
+export function set(path: string, value: unknown): (statement: Json) => Json {
   return change(path, (parent, key) => {
     parent[key] = value;
   });
 }
 
 /** Removes the property at a path. */
-function remove(path: string): (statement: Json) => Json {
+export function remove(path: string): (statement: Json) => Json {
   return change(path, (parent, key) => {
     delete parent[key];
   });
 }
 
 /** Applies several changes in order. */
-function all(...steps: readonly ((statement: Json) => Json)[]): (statement: Json) => Json {
+export function all(...steps: readonly ((statement: Json) => Json)[]): (statement: Json) => Json {
   return (statement) => steps.reduce((current, step) => step(current), statement);
 }
 
@@ -69,15 +69,17 @@ function all(...steps: readonly ((statement: Json) => Json)[]): (statement: Json
  * Sets the Object of a Statement. An Object that is not an Activity leaves out the `revision` and `platform` of the context,
  * which describe an Activity, so that a fixture about the Object has no other fault.
  */
-function withObject(value: unknown): (statement: Json) => Json {
+export function withObject(value: unknown): (statement: Json) => Json {
   return all(set("object", value), remove("context.revision"), remove("context.platform"));
 }
 
-const error = (path: string, rule: string): ExpectedFinding => ({ path, rule, severity: "error" });
-const warning = (path: string, rule: string): ExpectedFinding => ({ path, rule, severity: "warning" });
+/** An error that a reader finds. */
+export const error = (path: string, rule: string): ExpectedFinding => ({ path, rule, severity: "error" });
+/** A warning that a reader finds. */
+export const warning = (path: string, rule: string): ExpectedFinding => ({ path, rule, severity: "warning" });
 
 /** A rule with the same findings for both roles. */
-function both(
+export function both(
   source: string,
   text: string,
   fixture: (statement: Json) => Json,
@@ -87,7 +89,7 @@ function both(
 }
 
 /** A rule that only a Learning Record Provider is held to, or that the roles judge differently. */
-function roles(
+export function roles(
   source: string,
   text: string,
   fixture: (statement: Json) => Json,
@@ -97,7 +99,8 @@ function roles(
   return { source, text, fixture, lrs, provider };
 }
 
-const VOIDED = "http://adlnet.gov/expapi/verbs/voided";
+/** The IRI of the Verb that voids a Statement. */
+export const VOIDED = "http://adlnet.gov/expapi/verbs/voided";
 
 /** The rules that a Statement breaks and a reader reports. */
 export const REFUSALS: readonly XapiRule[] = [
@@ -512,8 +515,8 @@ export const REFUSALS: readonly XapiRule[] = [
   ]),
 ];
 
-/** The pattern of a response of a `choice` interaction, in a definition that is otherwise sound. */
-function pattern(
+/** The pattern of a response of an interaction, in a definition that is otherwise sound. */
+export function pattern(
   interactionType: string,
   correctResponsesPattern: readonly string[],
   extra: Json = {},
@@ -523,9 +526,72 @@ function pattern(
 
 const PATTERN = "object.definition.correctResponsesPattern[0]";
 
-/** What a response pattern that breaks its form gives: a warning in both roles. */
-function badPattern(text: string, fixture: (statement: Json) => Json): XapiRule {
-  return both("LRS 4.2.2.3", text, fixture, [warning(PATTERN, "response-pattern")]);
+/**
+ * The forms of the response patterns of each type of interaction, which a reader of either role finds as a warning, since an LRS
+ * does not validate patterns: the table of response patterns, which xAPI 2.0 (LRS 4.2.2.3) keeps from 1.0.3 (Data 2.4.4.1).
+ *
+ * @param source - The section of the standard that the entries cite.
+ */
+export function responsePatternRules(source: string): readonly XapiRule[] {
+  const badPattern = (text: string, fixture: (statement: Json) => Json): XapiRule =>
+    both(source, text, fixture, [warning(PATTERN, "response-pattern")]);
+  return [
+    badPattern("true-false: either true or false.", pattern("true-false", ["yes"])),
+    badPattern(
+      "choice: a list of item ids; no empty item.",
+      pattern("choice", ["golf[,][,]tetris"], { choices: [{ id: "golf" }, { id: "tetris" }] }),
+    ),
+    badPattern(
+      "sequencing: an ordered list of item ids; no empty item.",
+      pattern("sequencing", ["[,]tim"], { choices: [{ id: "tim" }] }),
+    ),
+    badPattern(
+      "likert: a single item id, so the delimiter is not used.",
+      pattern("likert", ["a[,]b"], { scale: [{ id: "a" }, { id: "b" }] }),
+    ),
+    badPattern("likert: a single item id.", pattern("likert", [""], { scale: [{ id: "a" }] })),
+    badPattern(
+      "matching: each pair is a source and a target joined by [.].",
+      pattern("matching", ["ben[.]3[,]chris"], { source: [{ id: "ben" }, { id: "chris" }], target: [{ id: "3" }] }),
+    ),
+    badPattern(
+      "matching: a pair has two items only.",
+      pattern("matching", ["ben[.]3[.]4"], { source: [{ id: "ben" }], target: [{ id: "3" }] }),
+    ),
+    badPattern(
+      "matching: the source of a pair is not empty.",
+      pattern("matching", ["[.]3"], { target: [{ id: "3" }] }),
+    ),
+    badPattern(
+      "performance: a step id and a response, joined by [.].",
+      pattern("performance", ["pong"], { steps: [{ id: "pong" }] }),
+    ),
+    badPattern(
+      "performance: the id of a step is not empty.",
+      pattern("performance", ["[.]1"], { steps: [{ id: "pong" }] }),
+    ),
+    badPattern("numeric: a number or a range of numbers.", pattern("numeric", ["five"])),
+    badPattern("numeric: a range has one delimiter.", pattern("numeric", ["1[:]2[:]3"])),
+    badPattern("fill-in: case_matters is true or false.", pattern("fill-in", ["{case_matters=maybe}Bob"])),
+    badPattern("fill-in: only the parameters of the table.", pattern("fill-in", ["{color=red}Bob"])),
+    badPattern("fill-in: lang is a language tag.", pattern("fill-in", ["{lang=en_US}Bob"])),
+    badPattern(
+      "fill-in: case_matters belongs at the start of the list.",
+      pattern("fill-in", ["Bob[,]{case_matters=true}Ann"]),
+    ),
+    badPattern(
+      "choice: no parameter applies, so the pattern is the ids.",
+      pattern("choice", ["golf[,][,]"], { choices: [{ id: "golf" }] }),
+    ),
+    badPattern(
+      "long-fill-in: order_matters is true or false.",
+      pattern("long-fill-in", ["{order_matters=1}A long answer."]),
+    ),
+    badPattern(
+      "performance: case_matters does not apply.",
+      pattern("performance", ["{case_matters=true}pong[.]1"], { steps: [{ id: "pong" }] }),
+    ),
+  ];
 }
 
 /**
@@ -705,58 +771,7 @@ export const ADVISORIES: readonly XapiRule[] = [
     set("object.definition.choices.1.id", "golf"),
     [warning("object.definition.choices[1].id", "duplicate-component-id")],
   ),
-  badPattern("true-false: either true or false.", pattern("true-false", ["yes"])),
-  badPattern(
-    "choice: a list of item ids; no empty item.",
-    pattern("choice", ["golf[,][,]tetris"], { choices: [{ id: "golf" }, { id: "tetris" }] }),
-  ),
-  badPattern(
-    "sequencing: an ordered list of item ids; no empty item.",
-    pattern("sequencing", ["[,]tim"], { choices: [{ id: "tim" }] }),
-  ),
-  badPattern(
-    "likert: a single item id, so the delimiter is not used.",
-    pattern("likert", ["a[,]b"], { scale: [{ id: "a" }, { id: "b" }] }),
-  ),
-  badPattern("likert: a single item id.", pattern("likert", [""], { scale: [{ id: "a" }] })),
-  badPattern(
-    "matching: each pair is a source and a target joined by [.].",
-    pattern("matching", ["ben[.]3[,]chris"], { source: [{ id: "ben" }, { id: "chris" }], target: [{ id: "3" }] }),
-  ),
-  badPattern(
-    "matching: a pair has two items only.",
-    pattern("matching", ["ben[.]3[.]4"], { source: [{ id: "ben" }], target: [{ id: "3" }] }),
-  ),
-  badPattern("matching: the source of a pair is not empty.", pattern("matching", ["[.]3"], { target: [{ id: "3" }] })),
-  badPattern(
-    "performance: a step id and a response, joined by [.].",
-    pattern("performance", ["pong"], { steps: [{ id: "pong" }] }),
-  ),
-  badPattern(
-    "performance: the id of a step is not empty.",
-    pattern("performance", ["[.]1"], { steps: [{ id: "pong" }] }),
-  ),
-  badPattern("numeric: a number or a range of numbers.", pattern("numeric", ["five"])),
-  badPattern("numeric: a range has one delimiter.", pattern("numeric", ["1[:]2[:]3"])),
-  badPattern("fill-in: case_matters is true or false.", pattern("fill-in", ["{case_matters=maybe}Bob"])),
-  badPattern("fill-in: only the parameters of the table.", pattern("fill-in", ["{color=red}Bob"])),
-  badPattern("fill-in: lang is a language tag.", pattern("fill-in", ["{lang=en_US}Bob"])),
-  badPattern(
-    "fill-in: case_matters belongs at the start of the list.",
-    pattern("fill-in", ["Bob[,]{case_matters=true}Ann"]),
-  ),
-  badPattern(
-    "choice: no parameter applies, so the pattern is the ids.",
-    pattern("choice", ["golf[,][,]"], { choices: [{ id: "golf" }] }),
-  ),
-  badPattern(
-    "long-fill-in: order_matters is true or false.",
-    pattern("long-fill-in", ["{order_matters=1}A long answer."]),
-  ),
-  badPattern(
-    "performance: case_matters does not apply.",
-    pattern("performance", ["{case_matters=true}pong[.]1"], { steps: [{ id: "pong" }] }),
-  ),
+  ...responsePatternRules("LRS 4.2.2.3"),
 ];
 
 /** What an LRS shall not reject, or may not reject: Statements that the reader of an LRS accepts without a finding. */

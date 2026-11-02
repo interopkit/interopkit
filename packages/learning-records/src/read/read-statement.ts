@@ -1,14 +1,14 @@
 import { DataError } from "@interopkit/core";
-import { describe, type FindingSink, isRecord, refusalOf } from "@interopkit/core/checks";
-import type { RuleRole, Statement, StatementIssue } from "../model/index.js";
+import { DEFAULT_MAX_FINDINGS, describe, type FindingSink, isRecord, refusalOf } from "@interopkit/core/checks";
+import type { Statement, StatementIssue } from "../model/index.js";
 import { error } from "./finding.js";
 import { inspectStatement, issueSink } from "./inspect.js";
-import { type ReadOptions, readSettings } from "./options.js";
+import { type ReadOptions, type RuleSet, readSettings } from "./options.js";
 import { item } from "./path.js";
 
 /**
  * Reads a Statement into the model: checks every property against the tables of the standard and the rules between them for
- * the role, and returns a copy.
+ * the role and the version, and returns a copy.
  *
  * @remarks
  * The result shares nothing with the input. A single Activity of `contextActivities` is returned as a list of one, as an LRS
@@ -17,16 +17,17 @@ import { item } from "./path.js";
  * with `readStatementJson`. The check stops after `maxFindings` errors, and the error says that there may be more.
  *
  * @param value - The Statement, such as the parsed text of a request.
- * @param options - Whose rules apply, and the most errors to count.
+ * @param options - Whose rules apply, of which version, and the most errors to count.
  * @returns The Statement.
  * @throws `DataError` that names the path of the first error and counts the others, when the value has an error, or when the
- * options are not an object with a `role` of `"lrs"` or `"provider"` and a `maxFindings` that is a positive integer.
+ * options are not an object with a `role` of `"lrs"` or `"provider"`, a `version` of `"2.0.0"` or `"1.0.3"` and a `maxFindings`
+ * that is a positive integer.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
 export function readStatement(value: unknown, options?: ReadOptions): Statement {
-  const { role, maxFindings } = readSettings(options);
+  const { rules, maxFindings } = readSettings(options);
   const sink = issueSink(maxFindings, true);
-  const statement = inspectStatement(value, role, sink);
+  const statement = inspectStatement(value, rules, sink);
   const errors = sink.list();
   if (statement === undefined || errors.length > 0) {
     throw new DataError(refusalOf("The statement", errors, "validateStatement"));
@@ -36,7 +37,7 @@ export function readStatement(value: unknown, options?: ReadOptions): Statement 
 
 /**
  * Judges a Statement: lists what is wrong with it, or departs from the standard, for the rules of an LRS or of a Learning
- * Record Provider.
+ * Record Provider, in a version.
  *
  * @remarks
  * The findings are those that `readStatement` bases its refusal on, the warnings among them. A value that is not a Statement
@@ -45,17 +46,34 @@ export function readStatement(value: unknown, options?: ReadOptions): Statement 
  * `findings-stopped` says that the check stopped there and that there may be more.
  *
  * @param value - The Statement: parsed text, or a Statement in the model.
- * @param options - Whose rules apply, and the most findings to list.
+ * @param options - Whose rules apply, of which version, and the most findings to list.
  * @returns The findings, errors and warnings. An empty list means that the Statement is sound.
- * @throws `DataError` when the options are not an object with a `role` of `"lrs"` or `"provider"` and a `maxFindings` that is
- * a positive integer.
+ * @throws `DataError` when the options are not an object with a `role` of `"lrs"` or `"provider"`, a `version` of `"2.0.0"` or
+ * `"1.0.3"` and a `maxFindings` that is a positive integer.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
 export function validateStatement(value: unknown, options?: ReadOptions): readonly StatementIssue[] {
-  const { role, maxFindings } = readSettings(options);
+  const { rules, maxFindings } = readSettings(options);
   const sink = issueSink(maxFindings, false);
-  inspectStatement(value, role, sink);
+  inspectStatement(value, rules, sink);
   return sink.list();
+}
+
+/**
+ * Reads a Statement of either version as an LRS reads it: by the rules of 2.0, or else of 1.0.3, whose Timestamps may have forms
+ * of ISO 8601 that RFC 3339 does not.
+ *
+ * @throws `DataError` of the rules of 2.0, when neither version takes the value.
+ */
+export function readEitherVersion(value: unknown): Statement {
+  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const statement = inspectStatement(value, { role: "lrs", version: "2.0.0" }, sink);
+  const errors = sink.list();
+  if (statement !== undefined && errors.length === 0) return statement;
+  const other = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const earlier = inspectStatement(value, { role: "lrs", version: "1.0.3" }, other);
+  if (earlier !== undefined && other.list().length === 0) return earlier;
+  throw new DataError(refusalOf("The statement", errors, "validateStatement"));
 }
 
 /** Writes the path of a finding about the Statement at an index of a batch. */
@@ -90,7 +108,7 @@ function duplicateIds(batch: readonly unknown[], sink: FindingSink<StatementIssu
  * Judges a batch of Statements into a sink, and returns the Statements whose shape is right, in order: when the sink holds no
  * error, one for each entry. The batch is read once, whether the caller wants every finding or the errors alone.
  */
-export function inspectBatch(value: unknown, role: RuleRole, sink: FindingSink<StatementIssue>): readonly Statement[] {
+export function inspectBatch(value: unknown, rules: RuleSet, sink: FindingSink<StatementIssue>): readonly Statement[] {
   if (!Array.isArray(value)) {
     sink.add([error("", "wrong-type", `expected an array of Statements, found ${describe(value)}.`)]);
     return [];
@@ -100,7 +118,7 @@ export function inspectBatch(value: unknown, role: RuleRole, sink: FindingSink<S
     if (sink.stopped) break;
     const read = inspectStatement(
       entry,
-      role,
+      rules,
       sink.within((issue) => ({ ...issue, path: inBatch(index, issue.path) })),
     );
     if (read !== undefined) statements.push(read);
@@ -118,15 +136,15 @@ export function inspectBatch(value: unknown, role: RuleRole, sink: FindingSink<S
  * that the check stopped there and that there may be more.
  *
  * @param value - The batch: an array of Statements, such as the parsed text of a request.
- * @param options - Whose rules apply, and the most findings to list.
+ * @param options - Whose rules apply, of which version, and the most findings to list.
  * @returns The findings, each with its path from the batch: `[0].actor`. A value that is not an array gives one finding.
- * @throws `DataError` when the options are not an object with a `role` of `"lrs"` or `"provider"` and a `maxFindings` that is
- * a positive integer.
+ * @throws `DataError` when the options are not an object with a `role` of `"lrs"` or `"provider"`, a `version` of `"2.0.0"` or
+ * `"1.0.3"` and a `maxFindings` that is a positive integer.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
 export function validateStatements(value: unknown, options?: ReadOptions): readonly StatementIssue[] {
-  const { role, maxFindings } = readSettings(options);
+  const { rules, maxFindings } = readSettings(options);
   const sink = issueSink(maxFindings, false);
-  inspectBatch(value, role, sink);
+  inspectBatch(value, rules, sink);
   return sink.list();
 }

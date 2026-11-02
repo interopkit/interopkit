@@ -110,6 +110,13 @@ export function providerStatement(): Statement {
   return statement;
 }
 
+/** The Statement as a Learning Record Provider of xAPI 1.0.3 writes it: the context has no `contextAgents` or `contextGroups`. */
+export function providerStatementV1(): Statement {
+  const { context, ...statement } = providerStatement();
+  const { contextAgents: _agents, contextGroups: _groups, ...kept } = context ?? {};
+  return { ...statement, context: kept };
+}
+
 /** The smallest Statement: an Actor, a Verb and an Object. */
 export function minimalStatement(): Statement {
   return {

@@ -1290,8 +1290,6 @@
                     "group": [
                       "**/build",
                       "**/build/**",
-                      "**/compare",
-                      "**/compare/**",
                       "**/format",
                       "**/format/**",
                       "**/signing",
@@ -1299,7 +1297,7 @@
                       "**/store",
                       "**/store/**"
                     ],
-                    "message": "client/ builds on model/, read/, attachments/ and @interopkit/core only."
+                    "message": "client/ builds on model/, read/, compare/, attachments/ and @interopkit/core only."
                   }
                 ]
               }
@@ -1354,6 +1352,7 @@
         "packages/learning-records/src/store/documents/parameters.ts",
         "packages/learning-records/test/**",
         "scripts/xapi-rules.ts",
+        "scripts/xapi-v1-rules.ts",
         "scripts/test/schema-arbitrary.test.ts",
         "scripts/test/schema-oracle.test.ts"
       ],

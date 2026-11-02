@@ -2,14 +2,14 @@
 
 [SQL LRS](https://github.com/yetanalytics/lrsql) 0.9.11 (Apache-2.0) is an LRS of Yet Analytics that passes the ADL suite for
 xAPI 2.0. `pnpm sql-lrs` starts it in a container and asks it two things: whether it takes and refuses the Statements of the
-rules as the reader of an LRS does, and whether the client, the platform and the dashboard of the example work against a
+rules of each version as the reader of an LRS does, and whether the client, the platform and the dashboard of the example work against a
 different implementation of the other side.
 
 ```mermaid
 flowchart LR
   run["pnpm sql-lrs<br/>run.ts"] -->|"docker run --cpus=2, a name for the run,<br/>127.0.0.1, a free port, random credentials"| lrs[("SQL LRS 0.9.11<br/>SQLite")]
   run -->|"vitest --project<br/>example-learning-records-sqllrs"| tests["Two test files"]
-  tests -->|"the fixtures of scripts/xapi-rules.ts"| lrs
+  tests -->|"the fixtures of scripts/xapi-rules.ts<br/>and scripts/xapi-v1-rules.ts"| lrs
   tests -->|"createLrsClient, 2.0.0 and 1.0.3"| lrs
   run -->|"docker stop, docker wait, docker rm<br/>of that container only"| lrs
 ```
@@ -17,7 +17,7 @@ flowchart LR
 | File                                                   | Holds                                                                                                           |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
 | `run.ts`                                               | Starts the container, waits until it is healthy, runs the tests, and always stops and removes its own container |
-| `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts` | The verdict of SQL LRS on the fixture of each of the 153 rules, against the verdict of the reader of an LRS     |
+| `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts` | The verdict of SQL LRS on the fixture of each of the 153 rules of 2.0 and the 179 of 1.0.3, against the verdict of the reader of an LRS     |
 | `examples/learning-records/test/sqllrs.corpus.test.ts` | The platform and the dashboard of the example, and the client of 1.0.3, against SQL LRS                         |
 
 ## Running it
@@ -64,5 +64,7 @@ The flows pin what the two do differently as a client and a server:
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A batch that the LRS holds already is sent again                     | Answers 200 with `[]`, not the ids; the client resolves with the ids of the batch                                                                                          |
 | A signed Statement that has another Attachment besides the signature | Answers 400 "Statement signature does not match statement": it compares the payload with the Statement without its Attachments, though the standard signs the complete one |
-| A Statement with `version` 2.0.0 sent to the 1.0.3 route             | Answers 400; the Statements that a 2.0 builder writes carry the version                                                                                                    |
-| A second State write with no precondition on the 1.0.3 route         | Answers 409, as it does on 2.0.0, where 1.0.3 asks that State go without headers                                                                                           |
+| A Statement with `version` 2.0.0 sent to the 1.0.3 route             | Answers 400; the client of 1.0.3 refuses it before any request, and a builder of 1.0.3 writes `1.0.0`                                                                                                    |
+| A second State write with no precondition on the 1.0.3 route         | Answers 409, as it does on 2.0.0, where 1.0.3 asks that State go without headers; the LRS of the package replaces the document |
+| A Statement of 2.0 read on the 1.0.3 route                           | Answers it as it holds it, with `contextAgents` and `version` 2.0.0; the client of 1.0.3 reads it into the form of 1.0.3        |
+| The form of 1.0.3 of a Statement of 2.0 sent again on the 1.0.3 route | Answers 409, since it compares with the whole Statement; the LRS of the package answers 204                                     |                                            |

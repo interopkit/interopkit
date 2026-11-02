@@ -3,10 +3,10 @@ import type {
   ActivityDefinition,
   InteractionComponent,
   InteractionType,
-  RuleRole,
   StatementIssue,
 } from "../model/index.js";
 import { error, warning } from "./finding.js";
+import type { RuleSet } from "./options.js";
 import { item, member } from "./path.js";
 import { patternProblem } from "./response-pattern.js";
 
@@ -30,8 +30,14 @@ const COMPONENT_LISTS: Readonly<Record<InteractionType, readonly ComponentList[]
   other: [],
 };
 
-/** Judges the ids of the components of one list: they are unique, and have no white space (4.2.4.2). */
-function componentIssues(components: readonly InteractionComponent[], path: string): StatementIssue[] {
+/**
+ * Judges the ids of the components of one list: they have no white space (4.2.4.2), and they identify the component in the
+ * list (4.2.2.3), which 1.0.3 states as a requirement that they be distinct (Data 2.4.4.1). An LRS may refuse what is not valid
+ * for an interaction and need not (1.0.3 Data 2.4.4.1), so for an LRS a repeated id is a warning in either version, and for a
+ * provider of 1.0.3 an error.
+ */
+function componentIssues(components: readonly InteractionComponent[], path: string, rules: RuleSet): StatementIssue[] {
+  const repeated = rules.version === "1.0.3" && rules.role === "provider" ? error : warning;
   const issues: StatementIssue[] = [];
   const seen = new Set<string>();
   for (const [index, component] of components.entries()) {
@@ -43,7 +49,7 @@ function componentIssues(components: readonly InteractionComponent[], path: stri
     }
     if (seen.has(component.id)) {
       issues.push(
-        warning(
+        repeated(
           at,
           "duplicate-component-id",
           `expected an id that identifies the component in its list, found ${JSON.stringify(component.id)} again.`,
@@ -60,7 +66,7 @@ function listIssues(
   definition: ActivityDefinition,
   type: InteractionType,
   path: string,
-  role: RuleRole,
+  rules: RuleSet,
 ): StatementIssue[] {
   const allowed = COMPONENT_LISTS[type];
   const issues: StatementIssue[] = [];
@@ -68,12 +74,12 @@ function listIssues(
     const list = definition[name];
     if (list === undefined) continue;
     if (allowed.includes(name)) {
-      issues.push(...componentIssues(list, member(path, name)));
+      issues.push(...componentIssues(list, member(path, name), rules));
       continue;
     }
     const lists = allowed.length === 0 ? "no list of components" : `the lists ${allowed.join(" and ")}`;
     const message = `a ${type} interaction has ${lists}, found ${name}.`;
-    const finding = role === "provider" ? error : warning;
+    const finding = rules.role === "provider" ? error : warning;
     issues.push(finding(member(path, name), "unsupported-component-list", message));
   }
   return issues;
@@ -85,7 +91,7 @@ function listIssues(
  * (4.2.4.2), so it is a warning for an LRS and an error for a provider, which shall not add properties (5.2.1). A response
  * pattern that does not have the form of its type is a warning, since an LRS does not validate patterns (4.2.2.3).
  */
-export function interactionIssues(activity: Activity, path: string, role: RuleRole): StatementIssue[] {
+export function interactionIssues(activity: Activity, path: string, rules: RuleSet): StatementIssue[] {
   const { definition } = activity;
   if (definition === undefined) return [];
   const base = member(path, "definition");
@@ -103,7 +109,7 @@ export function interactionIssues(activity: Activity, path: string, role: RuleRo
         ]
       : [];
   }
-  const issues = listIssues(definition, interactionType, base, role);
+  const issues = listIssues(definition, interactionType, base, rules);
   for (const [index, pattern] of correctResponsesPattern.entries()) {
     const problem = patternProblem(interactionType, pattern);
     if (problem !== undefined) {

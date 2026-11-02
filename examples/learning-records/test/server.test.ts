@@ -34,7 +34,7 @@ describe("the example LRS over HTTP", () => {
     const url = await start();
     const about = await fetch(`${url}/xapi/about`);
     expect(about.status).toBe(200);
-    expect(await about.json()).toStrictEqual({ version: ["2.0.0"] });
+    expect(await about.json()).toStrictEqual({ version: ["2.0.0", "1.0.3"] });
     const refused = await fetch(`${url}/xapi/statements`, { headers: { "x-experience-api-version": "2.0.0" } });
     expect(refused.status).toBe(401);
     expect(refused.headers.get("www-authenticate")).toBe('Basic realm="xAPI"');

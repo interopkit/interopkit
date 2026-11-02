@@ -58,20 +58,56 @@ describe("handleLrsRequest: the routes", () => {
 });
 
 describe("handleLrsRequest: the version header", () => {
-  it.each(["2.0.0", "2.0", "2.0.1", "2.0.12"])("serves a request that names the version %s", async (version) => {
-    const { response } = await ask("GET", "/statements", { headers: { [VERSION]: version } });
-    expect(response.status).toBe(200);
-  });
+  it.each([
+    ["2.0.0", "2.0.0"],
+    ["2.0", "2.0.0"],
+    ["2.0.1", "2.0.0"],
+    ["2.0.12", "2.0.0"],
+    ["1.0.3", "1.0.3"],
+    ["1.0", "1.0.3"],
+    ["1.0.0", "1.0.3"],
+    ["1.0.9", "1.0.3"],
+  ])(
+    "serves a request that names the version %s on the route of %s, and names that route in the answer",
+    async (version, route) => {
+      const { response } = await ask("GET", "/statements", { headers: { [VERSION]: version } });
+      expect(response.status).toBe(200);
+      expect(response.headers[VERSION]).toBe(route);
+    },
+  );
 
-  it.each(["1.0.3", "1.0", "2.1.0", "2.1", "3.0.0", "2", "2.0.0.1", "2.0.x", "", "abc"])(
+  it.each(["0.95", "0.9", "1.1.0", "1.1", "2.1.0", "2.1", "3.0.0", "2", "1", "2.0.0.1", "2.0.x", "1.0.x", "", "abc"])(
     "refuses a request that names the version %j with 400",
     async (version) => {
       const { response, store } = await ask("GET", "/statements", { headers: { [VERSION]: version } });
       expect(response.status).toBe(400);
       expect(jsonOf(response)).toStrictEqual({
-        message: `The header X-Experience-API-Version must be 2.0.0 or 2.0, found ${JSON.stringify(version)}.`,
+        message: `The header X-Experience-API-Version must be 2.0 or 2.0.x, or 1.0 or 1.0.x, found ${JSON.stringify(version)}.`,
       });
       expect(store.calls).toStrictEqual([]);
+    },
+  );
+
+  it.each([
+    [["2.0.0"], "1.0.3", "2.0 or 2.0.x", "2.0.0"],
+    [["1.0.3"], "2.0.0", "1.0 or 1.0.x", "1.0.3"],
+  ] as const)(
+    "serves only the versions of the option versions %j, and refuses a request of %s",
+    async (versions, refused, names, named) => {
+      const lrs = memory();
+      const options = optionsOf(lrs, { versions });
+      const response = await handleLrsRequest(
+        requestOf("GET", "/statements", { headers: { [VERSION]: refused } }),
+        options,
+      );
+      expect(response.status).toBe(400);
+      expect(jsonOf(response)).toStrictEqual({
+        message: `The header X-Experience-API-Version must be ${names}, found ${JSON.stringify(refused)}.`,
+      });
+      expect(response.headers[VERSION]).toBe(named);
+      const about = await handleLrsRequest(requestOf("GET", "/about", { headers: { [VERSION]: refused } }), options);
+      expect(jsonOf(about)).toStrictEqual({ version: versions });
+      expect(about.headers[VERSION]).toBe(named);
     },
   );
 
@@ -83,7 +119,7 @@ describe("handleLrsRequest: the version header", () => {
     expect(textOf(response)).toContain("found none.");
   });
 
-  it("names 2.0.0 in every answer, whatever its status", async () => {
+  it("names the version of the route in every answer, whatever its status, and the latest it serves when a request names none it serves", async () => {
     const lrs = memory();
     const options = optionsOf(lrs, { access: async () => ({ allowed: false, status: 401, reason: "no" }) });
     const answers = [
@@ -92,10 +128,21 @@ describe("handleLrsRequest: the version header", () => {
       await handleLrsRequest(requestOf("GET", "/statements"), options),
       await handleLrsRequest(requestOf("GET", "/nothing"), options),
       await handleLrsRequest(requestOf("DELETE", "/statements"), options),
-      await handleLrsRequest(requestOf("GET", "/statements", { headers: { [VERSION]: "1.0.3" } }), options),
+      await handleLrsRequest(requestOf("GET", "/statements", { headers: { [VERSION]: "2.1.0" } }), options),
+      await handleLrsRequest(requestOf("GET", "/statements", { headers: { [VERSION]: "1.0.1" } }), options),
+      await handleLrsRequest(requestOf("GET", "/nothing", { headers: { [VERSION]: "1.0" } }), options),
     ];
-    expect(answers.map(({ status }) => status)).toStrictEqual([200, 400, 401, 404, 405, 400]);
-    for (const answer of answers) expect(answer.headers[VERSION]).toBe("2.0.0");
+    expect(answers.map(({ status }) => status)).toStrictEqual([200, 400, 401, 404, 405, 400, 401, 404]);
+    expect(answers.map((answer) => answer.headers[VERSION])).toStrictEqual([
+      "2.0.0",
+      "2.0.0",
+      "2.0.0",
+      "2.0.0",
+      "2.0.0",
+      "2.0.0",
+      "1.0.3",
+      "1.0.3",
+    ]);
   });
 });
 
@@ -394,7 +441,14 @@ describe("handleLrsRequest: the options", () => {
         { ...valid, signal: {} },
         "The configuration of the LRS is invalid at signal: expected an AbortSignal, found an object.",
       ],
-      [{ ...valid, versions: ["2.0.0"] }, 'The configuration of the LRS is invalid: unexpected property "versions".'],
+      [
+        { ...valid, versions: [] },
+        'The configuration of the LRS is invalid at versions: expected a list of "2.0.0" and "1.0.3", with each once and at least one, found an array.',
+      ],
+      [{ ...valid, versions: ["2.0.0", "2.0.0"] }, "The configuration of the LRS is invalid at versions"],
+      [{ ...valid, versions: ["2.1.0"] }, "The configuration of the LRS is invalid at versions"],
+      [{ ...valid, versions: "2.0.0" }, "The configuration of the LRS is invalid at versions"],
+      [{ ...valid, version: "2.0.0" }, 'The configuration of the LRS is invalid: unexpected property "version".'],
     ];
     for (const [options, sentence] of cases) {
       await expect(run(options)).rejects.toBeInstanceOf(DataError);

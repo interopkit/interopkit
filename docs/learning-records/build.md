@@ -58,8 +58,8 @@ voiding.object; // => { objectType: "StatementRef", id }
 
 | Function                             | Does                                                                                                                                                             | Throws                                                |
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `buildStatement(input)`              | Copies the input, writes `timestamp` in UTC with milliseconds and `version` as `2.0.0`, and reads the result with the rules of a provider. Returns the Statement | `DataError` that names every error with its path      |
-| `voidingStatement(target, input)`    | Builds the Statement with the voided verb, whose Object is a Statement Reference to `target`. The target need not exist                                          | `DataError` for the target, or as `buildStatement`    |
+| `buildStatement(input, options?)`    | Copies the input, writes `timestamp` in UTC with milliseconds and the `version`, and reads the result with the rules of a provider of that version. Returns the Statement | `DataError` that names every error with its path      |
+| `voidingStatement(target, input, options?)` | Builds the Statement with the voided verb, whose Object is a Statement Reference to `target`. The target need not exist                                          | `DataError` for the target, or as `buildStatement`    |
 | `deriveStatementId(namespace, name)` | Returns the UUID of version 5 of a name in a namespace, so that a resend of an event repeats the id and an LRS keeps the first copy                              | `DataError` for a namespace or a name that is wrong   |
 | `formatDuration(milliseconds)`       | Writes a length of time as an ISO 8601 duration of hours, minutes and seconds, cut at 0.01 second: `PT1H30M32.15S`                                               | `DataError` for anything but a whole number from 0    |
 | `parseDuration(text)`                | Reads a duration of ISO 8601 4.4.3.2 into years, months, days, hours, minutes and seconds, or returns `undefined`                                                | none                                                  |
@@ -80,6 +80,10 @@ voiding.object; // => { objectType: "StatementRef", id }
 Any other property is refused: `stored`, `authority` and `version` are set by the LRS or by the builder. The `version` is
 written although a provider should not send one, so that a system of xAPI 1.0.x does not read the Statement as 1.0.0; the provider
 rules call it a warning, and a warning does not keep a Statement from being built.
+
+| Option    | Of                                   | Default   | Meaning                                                                                                     |
+| --------- | ------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `version` | `buildStatement`, `voidingStatement` | `"2.0.0"` | The provider rules that apply: `"2.0.0"`, or `"1.0.3"`, whose Statements carry `1.0.0` and have no `contextAgents` or `contextGroups` |
 
 ## Limits
 

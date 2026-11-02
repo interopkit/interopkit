@@ -172,7 +172,8 @@ describe("the options", () => {
     [{ role: "judge" }, 'The options object is invalid at role: expected "lrs" or "provider", found "judge".'],
     [{ role: null }, 'The options object is invalid at role: expected "lrs" or "provider", found null.'],
     [{ role: 5 }, 'The options object is invalid at role: expected "lrs" or "provider", found 5.'],
-    [{ version: "2.0.0" }, 'The options object is invalid: unexpected property "version".'],
+    [{ version: "2.0" }, 'The options object is invalid at version: expected "2.0.0" or "1.0.3", found "2.0".'],
+    [{ versions: "2.0.0" }, 'The options object is invalid: unexpected property "versions".'],
     [{ maxFindings: 0 }, "The options object is invalid at maxFindings: expected a value of at least 1, found 0."],
     [{ maxFindings: "5" }, 'The options object is invalid at maxFindings: expected a number, found "5".'],
   ])("refuses %j, as JavaScript or JSON passes it, in all three functions", (options, sentence) => {

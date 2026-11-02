@@ -25,8 +25,9 @@ import {
   type LanguageMap,
   type Person,
   type Statement,
+  type XapiVersion,
 } from "../model/index.js";
-import { isDuration, isMailtoIri, isMediaType, isSha1Hex, isSha2Hex } from "../model/internal.js";
+import { isDuration, isIsoTimestamp, isMailtoIri, isMediaType, isSha1Hex, isSha2Hex } from "../model/internal.js";
 
 const text = v.string();
 /** An IRI, an IRL or a URI of the tables: the Statements need a scheme (4.2.1). */
@@ -203,23 +204,51 @@ const contextActivities = strictRecord({
   other: activities,
 });
 
-const context = strictRecord({
+/** The properties of a context that both versions have (4.2.2.5; 1.0.3 Data 2.4.6). */
+const contextEntries = {
   registration: v.optional(uuidSchema),
   instructor: v.optional(actor),
   team: v.optional(group),
   contextActivities: v.optional(contextActivities),
+  revision: v.optional(text),
+  platform: v.optional(text),
+  language: v.optional(languageTagSchema),
+  statement: v.optional(strictRecord(statementRef)),
+  extensions: v.optional(extensions),
+};
+
+/** The context of xAPI 2.0, which adds the Agents and Groups that take part with their relevant types (4.2.2.5). */
+const context = strictRecord({
+  ...contextEntries,
   contextAgents: v.optional(
     v.array(strictRecord({ objectType: v.literal("contextAgent"), agent, relevantTypes: v.optional(nonEmpty(iri)) })),
   ),
   contextGroups: v.optional(
     v.array(strictRecord({ objectType: v.literal("contextGroup"), group, relevantTypes: v.optional(nonEmpty(iri)) })),
   ),
-  revision: v.optional(text),
-  platform: v.optional(text),
-  language: v.optional(languageTagSchema),
-  statement: v.optional(strictRecord(statementRef)),
-  extensions: v.optional(extensions),
 });
+
+/** The context of xAPI 1.0.3, which has no `contextAgents` and no `contextGroups` (Data 2.4.6). */
+const contextV1 = strictRecord(contextEntries);
+
+/** A Timestamp of xAPI 1.0.3: ISO 8601 with a time zone (Data 4.5). */
+const isoTimestamp = v.pipe(
+  v.string(),
+  v.check(
+    isIsoTimestamp,
+    (issue) =>
+      `expected a date and time as ISO 8601 with a time zone, such as 2024-06-13T18:46:03.250Z, found ${issue.received}`,
+  ),
+);
+
+/** What the Statements of the two versions write differently: the form of a Timestamp, and the properties of a context. */
+const FORMS = {
+  "2.0.0": { time: dateTimeSchema, context },
+  "1.0.3": { time: isoTimestamp, context: contextV1 },
+} as const;
+
+/** The forms of one version. */
+type Forms = (typeof FORMS)[XapiVersion];
 
 const attachment = strictRecord({
   usageType: iri,
@@ -271,15 +300,15 @@ const subStatementObjects = [
   v.strictObject(statementRef),
 ] as const;
 
-/** The properties that a Statement and a SubStatement share, around the Object that each allows. */
-function statementProperties<const TObject extends v.GenericSchema>(object: TObject) {
+/** The properties that a Statement and a SubStatement share, around the Object that each allows, in the forms of a version. */
+function statementProperties<const TObject extends v.GenericSchema>(object: TObject, forms: Forms) {
   return {
     actor,
     verb,
     object,
     result: v.optional(result),
-    context: v.optional(context),
-    timestamp: v.optional(dateTimeSchema),
+    context: v.optional(forms.context),
+    timestamp: v.optional(forms.time),
     attachments: v.optional(v.array(attachment)),
   };
 }
@@ -294,26 +323,35 @@ const subStatementObject = v.pipe(
   ),
 );
 
-const subStatement = v.strictObject({
-  objectType: v.literal("SubStatement"),
-  ...statementProperties(subStatementObject),
-});
+/** Builds the schema of a Statement in the forms of a version. */
+function statementOf(forms: Forms): Schema<Statement> {
+  const subStatement = v.strictObject({
+    objectType: v.literal("SubStatement"),
+    ...statementProperties(subStatementObject, forms),
+  });
+  /** The Object of a Statement, told apart by `objectType`, which an Activity may leave out (4.2.2.3). */
+  const statementObject = v.pipe(
+    objectGuard,
+    v.variant(
+      "objectType",
+      [...subStatementObjects, subStatement],
+      (issue) => `expected "Activity", "Agent", "Group", "StatementRef" or "SubStatement", found ${issue.received}`,
+    ),
+  );
+  return strictRecord({
+    id: v.optional(uuidSchema),
+    ...statementProperties(statementObject, forms),
+    stored: v.optional(forms.time),
+    authority: v.optional(actor),
+    version: v.optional(text),
+  });
+}
 
-/** The Object of a Statement, told apart by `objectType`, which an Activity may leave out (4.2.2.3). */
-const statementObject = v.pipe(
-  objectGuard,
-  v.variant(
-    "objectType",
-    [...subStatementObjects, subStatement],
-    (issue) => `expected "Activity", "Agent", "Group", "StatementRef" or "SubStatement", found ${issue.received}`,
-  ),
-);
-
-/** Reads a Statement of xAPI 2.0 into the model: every property, its type and its form. The rules between properties are in `rules.ts`. */
-export const statementSchema: Schema<Statement> = strictRecord({
-  id: v.optional(uuidSchema),
-  ...statementProperties(statementObject),
-  stored: v.optional(dateTimeSchema),
-  authority: v.optional(actor),
-  version: v.optional(text),
-});
+/**
+ * Reads a Statement of a version into the model: every property, its type and its form. The rules between properties are in
+ * `rules.ts`.
+ */
+export const STATEMENT_SCHEMAS: Readonly<Record<XapiVersion, Schema<Statement>>> = {
+  "2.0.0": statementOf(FORMS["2.0.0"]),
+  "1.0.3": statementOf(FORMS["1.0.3"]),
+};

@@ -1,5 +1,5 @@
 import { callPort } from "@interopkit/core";
-import { sameStatement } from "../../compare/index.js";
+import { sameStatement, toStatementVersion } from "../../compare/index.js";
 import { iriKey } from "../../compare/internal.js";
 import { type Activity, type Statement, VERB_VOIDED } from "../../model/index.js";
 import type { StoredStatement } from "../ports.js";
@@ -67,7 +67,8 @@ function activitiesOfAll(statements: readonly Statement[]): readonly Activity[] 
 
 /**
  * Stores the Statements of a request and tells the host's store of the Activities. An id that the LRS holds already is
- * compared with the Statement that came: the same Statement is a resend, and another is a conflict (4.1.6.1).
+ * compared with the Statement that came, as the route answers it: the same Statement is a resend, and another is a conflict
+ * (4.1.6.1).
  */
 export async function storeStatements(context: Context, prepared: Prepared): Promise<Verdict<Stored>> {
   const { statements, stored, attachments } = prepared;
@@ -80,7 +81,7 @@ export async function storeStatements(context: Context, prepared: Prepared): Pro
     statement,
     stored,
     voided: false,
-    version: "2.0.0",
+    version: context.version,
   }));
   const inserted = await callPort(
     () => context.settings.statements.insert(batch, voids.value, attachments, { signal }),
@@ -90,7 +91,9 @@ export async function storeStatements(context: Context, prepared: Prepared): Pro
   const submitted = new Map(statements.map((statement) => [statement.id, statement]));
   for (const held of inserted.value.existing) {
     const sent = held.statement.id === undefined ? undefined : submitted.get(held.statement.id);
-    if (sent !== undefined && !sameStatement(held.statement, sent)) {
+    // A resend on the route of 1.0.3 is compared with what that route answers for the Statement held (2.5 of the gaps page).
+    const answered = context.version === "1.0.3" ? toStatementVersion(held.statement, "1.0.3") : held.statement;
+    if (sent !== undefined && !sameStatement(answered, sent)) {
       return refused(
         409,
         `The LRS holds another Statement with the id ${held.statement.id}, and a Statement is not changed.`,

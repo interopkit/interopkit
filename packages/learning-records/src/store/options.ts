@@ -11,7 +11,7 @@ import {
 } from "@interopkit/core/checks";
 import type { HttpRequest } from "@interopkit/core/http";
 import * as v from "valibot";
-import type { About, Statement, StatementIssue } from "../model/index.js";
+import { type About, type Statement, type StatementIssue, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 import type { Access, ActivityStore, AgentStore, DocumentStore, StatementStore } from "./ports.js";
 
 /** The limits of an LRS. */
@@ -118,6 +118,13 @@ export interface LrsOptions extends CallOptions {
    */
   readonly basePath?: string;
   /**
+   * The versions of xAPI that the LRS serves, the latest first: each request goes to the rules of the version that its
+   * `X-Experience-API-Version` header names, a request that names another is refused with 400, and About lists these.
+   *
+   * @defaultValue `["2.0.0", "1.0.3"]`
+   */
+  readonly versions?: readonly XapiVersion[];
+  /**
    * Makes the id of a Statement that has none: a UUID.
    *
    * @defaultValue `crypto.randomUUID`
@@ -174,6 +181,8 @@ export interface LrsSettings {
   readonly access: LrsOptions["access"];
   readonly clock: Clock;
   readonly basePath: string;
+  /** The versions that the LRS serves, the latest first. */
+  readonly versions: Versions;
   readonly newId: () => string;
   readonly accept: LrsOptions["accept"];
   readonly trustCertificate: LrsOptions["trustCertificate"];
@@ -199,6 +208,19 @@ const DEFAULT_LIMITS: LrsSettingsLimits = {
 
 const isFunction = <T>(value: unknown): value is T => typeof value === "function";
 
+/** A list of versions with at least one. */
+type Versions = readonly [XapiVersion, ...XapiVersion[]];
+
+/** Tells whether a value is a list of versions that the package speaks, each once, with at least one. */
+function isVersionList(value: unknown): value is Versions {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    new Set(value).size === value.length &&
+    value.every((version) => XAPI_VERSIONS.some((known) => known === version))
+  );
+}
+
 const optionsSchema = strictRecord({
   statements: methodsSchema<StatementStore>("insert", "get", "query", "consistentThrough", "attachments"),
   documents: methodsSchema<DocumentStore>("get", "write", "delete", "list", "deleteAll"),
@@ -215,6 +237,7 @@ const optionsSchema = strictRecord({
       ),
     ),
   ),
+  versions: v.optional(guardSchema(isVersionList, 'a list of "2.0.0" and "1.0.3", with each once and at least one')),
   newId: v.optional(guardSchema(isFunction<() => string>, "a function")),
   accept: v.optional(guardSchema(isFunction<NonNullable<LrsOptions["accept"]>>, "a function")),
   trustCertificate: v.optional(guardSchema(isFunction<NonNullable<LrsOptions["trustCertificate"]>>, "a function")),
@@ -254,6 +277,7 @@ export function readLrsOptions(options: unknown): LrsSettings {
     access: read.access,
     clock: read.clock,
     basePath: read.basePath ?? "/xapi",
+    versions: read.versions ?? XAPI_VERSIONS,
     newId: read.newId ?? (() => crypto.randomUUID()),
     accept: read.accept,
     trustCertificate: read.trustCertificate,

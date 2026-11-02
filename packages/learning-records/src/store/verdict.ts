@@ -1,6 +1,7 @@
 import { DataError } from "@interopkit/core";
 import type { HttpRequest } from "@interopkit/core/http";
 import { MultipartLimitError } from "../attachments/index.js";
+import type { XapiVersion } from "../model/index.js";
 import type { LrsSettings } from "./options.js";
 import type { Access } from "./ports.js";
 import type { Refuse } from "./status.js";
@@ -43,6 +44,8 @@ type GrantedAccess = Extract<Access, { readonly allowed: true }>;
 /** What a resource handler needs of a request. */
 export interface Context {
   readonly request: HttpRequest;
+  /** The version of xAPI whose rules answer the request: the route that its version header names. */
+  readonly version: XapiVersion;
   readonly settings: LrsSettings;
   readonly access: GrantedAccess;
   readonly refuse: Refuse;

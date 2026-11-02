@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
 import { checkProperties, checkRecord, checkString, describe, isUuid } from "@interopkit/core/checks";
 import { type Actor, type Statement, VERB_VOIDED } from "../model/index.js";
-import { buildStatement } from "./build-statement.js";
+import { type BuildOptions, buildStatement, versionOf } from "./build-statement.js";
 
 /** The display of the voided verb, which the standard recommends for a Verb (4.2.2.2). */
 const VOIDED_DISPLAY = { "en-US": "voided" } as const;
@@ -25,22 +25,27 @@ export interface VoidingInput {
  *
  * @param target - The id of the Statement to void, a UUID.
  * @param input - The id, the actor and the time of the voiding Statement.
+ * @param options - The version, as `buildStatement` takes it.
  * @returns The Statement.
  * @throws `DataError` when the target is not a UUID, or the Statement cannot be built as `buildStatement` says.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
-export function voidingStatement(target: string, input: VoidingInput): Statement {
+export function voidingStatement(target: string, input: VoidingInput, options?: BuildOptions): Statement {
+  const version = versionOf(options);
   checkString(target, "The target");
   if (!isUuid(target)) {
     throw new DataError(`The target must be the id of the Statement to void, as a UUID, found ${describe(target)}.`);
   }
   checkRecord(input, "The voiding input must be an object");
   checkProperties(input, "The voiding input", ["id", "actor", "timestamp"]);
-  return buildStatement({
-    id: input.id,
-    actor: input.actor,
-    verb: { id: VERB_VOIDED, display: VOIDED_DISPLAY },
-    object: { objectType: "StatementRef", id: target },
-    timestamp: input.timestamp,
-  });
+  return buildStatement(
+    {
+      id: input.id,
+      actor: input.actor,
+      verb: { id: VERB_VOIDED, display: VOIDED_DISPLAY },
+      object: { objectType: "StatementRef", id: target },
+      timestamp: input.timestamp,
+    },
+    { version },
+  );
 }

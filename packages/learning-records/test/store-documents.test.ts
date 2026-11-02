@@ -1248,14 +1248,14 @@ describe("handleLrsRequest: About", () => {
       const response = await handleLrsRequest(request, optionsOf(memory()));
       expect(response.status).toBe(200);
       expect(response.headers["x-experience-api-version"]).toBe("2.0.0");
-      expect(jsonOf(response)).toStrictEqual({ version: ["2.0.0"] });
+      expect(jsonOf(response)).toStrictEqual({ version: ["2.0.0", "1.0.3"] });
     }
   });
 
   it("adds the extensions of the options", async () => {
     const aboutExtensions = { "https://example.org/extensions/build": "42" };
     const response = await send(memory(), "GET", "/about", {}, { aboutExtensions });
-    expect(jsonOf(response)).toStrictEqual({ version: ["2.0.0"], extensions: aboutExtensions });
+    expect(jsonOf(response)).toStrictEqual({ version: ["2.0.0", "1.0.3"], extensions: aboutExtensions });
   });
 
   it("asks access, and needs no action", async () => {

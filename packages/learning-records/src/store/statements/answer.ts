@@ -2,6 +2,7 @@ import { callPort, DataError } from "@interopkit/core";
 import { isLanguageTag } from "@interopkit/core/checks";
 import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
 import { writeMultipart } from "../../attachments/index.js";
+import { toStatementVersion } from "../../compare/index.js";
 import { formatStatement } from "../../format/index.js";
 import type { ActivityDefinition, Statement, StatementFormat, StatementResult } from "../../model/index.js";
 import type { StoredStatement } from "../ports.js";
@@ -41,12 +42,17 @@ async function definitionsOf(
   return { value: definitions };
 }
 
-/** Puts the Statements in the format that the request asks for (4.1.6.1). */
+/**
+ * Puts the Statements in the form of the route and the format that the request asks for (4.1.6.1): the route of 1.0.3 answers
+ * a Statement of 2.0 without what 1.0.3 does not have (4.1.7, 2.5 of the gaps page).
+ */
 async function inFormat(
   context: Context,
-  statements: readonly Statement[],
+  held: readonly Statement[],
   format: StatementFormat,
 ): Promise<Verdict<readonly Statement[]>> {
+  const statements =
+    context.version === "1.0.3" ? held.map((statement) => toStatementVersion(statement, "1.0.3")) : held;
   if (format === "exact") return { value: statements };
   const languages = languagesOf(context.request.headers["accept-language"]);
   if (format === "ids") {

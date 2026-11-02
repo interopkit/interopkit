@@ -61,6 +61,7 @@ a signature already is refused, since an LRS reads one signature.
 | ------------------ | ------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `x5c`              | `signStatement`                             | none                                               | The certificate chain of the key, leaf first, each as the base64 of its DER encoding            |
 | `signal`           | `signStatement`, `verifyStatementSignature` | none                                               | Ends the caller's wait; the signer and `trustCertificate` receive it                            |
+| `version`          | `signStatement`, `verifyStatementSignature` | `"2.0.0"`                                          | The version of xAPI. `signStatement` reads the Statement by its provider rules. `verifyStatementSignature` reads the Statement by its rules, and on `"1.0.3"` compares it with the payload in the form of 1.0.3, since the route of 1.0.3 answers a Statement of 2.0 without what 1.0.3 does not have and the signature keeps them |
 | `key`              | `verifyStatementSignature`                  | none: a JWS without `x5c` is `no-key`              | The public RSASSA-PKCS1-v1_5 key, made for the hash of the algorithm, when the JWS has no `x5c` |
 | `trustCertificate` | `verifyStatementSignature`                  | none: the leaf is checked and trust is not claimed | `(chain, options) => Promise<boolean>`: whether the chain is trusted, leaf first                |
 
@@ -103,7 +104,6 @@ An error of the signer, of `trustCertificate`, and the `reason` of a `signal` pa
 | Signing with other algorithms                 | The standard names RS256, RS384 and RS512                                                             |
 | The JWS JSON serialization                    | "Strongly discouraged" and unlikely to be interoperable                                               |
 | Finding the signature Attachment in a request | The LRS reads the Statements and the parts first and then picks the Attachment by its usage type      |
-| Verifying a Statement of the 1.0.3 route      | The 1.0.3 form drops properties of 2.0 and needs its own projection                                   |
 
 ## Differences from the references
 

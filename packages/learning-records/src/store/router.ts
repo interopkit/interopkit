@@ -2,20 +2,19 @@ import { callPort } from "@interopkit/core";
 import { parseWith } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 import * as v from "valibot";
+import type { XapiVersion } from "../model/index.js";
 import { authoritySchema } from "../read/internal.js";
 import { handleAbout } from "./about.js";
 import { handleActivities } from "./activities.js";
 import { handleAgents } from "./agents.js";
+import { isAlternateRequest, readAlternateRequest } from "./alternate-syntax.js";
 import { handleActivityProfile, handleAgentProfile, handleState } from "./documents/handle.js";
-import { type LrsOptions, readLrsOptions } from "./options.js";
+import { type LrsOptions, type LrsSettings, readLrsOptions } from "./options.js";
 import { type Access, LRS_ACTIONS, type LrsAction } from "./ports.js";
 import { handleStatements } from "./statements/handle.js";
 import { FAILED, type Refuse, refusalWriter } from "./status.js";
-import type { Context } from "./verdict.js";
-import { VERSION } from "./version.js";
-
-/** The versions that a request may name: 2.0 is 2.0.0, and a later patch of 2.0 is accepted too (4.1.7). */
-const ACCEPTED = /^2\.0(?:\.\d+)?$/u;
+import { type Context, isRefusal } from "./verdict.js";
+import { namesOf, routeOf } from "./version.js";
 
 /** A resource of the LRS: its path, the action each method needs, and the function that answers it. */
 interface Resource {
@@ -95,22 +94,45 @@ function denial(decision: Extract<Access, { readonly allowed: false }>, refuse: 
   return refuse(decision.status, decision.reason, headers);
 }
 
-/** Answers a request for a resource: the checks that every resource has, and then the resource. */
-async function serve(request: HttpRequest, options: unknown, refuse: Refuse): Promise<HttpResponse> {
-  const settings = readLrsOptions(options);
-  const resource = resourceOf(new URL(request.url).pathname, settings.basePath);
-  if (resource === undefined) return refuse(404, "The LRS has no such resource.");
+/** The request that the LRS answers, after the alternate syntax: what it asks, and the version whose rules answer it. */
+interface Routed {
+  readonly request: HttpRequest;
+  readonly version: XapiVersion;
+}
+
+/**
+ * Finds the version of a request and the request itself: a request in the alternate syntax carries its headers, its parameters
+ * and its content in a form (1.0.3 Communication 1.3), which xAPI 2.0 removed.
+ */
+function route(request: HttpRequest, resource: Resource, settings: LrsSettings, refuse: Refuse): Routed | HttpResponse {
+  const alternate = isAlternateRequest(request);
+  const read = alternate ? readAlternateRequest(request, settings.limits.maxBodyBytes) : { value: request };
+  if (isRefusal(read)) return refuse(read.status, read.message);
+  const carried = read.value;
+  const header = carried.headers["x-experience-api-version"];
+  // About answers a request of any version, or of none (4.1.6.7; 1.0.3 Communication 2.8).
+  const version = routeOf(header, settings.versions) ?? (resource.versioned ? undefined : settings.versions[0]);
+  if (version === undefined) {
+    const found = header === undefined ? "none" : JSON.stringify(header);
+    return refuse(400, `The header X-Experience-API-Version must be ${namesOf(settings.versions)}, found ${found}.`);
+  }
+  if (alternate && version !== "1.0.3") {
+    return refuse(400, `The alternate request syntax is a part of xAPI 1.0.3, and xAPI ${version} has no such syntax.`);
+  }
+  return { request: carried, version };
+}
+
+/** Answers a request for a resource that is routed: the checks that every resource has, and then the resource. */
+async function serve(
+  { request, version }: Routed,
+  settings: LrsSettings,
+  resource: Resource,
+  refuse: Refuse,
+): Promise<HttpResponse> {
   const action = Object.hasOwn(resource.actions, request.method) ? resource.actions[request.method] : undefined;
   if (action === undefined) {
     const allow = Object.keys(resource.actions).join(", ");
     return refuse(405, `The method ${request.method} is not allowed here: use ${allow}.`, { allow });
-  }
-  const version = request.headers["x-experience-api-version"];
-  if (resource.versioned && (version === undefined || !ACCEPTED.test(version))) {
-    return refuse(
-      400,
-      `The header X-Experience-API-Version must be 2.0.0 or 2.0, found ${version === undefined ? "none" : JSON.stringify(version)}.`,
-    );
   }
   const { signal } = settings;
   const asked = await callPort(() => settings.access(request, signal === undefined ? undefined : { signal }), signal);
@@ -126,21 +148,36 @@ async function serve(request: HttpRequest, options: unknown, refuse: Refuse): Pr
       `The body has ${request.body.byteLength} bytes, above the limit of ${settings.limits.maxBodyBytes} bytes.`,
     );
   }
-  return resource.handle({ request, settings, access: decision, refuse });
+  return resource.handle({ request, version, settings, access: decision, refuse });
+}
+
+/** Answers a request: the resource that its path names, routed by its version. */
+async function answer(
+  request: HttpRequest,
+  settings: LrsSettings,
+  refuse: Refuse,
+): Promise<{ readonly response: HttpResponse; readonly routed?: Routed }> {
+  const resource = resourceOf(new URL(request.url).pathname, settings.basePath);
+  if (resource === undefined) return { response: refuse(404, "The LRS has no such resource.") };
+  const routed = route(request, resource, settings, refuse);
+  if (!("version" in routed)) return { response: routed };
+  return { response: await serve(routed, settings, resource, refuse), routed };
 }
 
 /**
- * Answers a request to the LRS: the Statements resource, with PUT, POST, GET and HEAD, over a `StatementStore`.
+ * Answers a request to the LRS: all seven resources, HEAD included, in each version of xAPI that the options serve.
  *
  * @remarks
- * The path is below `basePath`, `/xapi` unless the options say another. A path that names no resource is 404, a method the
- * resource does not have is 405 with `Allow`, and a request without `X-Experience-API-Version`, or with a version other than
- * 2.0 or 2.0.x, is 400. `access` is asked about every request that gets this far: it answers 401, 403 or 429, or the
- * `authority` and the actions the credentials allow, and a request for another action is 403. A body above
- * `limits.maxBodyBytes` is 413 before the store is called. Every answer names `X-Experience-API-Version: 2.0.0`, and a refusal
- * has its message in JSON, plain text or HTML, as `Accept` prefers. HEAD is answered as GET without a body. The handler keeps
- * no state, reads the time only from the `clock` of the options, answers 500 and says nothing of the cause when a port rejects,
- * and throws a `DataError` only for a port that breaks its contract.
+ * The path is below `basePath`, `/xapi` unless the options say another. A path that names no resource is 404, and a method the
+ * resource does not have is 405 with `Allow`. The `X-Experience-API-Version` header routes the request: 2.0 and 2.0.x to the
+ * rules of 2.0.0, 1.0 and 1.0.x to those of 1.0.3, and a request without the header, or with a version that `versions` does not
+ * hold, is 400; About answers any. On the 1.0.3 route a POST whose query names a `method` is a request in the alternate syntax,
+ * whose form carries its headers, its parameters and its content. `access` is asked about every request that gets this far: it
+ * answers 401, 403 or 429, or the `authority` and the actions the credentials allow, and a request for another action is 403. A
+ * body above `limits.maxBodyBytes` is 413 before a store is called. Every answer names the version of its route in
+ * `X-Experience-API-Version`, and a refusal has its message in JSON, plain text or HTML, as `Accept` prefers. HEAD is answered as
+ * GET without a body. The handler keeps no state, reads the time only from the `clock` of the options, answers 500 and says
+ * nothing of the cause when a port rejects, and throws a `DataError` only for a port that breaks its contract.
  *
  * @param request - The request.
  * @param options - The stores, `access`, the clock and the settings.
@@ -149,14 +186,19 @@ async function serve(request: HttpRequest, options: unknown, refuse: Refuse): Pr
  * something other than its contract.
  * @throws The reason of the `signal` of the options, when it aborts before the answer is ready.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
+ * @see {@link https://github.com/adlnet/xAPI-Spec/blob/1.0.3/xAPI-Communication.md | xAPI 1.0.3, Communication}
  */
 export async function handleLrsRequest(request: HttpRequest, options: LrsOptions): Promise<HttpResponse> {
   checkHttpRequest(request);
   const refuse = refusalWriter(request.headers.accept);
-  const response = await serve(request, options, refuse);
+  const settings = readLrsOptions(options);
+  const { response, routed } = await answer(request, settings, refuse);
+  // A request that was not routed is answered in the version its header names, or the latest the LRS serves.
+  const version =
+    routed?.version ?? routeOf(request.headers["x-experience-api-version"], settings.versions) ?? settings.versions[0];
   return {
     ...response,
-    headers: { ...response.headers, "x-experience-api-version": VERSION },
-    ...(request.method === "HEAD" ? { body: "" } : {}),
+    headers: { ...response.headers, "x-experience-api-version": version },
+    ...((routed?.request ?? request).method === "HEAD" ? { body: "" } : {}),
   };
 }

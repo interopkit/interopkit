@@ -46,7 +46,7 @@ describe("the scenario", () => {
 
   it("says what it speaks, gives the Person that the directory knows, and the Activity with the languages of every Statement", async () => {
     const { about, person, course } = await runScenario();
-    expect(about).toStrictEqual({ version: ["2.0.0"] });
+    expect(about).toStrictEqual({ version: ["2.0.0", "1.0.3"] });
     expect(person.name).toStrictEqual(["Ana", "Ana Putri"]);
     expect(person.mbox).toHaveLength(2);
     expect(course.definition?.name).toStrictEqual({ "en-US": "Statistics 101", "id-ID": "Statistika 101" });

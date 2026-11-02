@@ -23,6 +23,7 @@ describe("the public API", () => {
         "RULE_ROLES",
         "sameStatement",
         "STATEMENT_FORMATS",
+        "toStatementVersion",
         "validateStatement",
         "validateStatements",
         "VERB_VOIDED",

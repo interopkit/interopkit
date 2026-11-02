@@ -1,6 +1,6 @@
 import type { Fetch } from "@interopkit/core";
 import { signerFromCryptoKey } from "@interopkit/core";
-import type { Statement } from "@interopkit/learning-records";
+import { buildStatement, type Statement } from "@interopkit/learning-records";
 import { createLrsClient } from "@interopkit/learning-records/client";
 import { signStatement, verifyStatementSignature } from "@interopkit/learning-records/signing";
 import { describe, expect, it } from "vitest";
@@ -141,11 +141,65 @@ describe("the client of xAPI 1.0.3 against SQL LRS", () => {
     expect((await legacy.getDocument(target))?.body).toStrictEqual(body);
   });
 
-  it("is refused for a Statement that carries version 2.0.0, which the 1.0.3 route does not take", async () => {
+  it("refuses before any request a Statement that carries version 2.0.0, which the 1.0.3 route does not take", async () => {
     await expect(
       sendCourse(legacy, ANA, "66666666-6666-4666-8666-666666666666", [at(13), at(14), at(15)]),
-    ).rejects.toMatchObject({
-      status: 400,
+    ).rejects.toThrow('expected "1.0.0", found "2.0.0"');
+  });
+
+  it("stores a Statement built for 1.0.3, and both routes return it with its version", async () => {
+    const statement = buildStatement(
+      {
+        id: "77777777-7777-4777-8777-777777777777",
+        actor: ANA,
+        verb: { id: "http://adlnet.gov/expapi/verbs/completed" },
+        object: { id: STATISTICS },
+        timestamp: at(16),
+      },
+      { version: "1.0.3" },
+    );
+    expect(await legacy.sendStatement(statement)).toBe("stored");
+    expect((await legacy.getStatement(statement.id ?? ""))?.version).toBe("1.0.0");
+    expect((await client.getStatement(statement.id ?? ""))?.version).toBe("1.0.0");
+  });
+
+  it("answers on the 1.0.3 route as it holds a Statement of 2.0, and the client of 1.0.3 reads it in the form of 1.0.3", async () => {
+    const id = "88888888-8888-4888-8888-888888888888";
+    const proctor = { objectType: "contextAgent", agent: { mbox: "mailto:proctor@example.org" } } as const;
+    const statement = buildStatement({
+      id,
+      actor: ANA,
+      verb: { id: "http://adlnet.gov/expapi/verbs/completed" },
+      object: { id: STATISTICS },
+      context: { contextAgents: [proctor], language: "en" },
+      timestamp: at(17),
     });
+    expect(await client.sendStatement(statement)).toBe("stored");
+    const answer = await fetch(`${LRS}/xapi/statements?statementId=${id}`, {
+      headers: {
+        "x-experience-api-version": "1.0.3",
+        authorization: `Basic ${btoa(`${CREDENTIAL.user}:${CREDENTIAL.password}`)}`,
+      },
+    });
+    const held = await answer.json();
+    expect(held.version).toBe("2.0.0");
+    expect(held.context.contextAgents).toHaveLength(1);
+    const found = await legacy.getStatement(id);
+    expect(found?.version).toBe("1.0.0");
+    expect(found?.context).toStrictEqual({ language: "en" });
+  });
+
+  it("compares a resend on the 1.0.3 route with the whole Statement of 2.0, so that the form of 1.0.3 is a conflict there", async () => {
+    const id = "99999999-9999-4999-8999-999999999999";
+    const event = {
+      id,
+      actor: ANA,
+      verb: { id: "http://adlnet.gov/expapi/verbs/completed" },
+      object: { id: STATISTICS },
+      timestamp: at(18),
+    };
+    const proctor = { objectType: "contextAgent", agent: { mbox: "mailto:proctor@example.org" } } as const;
+    await client.sendStatement(buildStatement({ ...event, context: { contextAgents: [proctor] } }));
+    expect(await legacy.sendStatement(buildStatement(event, { version: "1.0.3" }))).toBe("conflict");
   });
 });

@@ -1,15 +1,34 @@
-import { isRecord } from "@interopkit/core/checks";
-import type { Result, Statement, StatementIssue, SubStatement } from "../model/index.js";
+import { isDateTime, isRecord } from "@interopkit/core/checks";
+import type { Result, Statement, StatementIssue, SubStatement, XapiVersion } from "../model/index.js";
 import { hasFinerThanCentiseconds, hasMillisecondPrecision, isUtc, splitDuration } from "../model/internal.js";
 import { error, warning } from "./finding.js";
 import { item, member } from "./path.js";
 
-/** The version of the Statements that a Learning Record Provider writes (5.2.4.1). */
-const PROVIDER_VERSION = "2.0.0";
+/** The version that a Learning Record Provider writes in a Statement when it writes one (5.2.4.1; 1.0.3 Data 2.4.10). */
+const PROVIDER_VERSIONS: Readonly<Record<XapiVersion, string>> = { "2.0.0": "2.0.0", "1.0.3": "1.0.0" };
 
-/** Judges a time of a Statement: a provider writes UTC (5.2.7), and should write at least milliseconds. */
-function timeIssues(timestamp: string | undefined, path: string): StatementIssue[] {
+/**
+ * Judges a time of a Statement of 1.0.3: ISO 8601 allows forms that RFC 3339 does not, such as the basic format, and a
+ * Timestamp should be expressed as RFC 3339 (Data 4.5), which the provider rules hold as a requirement.
+ */
+function rfc3339Issues(timestamp: string, path: string): StatementIssue[] {
+  if (isDateTime(timestamp)) return [];
+  return [
+    error(
+      path,
+      "timestamp-not-rfc3339",
+      `expected a time as RFC 3339, such as 2024-06-13T18:46:03.000Z, found ${JSON.stringify(timestamp)}.`,
+    ),
+  ];
+}
+
+/**
+ * Judges a time of a Statement: a provider of 2.0 writes UTC (5.2.7), and should write at least milliseconds; a provider of
+ * 1.0.3 writes RFC 3339.
+ */
+function timeIssues(timestamp: string | undefined, path: string, version: XapiVersion): StatementIssue[] {
   if (timestamp === undefined) return [];
+  if (version === "1.0.3") return rfc3339Issues(timestamp, path);
   const issues: StatementIssue[] = [];
   if (!isUtc(timestamp)) {
     issues.push(
@@ -32,16 +51,22 @@ function timeIssues(timestamp: string | undefined, path: string): StatementIssue
   return issues;
 }
 
-/** Judges the time of a Statement or a SubStatement: a provider writes UTC, with at least milliseconds (5.2.7). */
-export function providerTimeIssues(statement: Statement | SubStatement, path: string): StatementIssue[] {
-  return timeIssues(statement.timestamp, member(path, "timestamp"));
+/** Judges the time of a Statement or a SubStatement as the provider rules of a version ask. */
+export function providerTimeIssues(
+  statement: Statement | SubStatement,
+  path: string,
+  version: XapiVersion,
+): StatementIssue[] {
+  return timeIssues(statement.timestamp, member(path, "timestamp"), version);
 }
 
 /**
- * Judges what a Learning Record Provider is asked of the Statement as a whole (5.2.4.1): an id, and no `stored`, no
- * `authority` and no `version` unless it is 2.0.0; the time that it does send is in UTC.
+ * Judges what a Learning Record Provider is asked of the Statement as a whole (5.2.4.1; 1.0.3 Data 2.4.1, 2.4.10): an id,
+ * and no `stored`, no `authority` and no `version` unless it is the version of the rules, 2.0.0 or 1.0.0; the time that it
+ * does send is in the form of its version.
  */
-export function providerStatementIssues(statement: Statement): StatementIssue[] {
+export function providerStatementIssues(statement: Statement, version: XapiVersion): StatementIssue[] {
+  const expected = PROVIDER_VERSIONS[version];
   const issues: StatementIssue[] = [];
   if (statement.id === undefined) {
     issues.push(
@@ -52,19 +77,19 @@ export function providerStatementIssues(statement: Statement): StatementIssue[] 
       ),
     );
   }
-  issues.push(...timeIssues(statement.stored, "stored"));
+  issues.push(...timeIssues(statement.stored, "stored", version));
   for (const name of ["stored", "authority"] as const) {
     if (statement[name] !== undefined)
       issues.push(warning(name, "lrs-managed-property", `expected no ${name}, which the LRS sets.`));
   }
-  if (statement.version === PROVIDER_VERSION) {
+  if (statement.version === expected) {
     issues.push(warning("version", "lrs-managed-property", "expected no version, which the LRS sets."));
   } else if (statement.version !== undefined) {
     issues.push(
       error(
         "version",
         "invalid-value",
-        `expected ${JSON.stringify(PROVIDER_VERSION)}, found ${JSON.stringify(statement.version)}.`,
+        `expected ${JSON.stringify(expected)}, found ${JSON.stringify(statement.version)}.`,
       ),
     );
   }
@@ -100,7 +125,10 @@ function emptyObjects(value: unknown, path: string, issues: StatementIssue[]): v
   }
 }
 
-/** Judges a Statement for properties whose value is an empty object, which a provider should leave out (5.2.4.1). */
+/**
+ * Judges a Statement for properties whose value is an empty object, which a provider of 2.0 should leave out (5.2.4.1) and a
+ * Statement of 1.0.3 should not include (Data 2.2).
+ */
 export function emptyObjectIssues(statement: Statement): StatementIssue[] {
   const issues: StatementIssue[] = [];
   emptyObjects(statement, "", issues);

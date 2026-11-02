@@ -8,7 +8,7 @@ interopkit is a toolkit for learning-platform interoperability in JavaScript and
 `@interopkit/core` is the shared foundation, `@interopkit/tool-integration` implements LTI 1.3 in both roles, and
 `@interopkit/learning-analytics` implements Caliper Analytics 1.2, `@interopkit/competency-frameworks` implements the
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
-`@interopkit/learning-records` implements the xAPI Statement and its readers, the message of its Attachments, its signature, a client of an LRS and the handler of its requests,
+`@interopkit/learning-records` implements the xAPI Statement of 2.0 and 1.0.3 and its readers, the message of its Attachments, its signature, a client of an LRS and the handler of its requests,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
 implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists and their refresh, and it reads Open Badges 2.0.
 
@@ -87,7 +87,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/`, `tool/`, `platform/`                                             |
 | `packages/learning-analytics/`       | Caliper 1.2: `model/`, `build/`, `send/`                                                            |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
-| `packages/learning-records/`         | xAPI 2.0: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
+| `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/` |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
 | `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/` |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
@@ -111,7 +111,7 @@ Use these words with these meanings in code, comments and docs.
 | `pnpm test:browser`                                 | The browser tests in Chromium, Firefox and WebKit; run `pnpm exec playwright install` first. The Firefox of Playwright does not start on some macOS versions (it did not on macOS 27): run the suite in the container `mcr.microsoft.com/playwright` of the pinned Playwright release, with `--cpus=2` and `--ipc=host`, from a copy of the repository (`pnpm install` installs the git hooks only in a git clone, and skips them in a copy) |
 | `pnpm bench`                                        | Builds, then times the hot paths of `competency-frameworks` and `learning-records` and the three roles of `selective-disclosure` with `vitest bench` against the budgets of `test/budgets.ts`; fails above a budget. The roles of `selective-disclosure` are timed against Digital Bazaar's suite over the contexts that `pnpm schemas` downloads |
 | `pnpm opensalt`                                     | Starts OpenSALT in containers (Docker with Compose; the images are linux/amd64, so an arm64 host emulates them), runs the flows of `examples/competency-frameworks` against it, and removes the containers and their data whatever happens                                                                                                                                                                                                  |
-| `pnpm adl-lrs`                                      | Runs the ADL conformance suite of xAPI 2.0 at its pinned commit against the example LRS, which it starts on the loopback address with random credentials; it needs the packages built first, and fails on a failed test or on a suite of another size |
+| `pnpm adl-lrs`                                      | Runs the ADL conformance suites of xAPI 2.0 and 1.0.3 at their pinned commits against the example LRS, which it starts for each on the loopback address with random credentials; it needs the packages built first, and fails on a failed test or on a suite of another size |
 | `pnpm sql-lrs`                                      | Starts SQL LRS in a container with a name of the run, 2 CPUs and random credentials, runs the verdicts of the rules and the flows of the example against it, and stops, waits for and removes that container whatever happens |
 | `pnpm knip`                                         | Unused files, exports and dependencies                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `pnpm build`                                        | `tsc -b` after deleting `dist/`, so that no stale output ships                                                                                                                                                                                                                                                                                                                                                                               |
@@ -148,7 +148,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
 
 - interopkit owns the messages between a platform and a tool, the gradebook protocol, the Caliper event model, sensor and
   endpoint, the CASE model with its readers, the questions a consumer asks of a framework, the client of its REST binding,
-  the handlers of a CASE provider, and the xAPI Statement with its readers, the message of its Attachments, its signature, the client of an LRS and the handler of its requests. It does not own what a launched tool shows, what a
+  the handlers of a CASE provider, and the xAPI Statement of 2.0 and 1.0.3 with its readers, the message of its Attachments, its signature, the client of an LRS and the handler of its requests. It does not own what a launched tool shows, what a
   score means, which delivery event becomes which Caliper or xAPI event, QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to
   assesskit and measurekit, to the adapter of each product and to the host.
 - `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders, the comparison of
@@ -183,7 +183,7 @@ current behavior only, and never how it came to be. A package's changeset is wri
   a verifier of JWTs free of JSON-LD), and `refresh/` imports `model/` and `core` only. In `learning-records`, `model/` imports no other module,
   `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
   `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
-  `model/`, `read/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. Imports never form cycles.
+  `model/`, `read/`, `compare/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. Imports never form cycles.
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -313,7 +313,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - The examples that a specification prints are read in a `*.spec.test.ts` with `readSpecPage`, from a page or, when the address
   ends in `.md`, from the fenced blocks of a Markdown file; one that is not conformant is pinned with its findings and
   recorded in `spec-gaps.md`.
-- The rules of a standard that has no JSON schema are a table in `scripts/` (`scripts/xapi-rules.ts`, `scripts/open-badges-v2-rules.ts`): one entry for each
+- The rules of a standard that has no JSON schema are a table in `scripts/` (`scripts/xapi-rules.ts`, `scripts/xapi-v1-rules.ts`, `scripts/open-badges-v2-rules.ts`): one entry for each
   sentence of the standard, a value that breaks it, and what a reader of each role finds. A test runs the table against the
   readers, and the table is written from the standard and not from the code.
 - The test vectors of a cryptosuite are reproduced byte for byte in a `*.spec.test.ts`: a base proof from the fixed secrets of the

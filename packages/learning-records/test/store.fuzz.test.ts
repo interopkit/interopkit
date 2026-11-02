@@ -46,7 +46,7 @@ describe("the handler on any request", () => {
           expect(response.status).toBeGreaterThanOrEqual(200);
           expect(response.status).toBeLessThan(600);
           expect(response.status).not.toBe(500);
-          expect(response.headers["x-experience-api-version"]).toBe("2.0.0");
+          expect(["2.0.0", "1.0.3"]).toContain(response.headers["x-experience-api-version"]);
         },
       ),
       RUNS,

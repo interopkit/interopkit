@@ -36,7 +36,10 @@ export const RULE_ROLES = ["lrs", "provider"] as const;
 /** The role whose rules a reader applies. */
 export type RuleRole = (typeof RULE_ROLES)[number];
 
-/** The versions of xAPI that a client speaks, as the `X-Experience-API-Version` header writes them (4.1.7). */
+/**
+ * The versions of xAPI that the package speaks, the latest first, as the `X-Experience-API-Version` header writes them (4.1.7):
+ * each has its rules for Statements, its header in the client, and its route in the LRS.
+ */
 export const XAPI_VERSIONS = ["2.0.0", "1.0.3"] as const;
 
 /** A version of xAPI. */

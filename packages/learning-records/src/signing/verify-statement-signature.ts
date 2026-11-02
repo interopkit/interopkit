@@ -9,9 +9,11 @@ import {
   type ProtectedHeaderParameters,
 } from "jose";
 import * as v from "valibot";
-import { sameStatement } from "../compare/index.js";
-import type { Statement } from "../model/index.js";
+import { toStatementVersion } from "../compare/index.js";
+import { equivalenceKey } from "../compare/internal.js";
+import { type Statement, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 import { readStatement, readStatementJson } from "../read/index.js";
+import { readEitherVersion } from "../read/internal.js";
 import { CERTIFICATE_BASE64, SIGNATURE_ALGORITHMS } from "./constants.js";
 
 const textDecoder = new TextDecoder("utf-8", { fatal: true });
@@ -52,6 +54,14 @@ export interface SignatureVerifyOptions extends CallOptions {
    * @defaultValue none: the leaf is checked and trust is not claimed
    */
   readonly trustCertificate?: (chain: readonly string[], options?: CallOptions) => Promise<boolean>;
+  /**
+   * The version of xAPI of the route that the Statement came from. On `1.0.3` the Statement is read with the rules of 1.0.3,
+   * and the payload, which may have been signed in either version, is compared in the form of 1.0.3 (`toStatementVersion`):
+   * the route of 1.0.3 answers a Statement of 2.0 without what 1.0.3 does not have, and its signature keeps them.
+   *
+   * @defaultValue `"2.0.0"`
+   */
+  readonly version?: XapiVersion;
 }
 
 /** Tells whether a value is a public key for RSASSA-PKCS1-v1_5 that can verify. */
@@ -74,6 +84,7 @@ const optionsSchema = strictRecord({
       "a function",
     ),
   ),
+  version: v.optional(v.picklist(XAPI_VERSIONS)),
   signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
 });
 
@@ -156,8 +167,11 @@ async function verifyJws(jws: string, { key, algorithm }: VerifyingKey): Promise
   }
 }
 
-/** Reads the payload of a signature as a Statement, or says that it is none. */
-function readPayload(payload: Uint8Array): Statement | undefined {
+/**
+ * Reads the payload of a signature as a Statement in the form of the version, or says that it is none. On 1.0.3 the payload
+ * may have been signed in either version, and is compared in the form of 1.0.3.
+ */
+function readPayload(payload: Uint8Array, version: XapiVersion): Statement | undefined {
   let text: string;
   try {
     text = textDecoder.decode(payload);
@@ -165,11 +179,17 @@ function readPayload(payload: Uint8Array): Statement | undefined {
     return undefined;
   }
   try {
-    return readStatement(readStatementJson(text));
+    const json = readStatementJson(text);
+    return version === "1.0.3" ? toStatementVersion(readEitherVersion(json), "1.0.3") : readStatement(json);
   } catch (error) {
     if (error instanceof DataError) return undefined;
     throw error;
   }
+}
+
+/** Tells whether two Statements that are read are the same Statement by the rules of immutability, which both versions share. */
+function equivalent(a: Statement, b: Statement): boolean {
+  return equivalenceKey(a) === equivalenceKey(b);
 }
 
 /** The characters of base64url (RFC 4648 section 5), which a section of a compact JWS is written in. */
@@ -190,11 +210,11 @@ function unverifiedPayload(jws: string): Uint8Array | undefined {
  * Judges a signature that cannot be verified for want of a key: the payload must still be the JSON of a Statement, and the same
  * Statement as the one received, which the LRS checks whether it holds a key or not (4.2.6). What is left is `no-key`.
  */
-function checkWithoutKey(jws: string, stated: Statement, noKey: Failure): Failure {
+function checkWithoutKey(jws: string, stated: Statement, version: XapiVersion, noKey: Failure): Failure {
   const payload = unverifiedPayload(jws);
-  const signed = payload === undefined ? undefined : readPayload(payload);
+  const signed = payload === undefined ? undefined : readPayload(payload, version);
   if (signed === undefined) return fail("malformed");
-  return sameStatement(stated, signed) ? noKey : fail("not-equivalent");
+  return equivalent(stated, signed) ? noKey : fail("not-equivalent");
 }
 
 /**
@@ -204,16 +224,16 @@ function checkWithoutKey(jws: string, stated: Statement, noKey: Failure): Failur
  * @remarks
  * The algorithm must be RS256, RS384 or RS512, and the JWS must be in compact serialization; the JWS JSON serialization is
  * `malformed`. A key that the JWS carries in a `jwk` header is not used, since the signer chose it. The Statement given is the
- * one received, with whatever the LRS added; the payload is compared to it by `sameStatement`, which ignores `id`,
+ * one received, with whatever the LRS added; the payload is compared to it by the rules of `sameStatement`, which ignore `id`,
  * `timestamp`, `stored`, `authority`, `version` and the Attachments, as the equivalence of the standard does. The chain is not
  * validated: `trustCertificate` decides whether it is trusted, and without it `certified` is `false`. A signature that is not
  * good is a value in the result; a Statement or options that are not valid throw.
  *
  * @param statement - The Statement that was received, with or without the header of its signature.
  * @param signature - The data of the Attachment of the signature: the compact JWS as UTF-8.
- * @param options - The key, the trust function and the `signal`.
+ * @param options - The key, the trust function, the version of the route and the `signal`.
  * @returns Whether the signature is good, whether the chain is trusted, or why it is not good.
- * @throws `DataError` when the Statement is not valid as an LRS reads it, the signature is not a `Uint8Array`, or the options
+ * @throws `DataError` when the Statement is not valid as an LRS of the version reads it, the signature is not a `Uint8Array`, or the options
  * are not valid.
  * @throws The `reason` of the signal when it aborts, and the error of `trustCertificate` when it rejects.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
@@ -223,25 +243,26 @@ export async function verifyStatementSignature(
   signature: Uint8Array,
   options?: SignatureVerifyOptions,
 ): Promise<SignatureCheck> {
-  const stated = readStatement(statement);
+  const {
+    key,
+    trustCertificate,
+    version = "2.0.0",
+    signal,
+  } = parseWith(optionsSchema, options === undefined ? {} : options, "The options object");
+  const stated = readStatement(statement, { version });
   if (!(signature instanceof Uint8Array)) {
     throw new DataError(`The signature must be a Uint8Array, found ${describe(signature)}.`);
   }
-  const { key, trustCertificate, signal } = parseWith(
-    optionsSchema,
-    options === undefined ? {} : options,
-    "The options object",
-  );
   signal?.throwIfAborted();
   const parsed = parseJws(signature);
   if (isFailure(parsed)) return parsed;
   const found = await findKey(parsed.header, key);
-  if (isFailure(found)) return found.reason === "no-key" ? checkWithoutKey(parsed.jws, stated, found) : found;
+  if (isFailure(found)) return found.reason === "no-key" ? checkWithoutKey(parsed.jws, stated, version, found) : found;
   const payload = await verifyJws(parsed.jws, found);
   if (isFailure(payload)) return payload;
-  const signed = readPayload(payload);
+  const signed = readPayload(payload, version);
   if (signed === undefined) return fail("malformed");
-  if (!sameStatement(stated, signed)) return fail("not-equivalent");
+  if (!equivalent(stated, signed)) return fail("not-equivalent");
   const certified =
     found.chain !== undefined && trustCertificate !== undefined
       ? await untilAborted(trustCertificate(found.chain, signal === undefined ? undefined : { signal }), signal)

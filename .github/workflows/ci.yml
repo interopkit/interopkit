@@ -406,7 +406,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm opensalt
 
-  # The ADL conformance suite of xAPI 2.0 against the example LRS (validation/adl-lrs/README.md). It builds first.
+  # The ADL conformance suites of xAPI 2.0 and 1.0.3 against the example LRS (validation/adl-lrs/README.md). It builds first.
   adl-lrs:
     needs: changes
     if: needs.changes.outputs.adl_lrs == 'true'

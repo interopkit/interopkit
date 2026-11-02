@@ -1,7 +1,7 @@
 {
   "name": "@interopkit/learning-records",
   "version": "0.0.0",
-  "description": "xAPI 2.0 learning records: the model of a Statement, readers and validators for the rules of an LRS and of a Learning Record Provider, and builders and comparisons of Statements.",
+  "description": "xAPI 2.0 and 1.0.3 learning records: the model of a Statement, readers and validators for the rules of an LRS and of a Learning Record Provider, builders, signatures, a client of an LRS and the handler of its requests.",
   "keywords": [
     "interopkit",
     "learning-records",

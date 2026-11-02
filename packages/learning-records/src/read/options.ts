@@ -1,6 +1,6 @@
 import { DEFAULT_MAX_FINDINGS, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
-import { RULE_ROLES, type RuleRole } from "../model/index.js";
+import { RULE_ROLES, type RuleRole, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 
 /** The options of `readStatement`, `validateStatement` and `validateStatements`. */
 export interface ReadOptions {
@@ -13,6 +13,13 @@ export interface ReadOptions {
    */
   readonly role?: RuleRole;
   /**
+   * The version whose rules apply: `2.0.0`, the IEEE standard, or `1.0.3`, whose Timestamps are ISO 8601 with a time zone,
+   * whose context has no `contextAgents` or `contextGroups`, and whose `version` starts with `1.0` (1.0.3 Data 2.4.10, 4.5).
+   *
+   * @defaultValue `"2.0.0"`
+   */
+  readonly version?: XapiVersion;
+  /**
    * The most findings that the call lists, or that `readStatement` counts errors up to before it stops. The check stops at
    * the first finding beyond the limit and ends the list with a finding that says so: a value that is wrong in a million
    * places costs the memory of the limit.
@@ -24,17 +31,27 @@ export interface ReadOptions {
 
 const optionsSchema = strictRecord({
   role: v.optional(v.picklist(RULE_ROLES)),
+  version: v.optional(v.picklist(XAPI_VERSIONS)),
   maxFindings: v.optional(positiveIntegerSchema),
 });
 
-/** The role and the limit of findings that the options of a read ask for. */
-export interface ReadSettings {
+/** Whose rules apply, and of which version. */
+export interface RuleSet {
   readonly role: RuleRole;
+  readonly version: XapiVersion;
+}
+
+/** The rules and the limit of findings that the options of a read ask for. */
+export interface ReadSettings {
+  readonly rules: RuleSet;
   readonly maxFindings: number;
 }
 
 /** Checks the options of a read and returns what they ask for. */
 export function readSettings(options: unknown): ReadSettings {
   const checked = parseWith(optionsSchema, options === undefined ? {} : options, "The options object");
-  return { role: checked.role ?? "lrs", maxFindings: checked.maxFindings ?? DEFAULT_MAX_FINDINGS };
+  return {
+    rules: { role: checked.role ?? "lrs", version: checked.version ?? "2.0.0" },
+    maxFindings: checked.maxFindings ?? DEFAULT_MAX_FINDINGS,
+  };
 }

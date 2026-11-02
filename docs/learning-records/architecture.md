@@ -4,7 +4,7 @@
 types. `read` turns untrusted data into the model and judges it. `build`, `compare` and `format` make Statements, compare them and
 write them in a format, and each reads a Statement with `read` first. `attachments` writes and reads the message that carries
 Attachments, and `signing` signs a Statement and verifies its signature, with the Attachment of `attachments` and the equivalence
-of `compare`, `client` speaks to an LRS with `read` and `attachments`, and `store` answers the requests of one with all of them but `build` and `client`. `model` imports nothing of the family, `read` imports only `model` and `@interopkit/core`, the three that build on
+of `compare`, `client` speaks to an LRS with `read`, `compare` and `attachments`, and `store` answers the requests of one with all of them but `build` and `client`. `model` imports nothing of the family, `read` imports only `model` and `@interopkit/core`, the three that build on
 `read` are siblings that never import each other, and `attachments`, `signing`, `client` and `store` are the layers above them.
 
 ```mermaid
@@ -13,7 +13,7 @@ flowchart BT
   model["model<br/>types, vocabularies, durations, times, formats"]
   read["read<br/>schemas, rules, readers, text of a request"]
   build["build<br/>Statements, ids, hashes"]
-  compare["compare<br/>sameStatement"]
+  compare["compare<br/>sameStatement, toStatementVersion"]
   format["format<br/>ids, exact, canonical"]
   attachments["attachments<br/>hash, multipart message"]
   signing["signing<br/>signStatement, verifyStatementSignature"]
@@ -36,6 +36,7 @@ flowchart BT
   signing --> read
   signing --> model
   client --> attachments
+  client --> compare
   client --> read
   client --> model
   store --> signing

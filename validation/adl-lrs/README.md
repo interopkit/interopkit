@@ -1,22 +1,22 @@
 # The ADL conformance suite
 
 The [LRS conformance test suite](https://github.com/adlnet/lrs-conformance-test-suite) of ADL (MIT) sends the requests that the
-standard asks an LRS to answer, and checks each answer. `pnpm adl-lrs` runs its xAPI 2.0 tests against the example LRS of
-`examples/learning-records`, which answers with `handleLrsRequest` over stores in memory, with HTTP Basic.
+standard asks an LRS to answer, and checks each answer. `pnpm adl-lrs` runs its tests of xAPI 2.0 and of xAPI 1.0.3 against the
+example LRS of `examples/learning-records`, which answers with `handleLrsRequest` over stores in memory, with HTTP Basic.
 
 ```mermaid
 flowchart LR
-  run["pnpm adl-lrs<br/>run.ts"] -->|"download, check the hash,<br/>npm ci --ignore-scripts"| suite["Suite at the pinned commit<br/>.cache/adl-lrs"]
-  run -->|"node serve.ts, random user and password"| lrs["Example LRS<br/>127.0.0.1, a free port"]
-  suite -->|"1,442 requests, -x 2.0.0, Basic"| lrs
+  run["pnpm adl-lrs<br/>run.ts, each lock in turn"] -->|"download, check the hash,<br/>npm ci --ignore-scripts"| suite["Suite at the pinned commit<br/>.cache/adl-lrs"]
+  run -->|"node serve.ts, random user and password"| lrs["A fresh example LRS<br/>127.0.0.1, a free port"]
+  suite -->|"1,442 tests, -x 2.0.0, or<br/>1,365 tests, -x 1.0.3, Basic"| lrs
   suite -->|"logs/*.log"| run
   run -->|"exit 1 on a failed test<br/>or another number of tests"| result["Result"]
 ```
 
 | File                | Holds                                                                                                                            |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `suite.lock.json`   | The repository, the branch `LRS-2.0`, the commit, the SHA-256 of the archive of that commit, the version and the number of tests |
-| `package-lock.json` | The dependencies of the suite with their hashes: the suite has no lockfile of its own                                            |
+| `suite.lock.json`   | One entry for each version: the repository, the branch, the commit, the SHA-256 of the archive of that commit, the version and the number of tests |
+| `package-lock.json` | The dependencies of the suite with their hashes: the suite has no lockfile of its own, and the two branches list the same ones   |
 | `run.ts`            | Downloads the suite, starts the LRS, runs the suite, and reads its log                                                           |
 
 ## Running it
@@ -32,21 +32,23 @@ pnpm build
 pnpm adl-lrs
 ```
 
-A run takes about 30 seconds after the first. The port is free and on the loopback address, and the user and the password are
+Each suite takes about 30 seconds after the first run. The port is free and on the loopback address, and the user and the password are
 random for the run and never printed.
 
 | Setting       | Value                                                                                                                        |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Pinned commit | `d17a26a0139523db65909fe5e9fdd6701c786013` of the branch `LRS-2.0`, version 2.0.0-0                                          |
+| Pinned commits | `d17a26a0139523db65909fe5e9fdd6701c786013` of the branch `LRS-2.0` for 2.0.0, and `5bc232d349c60faded8240da698f195106091638` of `master` for 1.0.3 |
 | Hash          | The archive that GitHub serves for the commit must have the SHA-256 of the lock, or the run stops before it unpacks anything |
 | Install       | `npm ci --ignore-scripts` from the lockfile: no package of the suite runs a script on the machine                            |
-| Tests         | 1,442; a suite with another number fails the run, so a new commit of the suite is noticed and not trusted                    |
+| Tests         | 1,442 and 1,365; a suite with another number fails the run, so a new commit of the suite is noticed and not trusted          |
 | Failure       | Each test that fails is printed with its groups and the error of the assertion, and the run exits with 1                     |
 
 ## What it found
 
-Every failure of the suite is a rule that the handler did not follow, and the fix is in the handler. The first run failed 116 of
-the 1,442 tests, from these causes; each has a test in `packages/learning-records` and a rule in `scripts/check-rules.ts`.
+Every failure of the suite is a rule that the handler did not follow, and the fix is in the handler. The first run of 2.0 failed
+116 of the 1,442 tests, from these causes; each has a test in `packages/learning-records` and a rule in `scripts/check-rules.ts`.
+The first run of 1.0.3 failed 2 of the 1,365 tests, both from one cause: a PUT of a profile with no precondition where no document
+exists was written, and the route of 1.0.3 refuses it with 400.
 
 | Group of the suite that failed                                         | Cause in the handler                                                                                                                |
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |

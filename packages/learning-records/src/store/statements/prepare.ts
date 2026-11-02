@@ -6,6 +6,7 @@ import {
   formatTimestamp,
   type Statement,
   type StatementIssue,
+  type XapiVersion,
 } from "../../model/index.js";
 import { mediaTypeOf } from "../../model/internal.js";
 import { inspectBatch, issueSink } from "../../read/internal.js";
@@ -27,10 +28,13 @@ export interface Prepared {
   readonly attachments: readonly AttachmentData[];
 }
 
-/** The version a Statement gets when it brings none (4.2.4.3). */
-const DEFAULT_VERSION = "2.0.0";
+/** The version a Statement gets when it brings none, by the route (4.2.4.3; 1.0.3 Data 2.4.10). */
+const DEFAULT_VERSIONS: Readonly<Record<XapiVersion, string>> = { "2.0.0": "2.0.0", "1.0.3": "1.0.0" };
 
-/** The versions of a Statement that the LRS takes: 2.0 and 2.0.x, and 1.0 and 1.0.x, which are the Statements of xAPI 1.0.3. */
+/**
+ * The versions of a Statement that the route of 2.0 takes: 2.0 and 2.0.x, and 1.0 and 1.0.x, which are the Statements of xAPI
+ * 1.0.3. The rules of 1.0.3 take 1.0 and 1.0.x alone, and refuse the others with the path of the Statement.
+ */
 const TAKEN_VERSION = /^(?:1\.0|2\.0)(?:\.\d+)?$/u;
 
 /** The messages about a signature that is not good, by the reason that `verifyStatementSignature` gives. */
@@ -61,7 +65,7 @@ function completed(statement: Statement, stored: string, context: Context): Iden
     timestamp: statement.timestamp ?? stored,
     authority:
       context.settings.keepSubmittedAuthority && statement.authority !== undefined ? statement.authority : authority,
-    version: statement.version ?? DEFAULT_VERSION,
+    version: statement.version ?? DEFAULT_VERSIONS[context.version],
   };
 }
 
@@ -114,6 +118,7 @@ async function checkSignature(
     const checked = await callPort(
       () =>
         verifyStatementSignature(statement, data.body, {
+          version: context.version,
           ...(trustCertificate === undefined ? {} : { trustCertificate }),
           ...(signal === undefined ? {} : { signal }),
         }),
@@ -179,11 +184,11 @@ export async function prepare(
       `The request has ${submitted.length} Statements, above the limit of ${maxBatch} for one request.`,
     );
   }
-  const converted = inUtcTimestamps(submitted);
+  const converted = inUtcTimestamps(submitted, context.version);
   if (isRefusal(converted)) return converted;
   const list = converted.value;
   const sink = issueSink(maxFindings, true);
-  const read = inspectBatch(list, "lrs", sink);
+  const read = inspectBatch(list, { role: "lrs", version: context.version }, sink);
   const errors = sink.list();
   if (errors.length > 0) return refused(400, refusalOf("The batch of Statements", errors, "validateStatements"));
   const refusal = checkIdentity(read, single);

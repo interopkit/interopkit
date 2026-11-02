@@ -2,7 +2,13 @@ import { type CallOptions, DataError, type Signer, signCompactJws } from "@inter
 import { checkRecord, describe, guardSchema, parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { attachmentHash } from "../attachments/index.js";
-import type { Attachment, AttachmentData, Statement } from "../model/index.js";
+import {
+  type Attachment,
+  type AttachmentData,
+  type Statement,
+  XAPI_VERSIONS,
+  type XapiVersion,
+} from "../model/index.js";
 import { readStatement } from "../read/index.js";
 import { CERTIFICATE_BASE64, SIGNATURE_ALGORITHMS, SIGNATURE_CONTENT_TYPE, SIGNATURE_USAGE_TYPE } from "./constants.js";
 
@@ -25,6 +31,12 @@ export interface SignStatementOptions extends CallOptions {
    * @defaultValue none
    */
   readonly x5c?: readonly string[];
+  /**
+   * The version of xAPI whose provider rules the Statement is read with first.
+   *
+   * @defaultValue `"2.0.0"`
+   */
+  readonly version?: XapiVersion;
 }
 
 const optionsSchema = strictRecord({
@@ -42,6 +54,7 @@ const optionsSchema = strictRecord({
       v.nonEmpty(),
     ),
   ),
+  version: v.optional(v.picklist(XAPI_VERSIONS)),
   signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
 });
 
@@ -61,7 +74,7 @@ function checkAlgorithm(signer: unknown): asserts signer is Signer {
  * Statement.
  *
  * @remarks
- * The Statement is read with the rules of a Learning Record Provider first, and the payload is its JSON before the signature
+ * The Statement is read with the rules of a Learning Record Provider of the version first, and the payload is its JSON before the signature
  * is added, as the standard asks. The signature has the usage type `http://adlnet.gov/expapi/attachments/signature` and the
  * content type `application/octet-stream`; the host sends the returned Statement with `signature` as the data of that
  * Attachment. The algorithm is the signer's and is RS256, RS384 or RS512, and the key id of the signer, if it has one, is the
@@ -69,7 +82,7 @@ function checkAlgorithm(signer: unknown): asserts signer is Signer {
  *
  * @param statement - The Statement, which has no signature yet.
  * @param signer - Signs the bytes with an RSA key, in a `CryptoKey` or a KMS.
- * @param options - The certificate chain and the `signal`.
+ * @param options - The certificate chain, the version and the `signal`.
  * @returns The Statement with the header of its signature, and the signature.
  * @throws `DataError` when the Statement breaks a rule of a provider or has a signature already, the signer does not sign with
  * RS256, RS384 or RS512, or the options are not valid.
@@ -81,9 +94,9 @@ export async function signStatement(
   signer: Signer,
   options?: SignStatementOptions,
 ): Promise<SignedStatement> {
-  const read = readStatement(statement, { role: "provider" });
+  const { x5c, version, signal } = parseWith(optionsSchema, options === undefined ? {} : options, "The options object");
+  const read = readStatement(statement, { role: "provider", version: version ?? "2.0.0" });
   checkAlgorithm(signer);
-  const { x5c, signal } = parseWith(optionsSchema, options === undefined ? {} : options, "The options object");
   if (read.attachments?.some(({ usageType }) => usageType === SIGNATURE_USAGE_TYPE)) {
     throw new DataError("The Statement has a signature already: a Statement is signed once.");
   }

@@ -1,7 +1,8 @@
 # Comparing Statements
 
 `sameStatement` tells whether two Statements are the same Statement by the rules of immutability. An LRS needs it when it meets
-an id it holds already: the same Statement is a resend (204), another is a conflict (409).
+an id it holds already: the same Statement is a resend (204), another is a conflict (409). `toStatementVersion` gives a Statement
+in the form of 1.0.3, which the route of 1.0.3 answers and compares a resend with: [the versions guide](versions.md) says how.
 
 ```mermaid
 flowchart TD
@@ -66,7 +67,7 @@ and `PT3600.004S`); a day is not 24 hours.
 | Not included                                                   | Why                                                                                                                 |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Normalizing percent-encoding, ports and dot segments of an IRI | The standard allows simple comparison or syntax-based normalization; the package folds the parts the standard names |
-| Comparing Statements across versions                           | The rules of 1.0.3 are another rule set                                                                             |
+| Comparing with `sameStatement` across versions                 | `toStatementVersion` gives the form to compare; the rules of immutability are the same in both versions             |
 
 ## Differences from the references
 

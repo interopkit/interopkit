@@ -1,7 +1,7 @@
 import { readStatementJson, validateStatement, validateStatements } from "@interopkit/learning-records";
 import learningLocker from "@learninglocker/xapi-validation";
 import { expect, test } from "vitest";
-import { BENCH_OPTIONS, expectRatio, RATIOS, STATEMENTS } from "./budgets.js";
+import { BENCH_OPTIONS, BUDGETS, expectRatio, expectWithin, RATIOS, STATEMENTS } from "./budgets.js";
 
 /** The validator of Learning Locker: the package is CommonJS, so Node gives its `exports` and a bundler gives the function. */
 const imported = learningLocker as unknown as
@@ -58,8 +58,10 @@ test("checks a batch of 1,000 Statements as fast as the validator of Learning Lo
     { ...reference, name: "the validator of Learning Locker" },
     RATIOS.validateAgainstLearningLocker,
   );
+  await expectWithin(annotate, "validateStatement", ours, BUDGETS.validateStatement);
 
   const parse = await bench("JSON.parse", () => JSON.parse(text)).run(BENCH_OPTIONS);
   const read = await bench("readStatementJson", () => readStatementJson(text)).run(BENCH_OPTIONS);
   await expectRatio(annotate, "readStatementJson", read, { ...parse, name: "JSON.parse" }, RATIOS.readJsonAgainstParse);
+  await expectWithin(annotate, "readStatementJson", read, BUDGETS.readStatementJson);
 });

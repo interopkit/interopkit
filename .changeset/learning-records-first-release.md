@@ -29,3 +29,8 @@ merge and the retry of lost races; Agents, Activities and About. `readBasicAutho
 An LRS that the handler answers for passes the 1,442 tests of the ADL conformance suite for xAPI 2.0, and the reader of an LRS
 agrees with SQL LRS on 147 of the 153 rules of the standard; the client takes the answer of a resend that an LRS gives with
 no ids.
+xAPI 1.0.3 runs beside 2.0. The readers take `version`, with the rules of 1.0.3 for each role; `buildStatement`,
+`voidingStatement` and `signStatement` take it too; `toStatementVersion` gives a Statement in the form of 1.0.3. The client
+speaks the version it is given, and `handleLrsRequest` routes each request by its `X-Experience-API-Version` header among the
+option `versions`, with the alternate request syntax, the preconditions of 1.0.3 through an unconditional write of
+`DocumentStore`, and reads and resends across routes. It passes the 1,365 tests of the ADL suite for 1.0.3.

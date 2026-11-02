@@ -102,11 +102,12 @@ a `warning` is a departure from a recommendation, or from what an LRS may reject
 | `component-id-whitespace`    | both       | warning                                 | The id of an interaction component has white space                                                                                               |
 | `duplicate-component-id`     | both       | warning                                 | Two components of a list have one id                                                                                                             |
 | `uuid-variant`               | both       | warning                                 | A UUID that is not of variant 2 of RFC 4122                                                                                                      |
-| `timestamp-not-utc`          | `provider` | error                                   | `timestamp` or `stored` has a time zone other than UTC                                                                                           |
+| `timestamp-not-utc`          | `provider` | error                                   | `timestamp` or `stored` has a time zone other than UTC (2.0)                                                                                     |
 | `timestamp-precision`        | `provider` | warning                                 | A time with less than millisecond precision                                                                                                      |
 | `duration-precision`         | `provider` | warning                                 | A duration with seconds finer than 0.01                                                                                                          |
 | `lrs-managed-property`       | `provider` | warning                                 | `stored`, `authority`, or a `version` of `2.0.0`, which the LRS sets                                                                             |
-| `empty-object`               | `provider` | warning                                 | A property whose value is `{}`, other than the values inside extensions                                                                          |
+| `timestamp-not-rfc3339`      | `provider` | error                                   | `timestamp` or `stored` is ISO 8601 and not RFC 3339 (1.0.3)                                                |
+| `empty-object`               | `provider` | warning                                 | A property whose value is `{}`, other than the values inside extensions; for both roles on 1.0.3                                                 |
 | `single-activity`            | `provider` | warning                                 | A value of `contextActivities` that is one Activity and not a list                                                                               |
 
 The warning `missing-property` for a provider names `id`: a provider should send one, so that a resend repeats it.
@@ -191,7 +192,7 @@ than `maxFindings` of about a kilobyte, whatever the size of the value: a Statem
 
 | Not included                                      | Why                                                                                                                                               |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| xAPI 1.0.3                                        | Another rule set with its own routes; the package reads 2.0 here                                                                                  |
+| Rules of xAPI 1.0.3 not listed here               | `version: "1.0.3"` applies them: [the versions guide](versions.md) lists what differs                                                             |
 | A timestamp later than the clock                  | It needs the clock and a margin that the standard leaves open; an LRS shall not reject it, and a provider compares `timestamp` with its own clock |
 | Items of a pattern that are not ids of components | The standard defines the form of a pattern and not a reference; an LRS does not validate patterns                                                 |
 | Subtags in the registry of IANA                   | The standard asks an LRS to validate the form of a language tag                                                                                   |
@@ -205,4 +206,4 @@ than `maxFindings` of about a kilobyte, whatever the size of the value: a Statem
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | The standard's text       | "May" and "should" of an LRS are warnings and never errors. "May not reject" is read as "shall not reject" ([gaps](spec-gaps.md))                                        |
 | The standard's examples   | Every Statement and batch the examples print is accepted by the rules of an LRS; a test reads them at a pinned hash. Some break rules of a provider, which the test pins |
-| Other validators of 1.0.x | Not compared: the package reads 2.0. Where a 2.0 verdict differs from another implementation, [the gaps page](spec-gaps.md) records it with the sentence of the standard |
+| Other validators of 1.0.x | The validator of Learning Locker reads the fixtures of the rules of 1.0.3 in a test. Where a verdict differs from another implementation, [the gaps page](spec-gaps.md) records it with the sentence of the standard |

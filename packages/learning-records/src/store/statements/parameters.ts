@@ -1,10 +1,10 @@
 import { DataError } from "@interopkit/core";
 import { describe, isUuid, parseWith } from "@interopkit/core/checks";
 import { type HttpRequest, readQuery } from "@interopkit/core/http";
-import type { StatementFormat, StatementQuery } from "../../model/index.js";
+import type { StatementFormat, StatementQuery, XapiVersion } from "../../model/index.js";
 import { statementQuerySchema } from "../../read/internal.js";
 import type { LrsSettingsLimits } from "../options.js";
-import { checkNames, readJsonParameter } from "../parameters.js";
+import { checkNames, readIsoParameter, readJsonParameter } from "../parameters.js";
 import { attempt, type Verdict } from "../verdict.js";
 
 /** What a GET on the Statements resource asks for. */
@@ -44,6 +44,7 @@ const FILTERS: ReadonlyMap<string, string> = new Map([
 
 const BOOLEANS = new Set(["related_activities", "related_agents", "attachments", "ascending"]);
 const SINGLE = new Set(["statementId", "voidedStatementId", "attachments", "format"]);
+const TIMES = new Set(["since", "until"]);
 
 /** The place of the cursor in the address of a page, which is the only parameter the LRS adds to the standard's. */
 export const CURSOR = "cursor";
@@ -66,20 +67,25 @@ function readCount(name: string, text: string): number {
 }
 
 /** Turns the text of the parameters into the filters of a query, and checks each. */
-function readFilters(parameters: ReadonlyMap<string, string>, limits: LrsSettingsLimits): StatementQuery {
+function readFilters(
+  parameters: ReadonlyMap<string, string>,
+  limits: LrsSettingsLimits,
+  version: XapiVersion,
+): StatementQuery {
   const raw: Record<string, unknown> = {};
   for (const [name, text] of parameters) {
     const property = FILTERS.get(name);
     if (property === undefined) continue;
     if (BOOLEANS.has(name)) raw[property] = readBoolean(name, text);
     else if (name === "limit") raw[property] = readCount(name, text);
+    else if (TIMES.has(name) && version === "1.0.3") raw[property] = readIsoParameter(name, text);
     else raw[property] = name === "agent" ? readJsonParameter(text, limits) : text;
   }
   return parseWith(statementQuerySchema, raw, "The query");
 }
 
 /** Reads a GET on the Statements resource: one Statement, or a page of them. */
-export function readGet(request: HttpRequest, limits: LrsSettingsLimits): Verdict<StatementsGet> {
+export function readGet(request: HttpRequest, limits: LrsSettingsLimits, version: XapiVersion): Verdict<StatementsGet> {
   return attempt(() => {
     const parameters = readQuery(request);
     checkNames(parameters, KNOWN);
@@ -91,7 +97,8 @@ export function readGet(request: HttpRequest, limits: LrsSettingsLimits): Verdic
     const one = wanted ?? voidedWanted;
     if (one === undefined) {
       const carried = [...parameters].filter(([name]) => name !== CURSOR);
-      return { kind: "many", query: readFilters(parameters, limits), carried, cursor: parameters.get(CURSOR) } as const;
+      const query = readFilters(parameters, limits, version);
+      return { kind: "many", query, carried, cursor: parameters.get(CURSOR) } as const;
     }
     for (const name of parameters.keys()) {
       if (!SINGLE.has(name)) {
@@ -101,7 +108,7 @@ export function readGet(request: HttpRequest, limits: LrsSettingsLimits): Verdic
       }
     }
     if (!isUuid(one)) throw new DataError(`The Statement id must be a UUID, found ${describe(one)}.`);
-    const filters = readFilters(parameters, limits);
+    const filters = readFilters(parameters, limits, version);
     return {
       kind: "one",
       id: one.toLowerCase(),

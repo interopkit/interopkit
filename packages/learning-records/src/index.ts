@@ -1,11 +1,13 @@
 /**
- * xAPI 2.0 learning records: the model of a Statement, readers and validators for the rules of an LRS and of a Learning Record
- * Provider, the text of a request read without a repeated property, builders of Statements, and their comparison and formats.
+ * xAPI 2.0 and 1.0.3 learning records: the model of a Statement, readers and validators for the rules of an LRS and of a
+ * Learning Record Provider in either version, the text of a request read without a repeated property, builders of Statements,
+ * their comparison and formats, and the form of a Statement in 1.0.3.
  *
  * @module @interopkit/learning-records
  */
 
 export {
+  type BuildOptions,
   buildStatement,
   deriveStatementId,
   mboxSha1sum,
@@ -13,7 +15,7 @@ export {
   type VoidingInput,
   voidingStatement,
 } from "./build/index.js";
-export { sameStatement } from "./compare/index.js";
+export { sameStatement, toStatementVersion } from "./compare/index.js";
 export { type FormatOptions, formatStatement } from "./format/index.js";
 export {
   type About,

@@ -2,16 +2,18 @@ import { type CallOptions, DataError, type ServiceResponse } from "@interopkit/c
 import { parseWith, refusalOf, strictRecord, uuidSchema } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { readMultipart, writeMultipart } from "../attachments/index.js";
+import { toStatementVersion } from "../compare/index.js";
 import {
   type AttachmentData,
   STATEMENT_FORMATS,
   type Statement,
   type StatementFormat,
   type StatementQuery,
+  type XapiVersion,
 } from "../model/index.js";
 import { mediaTypeOf } from "../model/internal.js";
 import { readStatement, validateStatements } from "../read/index.js";
-import { attachmentDataSchema } from "../read/internal.js";
+import { attachmentDataSchema, readEitherVersion } from "../read/internal.js";
 import type { Settings } from "./config.js";
 import { callOptionsSchema, signalEntry } from "./options.js";
 import { readQuery } from "./query.js";
@@ -90,6 +92,15 @@ const getOptionsSchema = strictRecord({
 
 const resultSchema = strictRecord({ statements: v.array(v.unknown()), more: v.optional(v.string()) });
 
+/**
+ * Reads a Statement of an answer. A client of 1.0.3 tolerates a data structure with additional properties and ignores what
+ * version 1.0.0 does not define (1.0.3 Communication 3.3), so it reads a Statement of either version into the form of 1.0.3: an
+ * LRS that serves both versions may answer a Statement of 2.0 as it holds it.
+ */
+function readAnswered(value: unknown, version: XapiVersion): Statement {
+  return version === "1.0.3" ? toStatementVersion(readEitherVersion(value), "1.0.3") : readStatement(value);
+}
+
 /** The body of a request: the Statements as JSON, or as a multipart message when the caller sends Attachments. */
 function bodyOf(
   document: Statement | readonly Statement[],
@@ -110,7 +121,7 @@ export async function sendStatement(
     options === undefined ? {} : options,
     "The options object",
   );
-  const read = readStatement(statement, { role: "provider" });
+  const read = readStatement(statement, { role: "provider", version: settings.version });
   if (read.id === undefined) {
     throw new DataError(
       "The Statement needs an id to be stored with PUT: deriveStatementId makes one that a resend repeats.",
@@ -166,9 +177,10 @@ export async function sendStatements(
     options === undefined ? {} : options,
     "The options object",
   );
-  const errors = validateStatements(statements, { role: "provider" }).filter(({ severity }) => severity === "error");
+  const rules = { role: "provider", version: settings.version } as const;
+  const errors = validateStatements(statements, rules).filter(({ severity }) => severity === "error");
   if (errors.length > 0) throw new DataError(refusalOf("The batch of Statements", errors, "validateStatements"));
-  const batch = statements.map((statement) => readStatement(statement, { role: "provider" }));
+  const batch = statements.map((statement) => readStatement(statement, rules));
   const { contentType, body } = bodyOf(batch, attachments);
   const url = urlOf(settings, "statements");
   const response = await send(
@@ -221,17 +233,20 @@ export async function getStatement(
   if (response.status === 404) return undefined;
   return readAnswer(url, () => {
     const body = readBody(response, settings);
-    const statement = readStatement(body.json);
+    const statement = readAnswered(body.json, settings.version);
     return attachments === true ? { statement, attachments: body.attachments } : statement;
   });
 }
 
-/** Reads the Statements of a page from the JSON of its answer: a result whose Statements are as an LRS reads them. */
-function readResult(json: unknown): { readonly statements: readonly Statement[]; readonly more: string } {
+/** Reads the Statements of a page from the JSON of its answer: a result whose Statements are as an LRS of the version reads them. */
+function readResult(
+  json: unknown,
+  version: XapiVersion,
+): { readonly statements: readonly Statement[]; readonly more: string } {
   const result = parseWith(resultSchema, json, "The page");
   const statements = result.statements.map((entry, index) => {
     try {
-      return readStatement(entry);
+      return readAnswered(entry, version);
     } catch (error) {
       if (!(error instanceof DataError)) throw error;
       throw new DataError(`The page has an invalid Statement at statements[${index}]. ${error.message}`);
@@ -247,7 +262,7 @@ function readPage(response: ServiceResponse, settings: Settings): StatementPage 
     throw new DataError("The answer has no X-Experience-API-Consistent-Through header, which the standard requires.");
   }
   const { json, attachments } = readBody(response, settings);
-  const { statements, more } = readResult(json);
+  const { statements, more } = readResult(json, settings.version);
   return { statements, attachments, consistentThrough, ...(more === "" ? {} : { more }) };
 }
 

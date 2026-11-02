@@ -150,13 +150,18 @@ export interface ActivityStore {
 
 /**
  * What a write of a document checks in the store, atomically, against the document that exists: the tag it must have, that
- * none exists and `If-None-Match: *` was sent, or that none exists and no precondition was sent.
+ * none exists and `If-None-Match: *` was sent, that none exists and no precondition was sent, or nothing, for a State `PUT`
+ * of xAPI 1.0.3 without a precondition, which replaces whatever document exists (1.0.3 Communication 3.1).
  */
 export type WriteCondition =
   | Precondition
   | {
       /** The request had no precondition: the write goes only where no document exists. */
       readonly none: true;
+    }
+  | {
+      /** The route lets the write go without a precondition: it replaces the document that exists, or makes one. */
+      readonly unconditional: true;
     };
 
 /**
@@ -173,7 +178,7 @@ export interface DocumentStore {
   /**
    * Stores the document under the key if `condition` holds, atomically across processes, and says what it did: `written`,
    * `precondition-failed` when `ifMatch` names another tag than the document's or no document, or `ifNoneMatch` finds one,
-   * and `exists` when `none` finds one.
+   * and `exists` when `none` finds one. An `unconditional` write is always `written`.
    */
   write(
     key: DocumentTarget,

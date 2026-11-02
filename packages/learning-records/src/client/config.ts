@@ -20,7 +20,8 @@ export interface LrsClientConfig extends CallOptions {
   /** The `fetch` that makes the requests: the global one, or a replacement. */
   readonly fetch: Fetch;
   /**
-   * The version of xAPI whose header and rules for preconditions the client uses.
+   * The version of xAPI whose header, rules for Statements and rules for preconditions the client uses. On `1.0.3` the
+   * Statements that it sends follow the provider rules of 1.0.3, and it reads an answer into the form of 1.0.3.
    *
    * @defaultValue `"2.0.0"`
    */

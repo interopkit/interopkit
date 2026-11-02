@@ -14,7 +14,7 @@ function checkedDefinition(id: string, definition: unknown): ActivityDefinition 
       verb: { id: "https://example.org/probe" },
       object: { id, definition },
     },
-    "lrs",
+    { role: "lrs", version: "2.0.0" },
     sink,
   );
   const errors = sink.list();

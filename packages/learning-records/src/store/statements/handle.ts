@@ -13,7 +13,7 @@ const CONSISTENT_THROUGH = "x-experience-api-consistent-through";
 
 /** Answers a GET or a HEAD: one Statement, or a page of them. */
 async function get(context: Context): Promise<HttpResponse> {
-  const asked = readGet(context.request, context.settings.limits);
+  const asked = readGet(context.request, context.settings.limits, context.version);
   if (isRefusal(asked)) return context.refuse(asked.status, asked.message);
   return asked.value.kind === "one" ? answerOne(context, asked.value) : answerMany(context, asked.value);
 }

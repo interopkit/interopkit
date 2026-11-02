@@ -1,7 +1,8 @@
 # Supported
 
-What `@interopkit/learning-records` implements of xAPI. The package implements the standard and is not certified or endorsed
-by IEEE or ADL. Section numbers are those of the LRS book (4.x) and the Content book (5.x) of IEEE 9274.1.1.
+What `@interopkit/learning-records` implements of xAPI 2.0 and 1.0.3. The package implements the standards and is not certified
+or endorsed by IEEE or ADL. Section numbers are those of the LRS book (4.x) and the Content book (5.x) of IEEE 9274.1.1; 1.0.3 has
+a row of its own.
 
 ```mermaid
 flowchart LR
@@ -12,7 +13,8 @@ flowchart LR
   model --> attach["Attachments, signatures<br/>4.1.3, 4.2.6"]
   model --> client["Client of the seven resources<br/>4.1.4 to 4.1.7"]
   model --> store["Handler of the LRS requests<br/>4.1.1 to 4.1.8"]
-  spec -.-> outside["Not included here:<br/>1.0.3, requests, store,<br/>profiles, cmi5"]
+  v1["xAPI 1.0.3<br/>Data, Communication"] --> model
+  spec -.-> outside["Not included here:<br/>profiles, cmi5"]
 ```
 
 | Area               | Specification                       | Included                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -38,12 +40,11 @@ flowchart LR
 | Signed Statements  | 4.2.6                               | A compact JWS in an Attachment, RS256, RS384 and RS512, the `x5c` chain, the signing over a `Signer`, the check of the leaf and of the equivalence of the payload                                                                                                                                                                                                                                      |
 | Client             | 4.1.1 to 4.1.7                      | The seven resources over `fetch`: Statements (PUT, POST, GET, the twelve filters, `more`), State, Agent Profile and Activity Profile with ETags and preconditions, Agents, Activities, About; the version header                                                                                                                                                                                       |
 | LRS handler        | 4.1.1 to 4.1.8, 4.2.4, 4.2.5        | All seven resources with HEAD: the version header, errors by `Accept`, the limits with 413, Statements with the twelve filters, the rules of Statement References, pages with `more`, the three formats, voiding, Attachments in both directions and signatures; State and both profiles under ETags with merge, `If-Match`, `If-None-Match` and the retry of lost races; Agents, Activities and About |
+| xAPI 1.0.3         | Data, Communication                 | The rules of each role with `version: "1.0.3"`, builders, signatures, the client, and a route of the LRS with the alternate request syntax, 1.0.3 preconditions and `toStatementVersion` ([versions](versions.md)) |
 | Examples           | The IEEE examples repository        | Every Statement and batch of the examples is read, at a pinned hash                                                                                                                                                                                                                                                                                                                                    |
 
 ## Not included
 
 | Not included                  | Why                                                             |
 | ----------------------------- | --------------------------------------------------------------- |
-| xAPI 1.0.3                    | Its own rule set and routes; the readers and builders apply 2.0 |
-| xAPI 1.0.3 in the LRS handler | Another part of the package                                     |
 | xAPI Profiles, cmi5, launch   | Standards of their own                                          |

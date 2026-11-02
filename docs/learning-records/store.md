@@ -3,17 +3,22 @@
 `@interopkit/learning-records/store` answers the requests that a Learning Record Provider and a consumer make to a Learning
 Record Store. `handleLrsRequest` takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, over the ports
 of the host: the stores of Statements, documents and Activities, the decision about who may do what, and a clock. It keeps no
-state, makes no request, and knows no database, server or account.
+state, makes no request, and knows no database, server or account. It serves xAPI 2.0 and 1.0.3, each request by the version it
+names: [the versions guide](versions.md) says what differs.
 
 ```mermaid
 flowchart TD
   request["HttpRequest"] --> route{"Path below basePath<br/>names a resource?"}
   route -->|"no"| r404["404"]
-  route -->|"yes"| method{"Method allowed?"}
-  method -->|"no"| r405["405 with Allow"]
-  method -->|"yes"| version{"X-Experience-API-Version<br/>2.0 or 2.0.x?<br/>(not asked of About)"}
+  route -->|"yes"| alternate{"A POST with method<br/>in its query?"}
+  alternate -->|"yes"| form["Read the form:<br/>the method, headers, parameters, content"]
+  alternate -->|"no"| version
+  form -->|"not a form"| r400f["400"]
+  form --> version{"X-Experience-API-Version<br/>a version that versions serves?<br/>(not asked of About)"}
   version -->|"no"| r400["400"]
-  version -->|"yes"| access["access(request)"]
+  version -->|"yes"| method{"Method allowed?"}
+  method -->|"no"| r405["405 with Allow"]
+  method -->|"yes"| access["access(request)"]
   access -->|"refuses"| rA["401, 403 or 429"]
   access -->|"allows"| action{"Action granted?"}
   action -->|"no"| r403["403"]
@@ -21,7 +26,7 @@ flowchart TD
   size -->|"no"| r413["413"]
   size -->|"yes"| resource["The resource:<br/>parameters, body, rules"]
   resource --> ports["StatementStore, DocumentStore,<br/>ActivityStore, AgentStore"]
-  resource --> answer["HttpResponse<br/>X-Experience-API-Version: 2.0.0"]
+  resource --> answer["HttpResponse<br/>X-Experience-API-Version of the route"]
 ```
 
 ## Quick start
@@ -168,8 +173,8 @@ not ask the store.
 
 A stored Statement gets what the LRS sets (4.2.4.2): an `id` when it has none, in lower case; `stored`, always, from the
 `clock`; `timestamp` from `stored` when it has none, and a `timestamp` that is not in UTC written in UTC, whatever form of ISO 8601 or RFC 3339 it has (the offset `-00:00` is refused); `authority` from `access`, unless `keepSubmittedAuthority` keeps the one it
-brings; `version` `2.0.0` when it has none. A Statement is read with the rules of an LRS first, and a list is judged whole:
-one Statement with an error refuses the request and stores nothing, and two with one id refuse it too. A `version` is `1.0`, `1.0.x`, `2.0` or `2.0.x`, and a submitted `authority` that is a Group is an anonymous Group of two Agents, though the LRS replaces it; the `revision` and `platform` of a context go with an Activity.
+brings; `version` `2.0.0` when it has none, or `1.0.0` on the route of 1.0.3. A Statement is read with the rules of an LRS of the route first, and a list is judged whole:
+one Statement with an error refuses the request and stores nothing, and two with one id refuse it too. A `version` is `1.0`, `1.0.x`, `2.0` or `2.0.x`, or `1.0` and `1.0.x` alone on the route of 1.0.3, and a submitted `authority` that is a Group is an anonymous Group of two Agents, though the LRS replaces it; the `revision` and `platform` of a context go with an Activity.
 
 A Statement with the voided Verb voids the Statement it refers to when the LRS holds it, or the batch has it, and it is not a
 voiding Statement itself. A voided Statement is returned only to a request by `voidedStatementId`, and Statements that refer to
@@ -239,6 +244,14 @@ RFC 9110 and the standard (4.1.4):
 | none, a PUT             | 409                                                      | Written       |
 | none, a POST            | Merged into it                                           | Written       |
 
+The route of 1.0.3 lets State go without concurrency headers and asks one of a PUT of a profile (1.0.3 Communication 3.1), so a
+PUT with neither header differs there:
+
+| A PUT with neither header, on 1.0.3 | The document exists | There is none  |
+| ----------------------------------- | ------------------- | -------------- |
+| State                               | Replaced            | Written        |
+| Agent Profile, Activity Profile     | 409                 | 400            |
+
 A `DELETE` takes `If-Match` and no other header: with a tag that is not the document's, or with no document, the answer is 412,
 and without the header the document is removed, or is already not there and the answer is 204. A member of a header is compared
 with the tag as it was written, so one that is no quoted entity tag, such as `1234`, names no tag of the document and the
@@ -262,8 +275,9 @@ exactly one parameter; a Group, an Agent without an identifier, and an `activity
 
 ## About
 
-`GET about` answers `{ "version": ["2.0.0"] }` with the `aboutExtensions` of the options as `extensions` (4.1.6.7). It is
-answered whatever version header the request has, so that a client can find the versions the LRS speaks. It asks `access` like
+`GET about` answers `{ "version": ["2.0.0", "1.0.3"] }`, the option `versions`, with the `aboutExtensions` of the options as
+`extensions` (4.1.6.7). It is answered whatever version header the request has, so that a client can find the versions the LRS
+serves. It asks `access` like
 every request and needs no action: a host that lets anyone ask About answers `{ allowed: true, actions: [] }` with an
 `authority` of its choice.
 
@@ -285,6 +299,7 @@ method is in the table of [the resources](#the-resources).
 | `access`                 | `LrsOptions` | required                              | Decides who asks and what they may do                                                                          |
 | `clock`                  | `LrsOptions` | required                              | The time of the LRS; `stored` of a Statement and `updated` of a document are its `now`                         |
 | `basePath`               | `LrsOptions` | `"/xapi"`                             | The path the LRS is mounted at: `""`, or a path that starts with `/` and does not end with one                 |
+| `versions`               | `LrsOptions` | `["2.0.0", "1.0.3"]`                  | The versions the LRS serves, the latest first; a request of another is 400, and About lists these              |
 | `newId`                  | `LrsOptions` | `crypto.randomUUID`                   | Makes the id of a Statement that has none                                                                      |
 | `accept`                 | `LrsOptions` | none                                  | A check after the standard's, for the rules of a profile; an error among its findings refuses with 400         |
 | `trustCertificate`       | `LrsOptions` | none                                  | Whether the chain of a signed Statement is trusted; the signature is checked against the leaf whatever it says |
@@ -334,8 +349,9 @@ bytes, which is 413.
 | `AgentStore`     | `person`            | Returns the Person that an Agent is, with every identifier the host knows                                                                |
 
 The `agent` of a `DocumentTarget` holds only `objectType` and its one identifier in a fixed order, and a `registration` is in
-lower case, so the JSON of a target can be its key. A `WriteCondition` is `{ ifMatch }`, `{ ifNoneMatch: "*" }` or
-`{ none: true }`, which writes only where no document exists.
+lower case, so the JSON of a target can be its key. A `WriteCondition` is `{ ifMatch }`, `{ ifNoneMatch: "*" }`,
+`{ none: true }`, which writes only where no document exists, or `{ unconditional: true }`, which replaces whatever exists and
+always answers `written`: a State PUT without a precondition on the route of 1.0.3.
 
 `matchesStatementQuery(statement, query, target)` says whether a Statement meets the filters of a query, with the rules of the
 Statement References of 4.1.6.1; a store that holds Statements in a database can mirror it in its own query and test the
@@ -358,6 +374,7 @@ mirror against it. `target` finds any Statement by its id in lower case, a voide
 | 401, 403, 429                                                                    | `access` refused the request, or the credentials lack the action                                                         | Send the credentials the host asks for                                     |
 | 404                                                                              | The path names no resource, or the LRS holds no such Statement or document                                               | Check the id                                                               |
 | 405 with `Allow`                                                                 | The resource has no such method                                                                                          | Use a method of `Allow`                                                    |
+| 400 on the route of 1.0.3                                                        | A PUT of a profile has no precondition and no document exists                                                            | Send `If-None-Match: *`                                                    |
 | 409                                                                              | The LRS holds another Statement with the id; a PUT has no precondition over a document that exists; writers kept winning | Send a new id, or `If-Match` with the ETag, or read the document and retry |
 | 412                                                                              | `If-Match` or `If-None-Match` is not met                                                                                 | Read the document again                                                    |
 | 413                                                                              | A body, a batch, a part, a number of parts or a document is over its limit                                               | Send less, or raise the limit                                              |
@@ -372,11 +389,11 @@ A refusal is written as plain text, JSON `{ "message": "..." }` or HTML, as `Acc
 
 | Not included                                          | Why                                                                   |
 | ----------------------------------------------------- | --------------------------------------------------------------------- |
-| The version 1.0.3                                     | Its own rules and routes; a request that names it is refused with 400 |
 | A conditional GET (`If-None-Match` answered with 304) | The standard asks only for the ETag on a GET                          |
 | A database, an index, an account, a rate limit        | The host's: the ports and `access` are where they plug in             |
 | Deleting a Statement                                  | The standard asks that Statements are not deleted; voiding is the way |
 | A time later than the clock                           | The standard says an LRS shall not reject it                          |
+| The versions 0.9 and 0.95                             | Earlier than 1.0.0, which 1.0.3 asks an LRS to refuse (Communication 3.3) |
 
 ## Differences from the references
 

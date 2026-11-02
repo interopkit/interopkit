@@ -1,6 +1,7 @@
 # @interopkit/learning-records
 
-xAPI [2.0](https://opensource.ieee.org/xapi/xapi-base-standard-documentation) (IEEE 9274.1.1-2023): the model of a Statement,
+xAPI [2.0](https://opensource.ieee.org/xapi/xapi-base-standard-documentation) (IEEE 9274.1.1-2023) and
+[1.0.3](https://github.com/adlnet/xAPI-Spec/tree/1.0.3): the model of a Statement,
 readers that check it against the rules of an LRS and of a Learning Record Provider, validators that list every finding, a
 reader of the text of a request that refuses a property given twice, builders of Statements, the comparison and the formats
 of Statements, the message that carries Attachments, the signature of a Statement, a client of an LRS, and the handler of the requests that an LRS answers. It knows nothing of any product: the host says where a Statement comes from and what it is for.
@@ -19,7 +20,7 @@ flowchart LR
     client["/client<br/>createLrsClient"]
     store["/store<br/>handleLrsRequest"]
   end
-  model["Statement, Actor, Activity, Result, Context, ...<br/>the model of xAPI 2.0"]
+  model["Statement, Actor, Activity, Result, Context, ...<br/>the model of xAPI"]
   host -->|"text"| json
   json -->|"parsed value"| read
   host -->|"parsed value"| read
@@ -61,7 +62,7 @@ npm install @interopkit/learning-records
 |                                            | `readStatementJson`, `ReadStatementJsonOptions`: parse the text of a request, and refuse a property that occurs twice                                                                                                                                                                                                                    |
 |                                            | `buildStatement`, `StatementInput`, `voidingStatement`: build the Statement of an event, or the one that voids another, checked against the rules of a provider                                                                                                                                                                          |
 |                                            | `deriveStatementId`, `mboxSha1sum`, `formatDuration`, `parseDuration`, `formatTimestamp`: the id of an event, the hash of an address, and the durations and times of the standard                                                                                                                                                        |
-|                                            | `sameStatement`: whether two Statements are the same by the rules of immutability                                                                                                                                                                                                                                                        |
+|                                            | `sameStatement`, `toStatementVersion`: whether two Statements are the same by the rules of immutability, and a Statement in the form of 1.0.3                                                                                                                                                                                                                                                        |
 |                                            | `formatStatement`, `FormatOptions`, `StatementFormat`: a Statement as `ids`, `exact` or `canonical`                                                                                                                                                                                                                                      |
 |                                            | `Statement`, `SubStatement`, `StatementRef`, `StatementResult`, `Actor`, `Agent`, `Group`, `Activity`, `ActivityDefinition`, `Result`, `Context`, `Attachment`, `AttachmentData` and the other types                                                                                                                                     |
 |                                            | `INTERACTION_TYPES`, `CONTEXT_ACTIVITY_TYPES`, `RULE_ROLES`, `VERB_VOIDED` and the types of the vocabularies                                                                                                                                                                                                                             |
@@ -96,7 +97,7 @@ validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `
 
 ## What this version includes
 
-| Part of xAPI 2.0                | Included                                                                                                                                                                                                                       |
+| Part of xAPI                    | Included                                                                                                                                                                                                                       |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | The Statement and what it holds | Every property of the tables of 4.2.2: Actors, Verbs, Objects with Activity Definitions and the ten interactions, Results, Contexts, SubStatements, Attachments                                                                |
 | Rules of an LRS                 | What an LRS shall reject (4.2.1, 4.2.4, 4.2.5, 4.2.7), the batch rule of 4.1.6.1, and what it shall not reject                                                                                                                 |
@@ -109,6 +110,7 @@ validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `
 | Attachments                     | The `multipart/mixed` message of Statements and Attachment data, matched by SHA-2 hash, within limits                                                                                                                          |
 | Signed Statements               | A compact JWS in an Attachment with RS256, RS384 or RS512 and an `x5c` chain, signed over a `Signer` and verified against the leaf and the equivalence of the payload                                                          |
 | Client                          | The seven resources over `fetch`: Statements and their twelve filters with pages, State and the two profiles under ETags with the preconditions of the version, Agents, Activities and About                                   |
+| xAPI 1.0.3                      | The rules of each role with `version: "1.0.3"`, builders, signatures, the client, and a route of the LRS with the alternate request syntax and the preconditions of 1.0.3 |
 | LRS handler                     | All seven resources over plain requests and the ports of your stores: versions, errors, limits, access, voiding, filters and pages, Attachments and signatures, documents under ETags with merge, Agents, Activities and About |
 
 [The model guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/model.md) has the options with their
@@ -117,15 +119,16 @@ differences from the references. The guides of [building](https://github.com/int
 [comparing](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/compare.md),
 [formats](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/format.md),
 [attachments](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/attachments.md),
-[signing](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/signing.md) and
-[the client](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/client.md) and
-[the LRS handler](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/store.md) do the same.
+[signing](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/signing.md),
+[the client](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/client.md),
+[the LRS handler](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/store.md) and
+[the versions of xAPI](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/versions.md) do the same.
 
 [The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/evidence.md) shows what the
-package was checked against: the rules of the standard, the ADL conformance suite, SQL LRS as an oracle and a counterparty,
-an example LRS with a platform and a dashboard, the speed of checking and four runtimes.
+package was checked against: the rules of both versions, both ADL conformance suites, SQL LRS and the validator of Learning
+Locker as oracles, an example LRS with a platform and a dashboard, the speed of checking and four runtimes.
 
 ## License
 
 [Apache-2.0](LICENSE). Copyright Fariz Wakan. xAPI is the standard IEEE 9274.1.1; see [NOTICE](NOTICE). This package implements
-xAPI 2.0 and is not certified or endorsed by IEEE or ADL.
+xAPI 2.0 and 1.0.3 and is not certified or endorsed by IEEE or ADL.

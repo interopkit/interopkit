@@ -111,7 +111,7 @@ A precondition that the version does not require is sent when the caller gives i
 | --------------- | ------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
 | `endpoint`      | `LrsClientConfig`               | required   | The LRS before the resources, HTTPS, ending in a slash, with no credentials, query or fragment         |
 | `fetch`         | `LrsClientConfig`               | required   | The `fetch` that makes the requests                                                                    |
-| `version`       | `LrsClientConfig`               | `"2.0.0"`  | `"2.0.0"` or `"1.0.3"`: the `X-Experience-API-Version` header and the preconditions above              |
+| `version`       | `LrsClientConfig`               | `"2.0.0"`  | `"2.0.0"` or `"1.0.3"`: the `X-Experience-API-Version` header, the rules of Statements and the preconditions above ([versions](versions.md))              |
 | `authorization` | `LrsClientConfig`               | none       | `(options) => Promise<string \| undefined>`: the `Authorization` header, asked for before each request |
 | `timeoutMs`     | `LrsClientConfig`               | 10,000     | The most milliseconds of one request, from the request to the last byte                                |
 | `maxBytes`      | `LrsClientConfig`               | 10,485,760 | The most bytes of one answer                                                                           |
@@ -159,10 +159,9 @@ The filters of `queryStatements` are the properties of `StatementQuery`: `agent`
 | Not included                          | Why                                                                                                       |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Retries and backoff                   | A retry of a write needs the host's idea of what is safe to resend; `Retry-After` is in the error         |
-| The rules of 1.0.3 for Statements     | `version: "1.0.3"` changes the header and the preconditions; Statements are checked with the rules of 2.0 |
 | A language for `canonical` Statements | `Accept-Language` is not sent; the LRS chooses                                                            |
 | `HEAD` requests                       | They return what GET does without a body, which a client has no use for                                   |
-| The alternate request syntax          | Removed in 2.0; the client never sends it                                                                 |
+| The alternate request syntax          | Removed in 2.0, and meant for browsers that cannot set headers; the client never sends it                 |
 | Getting a credential                  | `authorization` is the host's: Basic, bearer or OAuth 2.0 through `@interopkit/core/oauth`                |
 | Fetching the data at a `fileUrl`      | A fetch is the host's: it knows which addresses may be called                                             |
 

@@ -1,7 +1,8 @@
 import { createFindingSink, type FindingSink, findingsOf, safeParseBounded } from "@interopkit/core/checks";
-import type { RuleRole, Statement, StatementIssue } from "../model/index.js";
+import type { Statement, StatementIssue } from "../model/index.js";
+import type { RuleSet } from "./options.js";
 import { ruleIssues } from "./rules.js";
-import { statementSchema } from "./schemas.js";
+import { STATEMENT_SCHEMAS } from "./schemas.js";
 
 /**
  * Makes the list of findings of a call that stops at a limit. A reader keeps the errors alone, because it does not report
@@ -16,20 +17,21 @@ export function issueSink(maxFindings: number, errorsOnly: boolean): FindingSink
 }
 
 /**
- * Reads a value into a Statement, and judges the rules between its properties when its shape is right.
+ * Reads a value into a Statement by the rules of a role and a version, and judges the rules between its properties when its
+ * shape is right.
  *
  * @returns The Statement, a copy that shares nothing with the input, when its shape is right, whatever else is found.
  */
 export function inspectStatement(
   input: unknown,
-  role: RuleRole,
+  rules: RuleSet,
   sink: FindingSink<StatementIssue>,
 ): Statement | undefined {
-  const result = safeParseBounded(statementSchema, input, sink.room);
+  const result = safeParseBounded(STATEMENT_SCHEMAS[rules.version], input, sink.room);
   if (!result.success) {
     sink.add(findingsOf(result.issues).map((finding) => ({ ...finding, severity: "error" })));
     return undefined;
   }
-  sink.add(ruleIssues(result.output, role, input));
+  sink.add(ruleIssues(result.output, rules, input));
   return result.output;
 }
