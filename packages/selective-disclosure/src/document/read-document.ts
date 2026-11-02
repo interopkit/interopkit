@@ -1,15 +1,10 @@
 import { DataError } from "@interopkit/core";
-import { copyJson, type JsonObject } from "@interopkit/core/checks";
+import { copyJson, hasMoreTokensThan, type JsonObject } from "@interopkit/core/checks";
 
 /** A document, or a proof, as the functions of the package take it: JSON that they read and do not change. */
 export type JsonDocument = Readonly<Record<string, unknown>>;
 
 const encoder = new TextEncoder();
-
-/** The size of a JSON value as text, in UTF-8 bytes. */
-export function jsonBytes(value: JsonObject): number {
-  return encoder.encode(JSON.stringify(value)).length;
-}
 
 /**
  * Reads a document or a proof that a function of the package works on: a copy that shares nothing with the input.
@@ -25,16 +20,26 @@ export function readJson(value: JsonDocument, label: string): JsonObject {
 }
 
 /**
- * Checks that a document with its proof is not larger than the caller allows.
+ * Checks that a document with its proof is not larger than the caller allows, before any processing: its bytes, and its
+ * tokens, which bound the work of the JSON-LD processor.
  *
- * @param size - The bytes of the document and its proof, as JSON.
- * @param maxBytes - The most bytes allowed.
- * @throws `DataError` when it is larger.
+ * @param text - The document and its proof, as JSON.
+ * @param limits - The most bytes and the most tokens allowed.
+ * @throws `DataError` when it has more bytes or more tokens.
  */
-export function checkSize(size: number, maxBytes: number): void {
+export function checkSize(
+  text: string,
+  { maxBytes, maxTokens }: { readonly maxBytes: number; readonly maxTokens: number },
+): void {
+  const size = encoder.encode(text).length;
   if (size > maxBytes) {
     throw new DataError(
       `The document with its proof has ${size} bytes as JSON, more than the option maxBytes allows, ${maxBytes}.`,
+    );
+  }
+  if (hasMoreTokensThan(text, maxTokens)) {
+    throw new DataError(
+      `The document with its proof has more tokens of JSON than the option maxTokens allows, ${maxTokens}.`,
     );
   }
 }

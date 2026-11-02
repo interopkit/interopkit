@@ -4,7 +4,6 @@ import {
   checkSize,
   createProcessing,
   type JsonDocument,
-  jsonBytes,
   readCommonOptions,
   readJson,
   withoutProof,
@@ -26,6 +25,13 @@ export interface VerifyProofOptions extends CallOptions {
    * @defaultValue 1,048,576
    */
   readonly maxBytes?: number;
+  /**
+   * The most tokens of the document with its proof as JSON. Over it, `verify` answers `false`. They bound the work of the
+   * JSON-LD processor, which grows with the square of the values of one property.
+   *
+   * @defaultValue 20,000
+   */
+  readonly maxTokens?: number;
 }
 
 /**
@@ -34,10 +40,12 @@ export interface VerifyProofOptions extends CallOptions {
  * @remarks
  * The verdict is `false` for anything that is wrong with the document or the proof: a base proof, a proof that is not a
  * proof of this suite, a proof value that does not parse, a document that cannot be read as JSON-LD with its contexts, a
- * document larger than `maxBytes`, a signature that does not verify, a key that is not a P-256 key. Wrong arguments throw.
+ * document larger than `maxBytes` or `maxTokens`, a signature that does not verify, a key that is not a P-256 key. Wrong
+ * arguments throw.
  */
 async function verify(document: JsonDocument, proof: JsonDocument, options: VerifyProofOptions): Promise<boolean> {
-  const { contexts, signal, maxBytes } = readCommonOptions(options, "The options of verify");
+  const limits = readCommonOptions(options, "The options of verify");
+  const { contexts, signal } = limits;
   checkRecord(document, "The document must be an object");
   checkRecord(proof, "The proof must be an object");
   checkRecord(options.publicKeyJwk, "The option publicKeyJwk must be an object");
@@ -49,7 +57,7 @@ async function verify(document: JsonDocument, proof: JsonDocument, options: Veri
   try {
     const documentCopy = readJson(document, "The document");
     const proofCopy = readJson(proof, "The proof");
-    checkSize(jsonBytes(documentCopy) + jsonBytes(proofCopy), maxBytes);
+    checkSize(JSON.stringify(documentCopy) + JSON.stringify(proofCopy), limits);
     if (proofCopy.type !== PROOF_TYPE || proofCopy.cryptosuite !== CRYPTOSUITE) return false;
     const { proofValue, ...proofOptions } = proofCopy;
     const derived = parseDerivedProofValue(proofValue);

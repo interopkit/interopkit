@@ -9,7 +9,6 @@ import {
   hashMandatory,
   hmacLabelMap,
   type JsonDocument,
-  jsonBytes,
   readCommonOptions,
   readJson,
   withoutProof,
@@ -31,6 +30,13 @@ export interface BaseProofOptions extends CallOptions {
    * @defaultValue 1,048,576
    */
   readonly maxBytes?: number;
+  /**
+   * The most tokens of the document as JSON: strings, numbers, literals and the six structural characters. They bound the work
+   * of the JSON-LD processor, which grows with the square of the values of one property.
+   *
+   * @defaultValue 20,000
+   */
+  readonly maxTokens?: number;
   /**
    * The JSON pointers to what a holder can never hide.
    *
@@ -79,9 +85,9 @@ function checkSignature(signature: unknown): Uint8Array {
  * @param document - The document to sign: JSON-LD with an `@context` and no `proof`. It is not changed.
  * @param options - The signer, the mandatory pointers, the `created` of the proof and the loader of contexts.
  * @returns A copy of the document with the base proof as its `proof`.
- * @throws `DataError` when an argument is not valid, the document already has a proof, a pointer points at nothing in the
- * document, or the JSON-LD processors refuse the document or its contexts (a term the contexts do not define, a blank-node
- * graph that takes more work to canonicalize than the work factor allows).
+ * @throws `DataError` when an argument is not valid, the document is larger than `maxBytes` or `maxTokens`, the document
+ * already has a proof, a pointer points at nothing in the document, or the JSON-LD processors refuse the document or its
+ * contexts (a term the contexts do not define, blank nodes that take more than 1,000 runs of Hash N-Degree Quads to tell apart).
  * @throws The error of the signer or of the context loader when one fails, and the `reason` of the signal when it aborts.
  * @see {@link https://www.w3.org/TR/vc-di-ecdsa/#create-base-proof-ecdsa-sd-2023 | Create Base Proof (ecdsa-sd-2023)}
  */
@@ -98,7 +104,8 @@ export async function addBaseProofWith(
   options: BaseProofOptions,
   secretsOf: () => Secrets,
 ): Promise<JsonDocument> {
-  const { contexts, signal, maxBytes } = readCommonOptions(options, "The options of addBaseProof");
+  const limits = readCommonOptions(options, "The options of addBaseProof");
+  const { contexts, signal } = limits;
   const verificationMethod = verificationMethodOf(options.signer);
   if (typeof options.created !== "string" || !isDateTime(options.created)) {
     throw new DataError(
@@ -107,7 +114,7 @@ export async function addBaseProofWith(
   }
   checkRecord(document, "The document must be an object");
   const copy = readJson(document, "The document");
-  checkSize(jsonBytes(copy), maxBytes);
+  checkSize(JSON.stringify(copy), limits);
   if (copy.proof !== undefined) {
     throw new DataError("The document already has a proof: the base proof signs a document without one.");
   }

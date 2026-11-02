@@ -1,12 +1,12 @@
 import { DataError, untilAborted } from "@interopkit/core";
 import { copyJson, describe, isRecord } from "@interopkit/core/checks";
-import { MAX_WORK_FACTOR } from "../limits.js";
+import { MAX_DEEP_ITERATIONS } from "../limits.js";
 import type { Contexts } from "./options.js";
 import type { ProcessingOptions } from "./primitives.js";
 
 /** The options of every call into the primitives, and the wait for the work that uses them. */
 export interface Processing {
-  /** The caller's loader as the loader of `jsonld`, and the work factor and signal for `rdf-canonize`. */
+  /** The caller's loader as the loader of `jsonld`, and the bound of the work and the signal for `rdf-canonize`. */
   readonly options: ProcessingOptions;
   /**
    * Waits for work that uses `options`.
@@ -55,7 +55,7 @@ export function createProcessing(contexts: Contexts, signal?: AbortSignal): Proc
     }
   };
   return {
-    options: { documentLoader, maxWorkFactor: MAX_WORK_FACTOR, ...(signal === undefined ? {} : { signal }) },
+    options: { documentLoader, maxDeepIterations: MAX_DEEP_ITERATIONS, ...(signal === undefined ? {} : { signal }) },
     async wait(work) {
       try {
         return await untilAborted(work, signal);

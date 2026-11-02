@@ -5,7 +5,7 @@ import { deepFreeze } from "../../../scripts/json-mutation.js";
 import { addBaseProof, deriveProof, isBaseProof } from "../src/index.js";
 import { parseBaseProofValue, parseDerivedProofValue } from "../src/proof-value/index.js";
 import { hangingContexts, memoryContexts } from "./contexts.js";
-import { CREATED, MANDATORY_POINTERS, SELECTIVE_POINTERS, sampleCredential } from "./documents.js";
+import { CREATED, MANDATORY_POINTERS, SELECTIVE_POINTERS, sampleCredential, tokensOf } from "./documents.js";
 import { createIssuer } from "./keys.js";
 import { disclosure, signedCredential } from "./setup.js";
 
@@ -247,14 +247,23 @@ describe("deriveProof, given arguments of other types", () => {
     );
   });
 
-  it("refuses a document larger than maxBytes, and a limit that is not a count", async () => {
+  it("refuses a document larger than maxBytes or maxTokens, and a limit that is not a count", async () => {
     const { base, contexts } = await signedCredential();
     await expect(deriveProof(base, { selectivePointers: [], contexts: contexts.load, maxBytes: 100 })).rejects.toThrow(
       /bytes as JSON, more than the option maxBytes allows, 100/,
     );
+    const tokens = tokensOf(JSON.stringify(base));
+    const atLimit = await deriveProof(base, { selectivePointers: [], contexts: contexts.load, maxTokens: tokens });
+    expect(atLimit.proof).toBeDefined();
+    await expect(
+      deriveProof(base, { selectivePointers: [], contexts: contexts.load, maxTokens: tokens - 1 }),
+    ).rejects.toThrow(`more tokens of JSON than the option maxTokens allows, ${tokens - 1}`);
     await expect(
       deriveProof(base, { selectivePointers: [], contexts: contexts.load, maxBytes: "100" as never }),
     ).rejects.toThrow(/The option maxBytes must be a positive integer/);
+    await expect(deriveProof(base, { selectivePointers: [], contexts: contexts.load, maxTokens: 0 })).rejects.toThrow(
+      /The option maxTokens must be a positive integer/,
+    );
   });
 
   it("refuses a document that is no JSON", async () => {

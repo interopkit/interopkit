@@ -5,7 +5,6 @@ import {
   checkSize,
   createProcessing,
   type JsonDocument,
-  jsonBytes,
   readCommonOptions,
   readJson,
   withoutProof,
@@ -26,6 +25,13 @@ export interface DeriveProofOptions extends CallOptions {
    * @defaultValue 1,048,576
    */
   readonly maxBytes?: number;
+  /**
+   * The most tokens of the document with its base proof as JSON. They bound the work of the JSON-LD processor, which grows
+   * with the square of the values of one property.
+   *
+   * @defaultValue 20,000
+   */
+  readonly maxTokens?: number;
 }
 
 /**
@@ -40,17 +46,18 @@ export interface DeriveProofOptions extends CallOptions {
  * @param document - The document with a base proof as its `proof`. It is not changed.
  * @param options - The pointers to reveal and the loader of contexts.
  * @returns A new document with the selected parts and a derived proof.
- * @throws `DataError` when an argument is not valid, the proof is not a base proof of `ecdsa-sd-2023`, nothing is selected,
- * a pointer points at nothing in the document, the proof does not belong to the document, or the JSON-LD processors refuse
- * the document or its contexts.
+ * @throws `DataError` when an argument is not valid, the document is larger than `maxBytes` or `maxTokens`, the proof is not a
+ * base proof of `ecdsa-sd-2023`, nothing is selected, a pointer points at nothing in the document, the proof does not belong
+ * to the document, or the JSON-LD processors refuse the document or its contexts.
  * @throws The error of the context loader when it fails, and the `reason` of the signal when it aborts.
  * @see {@link https://www.w3.org/TR/vc-di-ecdsa/#add-derived-proof-ecdsa-sd-2023 | Add Derived Proof (ecdsa-sd-2023)}
  */
 export async function deriveProof(document: JsonDocument, options: DeriveProofOptions): Promise<JsonDocument> {
-  const { contexts, signal, maxBytes } = readCommonOptions(options, "The options of deriveProof");
+  const limits = readCommonOptions(options, "The options of deriveProof");
+  const { contexts, signal } = limits;
   checkRecord(document, "The document must be an object");
   const copy = readJson(document, "The document");
-  checkSize(jsonBytes(copy), maxBytes);
+  checkSize(JSON.stringify(copy), limits);
   const { proof } = copy;
   if (!isRecord(proof)) {
     throw new DataError(`The document must have one proof, as an object, found ${describe(proof)}.`);

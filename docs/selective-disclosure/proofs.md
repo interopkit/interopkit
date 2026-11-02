@@ -23,7 +23,7 @@ sequenceDiagram
 ```mermaid
 flowchart LR
   doc["Document<br/>JSON-LD with an @context"] --> expand["jsonld: expand, skolemize,<br/>safe mode"]
-  expand --> canon["rdf-canonize: RDFC-1.0<br/>maxWorkFactor 1"]
+  expand --> canon["rdf-canonize: RDFC-1.0<br/>at most 1,000 deep iterations"]
   canon --> label["Blank nodes get the labels<br/>of an HMAC of their canonical label"]
   label --> group["Statements grouped by pointers:<br/>mandatory, selective, combined"]
   group --> sign["Proof key signs each statement<br/>issuer's key signs hash, key, mandatory hash"]
@@ -96,6 +96,7 @@ code that reads the credential.
 | `publicKeyJwk`      | `verify`       | required  | The public key of the issuer's verification method, a P-256 key as a JWK. A JWK with `d` is a `DataError`                                  |
 | `contexts`          | all three      | required  | `(url, { signal }) => Promise<unknown>`: the JSON-LD context behind a URL, as an object. The processors read no context from anywhere else |
 | `maxBytes`          | all three      | 1,048,576 | The most bytes of the document with its proof, as JSON                                                                                     |
+| `maxTokens`         | all three      | 20,000    | The most tokens of the document with its proof, as JSON: strings, numbers, literals and the six structural characters                      |
 | `signal`            | all three      | none      | Ends the caller's wait with its `reason`. The loader and the signer receive it too                                                         |
 
 The proof of a base proof has the `type` `DataIntegrityProof`, the `cryptosuite` `ecdsa-sd-2023` and the `proofPurpose`
@@ -131,12 +132,21 @@ the caller say why.
 
 ## Limits
 
-| Limit                                              | Value      | Applies to                                                                                                       |
-| -------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| `maxBytes`                                         | 1,048,576  | The document with its proof, as JSON, in bytes; a `DataError`, and `false` from `verify`                         |
-| Levels that a document, a proof or a context nests | 64         | Checked before any processing; a `DataError`, and `false` from `verify`; not replaceable                         |
-| RDF canonicalization work factor                   | 1          | `maxWorkFactor` of the canonicalization: a graph of blank nodes that takes more work is refused; not replaceable |
-| Bytes of a signature, an HMAC key, a label         | 64, 32, 32 | Fixed by the Recommendation; a proof value with other lengths does not parse                                     |
+| Limit                                              | Value      | Applies to                                                                                                              |
+| -------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `maxBytes`                                         | 1,048,576  | The document with its proof, as JSON, in bytes; a `DataError`, and `false` from `verify`                                |
+| `maxTokens`                                        | 20,000     | The document with its proof, as JSON, in tokens, counted before any processing; a `DataError`, and `false` from `verify` |
+| Levels that a document, a proof or a context nests | 64         | Checked before any processing; a `DataError`, and `false` from `verify`; not replaceable                                |
+| Deep iterations of RDF canonicalization            | 1,000      | `maxDeepIterations` of `rdf-canonize`: blank nodes that take more runs of Hash N-Degree Quads to tell apart are refused; not replaceable |
+| Bytes of a signature, an HMAC key, a label         | 64, 32, 32 | Fixed by the Recommendation; a proof value with other lengths does not parse                                            |
+
+The work of the JSON-LD processors grows faster than the size of a document, so bytes alone do not bound it. `jsonld` adds
+each value of a property after a search of the values the property holds, so its time grows with the square of the values of
+one property: 1 MiB of short numbers in one array takes minutes. `rdf-canonize` allows by default one deep iteration for each
+blank node that looks like another, and each iteration copies the labels issued on its path, so a list of alike items takes
+memory with the square of its length: a document of 40,000 tokens exhausts 2 GB. `maxTokens` bounds the first and the fixed
+count of deep iterations the second. The examples of Open Badges 3.0 and CLR 2.0 have at most 2,053 tokens and need at most 16
+deep iterations; a caller that trusts its source can raise `maxTokens`.
 
 A proof value is CBOR. The reader refuses indefinite lengths, `undefined`, NaN, infinities, integers beyond 2^53, a map with a
 key twice and every tag but 64, and it needs exactly one array of five items and no bytes after it.
@@ -152,10 +162,11 @@ reaches the caller as it was.
 | `The options of <function> must be an object`                   | The options are `null`, a string, an array                                | Pass an options object                                                                         |
 | `The option contexts must be a function`                        | `contexts` is missing or is not a function                                | Pass a loader                                                                                  |
 | `The option signal must be an AbortSignal`                      | `signal` is another kind of value                                         | Pass an `AbortSignal`, or leave it out                                                         |
-| `The option maxBytes must be a positive integer`                | `maxBytes` is not one                                                     | Pass a count of bytes                                                                          |
+| `The option maxBytes must be a positive integer`                | `maxBytes` is not one (also `maxTokens`)                                  | Pass a count of bytes, or of tokens                                                            |
 | `The document must be an object`                                | The document, or a proof, is `null`, a string or an array                 | Pass the parsed JSON object                                                                    |
 | `The document must be JSON, but ...`                            | A value is not JSON, or nests more than 64 levels                         | Pass data that `JSON.stringify` writes                                                         |
 | `The document with its proof has ... bytes as JSON`             | The document is larger than `maxBytes`                                    | Reduce it, or raise `maxBytes` when the source is trusted                                      |
+| `The document with its proof has more tokens of JSON`           | The document has more tokens than `maxTokens`                             | Reduce it, or raise `maxTokens` when the source is trusted                                     |
 | `The document has no @context`                                  | The document has no `@context`                                            | Add the contexts that define its terms                                                         |
 | `The document already has a proof`                              | `addBaseProof` got a document with a `proof`                              | Sign the document without it                                                                   |
 | `The option signer must ...`, `The keyId of the option signer`  | The signer is not an ES256 signer with a `keyId`                          | Pass a `Signer` with `algorithm` `"ES256"` and the verification method as `keyId`              |
@@ -168,7 +179,7 @@ reaches the caller as it was.
 | `The proofValue of a base proof ...`                            | The value does not parse: not base64url, not CBOR, wrong items or lengths | Ask the issuer for the proof again                                                             |
 | `Nothing is selected to reveal`                                 | No mandatory pointers and no `selectivePointers`                          | Choose at least one pointer                                                                    |
 | `The base proof has ... signatures`                             | The proof does not belong to the document: the statements do not match    | Derive from the document as the issuer signed it                                               |
-| `The document cannot be processed as JSON-LD with its contexts` | A term no context defines, a context that does not parse, too much work   | Define the term in a context, or correct the document; the sentence after the colon says which |
+| `The document cannot be processed as JSON-LD with its contexts` | A term no context defines, a context that does not parse, more than 1,000 deep iterations | Define the term in a context, or correct the document; the sentence after the colon says which |
 | `The context loader must return the context of ...`             | The loader answered with something other than a JSON object               | Return the parsed context document                                                             |
 | `The option publicKeyJwk holds a private key (d)`               | `verify` got a private JWK                                                | Pass the public key                                                                            |
 
@@ -204,7 +215,7 @@ anywhere, so there is nothing to undo.
 | The Recommendation                               | Places where it contradicts itself or is silent are in [spec-gaps](spec-gaps.md), each with the choice made and a test                                                                                    |
 | Digital Bazaar `ecdsa-sd-2023-cryptosuite` 3.4.1 | Every combination of this package and that suite signing, deriving and verifying gives a valid proof (a test). This package is stricter where a proof is malleable or a pointer is loose                  |
 | Digital Bazaar                                   | `verify` takes a JWK, not a verification method, and the three roles are plain functions over plain data, not suites of `jsonld-signatures`                                                               |
-| Digital Bazaar                                   | Mandatory positions must ascend and name a statement; signatures, keys and labels are checked for their lengths; pointers are checked; `maxBytes` bounds a call                                           |
+| Digital Bazaar                                   | Mandatory positions must ascend and name a statement; signatures, keys and labels are checked for their lengths; pointers are checked; `maxBytes`, `maxTokens` and a fixed count of deep iterations bound a call, where Digital Bazaar's suite has no limit of its own |
 | Digital Bazaar                                   | Signatures of statements are deterministic (RFC 6979), where Web Crypto signs with a random nonce; both verify the same                                                                                   |
 | Digital Bazaar and the primitives                | Statements are sorted by UTF-16 code unit, as `Array.prototype.sort` does, and not by code point: they differ only for a statement that compares a character outside the BMP with one in U+E000 to U+FFFF |
 

@@ -29,7 +29,7 @@ flowchart LR
 | `documentLoader`         | The caller's `contexts`, wrapped | The only way a context is read                                      |
 | `safe`                   | `true` (the primitives' own)     | A term that no context defines is an error and is not dropped       |
 | `algorithm`              | `RDFC-1.0` (the primitives' own) | The canonicalization of the Recommendation                          |
-| `maxWorkFactor`          | `1`                              | Refuses a graph of blank nodes that takes more work to canonicalize |
+| `maxDeepIterations`      | `1000`                           | Refuses blank nodes that take more runs of Hash N-Degree Quads to tell apart, in time and memory that do not grow with their number |
 | `signal`                 | The caller's                     | Stops the canonicalization at the next check                        |
 
 A part of the Recommendation that is not here is listed under "Not included" in the [proofs guide](proofs.md), with its

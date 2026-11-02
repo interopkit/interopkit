@@ -18,4 +18,4 @@ export {
   selectJsonLd,
   stripBlankNodePrefixes,
 } from "./primitives.js";
-export { checkSize, type JsonDocument, jsonBytes, readJson, withoutProof } from "./read-document.js";
+export { checkSize, type JsonDocument, readJson, withoutProof } from "./read-document.js";

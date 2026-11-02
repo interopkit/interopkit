@@ -27,7 +27,7 @@ export async function statementsOf(document: Readonly<Record<string, unknown>>, 
         documentUrl: url,
         document: await contexts.load(url),
       }),
-      maxWorkFactor: 1,
+      maxDeepIterations: 1000,
     },
   });
 }

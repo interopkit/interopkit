@@ -1350,6 +1350,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/selective-disclosure/test/verify.test.ts",
   },
   {
+    rule: "A document with its proof of more tokens than maxTokens is refused before the JSON-LD processor reads it.",
+    file: "packages/selective-disclosure/src/document/read-document.ts",
+    find: "if (hasMoreTokensThan(text, maxTokens)) {",
+    replace: "if (false) {",
+    test: "packages/selective-disclosure/test/verify.test.ts",
+  },
+  {
     rule: "A pointer that points at nothing in the document is refused.",
     file: "packages/selective-disclosure/src/document/pointers.ts",
     find: "if (reason !== undefined) {",
@@ -1408,9 +1415,16 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The processors read contexts only through the caller's loader.",
     file: "packages/selective-disclosure/src/document/loader.ts",
-    find: "options: { documentLoader, maxWorkFactor: MAX_WORK_FACTOR,",
-    replace: "options: { documentLoader: undefined, maxWorkFactor: MAX_WORK_FACTOR,",
+    find: "options: { documentLoader, maxDeepIterations: MAX_DEEP_ITERATIONS,",
+    replace: "options: { documentLoader: undefined, maxDeepIterations: MAX_DEEP_ITERATIONS,",
     test: "packages/selective-disclosure/test/loader.test.ts",
+  },
+  {
+    rule: "The canonicalization stops after a fixed number of runs of Hash N-Degree Quads, however many blank nodes look alike.",
+    file: "packages/selective-disclosure/src/document/loader.ts",
+    find: "maxDeepIterations: MAX_DEEP_ITERATIONS,",
+    replace: "maxWorkFactor: 1,",
+    test: "packages/selective-disclosure/test/base.test.ts",
   },
   {
     rule: "The key of the HMAC comes from crypto.getRandomValues.",

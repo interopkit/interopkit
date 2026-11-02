@@ -5,6 +5,7 @@ import { selectiveDisclosureSuite } from "../src/index.js";
 import { createProofKey, signStatement } from "../src/keys/index.js";
 import { parseDerivedProofValue } from "../src/proof-value/index.js";
 import { hangingContexts, memoryContexts } from "./contexts.js";
+import { tokensOf } from "./documents.js";
 import { forgedLabels, proofWith, statementsOf } from "./forge.js";
 import { createIssuer } from "./keys.js";
 import { type Disclosure, disclosure, signedCredential } from "./setup.js";
@@ -14,12 +15,18 @@ const { verify } = selectiveDisclosureSuite;
 /** Whether the proof of a disclosure, or a change of it, verifies under the issuer's key. */
 async function check(
   { issuer, contexts, document, proof }: Disclosure,
-  change: { document?: Record<string, unknown>; proof?: Record<string, unknown>; maxBytes?: number } = {},
+  change: {
+    document?: Record<string, unknown>;
+    proof?: Record<string, unknown>;
+    maxBytes?: number;
+    maxTokens?: number;
+  } = {},
 ): Promise<boolean> {
   return verify(change.document ?? document, change.proof ?? proof, {
     publicKeyJwk: issuer.publicKeyJwk,
     contexts: contexts.load,
     ...(change.maxBytes === undefined ? {} : { maxBytes: change.maxBytes }),
+    ...(change.maxTokens === undefined ? {} : { maxTokens: change.maxTokens }),
   });
 }
 
@@ -276,6 +283,21 @@ describe("selectiveDisclosureSuite, given more than it will read", () => {
     expect(await check(shown, { maxBytes: size - 1 })).toBe(false);
   });
 
+  it("answers false for a document with its proof of more tokens than maxTokens, and true at the limit", async () => {
+    const shown = await disclosure();
+    const tokens = tokensOf(JSON.stringify(shown.document) + JSON.stringify(shown.proof));
+    expect(await check(shown, { maxTokens: tokens })).toBe(true);
+    expect(await check(shown, { maxTokens: tokens - 1 })).toBe(false);
+  });
+
+  it("answers false for a document of more than 20,000 tokens unless the caller sets another limit", async () => {
+    const shown = await disclosure();
+    // The proof property of the document is not what the proof covers, but it counts towards the limits.
+    const padded = { ...shown.document, proof: Array.from({ length: 10_000 }, (_, index) => index) };
+    expect(await check(shown, { document: padded })).toBe(false);
+    expect(await check(shown, { document: padded, maxTokens: 30_000 })).toBe(true);
+  });
+
   it("answers false for a document that is not JSON or nests too deep", async () => {
     const shown = await disclosure();
     let nested: Record<string, unknown> = {};
@@ -318,6 +340,9 @@ describe("selectiveDisclosureSuite, given arguments of other types", () => {
     ).rejects.toThrow(/The option contexts must be a function/);
     await expect(verify(shown.document, shown.proof, { ...options, maxBytes: 0 })).rejects.toThrow(
       /maxBytes must be a positive integer/,
+    );
+    await expect(verify(shown.document, shown.proof, { ...options, maxTokens: 2.5 })).rejects.toThrow(
+      /maxTokens must be a positive integer/,
     );
     await expect(verify(shown.document, shown.proof, { ...options, signal: 1 as never })).rejects.toThrow(
       /signal must be an AbortSignal/,

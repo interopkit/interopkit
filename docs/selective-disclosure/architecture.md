@@ -95,7 +95,7 @@ flowchart TD
   args -- no --> throw["DataError"]
   args -- yes --> key{"publicKeyJwk a P-256 key?"}
   key -- no --> no["false"]
-  key -- yes --> read{"Document and proof JSON,<br/>within maxBytes, proof value parses?"}
+  key -- yes --> read{"Document and proof JSON,<br/>within maxBytes and maxTokens,<br/>proof value parses?"}
   read -- no --> no
   read -- yes --> proc["jsonld and rdf-canonize<br/>with the caller's loader"]
   proc -- "loader fails or signal aborts" --> rethrow["the caller's error"]

@@ -9,8 +9,8 @@ export interface ProcessingOptions {
     readonly documentUrl: string;
     readonly document: unknown;
   }>;
-  /** The work factor of the canonicalization. */
-  readonly maxWorkFactor: number;
+  /** The most runs of the Hash N-Degree Quads algorithm in one canonicalization. */
+  readonly maxDeepIterations: number;
   /** Ends the canonicalization at its next check. */
   readonly signal?: AbortSignal;
 }

@@ -1,3 +1,4 @@
+import { hasMoreTokensThan } from "@interopkit/core/checks";
 import { OPEN_CONTEXT } from "./contexts.js";
 
 /**
@@ -31,3 +32,10 @@ export const SELECTIVE_POINTERS: readonly string[] = ["/credentialSubject/name",
 
 /** The time of the proofs of the tests. */
 export const CREATED = "2026-11-01T09:30:00Z";
+
+/** The tokens of JSON of a text, as the option maxTokens counts them. */
+export function tokensOf(text: string): number {
+  let tokens = 0;
+  while (hasMoreTokensThan(text, tokens)) tokens += 1;
+  return tokens;
+}

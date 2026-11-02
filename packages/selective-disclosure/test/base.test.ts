@@ -6,7 +6,7 @@ import { addBaseProof, isBaseProof } from "../src/index.js";
 import { createProofKey } from "../src/keys/index.js";
 import { parseBaseProofValue } from "../src/proof-value/index.js";
 import { CLOSED_CONTEXT, hangingContexts, memoryContexts, OPEN_CONTEXT } from "./contexts.js";
-import { CREATED, MANDATORY_POINTERS, sampleCredential } from "./documents.js";
+import { CREATED, MANDATORY_POINTERS, sampleCredential, tokensOf } from "./documents.js";
 import { createIssuer, VERIFICATION_METHOD } from "./keys.js";
 import { fixRandomBytes } from "./random.js";
 import { signedCredential } from "./setup.js";
@@ -168,6 +168,19 @@ describe("addBaseProof, given what it cannot sign", () => {
     expect((error as Error).message).toMatch(/Maximum deep iterations exceeded/);
   });
 
+  it("refuses blank nodes that take more than 1,000 runs of Hash N-Degree Quads to tell apart, whatever their number", async () => {
+    // Each empty object is a blank node that looks like the others, and takes one run to tell apart.
+    const alike = (count: number) => ({
+      "@context": [OPEN_CONTEXT],
+      items: Array.from({ length: count }, () => ({})),
+    });
+    const signed = await addBaseProof(alike(1000), await options());
+    expect(signed.proof).toBeDefined();
+    await expect(addBaseProof(alike(1001), await options())).rejects.toThrow(
+      /Maximum deep iterations exceeded \(1000\)/,
+    );
+  });
+
   it("refuses a document that is no JSON, or nests too deep", async () => {
     await expect(addBaseProof({ ...sampleCredential(), value: undefined }, await options())).rejects.toThrow(
       /must be JSON, but value is undefined/,
@@ -185,6 +198,17 @@ describe("addBaseProof, given what it cannot sign", () => {
     await expect(addBaseProof(sampleCredential(), { ...(await options()), maxBytes: 100 })).rejects.toThrow(
       /bytes as JSON, more than the option maxBytes allows, 100/,
     );
+  });
+
+  it("refuses a document of more tokens than maxTokens, 20,000 unless the caller sets another limit", async () => {
+    const tokens = tokensOf(JSON.stringify(sampleCredential()));
+    const atLimit = await addBaseProof(sampleCredential(), { ...(await options()), maxTokens: tokens });
+    expect(atLimit.proof).toBeDefined();
+    await expect(addBaseProof(sampleCredential(), { ...(await options()), maxTokens: tokens - 1 })).rejects.toThrow(
+      `more tokens of JSON than the option maxTokens allows, ${tokens - 1}`,
+    );
+    const large = { "@context": [OPEN_CONTEXT], items: Array.from({ length: 10_000 }, (_, index) => index) };
+    await expect(addBaseProof(large, await options())).rejects.toThrow("maxTokens allows, 20000");
   });
 });
 
@@ -245,10 +269,13 @@ describe("addBaseProof, given arguments of other types", () => {
     await expect(addBaseProof(sampleCredential(), { ...(await good()), signal: "stop" as never })).rejects.toThrow(
       /The option signal must be an AbortSignal/,
     );
-    for (const maxBytes of ["100", 0, 1.5, null]) {
-      await expect(
-        addBaseProof(sampleCredential(), { ...(await good()), maxBytes: maxBytes as never }),
-      ).rejects.toThrow(/The option maxBytes must be a positive integer/);
+    for (const limit of ["100", 0, 1.5, null]) {
+      await expect(addBaseProof(sampleCredential(), { ...(await good()), maxBytes: limit as never })).rejects.toThrow(
+        /The option maxBytes must be a positive integer/,
+      );
+      await expect(addBaseProof(sampleCredential(), { ...(await good()), maxTokens: limit as never })).rejects.toThrow(
+        /The option maxTokens must be a positive integer/,
+      );
     }
   });
 
