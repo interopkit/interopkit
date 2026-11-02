@@ -15,7 +15,7 @@ export const EVENTS = 1000;
 
 /**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of a reference in the same run.
- * Both samples come from one run, so a ratio holds on any machine. A ratio to `JSON.parse` is five times the highest ratio
+ * Both samples come from one run, so a ratio holds on any machine. A ratio to `JSON.parse` or `JSON.stringify` is five times the highest ratio
  * measured, rounded up to one significant digit, and a ratio to a draft 4 validator is parity, as docs/learning-analytics/evidence.md
  * explains. The budgets in time are pending the first sample of the runners of CI, so none is stated here.
  */
@@ -30,6 +30,20 @@ export const RATIOS = {
   readEnvelope11AgainstParse: 60,
   /** `readEnvelope` of an envelope of 1.1, as a multiple of `schema_1_1` over its events: parity or better. */
   readEnvelope11AgainstSchemas: 1,
+  /** `readEntity` of 1,000 entity describes of 1.2, as a multiple of the draft 4 schemas over them: parity or better. */
+  readEntityAgainstSchemas: 1,
+  /** `validateEntity` over the same, as a multiple of the same schemas: parity or better. */
+  validateEntityAgainstSchemas: 1,
+  /** `buildEvent` of 1,000 events, as a multiple of the draft 4 schemas over what it builds: parity or better. */
+  buildEventAgainstSchemas: 1,
+  /** `buildEntity` of 1,000 entity describes, as a multiple of the same schemas over what it builds: parity or better. */
+  buildEntityAgainstSchemas: 1,
+  /** `sendCaliper` of an envelope of 1,000 events to an endpoint that answers at once, as a multiple of `JSON.stringify` of it. */
+  sendCaliperAgainstStringify: 6,
+  /** `handleCaliperRequest` of an envelope of 1,000 events of 1.2, as a multiple of `JSON.parse` of its text. */
+  handleRequestAgainstParse: 200,
+  /** `handleCaliperRequest` of the same envelope, as a multiple of the draft 4 schemas over its events: parity or better. */
+  handleRequestAgainstSchemas: 1,
 } as const;
 
 /** The result of a benchmark that the budgets read. */

@@ -10,6 +10,7 @@
       "@interopkit/core/checks": ["../core/src/checks.ts"],
       "@interopkit/core/http": ["../core/src/http/index.ts"],
       "@interopkit/competency-frameworks": ["./src/index.ts"],
+      "@interopkit/competency-frameworks/client": ["./src/client/index.ts"],
       "@interopkit/competency-frameworks/graph": ["./src/graph/index.ts"],
       "@interopkit/competency-frameworks/provider": ["./src/provider/index.ts"]
     }

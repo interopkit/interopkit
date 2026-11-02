@@ -1,9 +1,10 @@
-import { type CFDocument, readPackage, validatePackage } from "@interopkit/competency-frameworks";
+import { type CFDocument, readEntity, readPackage, validatePackage } from "@interopkit/competency-frameworks";
 import { frameworkTree } from "@interopkit/competency-frameworks/graph";
 import { queryEntities } from "@interopkit/competency-frameworks/provider";
 import { expect, test } from "vitest";
 import { framework } from "./bank.js";
-import { BENCH_OPTIONS, BUDGETS, expectWithin, ITEMS, READ_RATIO } from "./budgets.js";
+import { BENCH_OPTIONS, BUDGETS, expectRatio, expectWithin, ITEMS, RATIOS, SLOW_REFERENCE_OPTIONS } from "./budgets.js";
+import { officialValidator } from "./official.js";
 
 test("reads, validates and walks a framework of 10,000 items", async ({ annotate, bench }) => {
   const parsed = JSON.parse(JSON.stringify(framework(ITEMS)));
@@ -15,15 +16,10 @@ test("reads, validates and walks a framework of 10,000 items", async ({ annotate
 
   const text = JSON.stringify(parsed);
   const reference = await bench("JSON.parse", () => JSON.parse(text)).run(BENCH_OPTIONS);
+  const named = { ...reference, name: "JSON.parse" };
   const read = await bench("readPackage", () => readPackage(parsed)).run(BENCH_OPTIONS);
   await expectWithin(annotate, "readPackage", read, BUDGETS.readPackage);
-  const ratio = read.latency.min / reference.latency.min;
-  await annotate(
-    `JSON.parse of the same framework: fastest ${reference.latency.min.toFixed(2)} ms; readPackage is ${ratio.toFixed(2)} times that, budget ${READ_RATIO}`,
-  );
-  expect(ratio, "The fastest sample of readPackage as a multiple of the fastest sample of JSON.parse").toBeLessThan(
-    READ_RATIO,
-  );
+  await expectRatio(annotate, "readPackage", read, named, RATIOS.readPackageAgainstParse);
 
   const validate = await bench("validatePackage", () => validatePackage(parsed)).run(BENCH_OPTIONS);
   await expectWithin(annotate, "validatePackage", validate, BUDGETS.validatePackage);
@@ -32,6 +28,47 @@ test("reads, validates and walks a framework of 10,000 items", async ({ annotate
   expect(frameworkTree(pkg)).toHaveLength(10);
   const tree = await bench("frameworkTree", () => frameworkTree(pkg)).run(BENCH_OPTIONS);
   await expectWithin(annotate, "frameworkTree", tree, BUDGETS.frameworkTree);
+  await expectRatio(annotate, "frameworkTree", tree, named, RATIOS.frameworkTreeAgainstParse);
+});
+
+test("reads a framework of 10,000 items, and 10,000 items alone, faster than the official schemas of CASE 1.1 check them", async ({
+  annotate,
+  bench,
+}) => {
+  const parsed = JSON.parse(JSON.stringify(framework(ITEMS)));
+  const schema = officialValidator("1.1", "package");
+  expect(schema(parsed)).toBe(true);
+  const official = await bench("the package schema", () => schema(parsed)).run(SLOW_REFERENCE_OPTIONS);
+  const read = await bench("readPackage", () => readPackage(parsed)).run(BENCH_OPTIONS);
+  await expectRatio(
+    annotate,
+    "readPackage",
+    read,
+    { ...official, name: "the package schema of CASE 1.1" },
+    RATIOS.readPackageAgainstSchema,
+  );
+
+  // Each item as a provider answers it alone: with the link to its document.
+  const { identifier, uri, title } = parsed.CFDocument;
+  const items = parsed.CFItems.map((item: Record<string, unknown>) => ({
+    ...item,
+    CFDocumentURI: { title, identifier, uri },
+  }));
+  const itemSchema = officialValidator("1.1", "CFItem");
+  expect(items.every(itemSchema)).toBe(true);
+  const officialItems = await bench("the item schema", () => {
+    for (const item of items) itemSchema(item);
+  }).run(SLOW_REFERENCE_OPTIONS);
+  const readItems = await bench("readEntity", () => {
+    for (const item of items) readEntity("CFItem", item);
+  }).run(BENCH_OPTIONS);
+  await expectRatio(
+    annotate,
+    "readEntity",
+    readItems,
+    { ...officialItems, name: "the item schema of CASE 1.1" },
+    RATIOS.readEntityAgainstSchema,
+  );
 });
 
 test("filters and sorts 10,000 documents", async ({ annotate, bench }) => {
