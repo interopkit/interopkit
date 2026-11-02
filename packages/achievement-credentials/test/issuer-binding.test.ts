@@ -156,6 +156,26 @@ describe("what the check does when it cannot read what the issuer publishes", ()
     expect(check).toMatchObject({ check: "issuer", outcome: "unavailable" });
   });
 
+  it.each([
+    [302, "passed"],
+    [401, "passed"],
+    [403, "passed"],
+    [503, "unavailable"],
+  ] as const)(
+    "reads a JWK Set that answers %i as %s, when the issuer's document lists the key",
+    async (status, outcome) => {
+      // A site without a JWK Set redirects to a page or refuses as often as it answers 404; a server that fails says nothing.
+      const keys = resolverFor({ [ISSUER]: controllerDocument(KEYS.es256, ["assertionMethod"]), [SET_URL]: status });
+      const key = keyOf(KEYS.es256, { id: `${ISSUER}#key-1`, controller: ISSUER });
+      expect((await verifyIssuerKey(key, ISSUER, { keys })).outcome).toBe(outcome);
+    },
+  );
+
+  it("is unavailable when the issuer's document refuses, though the JWK Set answers", async () => {
+    const keys = resolverFor({ [ISSUER]: 403, [SET_URL]: { keys: [{ ...KEYS.rs256.publicJwk, kid: "k" }] } });
+    expect((await verifyIssuerKey(keyOf(KEYS.es256), ISSUER, { keys })).outcome).toBe("unavailable");
+  });
+
   it("passes on the abort of the caller and the failure of a resolver that is no service", async () => {
     const aborting: KeyResolver = {
       resolve: async () => undefined,

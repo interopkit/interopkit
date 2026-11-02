@@ -13,7 +13,7 @@ import { createKeyedCache } from "../keyed-cache.js";
 import { KEY_RELATIONSHIPS, type KeyResolver, type VerificationKey } from "../model/index.js";
 import { type DidResolver, didKeyResolver, didWebResolver } from "./did.js";
 import { decodeDidJwk, isDidJwk } from "./did-jwk.js";
-import { type DocumentSettings, documentUrl, fetchDocument, keysOfDocument } from "./documents.js";
+import { type DocumentSettings, documentUrl, fetchDocument, isAbsent, keysOfDocument } from "./documents.js";
 
 /** A DID method that a resolver reads itself: `key` and `web`. */
 export type DidMethod = "key" | "web";
@@ -87,6 +87,15 @@ const MILLISECONDS_PER_SECOND = 1000;
 /** The path of the JWK Set of a domain (Implementation Guide 3.1.12.2). */
 const JWK_SET_PATH = "/.well-known/jwks.json";
 
+/**
+ * Tells whether the answer to the JWK Set of a domain says that the domain publishes none: a redirect or a refusal. The path is
+ * asked of every HTTPS issuer, and a site that has no such file redirects to a page or refuses (a store of files answers 403 for
+ * a name that it lacks) as often as it answers 404; only a server that fails or does not answer leaves the keys unknown.
+ */
+function publishesNoSet(status: number): boolean {
+  return status >= 300 && status < 500;
+}
+
 /** Checks the options as a host passes them from JavaScript. */
 function checkOptions(options: unknown): asserts options is KeyResolverOptions {
   checkRecord(options, "The options of createKeyResolver must be an object");
@@ -159,21 +168,30 @@ export function createKeyResolver(options: KeyResolverOptions): KeyResolver {
     maxEntries: MAX_CACHED_DOCUMENTS,
   });
 
-  /** Loads the keys that the document at a DID or an address holds. */
-  const load = async (base: string, did: string | undefined): Promise<readonly VerificationKey[] | undefined> => {
+  /** Loads the keys that the document at a DID or an address holds; `absent` tells the statuses that mean no document. */
+  const load = async (
+    base: string,
+    did: string | undefined,
+    absent: (status: number) => boolean,
+  ): Promise<readonly VerificationKey[] | undefined> => {
     const document =
       did === undefined
         ? settings === undefined
           ? undefined
-          : await fetchDocument(settings, base)
+          : await fetchDocument(settings, base, absent)
         : await resolvers.get(did)?.(base);
     return document === undefined ? undefined : await keysOfDocument(document, base);
   };
 
   /** Returns the keys of the document at a DID or an address, from the cache. */
-  const keysAt = (base: string, callOptions?: CallOptions, reload = false) => {
+  const keysAt = (base: string, callOptions?: CallOptions, reload = false, absent = isAbsent) => {
     const method = splitDid(base)?.method;
-    return cache.get(base, () => load(base, method), callOptions, reload ? REFETCH_AFTER_MILLISECONDS : undefined);
+    return cache.get(
+      base,
+      () => load(base, method, absent),
+      callOptions,
+      reload ? REFETCH_AFTER_MILLISECONDS : undefined,
+    );
   };
 
   /** Finds the base of a reference: the DID, or the address without its fragment. `undefined` when no enabled method reads it. */
@@ -216,7 +234,10 @@ export function createKeyResolver(options: KeyResolverOptions): KeyResolver {
       if (base === undefined) return [];
       if (issuer.startsWith("did:")) return (await keysAt(base, callOptions)) ?? [];
       const set = new URL(JWK_SET_PATH, base).href;
-      const [document, keySet] = await Promise.all([keysAt(base, callOptions), keysAt(set, callOptions)]);
+      const [document, keySet] = await Promise.all([
+        keysAt(base, callOptions),
+        keysAt(set, callOptions, false, publishesNoSet),
+      ]);
       return [...(document ?? []), ...(keySet ?? [])];
     },
   };

@@ -26,6 +26,11 @@ const MAX_DOCUMENT_KEYS = 100;
 /** The statuses that mean that a document is not there, as against a server that failed. */
 const ABSENT_STATUSES: readonly number[] = [404, 410];
 
+/** Tells whether a status says that a document is not there: 404 or 410. */
+export function isAbsent(status: number): boolean {
+  return ABSENT_STATUSES.includes(status);
+}
+
 const ACCEPT = "application/json, application/did+json;q=0.9, application/ld+json;q=0.8";
 
 /** Parses the text of a document, or returns `undefined` when it is not a JSON object within the limits of levels and tokens. */
@@ -52,14 +57,16 @@ export function documentUrl(reference: string): string | undefined {
 /**
  * Fetches a JSON document by an HTTPS address.
  *
- * @returns The document, or `undefined` when the address is not HTTPS, the server says that the document is not there (404 or
- * 410) or the body is not a JSON object within the depth limit.
+ * @param absent - Tells which statuses say that the document is not there; by default 404 and 410.
+ * @returns The document, or `undefined` when the address is not HTTPS, the server says that the document is not there, or the
+ * body is not a JSON object within the depth limit.
  * @throws `ServiceError` when the server did not answer, answered with a redirect or another status, or sent more than
  * `maxBytes`.
  */
 export async function fetchDocument(
   settings: DocumentSettings,
   url: string,
+  absent: (status: number) => boolean = isAbsent,
 ): Promise<Readonly<Record<string, unknown>> | undefined> {
   const address = documentUrl(url);
   if (address === undefined) return undefined;
@@ -73,7 +80,7 @@ export async function fetchDocument(
     );
     return parseDocument(text, settings.maxTokens);
   } catch (error) {
-    if (error instanceof ServiceError && ABSENT_STATUSES.includes(error.status)) return undefined;
+    if (error instanceof ServiceError && absent(error.status)) return undefined;
     throw error;
   }
 }

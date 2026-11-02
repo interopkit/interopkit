@@ -108,6 +108,7 @@ key of more than 8,192 bits.
 | A published key counts only when it is listed under `assertionMethod`                         | `failed`                                                 |
 | A published key with an `iss` counts only when the `iss` is the issuer                        | The key is skipped, which keeps the issuers of a shared platform apart |
 | What the issuer publishes cannot be read: a `ServiceError`                                    | `unavailable`                                            |
+| The JWK Set at `/.well-known/jwks.json` answers a redirect or a status of 400 to 499           | The host publishes no JWK Set there: a site without the file redirects or refuses as often as it answers 404. A status of 500 or more is a `ServiceError` |
 
 A key with a `controller` that is the issuer is not enough: any document may claim a controller, so the key must also be
 among what the issuer itself publishes. A key set member with no `iss` binds for every issuer of its host; a platform that
