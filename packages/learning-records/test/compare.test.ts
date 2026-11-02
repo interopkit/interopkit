@@ -160,11 +160,19 @@ describe("sameStatement", () => {
       ["the Activity", (s: Record<string, any>) => (s.object.id = "https://example.org/activities/other")],
       [
         "the kind of Object",
-        (s: Record<string, any>) => (s.object = { objectType: "Agent", mbox: "mailto:a@example.org" }),
+        (s: Record<string, any>) => {
+          s.object = { objectType: "Agent", mbox: "mailto:a@example.org" };
+          delete s.context.revision;
+          delete s.context.platform;
+        },
       ],
       [
         "the Statement that is referenced",
-        (s: Record<string, any>) => (s.object = { objectType: "StatementRef", id: uuid(5) }),
+        (s: Record<string, any>) => {
+          s.object = { objectType: "StatementRef", id: uuid(5) };
+          delete s.context.revision;
+          delete s.context.platform;
+        },
       ],
       ["the score", (s: Record<string, any>) => (s.result.score.scaled = 0.5)],
       ["success", (s: Record<string, any>) => (s.result.success = false)],

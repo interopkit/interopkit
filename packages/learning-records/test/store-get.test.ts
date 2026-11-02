@@ -99,7 +99,7 @@ describe("GET of one Statement", () => {
     const response = await get(store, query);
     expect(response.status).toBe(400);
     expect(reasonOf(response)).toContain(sentence);
-    expect(store.calls).toStrictEqual([]);
+    expect(store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
   });
 
   it("accepts attachments and format beside the id, which the standard allows", async () => {
@@ -430,7 +430,7 @@ describe("GET of a page of Statements", () => {
     const response = await get(store, query);
     expect(response.status).toBe(400);
     expect(reasonOf(response)).toContain(sentence);
-    expect(store.calls).toStrictEqual([]);
+    expect(store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
   });
 
   it("refuses a parameter that occurs twice with 400", async () => {
@@ -507,5 +507,62 @@ describe("the bounds of the JSON in a parameter", () => {
     const response = await get(memory(), { agent }, {}, { limits: { maxBodyBytes: 10 } });
     expect(response.status).toBe(400);
     expect(reasonOf(response)).toContain("The text has");
+  });
+});
+
+describe("X-Experience-API-Consistent-Through", () => {
+  const THROUGH = "x-experience-api-consistent-through";
+
+  it.each([
+    [
+      "a GET that is refused for its parameters",
+      "GET",
+      { statementId: uuid(1), agent: '{"mbox":"mailto:a@b.org"}' },
+      400,
+    ],
+    ["a GET of a Statement that is not there", "GET", { statementId: uuid(9) }, 404],
+    ["a GET of a voided Statement by statementId", "GET", { statementId: uuid(1) }, 404],
+    ["a HEAD of a query with an unknown parameter", "HEAD", { unknown: "1" }, 400],
+  ])("is on the answer to %s", async (_name, method, query, status) => {
+    const store = memory();
+    await fill(store, [statementOf(1)]);
+    await handleLrsRequest(
+      requestOf("POST", "/statements", {
+        headers: JSON_TYPE,
+        body: JSON.stringify({ ...statementOf(2), id: uuid(2) }),
+      }),
+      optionsOf(store),
+    );
+    const first = store.held.get(uuid(1));
+    if (first !== undefined) store.held.set(uuid(1), { ...first, voided: true });
+    const response = await get(store, query, {}, {}, method);
+    expect(response.status).toBe(status);
+    expect(response.headers[THROUGH]).toBe(NOW);
+  });
+
+  it("is on the refusal of a PUT or POST for its body", async () => {
+    const store = memory();
+    const refused = await handleLrsRequest(
+      requestOf("POST", "/statements", { headers: JSON_TYPE, body: "not json" }),
+      optionsOf(store),
+    );
+    expect(refused.status).toBe(400);
+    expect(refused.headers[THROUGH]).toBe(NOW);
+  });
+
+  it("is not made up for an answer that the store cannot give the time for, and is not asked of a refusal before the resource", async () => {
+    const store = memory();
+    const failing = { ...store.statements, consistentThrough: () => Promise.reject(new Error("down")) };
+    const response = await get(store, { unknown: "1" }, {}, { statements: failing });
+    expect(response.status).toBe(400);
+    expect(response.headers[THROUGH]).toBeUndefined();
+    const denied = await get(
+      store,
+      {},
+      {},
+      { access: async () => ({ allowed: false, status: 401, reason: "Sign in." }) },
+    );
+    expect(denied.status).toBe(401);
+    expect(denied.headers[THROUGH]).toBeUndefined();
   });
 });

@@ -13,11 +13,11 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Makes the function that builds the answer of a refused request in the media type that the `Accept` header prefers among JSON,
- * plain text and HTML, JSON when it prefers none (4.1.5). The message is a sentence that says what is wrong.
+ * Makes the function that builds the answer of a refused request in the media type that the `Accept` header prefers among plain
+ * text, JSON and HTML, plain text when it prefers none or prefers them alike (4.1.5). The message is a sentence that says what is wrong.
  */
 export function refusalWriter(accept: string | undefined): Refuse {
-  const type = negotiate(accept, [JSON_TYPE, TEXT_TYPE, HTML_TYPE]);
+  const type = negotiate(accept, [TEXT_TYPE, JSON_TYPE, HTML_TYPE]);
   return (status, message, headers = {}) => {
     if (type === JSON_TYPE) return jsonResponse(status, { message }, headers);
     if (type === TEXT_TYPE) {

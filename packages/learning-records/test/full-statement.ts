@@ -1,8 +1,18 @@
-import type { Statement } from "../src/index.js";
+import type { Statement, StatementObject } from "../src/index.js";
 
 /** A UUID of version 4 and variant 2, for the identifiers of the fixtures. */
 export function uuid(n: number): string {
   return `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+}
+
+/**
+ * A full Statement about another kind of Object than an Activity. The `revision` and `platform` of its context describe an
+ * Activity, so it has neither.
+ */
+export function fullStatementAbout(object: StatementObject): Statement {
+  const { context, ...rest } = fullStatement();
+  const { revision: _revision, platform: _platform, ...kept } = context ?? {};
+  return { ...rest, context: kept, object };
 }
 
 /**

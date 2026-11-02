@@ -162,10 +162,14 @@ and sends the `HttpResponse`. The header `X-Experience-API-Version` is on every 
 | `GET statements?`                                     | Returns a page of the Statements that match the filters, newest first unless `ascending`      | 200 with `{ statements, more? }`                                |
 | `HEAD statements`                                     | As GET, with no body                                                                          | The status and headers of GET                                   |
 
+Every answer of the Statements resource names `X-Experience-API-Consistent-Through`, the time that `consistentThrough` of the store
+gives, a 400 and a 404 included: the answers that come before the resource, a refusal of `access` or of the size of a body, do
+not ask the store.
+
 A stored Statement gets what the LRS sets (4.2.4.2): an `id` when it has none, in lower case; `stored`, always, from the
-`clock`; `timestamp` from `stored` when it has none; `authority` from `access`, unless `keepSubmittedAuthority` keeps the one it
+`clock`; `timestamp` from `stored` when it has none, and a `timestamp` that is not in UTC written in UTC, whatever form of ISO 8601 or RFC 3339 it has (the offset `-00:00` is refused); `authority` from `access`, unless `keepSubmittedAuthority` keeps the one it
 brings; `version` `2.0.0` when it has none. A Statement is read with the rules of an LRS first, and a list is judged whole:
-one Statement with an error refuses the request and stores nothing, and two with one id refuse it too.
+one Statement with an error refuses the request and stores nothing, and two with one id refuse it too. A `version` is `1.0`, `1.0.x`, `2.0` or `2.0.x`, and a submitted `authority` that is a Group is an anonymous Group of two Agents, though the LRS replaces it; the `revision` and `platform` of a context go with an Activity.
 
 A Statement with the voided Verb voids the Statement it refers to when the LRS holds it, or the batch has it, and it is not a
 voiding Statement itself. A voided Statement is returned only to a request by `voidedStatementId`, and Statements that refer to
@@ -184,9 +188,9 @@ refuses the request with 400.
 
 With `attachments=true` the answer is a `multipart/mixed` message with the data of the Attachments that the store holds, one
 part for each hash. A Statement is stored with the data that come in a multipart request, and an Attachment needs either a
-`fileUrl` or its part. The signature of a Statement is checked (4.2.6): it must be a compact JWS of RS256, RS384 or RS512
-whose payload is the same Statement, and when its header has an `x5c` it must verify against the leaf; `trustCertificate` is
-asked about the chain and its answer does not refuse a request.
+`fileUrl` or its part, and a part that no Attachment names refuses the request; the `length` of the Attachment is not compared to its data, which the hash binds. The signature of a Statement is checked (4.2.6): it must be a compact JWS of RS256, RS384 or RS512
+whose payload is the same Statement, whether the LRS holds a key or not, and when its header has an `x5c` it must verify against
+the leaf; `trustCertificate` is asked about the chain and its answer does not refuse a request.
 
 ## Documents
 
@@ -198,7 +202,7 @@ flowchart TD
   write["PUT or POST"] --> read["DocumentStore.get"]
   read --> judge{"Preconditions<br/>against the document"}
   judge -->|"If-Match not met,<br/>If-None-Match: * and it exists"| r412["412"]
-  judge -->|"no header and it exists"| r409["409"]
+  judge -->|"PUT with no header<br/>and it exists"| r409["409"]
   judge -->|"met"| make["Make the document:<br/>PUT keeps the body, POST merges JSON"]
   make --> cas["DocumentStore.write<br/>compare-and-set"]
   cas -->|"written"| r204["204 with ETag"]
@@ -207,15 +211,15 @@ flowchart TD
   again -->|"no"| r409b["409"]
 ```
 
-| Request                                    | Does                                                                                 | Answers                                                       |
-| ------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| `GET` with the id (`stateId`, `profileId`) | Returns the document with its `Content-Type`, `ETag` and `Last-Modified`             | 200; 404 when there is none                                   |
-| `GET` without the id                       | Returns the ids of the documents of the context, each once, as a JSON array          | 200; `since` lists only the documents updated after that time |
-| `PUT` with the id                          | Stores the body as it came, with the `Content-Type` of the request, which it needs   | 204 with the new `ETag`                                       |
-| `POST` with the id                         | Merges the body into the document, or stores it where there is none                  | 204 with the new `ETag`; 400 when it cannot merge             |
-| `DELETE` with the id                       | Removes the document                                                                 | 204; 404 when there is none                                   |
-| `DELETE` of State without `stateId`        | Removes every State of the Activity and Agent, of the registration when one is named | 204; no precondition, since the documents share no tag        |
-| `HEAD`                                     | As GET, with no body                                                                 | The status and headers of GET                                 |
+| Request                                    | Does                                                                                 | Answers                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `GET` with the id (`stateId`, `profileId`) | Returns the document with its `Content-Type`, `ETag` and `Last-Modified`             | 200; 404 when there is none                                              |
+| `GET` without the id                       | Returns the ids of the documents of the context, each once, as a JSON array          | 200; `since` lists only the documents updated after that time            |
+| `PUT` with the id                          | Stores the body as it came, with the `Content-Type` of the request, which it needs   | 204 with the new `ETag`                                                  |
+| `POST` with the id                         | Merges the body into the document, or stores it where there is none                  | 204 with the new `ETag`; 400 when it cannot merge                        |
+| `DELETE` with the id                       | Removes the document                                                                 | 204; also when there is none, unless `If-Match` asks for a version (412) |
+| `DELETE` of State without `stateId`        | Removes every State of the Activity and Agent, of the registration when one is named | 204; no precondition, since the documents share no tag                   |
+| `HEAD`                                     | As GET, with no body                                                                 | The status and headers of GET                                            |
 
 The parameters are `activityId`, `agent` and `registration` (optional) with `stateId` for State; `agent` with `profileId` for
 Agent Profile; `activityId` with `profileId` for Activity Profile; and `since` on a GET without the id. The `agent` is the JSON
@@ -231,11 +235,14 @@ RFC 9110 and the standard (4.1.4):
 | `If-Match: "tag"`       | Written if the tag is its tag; else 412                  | 412           |
 | `If-Match: *` or a list | Written if `*` or a tag of the list is its tag; else 412 | 412           |
 | `If-None-Match: *`      | 412                                                      | Written       |
-| none                    | 409                                                      | Written       |
+| `If-None-Match: "tag"`  | 412 if the tag is its tag, else written                  | Written       |
+| none, a PUT             | 409                                                      | Written       |
+| none, a POST            | Merged into it                                           | Written       |
 
-A `DELETE` needs `If-Match` and removes the document under the same rules; without it the answer is 409 where the document
-exists. A weak tag (`W/"..."`) never matches. An `If-None-Match` with a tag, a header that is not quoted, and both headers
-together refuse the request with 400.
+A `DELETE` takes `If-Match` and no other header: with a tag that is not the document's, or with no document, the answer is 412,
+and without the header the document is removed, or is already not there and the answer is 204. A member of a header is compared
+with the tag as it was written, so one that is no quoted entity tag, such as `1234`, names no tag of the document and the
+answer is 412, not 400. A weak tag (`W/"..."`) never matches.
 
 A POST merges when the document exists (4.1.6.2): both the body and the document must be `application/json` and a JSON object,
 and the top-level properties of the body replace those of the document. Where no document exists, the body is stored as it came;
@@ -345,21 +352,21 @@ mirror against it. `target` finds any Statement by its id in lower case, a voide
 
 ## Errors
 
-| Answer or error                                                                  | When                                                                                                                                                | What to do                                                        |
-| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| 400 with a message                                                               | A parameter, a header, the body, a Statement or a signature is wrong                                                                                | Show the message to the sender: it names the path                 |
-| 401, 403, 429                                                                    | `access` refused the request, or the credentials lack the action                                                                                    | Send the credentials the host asks for                            |
-| 404                                                                              | The path names no resource, or the LRS holds no such Statement or document                                                                          | Check the id                                                      |
-| 405 with `Allow`                                                                 | The resource has no such method                                                                                                                     | Use a method of `Allow`                                           |
-| 409                                                                              | The LRS holds another Statement with the id; a document exists and the write has no precondition; a removal has no `If-Match`; writers kept winning | Send a new id or the precondition, or read the document and retry |
-| 412                                                                              | `If-Match` or `If-None-Match` is not met                                                                                                            | Read the document again                                           |
-| 413                                                                              | A body, a batch, a part, a number of parts or a document is over its limit                                                                          | Send less, or raise the limit                                     |
-| 500                                                                              | A port rejected                                                                                                                                     | Look at the host's own log; the answer says nothing of the cause  |
-| `DataError`: `The configuration of the LRS is invalid: <sentence>.`              | An option has the wrong type                                                                                                                        | Pass the option as the table says                                 |
-| `DataError`: `The decision of access is invalid at <path>: <sentence>.`          | `access` answered with something that is no decision                                                                                                | Answer `{ allowed, ... }` as `Access` says                        |
-| `DataError`: `The answer of DocumentStore.get is invalid at <path>: <sentence>.` | A store broke its contract                                                                                                                          | Fix the store                                                     |
+| Answer or error                                                                  | When                                                                                                                     | What to do                                                                 |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| 400 with a message                                                               | A parameter, a header, the body, a Statement or a signature is wrong                                                     | Show the message to the sender: it names the path                          |
+| 401, 403, 429                                                                    | `access` refused the request, or the credentials lack the action                                                         | Send the credentials the host asks for                                     |
+| 404                                                                              | The path names no resource, or the LRS holds no such Statement or document                                               | Check the id                                                               |
+| 405 with `Allow`                                                                 | The resource has no such method                                                                                          | Use a method of `Allow`                                                    |
+| 409                                                                              | The LRS holds another Statement with the id; a PUT has no precondition over a document that exists; writers kept winning | Send a new id, or `If-Match` with the ETag, or read the document and retry |
+| 412                                                                              | `If-Match` or `If-None-Match` is not met                                                                                 | Read the document again                                                    |
+| 413                                                                              | A body, a batch, a part, a number of parts or a document is over its limit                                               | Send less, or raise the limit                                              |
+| 500                                                                              | A port rejected                                                                                                          | Look at the host's own log; the answer says nothing of the cause           |
+| `DataError`: `The configuration of the LRS is invalid: <sentence>.`              | An option has the wrong type                                                                                             | Pass the option as the table says                                          |
+| `DataError`: `The decision of access is invalid at <path>: <sentence>.`          | `access` answered with something that is no decision                                                                     | Answer `{ allowed, ... }` as `Access` says                                 |
+| `DataError`: `The answer of DocumentStore.get is invalid at <path>: <sentence>.` | A store broke its contract                                                                                               | Fix the store                                                              |
 
-A refusal is written as JSON `{ "message": "..." }`, plain text or HTML, as `Accept` prefers, and as JSON when it prefers none.
+A refusal is written as plain text, JSON `{ "message": "..." }` or HTML, as `Accept` prefers, and as plain text when it prefers none or prefers them alike.
 
 ## Not included
 
@@ -376,7 +383,5 @@ A refusal is written as JSON `{ "message": "..." }`, plain text or HTML, as `Acc
 | Reference    | Difference                                                                                                                                                                    |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The standard | A Statement that arrives after the Statement that voids it is not voided, since the LRS looks for the target when the voiding Statement arrives                               |
-| The standard | `X-Experience-API-Consistent-Through` is on the successful answers of the Statements resource, and not on a refusal                                                           |
 | The standard | A batch with a Statement that the LRS holds with other content is answered 409 after the new Statements were stored: the ports do not let the handler check all the ids first |
-| The standard | A POST of a document with no precondition over one that exists is 409 like a PUT, and a DELETE without `If-Match` is 409                                                      |
-| RFC 9110     | `If-None-Match` takes `*` only, and a DELETE of a document that does not exist is 404 whatever the headers                                                                    |
+| RFC 9110     | A member of `If-Match` that is no entity tag names no tag and the answer is 412; a `DELETE` of a document that does not exist is 204                                          |

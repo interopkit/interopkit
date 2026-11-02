@@ -64,7 +64,8 @@ describe("buildStatement", () => {
       object: { id: "https://example.org/q" },
       timestamp: "2024-06-13T18:00:00.000Z",
     };
-    expect(buildStatement({ ...input(), object: sub }).object).toStrictEqual(sub);
+    const { revision: _revision, platform: _platform, ...context } = input().context ?? {};
+    expect(buildStatement({ ...input(), context, object: sub }).object).toStrictEqual(sub);
   });
 
   it("names every error, each with its path, and not only the first", () => {

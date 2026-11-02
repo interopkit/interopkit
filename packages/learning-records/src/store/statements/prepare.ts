@@ -10,8 +10,9 @@ import {
 import { mediaTypeOf } from "../../model/internal.js";
 import { inspectBatch, issueSink } from "../../read/internal.js";
 import { SIGNATURE_USAGE_TYPE, verifyStatementSignature } from "../../signing/index.js";
-import { type Context, isRefusal, refused, type Verdict } from "../verdict.js";
+import { type Context, isRefusal, type Refusal, refused, type Verdict } from "../verdict.js";
 import type { StatementsBody } from "./body.js";
+import { inUtcTimestamps } from "./timestamps.js";
 
 /** A Statement that has its id. */
 type IdentifiedStatement = Statement & { readonly id: string };
@@ -28,6 +29,9 @@ export interface Prepared {
 
 /** The version a Statement gets when it brings none (4.2.4.3). */
 const DEFAULT_VERSION = "2.0.0";
+
+/** The versions of a Statement that the LRS takes: 2.0 and 2.0.x, and 1.0 and 1.0.x, which are the Statements of xAPI 1.0.3. */
+const TAKEN_VERSION = /^(?:1\.0|2\.0)(?:\.\d+)?$/u;
 
 /** The messages about a signature that is not good, by the reason that `verifyStatementSignature` gives. */
 const SIGNATURE_PROBLEMS = {
@@ -61,7 +65,12 @@ function completed(statement: Statement, stored: string, context: Context): Iden
   };
 }
 
-/** Matches the Attachments of the Statements with the data that came with them (4.1.3). */
+/**
+ * Matches the Attachments of the Statements with the data that came with them (4.1.3): an Attachment without a `fileUrl` needs
+ * its part, and a part that no Attachment names is refused. The `length` of an Attachment is not compared to its part: the hash
+ * is what binds the data to the Attachment, and the standard asks the LRS to reject only an Attachment that has neither a
+ * `fileUrl` nor a part with its hash.
+ */
 function matchAttachments(
   statements: readonly Statement[],
   parts: ReadonlyMap<string, AttachmentData>,
@@ -76,13 +85,12 @@ function matchAttachments(
       }
       continue;
     }
-    if (header.length !== data.body.byteLength) {
-      return refused(
-        400,
-        `The Attachment with the hash ${hash} declares ${header.length} bytes, and its part holds ${data.body.byteLength}.`,
-      );
-    }
     if (!matched.has(hash)) matched.set(hash, { sha2: hash, contentType: header.contentType, body: data.body });
+  }
+  for (const hash of parts.keys()) {
+    if (!matched.has(hash)) {
+      return refused(400, `The part with the hash ${hash} belongs to no Attachment of the Statements.`);
+    }
   }
   return { value: [...matched.values()] };
 }
@@ -134,6 +142,23 @@ async function acceptable(statements: readonly Statement[], context: Context): P
     : refused(400, refusalOf("The batch of Statements", errors, "accept"));
 }
 
+/** Refuses a Statement of a version that the LRS does not take, and a Statement whose id is not the `statementId` of a PUT. */
+function checkIdentity(read: readonly Statement[], single: { readonly id: string } | undefined): Refusal | undefined {
+  for (const [index, statement] of read.entries()) {
+    if (statement.version !== undefined && !TAKEN_VERSION.test(statement.version)) {
+      return refused(
+        400,
+        `The version of the Statement at [${index}], ${JSON.stringify(statement.version)}, is not one that the LRS takes: write 2.0.x, or 1.0.x for a Statement of xAPI 1.0.`,
+      );
+    }
+  }
+  const only = read[0];
+  if (single !== undefined && only?.id !== undefined && only.id.toLowerCase() !== single.id) {
+    return refused(400, `The id of the Statement, ${only.id}, is not the statementId of the request, ${single.id}.`);
+  }
+  return undefined;
+}
+
 /**
  * Reads the Statements of a request, completes them, and checks their Attachments and signatures: everything that can refuse
  * the request before the store is called.
@@ -143,24 +168,26 @@ export async function prepare(
   body: StatementsBody,
   single: { readonly id: string } | undefined,
 ): Promise<Verdict<Prepared>> {
-  const list = Array.isArray(body.json) ? body.json : [body.json];
+  const submitted = Array.isArray(body.json) ? body.json : [body.json];
   const { maxBatch, maxFindings } = context.settings.limits;
   if (single !== undefined && Array.isArray(body.json)) {
     return refused(400, "A PUT stores one Statement, and the body is a list.");
   }
-  if (list.length > maxBatch) {
-    return refused(413, `The request has ${list.length} Statements, above the limit of ${maxBatch} for one request.`);
+  if (submitted.length > maxBatch) {
+    return refused(
+      413,
+      `The request has ${submitted.length} Statements, above the limit of ${maxBatch} for one request.`,
+    );
   }
+  const converted = inUtcTimestamps(submitted);
+  if (isRefusal(converted)) return converted;
+  const list = converted.value;
   const sink = issueSink(maxFindings, true);
   const read = inspectBatch(list, "lrs", sink);
   const errors = sink.list();
   if (errors.length > 0) return refused(400, refusalOf("The batch of Statements", errors, "validateStatements"));
-  if (single !== undefined) {
-    const [only] = read;
-    if (only?.id !== undefined && only.id.toLowerCase() !== single.id) {
-      return refused(400, `The id of the Statement, ${only.id}, is not the statementId of the request, ${single.id}.`);
-    }
-  }
+  const refusal = checkIdentity(read, single);
+  if (refusal !== undefined) return refusal;
   const stored = formatTimestamp(context.settings.clock.now());
   const statements = read.map((statement, index) =>
     completed(index === 0 && single !== undefined ? { ...statement, id: single.id } : statement, stored, context),

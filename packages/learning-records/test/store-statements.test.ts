@@ -111,7 +111,7 @@ describe("PUT of a Statement", () => {
     const { response, store } = await send("PUT", statementOf(1), { query });
     expect(response.status).toBe(400);
     expect(reasonOf(response)).toContain(sentence);
-    expect(store.calls).toStrictEqual([]);
+    expect(store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
   });
 
   it("refuses a parameter that occurs twice with 400", async () => {
@@ -139,7 +139,9 @@ describe("PUT of a Statement", () => {
     const invalid = await put({ ...statementOf(1), actor: { name: "No identifier" } }, uuid(1));
     expect(invalid.response.status).toBe(400);
     expect(reasonOf(invalid.response)).toContain("The batch of Statements is invalid at [0].actor");
-    expect([mismatch, list, invalid].flatMap(({ store }) => store.calls)).toStrictEqual([]);
+    expect([mismatch, list, invalid].flatMap(({ store }) => store.calls)).toStrictEqual(
+      Array.from({ length: 3 }, () => "consistentThrough"),
+    );
   });
 });
 
@@ -155,7 +157,7 @@ describe("the body of a request that stores Statements", () => {
     const { response, store } = await send("POST", text);
     expect(response.status).toBe(400);
     expect(reasonOf(response)).toContain(sentence);
-    expect(store.calls).toStrictEqual([]);
+    expect(store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
   });
 
   it("refuses a body that is not UTF-8, and JSON nested deeper than the limit", async () => {
@@ -231,7 +233,7 @@ describe("POST of Statements", () => {
     const three = await send("POST", [statementOf(1), statementOf(2), statementOf(3)], { changes });
     expect(three.response.status).toBe(413);
     expect(reasonOf(three.response)).toContain("The request has 3 Statements, above the limit of 2 for one request.");
-    expect(three.store.calls).toStrictEqual([]);
+    expect(three.store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
     expect((await send("POST", [statementOf(1), statementOf(2)], { changes })).response.status).toBe(200);
   });
 
@@ -243,7 +245,7 @@ describe("POST of Statements", () => {
     const twice = await send("POST", [statementOf(1), statementOf(1)]);
     expect(twice.response.status).toBe(400);
     expect(reasonOf(twice.response)).toContain("[1].id");
-    expect(twice.store.calls).toStrictEqual([]);
+    expect(twice.store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
   });
 
   it("refuses a parameter with 400", async () => {
@@ -356,7 +358,22 @@ describe("the ports of a request that stores Statements", () => {
 });
 
 describe("the Activities of the Statements that are stored", () => {
-  it("tells the store of every Activity once, with the authority, and prefers a mention with a definition", async () => {
+  it("tells the store of every definition of one Activity, so that it can join what several Statements say of it", async () => {
+    const meeting = (n: number, name: Record<string, string>): Statement => ({
+      ...statementOf(n),
+      object: { id: "https://example.org/activities/meeting", definition: { name } },
+    });
+    const { store } = await send("POST", [
+      meeting(1, { "en-US": "meeting" }),
+      meeting(2, { "fr-FR": "the meeting in French" }),
+    ]);
+    expect(store.observed[0]?.activities).toStrictEqual([
+      { id: "https://example.org/activities/meeting", definition: { name: { "en-US": "meeting" } } },
+      { id: "https://example.org/activities/meeting", definition: { name: { "fr-FR": "the meeting in French" } } },
+    ]);
+  });
+
+  it("tells the store of every Activity, with the authority, and of one mention of an Activity that has no definition", async () => {
     const withContext: Statement = {
       ...statementOf(1),
       object: { id: "https://example.org/activities/a" },
@@ -424,7 +441,7 @@ describe("the check of the host", () => {
     const bad = await send("POST", statementOf(1), { changes: { accept: finding("error") } });
     expect(bad.response.status).toBe(400);
     expect(reasonOf(bad.response)).toContain("The batch of Statements is invalid at [0].context: needs a registration");
-    expect(bad.store.calls).toStrictEqual([]);
+    expect(bad.store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
     expect((await send("POST", statementOf(1), { changes: { accept: finding("warning") } })).response.status).toBe(200);
   });
 
@@ -609,25 +626,35 @@ describe("Attachments", () => {
       optionsOf(store),
     );
     expect(empty.status).toBe(400);
-    expect(store.calls).toStrictEqual([]);
+    expect(store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
   });
 
-  it("refuses with 400 data whose length is not the length of the header", async () => {
-    const { response } = await multipart(withHeader({ length: 3 }));
-    expect(response.status).toBe(400);
-    expect(reasonOf(response)).toContain(`declares 3 bytes, and its part holds ${data.body.byteLength}.`);
-  });
-
-  it("leaves out a part that no Attachment names", async () => {
-    const stray = dataOf("stray");
-    const message = writeMultipart(statementWithAttachments([data, stray]), [data, stray]);
-    const store = memory();
-    const response = await handleLrsRequest(
-      requestOf("POST", "/statements", { headers: { "content-type": message.contentType }, body: message.body }),
+  it("stores data whose length is not the length of the header, as the hash is what binds the data to the Attachment", async () => {
+    const { response, store } = await multipart(withHeader({ length: 3 }));
+    expect(response.status).toBe(200);
+    expect(store.data.get(data.sha2)).toStrictEqual(data);
+    const asked = await handleLrsRequest(
+      requestOf("GET", "/statements", { query: { statementId: uuid(1), attachments: "true" } }),
       optionsOf(store),
     );
-    expect(response.status).toBe(200);
-    expect(store.data.size).toBe(2);
+    expect(asked.status).toBe(200);
+    expect(asked.headers["content-type"]).toContain("multipart/mixed");
+  });
+
+  it("refuses with 400 a part that no Attachment names, and stores nothing", async () => {
+    const stray = dataOf("stray");
+    const message = messageOf("b", JSON.stringify(withHeader()), [
+      { headers: ["Content-Type: text/plain", `X-Experience-API-Hash: ${data.sha2}`], body: "a certificate" },
+      { headers: ["Content-Type: text/plain", `X-Experience-API-Hash: ${stray.sha2}`], body: "stray" },
+    ]);
+    const store = memory();
+    const response = await handleLrsRequest(
+      requestOf("POST", "/statements", { headers: { "content-type": "multipart/mixed; boundary=b" }, body: message }),
+      optionsOf(store),
+    );
+    expect(response.status).toBe(400);
+    expect(reasonOf(response)).toBe(`The part with the hash ${stray.sha2} belongs to no Attachment of the Statements.`);
+    expect(store.held.size).toBe(0);
   });
 
   it("takes an Attachment of a SubStatement as an Attachment of the request", async () => {
@@ -653,7 +680,7 @@ describe("Attachments", () => {
       const { response, store } = await multipart(statement, two, { limits: { maxParts: 2 } });
       expect(response.status).toBe(413);
       expect(reasonOf(response)).toContain("part count exceeds");
-      expect(store.calls).toStrictEqual([]);
+      expect(store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
     });
 
     it("refuses a part above limits.maxPartBytes with 413, and the Statements part too", async () => {
@@ -702,7 +729,7 @@ describe("the bounds of what a request makes the LRS hold", () => {
     const over = await send("POST", million);
     expect(over.response.status).toBe(400);
     expect(reasonOf(over.response)).toContain("The text has more than 1000000 tokens");
-    expect(over.store.calls).toStrictEqual([]);
+    expect(over.store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
     const few = await send("POST", statementOf(1), { changes: { limits: { maxTokens: 20 } } });
     expect(few.response.status).toBe(400);
     expect(reasonOf(few.response)).toContain("The text has more than 20 tokens");
@@ -733,7 +760,7 @@ describe("the bounds of what a request makes the LRS hold", () => {
     expect(message).toContain(
       "At least 2 more errors: the check stopped at its limit, and validateStatements with a higher maxFindings lists more.",
     );
-    expect(stopped.store.calls).toStrictEqual([]);
+    expect(stopped.store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
     const counted = await send("POST", wrongBatch(2));
     expect(reasonOf(counted.response)).toMatch(
       /^The batch of Statements is invalid at \[0\]\.actor: .* 5 more errors: validateStatements lists every finding\.$/u,
@@ -777,5 +804,131 @@ describe("the bounds of what a request makes the LRS hold", () => {
     await expect(send("POST", statementOf(1), { changes: { limits: { maxFindings: 1.5 } } })).rejects.toThrow(
       "maxFindings",
     );
+  });
+});
+
+describe("what an LRS converts and refuses in the properties it sets or judges", () => {
+  const stamped = (timestamp: string, n = 1): Statement => ({ ...statementOf(n), timestamp });
+  const heldTimestamp = (store: ReturnType<typeof memory>, n = 1) => store.held.get(uuid(n))?.statement.timestamp;
+
+  it.each([
+    ["an offset", "2023-05-04T12:00:00.250-05:00", "2023-05-04T17:00:00.250Z"],
+    ["a time with no seconds, which ISO 8601 allows", "2023-05-04T12:00-05:00", "2023-05-04T17:00:00.000Z"],
+    [
+      "a space between the date and the time, which RFC 3339 allows",
+      "2008-09-15 15:53:00.601+00:00",
+      "2008-09-15T15:53:00.601Z",
+    ],
+    ["a lower-case t and z", "2023-05-04t12:00:00z", "2023-05-04T12:00:00.000Z"],
+    ["more than three digits of a second", "2023-05-04T12:00:00.123456Z", "2023-05-04T12:00:00.123Z"],
+  ])("writes a timestamp with %s in UTC", async (_name, timestamp, utc) => {
+    const { response, store } = await send("POST", stamped(timestamp));
+    expect(response.status).toBe(200);
+    expect(heldTimestamp(store)).toBe(utc);
+  });
+
+  it("writes the timestamp of a SubStatement in UTC, and leaves a Statement with none to get the time it was stored", async () => {
+    const sub: Statement = {
+      ...statementOf(1),
+      object: {
+        objectType: "SubStatement",
+        actor: { mbox: "mailto:a@example.org" },
+        verb: { id: "http://adlnet.gov/expapi/verbs/answered" },
+        object: { id: "https://example.org/activities/inner" },
+        timestamp: "2023-05-04T12:00-05:00",
+      },
+    };
+    const { id: _id, timestamp: _timestamp, ...bare } = statementOf(2);
+    const { response, store } = await send("POST", [sub, bare]);
+    expect(response.status).toBe(200);
+    const inner = store.held.get(uuid(1))?.statement.object;
+    expect(inner && "timestamp" in inner ? inner.timestamp : undefined).toBe("2023-05-04T17:00:00.000Z");
+    expect(heldTimestamp(store)).toBe(sub.timestamp);
+  });
+
+  it("refuses the offset -00:00, which ISO 8601 does not allow, and says where it is", async () => {
+    const { response, store } = await send("POST", [statementOf(1), stamped("2008-09-15T15:53:00.601-00:00", 2)]);
+    expect(response.status).toBe(400);
+    expect(reasonOf(response)).toBe(
+      'At [1].timestamp: The timestamp "2008-09-15T15:53:00.601-00:00" has the offset -00:00, which ISO 8601 does not allow: write Z or +00:00.',
+    );
+    expect(store.held.size).toBe(0);
+    const inner = await send("POST", {
+      ...statementOf(1),
+      object: {
+        objectType: "SubStatement",
+        actor: { mbox: "mailto:a@example.org" },
+        verb: { id: "http://adlnet.gov/expapi/verbs/answered" },
+        object: { id: "https://example.org/activities/inner" },
+        timestamp: "2008-09-15T15:53:00-00:00",
+      },
+    });
+    expect(reasonOf(inner.response)).toContain("At [0].object.timestamp:");
+  });
+
+  it.each([
+    "should fail",
+    "01/011/2015",
+    "2008-09-15T15:53:00.601-0000",
+    "2008-09-15T15:53:00.601-00",
+    "2023-02-30T12:00:00Z",
+  ])("leaves %j for the reader of Statements to refuse with its path", async (timestamp) => {
+    const { response, store } = await send("POST", stamped(timestamp));
+    expect(response.status).toBe(400);
+    expect(reasonOf(response)).toContain("The batch of Statements is invalid at [0].timestamp");
+    expect(store.held.size).toBe(0);
+  });
+
+  it.each(["1.0", "1.0.9", "2.0", "2.0.0", "2.0.7"])("takes the Statement version %s", async (version) => {
+    const { response, store } = await send("POST", { ...statementOf(1), version });
+    expect(response.status).toBe(200);
+    expect(store.held.get(uuid(1))?.statement.version).toBe(version);
+  });
+
+  it.each(["should fail", "0.9.9", "1.1.0", "3.0.0", "2", "2.0.0-beta"])(
+    "refuses the Statement version %j",
+    async (version) => {
+      const { response, store } = await send("POST", [statementOf(1), { ...statementOf(2), version }]);
+      expect(response.status).toBe(400);
+      expect(reasonOf(response)).toBe(
+        `The version of the Statement at [1], ${JSON.stringify(version)}, is not one that the LRS takes: write 2.0.x, or 1.0.x for a Statement of xAPI 1.0.`,
+      );
+      expect(store.held.size).toBe(0);
+    },
+  );
+
+  it.each([
+    [
+      "an identified Group",
+      {
+        objectType: "Group",
+        mbox: "mailto:t@example.org",
+        member: [{ mbox: "mailto:a@example.org" }, { mbox: "mailto:b@example.org" }],
+      },
+    ],
+    ["an anonymous Group of one Agent", { objectType: "Group", member: [{ mbox: "mailto:a@example.org" }] }],
+    [
+      "an anonymous Group of three Agents",
+      { objectType: "Group", member: ["a", "b", "c"].map((name) => ({ mbox: `mailto:${name}@example.org` })) },
+    ],
+  ])("refuses a submitted authority that is %s, though the LRS would replace it", async (_name, authority) => {
+    const { response, store } = await send("POST", { ...statementOf(1), authority });
+    expect(response.status).toBe(400);
+    expect(reasonOf(response)).toContain("The batch of Statements is invalid at [0].authority");
+    expect(store.held.size).toBe(0);
+  });
+
+  it("refuses a revision or a platform in the context of a Statement whose Object is not an Activity", async () => {
+    const about = {
+      ...statementOf(1),
+      object: { objectType: "Agent", mbox: "mailto:a@example.org" },
+      context: { revision: "2" },
+    };
+    const { response } = await send("POST", about);
+    expect(response.status).toBe(400);
+    expect(reasonOf(response)).toContain("The batch of Statements is invalid at [0].context.revision");
+    expect(
+      (await send("POST", { ...statementOf(1), context: { platform: "LMS", revision: "2" } })).response.status,
+    ).toBe(200);
   });
 });

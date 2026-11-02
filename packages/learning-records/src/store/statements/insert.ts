@@ -47,17 +47,22 @@ async function voidedBy(context: Context, statements: readonly Statement[]): Pro
   return { value: [...voids] };
 }
 
-/** Lists the Activities of the Statements, once for each id, with a definition when any of its mentions has one. */
+/**
+ * Lists the Activities of the Statements in their order: every mention that has a definition, so that a store that joins the
+ * definitions of one Activity from several Statements sees each of them (4.1.6.4), and the first mention of an Activity that no
+ * Statement defines, so that it sees every id.
+ */
 function activitiesOfAll(statements: readonly Statement[]): readonly Activity[] {
-  const byId = new Map<string, Activity>();
-  for (const activity of statements.flatMap(activitiesIn)) {
+  const mentions = statements.flatMap(activitiesIn);
+  const defined = new Set(mentions.filter(({ definition }) => definition !== undefined).map(({ id }) => iriKey(id)));
+  const bare = new Set<string>();
+  return mentions.filter((activity) => {
+    if (activity.definition !== undefined) return true;
     const key = iriKey(activity.id);
-    const known = byId.get(key);
-    if (known === undefined || (known.definition === undefined && activity.definition !== undefined)) {
-      byId.set(key, activity);
-    }
-  }
-  return [...byId.values()];
+    if (defined.has(key) || bare.has(key)) return false;
+    bare.add(key);
+    return true;
+  });
 }
 
 /**

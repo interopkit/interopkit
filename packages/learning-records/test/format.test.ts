@@ -10,7 +10,7 @@ import {
   type Statement,
 } from "../src/index.js";
 import { copyOf, sharesNothing } from "./fixture.js";
-import { fullStatement, subStatementStatement, uuid } from "./full-statement.js";
+import { fullStatement, fullStatementAbout, subStatementStatement, uuid } from "./full-statement.js";
 import { ROLES, RUNS } from "./fuzz.js";
 
 /** Every key that a format `ids` removes, wherever it is. */
@@ -92,11 +92,8 @@ describe("formatStatement", () => {
     });
 
     it("keeps the type of an Agent as the Object, since it would be read as an Activity without it", () => {
-      const input = {
-        ...fullStatement(),
-        object: { objectType: "Agent", name: "Classmate", mbox: "mailto:c@example.org" },
-      };
-      expect(formatStatement(input as Statement, "ids").object).toStrictEqual({
+      const input = fullStatementAbout({ objectType: "Agent", name: "Classmate", mbox: "mailto:c@example.org" });
+      expect(formatStatement(input, "ids").object).toStrictEqual({
         objectType: "Agent",
         mbox: "mailto:c@example.org",
       });
@@ -279,13 +276,10 @@ describe("formatStatement", () => {
 
   describe("the Objects that are not Activities", () => {
     it("formats a Group and a Statement Reference as the Object, and keeps the second as it is", () => {
-      const group = {
-        ...fullStatement(),
-        object: { objectType: "Group", name: "Team", mbox: "mailto:g@example.org" },
-      } as Statement;
+      const group = fullStatementAbout({ objectType: "Group", name: "Team", mbox: "mailto:g@example.org" });
       expect(formatStatement(group, "ids").object).toStrictEqual({ objectType: "Group", mbox: "mailto:g@example.org" });
       expect(formatStatement(group, "canonical").object).toStrictEqual(group.object);
-      const reference = { ...fullStatement(), object: { objectType: "StatementRef", id: uuid(6) } } as Statement;
+      const reference = fullStatementAbout({ objectType: "StatementRef", id: uuid(6) });
       expect(formatStatement(reference, "ids").object).toStrictEqual(reference.object);
       expect(formatStatement(reference, "canonical").object).toStrictEqual(reference.object);
     });

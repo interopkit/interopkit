@@ -398,6 +398,33 @@ describe("verifyStatementSignature", () => {
     expect(privateKey.type).toBe("private");
   });
 
+  it("reads the payload of a signature that it has no key for, and says no-key only when it is the Statement given", async () => {
+    const good = await signedBy("RS256");
+    const sections = new TextDecoder().decode(good).split(".");
+    const encode = (text: string) => Buffer.from(text).toString("base64url");
+    const rejoined = (payload: string) => new TextEncoder().encode(`${sections[0]}.${payload}.${sections[2]}`);
+    const verdict = (signature: Uint8Array) => verifyStatementSignature(statementToSign(), signature);
+    expect(await verdict(good)).toStrictEqual({ valid: false, reason: "no-key" });
+    // A payload that is not JSON, one that is not a Statement, and one that is another Statement.
+    expect(await verdict(rejoined(encode("{'actor':1}")))).toStrictEqual({ valid: false, reason: "malformed" });
+    expect(await verdict(rejoined(encode('{"actor":1}')))).toStrictEqual({ valid: false, reason: "malformed" });
+    expect(
+      await verdict(
+        rejoined(encode(JSON.stringify({ ...statementToSign(), verb: { id: "https://example.org/other" } }))),
+      ),
+    ).toStrictEqual({
+      valid: false,
+      reason: "not-equivalent",
+    });
+    // A JWS of two sections, and one whose payload is no base64url.
+    expect(await verdict(new TextEncoder().encode(`${sections[0]}.${sections[1]}`))).toStrictEqual({
+      valid: false,
+      reason: "malformed",
+    });
+    expect(await verdict(rejoined("***"))).toStrictEqual({ valid: false, reason: "malformed" });
+    expect(await verdict(rejoined("abcde"))).toStrictEqual({ valid: false, reason: "malformed" });
+  });
+
   it("refuses a key made for another hash than the algorithm of the JWS", async () => {
     const signature = await signedBy("RS256");
     expect(await verifyStatementSignature(statementToSign(), signature, { key: pairs.RS384.publicKey })).toStrictEqual({

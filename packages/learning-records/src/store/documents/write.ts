@@ -78,13 +78,14 @@ async function change(
   context: Context,
   target: DocumentTarget,
   preconditions: Preconditions,
+  method: "PUT" | "POST",
   make: (current: LrsDocument | undefined) => Verdict<LrsDocumentInput>,
 ): Promise<HttpResponse> {
   const { limits, clock } = context.settings;
   for (let attempts = 0; attempts < limits.mergeRetries; attempts += 1) {
     const current = await fetchDocument(context, target);
     if (isRefusal(current)) return context.refuse(current.status, current.message);
-    const condition = judge(preconditions, current.value);
+    const condition = judge(preconditions, current.value, method);
     if (isRefusal(condition)) return context.refuse(condition.status, condition.message);
     const made = make(current.value);
     if (isRefusal(made)) return context.refuse(made.status, made.message);
@@ -110,10 +111,9 @@ export async function writeDocument(
   const size = tooLarge(context, context.request.body.byteLength);
   if (isRefusal(size)) return context.refuse(size.status, size.message);
   const preconditions = readPreconditions(context.request);
-  if (isRefusal(preconditions)) return context.refuse(preconditions.status, preconditions.message);
   const make =
     method === "PUT"
       ? () => ({ value: replacement(context, contentType.value) })
       : (current: LrsDocument | undefined) => merged(context, contentType.value, current);
-  return change(context, target, preconditions.value, make);
+  return change(context, target, preconditions, method, make);
 }

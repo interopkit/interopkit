@@ -22,9 +22,50 @@ function variantIssues(uuid: string | undefined, path: string): StatementIssue[]
   ];
 }
 
+/** The most and the fewest Agents of an authority that is a Group: the Agent of the application and the Agent of the user. */
+const AUTHORITY_MEMBERS = 2;
+
+/** Judges the authority of a Statement: an Agent, or an anonymous Group of exactly two Agents, as an OAuth consumer and its user are written. */
+function authorityIssues(statement: Statement, path: string): StatementIssue[] {
+  const { authority } = statement;
+  if (authority?.objectType !== "Group") return [];
+  const identified = [authority.mbox, authority.mbox_sha1sum, authority.openid, authority.account].some(
+    (identifier) => identifier !== undefined,
+  );
+  if (!identified && authority.member?.length === AUTHORITY_MEMBERS) return [];
+  return [
+    error(
+      member(path, "authority"),
+      "authority-group",
+      `expected an Agent, or an anonymous Group of exactly two Agents, found ${identified ? "an identified Group" : `an anonymous Group of ${authority.member?.length ?? 0} Agents`}.`,
+    ),
+  ];
+}
+
+/**
+ * Judges the `revision` and `platform` of a context: they describe an Activity, so a Statement whose Object is another kind
+ * does not have them.
+ */
+function contextIssues(statement: Statement | SubStatement, path: string): StatementIssue[] {
+  const { context } = statement;
+  if (objectKind(statement.object) === "Activity") return [];
+  return (["revision", "platform"] as const).flatMap((name) =>
+    context?.[name] === undefined
+      ? []
+      : [
+          error(
+            member(member(path, "context"), name),
+            "context-needs-activity",
+            `expected no ${name}, which describes an Activity, in a Statement whose object is of type ${objectKind(statement.object)}.`,
+          ),
+        ],
+  );
+}
+
 /**
  * Judges the properties of a Statement or a SubStatement that depend on each other: the Verb that voids has a Statement
- * Reference as its Object (4.2.5), and the UUIDs should be of variant 2 (4.2.7).
+ * Reference as its Object (4.2.5), the `revision` and `platform` of a context go with an Activity, the authority is an Agent or
+ * an anonymous Group of two Agents, and the UUIDs should be of variant 2 (4.2.7).
  */
 export function relationIssues(statement: Statement | SubStatement, path: string): StatementIssue[] {
   const issues: StatementIssue[] = [];
@@ -37,7 +78,9 @@ export function relationIssues(statement: Statement | SubStatement, path: string
       ),
     );
   }
-  if (!isSubStatement(statement)) issues.push(...variantIssues(statement.id, member(path, "id")));
+  issues.push(...contextIssues(statement, path));
+  if (!isSubStatement(statement))
+    issues.push(...authorityIssues(statement, path), ...variantIssues(statement.id, member(path, "id")));
   if (statement.object.objectType === "StatementRef") {
     issues.push(...variantIssues(statement.object.id, member(member(path, "object"), "id")));
   }

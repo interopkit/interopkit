@@ -19,15 +19,15 @@ const EXPECTED = (issue: { readonly received: string }): string =>
 
 /**
  * An Agent or a Group that the LRS gives as the authority of a Statement: one with exactly one identifier, or an anonymous
- * Group with its members, which is how an OAuth consumer and its user are written (4.2.2.1).
+ * Group of exactly two Agents, which is how an OAuth consumer and its user are written.
  */
 export const authoritySchema = v.pipe(
   actorSchema,
   v.check(
     (actor: Actor) =>
-      hasOneIdentifier(actor) || (actor.objectType === "Group" && hasNoIdentifier(actor) && actor.member !== undefined),
+      hasOneIdentifier(actor) || (actor.objectType === "Group" && hasNoIdentifier(actor) && actor.member?.length === 2),
     (issue) =>
-      `expected an Agent or Group with one identifier, or an anonymous Group with members, found ${issue.received}`,
+      `expected an Agent or Group with one identifier, or an anonymous Group of two Agents, found ${issue.received}`,
   ),
 );
 

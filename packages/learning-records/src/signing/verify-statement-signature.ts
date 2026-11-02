@@ -1,6 +1,13 @@
 import { type CallOptions, DataError, untilAborted } from "@interopkit/core";
 import { describe, guardSchema, isRecord, parseWith, strictRecord } from "@interopkit/core/checks";
-import { compactVerify, decodeProtectedHeader, errors, importX509, type ProtectedHeaderParameters } from "jose";
+import {
+  base64url,
+  compactVerify,
+  decodeProtectedHeader,
+  errors,
+  importX509,
+  type ProtectedHeaderParameters,
+} from "jose";
 import * as v from "valibot";
 import { sameStatement } from "../compare/index.js";
 import type { Statement } from "../model/index.js";
@@ -23,7 +30,7 @@ export type SignatureCheck =
       /**
        * Why not: `malformed` for bytes that are no compact JWS, a certificate or a payload that cannot be read; `algorithm`
        * for an algorithm other than RS256, RS384 or RS512, or a key made for another hash or shorter than 2,048 bits; `no-key` when the JWS has no `x5c`
-       * and the caller gave no key; `signature` when the key does not verify it; `not-equivalent` when the payload is another
+       * and the caller gave no key, though its payload is the Statement given; `signature` when the key does not verify it; `not-equivalent` when the payload is another
        * Statement than the one given.
        */
       readonly reason: "malformed" | "not-equivalent" | "algorithm" | "signature" | "no-key";
@@ -165,6 +172,31 @@ function readPayload(payload: Uint8Array): Statement | undefined {
   }
 }
 
+/** The characters of base64url (RFC 4648 section 5), which a section of a compact JWS is written in. */
+const BASE64URL = /^[A-Za-z0-9_-]*$/u;
+
+/** Reads the payload of a compact JWS without verifying it, or says that the JWS is none. */
+function unverifiedPayload(jws: string): Uint8Array | undefined {
+  const sections = jws.split(".");
+  const payload = sections[1];
+  // A section of one more character than a multiple of four is no base64: a byte needs at least two.
+  if (sections.length !== 3 || payload === undefined || !BASE64URL.test(payload) || payload.length % 4 === 1) {
+    return undefined;
+  }
+  return base64url.decode(payload);
+}
+
+/**
+ * Judges a signature that cannot be verified for want of a key: the payload must still be the JSON of a Statement, and the same
+ * Statement as the one received, which the LRS checks whether it holds a key or not (4.2.6). What is left is `no-key`.
+ */
+function checkWithoutKey(jws: string, stated: Statement, noKey: Failure): Failure {
+  const payload = unverifiedPayload(jws);
+  const signed = payload === undefined ? undefined : readPayload(payload);
+  if (signed === undefined) return fail("malformed");
+  return sameStatement(stated, signed) ? noKey : fail("not-equivalent");
+}
+
 /**
  * Verifies the signature of a Statement (4.2.6): the JWS verifies against the leaf of its `x5c` or the key given, and its
  * payload is the same Statement as the one given.
@@ -204,7 +236,7 @@ export async function verifyStatementSignature(
   const parsed = parseJws(signature);
   if (isFailure(parsed)) return parsed;
   const found = await findKey(parsed.header, key);
-  if (isFailure(found)) return found;
+  if (isFailure(found)) return found.reason === "no-key" ? checkWithoutKey(parsed.jws, stated, found) : found;
   const payload = await verifyJws(parsed.jws, found);
   if (isFailure(payload)) return payload;
   const signed = readPayload(payload);

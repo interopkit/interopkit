@@ -65,6 +65,14 @@ function all(...steps: readonly ((statement: Json) => Json)[]): (statement: Json
   return (statement) => steps.reduce((current, step) => step(current), statement);
 }
 
+/**
+ * Sets the Object of a Statement. An Object that is not an Activity leaves out the `revision` and `platform` of the context,
+ * which describe an Activity, so that a fixture about the Object has no other fault.
+ */
+function withObject(value: unknown): (statement: Json) => Json {
+  return all(set("object", value), remove("context.revision"), remove("context.platform"));
+}
+
 const error = (path: string, rule: string): ExpectedFinding => ({ path, rule, severity: "error" });
 const warning = (path: string, rule: string): ExpectedFinding => ({ path, rule, severity: "warning" });
 
@@ -93,6 +101,41 @@ const VOIDED = "http://adlnet.gov/expapi/verbs/voided";
 
 /** The rules that a Statement breaks and a reader reports. */
 export const REFUSALS: readonly XapiRule[] = [
+  roles(
+    "ADL suite 2.0, from Data 2.4.6 of 1.0.3",
+    "The revision and platform of a context describe an Activity: a Statement whose Object is another kind does not have them.",
+    set("object", { objectType: "Agent", mbox: "mailto:a@example.org" }),
+    [error("context.revision", "context-needs-activity"), error("context.platform", "context-needs-activity")],
+    [error("context.revision", "context-needs-activity"), error("context.platform", "context-needs-activity")],
+  ),
+  roles(
+    "ADL suite 2.0, from Data 2.4.2 of 1.0.3",
+    "An authority that is a Group is anonymous and has two Agents: one Agent is not enough.",
+    set("authority", { objectType: "Group", member: [{ mbox: "mailto:a@example.org" }] }),
+    [error("authority", "authority-group")],
+    [error("authority", "authority-group"), warning("authority", "lrs-managed-property")],
+  ),
+  roles(
+    "ADL suite 2.0, from Data 2.4.2 of 1.0.3",
+    "An authority that is a Group of three Agents is refused too.",
+    set("authority", {
+      objectType: "Group",
+      member: [{ mbox: "mailto:a@example.org" }, { mbox: "mailto:b@example.org" }, { mbox: "mailto:c@example.org" }],
+    }),
+    [error("authority", "authority-group")],
+    [error("authority", "authority-group"), warning("authority", "lrs-managed-property")],
+  ),
+  roles(
+    "ADL suite 2.0, from Data 2.4.2 of 1.0.3",
+    "An authority that is an identified Group is refused.",
+    set("authority", {
+      objectType: "Group",
+      mbox: "mailto:team@example.org",
+      member: [{ mbox: "mailto:a@example.org" }, { mbox: "mailto:b@example.org" }],
+    }),
+    [error("authority", "authority-group")],
+    [error("authority", "authority-group"), warning("authority", "lrs-managed-property")],
+  ),
   both("LRS 4.2.1", "The LRS shall reject Statements missing any required properties: actor.", remove("actor"), [
     error("actor", "missing-property"),
   ]),
@@ -264,13 +307,13 @@ export const REFUSALS: readonly XapiRule[] = [
   both(
     "LRS 4.2.2.3",
     "The objectType of a Statement Reference is StatementRef.",
-    set("object", { objectType: "StatementReference", id: "00000000-0000-4000-8000-000000000009" }),
+    withObject({ objectType: "StatementReference", id: "00000000-0000-4000-8000-000000000009" }),
     [error("object.objectType", "invalid-value")],
   ),
   both(
     "LRS 4.2.2.3",
     "Any Object without an objectType is an Activity.",
-    set("object", { mbox: "mailto:classmate@example.org" }),
+    withObject({ mbox: "mailto:classmate@example.org" }),
     [error("object.id", "missing-property"), error("object.mbox", "unknown-property")],
   ),
   both(
@@ -300,7 +343,7 @@ export const REFUSALS: readonly XapiRule[] = [
   both(
     "LRS 4.2.4.2",
     "The LRS shall reject a Statement with an Object with ObjectType SubStatement that has within it an Object with ObjectType SubStatement.",
-    set("object", {
+    withObject({
       objectType: "SubStatement",
       actor: { mbox: "mailto:a@example.org" },
       verb: { id: "http://adlnet.gov/expapi/verbs/asked" },
@@ -316,7 +359,7 @@ export const REFUSALS: readonly XapiRule[] = [
   both(
     "LRS 4.2.2.3",
     "A SubStatement has no id.",
-    set("object", {
+    withObject({
       objectType: "SubStatement",
       id: "00000000-0000-4000-8000-000000000009",
       actor: { mbox: "mailto:a@example.org" },
@@ -431,7 +474,7 @@ export const REFUSALS: readonly XapiRule[] = [
   both(
     "LRS 4.2.5",
     "The voided verb when the Statement Reference has no id.",
-    all(set("verb.id", VOIDED), set("object", { objectType: "StatementRef" })),
+    all(set("verb.id", VOIDED), withObject({ objectType: "StatementRef" })),
     [error("object.id", "missing-property")],
   ),
   both(
@@ -556,7 +599,7 @@ export const ADVISORIES: readonly XapiRule[] = [
   roles(
     "Content 5.2.7",
     "A SubStatement is held to the same Timestamp rules.",
-    set("object", {
+    withObject({
       objectType: "SubStatement",
       actor: { mbox: "mailto:a@example.org" },
       verb: { id: "http://adlnet.gov/expapi/verbs/asked" },
@@ -604,7 +647,7 @@ export const ADVISORIES: readonly XapiRule[] = [
   roles(
     "Content 5.2.4.1",
     "The same for the context of a SubStatement.",
-    set("object", {
+    withObject({
       objectType: "SubStatement",
       actor: { mbox: "mailto:a@example.org" },
       verb: { id: "http://adlnet.gov/expapi/verbs/asked" },
@@ -633,7 +676,7 @@ export const ADVISORIES: readonly XapiRule[] = [
   both(
     "LRS 4.2.7",
     "UUIDs should use variant 2: the Object that is a Statement Reference.",
-    set("object", { objectType: "StatementRef", id: "00000000-0000-4000-7000-000000000004" }),
+    withObject({ objectType: "StatementRef", id: "00000000-0000-4000-7000-000000000004" }),
     [warning("object.id", "uuid-variant")],
   ),
   roles(
@@ -747,7 +790,7 @@ export const ACCEPTANCES: readonly Omit<XapiRule, "lrs" | "provider">[] = [
     text: "The LRS shall not reject a Statement that uses the voided verb if it cannot find the id of the Object of that Statement.",
     fixture: all(
       set("verb.id", VOIDED),
-      set("object", { objectType: "StatementRef", id: "00000000-0000-4000-8000-0000000000ff" }),
+      withObject({ objectType: "StatementRef", id: "00000000-0000-4000-8000-0000000000ff" }),
     ),
   },
   {
@@ -804,8 +847,11 @@ export const ACCEPTANCES: readonly Omit<XapiRule, "lrs" | "provider">[] = [
   },
   {
     source: "LRS 4.2.2.5",
-    text: "The authority is an Agent or a Group.",
-    fixture: set("authority", { objectType: "Group", member: [{ mbox: "mailto:a@example.org" }] }),
+    text: "The authority is an Agent, or an anonymous Group of two Agents.",
+    fixture: set("authority", {
+      objectType: "Group",
+      member: [{ mbox: "mailto:a@example.org" }, { mbox: "mailto:b@example.org" }],
+    }),
   },
   {
     source: "LRS 4.2.2.5",

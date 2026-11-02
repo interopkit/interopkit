@@ -94,7 +94,7 @@ describe("handleLrsRequest: PUT of a document", () => {
     });
     expect(again.status).toBe(409);
     expect(reasonOf(again)).toBe(
-      "The document exists: send If-Match with its ETag to change it, or If-None-Match: * to create it.",
+      "The document exists: send If-Match with its ETag to change it, or check its current state with a GET first.",
     );
     expect(heldText(store)).toBe("{}");
   });
@@ -126,7 +126,33 @@ describe("handleLrsRequest: PUT of a document", () => {
     await putState(store, "hello");
     const exists = await putState(store, "again");
     expect(exists.status).toBe(412);
-    expect(reasonOf(exists)).toBe("The document exists, and If-None-Match: * asks that it does not.");
+    expect(reasonOf(exists)).toBe(
+      "The document is a version that If-None-Match names, and the write asks that it is not.",
+    );
+  });
+
+  it("takes a list of tags in If-None-Match: the write goes where the document has none of them", async () => {
+    const store = memory();
+    await putState(store, "hello");
+    const header = async (value: string, body: string) =>
+      (
+        await send(store, "PUT", "/activities/state", {
+          query: STATE,
+          headers: { "content-type": JSON_TYPE, "if-none-match": value },
+          body,
+        })
+      ).status;
+    expect(await header(`"nope", ${HELLO_TAG}`, "named")).toBe(412);
+    expect(heldText(store)).toBe("hello");
+    expect(await header('"nope", W/"x"', "other")).toBe(204);
+    expect(heldText(store)).toBe("other");
+    const absent = memory();
+    const created = await send(absent, "PUT", "/activities/state", {
+      query: STATE,
+      headers: { "content-type": JSON_TYPE, "if-none-match": '"nope"' },
+      body: "new",
+    });
+    expect(created.status).toBe(204);
   });
 
   it("takes * and lists of tags in If-Match, and never matches a weak tag", async () => {
@@ -149,19 +175,20 @@ describe("handleLrsRequest: PUT of a document", () => {
   });
 
   it.each([
-    ["an If-Match that is not quoted", { "if-match": "abc" }],
+    ["an If-Match that is not quoted, such as one that has no ETag form", { "if-match": "1234" }],
     ["an If-Match that is empty", { "if-match": "" }],
-    ["an If-None-Match other than *", { "if-none-match": '"abc"' }],
-    ["both If-Match and If-None-Match", { "if-match": "*", "if-none-match": "*" }],
-  ])("answers 400 for %s", async (_name, headers) => {
+    ["an If-Match of the right hash without its quotes", { "if-match": HELLO_TAG.replaceAll('"', "") }],
+    ["an If-Match and an If-None-Match that cannot both hold", { "if-match": "*", "if-none-match": "*" }],
+  ])("answers 412 and changes nothing for %s", async (_name, headers) => {
     const store = memory();
+    await putState(store, "hello");
     const response = await send(store, "PUT", "/activities/state", {
       query: STATE,
       headers: { "content-type": JSON_TYPE, ...headers },
       body: "x",
     });
-    expect(response.status).toBe(400);
-    expect(store.calls).toStrictEqual([]);
+    expect(response.status).toBe(412);
+    expect(heldText(store)).toBe("hello");
   });
 
   it("answers 400 for a content type that is missing or is no media type", async () => {
@@ -507,9 +534,23 @@ describe("handleLrsRequest: POST of a document", () => {
     const store = memory();
     await putState(store, '{"a":1}');
     expect((await post(store, '{"b":1}', { "if-match": '"stale"' })).status).toBe(412);
-    expect((await post(store, '{"b":1}')).status).toBe(409);
     expect((await post(store, '{"b":1}', { "if-none-match": "*" })).status).toBe(412);
     expect(heldText(store)).toBe('{"a":1}');
+  });
+
+  it("merges a POST with no precondition into the document that exists, and a PUT with none is the only write that is refused", async () => {
+    const store = memory();
+    await putState(store, '{"a":1}');
+    const merged = await post(store, '{"b":2}');
+    expect(merged.status).toBe(204);
+    expect(JSON.parse(heldText(store))).toStrictEqual({ a: 1, b: 2 });
+    expect(merged.headers.etag).toBe(onlyDocument(store).etag);
+    const put = await send(store, "PUT", "/activities/state", {
+      query: STATE,
+      headers: { "content-type": JSON_TYPE },
+      body: "{}",
+    });
+    expect(put.status).toBe(409);
   });
 
   it.each([
@@ -722,33 +763,35 @@ describe("handleLrsRequest: DELETE of a document", () => {
     }
   });
 
-  it("answers 404 for a document that does not exist, with or without a header", async () => {
-    expect((await remove(memory(), { "if-match": "*" })).status).toBe(404);
-    expect((await remove(memory())).status).toBe(404);
+  it("answers 204 for a document that does not exist when no If-Match asks for a version, and 412 when one does", async () => {
+    expect((await remove(memory())).status).toBe(204);
+    expect((await remove(memory(), { "if-match": "*" })).status).toBe(412);
+    expect((await remove(memory(), { "if-match": HELLO_TAG })).status).toBe(412);
   });
 
-  it("answers 409 without If-Match, and 412 when it names another tag", async () => {
+  it("removes the document that exists without If-Match, and refuses with 412 when If-Match names another tag", async () => {
     const store = memory();
     await putState(store, "hello");
-    const without = await remove(store);
-    expect(without.status).toBe(409);
-    expect(reasonOf(without)).toBe("A DELETE of a document needs If-Match with the ETag of the document.");
     const other = await remove(store, { "if-match": '"other"' });
     expect(other.status).toBe(412);
+    expect(reasonOf(other)).toBe("The document is not the version that If-Match names.");
     expect(store.documents.size).toBe(1);
+    expect((await remove(store, { "if-match": "1234" })).status).toBe(412);
+    expect(store.documents.size).toBe(1);
+    expect((await remove(store)).status).toBe(204);
+    expect(store.documents.size).toBe(0);
   });
 
-  it("answers 400 for If-None-Match, and for an If-Match that is not a tag", async () => {
+  it("answers 400 for If-None-Match, which a DELETE does not take", async () => {
     const store = memory();
     await putState(store, "hello");
     const none = await remove(store, { "if-none-match": "*" });
     expect(none.status).toBe(400);
-    expect(reasonOf(none)).toBe("A DELETE takes If-Match, not If-None-Match.");
-    expect((await remove(store, { "if-match": "x" })).status).toBe(400);
+    expect(reasonOf(none)).toBe('A DELETE takes If-Match, not If-None-Match, found "*".');
     expect(store.documents.size).toBe(1);
   });
 
-  it("removes the document that won a race when If-Match * still holds, and answers 404 if it was removed", async () => {
+  it("removes the document that won a race when If-Match * still holds, and answers 412 or 204 if it was removed", async () => {
     const store = memory();
     await putState(store, "hello");
     let raced = false;
@@ -762,7 +805,11 @@ describe("handleLrsRequest: DELETE of a document", () => {
     const gone = memory();
     await putState(gone, "hello");
     gone.interfere = () => gone.documents.clear();
-    expect((await remove(gone, { "if-match": "*" })).status).toBe(404);
+    expect((await remove(gone, { "if-match": "*" })).status).toBe(412);
+    const anyone = memory();
+    await putState(anyone, "hello");
+    anyone.interfere = () => anyone.documents.clear();
+    expect((await remove(anyone)).status).toBe(204);
   });
 
   it("answers 409 after the tries of the limit when every try loses", async () => {

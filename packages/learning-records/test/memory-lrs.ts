@@ -217,7 +217,7 @@ export function requestOf(method: string, path: string, init: RequestInit = {}):
   return {
     method,
     url: `${BASE}${path}${query === "" ? "" : `?${query}`}`,
-    headers: { "x-experience-api-version": "2.0.0", ...init.headers },
+    headers: { "x-experience-api-version": "2.0.0", accept: "application/json", ...init.headers },
     body,
   };
 }

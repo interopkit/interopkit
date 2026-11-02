@@ -9,6 +9,8 @@ import { readGet, readPost, readPut } from "./parameters.js";
 import { prepare } from "./prepare.js";
 import { consistentThrough } from "./through.js";
 
+const CONSISTENT_THROUGH = "x-experience-api-consistent-through";
+
 /** Answers a GET or a HEAD: one Statement, or a page of them. */
 async function get(context: Context): Promise<HttpResponse> {
   const asked = readGet(context.request, context.settings.limits);
@@ -30,15 +32,27 @@ async function write(context: Context, method: "PUT" | "POST"): Promise<HttpResp
   if (isRefusal(stored)) return context.refuse(stored.status, stored.message);
   const through = await consistentThrough(context);
   if (isRefusal(through)) return context.refuse(through.status, through.message);
-  const headers = { "x-experience-api-consistent-through": through.value };
+  const headers = { [CONSISTENT_THROUGH]: through.value };
   if (method === "POST" && (stored.value.created || stored.value.ids.length === 0))
     return jsonResponse(200, stored.value.ids, headers);
   return { status: 204, headers, body: "" };
 }
 
+/**
+ * Adds `X-Experience-API-Consistent-Through` to an answer that lacks it, which is every refusal of the resource: the standard
+ * asks for the header on all responses to Statements Resource requests (4.1.6.1), a 400 or a 404 included. An answer that the
+ * store cannot give the time for stays as it is.
+ */
+async function withConsistentThrough(context: Context, response: HttpResponse): Promise<HttpResponse> {
+  if (CONSISTENT_THROUGH in response.headers) return response;
+  const through = await consistentThrough(context);
+  if (isRefusal(through)) return response;
+  return { ...response, headers: { ...response.headers, [CONSISTENT_THROUGH]: through.value } };
+}
+
 /** Answers a request for the Statements resource (4.1.6.1). */
-export function handleStatements(context: Context): Promise<HttpResponse> {
+export async function handleStatements(context: Context): Promise<HttpResponse> {
   const { method } = context.request;
-  if (method === "PUT" || method === "POST") return write(context, method);
-  return get(context);
+  const response = method === "PUT" || method === "POST" ? await write(context, method) : await get(context);
+  return withConsistentThrough(context, response);
 }

@@ -140,8 +140,10 @@ export interface ActivityStore {
   /** Returns the canonical description of an Activity, or `undefined` when the store holds none. */
   get(activityId: string, options?: CallOptions): Promise<Activity | undefined>;
   /**
-   * Sees every Activity of the Statements that were stored, with the `authority` that sent them. The host decides what
-   * becomes canonical. It is called again for a batch that is sent again, so it must be idempotent.
+   * Sees the Activities of the Statements that were stored, with the `authority` that sent them: every mention that has a
+   * definition, in the order of the batch, and one mention of each Activity that has none, so that the host can join what
+   * several Statements say of one Activity. The host decides what becomes canonical. It is called again for a batch that is sent
+   * again, so it must be idempotent.
    */
   observe(activities: readonly Activity[], authority: Actor, options?: CallOptions): Promise<void>;
 }

@@ -100,11 +100,25 @@ describe("handleLrsRequest: the version header", () => {
 });
 
 describe("handleLrsRequest: how a refusal is written", () => {
-  const refusal = async (accept?: string) =>
-    (await ask("GET", "/nothing", accept === undefined ? {} : { headers: { accept } })).response;
+  const refusal = async (accept?: string) => {
+    const { accept: _default, ...headers } = requestOf("GET", "/nothing").headers;
+    const request = {
+      ...requestOf("GET", "/nothing"),
+      headers: accept === undefined ? headers : { ...headers, accept },
+    };
+    return handleLrsRequest(request, optionsOf(memory()));
+  };
 
-  it("writes JSON when Accept names none, accepts everything, or prefers JSON", async () => {
-    for (const accept of [undefined, "*/*", "application/json", "text/*;q=0.1, application/json"]) {
+  it("writes plain text when Accept names none, accepts everything, or prefers the types alike", async () => {
+    for (const accept of [undefined, "*/*", "application/json, text/plain, */*", "text/plain, application/json"]) {
+      const response = await refusal(accept);
+      expect(response.headers["content-type"]).toBe("text/plain;charset=UTF-8");
+      expect(textOf(response)).toBe("The LRS has no such resource.");
+    }
+  });
+
+  it("writes JSON when Accept prefers it", async () => {
+    for (const accept of ["application/json", "text/*;q=0.1, application/json", "application/json, text/plain;q=0.5"]) {
       const response = await refusal(accept);
       expect(response.headers["content-type"]).toBe("application/json;charset=UTF-8");
       expect(jsonOf(response)).toStrictEqual({ message: "The LRS has no such resource." });
@@ -213,7 +227,7 @@ describe("handleLrsRequest: access", () => {
     expect((await handleLrsRequest(request(), none)).status).toBe(403);
   });
 
-  it("takes an anonymous Group with members as the authority, and refuses one without members or an Agent with no identifier", async () => {
+  it("takes an anonymous Group of two Agents as the authority, and refuses one of another size or an Agent with no identifier", async () => {
     const asAuthority = (authority: unknown) =>
       handleLrsRequest(
         request(),
@@ -231,7 +245,10 @@ describe("handleLrsRequest: access", () => {
     expect((await asAuthority(oauth)).status).toBe(200);
     expect((await asAuthority({ mbox: "mailto:a@example.org" })).status).toBe(200);
     await expect(asAuthority({ objectType: "Group" })).rejects.toThrow(
-      "expected an Agent or Group with one identifier, or an anonymous Group with members",
+      "expected an Agent or Group with one identifier, or an anonymous Group of two Agents",
+    );
+    await expect(asAuthority({ objectType: "Group", member: [{ mbox: "mailto:a@example.org" }] })).rejects.toThrow(
+      "or an anonymous Group of two Agents",
     );
     await expect(asAuthority({ name: "Nobody" })).rejects.toBeInstanceOf(DataError);
     await expect(asAuthority({ mbox: "mailto:a@example.org", openid: "https://example.org/a" })).rejects.toBeInstanceOf(
