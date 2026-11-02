@@ -238,8 +238,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   after the path and does not hold it; the rules are those that `findingsOf` names and those that a table of the guide lists.
 - A reader and a validator that list findings take `maxFindings` (default 1,000, `DEFAULT_MAX_FINDINGS`): they parse with
   `safeParseBounded`, never `v.safeParse`, and fill a `createFindingSink` of `core/checks`, whose last finding says that the list
-  stopped; a reader counts errors alone. A text of JSON is counted with `hasMoreTokensThan` before `JSON.parse`, and a client
-  has a `maxTokens` option beside `maxBytes`.
+  stopped; a reader counts errors alone. The checks that follow the schema yield their findings one at a time, so that a full
+  list stops them, and a finding names a bounded part of the value. A text of JSON is counted with `hasMoreTokensThan` before
+  `JSON.parse`, and a client has a `maxTokens` option beside `maxBytes`.
 
 ## Code
 

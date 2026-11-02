@@ -8,7 +8,8 @@ JSON schemas of 1EdTech and the rules of a package, and return a copy; they thro
 error and counts the others. `validatePackage` and `validateEntity` return the findings, at most `maxFindings` (1,000) of them, with their path, rule,
 sentence and severity, as data: they find a property that CASE does not have, an identifier that two entities share, a link that points to
 nothing, an `isChildOf` tree that loops (`child-of-cycle`), and an item that no chain of `isChildOf` leads to from the document
-(`item-outside-tree`). `toCaseVersion` takes a package or an entity of 1.1 to the form of 1.0, leaves out and reports what 1.0
+(`item-outside-tree`). They read the `CFPackageURI` and `CFDocumentURI` that some providers write in the form of a package,
+which has none, leave them out and warn (`package-form-link`). `toCaseVersion` takes a package or an entity of 1.1 to the form of 1.0, leaves out and reports what 1.0
 cannot hold, and reports an identifier or a URI that 1.0 would refuse (`form-not-in-1.0`).
 `@interopkit/competency-frameworks/graph` answers what a consumer asks of a framework: `frameworkTree`, `associationsOf`,
 `crosswalk`, `diffPackages`, `isNewer`, `adoptionStatus` and `caseEntityUri`.
