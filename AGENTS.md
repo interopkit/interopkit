@@ -151,7 +151,8 @@ CI. Run each job that the change touches in a fresh clone of the commit (`git cl
 in its job.
 
 A job runs only when what it reads changed since the last green run of main: its packages, what they use, the lockfile, the
-root configuration, the shared scripts or `ci.yml`; `changes` in `ci.yml` computes it and `check` always runs. A newer push to
+root configuration, the shared scripts or `ci.yml`; `changes` in `ci.yml` computes it and `check` always runs. A script that the
+tests of one package alone read, such as `scripts/cmi5-requirements.ts`, is that package's (`MEMBER_SCRIPTS`). A newer push to
 the same ref cancels the run in progress, and a cancelled run is not a failure.
 
 `rules` is not a job of `ci.yml`: `rules.yml` runs it each week and on `workflow_dispatch`. A builder runs the rules of its package
