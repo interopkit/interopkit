@@ -611,6 +611,21 @@ describe("a credential that reads its own Statements (statements/read/mine of 1.
     expect((await ask(2)).status).toBe(404);
   });
 
+  it("throws a DataError when the store answers the query with a Statement of another authority", async () => {
+    const store = await twoClients();
+    const leaky = { ...store.statements, query: async () => ({ statements: [...store.held.values()] }) };
+    await expect(
+      handleLrsRequest(
+        requestOf("GET", "/statements"),
+        optionsOf(store, { statements: leaky, access: async () => MINE }),
+      ),
+    ).rejects.toThrow(
+      "The answer of StatementStore.query must hold only the Statements of page.authority, and it holds one of another authority.",
+    );
+    const all = await handleLrsRequest(requestOf("GET", "/statements"), optionsOf(store, { statements: leaky }));
+    expect((jsonOf(all) as { statements: unknown[] }).statements).toHaveLength(2);
+  });
+
   it("reads any Statement with statements.read, and none without a read action", async () => {
     const store = await twoClients();
     const any = await handleLrsRequest(requestOf("GET", "/statements"), optionsOf(store));

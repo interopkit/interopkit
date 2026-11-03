@@ -104,6 +104,11 @@ function ownAuthority(context: Context): Actor | undefined {
   return actions.includes("statements.read") ? undefined : authority;
 }
 
+/** Tells whether a Statement is one that a credential that reads its own Statements may read: its `authority` is the credential's. */
+function isOwn(statement: Statement, own: Actor): boolean {
+  return statement.authority !== undefined && sameActor(statement.authority, own);
+}
+
 /** Answers a request for one Statement: the Statement, or 404 when the LRS has none of that kind. */
 export async function answerOne(context: Context, get: Extract<StatementsGet, { kind: "one" }>): Promise<HttpResponse> {
   const { signal } = context.settings;
@@ -111,8 +116,7 @@ export async function answerOne(context: Context, get: Extract<StatementsGet, { 
   if (asked === undefined) return context.refuse(500, FAILED);
   const held = asked.value;
   const own = ownAuthority(context);
-  const hidden =
-    own !== undefined && (held?.statement.authority === undefined || !sameActor(held.statement.authority, own));
+  const hidden = own !== undefined && held !== undefined && !isOwn(held.statement, own);
   if (held === undefined || held.voided !== get.voided || hidden) {
     return context.refuse(404, `The LRS holds no ${get.voided ? "voided " : ""}Statement with the id ${get.id}.`);
   }
@@ -166,6 +170,12 @@ export async function answerMany(
   if (statements.length > limit || statements.some(({ voided }) => voided)) {
     throw new DataError(
       `The answer of StatementStore.query must have at most ${limit} Statements and none that was voided, and it has ${statements.length}.`,
+    );
+  }
+  // The store filters by page.authority; a store that does not would give a credential the Statements of others.
+  if (own !== undefined && statements.some(({ statement }) => !isOwn(statement, own))) {
+    throw new DataError(
+      "The answer of StatementStore.query must hold only the Statements of page.authority, and it holds one of another authority.",
     );
   }
   const formatted = await inFormat(

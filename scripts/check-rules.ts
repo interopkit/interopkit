@@ -3760,6 +3760,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-records/test/store-get.test.ts",
   },
   {
+    rule: "A store that answers a credential that reads its own Statements with another's breaks its contract.",
+    file: "packages/learning-records/src/store/statements/answer.ts",
+    find: "if (own !== undefined && statements.some(({ statement }) => !isOwn(statement, own))) {",
+    replace: "if (false) {",
+    test: "packages/learning-records/test/store-get.test.ts",
+  },
+  {
     rule: "A credential that reads its own Statements may ask for Statements.",
     file: "packages/learning-records/src/store/router.ts",
     find: '|| (action === "statements.read" && actions.includes("statements.read.mine"))',

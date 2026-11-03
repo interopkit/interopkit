@@ -398,7 +398,7 @@ mirror against it. `target` finds any Statement by its id in lower case, a voide
 | `observe` rejects                                        | Answers 500 while the Statements stay stored; a resend answers 204 and observes again                                                                                  |
 | `write` or `delete` does not do what the condition asked | Reads the document again, judges again, and tries again, up to `limits.mergeRetries` tries                                                                             |
 | A port does not answer                                   | Waits for the `signal` of the options and rejects with its reason                                                                                                      |
-| A port breaks its contract                               | Throws a `DataError`: more Statements than the limit, a voided Statement, a document without an ETag, an answer outside the set of outcomes, an Activity of another id |
+| A port breaks its contract                               | Throws a `DataError`: more Statements than the limit, a voided Statement, a Statement of another authority for a credential that reads its own, a document without an ETag, an answer outside the set of outcomes, an Activity of another id |
 
 ## Errors
 
