@@ -48,7 +48,10 @@ export interface PriorOutcome {
    *
    * @defaultValue none
    */
-  readonly waived?: { readonly reason: string };
+  readonly waived?: {
+    /** Why the LMS waived the unit. */
+    readonly reason: string;
+  };
 }
 
 /** What a completed, passed or failed statement may carry beyond what the session gives it. */
@@ -133,7 +136,14 @@ export interface AuSession {
   /** Writes the preferences of the learner; an LMS may refuse them with 403, which is no error (11.0). */
   savePreferences(preferences: Required<LearnerPreferences>, options?: CallOptions): Promise<"saved" | "refused">;
   /** Sends the terminated statement, the last of the session, and returns where the page sends the learner next. */
-  terminate(options?: CallOptions): Promise<{ readonly returnUrl?: string }>;
+  terminate(options?: CallOptions): Promise<{
+    /**
+     * The address that the page sends the learner to, when the launch gave one that is http or https.
+     *
+     * @defaultValue none
+     */
+    readonly returnUrl?: string;
+  }>;
 }
 
 /** What a session is made from. */

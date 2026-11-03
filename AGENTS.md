@@ -239,7 +239,9 @@ current behavior only, and never how it came to be. A package's changeset is wri
   `@cfworker/json-schema` is a development dependency of the repository, for `scripts/schema-oracle.ts`: the validator that
   tests run the published JSON schemas of a standard through, and a dependency of `achievement-credentials` for the schemas that a
   credential names beyond those of 1EdTech. `oidc-provider` is a development dependency of `core` and of
-  `achievement-credentials`: the authorization server that their OAuth tests run against.
+  `achievement-credentials`: the authorization server that their OAuth tests run against. For `course-launch`: `@xapi/cmi5`, a
+  development dependency of `examples/course-launch` and a unit of other authors that plays sessions against the example LMS;
+  `pnpm-workspace.yaml` leaves out the axios and `@xapi/xapi` that it declares, which its build carries.
 
 ## Deviations from the standards
 

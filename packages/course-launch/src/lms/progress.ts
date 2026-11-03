@@ -9,9 +9,15 @@ export interface CourseProgress {
   /** Whether the course is satisfied: every member in it is. */
   readonly satisfied: boolean;
   /** Each block in the order of the structure, by its publisher id. */
-  readonly blocks: readonly { readonly id: string; readonly satisfied: boolean }[];
+  readonly blocks: readonly {
+    /** The publisher id of the block. */
+    readonly id: string;
+    /** Whether every member of the block is satisfied. */
+    readonly satisfied: boolean;
+  }[];
   /** Each assignable unit in the order of the structure, by its publisher id. */
   readonly aus: readonly {
+    /** The publisher id of the unit. */
     readonly id: string;
     /** Whether the registration holds a completed statement that the LRS stored. */
     readonly completed: boolean;

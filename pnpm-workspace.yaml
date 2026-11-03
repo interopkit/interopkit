@@ -10,6 +10,10 @@ minimumReleaseAge: 20160
 # exhaust (GHSA-mrhx-c7xc-m3w5) and which no release of 3 repairs.
 overrides:
   "@interop/verifier-core>zod": 4.6.7
+  # @xapi/cmi5, a counterparty of the tests, carries axios and @xapi/xapi in its build, so the copies that it declares are not
+  # installed: their follow-redirects has a known vulnerability, and nothing loads them.
+  "@xapi/cmi5>axios": "-"
+  "@xapi/cmi5>@xapi/xapi": "-"
 
 allowBuilds:
   core-js: false

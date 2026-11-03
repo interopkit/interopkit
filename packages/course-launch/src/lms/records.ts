@@ -100,7 +100,12 @@ export interface RegistrationAu {
    *
    * @defaultValue none
    */
-  readonly waived?: { readonly statement: string; readonly reason: string };
+  readonly waived?: {
+    /** The id of the waived statement. */
+    readonly statement: string;
+    /** Why the LMS waived the unit. */
+    readonly reason: string;
+  };
   /** Whether the unit is satisfied. */
   readonly satisfied: boolean;
   /**

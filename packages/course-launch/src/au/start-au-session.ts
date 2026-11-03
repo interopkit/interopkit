@@ -139,7 +139,22 @@ function rootOf(endpoint: string): string {
 export async function startAuSession(
   launchUrl: string,
   options: AuOptions,
-): Promise<{ readonly session: AuSession } | { readonly refusal: AuRefusal; readonly text?: string }> {
+): Promise<
+  | {
+      /** The session that started. */
+      readonly session: AuSession;
+    }
+  | {
+      /** Why the session did not start. */
+      readonly refusal: AuRefusal;
+      /**
+       * The `error-text` that the fetch URL gave.
+       *
+       * @defaultValue none
+       */
+      readonly text?: string;
+    }
+> {
   const settings = readAuOptions(options);
   const launch = readLaunchUrl(launchUrl);
   const { trustedOrigins, resume } = settings;
