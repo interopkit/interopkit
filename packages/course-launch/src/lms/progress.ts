@@ -91,10 +91,11 @@ function satisfactionOf(course: ImportedCourse, registration: Registration): Rea
 export function dueSatisfactions(course: ImportedCourse, registration: Registration): readonly Satisfiable[] {
   const satisfied = satisfactionOf(course, registration);
   const written = new Set(registration.satisfiedBlocks);
+  const blocks = new Map(course.blocks.map((block) => [block.publisherId, block]));
   const due: Satisfiable[] = [];
   const visit = (members: readonly string[]): void => {
     for (const id of members) {
-      const block = course.blocks.find(({ publisherId }) => publisherId === id);
+      const block = blocks.get(id);
       if (block === undefined) continue;
       visit(block.members);
       if (satisfied.get(id) === true && !written.has(id)) {
