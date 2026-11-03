@@ -3,6 +3,7 @@ import { checkArray, checkRecord, checkString, describe } from "@interopkit/core
 import type { PlatformConfiguration, ToolRegistrationResult } from "../../protocol/index.js";
 import { readToolRegistrationResult, writeToolRegistrationResult } from "../../protocol/internal.js";
 import { checkPlatformRegistration, type PlatformRegistration } from "../registration.js";
+import { writeAndRead } from "../write-and-read.js";
 import { platformOf } from "./register.js";
 
 /** What the tool adds to a registration to make its record of the platform. */
@@ -21,13 +22,8 @@ export interface PlatformRegistrationInput {
 
 /** Reads a registration that the host passes, as `registerTool` returned it, back through its writer. */
 function resultOf(value: unknown): ToolRegistrationResult {
-  try {
-    return readToolRegistrationResult(writeToolRegistrationResult(value as ToolRegistrationResult));
-  } catch (error) {
-    // The writer takes the types of the model, and a member of another kind fails it with a TypeError.
-    if (error instanceof TypeError) throw new DataError(`The registration is not one: ${error.message}.`);
-    throw error;
-  }
+  return writeAndRead(value, "The registration is not one", writeToolRegistrationResult, readToolRegistrationResult)
+    .read;
 }
 
 /**

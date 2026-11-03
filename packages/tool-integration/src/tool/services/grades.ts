@@ -1,5 +1,5 @@
 import { type CallOptions, DataError } from "@interopkit/core";
-import { checkHttpsUrl, describe } from "@interopkit/core/checks";
+import { checkHttpsUrl, checkRecord, describe } from "@interopkit/core/checks";
 import {
   type LineItem,
   type LineItemInput,
@@ -16,8 +16,10 @@ import {
   RESULT_CONTAINER_MEDIA_TYPE,
   RESULTS_SUFFIX,
   readLineItem,
+  readLineItemInput,
   readLineItems,
   readResults,
+  readScore,
   SCORE_MEDIA_TYPE,
   SCORES_SUFFIX,
   writeLineItemInput,
@@ -25,6 +27,7 @@ import {
   writeResultQuery,
   writeScore,
 } from "../../protocol/internal.js";
+import { writeAndRead } from "../write-and-read.js";
 import { containerRequest, type Page, type ServiceAccess, withQuery } from "./access.js";
 
 /** The scopes that read line items, the narrower first. */
@@ -47,10 +50,14 @@ export interface GradesClient {
   lineItem(url: string, options?: CallOptions): Promise<LineItem | undefined>;
   /**
    * Creates a line item in a container (AGS 3.2.5). It is not idempotent: a retry makes a second line item, so a tool queries by
-   * `resourceId` and `tag` first.
+   * `resourceId` and `tag` first. An input that breaks AGS 3.2, such as a blank label or dates without a time zone, is a
+   * `DataError` before anything is sent.
    */
   createLineItem(containerUrl: string, input: LineItemInput, options?: CallOptions): Promise<LineItem>;
-  /** Replaces a line item (AGS 3.2.6) and returns it as the platform keeps it. */
+  /**
+   * Replaces a line item (AGS 3.2.6) and returns it as the platform keeps it. The input is checked as `createLineItem` checks it:
+   * a `DataError` for one that breaks AGS 3.2, before anything is sent.
+   */
   updateLineItem(url: string, input: LineItemInput, options?: CallOptions): Promise<LineItem>;
   /** Deletes a line item (AGS 3.2.7); `false` when the platform has none at the URL (404). */
   deleteLineItem(url: string, options?: CallOptions): Promise<boolean>;
@@ -65,7 +72,9 @@ export interface GradesClient {
   results(lineItemUrl: string, query?: ResultQuery, options?: CallOptions): Promise<Page<Result>>;
   /**
    * Publishes a score to a line item (AGS 3.4). It is not idempotent: each update of a line item and user needs a strictly later
-   * `timestamp` (AGS 3.4.9), which `advanceScoreTimestamp` gives, so a resend after a call in doubt takes a later one too.
+   * `timestamp` (AGS 3.4.9), which `advanceScoreTimestamp` gives, so a resend after a call in doubt takes a later one too. A score
+   * that breaks AGS 3.4, such as a `scoreGiven` below 0, a `timestamp` without a time zone or an `activityProgress` that AGS does not
+   * name, is a `DataError` before anything is sent.
    */
   publishScore(lineItemUrl: string, score: Score, options?: CallOptions): Promise<void>;
 }
@@ -106,6 +115,18 @@ export function advanceScoreTimestamp(lastSent: string | undefined, nowMilliseco
   return new Date(Math.max(nowMilliseconds, last + 1)).toISOString();
 }
 
+/** Writes a line item that the host gave, and reads it back: the reader is the check of the line item against AGS 3.2. */
+function lineItemBody(input: unknown): ReturnType<typeof writeLineItemInput> {
+  checkRecord(input, "The line item must be an object");
+  return writeAndRead(input, "The line item is not one", writeLineItemInput, readLineItemInput).written;
+}
+
+/** Writes a score that the host gave, and reads it back: the reader is the check of the score against AGS 3.4. */
+function scoreBody(score: unknown): ReturnType<typeof writeScore> {
+  checkRecord(score, "The score must be an object");
+  return writeAndRead(score, "The score is not one", writeScore, readScore).written;
+}
+
 /** Makes the client of the grade services over the access to the services of a platform. */
 export function gradesClient(access: ServiceAccess): GradesClient {
   const { pageLimit } = access.settings;
@@ -130,16 +151,16 @@ export function gradesClient(access: ServiceAccess): GradesClient {
       const response = await access.request(url, init, options);
       return response.status === NOT_FOUND ? undefined : access.read(response, `The line item at ${url}`, readLineItem);
     },
-    createLineItem(containerUrl, input, options) {
-      const body = { type: LINE_ITEM_MEDIA_TYPE, json: writeLineItemInput(input) };
+    async createLineItem(containerUrl, input, options) {
+      const body = { type: LINE_ITEM_MEDIA_TYPE, json: lineItemBody(input) };
       return lineItemAnswer(
         containerUrl,
         { method: "POST", scopes: [SCOPES.lineitem], accept: LINE_ITEM_MEDIA_TYPE, body },
         options,
       );
     },
-    updateLineItem(url, input, options) {
-      const body = { type: LINE_ITEM_MEDIA_TYPE, json: writeLineItemInput(input) };
+    async updateLineItem(url, input, options) {
+      const body = { type: LINE_ITEM_MEDIA_TYPE, json: lineItemBody(input) };
       return lineItemAnswer(
         url,
         { method: "PUT", scopes: [SCOPES.lineitem], accept: LINE_ITEM_MEDIA_TYPE, body },
@@ -163,7 +184,7 @@ export function gradesClient(access: ServiceAccess): GradesClient {
       return next === undefined ? { items } : { items, next };
     },
     async publishScore(lineItemUrl, score, options) {
-      const body = { type: SCORE_MEDIA_TYPE, json: writeScore(score) };
+      const body = { type: SCORE_MEDIA_TYPE, json: scoreBody(score) };
       await access.request(
         belowLineItem(lineItemUrl, SCORES_SUFFIX).href,
         { method: "POST", scopes: [SCOPES.score], body },

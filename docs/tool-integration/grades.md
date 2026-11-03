@@ -57,7 +57,8 @@ that its tokens are reused.
 | `results(lineItemUrl, query?)`             | 3.3   | `result.readonly`                               | A `Page<Result>`                              |
 | `publishScore(lineItemUrl, score)`         | 3.4   | `score`                                         | Nothing; the platform answers 2xx             |
 
-Each method also takes `{ signal }`. A query (`LineItemQuery`, `ResultQuery`) adds its filters. A request for a container adds a `limit` of `pageLimit` when
+Each method also takes `{ signal }`. A score or a line item that breaks AGS 3.4 or 3.2, such as a `scoreGiven` below 0 or a date
+without a time zone, is a `DataError` before anything is sent. A query (`LineItemQuery`, `ResultQuery`) adds its filters. A request for a container adds a `limit` of `pageLimit` when
 neither the query nor the URL names one; a request for results adds none, since AGS 3.3 makes it optional. A `Page` has its `items` and, when the answer links to one on the origin of the request, the
 `next` page, which the same method takes as its URL and sends as it is (AGS 3.2.4: the tool does not apply the filters again). A
 `next` link to another origin ends the pages, so that the token never leaves the platform that answered. The results are below the

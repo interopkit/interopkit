@@ -1,7 +1,7 @@
-import { DataError } from "@interopkit/core";
 import { checkProperties, checkRecord } from "@interopkit/core/checks";
 import type { ToolConfiguration } from "../../protocol/index.js";
 import { readToolConfiguration, writeToolConfiguration } from "../../protocol/internal.js";
+import { writeAndRead } from "../write-and-read.js";
 
 /**
  * The registration that a tool asks a platform for (Dynamic Registration 1.0 section 2.2), without what LTI fixes: the library
@@ -44,13 +44,6 @@ export function writeToolInput(input: unknown): ReturnType<typeof writeToolConfi
     grantTypes: ["implicit", "client_credentials"],
     tokenEndpointAuthMethod: "private_key_jwt",
   } as const;
-  try {
-    const written = writeToolConfiguration(configuration);
-    readToolConfiguration(written);
-    return written;
-  } catch (error) {
-    // The writer takes the types of the model, and a member of another kind fails it with a TypeError.
-    if (error instanceof TypeError) throw new DataError(`The tool configuration is not one: ${error.message}.`);
-    throw error;
-  }
+  return writeAndRead(configuration, "The tool configuration is not one", writeToolConfiguration, readToolConfiguration)
+    .written;
 }

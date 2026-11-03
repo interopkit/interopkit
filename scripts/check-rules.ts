@@ -1180,6 +1180,13 @@ export const RULES: readonly Rule[] = [
     browser: true,
   },
   {
+    rule: "The client of the grade services sends no score that breaks AGS 3.4.",
+    file: "packages/tool-integration/src/tool/services/grades.ts",
+    find: 'return writeAndRead(score, "The score is not one", writeScore, readScore).written;',
+    replace: "return writeScore(score as never);",
+    test: "packages/tool-integration/test/tool-services.test.ts",
+  },
+  {
     rule: "The storage pages take only the answer to their own capabilities request.",
     file: "packages/tool-integration/src/tool/pages.ts",
     find: 'if (data.subject !== "lti.capabilities.response" || data.message_id !== id) return;',

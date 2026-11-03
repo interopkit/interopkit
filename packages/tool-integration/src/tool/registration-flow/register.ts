@@ -1,4 +1,4 @@
-import { DataError, requestService } from "@interopkit/core";
+import { requestService } from "@interopkit/core";
 import type { PlatformConfiguration, ToolRegistrationResult } from "../../protocol/index.js";
 import {
   readPlatformConfiguration,
@@ -6,6 +6,7 @@ import {
   writePlatformConfiguration,
 } from "../../protocol/internal.js";
 import { readAnswer } from "../services/access.js";
+import { writeAndRead } from "../write-and-read.js";
 import { checkRegistrationAddress } from "./addresses.js";
 import { checkInitiation, REGISTRATION_MEDIA_TYPE, registrationHeaders, serviceOf } from "./discover.js";
 import type { RegistrationInitiation } from "./initiation.js";
@@ -14,13 +15,12 @@ import { type ToolConfigurationInput, writeToolInput } from "./tool-configuratio
 
 /** Reads a platform configuration that the host passes, as `discoverPlatform` returned it, back through its writer. */
 export function platformOf(value: unknown): PlatformConfiguration {
-  try {
-    return readPlatformConfiguration(writePlatformConfiguration(value as PlatformConfiguration));
-  } catch (error) {
-    // The writer takes the types of the model, and a member of another kind fails it with a TypeError.
-    if (error instanceof TypeError) throw new DataError(`The platform configuration is not one: ${error.message}.`);
-    throw error;
-  }
+  return writeAndRead(
+    value,
+    "The platform configuration is not one",
+    writePlatformConfiguration,
+    readPlatformConfiguration,
+  ).read;
 }
 
 /**

@@ -82,6 +82,34 @@ describe("the scores", () => {
     await expect(client.publishScore(LINE_ITEM_URL, { ...final, userId: "u".repeat(256) })).rejects.toThrow(DataError);
     expect(lms.calls).toEqual([]);
   });
+
+  it("refuses a score and a line item that break AGS, and of other types, as JavaScript passes them, before any request", async () => {
+    const { lms, launch, options } = await launched();
+    const client = createServiceClient(launch, options);
+    const scores: [string, unknown][] = [
+      ["null", JSON.parse("null")],
+      ["a string", JSON.parse('"score"')],
+      ["a scoreGiven below 0", { ...final, scoreGiven: -1 }],
+      ["a scoreGiven that is a string", { ...final, scoreGiven: JSON.parse('"83"') }],
+      ["a timestamp without a zone", { ...final, timestamp: "2023-11-14T22:13:20" }],
+      ["an activityProgress that AGS does not name", { ...final, activityProgress: "Done" }],
+      ["a submission that is null", { ...final, submission: JSON.parse("null") }],
+    ];
+    for (const [name, score] of scores) {
+      await expect(client.publishScore(LINE_ITEM_URL, score as Score), name).rejects.toThrow(DataError);
+    }
+    const inputs: [string, unknown][] = [
+      ["null", JSON.parse("null")],
+      ["a label that is a number", { label: JSON.parse("5"), scoreMaximum: 10 }],
+      ["a start without a zone", { label: "Quiz", scoreMaximum: 10, startDateTime: "2023-11-14T22:13:20" }],
+      ["a submission review that is null", { label: "Quiz", scoreMaximum: 10, submissionReview: JSON.parse("null") }],
+    ];
+    for (const [name, input] of inputs) {
+      await expect(client.createLineItem(CONTAINER_URL, input as never), name).rejects.toThrow(DataError);
+      await expect(client.updateLineItem(LINE_ITEM_URL, input as never), name).rejects.toThrow(DataError);
+    }
+    expect(lms.calls).toEqual([]);
+  });
 });
 
 describe("the tokens", () => {

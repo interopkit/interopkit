@@ -14,6 +14,7 @@ import type { ContentItem, DeepLinkingRequestMessage } from "../protocol/index.j
 import { findRefusal, LTI_VERSION, readContentItem, writeContentItem } from "../protocol/internal.js";
 import { checkToolOptions, findDeployment, type ToolOptions } from "./options.js";
 import { postToolMessage } from "./tool-message.js";
+import { writeAndRead } from "./write-and-read.js";
 
 const MESSAGE_TYPE = "LtiDeepLinkingRequest";
 
@@ -101,16 +102,7 @@ function writeItem(item: unknown, index: number): { readonly written: JsonObject
       `The custom properties of the item ${index + 1} must be a Map of strings, found ${describe(item.custom)}.`,
     );
   }
-  try {
-    const written = writeContentItem(item as unknown as ContentItem);
-    return { written, read: readContentItem(written) };
-  } catch (error) {
-    // The writer takes the types of the model, and a member of another kind, such as `null` for an image, fails it with a TypeError.
-    if (error instanceof TypeError) {
-      throw new DataError(`The item ${index + 1} is not a content item: ${error.message}.`);
-    }
-    throw error;
-  }
+  return writeAndRead(item, `The item ${index + 1} is not a content item`, writeContentItem, readContentItem);
 }
 
 /**
