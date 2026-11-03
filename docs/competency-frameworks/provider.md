@@ -142,7 +142,7 @@ is 404.
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------- |
 | `store`       | The `FrameworkStore`. Required                                                                                               | none                  |
 | `discovery`   | The localized OpenAPI 3 document, from `localizeOpenApi`. Required                                                           | none                  |
-| `basePath`    | The path the provider is mounted at, before `/ims/case/v1p1`: `""`, or a path that starts with `/` and does not end with one | `""`                  |
+| `basePath`    | The path the provider is mounted at, before `/ims/case/v1p1`: `""`, or a path that starts with `/` and does not end with one. It is compared percent-encoded, as the URL of a request writes it, so `/café` and `/caf%C3%A9` are one path | `""`                  |
 | `versions`    | The versions to serve, each at its own path                                                                                  | `["1.1"]`             |
 | `authorize`   | Decides from the request whether it may be served, and refuses one over the host's limit of rate; not asked for the discovery file | every request allowed |
 | `pageSize`    | Documents in a page when the request has no `limit`; lowered to `maxPageSize` when above it                                  | 100                   |

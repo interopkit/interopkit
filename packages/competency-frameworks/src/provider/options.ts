@@ -15,7 +15,8 @@ export interface CaseProviderOptions extends CallOptions {
   readonly discovery: OpenApiDocument;
   /**
    * The path the provider is mounted at, before `/ims/case/v1p1`: `""` or a path that starts with `/` and does not end
-   * with one.
+   * with one. It is compared with the path of a request as `URL` writes that, percent-encoded, so `/café` and `/caf%C3%A9`
+   * are one path.
    *
    * @defaultValue `""`
    */
@@ -71,18 +72,30 @@ export interface ProviderSettings {
 const DEFAULT_PAGE_SIZE = 100;
 const DEFAULT_MAX_PAGE_SIZE = 1000;
 
+/** A path whose segments each start with `/` and are not empty, so that it is not `/` and does not end with one. */
+const BASE_PATH = /^(?:\/[^/?#\s]+)*$/u;
+
+/** The base against which a path alone is parsed as `URL` parses the path of a request. */
+const PATH_BASE = "https://provider.invalid";
+
+const basePathMessage = (issue: v.BaseIssue<unknown>): string =>
+  `expected "" or a path that starts with / and does not end with /, found ${issue.received}`;
+
+/**
+ * The schema of the base path: the path as it is given, then as the URL of a request writes it, percent-encoded and without
+ * segments of dots, which is the form that the router compares with the path of a request.
+ */
+const basePathSchema = v.pipe(
+  v.string(),
+  v.regex(BASE_PATH, basePathMessage),
+  v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),
+  v.regex(BASE_PATH, basePathMessage),
+);
+
 const optionsSchema = strictRecord({
   store: storeSchema,
   discovery: openApiSchema,
-  basePath: v.optional(
-    v.pipe(
-      v.string(),
-      v.regex(
-        /^(?:\/[^/?#\s]+)*$/u,
-        (issue) => `expected "" or a path that starts with / and does not end with /, found ${issue.received}`,
-      ),
-    ),
-  ),
+  basePath: v.optional(basePathSchema),
   versions: v.optional(v.pipe(v.array(v.picklist(CASE_VERSIONS)), v.minLength(1))),
   authorize: v.optional(
     guardSchema(

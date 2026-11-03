@@ -131,6 +131,13 @@ describe("the paths", () => {
     expect((await serve(`/casework${V11}/CFItems/${id(2)}`, { basePath: "/case" })).status).toBe(404);
   });
 
+  it("serves below a base path that the URL of a request writes percent-encoded, however the option writes it", async () => {
+    for (const basePath of ["/café", "/caf%C3%A9"]) {
+      expect((await serve(`/café${V11}/CFItems/${id(2)}`, { basePath })).status, basePath).toBe(200);
+      expect((await serve(`/cafe${V11}/CFItems/${id(2)}`, { basePath })).status, basePath).toBe(404);
+    }
+  });
+
   it.each(["POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])(
     "answers 405 with Allow: GET for %s",
     async (method) => {
@@ -292,6 +299,7 @@ describe("the arguments", () => {
     ["a basePath with no slash at the start", '{"basePath":"case"}'],
     ["a basePath with a slash at the end", '{"basePath":"/case/"}'],
     ["a basePath with a query", '{"basePath":"/case?x"}'],
+    ["a basePath that dot segments make the root", '{"basePath":"/case/.."}'],
     ["versions that are not a list", '{"versions":"1.1"}'],
     ["no versions", '{"versions":[]}'],
     ["a version that CASE does not have", '{"versions":["2.0"]}'],

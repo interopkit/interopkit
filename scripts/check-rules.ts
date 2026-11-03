@@ -1462,6 +1462,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/competency-frameworks/test/client.test.ts",
   },
   {
+    rule: "The base path of a CASE provider is compared in the percent-encoded form of the path of a request.",
+    file: "packages/competency-frameworks/src/provider/options.ts",
+    find: 'v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),',
+    replace: "",
+    test: "packages/competency-frameworks/test/provider.test.ts",
+  },
+  {
     rule: "The audience of a registration is the audience of the client assertion.",
     file: "packages/tool-integration/src/tool/token.ts",
     find: "...(audience === undefined ? {} : { audience })",
