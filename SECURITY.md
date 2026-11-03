@@ -540,7 +540,8 @@ them ([platform role](docs/tool-integration/platform.md)).
   present, an expiry within 3,600 seconds. The `nonce` is accepted once through `once` and remembered through the leeway, and is
   spent only by a message of the type that the route reads. The `data` claim must be the data this platform sealed into the
   request, for that tool and deployment and unexpired, and the items are held to the settings sealed in it and not to anything the
-  tool says. The platform renders nothing of an item: the host fetches the `url` of a file through its guarded `fetch` and
+  tool says. The sealed data binds the user of the request and is its anti-CSRF token: the host places the items only when its own
+  session of the browser is of the `subject` that the reader returns. The platform renders nothing of an item: the host fetches the `url` of a file through its guarded `fetch` and
   sanitizes `html`. `readStartAssessment` reads a Start Assessment message the same way, within its own `maxFormBytes` of 65,536
   bytes; its `session_data` must be the data this platform sealed into the Start Proctoring message, for that tool, deployment,
   resource link and attempt and unexpired. The session data is the anti-CSRF token of Proctoring Services: the host starts an

@@ -26,6 +26,13 @@ export interface ReceivedDeepLinkingResponse extends Omit<DeepLinkingResponseMes
   readonly data?: JsonObject;
   /** The settings of the request that the response answers, as the platform sent them, but for the host's data. */
   readonly settings: Omit<DeepLinkingSettings, "data">;
+  /**
+   * The `sub` of the Deep Linking request that the response answers, from its sealed data. The host places the items only when
+   * its own session of the browser is of this user, so that a response that another user's browser posts places nothing.
+   *
+   * @defaultValue none, for an anonymous launch
+   */
+  readonly subject?: string;
   /** The content items that the tool placed, each read by its type, and within what the request accepted. */
   readonly items: readonly ContentItem[];
 }
@@ -54,13 +61,14 @@ function readItems(items: readonly JsonObject[]): ContentItem[] {
  * and the deployment of the tool; the single use of the `nonce`; the `data` claim, which the platform sealed in the request with its
  * settings and the host's own data, for this tool, this deployment and a time not past; each item as its type has it; and the items against the settings of the request (`accept_types`, `accept_multiple`, `accept_media_types`,
  * `accept_lineitem` and `accept_presentation_document_targets`). Nothing is looked up beside the tool, so the response may come
- * to any process, and its settings are those the platform sent. Whether the user confirms the items, and what to do with
- * `autoCreate`, are the host's.
+ * to any process, and its settings are those the platform sent. The sealed data is the anti-CSRF token of the request, and the
+ * host completes it: it places the items only when its own session of the browser is of `subject`. Whether the user confirms
+ * the items, and what to do with `autoCreate`, are the host's.
  *
  * @see {@link https://standards.1edtech.org/lti/specifications/launch_messages/deep_linking/lti-deep-linking-spec | LTI Deep Linking 2.0}
  * @param request - The request to the host's route at `deep_link_return_url`.
  * @param options - The platform, its tools, the single-use ledger and the limits.
- * @returns The response, with the host's data and the items.
+ * @returns The response, with the host's data, the items and the subject of the request.
  * @throws `LtiError` with the reason of the failed check: those of the message of a tool (`request-invalid`, `form-too-large`,
  * `client-unknown`, `signature-invalid`, `nonce-replayed` and the others of `verifyJwt`), `deployment-unknown`,
  * `version-unsupported`, `deep-linking-data-invalid`, `content-items-limit` and `content-item-refused`.
@@ -113,5 +121,11 @@ export async function readDeepLinkingResponse(
   const refusal = findRefusal(items, sealed.settings);
   if (refusal !== undefined) throw new LtiError(refusal, "content-item-refused");
   const { data: _sealedData, items: _jsonItems, ...rest } = message;
-  return { ...rest, settings: sealed.settings, items, ...(sealed.data === undefined ? {} : { data: sealed.data }) };
+  return {
+    ...rest,
+    settings: sealed.settings,
+    items,
+    ...(sealed.data === undefined ? {} : { data: sealed.data }),
+    ...(sealed.subject === undefined ? {} : { subject: sealed.subject }),
+  };
 }

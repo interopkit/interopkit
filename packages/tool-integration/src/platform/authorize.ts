@@ -171,7 +171,13 @@ async function signMigration(
 /** Seals the data that a message carries for the tool to return: of a Deep Linking request, or of a proctored attempt. */
 function sealData(message: MessageInput, issue: Issue, settings: PlatformSettings): Promise<string> | undefined {
   const { config } = settings;
-  const bound = { client: message.clientId, deployment: message.deploymentId };
+  const { subject } = message.user;
+  // The data binds the user, as the anti-CSRF token of each: the host acts on what comes back only for its session of that user.
+  const bound = {
+    client: message.clientId,
+    deployment: message.deploymentId,
+    ...(subject === undefined ? {} : { subject }),
+  };
   if (message.messageType === "LtiDeepLinkingRequest") {
     const { data, ...requested } = message.settings;
     const exp = issue.iat + settings.deepLinkingLifetimeSeconds;
@@ -182,12 +188,10 @@ function sealData(message: MessageInput, issue: Issue, settings: PlatformSetting
   }
   if (message.messageType === "LtiStartProctoring") {
     const exp = issue.iat + settings.sessionDataLifetimeSeconds;
-    const subject = message.user.subject;
     const session = {
       ...bound,
       resourceLink: message.resourceLink.id,
       attempt: message.attemptNumber,
-      ...(subject === undefined ? {} : { subject }),
       exp,
     };
     return sealSessionData(session, config.hintKey);

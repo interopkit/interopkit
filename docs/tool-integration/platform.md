@@ -178,7 +178,7 @@ of the tool's), `targetLinkUri`, `user` (without a `subject` the launch is anony
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `LtiResourceLinkRequest` | `resourceLink`                                                                                                                                               |
 | `LtiSubmissionReviewRequest` | `forUser`, and `resourceLink` when the line item has one; `services.grades.lineItemId` names the line item of the review, which needs `services.gradebook` |
-| `LtiDeepLinkingRequest`  | `settings`: the settings of DL 4.4.1, and the host's `data`, an object that the platform seals into the `data` claim with the settings for 86,400 seconds |
+| `LtiDeepLinkingRequest`  | `settings`: the settings of DL 4.4.1, and the host's `data`, an object that the platform seals into the `data` claim with the client, deployment, user and settings for 86,400 seconds |
 | `LtiStartProctoring`     | `resourceLink`, `attemptNumber`, `startAssessmentUrl`, `proctoringSettings`; the platform seals the client, deployment, resource link, attempt and user into `session_data` for 3,600 seconds. `services.control`, which no other message may carry, offers the Assessment Control Service with its `actions` |
 | `LtiEndAssessment`       | `attemptNumber`, and `resourceLink`, `proctoringSettings`, `errorMessage`, `errorLog` when there are any                                                      |
 
@@ -294,7 +294,8 @@ and a Start Assessment message posted to the `start_assessment_url` of a Start P
 (the algorithms of the registration, the key set, the times, an expiry within 3,600 seconds), with the platform's issuer as the
 audience and as the authorized party when the token names one, and requires an `iat` and a `nonce`. The `nonce` is the
 single-use identifier here, recorded in `once` until the token stops verifying. The `data` claim of the response must be the data
-that the platform sealed into the request, for that tool and deployment and not expired. The [Deep Linking
+that the platform sealed into the request, for that tool and deployment and not expired, and the host places the items only when
+its own session is of the `subject` that it returns. The [Deep Linking
 guide](deep-linking.md) has the checks and the options (`config`, `clock`, `client`, `jwks`, `once`, `maxFormBytes`, `maxTokens` and
 `maxContentItems`). `readStartAssessment(request, options)` takes the same options and checks the token the same way; the
 `session_data` must be the data that the platform sealed into the Start Proctoring message, for that tool, deployment, resource link

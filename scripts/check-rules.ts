@@ -6515,6 +6515,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/tool-integration/test/platform-failures.test.ts",
   },
   {
+    rule: "The data of a Deep Linking request and the session data of a proctored attempt bind the user of the message.",
+    file: "packages/tool-integration/src/platform/authorize.ts",
+    find: "    deployment: message.deploymentId,\n    ...(subject === undefined ? {} : { subject }),\n  };",
+    replace: "    deployment: message.deploymentId,\n  };",
+    test: "packages/tool-integration/test/platform-deep-linking.test.ts",
+  },
+  {
     rule: "A store that lacks a method of a service serves neither its route nor the scope that only that method needs.",
     file: "packages/tool-integration/src/platform/services/routes.ts",
     find: 'typeof Reflect.get(store, uses) === "function"',

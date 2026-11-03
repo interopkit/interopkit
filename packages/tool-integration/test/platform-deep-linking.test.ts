@@ -141,6 +141,22 @@ describe("readDeepLinkingResponse", () => {
     expect(read.claims[`${DL}content_items`]).toEqual(items);
   });
 
+  it("returns the user of the request, whom the data binds, for the host to compare with its session", async () => {
+    const ctx = setup();
+    const read = await readDeepLinkingResponse(
+      await responseTo(ctx, await sealedData(ctx), []),
+      toolMessageOptions(ctx),
+    );
+    expect(read.subject).toBe("candidate-7");
+    expect((await openDeepLinkingData(await sealedData(ctx), [hintKey]))?.subject).toBe("candidate-7");
+    const anonymous = { ...deepLinking(), user: {} };
+    const unbound = await readDeepLinkingResponse(
+      await responseTo(ctx, await sealedData(ctx, anonymous), []),
+      toolMessageOptions(ctx),
+    );
+    expect(unbound).not.toHaveProperty("subject");
+  });
+
   it("reads an item of a type that another specification defines, with its properties", async () => {
     const ctx = setup();
     const type = "https://tool.example.com/types/quiz";

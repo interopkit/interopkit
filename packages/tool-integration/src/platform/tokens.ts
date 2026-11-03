@@ -55,12 +55,14 @@ export interface RegistrationToken {
   readonly exp: number;
 }
 
-/** What the data of a Deep Linking request carries: the settings of the request and the host's own data. */
+/** What the data of a Deep Linking request carries: the tool, the user, the settings of the request and the host's own data. */
 export interface DeepLinkingData {
   /** The client identifier of the tool. */
   readonly client: string;
   /** The deployment of the request. */
   readonly deployment: string;
+  /** The `sub` of the request; absent in an anonymous launch. */
+  readonly subject?: string;
   /** The settings of the request. */
   readonly settings: Omit<DeepLinkingSettings, "data">;
   /** The host's own data, returned after the response is verified. */
@@ -98,6 +100,7 @@ const registrationTokenSchema = v.object({ id: STRING, exp: NUMBER });
 const deepLinkingDataSchema = v.object({
   client: STRING,
   deployment: STRING,
+  subject: v.optional(IDENTIFIER),
   settings: deepLinkingSettingsSchema,
   data: v.optional(jsonObjectSchema),
   exp: NUMBER,

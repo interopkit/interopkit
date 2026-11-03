@@ -439,7 +439,7 @@ describe("the authentication request", () => {
     expect(claims["https://vendor.example/claim"]).toEqual({ tier: 2 });
   });
 
-  it("issues a Deep Linking request whose data seals its settings and the host's data for a day", async () => {
+  it("issues a Deep Linking request whose data seals its user, its settings and the host's data for a day", async () => {
     const ctx = setup();
     const settings = {
       returnUrl: "https://lti.platform.example/deep-linking/return",
@@ -461,6 +461,7 @@ describe("the authentication request", () => {
     expect(await openToken(data, "deep-linking-data", [hintKey])).toEqual({
       client: TOOL_CLIENT_ID,
       deployment: TOOL_DEPLOYMENT_ID,
+      subject: "candidate-7",
       settings: {
         returnUrl: settings.returnUrl,
         acceptTypes: ["ltiResourceLink"],

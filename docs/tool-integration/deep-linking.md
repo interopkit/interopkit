@@ -140,8 +140,11 @@ The checks, in order:
 | The items against the sealed settings: the table above | `content-item-refused`                                                                                     |
 
 The result is a `ReceivedDeepLinkingResponse`: the fields of the message (`issuer`, `clientId`, `deploymentId`, `version`,
-`message`, `log`, `errorMessage`, `errorLog`, `claims`), the `items` as `ContentItem` values, the `settings` of the request, and the
-host's own `data` after verification (absent when the request had none). Whether the user confirms the items, what `autoCreate`
+`message`, `log`, `errorMessage`, `errorLog`, `claims`), the `items` as `ContentItem` values, the `settings` of the request, the
+host's own `data` after verification (absent when the request had none), and the `subject` of the request (absent for an
+anonymous one). The sealed data is the anti-CSRF token of the request (Appendix A's example names its `data` a `csrftoken`): the
+host places the items only when its own session of the browser is of that `subject`, so that a response that another user's
+browser is made to post places nothing. Whether the user confirms the items, what `autoCreate`
 means, and how a `file` is fetched, an `html` item sanitized and a `link` shown, are the host's. A file's `url` is short-lived:
 fetch it through the host's guarded `fetch` before its `expiresAt`. An `html` fragment, a `title` and a `text` are data, never
 markup that the package renders.
@@ -196,7 +199,7 @@ Each `LtiError` carries the HTTP `status` that the host answers with.
 
 | Data                                  | Comes from                          | Goes to                                                   | Kept by the package |
 | ------------------------------------- | ----------------------------------- | --------------------------------------------------------- | ------------------- |
-| The host's `data`, the settings       | The host's `MessageInput`           | The tool, sealed (signed, not encrypted) in the request; back in the response | No      |
+| The host's `data`, the settings, the user's `sub` | The host's `MessageInput` | The tool, sealed (signed, not encrypted) in the request; back in the response | No      |
 | The items                             | The tool's host                     | The platform's host, in a form posted by the browser      | No                  |
 | The nonce of a response               | The tool                            | The host's `once`                                         | No                  |
 
