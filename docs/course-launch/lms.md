@@ -74,7 +74,7 @@ handlers, and `scenario.ts` plays sessions against it.
 | --- | --- |
 | `importCourse(structure, input)` | Checks the structure by every rule of the reader, resolves relative URLs against `contentBase`, and makes the ids of the LMS: `idBase` and a UUID of version 5 of the course id, the kind and the publisher id, the same in every registration (8.1.5) |
 | `createRegistration(input, options)` | Makes the registration, satisfies at once every unit whose `moveOn` is `NotApplicable` and the blocks and course they fill (9.6.1.1), and returns an existing one of the same learner and course as it is |
-| `prepareLaunch(input, options)` | Abandons the unit's open session, writes the launch data and the launched statement, and returns the URL, the window (`own` for `OwnWindow`) and the session id |
+| `prepareLaunch(input, options)` | Abandons the unit's open session, writes the launch data and the launched statement, and returns the URL, the window (`own` for `OwnWindow`) and the session id; of two launches of a unit at once, one abandons the other |
 | `handleFetchRequest(request, options)` | Answers the first POST of a fetch code with the token, and every other request with an error code of cmi5 |
 | `extendLrsOptions(lrs, options)` | The host's LRS options with the access and the rules of cmi5, and its store of Statements wrapped for satisfaction |
 | `abandonSession(session, options)` | Ends a session that its unit did not terminate, and writes its abandoned statement |

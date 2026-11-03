@@ -7728,6 +7728,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/course-launch/test/lms-inputs.test.ts",
   },
   {
+    rule: "Of two launches of a unit at once, one abandons the other, so a registration has one open session of a unit.",
+    file: "packages/course-launch/src/lms/prepare-launch.ts",
+    find: "if (replaced !== undefined) await abandon(settings, replaced);",
+    replace: "",
+    test: "packages/course-launch/test/lms-flow.test.ts",
+  },
+  {
     rule: "An abandoned session ends before its abandoned statement, so its token is refused at once.",
     file: "packages/course-launch/src/lms/abandon-session.ts",
     find: 'state: "abandoned",',

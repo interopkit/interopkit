@@ -207,17 +207,23 @@ async function markLaunched(settings: LmsSettings, session: Session): Promise<vo
   });
 }
 
-/** Points the unit of a registration at its new session, with the `moveOn` of the launch. */
-async function pointAt(settings: LmsSettings, session: Session): Promise<void> {
-  await withRetries(settings, "launched a session", async () => {
+/**
+ * Points the unit of a registration at its new session, with the `moveOn` of the launch.
+ *
+ * @returns The session that the unit pointed at before, when another launch made it after this one abandoned the open session.
+ */
+async function pointAt(settings: LmsSettings, session: Session): Promise<string | undefined> {
+  return withRetries(settings, "launched a session", async () => {
     const registration = await registrationOf(settings, session.registration);
-    const au = { ...auOf(registration, session.au), session: session.id, moveOn: session.launchData.moveOn };
+    const before = auOf(registration, session.au);
+    const au = { ...before, session: session.id, moveOn: session.launchData.moveOn };
     const put = await settings.store.putRegistration(
       { ...registration, aus: { ...registration.aus, [session.au]: au }, revision: registration.revision + 1 },
       registration.revision,
       signalOf(settings),
     );
-    return put === "written" ? "done" : "conflict";
+    if (put === "conflict") return "conflict";
+    return before.session === session.id ? undefined : before.session;
   });
 }
 
@@ -231,7 +237,9 @@ async function pointAt(settings: LmsSettings, session: Session): Promise<void> {
  * the course structure for this launch. The launched statement carries the launch mode, the URL of the unit without the
  * parameters of the launch, `moveOn`, and the launch parameters and mastery score when given. The session becomes launched only
  * once both are written: a failure leaves it preparing, so its fetch code is never answered, and returns no URL. The launch URL
- * keeps the unit's own query, and its endpoint has no final slash. The fetch code expires after `fetchLifetimeSeconds`.
+ * keeps the unit's own query, and its endpoint has no final slash. The fetch code expires after `fetchLifetimeSeconds`. Of two
+ * launches of a unit at once, the one that points the registration at its session last abandons the other, so a registration
+ * has one open session of a unit.
  *
  * @param input - The registration, the unit, and what this launch sets.
  * @param options - The options of the LMS.
@@ -294,7 +302,9 @@ export async function prepareLaunch(input: LaunchInput, options: LmsOptions): Pr
     throw new InteropkitError(`The LRS did not write the launch data of the session ${id}: ${written}.`);
   await writeOnce(settings, launchedStatement(course, au, session, launchData, au.url));
   await markLaunched(settings, session);
-  await pointAt(settings, session);
+  // Two launches of a unit at once both find no open session; the later to point the unit at its own abandons the other (9.3.6).
+  const replaced = await pointAt(settings, session);
+  if (replaced !== undefined) await abandon(settings, replaced);
   return {
     url: launchUrlOf(settings, au, registration, `${id}.${secret}`),
     window: au.launchMethod === "OwnWindow" ? "own" : "any",

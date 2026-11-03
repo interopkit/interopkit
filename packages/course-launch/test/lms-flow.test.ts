@@ -1,8 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { CMI5_ACTIVITY_TYPES, CMI5_CATEGORIES, CMI5_EXTENSIONS, readCourseStructure } from "../src/index.js";
+import {
+  CMI5_ACTIVITY_TYPES,
+  CMI5_CATEGORIES,
+  CMI5_EXTENSIONS,
+  readCourseStructure,
+  readLaunchUrl,
+} from "../src/index.js";
 import { abandonSession, importCourse, prepareLaunch, progressOf, waiveAu } from "../src/lms/index.js";
 import { AU1, AU2, AU3, LEARNER, NAMESPACE, ORIGIN, testHost } from "./lms-host.js";
-import { launchUnit, register, sendStatement, statementsOf, unitStatement, verbsOf } from "./lms-session.js";
+import {
+  jsonOf,
+  launchUnit,
+  postFetch,
+  register,
+  sendStatement,
+  statementsOf,
+  unitStatement,
+  verbsOf,
+} from "./lms-session.js";
 
 const PUBLISHER_BLOCK = "https://publisher.example.org/block";
 const PUBLISHER_COURSE = "https://publisher.example.org/course";
@@ -190,6 +205,23 @@ describe("abandoned and terminated sessions", () => {
     expect(statements[2]?.context?.extensions?.[CMI5_EXTENSIONS.sessionId]).toBe(first.launch.session);
     expect((await sendStatement(host, first, unitStatement(first, "experienced"))).status).toBe(401);
     expect((await sendStatement(host, second, unitStatement(second, "initialized"))).status).toBe(204);
+  });
+
+  it("abandons one of two launches of a unit made at once, so that one session of the unit stays open", async () => {
+    const host = testHost();
+    const registration = await register(host);
+    const launches = await Promise.all([
+      prepareLaunch({ registration: registration.id, au: AU1 }, host.options),
+      prepareLaunch({ registration: registration.id, au: AU1 }, host.options),
+    ]);
+    const open = (await host.store.registration(registration.id))?.aus[AU1]?.session;
+    const states = await Promise.all(launches.map(async ({ session }) => (await host.store.session(session))?.state));
+    expect(states.toSorted()).toStrictEqual(["abandoned", "launched"]);
+    expect((await host.store.session(open ?? ""))?.state).toBe("launched");
+    expect(verbsOf(await statementsOf(host, registration.id))).toStrictEqual(["launched", "launched", "abandoned"]);
+    const closed = launches.find(({ session }) => session !== open) ?? expect.unreachable();
+    const answer = jsonOf(await postFetch(host, readLaunchUrl(closed.url).fetch));
+    expect(answer).toStrictEqual(expect.objectContaining({ "error-code": "1" }));
   });
 
   it("abandons a session once, and tells a session that ended or never launched", async () => {
