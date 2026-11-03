@@ -1448,6 +1448,20 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-analytics/test/send.test.ts",
   },
   {
+    rule: "A CASE client that selects fields asks for the identifier too, by which its paging tells documents apart.",
+    file: "packages/competency-frameworks/src/client/client.ts",
+    find: "return pagesOfDocuments(settings, withIdentifier(query), signal);",
+    replace: "return pagesOfDocuments(settings, query, signal);",
+    test: "packages/competency-frameworks/test/client.test.ts",
+  },
+  {
+    rule: "A selected document without the identifier that the CASE client asked for is a fault of the answer.",
+    file: "packages/competency-frameworks/src/client/client.ts",
+    find: '(rule !== "missing-property" || path === "identifier")',
+    replace: 'rule !== "missing-property"',
+    test: "packages/competency-frameworks/test/client.test.ts",
+  },
+  {
     rule: "The audience of a registration is the audience of the client assertion.",
     file: "packages/tool-integration/src/tool/token.ts",
     find: "...(audience === undefined ? {} : { audience })",

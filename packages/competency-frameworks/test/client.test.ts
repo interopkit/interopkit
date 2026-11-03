@@ -643,12 +643,33 @@ describe("documents: the fields asked for", () => {
     }
   });
 
-  it("gives every document that has no identifier, since it cannot tell a repeat", async () => {
-    const provider = fakeProvider(() => ({
-      body: { CFDocuments: [{ title: "A" }, { title: "A" }] },
-      headers: { "X-Total-Count": "2" },
-    }));
-    expect(await collect(clientOf(provider).documents({ fields: ["title"] }))).toHaveLength(2);
+  it("asks for the identifier with the fields, since it tells the documents apart by it", async () => {
+    const selected = [
+      { title: "A", identifier: id(1) },
+      { title: "A", identifier: id(2) },
+    ];
+    const provider = fakeProvider(() => ({ body: { CFDocuments: selected }, headers: { "X-Total-Count": "2" } }));
+    expect(await collect(clientOf(provider).documents({ fields: ["title"] }))).toStrictEqual(selected);
+    expect(new URL(provider.requests[0]?.url ?? "").searchParams.get("fields")).toBe("title,identifier");
+  });
+
+  it("refuses a selected document without the identifier that it asked for", async () => {
+    const provider = fakeProvider(() => ({ body: { CFDocuments: [{ title: "A" }] } }));
+    const error = await failureOf(collect(clientOf(provider).documents({ fields: ["title"] })));
+    expect(error).toBeInstanceOf(DataError);
+    expect((error as DataError).message).toContain(
+      'CFDocuments[0] is invalid at identifier: missing the property "identifier"',
+    );
+  });
+
+  it("stops when a provider that ignores the offset repeats a page of selected documents", async () => {
+    const same = manyDocuments(100).map(({ identifier, title }) => ({ identifier, title }));
+    const provider = fakeProvider(() => ({ body: { CFDocuments: same } }));
+    expect(await collect(clientOf(provider).documents({ fields: ["title"] }))).toHaveLength(100);
+    expect(provider.requests).toHaveLength(2);
+    const nameless = fakeProvider(() => ({ body: { CFDocuments: same.map(({ title }) => ({ title })) } }));
+    expect(await failureOf(collect(clientOf(nameless).documents({ fields: ["title"] })))).toBeInstanceOf(DataError);
+    expect(nameless.requests).toHaveLength(1);
   });
 });
 

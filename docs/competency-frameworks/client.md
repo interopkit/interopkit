@@ -121,7 +121,7 @@ flowchart TD
 | Rule                        | Behavior                                                                                                                    |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | The offset of the next page | The offset plus the number of documents the page held, so a provider that caps the page below `limit` is followed           |
-| A document seen before      | Given once, matched by identifier in either case: a collection that changes between pages may repeat a document             |
+| A document seen before      | Given once, matched by identifier in either case: a collection that changes between pages may repeat a document. With `fields`, the client asks for `identifier` too |
 | `Link` header               | Read for `rel="next"` only. The client builds the next request itself and never requests an address that the provider gives |
 | An empty first page         | The iteration ends without a document                                                                                       |
 | A 404 for the first page    | A `ServiceError`: the path is wrong or the provider has no such service                                                     |
@@ -133,7 +133,7 @@ flowchart TD
 | `sort`               | The field to sort on, or a path through nested objects with dots                | none    |
 | `orderBy`            | `"asc"` or `"desc"`                                                             | none    |
 | `filter`             | A comparison, or two comparisons joined by `and` or `or`; see below             | none    |
-| `fields`             | The fields to return, and only those; the documents then have those fields only | none    |
+| `fields`             | The fields to return, and only those; the documents then have those fields and `identifier` | none    |
 
 A query is checked when `documents` is called, before any request: a property that a query does not have, a field that is not a
 name, an empty list of fields, a predicate or an order that does not exist, a value that is not text, or a logical operator
@@ -164,9 +164,11 @@ is a comma separated list.
 ### Selecting fields
 
 A document that a provider returns with only the fields asked for lacks the properties that the class requires, so the type of
-the iteration changes with the query: with `fields` it yields `SelectedDocument`, a document with every property optional, and
-without it `CFDocument`. Each one is checked: a property it has must be right, and the only fault that is allowed is a missing
-property. The use that the Implementation Guide names (4.3.6) is to ask for the time of change of every document, and to fetch
+the iteration changes with the query: with `fields` it yields `SelectedDocument`, a document with every property optional but
+`identifier`, and without it `CFDocument`. The client adds `identifier` to the fields when the query leaves it out, because it
+tells a document that it has given from a new one by it: so the iteration ends when a provider that ignores the offset repeats
+a page. Each document is checked: a property it has must be right, and the only fault that is allowed is a missing property
+other than `identifier`. The use that the Implementation Guide names (4.3.6) is to ask for the time of change of every document, and to fetch
 a package only when `isNewer` says it is stale.
 
 ```ts

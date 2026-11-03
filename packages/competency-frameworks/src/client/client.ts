@@ -36,8 +36,11 @@ import { openApiSchema } from "../read/internal.js";
 import { type CaseClientConfig, type Settings, settingsOf } from "./config.js";
 import { queryString } from "./query.js";
 
-/** A document with the fields that a query asked for, and none of the others unless they were asked for. */
-export type SelectedDocument = Readonly<Partial<CFDocument>>;
+/**
+ * A document with the fields that a query asked for and its identifier, which the client asks for as well, and none of the
+ * others unless they were asked for.
+ */
+export type SelectedDocument = Readonly<Partial<CFDocument>> & Pick<CFDocument, "identifier">;
 
 /** The calls to a CASE provider: one for each of the twelve endpoints of the REST binding, and the discovery file. */
 export interface CaseClient {
@@ -48,8 +51,8 @@ export interface CaseClient {
    * Each request asks for `pageSize` documents from the next offset. The iteration stops when the provider says that no
    * page follows (`X-Total-Count`, else the `Link` header, else a page shorter than the one asked for), or answers a page
    * that holds only documents already seen. A collection that changes between pages may repeat or skip a document; a
-   * document seen twice is given once. With `fields`, the documents hold the fields asked for and not every field that the
-   * class requires.
+   * document seen twice is given once. With `fields`, the documents hold the fields asked for and `identifier`, which the
+   * client adds to the fields because it tells the documents apart by it, and not every field that the class requires.
    *
    * @param query - How to sort, filter and select.
    * @param options - A `signal` that ends the whole iteration.
@@ -215,12 +218,15 @@ function hasMore(headers: Readonly<Record<string, string>>, offset: number, rece
   return hasNextLink(headers) ?? received >= limit;
 }
 
-/** Reads the documents of a page that asked for some fields: each must be a document, less what it was not asked to hold. */
+/**
+ * Reads the documents of a page that asked for some fields: each must be a document, less what it was not asked to hold. The
+ * client asks for the identifier with the fields, so a document without one is a fault of the answer.
+ */
 function readSelected(json: unknown, settings: Settings): SelectedDocument[] {
   const set = checkedSet(json);
   return set.map((document, at) => {
     const faults = validateEntity("CFDocument", document, { version: settings.version }).filter(
-      ({ severity, rule }) => severity === "error" && rule !== "missing-property",
+      ({ severity, rule, path }) => severity === "error" && (rule !== "missing-property" || path === "identifier"),
     );
     const [first] = faults;
     if (first !== undefined) {
@@ -228,16 +234,28 @@ function readSelected(json: unknown, settings: Settings): SelectedDocument[] {
         `CFDocuments[${at}] is invalid${first.path === "" ? "" : ` at ${first.path}`}: ${first.message}`,
       );
     }
-    return document;
+    // The validator has just found the identifier a string and every other property of the right form.
+    return document as SelectedDocument;
   });
 }
 
 /** Checks that a page is an object with a list of documents, and returns the list. */
-function checkedSet(json: unknown): readonly SelectedDocument[] {
+function checkedSet(json: unknown): readonly unknown[] {
   if (!isRecord(json) || !Array.isArray(json.CFDocuments)) {
     throw new DataError(`The answer must be an object with the list CFDocuments, found ${describe(json)}.`);
   }
   return json.CFDocuments;
+}
+
+/**
+ * Adds `identifier` to the fields that a query selects: the iteration tells a document that it has given from a new one by
+ * its identifier, so that it ends when a provider repeats a page.
+ */
+function withIdentifier(query: CaseQuery | undefined): CaseQuery | undefined {
+  const fields = query?.fields;
+  return fields === undefined || fields.includes("identifier")
+    ? query
+    : { ...query, fields: [...fields, "identifier"] };
 }
 
 /** The iteration of `documents`: one request per page, until the provider has no more. */
@@ -261,9 +279,8 @@ async function* pagesOfDocuments(
         ? readSelected(json, settings)
         : readEntity("CFDocumentSet", json, { version: settings.version }).CFDocuments,
     );
-    const fresh = documents.filter((document) => {
-      const key = document.identifier?.toLowerCase();
-      if (key === undefined) return true;
+    const fresh = documents.filter(({ identifier }) => {
+      const key = identifier.toLowerCase();
       return !seen.has(key) && seen.add(key);
     });
     yield* fresh;
@@ -304,7 +321,7 @@ export function createCaseClient(config: CaseClientConfig): CaseClient {
     const signal = signalOf(options);
     // The first page's parameters are written now, so that a query that is not valid fails before the iteration starts.
     queryString(query, { limit: settings.pageSize, offset: 0 });
-    return pagesOfDocuments(settings, query, signal);
+    return pagesOfDocuments(settings, withIdentifier(query), signal);
   }
 
   return {
