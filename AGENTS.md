@@ -418,7 +418,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   --volumes` always runs. What it does differently from the references is pinned by the flows. A counterparty that calls the machine, as PyLTI1p3 calls the platform role, reaches the process of the tests through `host.docker.internal` over `https` on all interfaces for the run (on Linux the bridge is not the loopback address), with a certificate of an authority that the run makes and gives the container.
 - A reader of untrusted input has a test of its peak memory on its worst input: `process.resourceUsage().maxRSS` before and after the
   reading, reported with `annotate` and under a budget that the unbounded reading would pass by far. A process's peak only grows and Vitest runs each file in a
-  process of its own, so each such test is a file of its own.
+  process of its own, so each such test is a file of its own. `course-launch` runs each reading instead in a Node.js process of
+  its own whose heap is bounded (`test/memory.ts`): what the reading keeps alive at once must fit, whenever V8 collects, so the
+  test holds on a loaded machine, where a collector that falls behind raised the peak of a reading in the test's own process.
 - Baked images are written by `validation/baked_images.py` (`struct` and `zlib` for the PNG chunks, string edits for the SVG, ElementTree to
   parse every SVG), and `test/baking.test.ts` compares the bytes and the text with the fixture. A reader of images has a test of the
   worst input of each limit.

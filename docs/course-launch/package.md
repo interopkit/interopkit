@@ -92,8 +92,11 @@ package sets, and these:
 | `cmi5.xml`                   | 16,777,216 | `DataError` for a size above it in its header; zip.js refuses data that inflates past its header     |
 | Archive                      | none       | A `Blob` is read for its central directory and `cmi5.xml` alone; the host bounds an upload            |
 
-The peak memory of the worst packages, measured by the tests of the package: 100,000 entries raise the peak by about 250 MiB,
-a central directory of 64 MiB by about 310 MiB, and a `cmi5.xml` that inflates to 64 MiB and says it has 64 bytes by 3 MiB.
+The memory of the worst packages, each read by the tests of the package in a process whose heap is bounded, at most on Node.js
+22, 24 and 26: 100,000 entries end within a heap of 29 MiB, a central directory at its limit within 19 MiB besides the bytes of
+the directory, which V8 keeps outside its heap, and a `cmi5.xml` that inflates to 64 MiB and says it has 64 bytes within
+11 MiB. In a process with the default heap of V8 the resident memory grows further before V8 collects, by about 100 MiB for
+each of the first two.
 
 ## Writing a package
 

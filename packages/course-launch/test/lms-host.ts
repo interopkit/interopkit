@@ -30,7 +30,6 @@ import {
   type StatementStore,
   type StoredStatement,
 } from "@interopkit/learning-records/store";
-import { expect } from "vitest";
 
 /** The origin of the LMS of the tests. */
 export const ORIGIN = "https://lms.example.org";
@@ -340,8 +339,11 @@ export function testHost(changes: Partial<LmsOptions> = {}): TestHost {
   };
   let counter = 0;
   const host: { lrsOptions?: LrsOptions } = {};
-  const handle = (request: HttpRequest): Promise<HttpResponse> =>
-    handleLrsRequest(request, host.lrsOptions ?? expect.unreachable("The LRS is not ready."));
+  const handle = (request: HttpRequest): Promise<HttpResponse> => {
+    // The client of the LMS reaches the LRS through this, which has its options before its first request.
+    if (host.lrsOptions === undefined) throw new Error("The LRS is not ready.");
+    return handleLrsRequest(request, host.lrsOptions);
+  };
   const recordsFail: TestHost["recordsFail"] = { sendStatement: 0, putDocument: 0, putOutcome: "written" };
   const client = createLrsClient({
     endpoint: `${ORIGIN}/xapi/`,

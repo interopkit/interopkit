@@ -52,6 +52,13 @@ def info(name, compression=zipfile.ZIP_DEFLATED, external=None):
     return entry
 
 
+def commented(name):
+    """An empty entry whose comment is the longest that a central directory holds, 65,535 bytes."""
+    entry = info(name, zipfile.ZIP_STORED)
+    entry.comment = b"c" * 65535
+    return entry
+
+
 def archive(entries, force_zip64=False):
     """The bytes of an archive of (name, data) entries, or (ZipInfo, data)."""
     buffer = io.BytesIO()
@@ -145,6 +152,10 @@ def main():
     write("lying-bomb.zip", patch(archive([("cmi5.xml", STRUCTURE + b" " * (64 * 1024 * 1024)), ("index.html", PAGE)]), 0, 22, 24, "<I", 64))
     write_gzipped("zip64-many.zip.gz", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE)] + [(info(f"f/{i}", zipfile.ZIP_STORED), b"") for i in range(65999)]))
     write_gzipped("wrapped.zip.gz", wrapped(70002))
+    # The worst packages within the default limits of the reader, for the tests of its peak memory: 100,000 entries, and a
+    # central directory of almost 64 MiB, of entries whose comments are as long as a comment may be.
+    write_gzipped("entries-limit.zip.gz", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE)] + [(info(f"media/{i}.bin", zipfile.ZIP_STORED), b"") for i in range(99998)]))
+    write_gzipped("directory-limit.zip.gz", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE)] + [(commented(f"m/{i}"), b"") for i in range(1021)]))
     print(f"Wrote the archives to {OUTPUT}.")
 
 

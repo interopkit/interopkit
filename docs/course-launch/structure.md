@@ -120,10 +120,12 @@ extension as one element of its `namespace` and `name`, and refuses one that hol
 | Findings                      | 1,000      | The list stops, and its last finding says so                                                |
 | Levels of blocks to write     | 64         | `DataError` before the model is read                                                        |
 
-The peak memory of the worst structures, measured by the tests of the package: a structure of almost a million `langstring`
-elements, at the limit of elements, raises the peak by about 140 MiB; 16 MiB of them are refused at that limit at the same cost;
-one `langstring` of 16 MiB costs about 34 MiB; blocks nested past the limit of depth, and a million wrong values whose findings
-stop at 1,000, cost less than 20 MiB each.
+The memory of the worst structures, each read by the tests of the package in a process whose heap is bounded, the text of the
+structure included, at most on Node.js 22, 24 and 26: a structure of almost a million `langstring` elements, at the limit of
+elements, ends within a heap of 74 MiB, and 16 MiB of them are refused at that limit within 78 MiB; one `langstring` of 16 MiB
+within 59 MiB; blocks nested past the limit of depth within 27 MiB, and a million wrong values whose findings stop at 1,000
+within 23 MiB. In a process with the default heap of V8 the resident memory grows further before V8 collects, by about 120 MiB
+for the million texts.
 
 ## Errors
 
