@@ -5471,6 +5471,27 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
+    rule: "A status list is kept by its address and by the trust of the call that verified it, so no call is served a list that it would refuse.",
+    file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
+    find: "cache.get(cacheKeyOf(url, settings),",
+    replace: "cache.get(url,",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
+    rule: "A load of a status list that calls share runs with no caller's signal, so one caller's abort ends only its own wait.",
+    file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
+    find: "() => load(undefined),",
+    replace: "() => load(signal),",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
+    rule: "The wait for a cache of status lists of the host ends when the signal aborts, whatever the cache does.",
+    file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
+    find: "return untilAborted(Promise.resolve(shared), signal);",
+    replace: "return shared;",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
     rule: "A list credential is kept 300,000 ms when it gives no ttl.",
     file: "packages/achievement-credentials/src/status/status-list-cache.ts",
     find: "const DEFAULT_TTL_MILLISECONDS = 300_000;",

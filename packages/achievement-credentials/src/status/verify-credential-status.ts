@@ -1,4 +1,4 @@
-import { callService, readClock, ServiceError } from "@interopkit/core";
+import { callService, readClock, ServiceError, untilAborted } from "@interopkit/core";
 import { checkRecord, describe, isRecord } from "@interopkit/core/checks";
 import { parseJsonText } from "../json-text.js";
 import { readCredentialJwt } from "../jwt/index.js";
@@ -116,8 +116,16 @@ function entryOf(credential: unknown): Named {
   };
 }
 
-/** Reads the text of a list credential as a credential, verifying its proof and its issuer's hold on the key. */
-async function verifiedList(text: string, settings: CheckSettings): Promise<VerifiableCredential> {
+/**
+ * Reads the text of a list credential as a credential, verifying its proof and its issuer's hold on the key.
+ *
+ * @param signal - Ends the work, for a load that one caller makes alone; a load that callers share has none.
+ */
+async function verifiedList(
+  text: string,
+  settings: CheckSettings,
+  signal: AbortSignal | undefined,
+): Promise<VerifiableCredential> {
   const keyed = {
     keys: settings.keys,
     clock: settings.clock,
@@ -125,7 +133,7 @@ async function verifiedList(text: string, settings: CheckSettings): Promise<Veri
     allowUnboundKeys: settings.allowUnboundKeys,
     ...(settings.algorithms === undefined ? {} : { algorithms: settings.algorithms }),
     ...(settings.clockSkewSeconds === undefined ? {} : { clockSkewSeconds: settings.clockSkewSeconds }),
-    ...(settings.signal === undefined ? {} : { signal: settings.signal }),
+    ...(signal === undefined ? {} : { signal }),
   };
   if (!text.trimStart().startsWith("{")) {
     const result = await readCredentialJwt(text.trim(), keyed);
@@ -178,9 +186,13 @@ async function fetchText(url: string, what: string, accept: string, settings: Ch
 }
 
 /** Fetches a list credential and checks it, or throws what is wrong with it. */
-async function fetchList(url: string, settings: CheckSettings): Promise<VerifiableCredential> {
+async function fetchList(
+  url: string,
+  settings: CheckSettings,
+  signal: AbortSignal | undefined,
+): Promise<VerifiableCredential> {
   const accept = "application/vc+jwt, application/ld+json, application/json";
-  return await verifiedList(await fetchText(url, "The status list credential", accept, settings), settings);
+  return await verifiedList(await fetchText(url, "The status list credential", accept, settings), settings, signal);
 }
 
 /** Fetches a revocation list of the 1EdTech Revocation List Status Method, a JSON object, or throws what is wrong with it. */
@@ -190,6 +202,37 @@ async function fetchRevocationList(url: string, settings: CheckSettings): Promis
   if ("reason" in parsed) throw new ListFailure(parsed.reason);
   if (!isRecord(parsed.value)) throw new ListFailure("The revocation list is not a JSON object.");
   return parsed.value;
+}
+
+/** The number of each object of a host that decides whether a list credential counts, kept while the object lives. */
+const identities = { made: 0, of: new WeakMap<object, number>() };
+
+/** Returns the number of an object of the host, which it is given when it is first seen. */
+function identityOf(port: object): number {
+  const known = identities.of.get(port);
+  if (known !== undefined) return known;
+  identities.made += 1;
+  identities.of.set(port, identities.made);
+  return identities.made;
+}
+
+/**
+ * Returns what a list is kept by in a cache: its address, and the trust under which the call verifies it, which is the resolver
+ * of keys, the loader of contexts, the suites, and the options that decide whether a proof counts. A list that one call
+ * verified is never served to a call that trusts less, so a cache that verifiers of different policies share lends none of
+ * them a list that only another would accept.
+ */
+function cacheKeyOf(url: string, settings: CheckSettings): string {
+  return JSON.stringify([
+    url,
+    identityOf(settings.keys),
+    settings.contexts === undefined ? null : identityOf(settings.contexts),
+    settings.suites.map(identityOf),
+    settings.allowUnboundKeys,
+    settings.legacyProofs,
+    settings.algorithms ?? null,
+    settings.clockSkewSeconds ?? null,
+  ]);
 }
 
 /** Reads the identifier of the issuer of a credential. */
@@ -334,16 +377,28 @@ export async function verifyCredentialStatus(
   settings.signal?.throwIfAborted();
   const read = entryOf(credential);
   if ("done" in read) return read.done;
-  const withSignal = settings.signal === undefined ? undefined : { signal: settings.signal };
-  const cached = <TDocument extends object>(url: string, load: () => Promise<TDocument>): Promise<object> =>
-    settings.cache === undefined ? load() : settings.cache.get(url, load, withSignal);
+  const { cache, signal } = settings;
+  const cached = <TDocument extends object>(
+    url: string,
+    load: (signal: AbortSignal | undefined) => Promise<TDocument>,
+  ): Promise<object> => {
+    if (cache === undefined) return load(signal);
+    // The callers that ask for a list while it loads share the load, so it runs to its own timeouts with no caller's signal.
+    // The cache is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
+    const shared = cache.get(
+      cacheKeyOf(url, settings),
+      () => load(undefined),
+      signal === undefined ? undefined : { signal },
+    );
+    return untilAborted(Promise.resolve(shared), signal);
+  };
   try {
     if ("revocationList" in read) {
       const list = await cached(read.revocationList, () => fetchRevocationList(read.revocationList, settings));
       return readRevocation(isRecord(list) ? list : {}, credential, settings);
     }
     const { entry } = read;
-    const list = await cached(entry.url, () => fetchList(entry.url, settings));
+    const list = await cached(entry.url, (loading) => fetchList(entry.url, settings, loading));
     return await readEntry(asList(list), entry, issuerOf(credential), settings);
   } catch (error) {
     if (error instanceof ListFailure) return check("failed", `STATUS_VERIFICATION_ERROR: ${error.message}`);

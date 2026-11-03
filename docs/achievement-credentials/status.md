@@ -167,8 +167,11 @@ credential chose.
 of 1EdTech, by address. An entry expires at its `ttl` (the `ttl` of the subject in milliseconds; 300,000 when it gives none) or at
 its `validUntil`, whichever comes first. Verifications that run together share one fetch, which runs to its own timeout, and a
 failure is not kept. The credential that the cache holds is the list credential and not its answer: its issuer is compared with
-each credential's issuer on every verification. A list is kept as the call that loaded it verified it, so one cache serves the
-calls of one `keys`, `allowUnboundKeys`, `legacyProofs` and `suites`.
+each credential's issuer on every verification. A list is kept as the call that loaded it verified it, so it is kept by its address
+and by what decides whether its proof counts: the `keys`, `contexts` and `suites` of the call, told apart by identity, and its
+`allowUnboundKeys`, `legacyProofs`, `algorithms` and `clockSkewSeconds`. Calls of different policies may share one cache and never
+share a list, and calls that pass the same objects share their lists. A load runs without the `signal` of any caller, and each
+caller's wait ends when its own `signal` aborts, whatever a cache of the host does.
 
 | Option       | Meaning                              | Default |
 | ------------ | ------------------------------------ | ------- |

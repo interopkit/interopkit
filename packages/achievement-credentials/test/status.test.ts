@@ -11,6 +11,7 @@ import {
 } from "../src/status/index.js";
 import { decodeList, encodeList, isSet } from "../src/status/internal.js";
 import { memoryContexts } from "./context-fixtures.js";
+import { abortsWhileWaiting, hangingPort } from "./hanging-port.js";
 import { HOSTILE, neverParsesLarge } from "./hostile.js";
 import { clockAt, KEYS, signerOf } from "./key-fixtures.js";
 import {
@@ -644,6 +645,74 @@ describe("the cache of status list credentials", () => {
     expect(await check()).toMatchObject({ outcome: "unavailable" });
     expect(await check()).toMatchObject({ outcome: "unavailable" });
     expect(w.requests.filter((url) => url === LIST_URL)).toHaveLength(2);
+  });
+
+  it("never serves a list to a call that trusts less than the call that verified it", async () => {
+    const did = `did:key:${KEYS.other.multikey}`;
+    const forged = await listJws(listWith(), {}, signerOf(KEYS.other, `${did}#${KEYS.other.multikey}`));
+    const w = world({ [LIST_URL]: forged });
+    const cache = createStatusListCache({ clock: w.clock });
+    const check = (options: object = {}) =>
+      verifyCredentialStatus(credentialWithStatus(), { ...w.options, cache, ...options });
+    const refused = { outcome: "failed", detail: expect.stringContaining("STATUS_VERIFICATION_ERROR") };
+    expect(await check({ allowUnboundKeys: true })).toMatchObject({ outcome: "passed" });
+    expect(await check()).toMatchObject(refused);
+    // A resolver that says that the issuer publishes the forger's key is a policy of its own.
+    const forgerKey = { id: `${did}#${KEYS.other.multikey}`, publicKeyJwk: KEYS.other.publicJwk };
+    const lax = {
+      resolve: async () => ({ ...forgerKey, relationships: [] }),
+      issuerKeys: async () => [{ ...forgerKey, relationships: ["assertionMethod" as const] }],
+    };
+    expect(await check({ keys: lax })).toMatchObject({ outcome: "passed" });
+    expect(await check()).toMatchObject(refused);
+    expect(await check({ allowUnboundKeys: true })).toMatchObject({ outcome: "passed" });
+    // Each policy fetched the list once, and a list that a call refused is not kept: the strict calls fetched it twice.
+    expect(w.requests.filter((url) => url === LIST_URL)).toHaveLength(4);
+  });
+
+  it("verifies a list that calls share with no caller's signal, so that one caller's abort ends only its own wait", async () => {
+    const w = world({ [LIST_URL]: await listJws(listWith()) });
+    const cache = createStatusListCache({ clock: w.clock });
+    let open = () => {};
+    const gate = new Promise<void>((resolve) => {
+      open = resolve;
+    });
+    const asked: (AbortSignal | undefined)[] = [];
+    const keys = {
+      resolve: async (method: string, options?: { readonly signal?: AbortSignal }) => {
+        asked.push(options?.signal);
+        await gate;
+        return await w.keys.resolve(method);
+      },
+      issuerKeys: w.keys.issuerKeys,
+    };
+    const first = new AbortController();
+    const check = (signal?: AbortSignal) =>
+      verifyCredentialStatus(credentialWithStatus(), {
+        ...w.options,
+        keys,
+        cache,
+        ...(signal === undefined ? {} : { signal }),
+      });
+    const aborted = check(first.signal);
+    const other = check();
+    const gaveUp = expect(aborted).rejects.toThrow("the first caller stopped");
+    await vi.waitFor(() => expect(asked).toHaveLength(1));
+    first.abort(new Error("the first caller stopped"));
+    await gaveUp;
+    open();
+    expect(await other).toMatchObject({ outcome: "passed" });
+    expect(asked).toStrictEqual([undefined]);
+    expect(w.requests.filter((url) => url === LIST_URL)).toHaveLength(1);
+  });
+
+  it("ends the wait for a cache of the host when the signal aborts, whatever the cache does", async () => {
+    const w = world({ [LIST_URL]: await listJws(listWith()) });
+    const { hang, seen } = hangingPort();
+    await abortsWhileWaiting(
+      (signal) => verifyCredentialStatus(credentialWithStatus(), { ...w.options, cache: { get: hang }, signal }),
+      seen,
+    );
   });
 
   it("holds at most the entries it is given, and is refused options of the wrong type", () => {

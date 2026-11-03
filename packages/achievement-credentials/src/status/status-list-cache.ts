@@ -3,26 +3,29 @@ import { checkPositiveInteger, checkRecord, isRecord } from "@interopkit/core/ch
 
 /**
  * Status list credentials, and the revocation lists of the 1EdTech Revocation List Status Method, kept across verifications by
- * address.
+ * address and by the trust of the call that verified them.
  *
  * @remarks
- * A list is kept as the call that loaded it verified it: share one cache among calls with the same `keys`, `allowUnboundKeys`,
- * `legacyProofs` and `suites`.
+ * A list is kept as the call that loaded it verified it, so `verifyCredentialStatus` keys it by its address and by what decides
+ * whether its proof counts: the `keys`, `contexts` and `suites` of the call, which it tells apart by identity, and its
+ * `allowUnboundKeys`, `legacyProofs`, `algorithms` and `clockSkewSeconds`. Calls of different policies may share one cache and
+ * never share a list; calls that pass the same objects share their lists.
  */
 export interface StatusListCache {
   /**
-   * Returns the document at an address: the kept one while it is good, else the result of `load`.
+   * Returns the document of a key: the kept one while it is good, else the result of `load`.
    *
    * @remarks
    * A load is shared work: callers that ask while it runs share one, which runs to its own timeout and receives no caller's
    * `signal`. An entry expires at its `ttl` (300,000 ms when it gives none) or at its `validUntil`, whichever comes first, and
    * a failed load is not kept.
    *
-   * @param url - The address of the status list credential or of the revocation list.
+   * @param key - What the document is kept by: the address of the status list credential or of the revocation list, with the
+   * trust of the call that verifies it.
    * @param load - Fetches the document and checks it.
    * @param options - The `signal` that ends the caller's wait.
    */
-  get(url: string, load: (options?: CallOptions) => Promise<object>, options?: CallOptions): Promise<object>;
+  get(key: string, load: () => Promise<object>, options?: CallOptions): Promise<object>;
 }
 
 /** The options of `createStatusListCache`. */
@@ -73,6 +76,6 @@ export function createStatusListCache(options: StatusListCacheOptions): StatusLi
     },
   });
   return {
-    get: (url, load, callOptions) => kept.get(url, () => load(), callOptions),
+    get: (key, load, callOptions) => kept.get(key, load, callOptions),
   };
 }
