@@ -6,6 +6,7 @@ import { methodNotAllowed, refusal, serverError } from "../answers.js";
 import { openingKeys } from "../config.js";
 import type { PlatformSettings } from "../options.js";
 import type { RegistrationStore } from "../ports.js";
+import { bearerToken } from "../services/access.js";
 import { offeredScopes } from "../services/routes.js";
 import { openRegistrationToken } from "../tokens.js";
 import {
@@ -16,7 +17,6 @@ import {
   storedRegistration,
 } from "./tool-configuration.js";
 
-const BEARER = /^Bearer ([A-Za-z0-9._~+/-]+=*)$/iu;
 const LABEL = "RegistrationStore.register";
 
 /** The answer to a registration request whose token is missing, not this platform's, expired or used (RFC 6750 section 3.1). */
@@ -40,7 +40,7 @@ async function spendToken(request: HttpRequest, settings: PlatformSettings): Pro
       ? undefined
       : invalidToken("The registration needs the registration token of its initiation.");
   }
-  const sealed = BEARER.exec(header)?.[1];
+  const sealed = bearerToken(header);
   const token = sealed === undefined ? undefined : await openRegistrationToken(sealed, openingKeys(settings.config));
   if (token === undefined) return invalidToken("The registration token is not one that this platform issued.");
   if (toSeconds(readClock(settings.clock)) >= token.exp) return invalidToken("The registration token has expired.");

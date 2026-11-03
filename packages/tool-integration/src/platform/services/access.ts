@@ -8,7 +8,13 @@ import type { ServiceCaller } from "../ports.js";
 import { readToolRegistration } from "../registration.js";
 import { openAccess } from "../tokens.js";
 
+/** The credentials of `Authorization: Bearer` (RFC 6750 section 2.1), the scheme in any case. */
 const BEARER = /^Bearer ([A-Za-z0-9._~+/-]+=*)$/iu;
+
+/** Returns the token of an `Authorization` header of the bearer scheme, or `undefined` when the header is not one. */
+export function bearerToken(header: string): string | undefined {
+  return BEARER.exec(header)?.[1];
+}
 
 /** Builds the answer of a service to a request whose token is missing, unusable or too narrow (RFC 6750 section 3). */
 function refusal(status: 401 | 403, challenge: string, error: string, description: string): HttpResponse {
@@ -38,7 +44,7 @@ export async function authorizeService(
   if (header === undefined) {
     return refusal(401, "Bearer", "invalid_token", "The request needs an access token of the platform.");
   }
-  const token = BEARER.exec(header)?.[1];
+  const token = bearerToken(header);
   const access = token === undefined ? undefined : await openAccess(token, openingKeys(settings.config));
   if (access === undefined) return invalidToken("The access token is not one that this platform issued.");
   if (toSeconds(readClock(settings.clock)) >= access.exp) return invalidToken("The access token has expired.");
