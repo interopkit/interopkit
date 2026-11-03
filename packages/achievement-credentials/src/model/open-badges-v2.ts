@@ -215,7 +215,10 @@ export interface RevokedAssertionV2 {
   readonly uid?: string;
   /** The types; `Assertion` when absent. */
   readonly type?: readonly string[];
-  /** Whether the assertion is revoked; true when absent. */
+  /**
+   * Whether the assertion is revoked, as the entry says. Open Badges 2.0 does not define it for an entry: a verifier counts every
+   * entry that names an assertion as its revocation, as the validator of 1EdTech does.
+   */
   readonly revoked?: boolean;
   /** The published reason for revocation. */
   readonly revocationReason?: string;
