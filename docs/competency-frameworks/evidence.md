@@ -171,10 +171,12 @@ process only grows; the test reports the rise.
 | `validatePackage`            | The same                                                                    | 2–4 MiB      | 64 MiB  |
 | `readEntity`                 | The associations of an item, a million wrong ones                           | 1–2 MiB      | 64 MiB  |
 | `package` of a client        | The largest framework of the bank that the 16 MiB of an answer hold, 15,000 items | 76–92 MiB on Node.js 22, 163–185 on 24 | 256 MiB |
+| `package` of a client        | Extensions of 499,000 distinct keys, the most that 2,000,000 tokens hold, in 16 MiB | 233–275 MiB  | 512 MiB |
 | `handleCaseRequest`          | A request for the list with a `fields` list of 10 MiB                        | 16–20 MiB    | 64 MiB  |
 
-A `fields` list had no limit, and one of 10 MiB raised the peak by 629 MiB; it holds 2,048 characters, as a filter does, and the
-rest is the URL that the host gave.
+Without its limit of 2,048 characters, as a filter has, a `fields` list of 10 MiB raises the peak by 629 MiB; the rest is the URL
+that the host gave. An object of distinct keys is the costliest answer for its tokens, about 15 times its bytes: lower `maxBytes`
+and `maxTokens` for a provider that you do not trust.
 
 ## Runtimes
 

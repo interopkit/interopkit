@@ -3,7 +3,7 @@ import { handleCaseRequest } from "../src/provider/index.js";
 import { DISCOVERY, memoryStore } from "./provider-fixture.js";
 
 const MIB = 1024 * 1024;
-/** The bytes that the request may raise the peak of the process by. With no limit on the fields list, it took 629 MiB. */
+/** The bytes that the request may raise the peak of the process by. Without the limit of the fields list, it takes 629 MiB. */
 const BUDGET = 64 * MIB;
 
 /** The peak resident memory of the process so far, in bytes. */

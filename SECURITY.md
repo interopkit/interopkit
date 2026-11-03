@@ -157,7 +157,7 @@ through the `fetch` of the host and keeps nothing between calls. A framework car
 | An identifier or a filter that changes a request            | An identifier is percent-encoded into one path segment and `.` and `..` are refused; the filter, the sort and the fields are checked and encoded     |
 | An address in a `Link` header that leads elsewhere          | The client reads `rel="next"` as a signal and builds every request from `baseUrl`; it never requests an address that a provider gives                |
 | An answer that is not CASE, or that has a hostile shape     | Every answer is read with `readEntity` or `readPackage` and refused with a `DataError` that names the provider; a status body is read, never trusted |
-| An answer built to exhaust memory                           | The answer is read up to `maxBytes` (16 MiB) and its tokens counted against `maxTokens` (2,000,000) before it is parsed; the readers' checks are linear and stop at `maxFindings`. Measured with the defaults: a framework of 16 MiB peaks at 160 MB, and the worst hostile answer found, 14 MB of `extensions` with 480,000 distinct keys, at 310 MB. Lower both limits for a provider you do not trust |
+| An answer built to exhaust memory                           | The answer is read up to `maxBytes` (16 MiB) and its tokens counted against `maxTokens` (2,000,000) before it is parsed; the readers' checks are linear and stop at `maxFindings`. Measured with the defaults: a framework of 16 MiB raises the peak by 76 to 185 MiB, and the worst answer, 16 MiB of `extensions` with 499,000 distinct keys, by 233 to 275 MiB. Lower both limits for a provider you do not trust |
 
 ### The provider
 
