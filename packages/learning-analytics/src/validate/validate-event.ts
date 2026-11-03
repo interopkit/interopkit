@@ -25,7 +25,7 @@ import { readValidateOptions, type ValidateOptions } from "./options.js";
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2#profiles-0 | Caliper Analytics 1.2, Profiles}
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2/cert | Caliper Analytics 1.2 Conformance and Certification Guide}
  */
-export function validateEvent(value: unknown, options?: ValidateOptions): CaliperFinding[] {
+export function validateEvent(value: unknown, options?: ValidateOptions): readonly CaliperFinding[] {
   const { version, maxFindings } = readValidateOptions(options);
   const sink = findingSink(maxFindings);
   inspectEvent(value, sink, version);

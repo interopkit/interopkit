@@ -30,7 +30,7 @@ function documents(prefix: string, negative = false): Document[] {
 }
 
 const isEvent = (value: Record<string, unknown>): boolean => EVENT_TYPES.some((type) => type === value.type);
-const judge = (value: Record<string, unknown>): CaliperFinding[] =>
+const judge = (value: Record<string, unknown>): readonly CaliperFinding[] =>
   isEvent(value) ? validateEvent(value) : validateEntity(value);
 const errorsOf = (findings: readonly CaliperFinding[]) => findings.filter(({ severity }) => severity === "error");
 

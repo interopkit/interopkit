@@ -18,7 +18,7 @@ import { readValidateOptions, type ValidateOptions } from "./options.js";
  * @throws `DataError` when the options are not an object with a `maxFindings` that is a positive integer.
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2#profiles-0 | Caliper Analytics 1.2, Profiles}
  */
-export function validateEntity(value: unknown, options?: ValidateOptions): CaliperFinding[] {
+export function validateEntity(value: unknown, options?: ValidateOptions): readonly CaliperFinding[] {
   const { version, maxFindings } = readValidateOptions(options);
   const sink = findingSink(maxFindings);
   inspectEntity(value, sink, version);
