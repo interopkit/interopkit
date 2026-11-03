@@ -1708,6 +1708,33 @@
       }
     },
     {
+      "includes": ["packages/course-launch/src/lms/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/package",
+                      "**/package/**",
+                      "**/au",
+                      "**/au/**",
+                      "@zip.js/zip.js",
+                      "@zip.js/zip.js/**"
+                    ],
+                    "message": "lms/ builds on model/, structure/, rules/ and @interopkit/learning-records: it takes a CourseStructure, so an LMS never loads the ZIP code, and it never imports the runtime of a unit."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["packages/course-launch/src/package/**"],
       "linter": {
         "rules": {
@@ -1786,6 +1813,7 @@
         "scripts/xapi-rules.ts",
         "scripts/xapi-v1-rules.ts",
         "packages/course-launch/src/rules/launch-documents.ts",
+        "packages/course-launch/src/lms/prepare-launch.ts",
         "packages/course-launch/test/**",
         "scripts/cmi5-rules.ts",
         "scripts/test/schema-arbitrary.test.ts",

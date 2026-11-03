@@ -35,6 +35,14 @@ export interface Cmi5Rule {
   readonly fixture: (session: Session) => Session;
   /** Every finding of `validateSessionStatements`, in order. Empty when it accepts the session. */
   readonly session: readonly ExpectedFinding[];
+  /**
+   * The indexes of the statements that the LMS refuses when the unit sends them one request each in the order of their
+   * timestamps. A statement that the LMS refuses changes nothing of the session, while `validateSessionStatements` counts every
+   * statement, so the two differ where a refused statement opens or closes the session.
+   *
+   * @defaultValue the indexes of the statements with an error in `session`
+   */
+  readonly lms?: readonly number[];
 }
 
 const ACTIVITY = "https://lms.example.org/courses/c1/au/1";
@@ -241,6 +249,8 @@ export const REFUSALS: readonly Cmi5Rule[] = [
       ...[0, 1, 2, 3, 4].map((index) => set(index, "actor", { mbox: "mailto:learner@example.org" })),
     ),
     session: [0, 2, 3, 4].map((index) => error(`[${index}].actor`, "actor-account")),
+    // The LMS refuses the initialized statement, so the allowed statement after it comes before any initialized statement.
+    lms: [0, 1, 2, 3, 4],
   },
   {
     source: "9.6.1",
@@ -516,6 +526,8 @@ export const REFUSALS: readonly Cmi5Rule[] = [
     text: "Other statements MUST NOT include the moveOn category activity.",
     fixture: set(0, "context.contextActivities.category", [{ id: CMI5 }, { id: MOVE_ON }]),
     session: [error("[0].context.contextActivities.category", "move-on-category")],
+    // The LMS refuses the initialized statement, so every statement after it comes before any initialized statement.
+    lms: [0, 1, 2, 3, 4],
   },
   {
     source: "9.5.5.1",
@@ -537,6 +549,8 @@ export const REFUSALS: readonly Cmi5Rule[] = [
     text: "The AU MUST retrieve the Learner Preferences document from the Agent Profile on startup.",
     fixture: facts((current) => ({ ...current, preferencesRead: false })),
     session: [error("[0].verb.id", "preferences-unread")],
+    // The LMS refuses the initialized statement, so every statement after it comes before any initialized statement.
+    lms: [0, 1, 2, 3, 4],
   },
 ];
 

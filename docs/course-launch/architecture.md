@@ -1,13 +1,14 @@
 # Architecture of course-launch
 
-`@interopkit/course-launch` implements cmi5 for the publisher of a course and for the LMS that imports it. `model` holds the
+`@interopkit/course-launch` implements cmi5 for the publisher of a course and for the LMS that imports and launches it. `model` holds the
 vocabularies of the specification and the types of the course structure. `structure` reads, validates and writes `cmi5.xml`
 with a parser that tracks namespaces, and enforces the schema of the specification itself. `package` reads and writes the
 course package, a ZIP archive or the XML alone, through zip.js. `rules` reads what a launch gives an assignable unit and judges the
 statements of a session, over the model and the rules of xAPI of `@interopkit/learning-records`. `model` imports no other module,
 `structure` imports `model` and `@interopkit/core` alone, `package` builds on both, and `rules` imports `model`,
 `@interopkit/learning-records` and `@interopkit/core`; `structure` and `rules` never import each other, and `package` imports
-no rule. Biome enforces the layers.
+no rule. `lms` builds on `model`, `structure` and `rules`, the client and the LRS of `@interopkit/learning-records`, and never
+imports `package`, so a host that reads a structure from elsewhere never loads the ZIP code. Biome enforces the layers.
 
 ```mermaid
 flowchart BT
@@ -33,6 +34,11 @@ flowchart BT
   root --> model
   root --> structure
   root --> rules
+  lms["lms<br/>importCourse, createRegistration, prepareLaunch,<br/>handleFetchRequest, extendLrsOptions, ..."]
+  lms --> model
+  lms --> structure
+  lms --> rules
+  lms --> records
 ```
 
 | Module      | Files                                                                    | Holds                                                                                                                       |
@@ -50,6 +56,12 @@ flowchart BT
 |             | `judge-statement.ts`                                                     | The judgement of one statement against its session, which `internal.ts` shares with the rest of the package                 |
 |             | `validate-session-statements.ts`                                         | The statements of one session, judged in the order of their timestamps                                                      |
 |             | `read-launch-url.ts`, `launch-documents.ts`, `xapi-parts.ts`             | The readers of the launch URL, the launch data and the preferences, and the rules of xAPI for an Actor and a Context        |
+| `lms`       | `records.ts`, `options.ts`                                               | The `Cmi5Store` port and its records; the options with their defaults, and the retries after a conflict                     |
+|             | `import-course.ts`, `create-registration.ts`, `prepare-launch.ts`        | The import with the ids of the LMS, the registration, and the launch with its launch data and launched statement            |
+|             | `handle-fetch-request.ts`, `secrets.ts`                                  | The fetch URL of one use, and the secrets of fetch codes and tokens with their hashes                                       |
+|             | `extend-lrs-options.ts`, `au-access.ts`, `accept-statements.ts`, `after-store.ts` | The LRS of cmi5: what a token may do, the judgement and reservation of statements, and what the store holding them does |
+|             | `progress.ts`, `satisfy.ts`, `lms-statements.ts`                         | Satisfaction by `moveOn`, and the launched, abandoned, waived and satisfied statements of the LMS                           |
+|             | `abandon-session.ts`, `waive-au.ts`                                      | Abandoned sessions and waivers                                                                                              |
 
 ## What the package owns
 
@@ -59,6 +71,7 @@ flowchart BT
 | Course packages in ZIP of 32 and 64 bits and in XML                                      | The files of a package once it is read: extracting them, hosting them, serving them                |
 | The vocabularies of cmi5                                                                 | An editor of courses, storage, servers, accounts                                                   |
 | The kinds of statements of cmi5 and the rules of a session                               | What a statement means for learning, and the windows and pages of a launch                         |
+| The LMS role: registrations, launches, the fetch URL, tokens, the rules of cmi5 on an LRS, satisfaction, abandoned sessions, waivers | The storage of records, servers, content hosting, CORS and TLS, accounts |
 
 ## Why the schema is enforced by hand
 

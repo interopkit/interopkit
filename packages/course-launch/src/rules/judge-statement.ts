@@ -69,7 +69,7 @@ function sameJson(left: unknown, right: unknown): boolean {
 }
 
 /** Tells whether two Actors are the same person by the identifier of xAPI that they carry. */
-function sameActor(left: Actor, right: Actor): boolean {
+export function sameActor(left: Actor, right: Actor): boolean {
   return (
     (left.objectType ?? "Agent") === (right.objectType ?? "Agent") &&
     left.mbox === right.mbox &&

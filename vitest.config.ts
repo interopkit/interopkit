@@ -4,9 +4,12 @@ import { defineConfig, type TestProjectInlineConfiguration } from "vitest/config
 
 /**
  * Resolves the packages of this repository and their subpaths to their sources, so that a test runs the code and not a
- * build. A subpath is a folder with an `index.ts`, except `checks` of `@interopkit/core`, which is a file.
+ * build. A subpath is a folder with an `index.ts`, except `checks` of `@interopkit/core`, which is a file, and a path in an
+ * example, which is a file of that example.
  */
 const SOURCES = [
+  // An example that builds on another reads its files by their path in that example's package.
+  { find: /^@interopkit\/example-([^/]+)\/(.+)$/, replacement: resolve(import.meta.dirname, "examples/$1/$2") },
   { find: /^@interopkit\/core\/checks$/, replacement: resolve(import.meta.dirname, "packages/core/src/checks.ts") },
   { find: /^@interopkit\/([^/]+)$/, replacement: resolve(import.meta.dirname, "packages/$1/src/index.ts") },
   { find: /^@interopkit\/([^/]+)\/(.+)$/, replacement: resolve(import.meta.dirname, "packages/$1/src/$2/index.ts") },
@@ -398,6 +401,16 @@ export default defineConfig({
         test: {
           name: "example-learning-records",
           include: ["examples/learning-records/test/**/*.test.ts"],
+          exclude: ["**/*.corpus.test.ts"],
+          testTimeout: HANG_LIMIT,
+        },
+      },
+      {
+        // The LMS of cmi5 over the campus LRS, and the units that it launches: the scenario and the tests run against the sources.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "example-course-launch",
+          include: ["examples/course-launch/test/**/*.test.ts"],
           exclude: ["**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
         },

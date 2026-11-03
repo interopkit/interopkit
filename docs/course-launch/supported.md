@@ -32,6 +32,12 @@ flowchart LR
 | 14.1 ZIP packages                                | `cmi5.xml` at the root; a relative URL names a file of the package; a corrupt or ambiguous archive refused                 |
 | 14.2 XML packages                                | Every url fully qualified                                                                                                  |
 | 6.1 Creating and exporting structures (SHOULD)   | `writeCourseStructure`, `writeCoursePackage`                                                                               |
+| 4.2, 6.0 The LMS is an LRS                       | `extendLrsOptions` over `handleLrsRequest` of `@interopkit/learning-records`, with an account of the host that reads every learner |
+| 6.1 Import                                       | `importCourse`: the ids of the LMS for the course, its blocks and units, the same in every registration                    |
+| 8.1, 8.2 Launch and fetch URL                    | `prepareLaunch`, `handleFetchRequest`: a fetch code of one use, a token for the session, error codes 1 to 3                |
+| 9.3 The verbs of the LMS                         | launched, abandoned (`abandonSession` and on a new launch), waived (`waiveAu`), satisfied for blocks and the course        |
+| 9.6.1.1, 9.3.9 Satisfaction                      | By `moveOn` at registration and when the store holds a unit's statement; `progressOf`                                      |
+| 10.0, 11.0 The documents of a launch             | `LMS.LaunchData` before each launch and read-only to units; the preferences read before initialized, written only when valid |
 
 ## Not included
 
@@ -40,4 +46,6 @@ flowchart LR
 | The schema of an extension (13.1.5)                                  | A package does not say where it is; the schema of cmi5 processes extensions `lax`            |
 | A relative URL for every packaged file (14.1, a SHOULD)              | Undecidable: an absolute URL may name anything, so no reader can tell whether it is packaged |
 | Other environments of a launch (8.3)                                 | The specification defines none                                                               |
+| Windows, frames, redirects, hosting the files of a package (8.1)    | The host's page and server; `prepareLaunch` returns the window a unit asks for              |
+| Voiding conflicting statements (6.3, a SHOULD)                       | Every statement that conflicts is refused on arrival, so none is stored                      |
 | xAPI itself: Statements, the LRS and its client                      | `@interopkit/learning-records`                                                               |

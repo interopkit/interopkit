@@ -50,7 +50,7 @@ function readFacts(value: unknown): SessionFacts {
 }
 
 /** The order in which a session judges its statements: by time, and a statement without one where it stands. */
-function sessionOrder(statements: readonly Statement[]): readonly number[] {
+export function sessionOrder(statements: readonly Statement[]): readonly number[] {
   let previous = Number.NEGATIVE_INFINITY;
   const timed = statements.map((statement, index) => {
     previous = timeOf(statement.timestamp) ?? previous;

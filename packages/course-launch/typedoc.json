@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["src/index.ts", "src/package/index.ts"],
+  "entryPoints": ["src/index.ts", "src/package/index.ts", "src/lms/index.ts"],
   "tsconfig": "tsconfig.build.json",
   "sourceLinkTemplate": "https://github.com/interopkit/interopkit/blob/{gitRevision}/packages/course-launch/{path}#L{line}",
   "validation": {

@@ -29,6 +29,10 @@
     "./package": {
       "types": "./dist/package/index.d.ts",
       "default": "./dist/package/index.js"
+    },
+    "./lms": {
+      "types": "./dist/lms/index.d.ts",
+      "default": "./dist/lms/index.js"
     }
   },
   "files": [
@@ -56,6 +60,7 @@
     "@interopkit/learning-records": "workspace:^",
     "@zip.js/zip.js": "2.24.0",
     "saxes": "6.0.0",
+    "uuid": "14.0.3",
     "valibot": "1.5.0"
   }
 }

@@ -10,7 +10,10 @@
       "@interopkit/core/checks": ["../core/src/checks.ts"],
       "@interopkit/core/http": ["../core/src/http/index.ts"],
       "@interopkit/learning-records": ["../learning-records/src/index.ts"],
+      "@interopkit/learning-records/client": ["../learning-records/src/client/index.ts"],
+      "@interopkit/learning-records/store": ["../learning-records/src/store/index.ts"],
       "@interopkit/course-launch": ["./src/index.ts"],
+      "@interopkit/course-launch/lms": ["./src/lms/index.ts"],
       "@interopkit/course-launch/package": ["./src/package/index.ts"]
     }
   },

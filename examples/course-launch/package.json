@@ -1,0 +1,17 @@
+{
+  "name": "@interopkit/example-course-launch",
+  "private": true,
+  "type": "module",
+  "description": "An LMS of cmi5 over the campus LRS in memory: it imports a course, registers learners, launches assignable units and judges their statements, and a unit plays a session against it.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node scenario.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@interopkit/core": "workspace:^",
+    "@interopkit/course-launch": "workspace:^",
+    "@interopkit/example-learning-records": "workspace:^",
+    "@interopkit/learning-records": "workspace:^"
+  }
+}

@@ -52,14 +52,14 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["4.2.0.0-1", "4.2.0.0-1 (d)", "6.0.0.0-1", "6.0.0.0-1 (d)"],
     asks: "The LMS is an LRS and passes ADL's LRS suite",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-access.test.ts"] },
   },
   {
     section: "4.2",
     ids: ["4.2.0.0-2"],
     asks: "An account that reads all data of another user",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-access.test.ts"] },
   },
   {
     section: "4.4",
@@ -92,7 +92,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["6.1.0.0-1"],
     asks: "Import the structure and the package",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-inputs.test.ts", "package.test.ts"] },
   },
   {
     section: "6.1",
@@ -120,14 +120,14 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["6.3.0.0-1"],
     asks: "No credential lets an AU void",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: ["rules.test.ts"] },
+    met: { state: "has", tests: ["rules.test.ts", "lms-access.test.ts"] },
   },
   {
     section: "6.3",
     ids: ["6.3.0.0-2"],
     asks: "Void conflicting statements that were not rejected",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-rules.test.ts"] },
   },
   {
     section: "7.1, 9.3",
@@ -172,7 +172,12 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["8.1.0.0-1", "8.1.0.0-2", "8.1.0.0-3"],
     asks: "The window follows launchMethod",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: {
+      state: "in-part",
+      tests: ["lms-flow.test.ts"],
+      reason:
+        "prepareLaunch returns the window that launchMethod asks for; opening a window, redirecting or framing is the page of the host",
+    },
   },
   {
     section: "8.1",
@@ -190,7 +195,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ],
     asks: "A launch URL with the five parameters URL-encoded, the AU's own query kept",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts"] },
   },
   {
     section: "8.1",
@@ -218,7 +223,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["8.1.2.0-2", "8.1.2.0-2 (d)", "8.2.1.0-6", "8.2.1.0-6 (d)", "8.1.2.0-5 (d)"],
     asks: "A token only within its session; refused before the fetch, after terminated or abandoned, and when absent",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-access.test.ts", "lms-flow.test.ts"] },
   },
   {
     section: "8.1, 8.2",
@@ -232,7 +237,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["8.2.1.0-2 (d)", "8.2.1.0-3", "8.2.1.0-4", "8.2.2.0-1", "8.2.2.0-2", "8.2.2.0-3"],
     asks: "The fetch URL answers POST with 200 and JSON holding auth-token",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-fetch.test.ts"] },
   },
   {
     section: "8.2",
@@ -246,7 +251,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["8.1.3.0-3 (d)", "11.0.0.0-1 (d)", "9.2.0.0-1"],
     asks: "The actor is the LMS's, and requests use it",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: ["rules.test.ts"] },
+    met: { state: "has", tests: ["rules.test.ts", "lms-access.test.ts"] },
   },
   {
     section: "8.1, 11",
@@ -267,7 +272,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["8.1.5.0-1", "8.1.5.0-3", "8.1.5.0-4"],
     asks: "A unique activityId, not the publisher id, the same in a registration",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts", "lms-inputs.test.ts"] },
   },
   {
     section: "8.1, 9.4",
@@ -348,7 +353,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["9.3.0.0-9"],
     asks: "Record and report every statement not rejected",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts", "lms-access.test.ts"] },
   },
   {
     section: "9.3, 9.5",
@@ -364,7 +369,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ],
     asks: "Abandoned",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts", "lms-failures.test.ts"] },
   },
   {
     section: "9.3, 9.5, 9.6",
@@ -384,28 +389,33 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ],
     asks: "Waived",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts", "lms-contract.test.ts"] },
   },
   {
     section: "9.3",
     ids: ["9.3.1.0-1", "9.3.1.0-2", "9.3.1.0-2 (d)"],
     asks: "Launched before the launch, once per session",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts", "lms-failures.test.ts"] },
   },
   {
     section: "9.3",
     ids: ["9.3.2.0-1", "9.3.2.0-1 (d)"],
     asks: "Initialized within a reasonable time of launched",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: {
+      state: "in-part",
+      tests: ["lms-flow.test.ts"],
+      reason:
+        "cmi5 sets no period: a session that never initializes is abandoned at the next launch or by abandonSession, and its token ends at maxSessionSeconds",
+    },
   },
   {
     section: "9.3, 9.6",
     ids: ["9.3.3.0-3", "9.3.4.0-4", "9.6.1.1-3"],
     asks: "Satisfaction by moveOn, evaluated at registration too",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts", "lms-contract.test.ts"] },
   },
   {
     section: "9.3, 9.5, 10.2",
@@ -419,7 +429,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["9.3.8.0-3", "9.3.8.0-4"],
     asks: "Terminated ends the session; after a period, refuse",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts"] },
   },
   {
     section: "9.3, 9.4",
@@ -436,7 +446,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ],
     asks: "Satisfied for blocks and the course",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts", "lms-failures.test.ts"] },
   },
   {
     section: "9.5",
@@ -508,7 +518,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["9.6.1.1-2"],
     asks: "The LMS makes the registration",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts", "lms-failures.test.ts"] },
   },
   {
     section: "9.6",
@@ -529,7 +539,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["9.6.2.3-1", "9.6.2.3-2", "10.2.1.0-3"],
     asks: "The publisher id activity in grouping",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts"] },
   },
   {
     section: "9.6, 10.2",
@@ -571,7 +581,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ],
     asks: "LMS.LaunchData before the launch",
     roles: "LMS",
-    met: { state: "planned", unit: "lms", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts"] },
   },
   {
     section: "10.2",

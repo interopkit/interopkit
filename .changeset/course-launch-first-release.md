@@ -26,3 +26,14 @@ learner. `classifyStatement` tells a statement that cmi5 defines from one it all
 place between initialized and terminated, and for a statement that cmi5 defines its verb, object, result, score, mastery score
 and launch mode. The examples of the specification and the course packages of CATAPULT are read, and the 305 requirements of
 CATAPULT are mapped to the package.
+`@interopkit/course-launch/lms` is the LMS role. `importCourse` checks a course structure and makes the ids of the LMS for the
+course, its blocks and its assignable units, the same in every registration. `createRegistration` registers a learner and
+satisfies at once every unit whose `moveOn` is `NotApplicable`. `prepareLaunch` abandons the unit's open session, writes
+`LMS.LaunchData` and the launched statement, and returns the launch URL with a fetch code of one use and the window that
+`launchMethod` asks for. `handleFetchRequest` answers the fetch URL with the token of the session once, and with error codes 1
+to 3. `extendLrsOptions` makes the host's LRS of `@interopkit/learning-records` the LRS of cmi5: a token is refused with 401
+before the fetch, after terminated or abandoned and after `maxSessionSeconds`, a unit reads and writes only what is its own and
+never changes `LMS.LaunchData`, its statements are judged by the rules of the session and refused with 403, and once the store
+holds them the LMS writes the satisfied statements of the blocks and the course that they make due. `abandonSession` and
+`waiveAu` write the abandoned and waived statements, and `progressOf` tells what a registration holds. The host keeps the
+records in its `Cmi5Store`, whose puts compare a revision.
