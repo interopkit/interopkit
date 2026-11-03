@@ -102,7 +102,8 @@ each compressed and dated midnight of 1980-01-01, the first date that ZIP holds,
 the archive turns to ZIP64 where its size needs it. Each path is names below the root of the package, without `.`, `..`, `\`, `:`,
 control characters or empty segments; no path is one file with another or with `cmi5.xml` to an extractor, the reader's test of
 two names; and each relative URL of the structure names
-one of them. The archive is read again by `readCoursePackage` with its default limits before it is returned.
+one of them. A package of more than the 100,000 entries that the reader takes by default is refused before anything is written,
+and the archive is read again by `readCoursePackage` with its default limits before it is returned.
 
 ## Errors
 

@@ -20,6 +20,8 @@ describe("archives of tens of thousands of entries", () => {
     const structure = readCourseStructure(withUrl("index.html"), { packaged: true });
     const many = new Map<string, Uint8Array>([["index.html", new TextEncoder().encode("x")]]);
     for (let index = 0; index < 100_000; index += 1) many.set(`f/${index}`, new Uint8Array());
-    await expect(writeCoursePackage(structure, many)).rejects.toThrow("The ZIP package has more than 100000 entries");
+    await expect(writeCoursePackage(structure, many)).rejects.toThrow(
+      "The package has 100001 files and cmi5.xml, more than the 100000 entries that readCoursePackage takes by default.",
+    );
   });
 });

@@ -13,7 +13,7 @@ import {
 import { readArchive } from "./archive.js";
 
 /** The most entries of a ZIP package, directories included. */
-const DEFAULT_MAX_ENTRIES = 100_000;
+export const DEFAULT_MAX_ENTRIES = 100_000;
 
 /** The most bytes of the central directory of a ZIP package: room for the names of the most entries, and much more. */
 const DEFAULT_MAX_DIRECTORY_BYTES = 67_108_864;

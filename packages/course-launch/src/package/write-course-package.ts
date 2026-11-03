@@ -6,7 +6,7 @@ import type { AssignableUnit, Block, CourseStructure } from "../model/index.js";
 import { writeCourseStructure } from "../structure/index.js";
 import { packageFileOf } from "../structure/internal.js";
 import { foldedName, STRUCTURE_FILE } from "./archive.js";
-import { readCoursePackage } from "./read-course-package.js";
+import { DEFAULT_MAX_ENTRIES, readCoursePackage } from "./read-course-package.js";
 
 const optionsSchema = strictRecord({ signal: v.optional(abortSignalSchema) });
 
@@ -82,8 +82,9 @@ function* urlsOf(members: readonly (AssignableUnit | Block)[], path: string): Ge
  * @remarks
  * The structure is written by `writeCourseStructure`, and each assignable unit with a relative URL must name one of the files
  * (14.1). The files keep the order of the map, after `cmi5.xml`; each entry is compressed, carries the time 1980-01-01 so that
- * the same course writes the same bytes, and the archive turns to ZIP64 where its size needs it. The archive is read again by
- * the rules of `readCoursePackage` with its default limits: what the writer returns, the reader takes.
+ * the same course writes the same bytes, and the archive turns to ZIP64 where its size needs it. More files than the 100,000
+ * entries that the reader takes by default are refused before anything is written, and the archive is read again by the rules
+ * of `readCoursePackage` with its default limits: what the writer returns, the reader takes.
  *
  * @param structure - The course structure.
  * @param files - The files of the course by their path below the root of the package, such as `media/intro.mp4`.
@@ -101,6 +102,12 @@ export async function writeCoursePackage(
 ): Promise<Blob> {
   const xml = writeCourseStructure(structure);
   const checked = readFiles(files);
+  // The reader takes this many entries by default, and the files and cmi5.xml are the entries of the archive.
+  if (checked.size + 1 > DEFAULT_MAX_ENTRIES) {
+    throw new DataError(
+      `The package has ${checked.size} files and cmi5.xml, more than the ${DEFAULT_MAX_ENTRIES} entries that readCoursePackage takes by default.`,
+    );
+  }
   const { signal } = parseWith(optionsSchema, options === undefined ? {} : options, "The options object");
   for (const [url, path] of urlsOf(structure.children, "children")) {
     const file = packageFileOf(url);
