@@ -1434,6 +1434,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-analytics/test/send.test.ts",
   },
   {
+    rule: "An IRI that checkIri passes is one that the readers take as the id of an entity.",
+    file: "packages/learning-analytics/src/build/iri.ts",
+    find: "if (!isAbsoluteUri(value)) {",
+    replace: "if (!URL.canParse(value)) {",
+    test: "packages/learning-analytics/test/build.test.ts",
+  },
+  {
     rule: "The audience of a registration is the audience of the client assertion.",
     file: "packages/tool-integration/src/tool/token.ts",
     find: "...(audience === undefined ? {} : { audience })",

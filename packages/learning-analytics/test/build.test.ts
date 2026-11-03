@@ -12,6 +12,7 @@ import {
   checkIri,
   type EventInput,
   mintUrn,
+  readEntity,
 } from "../src/index.js";
 import { ACTOR, ASSESSMENT, EVENT_TIME, fromJson, IDS, SESSION, startedInput, urnOf } from "./fixture.js";
 
@@ -161,6 +162,50 @@ describe("checkIri", () => {
     }
     expect(() => checkIri("item-1", "The actor")).toThrow('The actor must be an absolute IRI, found "item-1".');
     expect(() => checkIri(5, "The actor")).toThrow("The actor must be a string, found 5.");
+  });
+
+  it("refuses white space that URL would remove or encode, as the readers refuse it in an entity", () => {
+    for (const bad of [
+      "https://exam.example/a b",
+      "https://exam.\nexample/x",
+      "https://exam.example/x\t",
+      " https://exam.example",
+    ]) {
+      expect(() => checkIri(bad, "The actor"), JSON.stringify(bad)).toThrow(DataError);
+    }
+  });
+
+  it("accepts what the readers take as the IRI of an entity, and nothing else", () => {
+    const iriLike = fc.oneof(
+      fc.webUrl({ withFragments: true, withQueryParameters: true }),
+      fc
+        .tuple(fc.webUrl(), fc.constantFrom(" ", "\t", "\n", "\r"), fc.string())
+        .map(([url, space, rest]) => `${url}${space}${rest}`),
+      fc.string(),
+    );
+    fc.assert(
+      fc.property(iriLike, (value) => {
+        fc.pre(!value.startsWith("_:"));
+        const checked = (() => {
+          try {
+            checkIri(value, "The IRI");
+            return true;
+          } catch {
+            return false;
+          }
+        })();
+        const read = (() => {
+          try {
+            readEntity({ "@context": CALIPER_CONTEXT, id: value, type: "Person" });
+            return true;
+          } catch {
+            return false;
+          }
+        })();
+        expect(checked, JSON.stringify(value)).toBe(read);
+      }),
+      { numRuns: 300, seed: 20_261_103 },
+    );
   });
 });
 

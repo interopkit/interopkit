@@ -103,7 +103,8 @@ milliseconds. A fraction of a millisecond is cut. `label` names the time in the 
 | Anything else, including `NaN` and a string | `DataError`                                                           |
 
 `checkIri(value, label)` throws `DataError` unless the value is an absolute IRI, which Caliper requires of every entity
-(section 4.2). A host can use it on the parties it passes in.
+(section 4.2), in the form that the readers take as the `id` of an entity: a scheme, no white space, and a text that `URL`
+parses. A host can use it on the parties it passes in, and `buildEvent` takes what it passes.
 
 ## Errors
 
