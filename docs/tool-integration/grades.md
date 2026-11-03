@@ -239,3 +239,12 @@ A store that answers with something other than its contract (a line item that is
 | Automatic retries of a service call                        | The host decides; `Retry-After` is in the `ServiceError`                                 |
 | The ordering of scores at the platform                     | The store's: `keepScore` compares the timestamps in its own transaction                 |
 | A gradebook, a database                                    | The host's, behind `GradebookStore`                                                     |
+
+## Differences from the references
+
+The platform role is checked against `@lti-tool/core`, `lti-core` and PyLTI1p3, tools of other authors that use its grade
+services, and both roles against Moodle ([evidence](evidence.md)). Where platforms differ, the package follows the text of AGS.
+
+| What                                                     | AGS                                                                                  | Moodle 5.3.0 and Canvas                                                                                                    | The package                                                                                       |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| A score whose timestamp is not later than the kept one   | 3.4.9: the platform must not update the result, and "may just ignore" the score      | Moodle answers 409 for a timestamp earlier or equal (`mod/lti/service/gradebookservices/classes/local/resources/scores.php`, line 196); Canvas 400 for an earlier one (`lti/ims/scores_controller.rb`, `verify_valid_timestamp`) | The platform role answers 204 and keeps the later score; `publishScore` of the tool role throws the `ServiceError` of a 409 or 400, and the host sends again with a later timestamp |
