@@ -29,19 +29,22 @@ below its issuer, `registerTool`, which sends the registration token only to the
 launch, a submission review request, a Deep Linking request whose data seals its settings and the host's data, a Start Proctoring message whose session data
 seals the attempt, and an End Assessment message) in the host's `LaunchStore` for 300 seconds and starts the tool's login, and
 `handlePlatformRequest` answers every request to the platform's origin: the tool's authentication request, with the `id_token`
-of the kept message signed by the `Signer` of the platform's key set, or with the authentication error response; the key set
+of the kept message signed by the `Signer` of the platform's key set, or with the authentication error response, after the host's
+`checkLaunch` of the request; the key set
 with every key of a rotation; the token requests, whose stateless token grants the scopes that the request asks for, the
 registration grants and a service offers; the storage page of the client-side login; and the Assignment and Grade Services over
-the host's `GradebookStore`, offered in a claim, at the token endpoint and in their routes only when the store is given, with the
+the host's `GradebookStore`, which has the methods of what it supports and at least one, such as `keepScore` alone for a platform
+that takes scores, offered in a claim, at the token endpoint and in their routes only when the store is given and has the method, with the
 tool and its scopes checked again on every request, pages with `next` links, and the timestamp of each score for the store to
 keep the latest. The members of a context over a `RosterStore`, its groups and group sets over a `GroupStore` and the preferences records over a
-`PreferencesStore` are served and offered in the same way, each store checked as the gradebook is, and the platform shares only what a
+`PreferencesStore` are served and offered in the same way (group sets only when the store has `groupSets`), each store checked as the gradebook is, and the platform shares only what a
 request asked for: the enrollments with `groups=true`, the message with a resource link, and the members of a record that `fields` names.
 The Assessment Control Service over an `AssessmentControl` is offered in a Start Proctoring message with the actions that the host
 names, and answers 404 for an attempt that the store does not give the tool or a user of another issuer.
 `readDeepLinkingResponse` reads the form that a tool posts to the return URL of a Deep Linking request: it verifies the
-tool's token as an assertion is verified, accepts its `nonce` once, opens the `data` that the request sealed with its settings and
-the host's own data, and holds the items, each read by its type, to those settings and to `maxContentItems`.
+tool's token as an assertion is verified, accepts its `nonce` once, opens the `data` that the request sealed with its user, its settings and
+the host's own data, holds the items, each read by its type, to those settings and to `maxContentItems`, and returns the subject that
+the host compares with its session.
 `readStartAssessment` reads the Start Assessment message that a proctoring tool posts in the same way, opens the session data that
 the Start Proctoring message sealed, holds the resource link and the attempt to it, and returns the subject that the host compares
 with its session. With a `RegistrationStore`, the platform serves Dynamic Registration: `createRegistrationInitiation` gives a tool's

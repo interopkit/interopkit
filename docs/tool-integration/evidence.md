@@ -208,10 +208,10 @@ the peak of a process only grows; the test reports the rise. The rises are those
 | `control` | A status of a million tokens; 24 MiB | 86–94 MiB | 256 MiB |
 | `preferences` | A record of a million tokens; 24 MiB | 134–171 MiB | 256 MiB |
 | `discoverPlatform`, `registerTool` | An answer of an array just under 64 KiB, and one of 1 MiB | 12–20 MiB | 32 MiB |
-| The authorization and token requests of the platform | Forms of 64 KiB of repeated and distinct parameters, and of 64 MiB | 3.1–6.3 MiB | 32 MiB |
+| The authorization and token requests of the platform | Forms of 64 KiB of repeated and distinct parameters, and of 64 MiB | 2.2–9.9 MiB | 32 MiB |
 | The grade services, the Assessment Control Service and the registration endpoint | Bodies of 64 KiB of nesting and of arrays | 0.5–1.1 MiB | 32 MiB |
 | `readDeepLinkingResponse` | A form of under 1 MiB that lists 10,000 items, refused by their number | 11–13 MiB | 64 MiB |
-| `readStartAssessment` | A form of 64 KiB whose token is one array of small objects | 14–16 MiB | 32 MiB |
+| `readStartAssessment` | A form of 64 KiB whose token is one array of small objects | 7.4–16 MiB | 32 MiB |
 
 A key set of 64 KiB of empty keys took some 20 MiB to read, since jose copies each key and keeps a note of it: the cache refuses a set
 of more than 100 keys before jose sees it. A client of a service takes an answer of up to `maxBytes`, 1 MiB, and `maxTokens`, a
