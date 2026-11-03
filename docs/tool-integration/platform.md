@@ -273,7 +273,8 @@ Deep Linking data, 86,400 seconds by default); then remove it.
 ## The token endpoint
 
 `/token` accepts the client-credentials grant with a JWT assertion (Security Framework 4.1.1). The checks, in order: the method,
-the size of the body, the form, `grant_type`, `client_assertion_type`, a `client_assertion` and a `scope`; the tool named by `iss`;
+the size of the body, the form, `grant_type`, `client_assertion_type`, a `client_assertion` and a `scope`; the tool named by `iss`,
+which a `client_id` of the request, when it has one, names too (RFC 7521 section 4.2);
 an algorithm of the tool's `algorithms`, refused before any key is fetched for `none`, an HMAC algorithm and every other; the
 signature by a key of the tool's key set or `keys`; `sub` the client; `aud` the token URL, with no other member than the
 platform's issuer; the times with 60 seconds of leeway and an expiry within 3,600 seconds; no `message_type` claim, so a message

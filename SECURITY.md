@@ -528,7 +528,7 @@ them ([platform role](docs/tool-integration/platform.md)).
   and a redirect is refused, yet in a multi-tenant platform a tool's administrator could name an internal host. Pass a `fetch` that
   refuses loopback, private and link-local addresses, checked on the address that the connection resolves to and not on the host
   name, because of DNS rebinding (see the tool role). Give a tool its public keys in the registration, which needs no fetch.
-- **Client assertions.** An algorithm of the tool's registration among the six approved ones, refused before any key is fetched
+- **Client assertions.** A `client_id` of the request names the issuer of the assertion; an algorithm of the tool's registration among the six approved ones, refused before any key is fetched
   for `none`, HMAC and every other; the key type fits the algorithm; the audience is the token endpoint, beside which only the
   platform's issuer may stand; no `message_type`, so a message of the tool never passes as an assertion; a lifetime of at most
   3,600 seconds; the deployment, when named, the tool's; and a `jti` accepted once and remembered through the clock-skew leeway

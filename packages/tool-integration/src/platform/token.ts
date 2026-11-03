@@ -34,8 +34,15 @@ const OAUTH_ERRORS: ReadonlyMap<string, string> = new Map([
 /** What a port that failed leaves the route to answer: 500, with nothing of the cause. */
 const FAILED = Symbol("failed");
 
-/** Reads the form of the request: the grant, the assertion type, the assertion and the scopes. */
-function readRequest(request: HttpRequest): { readonly assertion: string; readonly scopes: readonly string[] } {
+/** What a token request asks for: the assertion, the scopes and the client that it names beside the assertion, if any. */
+interface TokenRequest {
+  readonly assertion: string;
+  readonly scopes: readonly string[];
+  readonly clientId?: string | undefined;
+}
+
+/** Reads the form of the request: the grant, the assertion type, the assertion, the scopes and the client. */
+function readRequest(request: HttpRequest): TokenRequest {
   let form: ReadonlyMap<string, string>;
   try {
     form = readForm(request);
@@ -56,7 +63,7 @@ function readRequest(request: HttpRequest): { readonly assertion: string; readon
   // A scope named twice is one scope (RFC 6749 section 3.3), and the token names it once.
   const scopes = [...new Set((form.get("scope") ?? "").split(" ").filter((scope) => scope !== ""))];
   if (scopes.length === 0) throw new LtiError("The token request must have a scope.", "scope-invalid");
-  return { assertion, scopes };
+  return { assertion, scopes, clientId: form.get("client_id") };
 }
 
 /** A verified assertion: the tool, and the deployment that it named. */
@@ -65,9 +72,21 @@ interface Verified {
   readonly deployment?: string;
 }
 
-/** Finds the tool that an assertion names as its issuer. */
-async function findTool(assertion: string, settings: PlatformSettings): Promise<ToolRegistration | typeof FAILED> {
+/**
+ * Finds the tool that an assertion names as its issuer. A `client_id` of the request must name the same client (RFC 7521
+ * section 4.2).
+ */
+async function findTool(
+  { assertion, clientId: named }: TokenRequest,
+  settings: PlatformSettings,
+): Promise<ToolRegistration | typeof FAILED> {
   const clientId = issuerOf(assertion, OWNER);
+  if (named !== undefined && named !== clientId) {
+    throw new LtiError(
+      `The client_id of the request, ${describe(named)}, is not the issuer of its assertion.`,
+      "client-mismatch",
+    );
+  }
   const { signal } = settings;
   const asked = await callPort(() => settings.client(clientId, { signal }), signal);
   return asked === undefined ? FAILED : toolFrom(asked.value, clientId);
@@ -81,8 +100,9 @@ async function findTool(assertion: string, settings: PlatformSettings): Promise<
  * if any, is the tool's; and its non-empty `jti` is one that `once` has not seen. The `jti` is remembered until the expiry,
  * rounded up to a whole second, plus the clock-skew leeway of 60 seconds, as long as the assertion verifies.
  */
-async function verifyAssertion(assertion: string, settings: PlatformSettings): Promise<Verified | typeof FAILED> {
-  const registration = await findTool(assertion, settings);
+async function verifyAssertion(asked: TokenRequest, settings: PlatformSettings): Promise<Verified | typeof FAILED> {
+  const { assertion } = asked;
+  const registration = await findTool(asked, settings);
   if (registration === FAILED) return FAILED;
   const { clientId } = registration;
   const nowMilliseconds = readClock(settings.clock);
@@ -134,8 +154,9 @@ async function verifyAssertion(assertion: string, settings: PlatformSettings): P
  * holds the client, the deployment of the assertion when it named one, the scopes and the expiry, and lasts one hour. A request
  * that fails a check gets status 400 with the error code of RFC 6749 section 5.2 (`invalid_request`, `unsupported_grant_type`,
  * `invalid_scope`, and `invalid_client` for an assertion that fails). The checks, in order: the method, the size, the form,
- * `grant_type`, `client_assertion_type`, the scopes, the tool, its algorithms, its key and the signature, `sub`, `aud`, the
- * times, the `message_type`, the deployment, the single use of the `jti`, and the scopes that remain.
+ * `grant_type`, `client_assertion_type`, the scopes, the tool, a `client_id` of the request that names it, its algorithms, its key
+ * and the signature, `sub`, `aud`, the times, the `message_type`, the deployment, the single use of the `jti`, and the scopes
+ * that remain.
  */
 export async function answerToken(request: HttpRequest, settings: PlatformSettings): Promise<HttpResponse> {
   if (request.method !== "POST") return methodNotAllowed(request.method, "POST");
@@ -147,12 +168,12 @@ export async function answerToken(request: HttpRequest, settings: PlatformSettin
     );
   }
   try {
-    const { assertion, scopes } = readRequest(request);
-    const verified = await verifyAssertion(assertion, settings);
+    const asked = readRequest(request);
+    const verified = await verifyAssertion(asked, settings);
     if (verified === FAILED) return serverError();
     const { registration, deployment } = verified;
     const offered = offeredScopes(settings);
-    const granted = scopes.filter((scope) => registration.scopes.includes(scope) && offered.includes(scope));
+    const granted = asked.scopes.filter((scope) => registration.scopes.includes(scope) && offered.includes(scope));
     if (granted.length === 0) {
       throw new LtiError("The platform grants the tool none of the scopes of the request.", "scope-invalid");
     }

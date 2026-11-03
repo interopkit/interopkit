@@ -6515,6 +6515,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/tool-integration/test/platform-failures.test.ts",
   },
   {
+    rule: "A client_id of a token request names the issuer of its assertion (RFC 7521 section 4.2).",
+    file: "packages/tool-integration/src/platform/token.ts",
+    find: "if (named !== undefined && named !== clientId) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/platform.test.ts",
+  },
+  {
     rule: "A filter of the groups by a user without an identifier is refused before the store is asked.",
     file: "packages/tool-integration/src/platform/services/groups.ts",
     find: 'if (query.userId === "") throw new DataError(',

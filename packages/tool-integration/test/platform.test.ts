@@ -1105,6 +1105,19 @@ describe("the token endpoint", () => {
     }
   });
 
+  it("refuses a client_id of the request that is not the issuer of its assertion, before the assertion is verified", async () => {
+    const ctx = setup();
+    const assertion = await clientAssertion(toolKeys, endpoints.token, ctx.clock);
+    const other = await handle(ctx, tokenRequest(endpoints.token, assertion, "s", { client_id: OTHER_CLIENT_ID }));
+    expect(JSON.parse(textOf(other.body))).toMatchObject({
+      error: "invalid_client",
+      error_description: expect.stringContaining("is not the issuer of its assertion"),
+    });
+    expect([ctx.toolFetches, ctx.used.size]).toEqual([[], 0]);
+    const same = await handle(ctx, tokenRequest(endpoints.token, assertion, "s", { client_id: TOOL_CLIENT_ID }));
+    expect(oauthError(same)).toBe("invalid_scope");
+  });
+
   it("grants a scope that the request names twice once", async () => {
     const SCORE = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
     const ctx = setup({ tools: [toolRegistration({ scopes: [SCORE] })] });
