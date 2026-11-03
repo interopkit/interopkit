@@ -107,7 +107,7 @@ carry such a challenge too, as the example's does.
 | --- | --- |
 | 200, `{"auth-token": ...}` | The first POST within `fetchLifetimeSeconds` of the launch |
 | 200, `error-code` 1 | A code used already, expired, or of a session that ended |
-| 200, `error-code` 2 | A code that the LMS did not make |
+| 200, `error-code` 2 | A code that the LMS did not make, or a query that gives the code twice |
 | 200, `error-code` 3 | The store failed or kept a conflict |
 | 405 with `Allow: POST` | Any other method |
 

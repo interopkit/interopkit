@@ -72,6 +72,9 @@ describe("the fetch URL", () => {
       `11111111-1111-4111-8111-111111111111.${new URL(url).searchParams.get("code")?.split(".")[1]}`,
     );
     expect(jsonOf(await postFetch(host, unknown.href))).toMatchObject({ "error-code": "2" });
+    const twice = new URL(url);
+    twice.searchParams.append("code", "other");
+    expect(jsonOf(await postFetch(host, twice.href))).toMatchObject({ "error-code": "2" });
   });
 
   it("answers error code 3 when the store fails or keeps a conflict", async () => {

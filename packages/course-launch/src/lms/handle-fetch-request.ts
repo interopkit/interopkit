@@ -1,6 +1,6 @@
 import { callPort, readClock } from "@interopkit/core";
 import { isUuid } from "@interopkit/core/checks";
-import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse, readQuery } from "@interopkit/core/http";
+import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
 import { type LmsOptions, type LmsSettings, readLmsOptions, signalOf, withRetries } from "./options.js";
 import type { Session } from "./records.js";
 import { hashOf, newSecret, sameHash } from "./secrets.js";
@@ -58,8 +58,8 @@ async function fetchToken(settings: LmsSettings, id: string, secret: string): Pr
  * that does not depend on where they differ. The first POST within `fetchLifetimeSeconds` of the launch makes the session
  * active and answers `{"auth-token": ...}`, the Basic credential of the session, whose secret the session keeps as its hash; the
  * write is conditional, so two POSTs at once get one token. Every answer is 200 with JSON and `Cache-Control: no-store`: a code
- * used or expired gets `error-code` 1, a code that the LMS did not make 2, and a store that fails 3. A method other than POST
- * is 405 with `Allow: POST`.
+ * used or expired gets `error-code` 1, a code that the LMS did not make or that the query gives twice 2, and a store that fails
+ * 3. A method other than POST is 405 with `Allow: POST`.
  *
  * @param request - The request to the route of `fetchEndpoint`.
  * @param options - The options of the LMS.
@@ -74,7 +74,9 @@ export async function handleFetchRequest(request: HttpRequest, options: LmsOptio
   if (request.method !== "POST") {
     return { status: 405, headers: { allow: "POST", ...NO_STORE }, body: "" };
   }
-  const code = readQuery(request).get("code") ?? "";
+  // A code given twice is no code that the LMS made: the URL of a launch holds one.
+  const codes = new URL(request.url).searchParams.getAll("code");
+  const code = codes.length === 1 ? (codes[0] ?? "") : "";
   const dot = code.indexOf(".");
   const id = code.slice(0, dot);
   const secret = code.slice(dot + 1);
