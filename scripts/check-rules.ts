@@ -6580,8 +6580,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A store receives the caller of the token.",
     file: "packages/tool-integration/src/platform/services/grades.ts",
-    find: "store.lineItem(caller, context, lineItem, options)",
-    replace: "store.lineItem({ clientId: caller.clientId }, context, lineItem, options)",
+    find: "store.lineItem?.(caller, context, lineItem, options)",
+    replace: "store.lineItem?.({ clientId: caller.clientId }, context, lineItem, options)",
     test: "packages/tool-integration/test/platform-grades.test.ts",
   },
   {
