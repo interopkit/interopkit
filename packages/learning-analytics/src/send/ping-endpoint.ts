@@ -23,10 +23,19 @@ export type PingResult =
       readonly httpStatus: number;
     };
 
+/** The lowest and the highest HTTP status, of the classes 1xx to 5xx (RFC 9110 section 15). */
+const LOWEST_STATUS = 100;
+const HIGHEST_STATUS = 599;
+
+/** The first status of the class of redirects, and the first of the class after it. */
+const FIRST_REDIRECT = 300;
+const FIRST_CLIENT_ERROR = 400;
+
 /** The statuses that a ping returns as values: every one a service answers with but a redirect, which no call follows. */
-const PING_STATUSES: readonly number[] = Array.from({ length: 500 }, (_, at) => 100 + at).filter(
-  (status) => status < 300 || status >= 400,
-);
+const PING_STATUSES: readonly number[] = Array.from(
+  { length: HIGHEST_STATUS - LOWEST_STATUS + 1 },
+  (_, at) => LOWEST_STATUS + at,
+).filter((status) => status < FIRST_REDIRECT || status >= FIRST_CLIENT_ERROR);
 
 /**
  * Asks a Caliper endpoint for its configuration and says whether it is available.
