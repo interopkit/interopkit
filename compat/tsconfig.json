@@ -35,7 +35,11 @@
       "@interopkit/achievement-credentials/refresh": ["../packages/achievement-credentials/src/refresh/index.ts"],
       "@interopkit/achievement-credentials/status": ["../packages/achievement-credentials/src/status/index.ts"],
       "@interopkit/achievement-credentials/verify": ["../packages/achievement-credentials/src/verify/index.ts"],
-      "@interopkit/selective-disclosure": ["../packages/selective-disclosure/src/index.ts"]
+      "@interopkit/selective-disclosure": ["../packages/selective-disclosure/src/index.ts"],
+      "@interopkit/course-launch": ["../packages/course-launch/src/index.ts"],
+      "@interopkit/course-launch/au": ["../packages/course-launch/src/au/index.ts"],
+      "@interopkit/course-launch/lms": ["../packages/course-launch/src/lms/index.ts"],
+      "@interopkit/course-launch/package": ["../packages/course-launch/src/package/index.ts"]
     }
   },
   "include": ["*.ts", "../packages/achievement-credentials/src/data-integrity/jsonld.d.ts"]
