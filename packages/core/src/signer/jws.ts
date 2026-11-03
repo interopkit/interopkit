@@ -70,12 +70,15 @@ export async function signCompactJws(
   if (!(payload instanceof Uint8Array)) {
     throw new DataError(`The payload must be a Uint8Array, found ${describe(payload)}.`);
   }
+  // A member that is `undefined`, as plain JavaScript may pass one, names nothing: spread over the signer's `alg` or `kid`, it
+  // would drop them from the header that JSON writes.
+  const given = Object.fromEntries(Object.entries(header).filter(([, value]) => value !== undefined));
   let protectedHeader: string;
   try {
     protectedHeader = JSON.stringify({
       alg: signer.algorithm,
       ...(signer.keyId === undefined ? {} : { kid: signer.keyId }),
-      ...header,
+      ...given,
     });
   } catch {
     throw new DataError("The header must be plain data that JSON can hold.");

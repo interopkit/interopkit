@@ -251,6 +251,16 @@ describe("signCompactJws", () => {
     expect(calls()).toBe(0);
   });
 
+  it("keeps the algorithm and the key id of the signer for a header whose alg and kid are undefined", async () => {
+    const { signer } = await signing();
+    const jws = await signCompactJws({ alg: undefined, kid: undefined, typ: "JWT" }, PAYLOAD, signer);
+    expect(Object.entries(parts(jws).header)).toStrictEqual([
+      ["alg", "ES256"],
+      ["kid", "key-1"],
+      ["typ", "JWT"],
+    ]);
+  });
+
   it("lets a header name a key when the signer names none", async () => {
     const pair = await generate({ name: "ECDSA", namedCurve: "P-256" });
     const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256" });

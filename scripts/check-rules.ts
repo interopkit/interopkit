@@ -203,6 +203,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/core/test/signer.test.ts",
   },
   {
+    rule: "A member of the header that is undefined leaves the signer's algorithm and key in the header.",
+    file: "packages/core/src/signer/jws.ts",
+    find: "Object.entries(header).filter(([, value]) => value !== undefined)",
+    replace: "Object.entries(header)",
+    test: "packages/core/test/signer.test.ts",
+  },
+  {
     rule: "A header whose jwk holds a private key is refused, so that a signature never publishes the key.",
     file: "packages/core/src/signer/jws.ts",
     find: 'if (isRecord(header.jwk) && "d" in header.jwk) {',

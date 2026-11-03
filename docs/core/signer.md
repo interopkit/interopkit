@@ -65,7 +65,7 @@ key.
 
 | `signCompactJws` does                                                                                       | When                                                       |
 | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Puts `alg` of the signer first in the protected header, then `kid` of the signer, then the rest of `header` | Always                                                     |
+| Puts `alg` of the signer first in the protected header, then `kid` of the signer, then the rest of `header`; a member that is `undefined` names nothing and leaves the signer's | Always |
 | Refuses a header that names another `alg` than the signer's                                                 | Before the signer is called                                |
 | Refuses a header that names another `kid` than the signer's                                                 | Before the signer is called, when the signer has a `keyId` |
 | Refuses a header whose `jwk` holds a private key (`d`)                                                      | Before the signer is called                                |
