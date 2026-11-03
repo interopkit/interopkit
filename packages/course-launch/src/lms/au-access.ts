@@ -22,11 +22,12 @@ const READS: ReadonlySet<string> = new Set(["GET", "HEAD"]);
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
-/** A refusal of a request of an assignable unit, with the sentence of the answer. */
+/**
+ * A refusal of a request of an assignable unit, with the sentence of the answer. A 401 carries no challenge: a browser that
+ * gets a challenge of Basic asks the learner for a password, and the token of a unit comes from the fetch URL, never from them.
+ */
 function refused(status: 401 | 403, reason: string): Access {
-  return status === 401
-    ? { allowed: false, status, reason, challenge: 'Basic realm="xAPI"' }
-    : { allowed: false, status, reason };
+  return { allowed: false, status, reason };
 }
 
 /**

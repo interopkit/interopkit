@@ -8,9 +8,6 @@
  * @see {@link https://github.com/adlnet/CATAPULT/blob/main/requirements/requirements.json | CATAPULT, requirements.json}
  */
 
-/** The units that build what a requirement still needs. */
-type Cmi5Unit = "lms" | "au" | "catapult-evidence";
-
 /** How the package meets a requirement. */
 type RequirementState =
   /** Met, and proven by the tests named, files of `packages/course-launch/test/`. */
@@ -18,9 +15,7 @@ type RequirementState =
   /** Met as far as a library can, with what is left to the host and why. */
   | { readonly state: "in-part"; readonly tests: readonly string[]; readonly reason: string }
   /** Not met, with the reason. */
-  | { readonly state: "excluded"; readonly reason: string }
-  /** Met once the unit named is built; the tests named prove the part built already. */
-  | { readonly state: "planned"; readonly unit: Cmi5Unit; readonly tests: readonly string[] };
+  | { readonly state: "excluded"; readonly reason: string };
 
 /** A requirement of cmi5: its section, the ids CATAPULT gives it, what it asks, who it binds, and how it is met. */
 export interface Cmi5Requirement {
@@ -85,7 +80,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ],
     asks: "Summaries of other sections",
     roles: "Both",
-    met: { state: "planned", unit: "catapult-evidence", tests: [] },
+    met: { state: "has", tests: ["lms-flow.test.ts", "lms-rules.test.ts", "au.test.ts"] },
   },
   {
     section: "6.1",

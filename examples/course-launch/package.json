@@ -6,12 +6,15 @@
   "license": "Apache-2.0",
   "scripts": {
     "start": "node scenario.ts",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "serve": "node serve.ts"
   },
   "devDependencies": {
     "@interopkit/core": "workspace:^",
     "@interopkit/course-launch": "workspace:^",
     "@interopkit/example-learning-records": "workspace:^",
-    "@interopkit/learning-records": "workspace:^"
+    "@interopkit/learning-records": "workspace:^",
+    "@xapi/cmi5": "1.4.0",
+    "@zip.js/zip.js": "2.24.0"
   }
 }

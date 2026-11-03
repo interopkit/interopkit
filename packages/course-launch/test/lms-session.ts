@@ -1,6 +1,5 @@
 import type { HttpResponse } from "@interopkit/core/http";
-import type { Statement } from "@interopkit/learning-records";
-import { CMI5_CATEGORIES, CMI5_EXTENSIONS, CMI5_VERBS, readLaunchUrl } from "../src/index.js";
+import { CMI5_CATEGORIES, CMI5_EXTENSIONS, CMI5_VERBS, readLaunchUrl } from "@interopkit/course-launch";
 import {
   createRegistration,
   handleFetchRequest,
@@ -8,7 +7,8 @@ import {
   type LaunchInput,
   prepareLaunch,
   type Registration,
-} from "../src/lms/index.js";
+} from "@interopkit/course-launch/lms";
+import type { Statement } from "@interopkit/learning-records";
 import { LEARNER, type TestHost } from "./lms-host.js";
 
 /** A launch that a unit of the tests fetched its token for: what it reads of the launch URL, and its Basic credential. */

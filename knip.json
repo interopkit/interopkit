@@ -45,6 +45,12 @@
     "compat": {
       "entry": ["run.ts", "worker.ts"],
       "ignoreDependencies": ["workerd"]
+    },
+    "examples/course-launch": {
+      "entry": ["unit.ts"]
+    },
+    ".": {
+      "ignore": ["validation/catapult/*.js"]
     }
   }
 }

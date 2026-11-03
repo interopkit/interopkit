@@ -21,7 +21,7 @@ describe("the map of the requirements of cmi5", () => {
     for (const { met } of CMI5_REQUIREMENTS) {
       if (met.state === "excluded") continue;
       for (const test of met.tests) expect(existsSync(new URL(test, import.meta.url)), test).toBe(true);
-      if (met.state !== "planned") expect(met.tests.length).toBeGreaterThan(0);
+      expect(met.tests.length).toBeGreaterThan(0);
     }
   });
 

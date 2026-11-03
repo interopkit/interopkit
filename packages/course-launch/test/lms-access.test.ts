@@ -31,7 +31,7 @@ describe("the token of a session", () => {
     const early = `Basic ${btoa(`${launch.session}:${new URL(readLaunchUrl(launch.url).fetch).searchParams.get("code")}`)}`;
     const answer = await host.xapi("GET", `statements?registration=${registration.id}`, { authorization: early });
     expect(answer.status).toBe(401);
-    expect(answer.headers["www-authenticate"]).toBe('Basic realm="xAPI"');
+    expect(answer.headers["www-authenticate"]).toBeUndefined();
   });
 
   it("leaves a credential that is no token, or names no session, to the host's access", async () => {

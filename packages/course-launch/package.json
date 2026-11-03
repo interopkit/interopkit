@@ -54,7 +54,8 @@
     "clean": "node --eval \"for (const path of ['dist', 'tsconfig.build.tsbuildinfo']) fs.rmSync(path, { recursive: true, force: true })\"",
     "build": "pnpm clean && tsc -b tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
-    "check:packages": "pnpm build && publint --pack pnpm --strict && attw --pack . --profile esm-only"
+    "check:packages": "pnpm build && publint --pack pnpm --strict && attw --pack . --profile esm-only",
+    "bench": "pnpm build && vitest bench --run --root ../.. --project 'course-launch-bench*' --reporter verbose"
   },
   "devDependencies": {
     "fast-check": "^4.10.2"

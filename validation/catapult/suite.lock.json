@@ -1,0 +1,12 @@
+{
+  "repository": "adlnet/CATAPULT",
+  "commit": "806c0baaa0fa99c9cb4f398ad7eb21fc5461c6e4",
+  "sha256": "cee65f47265cb18226b6604ba136f4f64268492c3c59bee483e9cb67b3270257",
+  "lms": {
+    "tests": 87,
+    "notApplicable": []
+  },
+  "content": {
+    "sessions": 54
+  }
+}

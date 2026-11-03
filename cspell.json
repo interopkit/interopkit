@@ -285,6 +285,19 @@
     "xmldecl",
     "activityid",
     "dotdot",
-    "vbscript"
+    "vbscript",
+    "coursecode",
+    "Dockerfiles",
+    "elearning",
+    "knex",
+    "lockfiles",
+    "mysqld",
+    "openedx",
+    "rdbms",
+    "rusticisoftware",
+    "scormflow",
+    "stringcase",
+    "xapijs",
+    "xblock"
   ]
 }

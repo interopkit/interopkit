@@ -22,7 +22,7 @@ jobs:
   # files); the lock file, the root configuration, the scripts that the tests share and this workflow reach every job; the
   # Markdown, the changesets and the configuration of the linters reach none but check. A file that no rule names reaches every
   # job. The guides of a package are tests of that package alone. Outputs: test, spec, browsers, bench, runtimes, opensalt,
-  # adl_lrs, sql_lrs, w3c_suites, validator, pylti1p3 and moodle say whether the job runs; projects and packages are the Vitest projects and the
+  # adl_lrs, sql_lrs, w3c_suites, validator, pylti1p3, moodle and catapult say whether the job runs; projects and packages are the Vitest projects and the
   # packages whose coverage floors the test job checks. The rules job is in rules.yml.
   changes:
     runs-on: ubuntu-latest
@@ -44,6 +44,7 @@ jobs:
       validator: ${{ steps.filter.outputs.validator }}
       pylti1p3: ${{ steps.filter.outputs.pylti1p3 }}
       moodle: ${{ steps.filter.outputs.moodle }}
+      catapult: ${{ steps.filter.outputs.catapult }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -117,7 +118,7 @@ jobs:
             if ((top === "packages" || top === "examples") && members.has(`${top}/${name}`)) touched.add(`${top}/${name}`);
             else if (top === "compat") touched.add("compat");
             else if (top === "docs" && third !== undefined && members.has(`packages/${name}`)) guides.add(`packages/${name}`);
-            else if (top === "validation" && ["opensalt", "adl-lrs", "sql-lrs", "w3c-suites", "1edtech-validator", "pylti1p3", "moodle", "containers"].includes(
+            else if (top === "validation" && ["opensalt", "adl-lrs", "sql-lrs", "w3c-suites", "1edtech-validator", "pylti1p3", "moodle", "containers", "catapult"].includes(
                 name,
               ))
               validation.add(name);
@@ -169,6 +170,8 @@ jobs:
             pylti1p3: everything || reached.has("packages/tool-integration") || validation.has("pylti1p3") || validation.has("containers"),
             // Moodle in both roles against the roles of the package; the helpers of the containers are shared.
             moodle: everything || reached.has("packages/tool-integration") || validation.has("moodle") || validation.has("containers"),
+            // Both suites of CATAPULT, against the LMS and the units of the cmi5 example.
+            catapult: everything || reached.has("examples/course-launch") || validation.has("catapult"),
           };
           for (const [name, value] of Object.entries(outputs)) {
             console.log(`${name}=${value}`);
@@ -242,6 +245,12 @@ jobs:
       # The tests that read the files that pnpm schemas, pnpm corpus and pnpm caliper-tables download at their pinned hashes.
       - if: needs.changes.outputs.projects != ''
         run: pnpm schemas
+      # The repositories that pnpm corpus downloads, kept between runs by the hash of the lock that pins them.
+      - if: needs.changes.outputs.projects != ''
+        uses: actions/cache@v5
+        with:
+          path: .cache/corpus
+          key: corpus-${{ hashFiles('scripts/corpus.lock.json') }}
       - if: needs.changes.outputs.projects != ''
         run: pnpm corpus
       - if: needs.changes.outputs.projects != ''
@@ -275,7 +284,11 @@ jobs:
       # The test vectors of the cryptosuite read the contexts that pnpm schemas downloads.
       - run: pnpm schemas
       # The oracle of the tests of learning-analytics reads the JSON schemas of Caliper from the repository that pnpm corpus
-      # downloads.
+      # downloads, kept between runs by the hash of the lock that pins it.
+      - uses: actions/cache@v5
+        with:
+          path: .cache/corpus
+          key: corpus-${{ hashFiles('scripts/corpus.lock.json') }}
       - run: pnpm corpus
       - run: pnpm test:spec
 
@@ -340,7 +353,12 @@ jobs:
       # The benchmarks of selective-disclosure and competency-frameworks read the contexts and the schemas that pnpm schemas
       # downloads at their pinned hashes.
       - run: pnpm schemas
-      # The benchmarks of learning-analytics read the fixtures and the schemas of caliper-spec that pnpm corpus downloads.
+      # The benchmarks of learning-analytics read the fixtures and the schemas of caliper-spec that pnpm corpus downloads, and
+      # those of course-launch the packages of CATAPULT.
+      - uses: actions/cache@v5
+        with:
+          path: .cache/corpus
+          key: corpus-${{ hashFiles('scripts/corpus.lock.json') }}
       - run: pnpm corpus
       - run: pnpm bench
 
@@ -441,6 +459,59 @@ jobs:
       # The credentials of the test are signed under the contexts that pnpm schemas downloads at their pinned hashes.
       - run: pnpm schemas
       - run: pnpm validator
+
+  # CATAPULT's LMS suite in the Chromium of Playwright against the example LMS of cmi5 (validation/catapult/README.md). It builds
+  # first.
+  catapult-lms:
+    needs: changes
+    if: needs.changes.outputs.catapult == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      # The archive of CATAPULT at its pinned commit, kept between runs by the hash of the lock that pins it.
+      - uses: actions/cache@v5
+        with:
+          path: .cache/catapult/suite
+          key: catapult-${{ hashFiles('validation/catapult/suite.lock.json') }}
+      - run: pnpm catapult-lms
+
+  # CATAPULT's content suite and its player in containers, with the units of the cmi5 example played by the runtime of the
+  # package (validation/catapult/README.md). The images are kept between runs by the hash of the lock and of their Dockerfiles.
+  catapult-content:
+    needs: changes
+    if: needs.changes.outputs.catapult == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - uses: actions/cache@v5
+        with:
+          path: .cache/catapult/suite
+          key: catapult-${{ hashFiles('validation/catapult/suite.lock.json') }}
+      - id: images
+        uses: actions/cache@v5
+        with:
+          path: .cache/catapult-images.tar
+          key: catapult-images-${{ hashFiles('validation/catapult/suite.lock.json', 'validation/catapult/*.Dockerfile') }}
+      - if: steps.images.outputs.cache-hit == 'true'
+        run: docker load -i .cache/catapult-images.tar
+      - run: pnpm catapult-content
+      - if: steps.images.outputs.cache-hit != 'true'
+        run: docker save -o .cache/catapult-images.tar $(docker image ls --filter 'reference=interopkit-catapult-*' --format '{{.Repository}}:{{.Tag}}')
 
   # PyLTI1p3 in a container as a counterparty of the platform role (validation/pylti1p3/README.md).
   pylti1p3:

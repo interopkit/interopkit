@@ -1,5 +1,15 @@
 import type { Clock } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
+import { readCourseStructure } from "@interopkit/course-launch";
+import {
+  type Cmi5Store,
+  extendLrsOptions,
+  type ImportedCourse,
+  importCourse,
+  type LmsOptions,
+  type Registration,
+  type Session,
+} from "@interopkit/course-launch/lms";
 import {
   type Activity,
   type AttachmentData,
@@ -21,16 +31,6 @@ import {
   type StoredStatement,
 } from "@interopkit/learning-records/store";
 import { expect } from "vitest";
-import { readCourseStructure } from "../src/index.js";
-import {
-  type Cmi5Store,
-  extendLrsOptions,
-  type ImportedCourse,
-  importCourse,
-  type LmsOptions,
-  type Registration,
-  type Session,
-} from "../src/lms/index.js";
 
 /** The origin of the LMS of the tests. */
 export const ORIGIN = "https://lms.example.org";

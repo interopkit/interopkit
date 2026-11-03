@@ -52,13 +52,54 @@ export function selectFiles(directory: string, include: readonly string[]): stri
     .sort();
 }
 
+/** How long a download may go without a byte before it counts as stalled, in milliseconds. */
+export const STALL_MS = 30_000;
+/** The tries of a download that fails or stalls, the first included. */
+export const DOWNLOAD_TRIES = 3;
+/** The wait before a download is tried again, in milliseconds, doubled at each try. */
+const RETRY_MS = 2000;
+
+/**
+ * Downloads an address to a file, and aborts when no byte arrives for `stallMs`, so that a stalled connection fails fast
+ * instead of holding the job.
+ */
+export async function download(url: string, file: string, stallMs = STALL_MS): Promise<void> {
+  const controller = new AbortController();
+  let timer = setTimeout(() => controller.abort(new Error(`No byte of ${url} arrived for ${stallMs} ms.`)), stallMs);
+  const awake = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => controller.abort(new Error(`No byte of ${url} arrived for ${stallMs} ms.`)), stallMs);
+  };
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!(response.ok && response.body)) throw new Error(`Downloading ${url} failed: HTTP ${response.status}.`);
+    const body = Readable.fromWeb(response.body);
+    body.on("data", awake);
+    await pipeline(body, createWriteStream(file), { signal: controller.signal });
+  } catch (error) {
+    throw controller.signal.aborted ? controller.signal.reason : error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Runs a download again after a failure, up to `tries` times in all, and throws the last failure. */
+export async function withRetries<T>(run: () => Promise<T>, tries = DOWNLOAD_TRIES, waitMs = RETRY_MS): Promise<T> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await run();
+    } catch (error) {
+      if (attempt >= tries) throw error;
+      console.error(`${error instanceof Error ? error.message : error} Trying again (${attempt + 1} of ${tries}).`);
+      await new Promise((done) => setTimeout(done, waitMs * 2 ** (attempt - 1)));
+    }
+  }
+}
+
 /** Downloads the archive of a commit to `<directory>/archive.tar.gz` and returns its SHA-256. */
 async function downloadArchive(repository: string, commit: string, directory: string): Promise<string> {
-  const response = await fetch(`https://codeload.github.com/${repository}/tar.gz/${commit}`);
-  if (!(response.ok && response.body))
-    throw new Error(`Downloading ${repository}@${commit} failed: HTTP ${response.status}.`);
   const archive = join(directory, "archive.tar.gz");
-  await pipeline(Readable.fromWeb(response.body), createWriteStream(archive));
+  await withRetries(() => download(`https://codeload.github.com/${repository}/tar.gz/${commit}`, archive));
   return sha256(archive);
 }
 

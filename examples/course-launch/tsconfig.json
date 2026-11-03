@@ -17,5 +17,5 @@
       "@interopkit/learning-records/store": ["../../packages/learning-records/src/store/index.ts"]
     }
   },
-  "include": ["scenario.ts", "src", "test"]
+  "include": ["scenario.ts", "serve.ts", "unit.ts", "src", "test"]
 }

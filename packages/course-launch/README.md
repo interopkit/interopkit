@@ -89,7 +89,10 @@ unit?.kind === "au" ? [unit.moveOn, unit.masteryScore] : undefined;
 | [Rules of a session](../../docs/course-launch/rules.md)  | The launch URL, the launch data, the preferences, and the rules of the statements of a session |
 | [Assignable unit](../../docs/course-launch/au.md)        | The runtime of a unit: its start, its statements, a reload, and what it skips and what the LMS refuses |
 | [LMS](../../docs/course-launch/lms.md)                   | Registrations, launches, the fetch URL, the rules of cmi5 on the host's LRS, satisfaction, abandoned sessions and waivers |
+| [Evidence](../../docs/course-launch/evidence.md)         | The requirement map, CATAPULT's suites, the counterparties, speed, size and peak memory |
+| [Comparators](../../docs/course-launch/comparators.md)   | The other implementations of cmi5 and how their capabilities map to the package         |
 | [Supported](../../docs/course-launch/supported.md)       | What of cmi5 the package covers, and what it leaves out                                 |
 | [Spec gaps](../../docs/course-launch/spec-gaps.md)       | Where the specification, its schema and CATAPULT differ, and the reading taken          |
 
-cmi5 is a specification of ADL; this package implements it and is not certified or endorsed by ADL.
+It passes CATAPULT's LMS and content suites at `806c0ba` ([evidence](../../docs/course-launch/evidence.md)). cmi5 is a
+specification of ADL; this package implements it and is not certified or endorsed by ADL.

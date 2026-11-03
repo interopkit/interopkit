@@ -23,6 +23,8 @@
     "validator": "node validation/1edtech-validator/run.ts",
     "pylti1p3": "node validation/pylti1p3/run.ts",
     "moodle": "node validation/moodle/run.ts",
+    "catapult-lms": "node validation/catapult/lms.ts",
+    "catapult-content": "node validation/catapult/content.ts",
     "lint": "biome check . && cspell --no-progress",
     "check:standards": "node scripts/check-standards.ts",
     "check:rules": "node scripts/check-rules.ts",

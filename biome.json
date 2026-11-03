@@ -1844,6 +1844,8 @@
         "scripts/xapi-v1-rules.ts",
         "packages/course-launch/src/rules/launch-documents.ts",
         "packages/course-launch/src/lms/prepare-launch.ts",
+        "examples/course-launch/test/xml-http-request.ts",
+        "validation/catapult/lms.interopkit.js",
         "packages/course-launch/test/**",
         "scripts/cmi5-rules.ts",
         "scripts/test/schema-arbitrary.test.ts",

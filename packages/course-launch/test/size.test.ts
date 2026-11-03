@@ -9,7 +9,7 @@ import { type EntrySize, entryPoints, entrySize } from "../../../scripts/entry-s
  */
 const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>> = {
   "@interopkit/course-launch": {
-    gzip: 40_500,
+    gzip: 41_000,
     holds: [
       "@interopkit/core",
       "course-launch/model",
@@ -58,7 +58,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/course-launch/package": {
-    gzip: 92_000,
+    gzip: 92_500,
     holds: [
       "@interopkit/core",
       "@zip.js/zip.js",

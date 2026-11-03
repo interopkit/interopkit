@@ -327,6 +327,33 @@ export default defineConfig({
         },
       },
       {
+        // The benchmarks of course-launch: `pnpm bench` runs them with `vitest bench`, against the build that ships, and against
+        // the packages of CATAPULT that `pnpm corpus` downloads.
+        resolve: {
+          alias: [
+            {
+              find: /^@interopkit\/course-launch$/,
+              replacement: resolve(import.meta.dirname, "packages/course-launch/dist/index.js"),
+            },
+            {
+              find: /^@interopkit\/course-launch\/(.+)$/,
+              replacement: resolve(import.meta.dirname, "packages/course-launch/dist/$1/index.js"),
+            },
+          ],
+        },
+        test: {
+          name: "course-launch-bench",
+          include: [],
+          server: { deps: { external: [/\/packages\/course-launch\/dist\//] } },
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
+          benchmark: {
+            include: ["packages/course-launch/test/**/*.bench.ts"],
+            suppressExportGetterWarnings: true,
+          },
+        },
+      },
+      {
         // The examples are packages of their own, and a test of each runs its scenario against the sources.
         resolve: { alias: SOURCES },
         test: {
@@ -407,7 +434,19 @@ export default defineConfig({
       },
       {
         // The LMS of cmi5 over the campus LRS, and the units that it launches: the scenario and the tests run against the sources.
-        resolve: { alias: SOURCES },
+        // @xapi/cmi5, a counterparty unit, names its module build in `module` alone, which the resolution of Vitest skips.
+        resolve: {
+          alias: [
+            ...SOURCES,
+            {
+              find: /^@xapi\/cmi5$/,
+              replacement: resolve(
+                import.meta.dirname,
+                "examples/course-launch/node_modules/@xapi/cmi5/dist/Cmi5.esm.js",
+              ),
+            },
+          ],
+        },
         test: {
           name: "example-course-launch",
           include: ["examples/course-launch/test/**/*.test.ts"],

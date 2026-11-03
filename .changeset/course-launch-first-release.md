@@ -45,3 +45,4 @@ the session, judge it by the rules of cmi5 and skip what they forbid without a r
 and a request that fails sends the same statement again on the next call. `resume` goes on after a reload of the page without a
 second fetch, `state` keeps the State of the unit, `savePreferences` takes a refusal as a value, and `terminate` returns the
 return URL when it is http or https.
+The package passes CATAPULT's LMS suite (87 of 87 tests) and its content suite (54 of 54 sessions) at `806c0ba`.
