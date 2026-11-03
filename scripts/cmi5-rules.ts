@@ -4,7 +4,9 @@
  *
  * The entries are written from the sentences of the specification and the derived requirements of CATAPULT, and not from the
  * code that judges statements: the tests of the package change a sound session with `fixture` and compare what
- * `validateSessionStatements` finds (`session`). Section numbers are those of cmi5 Quartz.
+ * `validateSessionStatements` finds (`session`) and what the LMS refuses when the unit sends the statements one request each
+ * (`lms`). The runtime of a unit judges each statement that it makes by the same rules before it sends it, and skips the ones
+ * that `session` finds an error in. Section numbers are those of cmi5 Quartz.
  */
 
 /** A JSON object, such as a statement. */

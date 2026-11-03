@@ -8,7 +8,8 @@ statements of a session, over the model and the rules of xAPI of `@interopkit/le
 `structure` imports `model` and `@interopkit/core` alone, `package` builds on both, and `rules` imports `model`,
 `@interopkit/learning-records` and `@interopkit/core`; `structure` and `rules` never import each other, and `package` imports
 no rule. `lms` builds on `model`, `structure` and `rules`, the client and the LRS of `@interopkit/learning-records`, and never
-imports `package`, so a host that reads a structure from elsewhere never loads the ZIP code. Biome enforces the layers.
+imports `package`, so a host that reads a structure from elsewhere never loads the ZIP code. `au` builds on `model`, `rules` and
+the client of `@interopkit/learning-records`, and `lms` and `au` never import each other. Biome enforces the layers.
 
 ```mermaid
 flowchart BT
@@ -39,6 +40,10 @@ flowchart BT
   lms --> structure
   lms --> rules
   lms --> records
+  au["au<br/>startAuSession, AuSession"]
+  au --> model
+  au --> rules
+  au --> records
 ```
 
 | Module      | Files                                                                    | Holds                                                                                                                       |
@@ -62,6 +67,8 @@ flowchart BT
 |             | `extend-lrs-options.ts`, `au-access.ts`, `accept-statements.ts`, `after-store.ts` | The LRS of cmi5: what a token may do, the judgement and reservation of statements, and what the store holding them does |
 |             | `progress.ts`, `satisfy.ts`, `lms-statements.ts`                         | Satisfaction by `moveOn`, and the launched, abandoned, waived and satisfied statements of the LMS                           |
 |             | `abandon-session.ts`, `waive-au.ts`                                      | Abandoned sessions and waivers                                                                                              |
+| `au`        | `options.ts`, `start-au-session.ts`                                      | The options and the resume of a session; the start: the fetch URL, the launch data, the preferences and what the registration holds |
+|             | `au-session.ts`                                                          | The session: its statements, judged by the rules before they are sent, its State and the preferences                        |
 
 ## What the package owns
 
@@ -72,6 +79,7 @@ flowchart BT
 | The vocabularies of cmi5                                                                 | An editor of courses, storage, servers, accounts                                                   |
 | The kinds of statements of cmi5 and the rules of a session                               | What a statement means for learning, and the windows and pages of a launch                         |
 | The LMS role: registrations, launches, the fetch URL, tokens, the rules of cmi5 on an LRS, satisfaction, abandoned sessions, waivers | The storage of records, servers, content hosting, CORS and TLS, accounts |
+| The runtime of an assignable unit, without a DOM                                         | The page: windows, frames, the redirect to the return URL, unload, audio                           |
 
 ## Why the schema is enforced by hand
 

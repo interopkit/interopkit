@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import * as core from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { guidesWithSamples, runGuideSamples, typecheckGuideSamples } from "../../../scripts/guide-samples.js";
+import * as au from "../src/au/index.js";
 import * as root from "../src/index.js";
 import * as lms from "../src/lms/index.js";
 import * as coursePackage from "../src/package/index.js";
@@ -9,6 +10,7 @@ import * as coursePackage from "../src/package/index.js";
 const modules = {
   "@interopkit/core": core,
   "@interopkit/course-launch": root,
+  "@interopkit/course-launch/au": au,
   "@interopkit/course-launch/lms": lms,
   "@interopkit/course-launch/package": coursePackage,
 };
@@ -17,6 +19,7 @@ const PACKAGES = fileURLToPath(new URL("../../", import.meta.url));
 /** Where the packages that the samples and the sources import resolve to: the sources, so that no build is needed. */
 const PATHS = {
   "@interopkit/course-launch": [`${PACKAGES}course-launch/src/index.ts`],
+  "@interopkit/course-launch/au": [`${PACKAGES}course-launch/src/au/index.ts`],
   "@interopkit/course-launch/lms": [`${PACKAGES}course-launch/src/lms/index.ts`],
   "@interopkit/course-launch/package": [`${PACKAGES}course-launch/src/package/index.ts`],
   "@interopkit/learning-records": [`${PACKAGES}learning-records/src/index.ts`],

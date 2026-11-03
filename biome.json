@@ -1708,6 +1708,36 @@
       }
     },
     {
+      "includes": ["packages/course-launch/src/au/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/lms",
+                      "**/lms/**",
+                      "**/package",
+                      "**/package/**",
+                      "**/structure",
+                      "**/structure/**",
+                      "@zip.js/zip.js",
+                      "@zip.js/zip.js/**",
+                      "@interopkit/learning-records/store"
+                    ],
+                    "message": "au/ builds on model/, rules/ and the client of @interopkit/learning-records: a unit loads neither the LMS, nor the LRS, nor the reader of a structure."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["packages/course-launch/src/lms/**"],
       "linter": {
         "rules": {

@@ -7504,6 +7504,48 @@ export const RULES: readonly Rule[] = [
     replace: "state: session.state,",
     test: "packages/course-launch/test/lms-flow.test.ts",
   },
+  {
+    rule: "A unit sends no statement that the rules of its session forbid.",
+    file: "packages/course-launch/src/au/au-session.ts",
+    find: 'if (judged.findings.some(({ severity }) => severity === "error")) {',
+    replace: "if (false) {",
+    test: "packages/course-launch/test/au.test.ts",
+  },
+  {
+    rule: "A session counts as ended once the LMS answers 401.",
+    file: "packages/course-launch/src/au/au-session.ts",
+    find: "ended = ended || error.status === 401;",
+    replace: "ended = ended;",
+    test: "packages/course-launch/test/au.test.ts",
+  },
+  {
+    rule: "A unit never changes LMS.LaunchData.",
+    file: "packages/course-launch/src/au/au-session.ts",
+    find: "if (stateId === LAUNCH_DATA_STATE_ID)",
+    replace: "if (false)",
+    test: "packages/course-launch/test/au.test.ts",
+  },
+  {
+    rule: "A unit gives its page a return URL only when it is http or https.",
+    file: "packages/course-launch/src/au/au-session.ts",
+    find: "return isPageUrl(launchData.returnUrl) ? { returnUrl: launchData.returnUrl } : {};",
+    replace: "return launchData.returnUrl === undefined ? {} : { returnUrl: launchData.returnUrl };",
+    test: "packages/course-launch/test/au.test.ts",
+  },
+  {
+    rule: "A unit sends its learner to no LMS outside its trusted origins.",
+    file: "packages/course-launch/src/au/start-au-session.ts",
+    find: "[launch.endpoint, launch.fetch].some((url) => !trustedOrigins.includes(new URL(url).origin))",
+    replace: "false",
+    test: "packages/course-launch/test/au.test.ts",
+  },
+  {
+    rule: "A resume belongs to its launch.",
+    file: "packages/course-launch/src/au/start-au-session.ts",
+    find: "(resume.registration !== launch.registration || resume.activityId !== launch.activityId)",
+    replace: "false",
+    test: "packages/course-launch/test/au.test.ts",
+  },
 ];
 
 /** The folders that a scratch copy leaves out: generated output and installed packages, which it links instead. */

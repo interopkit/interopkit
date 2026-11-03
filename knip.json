@@ -37,7 +37,7 @@
       "entry": ["src/index.ts"]
     },
     "packages/course-launch": {
-      "entry": ["src/index.ts", "src/package/index.ts", "src/lms/index.ts"]
+      "entry": ["src/index.ts", "src/package/index.ts", "src/lms/index.ts", "src/au/index.ts"]
     },
     "packages/tool-integration": {
       "entry": ["src/index.ts", "src/tool/index.ts", "src/platform/index.ts"]

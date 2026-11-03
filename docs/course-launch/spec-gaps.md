@@ -60,6 +60,14 @@ flowchart LR
 | Reads of a unit                                             | cmi5 says nothing; CATAPULT's player passes every read through                                                               | The Statements of its registration and learner, none by id, and the documents of its learner                  |
 | The duration of abandoned                                   | 9.5.4.2: from launched to the last statement of the unit                                                                     | Both times by the clock of the LMS, so a unit's clock never makes it negative                                   |
 
+## The assignable unit
+
+| Case                                                        | The sources                                                                                                                  | The package                                                                                                     |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| An endpoint without a final slash                           | 8.1.1 makes it the base of xAPI requests; CATAPULT's player and the LMS of this package write none                           | A slash is added                                                                                                |
+| A statement that the rules of the session forbid            | The unit MUST NOT send it; nothing says what it does instead                                                                 | Skipped with no request, as a value, so the content goes on                                                    |
+| The verb of progress                                        | 9.5.5.1 names the extension and no verb                                                                                       | `progressed` of the registry of ADL, in an allowed statement                                                     |
+
 ## The list of requirements
 
 `requirements.json` of CATAPULT dates from 2021 and lags the text in places: its ids of 13.2 follow an older numbering, and

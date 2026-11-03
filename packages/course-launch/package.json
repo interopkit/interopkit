@@ -33,6 +33,10 @@
     "./lms": {
       "types": "./dist/lms/index.d.ts",
       "default": "./dist/lms/index.js"
+    },
+    "./au": {
+      "types": "./dist/au/index.d.ts",
+      "default": "./dist/au/index.js"
     }
   },
   "files": [

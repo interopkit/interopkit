@@ -37,3 +37,11 @@ never changes `LMS.LaunchData`, its statements are judged by the rules of the se
 holds them the LMS writes the satisfied statements of the blocks and the course that they make due. `abandonSession` and
 `waiveAu` write the abandoned and waived statements, and `progressOf` tells what a registration holds. The host keeps the
 records in its `Cmi5Store`, whose puts compare a revision.
+`@interopkit/course-launch/au` is the runtime of an assignable unit, without a DOM. `startAuSession` reads the launch URL,
+refuses an LMS outside `trustedOrigins`, posts to the fetch URL once and turns its error codes into refusals, reads the launch
+data, the preferences of the learner and what the registration holds, and returns the session. `initialize`, `complete`,
+`pass`, `fail`, `judge` (by the mastery score), `progress`, `send` and `terminate` build each statement with the template of
+the session, judge it by the rules of cmi5 and skip what they forbid without a request; a 401 or 403 of the LMS is a refusal,
+and a request that fails sends the same statement again on the next call. `resume` goes on after a reload of the page without a
+second fetch, `state` keeps the State of the unit, `savePreferences` takes a refusal as a value, and `terminate` returns the
+return URL when it is http or https.

@@ -22,6 +22,24 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
       "xmlchars",
     ],
   },
+  "@interopkit/course-launch/au": {
+    gzip: 46_000,
+    holds: [
+      "@interopkit/core",
+      "@noble/hashes",
+      "@remix-run/headers",
+      "@remix-run/multipart-parser",
+      "course-launch/model",
+      "course-launch/rules",
+      "learning-records/attachments",
+      "learning-records/build",
+      "learning-records/client",
+      "learning-records/compare",
+      "learning-records/model",
+      "learning-records/read",
+      "valibot",
+    ],
+  },
   "@interopkit/course-launch/lms": {
     gzip: 51_500,
     holds: [

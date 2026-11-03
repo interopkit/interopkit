@@ -1,7 +1,7 @@
 # Runtimes
 
 The packages claim to run in any JavaScript runtime that has the web standards. `pnpm compat` shows it: it bundles the
-scenarios of the five examples and a set of calls to a real server, and runs the bundle on Node.js, Deno, Bun and workerd, the
+scenarios of the six examples and a set of calls to a real server, and runs the bundle on Node.js, Deno, Bun and workerd, the
 runtime of Cloudflare Workers. The bundle holds the packages as they ship, built with `pnpm build`, and the examples
 that use them.
 
@@ -38,6 +38,7 @@ flowchart LR
 | The CASE example                      | A ministry's provider and a school platform's client give the same documents, copies, outlines, alignments, refusals and changes on each runtime, and a consumer of CASE 1.0 gets the same 12 of 14 associations |
 | The credentials example               | A university awards Open Badges as JWTs and with Data Integrity proofs, a wallet serves the Open Badges API and refuses a forgery, an employer verifies, revokes and refreshes, baked PNG and SVG images and an Open Badges 2.0 badge verify, and a VC-API service issues, verifies and derives: the same statuses, checks and names on each runtime |
 | The xAPI example                      | A campus LRS, a platform and a dashboard give the same ids, voiding, pages, signature check, ETag outcomes, merge and Activity on each runtime, over the handler and the client                                  |
+| The cmi5 example                      | A course package written and read through zip.js, an LMS that registers, launches, judges, satisfies, abandons and waives, and units that start, reload and play their sessions give the same outcomes on each runtime |
 | The tool-integration example          | Web Crypto signs and verifies ES256, RS256 and HMAC the same on each runtime: the login, the launch with its substituted custom properties, the token, the line item, the score and the results of the grade services, the members, groups and record of needs of the roster services, the Deep Linking response that the tool signs and the platform reads, the Start Assessment message of a proctored attempt and the pause of the Assessment Control Service, the Submission Review request with the result that it reads, the End Assessment message, the registration of a second tool through Dynamic Registration, and the refusal of a second use of a launch |
 | `callService` with the global `fetch` | `redirect: "manual"` is accepted and a 302 is an error; a 503 is an error with its body; an answer over 65,536 bytes is refused; a server that never answers ends at the deadline, and a signal ends the wait with its reason |
 | The same results                      | Each runtime gives the results that Node.js gives, and Node.js gives what the packages promise                                                                                                                                |

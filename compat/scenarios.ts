@@ -1,6 +1,7 @@
 import { callService, type Fetch, ServiceError } from "@interopkit/core";
 import { runScenario as runCredentials } from "../examples/achievement-credentials/scenario.ts";
 import { runScenario as runFrameworks } from "../examples/competency-frameworks/scenario.ts";
+import { runScenario as runLaunch } from "../examples/course-launch/scenario.ts";
 import { runScenario as runAnalytics } from "../examples/learning-analytics/scenario.ts";
 import { runScenario as runRecords } from "../examples/learning-records/scenario.ts";
 import { runScenario as runTool } from "../examples/tool-integration/scenario.ts";
@@ -23,6 +24,8 @@ export interface Results {
   readonly frameworks: Awaited<ReturnType<typeof runFrameworks>>;
   /** The campus LRS, its platform and its dashboard of the xAPI example, as the example reports them. */
   readonly records: Awaited<ReturnType<typeof runRecords>>;
+  /** The package, the LMS and the units of the cmi5 example, as the example reports them. */
+  readonly launch: Awaited<ReturnType<typeof runLaunch>>;
   /** What `callService` does with the global `fetch` of the runtime, against the server of the check. */
   readonly service: Readonly<Record<string, unknown>>;
 }
@@ -69,7 +72,7 @@ async function serviceChecks(base: string): Promise<Record<string, unknown>> {
 }
 
 /**
- * Runs the scenarios of the four examples and the checks of the service call.
+ * Runs the scenarios of the examples and the checks of the service call.
  *
  * @param base - The address of the server of the check.
  */
@@ -90,6 +93,7 @@ export async function runAll(base: string): Promise<Results> {
     credentials: await runCredentials(),
     frameworks: await runFrameworks(),
     records: await runRecords(),
+    launch: await runLaunch(),
     service: await serviceChecks(base),
   };
 }
