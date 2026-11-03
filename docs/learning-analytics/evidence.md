@@ -149,6 +149,7 @@ value would pass by far.
 | The same, as Caliper 1.1                   | The same list                                              | 21–27 MiB    |
 | `readEnvelope`                             | An envelope whose event holds the same list                | 22–25 MiB    |
 | `handleCaliperRequest`                     | An envelope of 1 MiB of events, of 1.2 and of 1.1          | 1 and 17 MiB |
+| `handleCaliperRequest`                     | An event whose extensions have as many distinct keys as 1 MiB holds, the costliest body for its bytes | 29–33 MiB |
 
 The rises are those of Node.js 22 and 24. The copy of a host's value is most of what the million values cost: `copyJson` of
 `@interopkit/core` copies the list and names the place of a value only when it is not JSON. The endpoint reads what it parsed
