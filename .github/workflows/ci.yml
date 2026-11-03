@@ -114,8 +114,9 @@ jobs:
             ["scripts/cmi5-rules.ts", "packages/course-launch"],
           ]);
 
-          // The files of validation that a test of scripts reads, which compares the README of the W3C suites with their lock.
-          const SCRIPT_TESTED = new Set(["validation/w3c-suites/README.md", "validation/w3c-suites/suites.lock.json"]);
+          // The files that a test of scripts reads besides the scripts: every manifest, whose dependencies it holds to exact
+          // versions, and the README of the W3C suites with their lock, which it compares.
+          const SCRIPT_TESTED = /^(validation\/w3c-suites\/(README\.md|suites\.lock\.json)|(.+\/)?package\.json)$/;
 
           let everything = changed === null;
           let scriptTests = false;
@@ -124,7 +125,7 @@ jobs:
           const validation = new Set();
           for (const file of changed ?? []) {
             const [top, name, third] = file.split("/");
-            if (SCRIPT_TESTED.has(file)) scriptTests = true;
+            if (SCRIPT_TESTED.test(file)) scriptTests = true;
             if ((top === "packages" || top === "examples") && members.has(`${top}/${name}`)) touched.add(`${top}/${name}`);
             else if (top === "compat") touched.add("compat");
             else if (top === "docs" && third !== undefined && members.has(`packages/${name}`)) guides.add(`packages/${name}`);

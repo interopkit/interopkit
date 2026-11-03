@@ -58,7 +58,7 @@
     "check:packages": "pnpm build && publint --pack pnpm --strict && attw --pack . --profile esm-only"
   },
   "devDependencies": {
-    "fast-check": "^4.10.2",
+    "fast-check": "4.10.2",
     "oidc-provider": "9.12.2"
   },
   "dependencies": {

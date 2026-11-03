@@ -64,7 +64,7 @@
   "devDependencies": {
     "@humanwhocodes/momoa": "3.3.13",
     "@learninglocker/xapi-validation": "4.0.0",
-    "fast-check": "^4.10.2"
+    "fast-check": "4.10.2"
   },
   "dependencies": {
     "@interopkit/core": "workspace:^",

@@ -48,7 +48,7 @@
     "@digitalbazaar/data-integrity": "2.5.0",
     "@digitalbazaar/ecdsa-multikey": "1.8.0",
     "@digitalbazaar/ecdsa-sd-2023-cryptosuite": "3.4.1",
-    "fast-check": "^4.10.2",
+    "fast-check": "4.10.2",
     "jsonld": "9.0.0",
     "jsonld-signatures": "11.6.0"
   },

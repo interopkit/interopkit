@@ -222,7 +222,9 @@ A package at 0.0.0 takes `major` in its first changeset, so that it is released 
 - `internal.ts` cannot cross packages, so everything the packages share is a public export of `core`, covered by SemVer.
 - Runtime dependencies are listed in the `package.json` of the package that loads them, pinned to an exact version at least
   two weeks old, and recorded in `SECURITY.md` with their reason and license. `pnpm-workspace.yaml` sets
-  `minimumReleaseAge` so that an install cannot pick a younger version.
+  `minimumReleaseAge` so that an install cannot pick a younger version. Development dependencies are exact too, and
+  `scripts/test/versions.test.ts` fails on a range in any `package.json` of the workspace. `@types/node` stays on the oldest
+  supported Node.js major, and Dependabot ignores its major versions.
 - Generic concerns use mature libraries: `jose` for JOSE, `@interop/did-method-key`, `@interop/did-web-resolver` and the Multikey
   packages and the Data Integrity packages of the Interop Alliance (`@interop/jsonld-signatures`, `data-integrity-proof`,
   `ed25519-signature`, `ecdsa-signature`, `jsonld`) for DIDs, Multikeys and the cryptosuites, `valibot` for schemas, `uuid` for name-based UUIDs, `@noble/hashes` for the hashes of an identity and of an address, `oauth4webapi` for

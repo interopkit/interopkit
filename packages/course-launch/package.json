@@ -58,7 +58,7 @@
     "bench": "pnpm build && vitest bench --run --root ../.. --project 'course-launch-bench*' --reporter verbose"
   },
   "devDependencies": {
-    "fast-check": "^4.10.2"
+    "fast-check": "4.10.2"
   },
   "dependencies": {
     "@interopkit/core": "workspace:^",

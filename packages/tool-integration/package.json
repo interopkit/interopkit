@@ -57,7 +57,7 @@
   },
   "devDependencies": {
     "@lti-tool/core": "1.2.2",
-    "fast-check": "^4.10.2",
+    "fast-check": "4.10.2",
     "lti-core": "0.4.0"
   },
   "dependencies": {
