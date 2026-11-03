@@ -108,6 +108,15 @@ describe("the endpoints of the provider", () => {
     expect((await handle(options, "GET", `${OB}/credentials`)).status).toBe(404);
     expect((await handle(options, "GET", `/tenant/b${OB}/credentials`)).status).toBe(404);
   });
+
+  it("serves a base path outside ASCII as the URL of a request writes it, whether it is given encoded or not", async () => {
+    for (const basePath of ["/café", "/caf%C3%A9"]) {
+      const { options } = serving("badges", { basePath });
+      expect((await handle(options, "GET", `/café${OB}/credentials`)).status, basePath).toBe(200);
+      expect((await handle(options, "GET", `/caf%C3%A9${OB}/credentials`)).status, basePath).toBe(200);
+      expect((await handle(options, "GET", `/cafe${OB}/credentials`)).status, basePath).toBe(404);
+    }
+  });
 });
 
 describe("the scopes of the operations", () => {
@@ -633,6 +642,11 @@ describe("the arguments", () => {
       [{ ...options, authorize: "yes" }, "authorize"],
       [{ ...options, serviceDescription: "https://example.org/sdd" }, "serviceDescription"],
       [{ ...options, basePath: "/tenant/" }, "basePath"],
+      [
+        { ...options, basePath: "/tenant/.." },
+        'basePath: expected "" or a path that starts with / and does not end with /, found "/"',
+      ],
+      [{ ...options, basePath: "/tenant/." }, "basePath"],
       [{ ...options, pageSize: "100" }, "pageSize"],
       [{ ...options, maxPageSize: 0 }, "maxPageSize"],
       [{ ...options, maxBodyBytes: 1.5 }, "maxBodyBytes"],

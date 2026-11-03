@@ -2092,6 +2092,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/provider.test.ts",
   },
   {
+    rule: "The base path of a provider of Open Badges and CLR is compared in the percent-encoded form of the path of a request.",
+    file: "packages/achievement-credentials/src/provider/options.ts",
+    find: 'v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),',
+    replace: "",
+    test: "packages/achievement-credentials/test/provider.test.ts",
+  },
+  {
     rule: "A body above maxBodyBytes is refused with 413 before anything reads it.",
     file: "packages/achievement-credentials/src/provider/body.ts",
     find: "if (size > settings.maxBodyBytes)",

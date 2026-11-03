@@ -169,7 +169,7 @@ A path with other segments, a trailing slash or another case is 404; another met
 | `profiles`           | The `ProfileStore`. Required                                                                                                  | none      |
 | `authorize`          | `(request, scope, { signal }) => CredentialsAccess`: checks the token for the scope and names its owner. Required             | none      |
 | `serviceDescription` | The OpenAPI file of the API, profiled: `info` with the name and the policies, and the authorization code flow with every scope of the API. Required | none |
-| `basePath`           | The path the provider is mounted at: `""`, or a path that starts with `/` and does not end with one                          | `""`      |
+| `basePath`           | The path the provider is mounted at: `""`, or a path that starts with `/` and does not end with one. It is compared percent-encoded, as `URL` writes the path of a request, so `/café` and `/caf%C3%A9` are one path; one whose dot segments leave `/` is refused | `""`      |
 | `pageSize`           | Credentials in a page when the request has no `limit`; lowered to `maxPageSize` when above it                                 | 100       |
 | `maxPageSize`        | The most credentials in a page; a larger `limit` is lowered to it                                                             | 1,000     |
 | `maxBodyBytes`       | The most bytes of a body                                                                                                      | 1,048,576 |

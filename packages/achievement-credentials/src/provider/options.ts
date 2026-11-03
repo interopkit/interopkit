@@ -47,7 +47,8 @@ export interface CredentialsProviderOptions extends CallOptions {
   readonly serviceDescription: JsonObject;
   /**
    * The path the provider is mounted at, before `/ims/ob/v3p0` or `/ims/clr/v2p0`: `""` or a path that starts with `/` and
-   * does not end with one.
+   * does not end with one. It is compared with the path of a request as `URL` writes that, percent-encoded, so `/café` and
+   * `/caf%C3%A9` are one path.
    *
    * @defaultValue `""`
    */
@@ -108,6 +109,26 @@ const DEFAULT_MAX_PAGE_SIZE = 1000;
 /** The most bytes of a body: the size of the input that `verifyCredential` takes by default. */
 const DEFAULT_MAX_BODY_BYTES = 1_048_576;
 
+/** A path whose segments each start with `/` and are not empty, so that it is not `/` and does not end with one. */
+const BASE_PATH = /^(?:\/[^/?#\s]+)*$/u;
+
+/** The base against which a path alone is parsed as `URL` parses the path of a request. */
+const PATH_BASE = "https://provider.invalid";
+
+const basePathMessage = (issue: v.BaseIssue<unknown>): string =>
+  `expected "" or a path that starts with / and does not end with /, found ${issue.received}`;
+
+/**
+ * The schema of the base path: the path as it is given, then as the URL of a request writes it, percent-encoded and without
+ * segments of dots, which is the form that the router compares with the path of a request.
+ */
+const basePathSchema = v.pipe(
+  v.string(),
+  v.regex(BASE_PATH, basePathMessage),
+  v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),
+  v.regex(BASE_PATH, basePathMessage),
+);
+
 const optionsSchema = strictRecord({
   api: v.picklist(CREDENTIAL_APIS),
   credentials: credentialStoreSchema,
@@ -117,15 +138,7 @@ const optionsSchema = strictRecord({
     "a function",
   ),
   serviceDescription: guardSchema((value): value is JsonObject => isRecord(value), "an object"),
-  basePath: v.optional(
-    v.pipe(
-      v.string(),
-      v.regex(
-        /^(?:\/[^/?#\s]+)*$/u,
-        (issue) => `expected "" or a path that starts with / and does not end with /, found ${issue.received}`,
-      ),
-    ),
-  ),
+  basePath: v.optional(basePathSchema),
   pageSize: v.optional(positiveIntegerSchema),
   maxPageSize: v.optional(positiveIntegerSchema),
   maxBodyBytes: v.optional(positiveIntegerSchema),
