@@ -142,7 +142,7 @@ The checks, in order:
 The result is a `ReceivedDeepLinkingResponse`: the fields of the message (`issuer`, `clientId`, `deploymentId`, `version`,
 `message`, `log`, `errorMessage`, `errorLog`, `claims`), the `items` as `ContentItem` values, the `settings` of the request, the
 host's own `data` after verification (absent when the request had none), and the `subject` of the request (absent for an
-anonymous one). The sealed data is the anti-CSRF token of the request (Appendix A's example names its `data` a `csrftoken`): the
+anonymous one). The sealed data is the anti-CSRF token of the request (the `data` of the example of Appendix A is a CSRF token): the
 host places the items only when its own session of the browser is of that `subject`, so that a response that another user's
 browser is made to post places nothing. Whether the user confirms the items, what `autoCreate`
 means, and how a `file` is fetched, an `html` item sanitized and a `link` shown, are the host's. A file's `url` is short-lived:
