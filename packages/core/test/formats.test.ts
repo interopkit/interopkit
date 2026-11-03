@@ -13,6 +13,7 @@ import {
   parseDateTime,
   uuidSchema,
 } from "../src/checks.js";
+import { DataError } from "../src/index.js";
 
 describe("isDate", () => {
   it.each([
@@ -58,19 +59,19 @@ describe("parseDateTime", () => {
     const utc = Date.UTC(2017, 3, 16, 18, 54, 36);
     expect(parseDateTime("2017-04-17T18:53:36+23:59")).toBe(utc);
     expect(parseDateTime("2017-04-15T18:55:36-23:59")).toBe(utc);
-    expect(parseDateTime("2017-04-16T18:54:36+24:00")).toBeUndefined();
-    expect(parseDateTime("2017-04-16T18:54:36+00:60")).toBeUndefined();
+    expect(() => parseDateTime("2017-04-16T18:54:36+24:00")).toThrow(DataError);
+    expect(() => parseDateTime("2017-04-16T18:54:36+00:60")).toThrow(DataError);
   });
 
   it("reads a year below 100 as that year, which Date.UTC reads as 1900 and more", () => {
-    expect(new Date(parseDateTime("0050-01-01T00:00:00Z") ?? Number.NaN).getUTCFullYear()).toBe(50);
+    expect(new Date(parseDateTime("0050-01-01T00:00:00Z")).getUTCFullYear()).toBe(50);
   });
 
   it("reads a leap second at 23:59 as the second that follows, and no other second 60", () => {
     expect(parseDateTime("2016-12-31T23:59:60Z")).toBe(Date.UTC(2017, 0, 1, 0, 0, 0));
-    expect(parseDateTime("2016-12-31T23:58:60Z")).toBeUndefined();
-    expect(parseDateTime("2016-12-31T22:59:60Z")).toBeUndefined();
-    expect(parseDateTime("2016-12-31T23:59:61Z")).toBeUndefined();
+    expect(() => parseDateTime("2016-12-31T23:58:60Z")).toThrow(DataError);
+    expect(() => parseDateTime("2016-12-31T22:59:60Z")).toThrow(DataError);
+    expect(() => parseDateTime("2016-12-31T23:59:61Z")).toThrow(DataError);
   });
 
   it.each([
@@ -88,8 +89,12 @@ describe("parseDateTime", () => {
     "2024-06-13T18:46:03.Z",
     "",
   ])("refuses %j", (text) => {
-    expect(parseDateTime(text)).toBeUndefined();
+    expect(() => parseDateTime(text)).toThrow(DataError);
     expect(isDateTime(text)).toBe(false);
+  });
+
+  it("names the text in the error that it throws", () => {
+    expect(() => parseDateTime("2024-02-30T00:00:00Z")).toThrow('found "2024-02-30T00:00:00Z"');
   });
 
   it("says that a date and time that is read is one", () => {

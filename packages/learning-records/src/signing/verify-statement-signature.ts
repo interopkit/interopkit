@@ -1,13 +1,5 @@
 import { type CallOptions, DataError, raceAbort } from "@interopkit/core";
-import {
-  abortSignalSchema,
-  describe,
-  guardSchema,
-  isRecord,
-  parseDateTime,
-  parseWith,
-  strictRecord,
-} from "@interopkit/core/checks";
+import { abortSignalSchema, describe, guardSchema, isRecord, parseWith, strictRecord } from "@interopkit/core/checks";
 import {
   base64url,
   compactVerify,
@@ -20,7 +12,7 @@ import * as v from "valibot";
 import { convertStatementVersion } from "../compare/index.js";
 import { equivalenceKey } from "../compare/internal.js";
 import { type Statement, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
-import { parseIsoTimestamp } from "../model/internal.js";
+import { findInstant, parseIsoTimestamp } from "../model/internal.js";
 import { type ReadStatementJsonOptions, readStatement, readStatementJson } from "../read/index.js";
 import { readEitherVersion } from "../read/internal.js";
 import { isCertificate, SIGNATURE_ALGORITHMS } from "./constants.js";
@@ -206,7 +198,7 @@ function readPayload(
 
 /** Reads a time of a Statement of either version as epoch milliseconds. */
 function instantOf(time: string | undefined): number | undefined {
-  return time === undefined ? undefined : (parseDateTime(time) ?? parseIsoTimestamp(time));
+  return time === undefined ? undefined : (findInstant(time) ?? parseIsoTimestamp(time));
 }
 
 /**
@@ -324,7 +316,7 @@ export async function verifySignature(
   if (!equivalent(stated, signed)) return fail("not-equivalent");
   const certified =
     found.chain !== undefined && trustCertificate !== undefined
-      ? await raceAbort(trustCertificate(found.chain, signal === undefined ? undefined : { signal }), signal)
+      ? await raceAbort(trustCertificate(found.chain, signal === undefined ? undefined : { signal }), { signal })
       : false;
   return { valid: true, certified };
 }

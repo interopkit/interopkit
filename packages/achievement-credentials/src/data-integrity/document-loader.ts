@@ -18,7 +18,9 @@ export function documentLoaderOf(contexts: ContextLoader, signal?: AbortSignal) 
     contextUrl: null,
     documentUrl: url,
     // A loader is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
-    document: await raceAbort(Promise.resolve(contexts(url, signal === undefined ? undefined : { signal })), signal),
+    document: await raceAbort(Promise.resolve(contexts(url, signal === undefined ? undefined : { signal })), {
+      signal,
+    }),
   });
 }
 

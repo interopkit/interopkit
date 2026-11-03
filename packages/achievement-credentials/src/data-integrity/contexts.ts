@@ -254,6 +254,6 @@ export function createContextLoader(options: ContextLoaderOptions): ContextLoade
 
   return async (url: string, callOptions?: CallOptions) => {
     checkHttpsUrl(url, "The address of a context");
-    return structuredClone(await raceAbort(loadOnce(url), callOptions?.signal));
+    return structuredClone(await raceAbort(loadOnce(url), callOptions));
   };
 }

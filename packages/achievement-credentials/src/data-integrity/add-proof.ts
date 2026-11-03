@@ -94,7 +94,7 @@ export async function addProof(
         id: keyId,
         algorithm: ED25519.library,
         // The signer is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
-        sign: ({ data }: { data: Uint8Array }) => raceAbort(Promise.resolve(signer.sign(data, withSignal)), signal),
+        sign: ({ data }: { data: Uint8Array }) => raceAbort(Promise.resolve(signer.sign(data, withSignal)), { signal }),
       },
     });
     const signed: unknown = await jsigs.sign(document, {

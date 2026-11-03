@@ -88,10 +88,9 @@ async function storeNew(context: Context, prepared: Prepared): Promise<Verdict<R
       version: context.version,
     }));
     const targets = voidingTargets(pending);
-    const inserted = await callPort(
-      () => context.settings.statements.insert(batch, targets, attachments, { signal }),
+    const inserted = await callPort(() => context.settings.statements.insert(batch, targets, attachments, { signal }), {
       signal,
-    );
+    });
     if (inserted === undefined) return refused(500, FAILED);
     const same = resends(context, inserted.value.existing, pending);
     if (isRefusal(same)) return same;
@@ -115,10 +114,9 @@ export async function storeStatements(context: Context, prepared: Prepared): Pro
   const held = await storeNew(context, prepared);
   if (isRefusal(held)) return held;
   const seen = activitiesOfAll(statements.map((statement) => held.value.get(statement.id) ?? statement));
-  const told = await callPort(
-    () => context.settings.activities.observe(seen, context.access.authority, { signal }),
+  const told = await callPort(() => context.settings.activities.observe(seen, context.access.authority, { signal }), {
     signal,
-  );
+  });
   if (told === undefined) return refused(500, FAILED);
   return { value: { ids, created: held.value.size < statements.length } };
 }

@@ -12,7 +12,7 @@ import type {
   StatementQuery,
   StateScope,
 } from "../model/index.js";
-import { type LrsClientConfig, type Settings, settingsOf } from "./config.js";
+import { type LrsClientOptions, type Settings, settingsOf } from "./config.js";
 import {
   type DeleteOptions,
   deleteDocument,
@@ -133,13 +133,13 @@ function statementGetter(settings: Settings): LrsClient["getStatement"] {
  * `ServiceError` with its status, headers and body. Nothing is retried and nothing is kept between calls, so a client is safe
  * to share.
  *
- * @param config - The address of the LRS, the `fetch` and the optional version, credential, limits and signal.
+ * @param options - The address of the LRS, the `fetch` and the optional version, credential, limits and signal.
  * @returns The client.
- * @throws `DataError` when the configuration is not valid.
+ * @throws `DataError` when the options are not valid.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
-export function createLrsClient(config: LrsClientConfig): LrsClient {
-  const settings = settingsOf(config);
+export function createLrsClient(options: LrsClientOptions): LrsClient {
+  const settings = settingsOf(options);
   return {
     sendStatement: (statement, options) => sendStatement(settings, statement, options),
     sendStatements: (statements, options) => sendStatements(settings, statements, options),

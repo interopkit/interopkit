@@ -50,18 +50,18 @@ export function isDate(text: string): boolean {
 
 /**
  * Reads a date and time of RFC 3339 section 5.6 with an offset, such as `2024-06-13T18:46:03.250+00:00`, into milliseconds
- * since 1970-01-01T00:00:00Z.
+ * since 1970-01-01T00:00:00Z, or returns `undefined` when the text is not one.
  *
  * @remarks
  * The date must exist, the time must have an hour to 23, a minute to 59 and a second to 59, or 60 at 23:59, and the offset
  * is `Z` or a sign and `hh:mm` of at most 23:59. `T` and `Z` may be lower case, as RFC 3339 allows. A fraction of a second
  * keeps its first three digits. The `isoTimestamp` of valibot is a pattern that accepts a date that does not exist, which
- * is why this function reads the parts itself.
+ * is why this function reads the parts itself. `parseDateTime` of `checks.ts` is this function that throws.
  *
  * @param text - The text.
  * @returns The instant in milliseconds, or `undefined` when the text is not a date and time of RFC 3339.
  */
-export function parseDateTime(text: string): number | undefined {
+export function findInstant(text: string): number | undefined {
   const match = DATE_TIME.exec(text);
   if (match === null) return undefined;
   // The pattern holds every part, so that the empty strings stand in only for what the types leave possibly absent.
@@ -87,7 +87,7 @@ export function parseDateTime(text: string): number | undefined {
  * @returns Whether `parseDateTime` reads it.
  */
 export function isDateTime(text: string): boolean {
-  return parseDateTime(text) !== undefined;
+  return findInstant(text) !== undefined;
 }
 
 /**

@@ -116,9 +116,9 @@ export function verifyToolJwt(
  *
  * @throws `LtiError` (`assertion-lifetime`) when it expires later.
  */
-export function checkLifetime(claims: Claims, nowMilliseconds: number, owner: string): number {
+export function checkLifetime(claims: Claims, nowMs: number, owner: string): number {
   const exp = required(claims, "exp", owner, NUMBER);
-  if (exp - nowMilliseconds / MILLISECONDS > MAX_LIFETIME_SECONDS) {
+  if (exp - nowMs / MILLISECONDS > MAX_LIFETIME_SECONDS) {
     throw new LtiError(`The token must expire within ${MAX_LIFETIME_SECONDS} seconds.`, "assertion-lifetime");
   }
   return exp;

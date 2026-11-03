@@ -456,13 +456,17 @@ describe("buildJsonResponse", () => {
 
   it("takes more headers, which win over the media type, and another media type", () => {
     expect(
-      buildJsonResponse(403, { error: "x" }, { "www-authenticate": "Bearer" }, "application/problem+json"),
+      buildJsonResponse(
+        403,
+        { error: "x" },
+        { headers: { "www-authenticate": "Bearer" }, type: "application/problem+json" },
+      ),
     ).toStrictEqual({
       status: 403,
       headers: { "content-type": "application/problem+json", "www-authenticate": "Bearer" },
       body: '{"error":"x"}',
     });
-    expect(buildJsonResponse(200, 1, { "content-type": "text/plain" }).headers).toStrictEqual({
+    expect(buildJsonResponse(200, 1, { headers: { "content-type": "text/plain" } }).headers).toStrictEqual({
       "content-type": "text/plain",
     });
   });

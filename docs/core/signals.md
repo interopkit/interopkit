@@ -9,7 +9,7 @@ flowchart TD
   fn --> own{"Work of this caller alone?"}
   own -->|"yes"| port["Awaits the port or the service<br/>and passes the signal on"]
   own -->|"no, shared"| shared["Starts or joins the shared work,<br/>which takes no caller's signal"]
-  shared --> wait["raceAbort(shared, options.signal)"]
+  shared --> wait["raceAbort(shared, options)"]
   port -->|"signal aborts"| reason["Rejects with signal.reason"]
   wait -->|"signal aborts"| reason
   shared -->|"runs on"| done["Finishes for the other callers<br/>at its own timeout"]
@@ -22,7 +22,7 @@ import { raceAbort } from "@interopkit/core";
 
 const controller = new AbortController();
 const work = new Promise(() => undefined);
-const wait = raceAbort(work, controller.signal);
+const wait = raceAbort(work, { signal: controller.signal });
 controller.abort(new Error("The caller left."));
 await wait.catch((error) => error.message);
 // => "The caller left."
@@ -33,8 +33,8 @@ await wait.catch((error) => error.message);
 | Export                           | Does                                                                                                                                                                                     |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CallOptions`                    | The options type with `signal`, default none. Every options type of a function that waits on I/O extends it                                                                              |
-| `callPort(call, signal?)`        | Waits for a port of the host: its value in an object, `undefined` when it fails, so that a handler answers 500 and says nothing of the failure; an abort rejects with its reason         |
-| `raceAbort(promise, signal?)` | Settles with the promise, or rejects with `signal.reason` as soon as the signal aborts. The promise runs on and its outcome is dropped. Without a signal it returns the promise as it is |
+| `callPort(call, options?)`       | Waits for a port of the host: its value in an object, `undefined` when it fails, so that a handler answers 500 and says nothing of the failure; an abort rejects with its reason         |
+| `raceAbort(promise, options?)` | Settles with the promise, or rejects with `signal.reason` as soon as the signal aborts. The promise runs on and its outcome is dropped. Without a `signal` it returns the promise as it is |
 | `createKeyedCache({ clock, lifetime, maxEntries })` | A cache of values by key whose loads are shared work: `get(key, load, options?, reloadAfter?)` returns the kept value while its `lifetime` holds, else joins or starts the one load of the key, which takes no caller's signal. A failed load is not kept; a value whose lifetime is zero or less is shared and not kept; the key loaded first goes first beyond `maxEntries`; `reloadAfter` loads again a value older than it, for a caller that misses something in a document. `createTokenCache` of `@interopkit/core/oauth`, `createJwksCache` and the caches of the key resolver and the status lists of `achievement-credentials` are built on it |
 | `createJwksCache({ fetch, clock })` | A cache of JWK Sets by URL, for `jwtVerify` of jose: `keySet(url, options?)` returns the function that picks the key of a token, fetching the set when it holds none or an old one, and again for a missing `kid` at most once in `refreshSeconds`. `tool-integration` verifies LTI tokens with it, and [its guide](../tool-integration/tool.md#the-key-set-cache) has the options and the limits |
 

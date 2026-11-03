@@ -7,6 +7,7 @@
 import * as v from "valibot";
 import { DataError } from "./errors.js";
 import { FINDINGS_STOPPED_RULE, type Finding } from "./findings.js";
+import { findInstant } from "./formats.js";
 import { copyJson, type JsonObject } from "./json.js";
 
 export {
@@ -27,7 +28,6 @@ export {
   isLanguageTag,
   isUuid,
   languageTagSchema,
-  parseDateTime,
   uuidSchema,
 } from "./formats.js";
 export {
@@ -53,6 +53,29 @@ export function describe(value: unknown): string {
   if (typeof value === "function") return "a function";
   if (typeof value === "object" && value !== null) return "an object";
   return String(value);
+}
+
+/**
+ * Reads a date and time of RFC 3339 section 5.6 with an offset, such as `2024-06-13T18:46:03.250+00:00`, into milliseconds
+ * since 1970-01-01T00:00:00Z.
+ *
+ * @remarks
+ * The date must exist, the time must have an hour to 23, a minute to 59 and a second to 59, or 60 at 23:59, and the offset
+ * is `Z` or a sign and `hh:mm` of at most 23:59. `T` and `Z` may be lower case, as RFC 3339 allows. A fraction of a second
+ * keeps its first three digits. A reader that judges the text without throwing asks `isDateTime` first.
+ *
+ * @param text - The text.
+ * @returns The instant in milliseconds.
+ * @throws `DataError` when the text is not a date and time of RFC 3339.
+ */
+export function parseDateTime(text: string): number {
+  const instant = findInstant(text);
+  if (instant === undefined) {
+    throw new DataError(
+      `The date and time must be in the form of RFC 3339 with an offset, such as 2024-06-13T18:46:03+00:00, found ${describe(text)}.`,
+    );
+  }
+  return instant;
 }
 
 /** Returns whether a value is an object that is neither `null` nor an array. */

@@ -143,7 +143,9 @@ async function serve(
     return refuse(405, `The method ${request.method} is not allowed here: use ${allow}.`, { allow });
   }
   const { signal } = settings;
-  const asked = await callPort(() => settings.access(request, signal === undefined ? undefined : { signal }), signal);
+  const asked = await callPort(() => settings.access(request, signal === undefined ? undefined : { signal }), {
+    signal,
+  });
   if (asked === undefined) return refuse(500, FAILED);
   const decision = readAccessDecision(asked.value, "The decision of access", { grant: grantSchema });
   if (!decision.allowed) return denial(decision, refuse);

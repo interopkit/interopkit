@@ -3,7 +3,7 @@
 import { DataError, ServiceError } from "@interopkit/core";
 import { describe, expect, it, vi } from "vitest";
 import {
-  type CredentialsClientConfig,
+  type CredentialsClientOptions,
   createCredentialsClient,
   discoverService,
   readStatusInfo,
@@ -67,7 +67,7 @@ async function all<TValue>(iterable: AsyncIterable<TValue>): Promise<TValue[]> {
 
 const credential = (id: number) => ({ ...achievementCredential(), id: `https://example.edu/credentials/${id}` });
 
-function clientOf(fetch: CredentialsClientConfig["fetch"], more: Partial<CredentialsClientConfig> = {}) {
+function clientOf(fetch: CredentialsClientOptions["fetch"], more: Partial<CredentialsClientOptions> = {}) {
   return createCredentialsClient({ api: "badges", baseUrl: BASE, fetch, token: async () => "tk-1", ...more });
 }
 

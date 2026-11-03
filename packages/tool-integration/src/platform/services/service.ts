@@ -93,7 +93,7 @@ export async function askStore<T>(
   port: (options: CallOptions) => Promise<T> | undefined,
 ): Promise<T | undefined> {
   const { signal } = call.settings;
-  const outcome = await callPort(() => port({ signal }), signal);
+  const outcome = await callPort(() => port({ signal }), { signal });
   if (outcome === undefined) throw new StoreFailed();
   return outcome.value;
 }

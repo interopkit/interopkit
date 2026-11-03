@@ -29,7 +29,7 @@ async function postControl(call: ServiceRequest<AssessmentControl>): Promise<Htt
   const found = await askStore(call, (options) => store.control(caller, asked, options));
   if (found === undefined) return notFound();
   const status = fromStore("AssessmentControl.control", () => readControlStatus(writeControlStatus(found)));
-  return buildJsonResponse(200, writeControlStatus(status), {}, CONTROL_MEDIA_TYPE);
+  return buildJsonResponse(200, writeControlStatus(status), { type: CONTROL_MEDIA_TYPE });
 }
 
 /**

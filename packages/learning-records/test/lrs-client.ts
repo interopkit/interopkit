@@ -1,4 +1,4 @@
-import { createLrsClient, type LrsClient, type LrsClientConfig } from "../src/client/index.js";
+import { createLrsClient, type LrsClient, type LrsClientOptions } from "../src/client/index.js";
 import type { Statement } from "../src/index.js";
 import type { FakeLrs } from "./fake-lrs.js";
 import { uuid } from "./full-statement.js";
@@ -9,7 +9,7 @@ export const ENDPOINT = "https://lrs.example.org/xapi/";
 export const CONSISTENT_THROUGH = "2026-01-15T10:30:00.000Z";
 
 /** A client of a fake LRS, with the configuration of a test. */
-export function clientOf(lrs: FakeLrs, config: Partial<LrsClientConfig> = {}): LrsClient {
+export function clientOf(lrs: FakeLrs, config: Partial<LrsClientOptions> = {}): LrsClient {
   return createLrsClient({ endpoint: ENDPOINT, fetch: lrs.fetch, ...config });
 }
 

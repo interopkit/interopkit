@@ -24,14 +24,16 @@ describe("raceAbort", () => {
 
   it("settles with the promise while the signal has not aborted", async () => {
     const controller = new AbortController();
-    await expect(raceAbort(Promise.resolve("done"), controller.signal)).resolves.toBe("done");
-    await expect(raceAbort(Promise.reject(new Error("failed")), controller.signal)).rejects.toThrow("failed");
+    await expect(raceAbort(Promise.resolve("done"), { signal: controller.signal })).resolves.toBe("done");
+    await expect(raceAbort(Promise.reject(new Error("failed")), { signal: controller.signal })).rejects.toThrow(
+      "failed",
+    );
   });
 
   it("rejects with the reason of the signal as soon as it aborts, and leaves the promise running", async () => {
     const work = deferred<string>();
     const controller = new AbortController();
-    const wait = raceAbort(work.promise, controller.signal);
+    const wait = raceAbort(work.promise, { signal: controller.signal });
     const reason = new Error("The caller left.");
     controller.abort(reason);
     await expect(wait).rejects.toBe(reason);
@@ -41,14 +43,16 @@ describe("raceAbort", () => {
 
   it("rejects with the reason of a signal that aborted before the wait began", async () => {
     const reason = new Error("Already left.");
-    await expect(raceAbort(new Promise<string>(() => undefined), AbortSignal.abort(reason))).rejects.toBe(reason);
+    await expect(raceAbort(new Promise<string>(() => undefined), { signal: AbortSignal.abort(reason) })).rejects.toBe(
+      reason,
+    );
   });
 
   it("ends only the wait of the caller whose signal aborts", async () => {
     const work = deferred<string>();
     const first = new AbortController();
-    const ended = raceAbort(work.promise, first.signal);
-    const waiting = raceAbort(work.promise, new AbortController().signal);
+    const ended = raceAbort(work.promise, { signal: first.signal });
+    const waiting = raceAbort(work.promise, { signal: new AbortController().signal });
     first.abort();
     await expect(ended).rejects.toBeInstanceOf(DOMException);
     work.resolve("shared");
@@ -58,7 +62,7 @@ describe("raceAbort", () => {
   it("reports no unhandled rejection when the promise fails after the wait ended", async () => {
     const work = deferred<string>();
     const controller = new AbortController();
-    const wait = raceAbort(work.promise, controller.signal);
+    const wait = raceAbort(work.promise, { signal: controller.signal });
     controller.abort();
     await wait.catch(() => undefined);
     work.reject(new Error("The connection was reset."));
@@ -81,7 +85,7 @@ describe("raceAbort", () => {
       removed += 1;
       remove(...args);
     };
-    await raceAbort(Promise.resolve(1), signal);
+    await raceAbort(Promise.resolve(1), { signal });
     await Promise.resolve();
     expect({ added, removed }).toStrictEqual({ added: 1, removed: 1 });
   });

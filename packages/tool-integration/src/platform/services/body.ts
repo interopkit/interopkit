@@ -26,7 +26,9 @@ export function readBody<T>(
 ): { readonly value: T } | HttpResponse {
   if (mediaTypeOf(request) !== mediaType) {
     return buildJsonResponse(415, errorBody("unsupported_media_type", `The body must be ${mediaType}.`), {
-      accept: mediaType,
+      headers: {
+        accept: mediaType,
+      },
     });
   }
   if (request.body.byteLength > maxBytes) return tooLarge(request.body.byteLength, maxBytes);

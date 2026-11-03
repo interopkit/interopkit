@@ -15,7 +15,7 @@ import { XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 const DEFAULT_MAX_BYTES = 10_485_760;
 
 /** What the host sets for a client of an LRS. */
-export interface LrsClientConfig extends CallOptions {
+export interface LrsClientOptions extends CallOptions {
   /** The address of the LRS before the resources, over HTTPS and ending in a slash: `https://lrs.example.org/xapi/`. */
   readonly endpoint: string;
   /** The `fetch` that makes the requests: the global one, or a replacement. */
@@ -64,7 +64,7 @@ export interface Settings {
   readonly origin: string;
   readonly fetch: Fetch;
   readonly version: XapiVersion;
-  readonly authorization: LrsClientConfig["authorization"];
+  readonly authorization: LrsClientOptions["authorization"];
   readonly timeoutMs: number;
   readonly maxBytes: number;
   readonly maxTokens: number;
@@ -77,7 +77,7 @@ const configSchema = strictRecord({
   version: v.optional(v.picklist(XAPI_VERSIONS)),
   authorization: v.optional(
     guardSchema(
-      (value): value is NonNullable<LrsClientConfig["authorization"]> => typeof value === "function",
+      (value): value is NonNullable<LrsClientOptions["authorization"]> => typeof value === "function",
       "a function",
     ),
   ),

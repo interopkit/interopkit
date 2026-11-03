@@ -1,17 +1,16 @@
 import { DataError } from "@interopkit/core";
-import { checkRecord, describe, parseDateTime } from "@interopkit/core/checks";
+import { checkRecord, describe, isDateTime, parseDateTime } from "@interopkit/core/checks";
 
 /** Reads the `lastChangeDateTime` of an entity into milliseconds. */
 function changedAt(entity: unknown, label: string): number {
   checkRecord(entity, `${label} must be an object`);
   const text = entity.lastChangeDateTime;
-  const time = typeof text === "string" ? parseDateTime(text) : undefined;
-  if (time === undefined) {
+  if (typeof text !== "string" || !isDateTime(text)) {
     throw new DataError(
       `The lastChangeDateTime of ${label.toLowerCase()} must be a date and time of RFC 3339 with an offset, found ${describe(text)}.`,
     );
   }
-  return time;
+  return parseDateTime(text);
 }
 
 /**

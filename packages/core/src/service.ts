@@ -122,7 +122,7 @@ async function readBytes(response: Response, maxBytes: number, signal: AbortSign
   let finished = false;
   try {
     for (;;) {
-      const { done, value } = await raceAbort(reader.read(), signal);
+      const { done, value } = await raceAbort(reader.read(), { signal });
       if (done) {
         finished = true;
         return { bytes: join(chunks, size), complete: true };
@@ -272,7 +272,7 @@ export async function requestService(
   let answer: Answer;
   try {
     pending = Promise.resolve(call(url, { ...init, redirect: "manual", signal }));
-    response = await raceAbort(pending, signal);
+    response = await raceAbort(pending, { signal });
     answer = await readBytes(response, maxBytes, signal);
   } catch (error) {
     if (response === undefined) release(pending);

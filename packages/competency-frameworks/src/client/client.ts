@@ -27,7 +27,7 @@ import type {
 import { checkEndpointIdentifier, DISCOVERY_FILE, endpointUrl } from "../model/internal.js";
 import { readEntity, readPackage, validateEntity } from "../read/index.js";
 import { openApiSchema } from "../read/internal.js";
-import { type CaseClientConfig, type Settings, settingsOf } from "./config.js";
+import { type CaseClientOptions, type Settings, settingsOf } from "./config.js";
 import { queryString } from "./query.js";
 
 /**
@@ -143,7 +143,7 @@ async function get(
       ? undefined
       : await raceAbort(
           Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
-          either,
+          { signal: either },
         );
   if (
     authorization !== undefined &&
@@ -262,13 +262,13 @@ async function* pagesOfDocuments(
  * provider that answers 404 gives `undefined`; any other status that is not 200 is a `ServiceError` with its status, headers
  * and body, which `readStatusInfo` reads. Nothing is retried and nothing is kept between calls, so a client is safe to share.
  *
- * @param config - The provider's address, the `fetch` and the optional version, credential, limits and signal.
+ * @param options - The provider's address, the `fetch` and the optional version, credential, limits and signal.
  * @returns The client.
- * @throws `DataError` when the configuration is not valid.
+ * @throws `DataError` when the options are not valid.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1, REST binding}
  */
-export function createCaseClient(config: CaseClientConfig): CaseClient {
-  const settings = settingsOf(config);
+export function createCaseClient(options: CaseClientOptions): CaseClient {
+  const settings = settingsOf(options);
   const as = { version: settings.version };
 
   function documents(

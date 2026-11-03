@@ -397,7 +397,7 @@ export async function verifyCredentialStatus(
       () => load(undefined),
       signal === undefined ? undefined : { signal },
     );
-    return raceAbort(Promise.resolve(shared), signal);
+    return raceAbort(Promise.resolve(shared), { signal });
   };
   try {
     if ("revocationList" in read) {

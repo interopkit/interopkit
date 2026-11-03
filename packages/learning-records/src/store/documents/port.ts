@@ -27,7 +27,7 @@ export async function fetchDocument(
   target: DocumentTarget,
 ): Promise<Verdict<LrsDocument | undefined>> {
   const { signal } = settings;
-  const asked = await callPort(() => settings.documents.get(target, { signal }), signal);
+  const asked = await callPort(() => settings.documents.get(target, { signal }), { signal });
   if (asked === undefined) return refused(500, FAILED);
   if (asked.value === undefined) return { value: undefined };
   return { value: parseWith(storedSchema, asked.value, "The answer of DocumentStore.get") };
@@ -41,7 +41,7 @@ export async function storeDocument(
   condition: WriteCondition,
 ): Promise<Verdict<"written" | "precondition-failed" | "exists">> {
   const { signal } = settings;
-  const asked = await callPort(() => settings.documents.write(target, document, condition, { signal }), signal);
+  const asked = await callPort(() => settings.documents.write(target, document, condition, { signal }), { signal });
   if (asked === undefined) return refused(500, FAILED);
   return { value: parseWith(writeSchema, asked.value, "The answer of DocumentStore.write") };
 }
@@ -53,7 +53,7 @@ export async function removeDocument(
   ifMatch: string,
 ): Promise<Verdict<"deleted" | "precondition-failed" | "absent">> {
   const { signal } = settings;
-  const asked = await callPort(() => settings.documents.delete(target, { ifMatch }, { signal }), signal);
+  const asked = await callPort(() => settings.documents.delete(target, { ifMatch }, { signal }), { signal });
   if (asked === undefined) return refused(500, FAILED);
   return { value: parseWith(deleteSchema, asked.value, "The answer of DocumentStore.delete") };
 }
@@ -65,7 +65,7 @@ export async function listDocuments(
   since: string | undefined,
 ): Promise<Verdict<readonly string[]>> {
   const { signal } = settings;
-  const asked = await callPort(() => settings.documents.list(scope, since, { signal }), signal);
+  const asked = await callPort(() => settings.documents.list(scope, since, { signal }), { signal });
   if (asked === undefined) return refused(500, FAILED);
   return { value: [...new Set(parseWith(idsSchema, asked.value, "The answer of DocumentStore.list"))] };
 }
@@ -73,6 +73,6 @@ export async function listDocuments(
 /** Removes every State document of a scope. */
 export async function removeAll({ settings }: Context, scope: StateScope): Promise<Verdict<undefined>> {
   const { signal } = settings;
-  const asked = await callPort(() => settings.documents.deleteAll(scope, { signal }), signal);
+  const asked = await callPort(() => settings.documents.deleteAll(scope, { signal }), { signal });
   return asked === undefined ? refused(500, FAILED) : { value: undefined };
 }

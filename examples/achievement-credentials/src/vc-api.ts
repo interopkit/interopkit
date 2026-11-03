@@ -136,7 +136,7 @@ async function statusList(service: Service, name: string, purpose: string): Prom
   if (list === undefined) return failure(404, "There is no such status list.");
   return typeof list === "string"
     ? { status: 200, headers: { "content-type": "application/jwt" }, body: list }
-    : buildJsonResponse(200, list, {}, "application/ld+json");
+    : buildJsonResponse(200, list, { type: "application/ld+json" });
 }
 
 /** The checks of the API that the service offers, each by a function of the package. */

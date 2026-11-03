@@ -56,7 +56,7 @@ export async function listJws(
     issuer?: string;
     validFrom?: string;
     validUntil?: string;
-    ttlMilliseconds?: number;
+    ttlMs?: number;
   } = {},
   by = signer,
 ): Promise<string> {

@@ -18,6 +18,7 @@ describe("the public API", () => {
         "formatStatement",
         "formatTimestamp",
         "INTERACTION_TYPES",
+        "isDuration",
         "isSameStatement",
         "JsonLimitError",
         "mboxSha1sum",

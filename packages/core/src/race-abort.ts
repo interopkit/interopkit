@@ -1,3 +1,5 @@
+import type { CallOptions } from "./call-options.js";
+
 /**
  * Waits for a promise, and ends the wait as soon as a signal aborts.
  *
@@ -7,10 +9,11 @@
  * removed when the wait ends.
  *
  * @param promise - The work to wait for.
- * @param signal - Ends the wait. Default: none, and then the promise is returned as it is.
+ * @param options - The `signal` that ends the wait. Default: none, and then the promise is returned as it is.
  * @returns A promise that settles with `promise`, or rejects with the `reason` of `signal` when it aborts first.
  */
-export function raceAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+export function raceAbort<T>(promise: Promise<T>, options?: CallOptions): Promise<T> {
+  const signal = options?.signal;
   if (signal === undefined) return promise;
   return new Promise<T>((resolve, reject) => {
     const abort = (): void => reject(signal.reason);

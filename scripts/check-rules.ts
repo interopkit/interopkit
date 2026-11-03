@@ -79,14 +79,14 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait for the answer ends at the deadline, even when fetch ignores its signal.",
     file: "packages/core/src/service.ts",
-    find: "response = await raceAbort(pending, signal);",
+    find: "response = await raceAbort(pending, { signal });",
     replace: "response = await pending;",
     test: "packages/core/test/service.test.ts",
   },
   {
     rule: "The wait for the body ends at the deadline, even when the body stalls.",
     file: "packages/core/src/service.ts",
-    find: "await raceAbort(reader.read(), signal);",
+    find: "await raceAbort(reader.read(), { signal });",
     replace: "await reader.read();",
     test: "packages/core/test/service.test.ts",
   },
@@ -387,7 +387,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A cached token is given only while it is good.",
     file: "packages/core/src/oauth/token-cache.ts",
-    find: "expiresAt - skewMilliseconds - readClock(clock)",
+    find: "expiresAt - skewMs - readClock(clock)",
     replace: "Number.MAX_SAFE_INTEGER",
     test: "packages/core/test/token-cache.test.ts",
   },
@@ -970,7 +970,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A token issued in the future is refused, beyond the leeway for clock skew.",
     file: "packages/tool-integration/src/protocol/jwt.ts",
-    find: "checkIssuedAt(claims, nowMilliseconds / 1000);",
+    find: "checkIssuedAt(claims, nowMs / 1000);",
     replace: "",
     test: "packages/tool-integration/test/tool.test.ts",
   },
@@ -1218,7 +1218,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A client takes a token of the store only before its expiry, less the skew, by its clock, and of the scope.",
     file: "packages/tool-integration/src/tool/services/token-store.ts",
-    find: "const good = token.expiresAt - timing.skewMilliseconds > readClock(timing.clock) && token.scopes.includes(scope);",
+    find: "const good = token.expiresAt - timing.skewMs > readClock(timing.clock) && token.scopes.includes(scope);",
     replace: "const good = true;",
     test: "packages/tool-integration/test/tool-services.test.ts",
   },
@@ -2129,21 +2129,21 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait for the key of a JWS ends when the signal aborts, whatever the resolver does.",
     file: "packages/achievement-credentials/src/jwt/read-credential-jwt.ts",
-    find: "await raceAbort(settings.keys.resolve(kid, call), settings.signal);",
+    find: "await raceAbort(settings.keys.resolve(kid, call), { signal: settings.signal });",
     replace: "await settings.keys.resolve(kid, call);",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {
     rule: "The wait for the key of a Data Integrity proof ends when the signal aborts, whatever the resolver does.",
     file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
-    find: "await raceAbort(settings.keys.resolve(method, call), settings.signal);",
+    find: "await raceAbort(settings.keys.resolve(method, call), { signal: settings.signal });",
     replace: "await settings.keys.resolve(method, call);",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {
     rule: "The wait for what an issuer publishes ends when the signal aborts, whatever the resolver does.",
     file: "packages/achievement-credentials/src/keys/verify-issuer-key.ts",
-    find: "await raceAbort(options.keys.issuerKeys(issuer, call), options.signal);",
+    find: "await raceAbort(options.keys.issuerKeys(issuer, call), { signal: options.signal });",
     replace: "await options.keys.issuerKeys(issuer, call);",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
@@ -2346,7 +2346,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait for the processors ends when the caller's signal aborts.",
     file: "packages/selective-disclosure/src/document/loader.ts",
-    find: "return await raceAbort(work, signal);",
+    find: "return await raceAbort(work, { signal });",
     replace: "return await work;",
     test: "packages/selective-disclosure/test/loader.test.ts",
   },
@@ -3488,7 +3488,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A chain is certified only when the host's function trusts it.",
     file: "packages/learning-records/src/signing/verify-statement-signature.ts",
-    find: "await raceAbort(trustCertificate(found.chain, signal === undefined ? undefined : { signal }), signal)",
+    find: "await raceAbort(trustCertificate(found.chain, signal === undefined ? undefined : { signal }), { signal })",
     replace: "true",
     test: "packages/learning-records/test/signing.test.ts",
   },
@@ -4598,7 +4598,7 @@ export const RULES: readonly Rule[] = [
     file: "packages/achievement-credentials/src/client/request.ts",
     find: `const token = await raceAbort(
     Promise.resolve(settings.token(either === undefined ? undefined : { signal: either })),
-    either,
+    { signal: either },
   );`,
     replace: "const token = await settings.token(either === undefined ? undefined : { signal: either });",
     test: "packages/achievement-credentials/test/client.test.ts",
@@ -4699,7 +4699,7 @@ export const RULES: readonly Rule[] = [
     file: "packages/competency-frameworks/src/client/client.ts",
     find: `: await raceAbort(
           Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
-          either,
+          { signal: either },
         );`,
     replace: ": await settings.authorization(either === undefined ? undefined : { signal: either });",
     test: "packages/competency-frameworks/test/client.test.ts",
@@ -5045,7 +5045,7 @@ export const RULES: readonly Rule[] = [
     file: "packages/learning-records/src/client/request.ts",
     find: `: await raceAbort(
           Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
-          either,
+          { signal: either },
         );`,
     replace: ": await settings.authorization(either === undefined ? undefined : { signal: either });",
     test: "packages/learning-records/test/client.test.ts",
@@ -5263,7 +5263,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait of addProof for the signer of the host ends when the signal aborts, whatever the signer does.",
     file: "packages/achievement-credentials/src/data-integrity/add-proof.ts",
-    find: "sign: ({ data }: { data: Uint8Array }) => raceAbort(Promise.resolve(signer.sign(data, withSignal)), signal),",
+    find: "sign: ({ data }: { data: Uint8Array }) => raceAbort(Promise.resolve(signer.sign(data, withSignal)), { signal }),",
     replace: "sign: ({ data }: { data: Uint8Array }) => signer.sign(data, withSignal),",
     test: "packages/achievement-credentials/test/data-integrity.test.ts",
   },
@@ -5473,7 +5473,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait for a cache of status lists of the host ends when the signal aborts, whatever the cache does.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "return raceAbort(Promise.resolve(shared), signal);",
+    find: "return raceAbort(Promise.resolve(shared), { signal });",
     replace: "return shared;",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
@@ -5529,7 +5529,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait of the refresh handler for its port ends when the signal aborts, whatever the port does.",
     file: "packages/achievement-credentials/src/refresh/handle-refresh-request.ts",
-    find: "const asked = await callPort(() => refresh(id, signal === undefined ? undefined : { signal }), signal);",
+    find: "const asked = await callPort(() => refresh(id, signal === undefined ? undefined : { signal }), { signal });",
     replace: "const asked = await callPort(() => refresh(id, signal === undefined ? undefined : { signal }));",
     test: "packages/achievement-credentials/test/refresh.test.ts",
   },
@@ -6638,7 +6638,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "An assertion expires within an hour.",
     file: "packages/tool-integration/src/platform/tool-message.ts",
-    find: "if (exp - nowMilliseconds / MILLISECONDS > MAX_LIFETIME_SECONDS) {",
+    find: "if (exp - nowMs / MILLISECONDS > MAX_LIFETIME_SECONDS) {",
     replace: "if (false) {",
     test: "packages/tool-integration/test/platform.test.ts",
   },
@@ -6918,8 +6918,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The timestamp of a score is later than the last one sent.",
     file: "packages/tool-integration/src/tool/services/grades.ts",
-    find: "Math.max(nowMilliseconds, last + 1)",
-    replace: "Math.max(nowMilliseconds, last)",
+    find: "Math.max(nowMs, last + 1)",
+    replace: "Math.max(nowMs, last)",
     test: "packages/tool-integration/test/tool-services.test.ts",
   },
   {
@@ -6932,7 +6932,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A message of a tool expires within an hour.",
     file: "packages/tool-integration/src/platform/tool-message.ts",
-    find: "if (exp - nowMilliseconds / MILLISECONDS > MAX_LIFETIME_SECONDS) {",
+    find: "if (exp - nowMs / MILLISECONDS > MAX_LIFETIME_SECONDS) {",
     replace: "if (false) {",
     test: "packages/tool-integration/test/platform-deep-linking.test.ts",
   },

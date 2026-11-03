@@ -112,14 +112,14 @@ resolves `"conflict"` (409). Read the document again with `getDocument` and writ
 
 | Option          | Of                              | Default    | Meaning                                                                                                |
 | --------------- | ------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
-| `endpoint`      | `LrsClientConfig`               | required   | The LRS before the resources, HTTPS, ending in a slash, with no credentials, query or fragment         |
-| `fetch`         | `LrsClientConfig`               | required   | The `fetch` that makes the requests                                                                    |
-| `version`       | `LrsClientConfig`               | `"2.0.0"`  | `"2.0.0"` or `"1.0.3"`: the `X-Experience-API-Version` header, the rules of Statements and the preconditions above ([versions](versions.md))              |
-| `authorization` | `LrsClientConfig`               | none       | `(options) => Promise<string \| undefined>`: the `Authorization` header, asked for before each request |
-| `timeoutMs`     | `LrsClientConfig`               | 10,000     | The most milliseconds of one request, from the request to the last byte                                |
-| `maxBytes`      | `LrsClientConfig`               | 10,485,760 | The most bytes of one answer                                                                           |
-| `maxTokens`     | `LrsClientConfig`               | 1,000,000  | The most tokens of JSON in one answer, counted before it is parsed                                     |
-| `signal`        | `LrsClientConfig`               | none       | Ends every wait of the client                                                                          |
+| `endpoint`      | `LrsClientOptions`               | required   | The LRS before the resources, HTTPS, ending in a slash, with no credentials, query or fragment         |
+| `fetch`         | `LrsClientOptions`               | required   | The `fetch` that makes the requests                                                                    |
+| `version`       | `LrsClientOptions`               | `"2.0.0"`  | `"2.0.0"` or `"1.0.3"`: the `X-Experience-API-Version` header, the rules of Statements and the preconditions above ([versions](versions.md))              |
+| `authorization` | `LrsClientOptions`               | none       | `(options) => Promise<string \| undefined>`: the `Authorization` header, asked for before each request |
+| `timeoutMs`     | `LrsClientOptions`               | 10,000     | The most milliseconds of one request, from the request to the last byte                                |
+| `maxBytes`      | `LrsClientOptions`               | 10,485,760 | The most bytes of one answer                                                                           |
+| `maxTokens`     | `LrsClientOptions`               | 1,000,000  | The most tokens of JSON in one answer, counted before it is parsed                                     |
+| `signal`        | `LrsClientOptions`               | none       | Ends every wait of the client                                                                          |
 | `attachments`   | `SendOptions`                   | none       | The data of the Attachments, which makes the request a multipart message                               |
 | `role` | `SendOptions` | `"provider"` | `"provider"`, or `"lrs"` to forward what another LRS holds as it is |
 | `languages` | `ReadStatementsOptions`, `GetStatementOptions` | none | The languages to prefer, the first the most, as language tags or `*`: the `Accept-Language` of a read |

@@ -146,5 +146,8 @@ export function registrationAnswer(status: number, tool: RegisteredTool, setting
     clientId: tool.clientId,
     ...(configurable ? { registrationClientUri: registrationClientUrl(settings.config.origin, tool.clientId) } : {}),
   };
-  return buildJsonResponse(status, writeToolRegistrationResult(result), NO_STORE, REGISTRATION_MEDIA_TYPE);
+  return buildJsonResponse(status, writeToolRegistrationResult(result), {
+    headers: NO_STORE,
+    type: REGISTRATION_MEDIA_TYPE,
+  });
 }

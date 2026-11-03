@@ -40,7 +40,7 @@ export interface StatusListCredentialInput {
    *
    * @defaultValue none: verifiers keep it 300,000 ms
    */
-  readonly ttlMilliseconds?: number;
+  readonly ttlMs?: number;
 }
 
 /** The options of `issueStatusListCredential`. */
@@ -241,5 +241,5 @@ export function checkInput(input: unknown): asserts input is StatusListCredentia
   }
   if (input.validUntil !== undefined)
     checkNonEmptyString(input.validUntil, "The validUntil of the status list credential");
-  if (input.ttlMilliseconds !== undefined) checkPositiveInteger(input.ttlMilliseconds, "The ttlMilliseconds");
+  if (input.ttlMs !== undefined) checkPositiveInteger(input.ttlMs, "The ttlMs");
 }

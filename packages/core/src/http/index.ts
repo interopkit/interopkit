@@ -19,5 +19,5 @@ export { negotiate } from "./negotiate.js";
 export { buildPageLinks, type ListExtent, type OffsetPage, type PageSizes, readOffsetPage } from "./paging.js";
 export { type ReadFormOptions, readForm, readQuery } from "./parameters.js";
 export { checkHttpRequest, type HttpRequest } from "./request.js";
-export { buildJsonResponse, type HttpResponse } from "./response.js";
+export { buildJsonResponse, type HttpResponse, type JsonResponseOptions } from "./response.js";
 export { buildStatusInfoResponse, type StatusInfoOptions } from "./status-info.js";

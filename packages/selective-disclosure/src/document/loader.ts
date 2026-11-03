@@ -58,7 +58,7 @@ export function createProcessing(contexts: Contexts, signal?: AbortSignal): Proc
     options: { documentLoader, maxDeepIterations: MAX_DEEP_ITERATIONS, ...(signal === undefined ? {} : { signal }) },
     async wait(work) {
       try {
-        return await raceAbort(work, signal);
+        return await raceAbort(work, { signal });
       } catch (error) {
         if (failure !== undefined) throw failure.error;
         if (signal?.aborted) throw signal.reason;

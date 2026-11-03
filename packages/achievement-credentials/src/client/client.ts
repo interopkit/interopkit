@@ -20,7 +20,7 @@ import * as v from "valibot";
 import type { AnyVerifiableCredential, Profile } from "../model/index.js";
 import { readCredential, readEntity } from "../read/index.js";
 import { jws } from "../read/internal.js";
-import { type CredentialsClientConfig, type Settings, settingsOf } from "./config.js";
+import { type CredentialsClientOptions, type Settings, settingsOf } from "./config.js";
 import { type Body, type Call, send, signalOf } from "./request.js";
 
 /** The calls to an Open Badges or CLR resource server: the credentials and the profile of the user whose token the host holds. */
@@ -180,14 +180,14 @@ function credentialBody(settings: Settings, credential: unknown): Body {
  * retried and nothing is kept between calls, so a client is safe to share. The OAuth 2.0 side is the host's: register and get
  * tokens with `@interopkit/core/oauth`, from the endpoints that `discoverService` finds.
  *
- * @param config - The API, the server's address, the `fetch`, the `token` function and the optional limits and signal.
+ * @param options - The API, the server's address, the `fetch`, the `token` function and the optional limits and signal.
  * @returns The client.
- * @throws `DataError` when the configuration is not valid.
+ * @throws `DataError` when the options are not valid.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#open-badges-api | Open Badges 3.0, Open Badges API}
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/#clr-standard-api | CLR 2.0, CLR Standard API}
  */
-export function createCredentialsClient(config: CredentialsClientConfig): CredentialsClient {
-  const settings = settingsOf(config);
+export function createCredentialsClient(options: CredentialsClientOptions): CredentialsClient {
+  const settings = settingsOf(options);
   const profileUrl = `${settings.root}/profile`;
   const what = (url: string) => `The ${STANDARDS[settings.api]} API at ${url}`;
 

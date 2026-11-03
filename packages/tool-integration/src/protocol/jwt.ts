@@ -201,7 +201,7 @@ function refuse(error: unknown, expected: JwtExpectation): never {
  *
  * @param keys - Resolves the public key from the header of the token, such as a key set of `createJwksCache`.
  * @param expected - What the token must say about itself. A present `exp` or `iat` must be a number.
- * @param nowMilliseconds - The time in milliseconds since 1970-01-01T00:00:00Z.
+ * @param nowMs - The time in milliseconds since 1970-01-01T00:00:00Z.
  * @returns The claims.
  * @throws `LtiError` with the reason of the failed check: `token-malformed`, `algorithm-unsupported`, `key-unknown`,
  * `signature-invalid`, `issuer-mismatch`, `audience-mismatch`, `audience-untrusted`, `authorized-party-missing`,
@@ -213,7 +213,7 @@ export async function verifyJwt(
   token: string,
   keys: JWTVerifyGetKey,
   expected: JwtExpectation,
-  nowMilliseconds: number,
+  nowMs: number,
 ): Promise<Claims> {
   // A token that is not one is refused before any key is fetched.
   unverifiedClaims(token, expected.maxTokens);
@@ -236,13 +236,13 @@ export async function verifyJwt(
       requiredClaims: expected.requiredClaims,
       algorithms: [...(expected.algorithms ?? APPROVED_ALGORITHMS)],
       clockTolerance: CLOCK_SKEW_SECONDS,
-      currentDate: new Date(nowMilliseconds),
+      currentDate: new Date(nowMs),
     }));
   } catch (error) {
     return refuse(error, expected);
   }
   checkAudiences(claims, expected);
-  checkIssuedAt(claims, nowMilliseconds / 1000);
+  checkIssuedAt(claims, nowMs / 1000);
   return claims;
 }
 

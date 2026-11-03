@@ -45,7 +45,7 @@ export async function issueStatusListCredential(
     type: "BitstringStatusList",
     statusPurpose: input.purpose,
     encodedList: await encodeList(input.list),
-    ...(input.ttlMilliseconds === undefined ? {} : { ttl: input.ttlMilliseconds }),
+    ...(input.ttlMs === undefined ? {} : { ttl: input.ttlMs }),
   };
   const credential: VerifiableCredential = {
     "@context": [CONTEXT],

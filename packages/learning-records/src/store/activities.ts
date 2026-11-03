@@ -21,7 +21,7 @@ export async function handleActivities(context: Context): Promise<HttpResponse> 
   const id = readActivityId(context);
   if (isRefusal(id)) return context.refuse(id.status, id.message);
   const { activities, signal } = context.settings;
-  const found = await callPort(() => activities.get(id.value, { signal }), signal);
+  const found = await callPort(() => activities.get(id.value, { signal }), { signal });
   if (found === undefined) return context.refuse(500, FAILED);
   if (found.value === undefined) return buildJsonResponse(200, { objectType: "Activity", id: id.value });
   const activity = parseWith(activitySchema, found.value, "The answer of ActivityStore.get");

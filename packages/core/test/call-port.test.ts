@@ -20,13 +20,13 @@ describe("callPort", () => {
 
   it("returns the value while the signal has not aborted", async () => {
     const controller = new AbortController();
-    expect(await callPort(async () => 1, controller.signal)).toStrictEqual({ value: 1 });
+    expect(await callPort(async () => 1, { signal: controller.signal })).toStrictEqual({ value: 1 });
   });
 
   it("rejects with the reason of the signal when it aborts during the call, and leaves the port running", async () => {
     const controller = new AbortController();
     const reason = new Error("gave up");
-    const waiting = callPort(() => new Promise<never>(() => undefined), controller.signal);
+    const waiting = callPort(() => new Promise<never>(() => undefined), { signal: controller.signal });
     controller.abort(reason);
     await expect(waiting).rejects.toBe(reason);
   });
@@ -35,10 +35,13 @@ describe("callPort", () => {
     const reason = new Error("before");
     let calls = 0;
     await expect(
-      callPort(() => {
-        calls += 1;
-        return 1;
-      }, AbortSignal.abort(reason)),
+      callPort(
+        () => {
+          calls += 1;
+          return 1;
+        },
+        { signal: AbortSignal.abort(reason) },
+      ),
     ).rejects.toBe(reason);
     expect(calls).toBe(0);
   });
@@ -46,10 +49,13 @@ describe("callPort", () => {
   it("rejects with the reason of the signal when the port fails after the signal aborted", async () => {
     const controller = new AbortController();
     const reason = new Error("aborted first");
-    const waiting = callPort(async () => {
-      controller.abort(reason);
-      throw new Error("the port failed");
-    }, controller.signal);
+    const waiting = callPort(
+      async () => {
+        controller.abort(reason);
+        throw new Error("the port failed");
+      },
+      { signal: controller.signal },
+    );
     await expect(waiting).rejects.toBe(reason);
   });
 });

@@ -36,7 +36,7 @@ async function definitionsOf(
   const { signal } = context.settings;
   const definitions = new Map<string, ActivityDefinition>();
   for (const id of new Set(statements.flatMap(activitiesIn).map((activity) => activity.id))) {
-    const asked = await callPort(() => context.settings.activities.get(id, { signal }), signal);
+    const asked = await callPort(() => context.settings.activities.get(id, { signal }), { signal });
     if (asked === undefined) return refused(500, FAILED);
     if (asked.value?.definition !== undefined) definitions.set(id, asked.value.definition);
   }
@@ -86,10 +86,10 @@ async function present(
   attachments: boolean,
   headers: Readonly<Record<string, string>>,
 ): Promise<HttpResponse> {
-  if (!attachments) return buildJsonResponse(200, document, headers);
+  if (!attachments) return buildJsonResponse(200, document, { headers });
   const { signal } = context.settings;
   const hashes = [...new Set(statements.flatMap(attachmentHeadersOf).map(({ sha2 }) => sha2.toLowerCase()))];
-  const asked = await callPort(() => context.settings.statements.attachments(hashes, { signal }), signal);
+  const asked = await callPort(() => context.settings.statements.attachments(hashes, { signal }), { signal });
   if (asked === undefined) return context.refuse(500, FAILED);
   const message = writeMultipart(document, [...asked.value.values()]);
   return { status: 200, headers: { "content-type": message.contentType, ...headers }, body: message.body };
@@ -112,7 +112,9 @@ function isOwn(statement: Statement, own: Actor): boolean {
 /** Answers a request for one Statement: the Statement, or 404 when the LRS has none of that kind. */
 export async function answerOne(context: Context, get: Extract<StatementsGet, { kind: "one" }>): Promise<HttpResponse> {
   const { signal } = context.settings;
-  const asked = await callPort(() => context.settings.statements.get(get.id, { voided: get.voided, signal }), signal);
+  const asked = await callPort(() => context.settings.statements.get(get.id, { voided: get.voided, signal }), {
+    signal,
+  });
   if (asked === undefined) return context.refuse(500, FAILED);
   const held = asked.value;
   const own = ownAuthority(context);
@@ -162,7 +164,7 @@ export async function answerMany(
     ...(get.cursor === undefined ? {} : { cursor: get.cursor }),
     ...(own === undefined ? {} : { authority: own }),
   };
-  const asked = await callPort(() => context.settings.statements.query(get.query, page, { signal }), signal);
+  const asked = await callPort(() => context.settings.statements.query(get.query, page, { signal }), { signal });
   if (asked === undefined) return context.refuse(500, FAILED);
   if (asked.value === undefined)
     return context.refuse(400, "The cursor of the request is not valid, or it has expired.");

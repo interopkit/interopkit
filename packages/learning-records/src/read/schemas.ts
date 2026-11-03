@@ -22,12 +22,13 @@ import {
   type Agent,
   type AttachmentData,
   INTERACTION_TYPES,
+  isDuration,
   type LanguageMap,
   type Person,
   type Statement,
   type XapiVersion,
 } from "../model/index.js";
-import { isDuration, isIsoTimestamp, isMailtoIri, isMediaType, isSha1Hex, isSha2Hex } from "../model/internal.js";
+import { isIsoTimestamp, isMailtoIri, isMediaType, isSha1Hex, isSha2Hex } from "../model/internal.js";
 
 const text = v.string();
 /** An IRI, an IRL or a URI of the tables: the Statements need a scheme (4.2.1). */

@@ -1,4 +1,4 @@
-import { parseDateTime } from "@interopkit/core/checks";
+import { isDateTime, parseDateTime } from "@interopkit/core/checks";
 import {
   type Actor,
   type Context,
@@ -52,7 +52,8 @@ export function timeOf(text: string | undefined): number | undefined {
   const [, year, month, day, hour, minute = "00", second = "00", fraction = "", zone = ""] = match;
   const digits = zone.replace(":", "");
   const offset = /^[Zz]$/u.test(zone) ? "Z" : `${digits.slice(0, 3)}:${digits.slice(3) || "00"}`;
-  return parseDateTime(`${year}-${month}-${day}T${hour}:${minute}:${second}${fraction}${offset}`);
+  const written = `${year}-${month}-${day}T${hour}:${minute}:${second}${fraction}${offset}`;
+  return isDateTime(written) ? parseDateTime(written) : undefined;
 }
 
 /** Compares two values of JSON by content, the order of the members of an object aside. */

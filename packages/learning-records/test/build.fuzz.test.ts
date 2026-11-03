@@ -1,3 +1,4 @@
+import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { mutate, mutations } from "../../../scripts/json-mutation.js";
@@ -7,6 +8,7 @@ import {
   deriveStatementId,
   formatDuration,
   formatTimestamp,
+  isDuration,
   mboxSha1sum,
   parseDuration,
   readStatement,
@@ -55,10 +57,12 @@ describe("the builders and the data types on any value", () => {
   it("read a duration that a duration is written as, for any text", () => {
     fc.assert(
       fc.property(fc.string(), (text) => {
-        const parts = parseDuration(text);
-        if (parts !== undefined) {
-          for (const number of Object.values(parts)) expect(Number.isFinite(number) && number >= 0).toBe(true);
+        if (!isDuration(text)) {
+          expect(() => parseDuration(text)).toThrow(DataError);
+          return;
         }
+        for (const number of Object.values(parseDuration(text)))
+          expect(Number.isFinite(number) && number >= 0).toBe(true);
       }),
       RUNS,
     );

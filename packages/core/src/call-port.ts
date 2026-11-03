@@ -1,3 +1,4 @@
+import type { CallOptions } from "./call-options.js";
 import { raceAbort } from "./race-abort.js";
 
 /** What a call to a port gave: the value, or `undefined` when the port failed. */
@@ -17,14 +18,15 @@ export type PortOutcome<T> =
  * reason of the signal. A port that throws before it returns a promise fails in the same way as one that rejects.
  *
  * @param call - Calls the port, with the signal.
- * @param signal - The signal that ends the wait.
+ * @param options - The `signal` that ends the wait. Default: none.
  * @returns The value in an object, or `undefined` when the port failed.
  * @throws The `reason` of the signal when it aborts, before or during the call.
  */
-export async function callPort<T>(call: () => Promise<T> | T, signal?: AbortSignal): Promise<PortOutcome<T>> {
+export async function callPort<T>(call: () => Promise<T> | T, options?: CallOptions): Promise<PortOutcome<T>> {
+  const signal = options?.signal;
   try {
     signal?.throwIfAborted();
-    return { value: await raceAbort(Promise.resolve(call()), signal) };
+    return { value: await raceAbort(Promise.resolve(call()), options) };
   } catch (error) {
     if (signal?.aborted) throw error;
     return undefined;

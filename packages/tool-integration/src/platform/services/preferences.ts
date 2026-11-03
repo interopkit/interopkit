@@ -38,7 +38,7 @@ async function getRecord(call: Call): Promise<HttpResponse> {
     fields === undefined
       ? record
       : Object.fromEntries(Object.entries(record).filter(([name]) => fields.includes(name)));
-  return buildJsonResponse(200, body, {}, PREFERENCES_MEDIA_TYPE);
+  return buildJsonResponse(200, body, { type: PREFERENCES_MEDIA_TYPE });
 }
 
 /**

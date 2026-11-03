@@ -85,7 +85,7 @@ export async function signCompactJws(
   }
   options?.signal?.throwIfAborted();
   const signingInput = `${encodeBase64Url(encoder.encode(protectedHeader))}.${encodeBase64Url(payload)}`;
-  const signature = await raceAbort(signer.sign(encoder.encode(signingInput), options), options?.signal);
+  const signature = await raceAbort(signer.sign(encoder.encode(signingInput), options), options);
   checkSignature(signature, signer.algorithm);
   return `${signingInput}.${encodeBase64Url(signature)}`;
 }

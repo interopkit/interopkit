@@ -30,7 +30,7 @@ export async function handleAgents(context: Context): Promise<HttpResponse> {
   if (isRefusal(asked)) return context.refuse(asked.status, asked.message);
   const { agents, signal } = settings;
   if (agents === undefined) return buildJsonResponse(200, personOf(asked.value));
-  const found = await callPort(() => agents.person(asked.value, { signal }), signal);
+  const found = await callPort(() => agents.person(asked.value, { signal }), { signal });
   if (found === undefined) return context.refuse(500, FAILED);
   return buildJsonResponse(200, parseWith(personSchema, found.value, "The answer of AgentStore.person"));
 }

@@ -95,10 +95,7 @@ export function createCryptoKeySigner(key: CryptoKey, options: CryptoKeySignerOp
       if (callOptions?.signal !== undefined) checkAbortSignal(callOptions.signal, "The option signal");
       callOptions?.signal?.throwIfAborted();
       // A copy: Web Crypto takes bytes over an ArrayBuffer, and a caller's bytes may lie over another kind of buffer.
-      const signature = await raceAbort(
-        crypto.subtle.sign(spec.params, key, new Uint8Array(data)),
-        callOptions?.signal,
-      );
+      const signature = await raceAbort(crypto.subtle.sign(spec.params, key, new Uint8Array(data)), callOptions);
       return new Uint8Array(signature);
     },
   };

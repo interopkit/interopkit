@@ -1,4 +1,4 @@
-import { checkFunction, checkRecord, parseDateTime } from "@interopkit/core/checks";
+import { checkFunction, checkRecord } from "@interopkit/core/checks";
 import { identityKey, iriKey, sameActor } from "../compare/internal.js";
 import type {
   Activity,
@@ -9,6 +9,7 @@ import type {
   StatementQuery,
   SubStatement,
 } from "../model/index.js";
+import { findInstant } from "../model/internal.js";
 
 /** What a Statement and a SubStatement share, which the filters look at. */
 type Part = Statement | SubStatement;
@@ -124,10 +125,10 @@ function conditionsOf(query: StatementQuery): readonly Condition[] {
 /** Tells whether the Statement was stored in the time that the query asks for: after `since` and up to `until`. */
 function isInTime(statement: Statement, query: StatementQuery): boolean {
   if (query.since === undefined && query.until === undefined) return true;
-  const stored = statement.stored === undefined ? undefined : parseDateTime(statement.stored);
+  const stored = statement.stored === undefined ? undefined : findInstant(statement.stored);
   if (stored === undefined) return false;
-  const since = query.since === undefined ? undefined : parseDateTime(query.since);
-  const until = query.until === undefined ? undefined : parseDateTime(query.until);
+  const since = query.since === undefined ? undefined : findInstant(query.since);
+  const until = query.until === undefined ? undefined : findInstant(query.until);
   return (since === undefined || stored > since) && (until === undefined || stored <= until);
 }
 

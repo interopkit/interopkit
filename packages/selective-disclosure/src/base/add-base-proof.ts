@@ -166,7 +166,7 @@ export async function addBaseProofWith(
       Promise.all(nonMandatory.map((statement) => proofKey.sign(statement))),
       options.signer.sign(toSign, signal === undefined ? undefined : { signal }),
     ]),
-    signal,
+    { signal },
   );
   const baseSignature = checkSignature(signed);
   const proofValue = serializeBaseProofValue({

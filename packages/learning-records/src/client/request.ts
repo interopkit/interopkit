@@ -47,7 +47,7 @@ export async function send(
       ? undefined
       : await raceAbort(
           Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
-          either,
+          { signal: either },
         );
   if (authorization !== undefined && (typeof authorization !== "string" || !isHeaderValue(authorization))) {
     throw new DataError(

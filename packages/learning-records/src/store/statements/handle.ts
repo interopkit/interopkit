@@ -34,7 +34,7 @@ async function write(context: Context, method: "PUT" | "POST"): Promise<HttpResp
   if (isRefusal(through)) return context.refuse(through.status, through.message);
   const headers = { [CONSISTENT_THROUGH]: through.value };
   if (method === "POST" && (stored.value.created || stored.value.ids.length === 0))
-    return buildJsonResponse(200, stored.value.ids, headers);
+    return buildJsonResponse(200, stored.value.ids, { headers });
   return { status: 204, headers, body: "" };
 }
 

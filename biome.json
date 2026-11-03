@@ -131,12 +131,7 @@
       "plugins": ["./biome/no-clock.grit"]
     },
     {
-      "includes": [
-        "packages/core/src/errors.ts",
-        "packages/core/src/call-options.ts",
-        "packages/core/src/random.ts",
-        "packages/core/src/race-abort.ts"
-      ],
+      "includes": ["packages/core/src/errors.ts", "packages/core/src/call-options.ts", "packages/core/src/random.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -146,7 +141,7 @@
                 "patterns": [
                   {
                     "group": ["./*", "./*/**"],
-                    "message": "errors.ts, call-options.ts, random.ts and race-abort.ts depend on nothing."
+                    "message": "errors.ts, call-options.ts and random.ts depend on nothing."
                   },
                   {
                     "group": ["@interopkit/**"],
@@ -219,6 +214,30 @@
                   {
                     "group": ["./*", "./*/**", "!./errors.js", "!./checks.js"],
                     "message": "clock.ts depends only on errors.ts and checks.ts."
+                  },
+                  {
+                    "group": ["@interopkit/**"],
+                    "message": "core is the lowest package of the family: it imports no other."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/core/src/race-abort.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["./*", "./*/**", "!./call-options.js"],
+                    "message": "race-abort.ts depends only on call-options.ts."
                   },
                   {
                     "group": ["@interopkit/**"],

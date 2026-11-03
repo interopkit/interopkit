@@ -1,6 +1,6 @@
-import { isRecord, parseDateTime } from "@interopkit/core/checks";
+import { isRecord } from "@interopkit/core/checks";
 import type { Statement, XapiVersion } from "../../model/index.js";
-import { parseIsoTimestamp } from "../../model/internal.js";
+import { findInstant, parseIsoTimestamp } from "../../model/internal.js";
 import { isRefusal, type Refusal, refused, type Verdict } from "../verdict.js";
 
 /**
@@ -23,7 +23,7 @@ function utcOf(text: string): string | Refusal | undefined {
       `The timestamp ${JSON.stringify(text)} has the offset -00:00, which ISO 8601 does not allow: write Z or +00:00.`,
     );
   }
-  const milliseconds = parseDateTime(`${date}T${time}:${seconds}${fraction}${zone}`);
+  const milliseconds = findInstant(`${date}T${time}:${seconds}${fraction}${zone}`);
   return milliseconds === undefined ? undefined : new Date(milliseconds).toISOString();
 }
 

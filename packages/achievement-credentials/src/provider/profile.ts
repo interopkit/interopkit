@@ -14,7 +14,7 @@ const PROFILE_TYPE = "application/json";
 /** Answers getProfile (OB 6.2.4, CLR 5.2.4): the owner's profile, or 404 when the store holds none. */
 export async function answerProfile(owner: string, settings: ProviderSettings): Promise<HttpResponse> {
   const { signal } = settings;
-  const asked = await callPort(() => settings.profiles.get(owner, { signal }), signal);
+  const asked = await callPort(() => settings.profiles.get(owner, { signal }), { signal });
   if (asked === undefined) return internalError();
   const profile = parseWith(foundProfileSchema, asked.value, "The answer of ProfileStore.get");
   return profile === undefined ? failure(404, "There is no profile.", "not_found") : buildJsonResponse(200, profile);
@@ -53,7 +53,7 @@ export async function answerProfileUpdate(
   const read = profileOfBody(request, settings);
   if ("refusal" in read) return read.refusal;
   const { signal } = settings;
-  const asked = await callPort(() => settings.profiles.put(owner, read.profile, { signal }), signal);
+  const asked = await callPort(() => settings.profiles.put(owner, read.profile, { signal }), { signal });
   if (asked === undefined) return internalError();
   return buildJsonResponse(200, parseWith(profileSchema, asked.value, "The answer of ProfileStore.put"));
 }

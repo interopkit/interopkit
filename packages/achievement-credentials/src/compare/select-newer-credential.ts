@@ -1,17 +1,16 @@
 import { DataError } from "@interopkit/core";
-import { parseDateTime } from "@interopkit/core/checks";
+import { isDateTime, parseDateTime } from "@interopkit/core/checks";
 import type { CredentialV1p1, IssuableCredential } from "../model/index.js";
 import { comparableOf, isSame } from "./comparable.js";
 
 /** Reads the instant a credential became valid, or refuses it. */
 function validFromOf(validFrom: string | undefined, label: string): number {
-  const instant = validFrom === undefined ? undefined : parseDateTime(validFrom);
-  if (instant === undefined) {
+  if (validFrom === undefined || !isDateTime(validFrom)) {
     throw new DataError(
       `${label} has no validFrom that is a date and time of RFC 3339 with an offset, found ${JSON.stringify(validFrom)}.`,
     );
   }
-  return instant;
+  return parseDateTime(validFrom);
 }
 
 /**

@@ -1,4 +1,4 @@
-import { parseDateTime } from "@interopkit/core/checks";
+import { isDateTime, parseDateTime } from "@interopkit/core/checks";
 import type { AnyVerifiableCredential, VerificationCheck } from "../model/index.js";
 import { checkOf } from "./result.js";
 
@@ -27,8 +27,8 @@ export function checkValidity(
   if (timeFault !== undefined) return checkOf("validity", "failed", timeFault);
   const { from, until } = periodOf(credential);
   const skew = skewSeconds * MILLISECONDS_PER_SECOND;
-  const start = from === undefined ? undefined : parseDateTime(from);
-  const end = until === undefined ? undefined : parseDateTime(until);
+  const start = from !== undefined && isDateTime(from) ? parseDateTime(from) : undefined;
+  const end = until !== undefined && isDateTime(until) ? parseDateTime(until) : undefined;
   if (start !== undefined && now + skew < start) {
     return checkOf("validity", "failed", `The credential is not valid before ${from}.`);
   }

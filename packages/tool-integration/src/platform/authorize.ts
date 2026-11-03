@@ -101,7 +101,7 @@ async function checkLaunch(
     ...(hint.principal === undefined ? {} : { principal: hint.principal }),
     request,
   };
-  const asked = await callPort(() => ask(launch, { signal }), signal);
+  const asked = await callPort(() => ask(launch, { signal }), { signal });
   if (asked === undefined) return FAILED;
   if (typeof asked.value !== "boolean") {
     throw new DataError(`The option checkLaunch must resolve with a boolean, found ${describe(asked.value)}.`);
@@ -113,7 +113,7 @@ async function checkLaunch(
 /** Takes the message of a hint from the `LaunchStore`, once, and checks that it is the message that the hint names. */
 async function takeMessage(hint: Hint, settings: PlatformSettings): Promise<MessageInput | typeof FAILED> {
   const { signal } = settings;
-  const taken = await callPort(() => settings.launches.take(hint.id, { signal }), signal);
+  const taken = await callPort(() => settings.launches.take(hint.id, { signal }), { signal });
   if (taken === undefined) return FAILED;
   if (taken.value === undefined) {
     throw new LtiError("The launch of the lti_message_hint has been used or has expired.", "hint-used");
@@ -148,7 +148,7 @@ async function signMigration(
   const { migration } = message;
   const { migrationSecret, signal } = settings;
   if (migration === undefined || migrationSecret === undefined) return undefined;
-  const asked = await callPort(() => migrationSecret(migration.oauthConsumerKey, { signal }), signal);
+  const asked = await callPort(() => migrationSecret(migration.oauthConsumerKey, { signal }), { signal });
   if (asked === undefined) return FAILED;
   const secret: unknown = asked.value;
   if (secret === undefined) return undefined;
@@ -232,7 +232,9 @@ async function issueIdToken(
     nonce: issue.nonce,
   };
   const payload = encoder.encode(JSON.stringify(claims));
-  const signed = await callPort(() => signCompactJws({ typ: "JWT" }, payload, config.keys.signer, { signal }), signal);
+  const signed = await callPort(() => signCompactJws({ typ: "JWT" }, payload, config.keys.signer, { signal }), {
+    signal,
+  });
   return signed === undefined ? FAILED : signed.value;
 }
 
@@ -295,7 +297,7 @@ async function address(request: HttpRequest, settings: PlatformSettings): Promis
   const clientId = parameters.get("client_id") ?? "";
   if (clientId === "") return refusal(400, "invalid_request", "The authentication request must have a client_id.");
   const { signal } = settings;
-  const asked = await callPort(() => settings.client(clientId, { signal }), signal);
+  const asked = await callPort(() => settings.client(clientId, { signal }), { signal });
   if (asked === undefined) return serverError();
   const registration = readToolRegistration(asked.value, clientId);
   if (registration === undefined) {

@@ -7,6 +7,7 @@ import {
   formatDuration,
   formatTimestamp,
   INTERACTION_TYPES,
+  isDuration,
   parseDuration,
   RULE_ROLES,
   VERB_VOIDED,
@@ -15,7 +16,6 @@ import {
   durationKey,
   hasFinerThanCentiseconds,
   hasMillisecondPrecision,
-  isDuration,
   isMailtoIri,
   isMediaType,
   isSha1Hex,
@@ -243,12 +243,14 @@ describe("parseDuration", () => {
     expect(parseDuration(text)).toStrictEqual(expected);
   });
 
-  it.each(["", "P", "1H", "PT1H1H", "P0001-00-00T00:00:00"])(
-    "returns nothing for %j, which is not a duration",
-    (text) => {
-      expect(parseDuration(text)).toBeUndefined();
-    },
-  );
+  it.each(["", "P", "1H", "PT1H1H", "P0001-00-00T00:00:00"])("refuses %j, which is not a duration", (text) => {
+    expect(() => parseDuration(text)).toThrow(DataError);
+    expect(isDuration(text)).toBe(false);
+  });
+
+  it("names the text in the error that it throws", () => {
+    expect(() => parseDuration("1H")).toThrow('found "1H"');
+  });
 });
 
 describe("formatDuration", () => {
@@ -277,9 +279,7 @@ describe("formatDuration", () => {
     fc.assert(
       fc.property(fc.nat({ max: 10_000_000_000_000 }), (milliseconds) => {
         const text = formatDuration(milliseconds);
-        const parts = parseDuration(text);
-        expect(parts).toBeDefined();
-        const { hours = 0, minutes = 0, seconds = 0 } = parts ?? {};
+        const { hours, minutes, seconds } = parseDuration(text);
         expect(Math.round(((hours * 60 + minutes) * 60 + seconds) * 1000)).toBe(Math.floor(milliseconds / 10) * 10);
         expect(hasFinerThanCentiseconds(splitFor(text))).toBe(false);
       }),

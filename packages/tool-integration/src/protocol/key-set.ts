@@ -139,7 +139,7 @@ export function keySetResponse(request: HttpRequest, keys: KeySet, maxAgeSeconds
   const response = buildJsonResponse(
     200,
     { keys: keys.publicKeys },
-    { "cache-control": `public, max-age=${maxAgeSeconds}` },
+    { headers: { "cache-control": `public, max-age=${maxAgeSeconds}` } },
   );
   return request.method === "HEAD" ? { ...response, body: "" } : response;
 }

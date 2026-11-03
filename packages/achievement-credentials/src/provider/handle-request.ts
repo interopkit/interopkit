@@ -30,7 +30,7 @@ async function ownerOf(
   settings: ProviderSettings,
 ): Promise<{ readonly owner: string } | { readonly refusal: HttpResponse }> {
   const { authorize, signal } = settings;
-  const asked = await callPort(() => authorize(request, scope, { signal }), signal);
+  const asked = await callPort(() => authorize(request, scope, { signal }), { signal });
   if (asked === undefined) return { refusal: internalError() };
   const decision = readAccessDecision(asked.value, "The decision of authorize", { grant: grantSchema });
   if (decision.allowed) return { owner: decision.owner };

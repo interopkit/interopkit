@@ -44,6 +44,7 @@ export {
   type InteractionComponent,
   type InteractionType,
   type InverseFunctionalIdentifiers,
+  isDuration,
   type LanguageMap,
   type LrsDocument,
   type LrsDocumentInput,

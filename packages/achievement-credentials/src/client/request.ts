@@ -37,7 +37,7 @@ async function bearer(settings: Settings, signals: AbortSignal[]): Promise<strin
   // The host's function gets the signal and should stop, but the wait of the caller ends when it aborts whether the function does or not.
   const token = await raceAbort(
     Promise.resolve(settings.token(either === undefined ? undefined : { signal: either })),
-    either,
+    { signal: either },
   );
   if (typeof token !== "string" || !TOKEN.test(token)) {
     throw new DataError(

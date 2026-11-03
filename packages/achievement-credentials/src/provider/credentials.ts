@@ -50,7 +50,7 @@ export async function answerList(
   const page = pageOf(request, settings);
   if (typeof page === "string") return invalidQuery(page);
   const { signal } = settings;
-  const asked = await callPort(() => settings.credentials.list(owner, page, { signal }), signal);
+  const asked = await callPort(() => settings.credentials.list(owner, page, { signal }), { signal });
   if (asked === undefined) return internalError();
   const answer = parseWith(listSchema, asked.value, "The answer of CredentialStore.list");
   const { credentials, total } = answer;
@@ -66,8 +66,10 @@ export async function answerList(
     200,
     { credential: objects, compactJwsString: signed },
     {
-      ...(total === undefined ? {} : { "x-total-count": String(total) }),
-      link: buildPageLinks(request.url, page, extent),
+      headers: {
+        ...(total === undefined ? {} : { "x-total-count": String(total) }),
+        link: buildPageLinks(request.url, page, extent),
+      },
     },
   );
 }
@@ -84,7 +86,7 @@ export async function answerUpsert(
   const reception = await receiveCredential(request, settings);
   if ("refusal" in reception) return reception.refusal;
   const { signal } = settings;
-  const asked = await callPort(() => settings.credentials.upsert(owner, reception.credential, { signal }), signal);
+  const asked = await callPort(() => settings.credentials.upsert(owner, reception.credential, { signal }), { signal });
   if (asked === undefined) return internalError();
   const outcome = parseWith(v.picklist(UPSERT_OUTCOMES), asked.value, "The answer of CredentialStore.upsert");
   const status = UPSERT_STATUSES[outcome];

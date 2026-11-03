@@ -6,7 +6,7 @@ import type { PlatformRegistration } from "./registration.js";
  * key set, then the issuer, the audiences that the registration trusts, the authorized party and the times (Security
  * Framework section 5.1.3). The `nonce` and the LTI claims are the caller's to check.
  *
- * @param nowMilliseconds - The time in milliseconds since 1970-01-01T00:00:00Z.
+ * @param nowMs - The time in milliseconds since 1970-01-01T00:00:00Z.
  * @param signal - Ends the wait for the key set.
  * @returns The claims, with a `nonce`.
  * @throws `LtiError` with the reason of the failed check.
@@ -15,7 +15,7 @@ export async function verifyIdToken(
   token: string,
   registration: PlatformRegistration,
   jwks: JwksCache,
-  nowMilliseconds: number,
+  nowMs: number,
   signal?: AbortSignal,
 ): Promise<Claims> {
   const { issuer, clientId, algorithms, trustedAudiences } = registration;
@@ -30,7 +30,7 @@ export async function verifyIdToken(
       ...(algorithms === undefined ? {} : { algorithms }),
       ...(trustedAudiences === undefined ? {} : { trustedAudiences }),
     },
-    nowMilliseconds,
+    nowMs,
   );
   required(claims, "nonce", "The id_token", STRING);
   return claims;

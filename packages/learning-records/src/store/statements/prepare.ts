@@ -105,7 +105,7 @@ async function refusalOfSignature(
         },
         { maxBytes: limits.maxBodyBytes, maxDepth: limits.maxDepth, maxTokens: limits.maxTokens },
       ),
-    signal,
+    { signal },
   );
   if (checked === undefined) return refused(500, "The LRS could not check the signature.");
   if (checked.value.valid) {
@@ -182,7 +182,7 @@ async function acceptable(statements: readonly Statement[], context: Context): P
   if (accept === undefined) return { value: undefined };
   const asked = await callPort(
     () => accept(statements, context.access, signal === undefined ? undefined : { signal }),
-    signal,
+    { signal },
   );
   if (asked === undefined) return refused(500, "The LRS could not check the Statements.");
   const errors = asked.value.filter((issue: StatementIssue) => issue.severity === "error");

@@ -23,7 +23,7 @@ const ERRORS = {
 
 /** Answers the fetch URL with a body of the specification, always with 200 (8.2.1). */
 function answer(body: Readonly<Record<string, string>>): HttpResponse {
-  return buildJsonResponse(200, body, NO_STORE);
+  return buildJsonResponse(200, body, { headers: NO_STORE });
 }
 
 /** Gives the session of a fetch code its token, once: the conditional write of the session makes the code single use. */
@@ -81,6 +81,6 @@ export async function handleFetchRequest(request: HttpRequest, options: LmsOptio
   const id = code.slice(0, dot);
   const secret = code.slice(dot + 1);
   if (dot < 0 || !isUuid(id) || secret === "") return answer(ERRORS.security);
-  const outcome = await callPort(() => fetchToken(settings, id.toLowerCase(), secret), settings.signal);
+  const outcome = await callPort(() => fetchToken(settings, id.toLowerCase(), secret), { signal: settings.signal });
   return outcome === undefined ? answer(ERRORS.application) : outcome.value;
 }

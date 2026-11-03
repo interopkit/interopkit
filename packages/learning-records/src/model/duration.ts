@@ -1,4 +1,5 @@
-import { checkNonNegativeInteger } from "@interopkit/core/checks";
+import { DataError } from "@interopkit/core";
+import { checkNonNegativeInteger, describe } from "@interopkit/core/checks";
 
 /** The components of an ISO 8601 duration as written, each as the text before its designator; absent when the text has none. */
 export interface DurationParts {
@@ -43,7 +44,12 @@ export function splitDuration(text: string): DurationParts | undefined {
   return Object.fromEntries(Object.entries(parts).filter(([, part]) => part !== undefined));
 }
 
-/** Tells whether text is a duration of ISO 8601:2004 4.4.3.2. */
+/**
+ * Tells whether text is a duration of ISO 8601:2004 4.4.3.2, which `parseDuration` reads.
+ *
+ * @param text - The text.
+ * @returns Whether it is.
+ */
 export function isDuration(text: string): boolean {
   return splitDuration(text) !== undefined;
 }
@@ -94,12 +100,15 @@ function numberOf(part: string | undefined): number {
  * A time of days, hours, minutes and seconds is `((days * 24 + hours) * 60 + minutes) * 60 + seconds` seconds.
  *
  * @param text - The duration, such as `PT1H30M`.
- * @returns The components, or `undefined` when the text is not a duration of that form. A component too large for a number is
- * `Infinity`.
+ * @returns The components. A component too large for a number is `Infinity`.
+ * @throws `DataError` when the text is not a duration of that form; `isDuration` tells beforehand.
  */
-export function parseDuration(text: string): Duration | undefined {
+export function parseDuration(text: string): Duration {
   const parts = splitDuration(text);
-  return parts === undefined ? undefined : componentsOf(parts);
+  if (parts === undefined) {
+    throw new DataError(`The duration must be an ISO 8601 duration such as PT1H30M, found ${describe(text)}.`);
+  }
+  return componentsOf(parts);
 }
 
 /** Reads the parts of a duration as numbers. */

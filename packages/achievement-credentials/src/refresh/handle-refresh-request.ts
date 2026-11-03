@@ -55,7 +55,7 @@ export async function handleRefreshRequest(
   if (id === undefined) return { status: 400, headers: {}, body: "" };
   const { refresh, signal } = options;
   // The port gets the signal and should stop, but the wait ends when the signal aborts whether the port does or not.
-  const asked = await callPort(() => refresh(id, signal === undefined ? undefined : { signal }), signal);
+  const asked = await callPort(() => refresh(id, signal === undefined ? undefined : { signal }), { signal });
   if (asked === undefined) return { status: 500, headers: {}, body: "" };
   const refreshed = asked.value;
   if (refreshed === undefined) return { status: 404, headers: {}, body: "" };

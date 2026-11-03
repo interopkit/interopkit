@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { copyJson, describe, type JsonValue, parseDateTime } from "@interopkit/core/checks";
+import { copyJson, describe, isDateTime, type JsonValue, parseDateTime } from "@interopkit/core/checks";
 import * as v from "valibot";
 
 /** The members of a JSON object that a writer builds, where a member that is `undefined` is left out. */
@@ -81,12 +81,11 @@ export function writeExtensions(
  * @returns The instant, or `undefined` when the text is not such a date and time.
  */
 export function parseZonedDateTime(text: string): number | undefined {
-  return parseDateTime(
-    text.replace(
-      /(T.*[+-]\d{2})(\d{2})?$/u,
-      (_, head: string, minutes: string | undefined) => `${head}:${minutes ?? "00"}`,
-    ),
+  const written = text.replace(
+    /(T.*[+-]\d{2})(\d{2})?$/u,
+    (_, head: string, minutes: string | undefined) => `${head}:${minutes ?? "00"}`,
   );
+  return isDateTime(written) ? parseDateTime(written) : undefined;
 }
 
 /** Returns whether text is an ISO 8601 date and time with a time zone designator. */

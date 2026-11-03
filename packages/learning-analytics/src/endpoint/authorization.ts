@@ -19,7 +19,7 @@ export async function principalOf(
   settings: EndpointSettings,
 ): Promise<{ readonly principal: string } | { readonly refusal: HttpResponse }> {
   const { authorize, signal } = settings;
-  const asked = await callPort(() => authorize(readBearerToken(request), { signal }), signal);
+  const asked = await callPort(() => authorize(readBearerToken(request), { signal }), { signal });
   if (asked === undefined) return { refusal: internalError() };
   if (asked.value === undefined) return { refusal: unauthorized() };
   return { principal: parseWith(grantSchema, asked.value, "The decision of authorize").principal };

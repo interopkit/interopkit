@@ -94,7 +94,7 @@ async function suiteVerdict(
       ...(settings.signal === undefined ? {} : { signal: settings.signal }),
     });
     // A suite of the host may ignore the signal it is given: the wait ends at the signal either way.
-    return await raceAbort(Promise.resolve(verifying), settings.signal);
+    return await raceAbort(Promise.resolve(verifying), { signal: settings.signal });
   } catch (error) {
     if (error instanceof DataError) return { reason: error.message, unavailable: false };
     throw error;
@@ -123,7 +123,7 @@ async function checkSignature(
   const method = String(proof.verificationMethod);
   // A resolver is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
   const call = settings.signal === undefined ? undefined : { signal: settings.signal };
-  const resolved = await raceAbort(settings.keys.resolve(method, call), settings.signal);
+  const resolved = await raceAbort(settings.keys.resolve(method, call), { signal: settings.signal });
   if (resolved === undefined)
     return { reason: `No key is named by the verificationMethod ${method}.`, unavailable: false };
   const verdict = await suiteVerdict(suite, secured, proof, resolved, settings);

@@ -82,7 +82,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/`                     | The shared foundation                                                                               |
 | `packages/core/src/errors.ts`        | `InteropkitError`, `DataError`, `ServiceError`                                                      |
 | `packages/core/src/checks.ts`        | Checks of one value and the valibot side, which `@interopkit/core/checks` exports                   |
-| `packages/core/src/formats.ts`       | `isDate`, `parseDateTime`, `isUuid`, `isAbsoluteUri` and their schemas; `checks.ts` exports them    |
+| `packages/core/src/formats.ts`       | `isDate`, `isDateTime`, `findInstant`, `isUuid`, `isAbsoluteUri` and their schemas; `checks.ts` exports them, and `parseDateTime`, which throws where `findInstant` returns `undefined` |
 | `packages/core/src/json.ts`          | `JsonValue`, `copyJson`, `MAX_JSON_DEPTH`, the counts of depth and tokens; `checks.ts` exports them |
 | `packages/core/src/findings.ts`      | `Finding`, `createFindingSink`, `safeParseBounded`, `DEFAULT_MAX_FINDINGS`; `checks.ts` exports them |
 | `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                  |

@@ -60,6 +60,6 @@ export async function receive(
   const fault = settings.strict ? strictRefusal(envelope) : undefined;
   if (fault !== undefined) return badRequest(fault);
   const { accept, signal } = settings;
-  const accepted = await callPort(() => accept(envelope, { signal }), signal);
+  const accepted = await callPort(() => accept(envelope, { signal }), { signal });
   return accepted === undefined ? internalError() : received();
 }

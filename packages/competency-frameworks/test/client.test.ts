@@ -3,7 +3,7 @@ import { hasMoreTokensThan } from "@interopkit/core/checks";
 import { describe, expect, it, vi } from "vitest";
 import {
   type CaseClient,
-  type CaseClientConfig,
+  type CaseClientOptions,
   createCaseClient,
   readStatusInfo,
   writeCaseFilter,
@@ -33,7 +33,7 @@ const ENDPOINTS = [
 ] as const;
 
 /** A client of a provider, with the configuration of a test. */
-function clientOf(provider: FakeProvider, config: Partial<CaseClientConfig> = {}): CaseClient {
+function clientOf(provider: FakeProvider, config: Partial<CaseClientOptions> = {}): CaseClient {
   return createCaseClient({ baseUrl: BASE, fetch: provider.fetch, ...config });
 }
 
@@ -90,7 +90,7 @@ describe("createCaseClient: the configuration", () => {
   it("refuses a fetch, an authorization, a signal, a version and limits of the wrong kind", () => {
     const base = { baseUrl: BASE, fetch: provider.fetch };
     const bad = (extra: string) => () => createCaseClient({ ...base, ...fromJson<object>(extra) });
-    expect(() => createCaseClient(fromJson<CaseClientConfig>(`{"baseUrl":"${BASE}","fetch":"x"}`))).toThrow(
+    expect(() => createCaseClient(fromJson<CaseClientOptions>(`{"baseUrl":"${BASE}","fetch":"x"}`))).toThrow(
       "fetch: expected a function",
     );
     expect(bad('{"authorization":"Bearer x"}')).toThrow("authorization: expected a function");

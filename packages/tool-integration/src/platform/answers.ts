@@ -6,7 +6,7 @@ export const NO_STORE: Readonly<Record<string, string>> = { "cache-control": "no
 
 /** Builds an answer with an error code and its description, as OAuth 2.0 and the services write them. */
 export function refusal(status: number, error: string, description: string): HttpResponse {
-  return buildJsonResponse(status, errorBody(error, description), NO_STORE);
+  return buildJsonResponse(status, errorBody(error, description), { headers: NO_STORE });
 }
 
 /** Builds the answer to a request whose body is larger than the limit. */
@@ -20,7 +20,9 @@ export function methodNotAllowed(method: string, allow: string): HttpResponse {
     405,
     errorBody("method_not_allowed", `The method ${method} is not allowed here: use ${allow}.`),
     {
-      allow,
+      headers: {
+        allow,
+      },
     },
   );
 }
@@ -32,5 +34,7 @@ export function notFound(): HttpResponse {
 
 /** Builds the answer when a port of the host failed: 500, with nothing of the cause. */
 export function serverError(): HttpResponse {
-  return buildJsonResponse(500, errorBody("server_error", "The platform could not answer the request."), NO_STORE);
+  return buildJsonResponse(500, errorBody("server_error", "The platform could not answer the request."), {
+    headers: NO_STORE,
+  });
 }

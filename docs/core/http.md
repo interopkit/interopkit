@@ -70,7 +70,7 @@ that has no body, such as 204, takes `null`.
 | `readQuery(request)`                        | Reads the parameters of the query into a map                                           |
 | `readForm(request, options)`                | Reads the parameters of an `application/x-www-form-urlencoded` body into a map         |
 | `readBearerToken(request)`                    | Returns the token of an `Authorization` header of the bearer scheme (RFC 6750 section 2.1): the scheme in any case, one or more spaces, a b64token; `undefined` for no header or another scheme or form |
-| `buildJsonResponse(status, body, headers, type)` | Builds an answer with a JSON body                                                      |
+| `buildJsonResponse(status, body, options?)` | Builds an answer with a JSON body                                                      |
 | `negotiate(accept, offered)`                | Chooses a media type from the `Accept` header                                          |
 | `readOffsetPage(parameters, sizes)`         | Reads the `limit` and `offset` of a query into the page it asks for                    |
 | `buildPageLinks(url, page, extent)`        | Builds the `Link` header of a page: first, prev, next, and last when the total is known |
@@ -95,8 +95,8 @@ that has no body, such as 204, takes `null`.
 | `readJson` `options.maxDepth` | 64                               | levels | `DataError`  | Arrays and objects nested inside each other: `[]` is 1, `[[]]` is 2 |
 | `readJson` `options.maxTokens` | 1,000,000                       | tokens | `DataError`  | Each bracket, brace, colon and comma, each string, each number and each `true`, `false` and `null` |
 | `readForm` `options.maxBytes` | none                             | bytes  | `DataError`  | The size of the body, counted before anything is decoded            |
-| `buildJsonResponse` `headers`      | none                             |        |              | Win over the `content-type` that it sets                            |
-| `buildJsonResponse` `type`         | `application/json;charset=UTF-8` |        |              | The media type of the answer                                        |
+| `buildJsonResponse` `options.headers` | none                             |        |              | Win over the `content-type` that it sets                            |
+| `buildJsonResponse` `options.type` | `application/json;charset=UTF-8` |        |              | The media type of the answer                                        |
 | `readOffsetPage` `limit`      | `sizes.pageSize`, at most `sizes.maxPageSize` | items | `DataError` | A whole number of at least 1 in digits; a larger one is lowered to `maxPageSize` |
 | `readOffsetPage` `offset`     | 0                                | items  | `DataError`  | A whole number of at least 0 in digits                              |
 | `buildStatusInfoResponse` `options.minor` | none                      |        |              | The code of the detail, from the vocabulary of the specification    |

@@ -103,7 +103,7 @@ async function resolveVariable(variable: string, call: SubstitutionCall): Promis
   const answer = MESSAGE_VARIABLES.get(variable);
   if (answer !== undefined) return String(answer(view) ?? "");
   if (substitution === undefined || !substitution.names.includes(variable)) return undefined;
-  const asked = await callPort(() => substitution.resolve(variable, view.message, tool, { signal }), signal);
+  const asked = await callPort(() => substitution.resolve(variable, view.message, tool, { signal }), { signal });
   if (asked === undefined) return FAILED;
   const resolved: unknown = asked.value;
   if (resolved !== undefined && typeof resolved !== "string") {

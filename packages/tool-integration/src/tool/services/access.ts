@@ -184,7 +184,7 @@ export function createServiceAccess(deployment: LtiDeployment, settings: Service
   const { tokens } = options;
   const timing = {
     clock: options.clock,
-    skewMilliseconds: settings.refreshSkewSeconds * MILLISECONDS,
+    skewMs: settings.refreshSkewSeconds * MILLISECONDS,
     timeoutMs: settings.timeoutMs,
   };
 

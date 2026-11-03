@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { describe, parseDateTime } from "@interopkit/core/checks";
+import { describe, isDateTime, parseDateTime } from "@interopkit/core/checks";
 
 /** A time zone that is UTC: `Z`, or an offset of zero (RFC 3339 section 4.3). */
 const UTC_ZONE = /(?:[Zz]|[+-]00:00)$/u;
@@ -23,6 +23,11 @@ const EARLIEST = -62_167_219_200_000;
 /** The last millisecond that RFC 3339 can write with a year of four digits: 9999-12-31T23:59:59.999Z. */
 const LATEST = 253_402_300_799_999;
 
+/** Reads an RFC 3339 date and time into epoch milliseconds, or returns `undefined` for a text that is not one. */
+export function findInstant(text: string): number | undefined {
+  return isDateTime(text) ? parseDateTime(text) : undefined;
+}
+
 /**
  * Writes a time as a Timestamp of a provider (5.2.7): RFC 3339 in UTC with millisecond precision, such as
  * `2024-06-13T18:46:03.250Z`.
@@ -33,7 +38,7 @@ const LATEST = 253_402_300_799_999;
  * @see {@link https://www.rfc-editor.org/rfc/rfc3339 | RFC 3339}
  */
 export function formatTimestamp(at: number | string): string {
-  const milliseconds = typeof at === "string" ? parseDateTime(at) : at;
+  const milliseconds = typeof at === "string" ? findInstant(at) : at;
   if (
     typeof milliseconds !== "number" ||
     !Number.isSafeInteger(milliseconds) ||
@@ -66,12 +71,12 @@ export function parseIsoTimestamp(text: string): number | undefined {
   const match = ISO_EXTENDED.exec(text) ?? ISO_BASIC.exec(text);
   if (match === null) return undefined;
   const [, year = "", month = "", day = "", hour = "", minute = "00", second = "00", fraction = "", zone = ""] = match;
-  if (zone === "Z") return parseDateTime(`${year}-${month}-${day}T${hour}:${minute}:${second}${fraction}Z`);
+  if (zone === "Z") return findInstant(`${year}-${month}-${day}T${hour}:${minute}:${second}${fraction}Z`);
   const digits = zone.slice(1).replace(":", "");
   const [offsetHour, offsetMinute] = [digits.slice(0, 2), digits.slice(2) || "00"];
   if (zone.startsWith("-") && offsetHour === "00" && offsetMinute === "00") return undefined;
   const offset = `${zone.charAt(0)}${offsetHour}:${offsetMinute}`;
-  return parseDateTime(`${year}-${month}-${day}T${hour}:${minute}:${second}${fraction}${offset}`);
+  return findInstant(`${year}-${month}-${day}T${hour}:${minute}:${second}${fraction}${offset}`);
 }
 
 /** Tells whether text is a Timestamp of xAPI 1.0.3: ISO 8601 with a time zone, other than minus zero. */

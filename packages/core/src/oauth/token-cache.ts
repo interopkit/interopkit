@@ -49,12 +49,12 @@ export function createTokenCache(
   if (options.refreshSkewSeconds !== undefined)
     checkPositiveInteger(options.refreshSkewSeconds, "The option refreshSkewSeconds");
   const { clock } = options;
-  const skewMilliseconds = (options.refreshSkewSeconds ?? DEFAULT_REFRESH_SKEW_SECONDS) * MILLISECONDS_PER_SECOND;
+  const skewMs = (options.refreshSkewSeconds ?? DEFAULT_REFRESH_SKEW_SECONDS) * MILLISECONDS_PER_SECOND;
   // One token, good until the skew before its expiry; a token with no expiry is shared by the callers that waited and not kept.
   const kept = createKeyedCache<AccessToken>({
     clock,
     maxEntries: 1,
-    lifetime: ({ expiresAt }) => (expiresAt === undefined ? 0 : expiresAt - skewMilliseconds - readClock(clock)),
+    lifetime: ({ expiresAt }) => (expiresAt === undefined ? 0 : expiresAt - skewMs - readClock(clock)),
   });
   return async (callOptions) => (await kept.get(TOKEN_KEY, () => obtain(), callOptions)).accessToken;
 }

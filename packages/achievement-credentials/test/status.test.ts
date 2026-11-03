@@ -191,7 +191,7 @@ describe("issuing a status list credential", () => {
         issuer: did,
         validFrom: "2024-06-14T00:00:00Z",
         validUntil: "2025-06-14T00:00:00Z",
-        ttlMilliseconds: 60_000,
+        ttlMs: 60_000,
         purpose: "suspension",
         list: listWith(),
       },
@@ -224,9 +224,9 @@ describe("issuing a status list credential", () => {
     await expect(
       issueStatusListCredential({ ...input, ...bad({ validUntil: 5 }) }, signer, options),
     ).rejects.toBeInstanceOf(DataError);
-    await expect(
-      issueStatusListCredential({ ...input, ...bad({ ttlMilliseconds: 0 }) }, signer, options),
-    ).rejects.toBeInstanceOf(DataError);
+    await expect(issueStatusListCredential({ ...input, ...bad({ ttlMs: 0 }) }, signer, options)).rejects.toBeInstanceOf(
+      DataError,
+    );
     await expect(
       issueStatusListCredential({ ...input, list: { length: 8, bits: new Uint8Array(1) } }, signer, options),
     ).rejects.toBeInstanceOf(DataError);
@@ -634,7 +634,7 @@ describe("checking the status of a credential", () => {
 });
 
 describe("the cache of status list credentials", () => {
-  async function fixture(extra: { ttlMilliseconds?: number; validUntil?: string } = {}) {
+  async function fixture(extra: { ttlMs?: number; validUntil?: string } = {}) {
     const w = world({ [LIST_URL]: await listJws(listWith(), { validFrom: "2024-06-01T00:00:00Z", ...extra }) });
     const cache = createStatusListCache({ clock: w.clock });
     const run = () => verifyCredentialStatus(credentialWithStatus(), { ...w.options, cache });
@@ -654,12 +654,12 @@ describe("the cache of status list credentials", () => {
   });
 
   it("keeps a list for its ttl, or until its validUntil, whichever comes first", async () => {
-    const ttl = await fixture({ ttlMilliseconds: 10_000 });
+    const ttl = await fixture({ ttlMs: 10_000 });
     await ttl.run();
     ttl.w.clock.advance(10_000);
     await ttl.run();
     expect(ttl.listRequests()).toBe(2);
-    const until = await fixture({ ttlMilliseconds: 600_000, validUntil: "2024-06-14T12:01:00Z" });
+    const until = await fixture({ ttlMs: 600_000, validUntil: "2024-06-14T12:01:00Z" });
     await until.run();
     until.w.clock.advance(59_000);
     await until.run();

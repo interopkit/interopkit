@@ -10,7 +10,7 @@ import { openAccess } from "../tokens.js";
 
 /** Builds the answer of a service to a request whose token is missing, unusable or too narrow (RFC 6750 section 3). */
 function refusal(status: 401 | 403, challenge: string, error: string, description: string): HttpResponse {
-  return buildJsonResponse(status, errorBody(error, description), { "www-authenticate": challenge });
+  return buildJsonResponse(status, errorBody(error, description), { headers: { "www-authenticate": challenge } });
 }
 
 /** The answer to a request whose token is missing, expired, not this platform's, or of a tool it no longer has. */
@@ -41,7 +41,7 @@ export async function authorizeService(
   if (access === undefined) return invalidToken("The access token is not one that this platform issued.");
   if (toSeconds(readClock(settings.clock)) >= access.exp) return invalidToken("The access token has expired.");
   const { signal } = settings;
-  const asked = await callPort(() => settings.client(access.client, { signal }), signal);
+  const asked = await callPort(() => settings.client(access.client, { signal }), { signal });
   if (asked === undefined) return serverError();
   const registration = readToolRegistration(asked.value, access.client);
   const { deployment } = access;

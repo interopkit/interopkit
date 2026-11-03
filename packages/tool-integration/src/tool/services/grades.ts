@@ -96,23 +96,23 @@ function belowLineItem(lineItemUrl: string, suffix: string): URL {
  * the last that was sent when the time is not later than it, so that the timestamps increase strictly (AGS 3.4.9).
  *
  * @param lastSent - The timestamp of the last score sent for the line item and the user, or `undefined` for the first.
- * @param nowMilliseconds - The time, in milliseconds since 1970-01-01T00:00:00Z.
+ * @param nowMs - The time, in milliseconds since 1970-01-01T00:00:00Z.
  * @returns The timestamp, in UTC with the `Z` designator and three digits of the second.
- * @throws `DataError` when `lastSent` is not a date and time with a time zone designator, or `nowMilliseconds` is not a time.
+ * @throws `DataError` when `lastSent` is not a date and time with a time zone designator, or `nowMs` is not a time.
  * @see {@link https://www.imsglobal.org/spec/lti-ags/v2p0#timestamp | LTI AGS 2.0, timestamp}
  */
-export function advanceScoreTimestamp(lastSent: string | undefined, nowMilliseconds: number): string {
-  if (typeof nowMilliseconds !== "number" || !Number.isSafeInteger(nowMilliseconds)) {
-    throw new DataError(`The time must be a whole number of milliseconds, found ${describe(nowMilliseconds)}.`);
+export function advanceScoreTimestamp(lastSent: string | undefined, nowMs: number): string {
+  if (typeof nowMs !== "number" || !Number.isSafeInteger(nowMs)) {
+    throw new DataError(`The time must be a whole number of milliseconds, found ${describe(nowMs)}.`);
   }
-  if (lastSent === undefined) return new Date(nowMilliseconds).toISOString();
+  if (lastSent === undefined) return new Date(nowMs).toISOString();
   const last = typeof lastSent === "string" ? parseZonedDateTime(lastSent) : undefined;
   if (last === undefined) {
     throw new DataError(
       `The last timestamp must be a date and time with a time zone designator, found ${describe(lastSent)}.`,
     );
   }
-  return new Date(Math.max(nowMilliseconds, last + 1)).toISOString();
+  return new Date(Math.max(nowMs, last + 1)).toISOString();
 }
 
 /** Writes a line item that the host gave, and reads it back: the reader is the check of the line item against AGS 3.2. */

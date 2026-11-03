@@ -1,4 +1,4 @@
-import { parseDateTime } from "@interopkit/core/checks";
+import { isDateTime, parseDateTime } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { KEYWORD_TERMS_V2, PREFIXES_V2, TERMS_V2 } from "./context-v2.js";
 
@@ -77,7 +77,8 @@ export function parseDateTimeV2(text: string): number | undefined {
   const [, date = "", hour = "", minute = "", second = "00", fraction = "", sign, offsetHour, offsetMinute = "00"] =
     match;
   const zone = sign === undefined ? "Z" : `${sign}${offsetHour}:${offsetMinute}`;
-  return parseDateTime(`${date}T${hour}:${minute}:${second}${fraction}${zone}`);
+  const written = `${date}T${hour}:${minute}:${second}${fraction}${zone}`;
+  return isDateTime(written) ? parseDateTime(written) : undefined;
 }
 
 /**

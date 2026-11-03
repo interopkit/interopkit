@@ -88,7 +88,7 @@ async function findTool(
     );
   }
   const { signal } = settings;
-  const asked = await callPort(() => settings.client(clientId, { signal }), signal);
+  const asked = await callPort(() => settings.client(clientId, { signal }), { signal });
   return asked === undefined ? FAILED : toolFrom(asked.value, clientId);
 }
 
@@ -105,7 +105,7 @@ async function verifyAssertion(asked: TokenRequest, settings: PlatformSettings):
   const registration = await findTool(asked, settings);
   if (registration === FAILED) return FAILED;
   const { clientId } = registration;
-  const nowMilliseconds = readClock(settings.clock);
+  const nowMs = readClock(settings.clock);
   const { signal } = settings;
   const claims = await verifyToolJwt(
     assertion,
@@ -121,7 +121,7 @@ async function verifyAssertion(asked: TokenRequest, settings: PlatformSettings):
   if (claims[CLAIM.messageType] !== undefined) {
     throw new LtiError("A client assertion must not be a message of the tool: it has a message_type.", "claim-invalid");
   }
-  const exp = checkLifetime(claims, nowMilliseconds, OWNER);
+  const exp = checkLifetime(claims, nowMs, OWNER);
   const deployment = optional(claims, CLAIM.deploymentId, OWNER, IDENTIFIER);
   if (deployment !== undefined && !registration.deploymentIds.includes(deployment)) {
     throw new LtiError(
@@ -132,10 +132,9 @@ async function verifyAssertion(asked: TokenRequest, settings: PlatformSettings):
   const jti = required(claims, "jti", OWNER, NON_EMPTY_STRING);
   // An abort before `once` leaves the assertion unspent, since `callPort` checks the signal first. Once it is spent, a later
   // abort fails closed: the tool asks again.
-  const recorded = await callPort(
-    () => settings.once(`assertion:${clientId}:${jti}`, spentUntil(exp), { signal }),
+  const recorded = await callPort(() => settings.once(`assertion:${clientId}:${jti}`, spentUntil(exp), { signal }), {
     signal,
-  );
+  });
   if (recorded === undefined) return FAILED;
   if (typeof recorded.value !== "boolean") {
     throw new DataError(`The option once must resolve with a boolean, found ${describe(recorded.value)}.`);
@@ -190,7 +189,7 @@ export async function answerToken(request: HttpRequest, settings: PlatformSettin
       ["expires_in", ACCESS_TOKEN_TTL_SECONDS],
       ["scope", granted.join(" ")],
     ]);
-    return buildJsonResponse(200, body, NO_STORE);
+    return buildJsonResponse(200, body, { headers: NO_STORE });
   } catch (error) {
     if (error instanceof LtiError)
       return refusal(400, OAUTH_ERRORS.get(error.reason) ?? "invalid_client", error.message);

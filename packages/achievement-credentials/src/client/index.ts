@@ -5,6 +5,6 @@
  * @module @interopkit/achievement-credentials/client
  */
 export { type CredentialsClient, createCredentialsClient } from "./client.js";
-export type { CredentialsClientConfig } from "./config.js";
+export type { CredentialsClientOptions } from "./config.js";
 export { type DiscoverOptions, discoverService, type ServiceDescription } from "./discovery.js";
 export { readStatusInfo, type StatusDetail } from "./status.js";

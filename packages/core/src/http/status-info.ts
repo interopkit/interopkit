@@ -87,5 +87,5 @@ export function buildStatusInfoResponse(
           },
         }),
   };
-  return buildJsonResponse(status, body, headers);
+  return buildJsonResponse(status, body, { headers });
 }

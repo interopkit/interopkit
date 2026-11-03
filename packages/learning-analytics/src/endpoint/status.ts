@@ -14,7 +14,7 @@ function problem(
   headers: Readonly<Record<string, string>> = {},
 ): HttpResponse {
   const body = { type: "about:blank", title, status, ...(detail === undefined ? {} : { detail }) };
-  return buildJsonResponse(status, body, headers, PROBLEM_TYPE);
+  return buildJsonResponse(status, body, { headers, type: PROBLEM_TYPE });
 }
 
 /** Shortens a sentence to the most characters that an answer quotes. */

@@ -37,7 +37,7 @@ const messageOf = (error: unknown): string =>
 async function refusalOf(request: HttpRequest, settings: ProviderSettings): Promise<HttpResponse | undefined> {
   const { authorize, signal } = settings;
   if (authorize === undefined) return undefined;
-  const asked = await callPort(() => authorize(request, { signal }), signal);
+  const asked = await callPort(() => authorize(request, { signal }), { signal });
   if (asked === undefined) return internalError();
   const decision = readAccessDecision(asked.value, "The decision of authorize");
   if (decision.allowed) return undefined;
@@ -67,7 +67,7 @@ async function answerDocuments(
   const { signal } = settings;
   const asked = await callPort(
     () => settings.store.documents({ ...query, collation: settings.collation }, page, { signal }),
-    signal,
+    { signal },
   );
   if (asked === undefined) return internalError();
   const answer = parseWith(pageSchema, asked.value, "The answer of FrameworkStore.documents");
@@ -83,7 +83,12 @@ async function answerDocuments(
   return buildJsonResponse(
     200,
     { CFDocuments: documents },
-    { "x-total-count": String(answer.total), link: buildPageLinks(request.url, page, { total: answer.total }) },
+    {
+      headers: {
+        "x-total-count": String(answer.total),
+        link: buildPageLinks(request.url, page, { total: answer.total }),
+      },
+    },
   );
 }
 
@@ -94,7 +99,7 @@ async function answerEntity(
 ): Promise<HttpResponse> {
   if (!isUuid(route.id)) return invalidUuid();
   const { signal } = settings;
-  const asked = await callPort(() => route.lookup(settings.store, route.id, { signal }), signal);
+  const asked = await callPort(() => route.lookup(settings.store, route.id, { signal }), { signal });
   if (asked === undefined) return internalError();
   const found = parseWith(lookupSchema, asked.value, "The answer of FrameworkStore");
   const converted = found === undefined ? undefined : inVersion(found, route.version);

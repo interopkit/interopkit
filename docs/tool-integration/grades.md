@@ -24,7 +24,7 @@ sequenceDiagram
 | Role     | Function                                              | Does                                                                                     |
 | -------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Tool     | `createServiceClient(deployment, options)`            | Returns the client of the services of a platform for one deployment                     |
-| Tool     | `advanceScoreTimestamp(lastSent, nowMilliseconds)`    | Returns a timestamp strictly later than the last one sent, with millisecond precision   |
+| Tool     | `advanceScoreTimestamp(lastSent, nowMs)`    | Returns a timestamp strictly later than the last one sent, with millisecond precision   |
 | Platform | `handlePlatformRequest(request, options)`             | With `services.gradebook`, also serves the routes of the grade services                  |
 
 ## Quick start

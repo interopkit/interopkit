@@ -1,4 +1,4 @@
-import { isAbsoluteUri, isRecord, parseDateTime } from "@interopkit/core/checks";
+import { isAbsoluteUri, isDateTime, isRecord, parseDateTime } from "@interopkit/core/checks";
 import type { CredentialIssue, IdentityObject } from "../model/index.js";
 
 /** The form of an `IdentityHash` that the specification names: `sha256$` and 64 hexadecimal digits, or `md5$` and 32 (OB B.7). */
@@ -52,8 +52,7 @@ export function periodIssues(credential: object): CredentialIssue[] {
   const [begins, ends] = "validFrom" in credential ? ["validFrom", "validUntil"] : ["issuanceDate", "expirationDate"];
   const [from, until] = [Reflect.get(credential, begins ?? ""), Reflect.get(credential, ends ?? "")];
   if (typeof from !== "string" || typeof until !== "string") return [];
-  const [start, end] = [parseDateTime(from), parseDateTime(until)];
-  if (start === undefined || end === undefined || start <= end) return [];
+  if (!isDateTime(from) || !isDateTime(until) || parseDateTime(from) <= parseDateTime(until)) return [];
   return [
     {
       path: ends ?? "",

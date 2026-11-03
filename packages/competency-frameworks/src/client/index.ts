@@ -5,6 +5,6 @@
  * @module @interopkit/competency-frameworks/client
  */
 export { type CaseClient, createCaseClient, type SelectedDocument } from "./client.js";
-export type { CaseClientConfig } from "./config.js";
+export type { CaseClientOptions } from "./config.js";
 export { writeCaseFilter } from "./query.js";
 export { readStatusInfo, type StatusDetail } from "./status.js";

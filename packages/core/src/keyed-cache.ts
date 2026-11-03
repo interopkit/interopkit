@@ -96,7 +96,7 @@ export function createKeyedCache<TValue>(options: KeyedCacheOptions<TValue>): Ke
         const recent = reloadAfter === undefined || now - entry.loadedAt < reloadAfter;
         if (now < entry.expiresAt && recent) return entry.value;
       }
-      return await raceAbort(loading.get(key) ?? start(key, load), callOptions?.signal);
+      return await raceAbort(loading.get(key) ?? start(key, load), callOptions);
     },
   };
 }

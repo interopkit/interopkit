@@ -17,7 +17,7 @@ const DEFAULT_MAX_TOKENS = 2_000_000;
 const DEFAULT_PAGE_SIZE = 100;
 
 /** What the host sets for a client of a CASE provider. */
-export interface CaseClientConfig extends CallOptions {
+export interface CaseClientOptions extends CallOptions {
   /** The address of the provider before the path of the version, such as `https://standards.example.org`. */
   readonly baseUrl: string;
   /** The `fetch` that makes the requests: the global one, or a replacement. */
@@ -68,7 +68,7 @@ export interface Settings {
   readonly root: string;
   readonly fetch: Fetch;
   readonly version: CaseVersion;
-  readonly authorization: CaseClientConfig["authorization"];
+  readonly authorization: CaseClientOptions["authorization"];
   readonly timeoutMs: number;
   readonly maxBytes: number;
   readonly maxTokens: number;
@@ -84,7 +84,7 @@ const configSchema = strictRecord({
   version: v.optional(v.picklist(CASE_VERSIONS)),
   authorization: v.optional(
     guardSchema(
-      (value): value is NonNullable<CaseClientConfig["authorization"]> => typeof value === "function",
+      (value): value is NonNullable<CaseClientOptions["authorization"]> => typeof value === "function",
       "a function",
     ),
   ),

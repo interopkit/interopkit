@@ -21,8 +21,10 @@ const LABEL = "RegistrationStore.register";
 /** The answer to a registration request whose token is missing, not this platform's, expired or used (RFC 6750 section 3.1). */
 function invalidToken(description: string): HttpResponse {
   return buildJsonResponse(401, errorBody("invalid_token", description), {
-    "www-authenticate": 'Bearer error="invalid_token"',
-    "cache-control": "no-store",
+    headers: {
+      "www-authenticate": 'Bearer error="invalid_token"',
+      "cache-control": "no-store",
+    },
   });
 }
 
@@ -46,7 +48,7 @@ async function spendToken(request: HttpRequest, settings: PlatformSettings): Pro
   const { signal } = settings;
   const recorded = await callPort(
     () => settings.once(`registration:${token.id}`, token.exp * MILLISECONDS, { signal }),
-    signal,
+    { signal },
   );
   if (recorded === undefined) return serverError();
   if (typeof recorded.value !== "boolean") {
@@ -79,7 +81,7 @@ export async function answerRegistration(
   const admitted = admitConfiguration(body.value, settings, offeredScopes(settings));
   if ("status" in admitted) return admitted;
   const { signal } = settings;
-  const asked = await callPort(() => store.register(admitted.value, { signal }), signal);
+  const asked = await callPort(() => store.register(admitted.value, { signal }), { signal });
   if (asked === undefined) return serverError();
   const reason = storedRefusal(LABEL, asked.value);
   if (reason !== undefined) return refusal(400, "invalid_client_metadata", reason);

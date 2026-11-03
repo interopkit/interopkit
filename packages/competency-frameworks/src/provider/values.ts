@@ -1,4 +1,4 @@
-import { isRecord, parseDateTime } from "@interopkit/core/checks";
+import { isDateTime, isRecord, parseDateTime } from "@interopkit/core/checks";
 
 /** A value that a filter or a sort compares: the leaves of a JSON object. */
 export type Scalar = string | number | boolean;
@@ -50,7 +50,7 @@ export interface OrderKey {
 
 /** Makes the key that orders a value, so that a sort reads the date and time of a value once and not at each comparison. */
 export function orderKey(value: Scalar): OrderKey {
-  return { value, instant: typeof value === "string" ? parseDateTime(value) : undefined };
+  return { value, instant: typeof value === "string" && isDateTime(value) ? parseDateTime(value) : undefined };
 }
 
 /**

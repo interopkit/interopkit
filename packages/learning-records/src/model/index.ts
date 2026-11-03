@@ -7,7 +7,7 @@ export type { Activity, ActivityDefinition, InteractionComponent } from "./activ
 export type { Account, Actor, Agent, AgentObject, Group, InverseFunctionalIdentifiers } from "./actor.js";
 export type { Attachment, AttachmentData } from "./attachment.js";
 export type { Context, ContextActivities, ContextAgent, ContextGroup } from "./context.js";
-export { type Duration, formatDuration, parseDuration } from "./duration.js";
+export { type Duration, formatDuration, isDuration, parseDuration } from "./duration.js";
 export type { StatementIssue } from "./issue.js";
 export type { Extensions } from "./json.js";
 export type { LanguageMap } from "./language-map.js";

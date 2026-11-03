@@ -64,11 +64,11 @@ export async function keptToken(
   store: TokenStore,
   key: string,
   scope: string,
-  timing: { readonly clock: Clock; readonly skewMilliseconds: number; readonly timeoutMs: number },
+  timing: { readonly clock: Clock; readonly skewMs: number; readonly timeoutMs: number },
 ): Promise<AccessToken | undefined> {
   const kept: unknown = await store.get(key, { signal: AbortSignal.timeout(timing.timeoutMs) });
   if (kept === undefined) return undefined;
   const token = parseWith(keptTokenSchema, kept, "The token that the option tokens returned");
-  const good = token.expiresAt - timing.skewMilliseconds > readClock(timing.clock) && token.scopes.includes(scope);
+  const good = token.expiresAt - timing.skewMs > readClock(timing.clock) && token.scopes.includes(scope);
   return good ? token : undefined;
 }

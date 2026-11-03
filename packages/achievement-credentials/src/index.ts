@@ -8,7 +8,7 @@
 export type { BakedCredential, BakedKind, FoundKind } from "./baking/index.js";
 export type {
   CredentialsClient,
-  CredentialsClientConfig,
+  CredentialsClientOptions,
   DiscoverOptions,
   ServiceDescription,
 } from "./client/index.js";

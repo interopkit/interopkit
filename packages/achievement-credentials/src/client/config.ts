@@ -19,7 +19,7 @@ const DEFAULT_MAX_BYTES = 16_777_216;
 const DEFAULT_PAGE_SIZE = 100;
 
 /** What the host sets for a client of the Open Badges API or the CLR Standard API. */
-export interface CredentialsClientConfig extends CallOptions {
+export interface CredentialsClientOptions extends CallOptions {
   /** The API: `"badges"` for the Open Badges API (`/ims/ob/v3p0`), or `"clr"` for the CLR Standard API (`/ims/clr/v2p0`). */
   readonly api: CredentialApi;
   /** The address of the resource server before the path of the API, such as `https://badges.example.org`. */
@@ -64,7 +64,7 @@ export interface Settings {
   readonly api: CredentialApi;
   readonly root: string;
   readonly fetch: Fetch;
-  readonly token: CredentialsClientConfig["token"];
+  readonly token: CredentialsClientOptions["token"];
   readonly timeoutMs: number;
   readonly maxBytes: number;
   readonly maxTokens: number;
@@ -104,7 +104,7 @@ const configSchema = strictRecord({
   api: v.picklist(CREDENTIAL_APIS),
   baseUrl: v.string(),
   fetch: functionSchema((value): value is Fetch => typeof value === "function"),
-  token: functionSchema((value): value is CredentialsClientConfig["token"] => typeof value === "function"),
+  token: functionSchema((value): value is CredentialsClientOptions["token"] => typeof value === "function"),
   timeoutMs: v.optional(positiveIntegerSchema),
   maxBytes: v.optional(positiveIntegerSchema),
   maxTokens: v.optional(positiveIntegerSchema),
