@@ -136,11 +136,12 @@ function statementsAccess({ query, reads, session }: Asked): readonly LrsAction[
 function stateAccess({ request, query, reads, session }: Asked): readonly LrsAction[] | string {
   const problem = scopeProblem(query, session);
   if (problem !== undefined) return problem;
-  // Every activity of the registration holds its launch data, which the units read and never change.
+  // The activity of every unit that the learner launched holds its launch data, which the units read and never change.
   if (!reads && query.get("stateId") === LAUNCH_DATA_STATE_ID) {
     return "An assignable unit does not change LMS.LaunchData (10.2.1).";
   }
   if (request.method === "DELETE" && !query.has("stateId")) {
+    // A removal without a stateId takes every document of the activity, of every registration when it names none.
     return "An assignable unit removes its State documents one by one, so that LMS.LaunchData stays (10.2.1).";
   }
   return [reads ? "state.read" : "state.write"];

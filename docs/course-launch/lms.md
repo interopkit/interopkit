@@ -219,6 +219,6 @@ registration and to waivers.
 | Reads of a unit | Passes every read through with its own credentials | Only the registration of the session, its learner, and no Statement by id |
 | The endpoint in the launch URL | Without a final slash | The same, so that units that append `/statements` and units that add a slash both reach the LRS |
 | Order of statements | Judged in the order of arrival | The same, and a statement timestamped before initialized is refused |
-| A removal of every State document of an activity | Taken | Refused, since it would remove `LMS.LaunchData` |
+| A removal of every State document of an activity | Taken | Refused for any activity, since one of a unit holds `LMS.LaunchData`; a unit removes its documents one by one |
 | Satisfied statements | Written after the unit's statement | The same, before the LRS answers the unit |
 | The challenge of a 401 | Basic, at which a browser asks the learner for a password | `cmi5 realm="xAPI"`, at which no browser does |
