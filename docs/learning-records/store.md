@@ -201,6 +201,9 @@ part for each hash. A Statement is stored with the data that come in a multipart
 `fileUrl` or its part, and a part that no Attachment names refuses the request; the `length` of the Attachment is not compared to its data, which the hash binds. The signature of a Statement is checked (4.2.6): it must be a compact JWS of RS256, RS384 or RS512
 whose payload is the same Statement, whether the LRS holds a key or not, and when its header has an `x5c` it must verify against
 the leaf. Anyone can make a certificate: with `trustCertificate` a chain that it does not trust refuses the request with 400.
+The payload of a signature is read within `maxDepth` and `maxTokens`, a signature that a Statement names twice is verified
+once, and since many Statements may name one part, the bytes of the signatures, counted once for each Statement, are at most
+`maxBodyBytes`, or the request is refused with 413 before any is read.
 
 `accept`, when the options give it, judges a batch last, after its Attachments and signatures and before the store, for the
 rules of a profile such as cmi5. It sees each Statement as the request sent it, so that a profile can refuse what the LRS would
@@ -342,7 +345,7 @@ The other scopes of 1.0.3 map to the actions as follows; OAuth itself, and `defi
 
 | Limit              | Default    | Refused with | Applies to                                                                         |
 | ------------------ | ---------- | ------------ | ---------------------------------------------------------------------------------- |
-| `maxBodyBytes`     | 10,485,760 | 413          | The body of a request, before the store is called                                  |
+| `maxBodyBytes`     | 10,485,760 | 413          | The body of a request, before the store is called; and the bytes of the signatures of its Statements, counted once for each Statement that names them |
 | `maxBatch`         | 1,000      | 413          | The Statements of one request                                                      |
 | `maxParts`         | 100        | 413          | The parts of a multipart request, the Statements included                          |
 | `maxPartBytes`     | 10,485,760 | 413          | One part of a multipart request                                                    |

@@ -125,11 +125,108 @@ describe("a signed Statement", () => {
     expect(trusted.response.status).toBe(200);
   });
 
+  it("verifies a signature that a Statement names twice once", async () => {
+    const good = fixture.cases[0] as Case;
+    const body = encoder.encode(good.signature);
+    const header = {
+      usageType: SIGNATURE_USAGE_TYPE,
+      display: { "en-US": "Signature" },
+      contentType: "application/octet-stream",
+      length: body.byteLength,
+      sha2: attachmentHash(body),
+    };
+    const message = writeMultipart({ ...good.statement, attachments: [header, header] }, [
+      { sha2: header.sha2, contentType: header.contentType, body },
+    ]);
+    let asked = 0;
+    const response = await handleLrsRequest(
+      requestOf("POST", "/statements", { headers: { "content-type": message.contentType }, body: message.body }),
+      optionsOf(memory(), {
+        trustCertificate: async () => {
+          asked += 1;
+          return true;
+        },
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(asked).toBe(1);
+  });
+
   it("answers 500 when trustCertificate rejects", async () => {
     const good = fixture.cases[0] as Case;
     const { response } = await sendSigned(good.statement, good.signature, {
       trustCertificate: () => Promise.reject(new Error("down")),
     });
     expect(response.status).toBe(500);
+  });
+});
+
+describe("the signatures of a request", () => {
+  const actor = { mbox: "mailto:learner@example.org" };
+  const verb = { id: "http://adlnet.gov/expapi/verbs/completed" };
+  const object = { id: "https://example.org/activities/course-1" };
+  const base64url = (text: string) => Buffer.from(text).toString("base64url");
+
+  /**
+   * A JWS with no chain, which the LRS takes when its payload is the Statement, since it has no key, and whose payload carries a
+   * definition of its Activity, which the comparison of Statements leaves out.
+   */
+  function signatureOf(definition: object): { readonly jws: string; readonly sha2: string } {
+    const payload = { actor, verb, object: { ...object, definition } };
+    const jws = `${base64url('{"alg":"RS256"}')}.${base64url(JSON.stringify(payload))}.${base64url("signature")}`;
+    return { jws, sha2: attachmentHash(encoder.encode(jws)) };
+  }
+
+  /** Posts Statements that each name the signature, with its data in one part. */
+  function post(
+    signature: { readonly jws: string; readonly sha2: string },
+    statements: number,
+    changes: Partial<LrsOptions>,
+  ) {
+    const header = {
+      usageType: SIGNATURE_USAGE_TYPE,
+      display: { "en-US": "Signature" },
+      contentType: "application/octet-stream",
+      length: signature.jws.length,
+      sha2: signature.sha2,
+    };
+    const batch = Array.from({ length: statements }, () => ({ actor, verb, object, attachments: [header] }));
+    const message = writeMultipart(batch, [
+      { sha2: signature.sha2, contentType: "application/octet-stream", body: encoder.encode(signature.jws) },
+    ]);
+    const store = memory();
+    const response = handleLrsRequest(
+      requestOf("POST", "/statements", { headers: { "content-type": message.contentType }, body: message.body }),
+      optionsOf(store, changes),
+    );
+    return { response, store, bytes: message.body.byteLength };
+  }
+
+  it("refuses with 413 the bytes of the signatures, counted once for each Statement that names them, above the limit of a body", async () => {
+    const signature = signatureOf({ description: { en: "x".repeat(4000) } });
+    const allowed = post(signature, 2, {});
+    expect((await allowed.response).status).toBe(200);
+    const maxBodyBytes = 4 * signature.jws.length;
+    const over = post(signature, 5, { limits: { maxBodyBytes } });
+    expect(over.bytes).toBeLessThan(maxBodyBytes);
+    const response = await over.response;
+    expect(response.status).toBe(413);
+    expect(reasonOf(response)).toBe(
+      `The signatures of the Statements have ${5 * signature.jws.length} bytes, counted once for each Statement that names them, above the limit of ${maxBodyBytes} bytes.`,
+    );
+    expect(over.store.held.size).toBe(0);
+  });
+
+  it("reads the payload of a signature within the depth and the tokens of the limits of a request", async () => {
+    const signature = signatureOf({ extensions: { "https://example.org/extensions/scores": Array(200).fill(0) } });
+    expect((await post(signature, 1, {}).response).status).toBe(200);
+    const tokens = await post(signature, 1, { limits: { maxTokens: 300 } }).response;
+    expect(tokens.status).toBe(400);
+    expect(reasonOf(tokens)).toMatch(
+      /^The signature of the Statement .* is not a compact JWS whose payload is a Statement\.$/u,
+    );
+    const deep = signatureOf({ extensions: { "https://example.org/extensions/nested": [[[[[0]]]]] } });
+    expect((await post(deep, 1, {}).response).status).toBe(200);
+    expect((await post(deep, 1, { limits: { maxDepth: 8 } }).response).status).toBe(400);
   });
 });

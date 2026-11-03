@@ -3,7 +3,8 @@ import { isUuid, refusalOf } from "@interopkit/core/checks";
 import { type AttachmentData, formatTimestamp, type Statement, type StatementIssue } from "../../model/index.js";
 import { mediaTypeOf, STATEMENT_VERSIONS, VERSION_PATTERNS } from "../../model/internal.js";
 import { attachmentHeadersOf, inspectBatch, issueSink } from "../../read/internal.js";
-import { SIGNATURE_USAGE_TYPE, verifyStatementSignature } from "../../signing/index.js";
+import { SIGNATURE_USAGE_TYPE } from "../../signing/index.js";
+import { verifySignature } from "../../signing/internal.js";
 import { type Context, isRefusal, type Refusal, refused, type Verdict } from "../verdict.js";
 import type { StatementsBody } from "./body.js";
 import { inUtcTimestamps, withSentTimestamps } from "./timestamps.js";
@@ -85,20 +86,25 @@ function matchAttachments(
   return { value: [...matched.values()] };
 }
 
-/** Judges one signature of a Statement, and says why it is refused, if it is. */
+/** Judges one signature of a Statement, its payload read within the limits of the JSON of a request, and says why it is refused, if it is. */
 async function refusalOfSignature(
   statement: Statement,
   signature: Uint8Array,
   context: Context,
 ): Promise<Refusal | undefined> {
-  const { signal, trustCertificate } = context.settings;
+  const { signal, trustCertificate, limits } = context.settings;
   const checked = await callPort(
     () =>
-      verifyStatementSignature(statement, signature, {
-        version: context.version,
-        ...(trustCertificate === undefined ? {} : { trustCertificate }),
-        ...(signal === undefined ? {} : { signal }),
-      }),
+      verifySignature(
+        statement,
+        signature,
+        {
+          version: context.version,
+          ...(trustCertificate === undefined ? {} : { trustCertificate }),
+          ...(signal === undefined ? {} : { signal }),
+        },
+        { maxBytes: limits.maxBodyBytes, maxDepth: limits.maxDepth, maxTokens: limits.maxTokens },
+      ),
     signal,
   );
   if (checked === undefined) return refused(500, "The LRS could not check the signature.");
@@ -112,23 +118,60 @@ async function refusalOfSignature(
   return refused(400, `The signature of the Statement ${statement.id} ${SIGNATURE_PROBLEMS[checked.value.reason]}.`);
 }
 
-/** Checks the signature of a Statement that has one (4.2.6): it must be well formed, and it must verify when the key is known. */
-async function checkSignature(
+/**
+ * Lists the data of the signatures of a Statement (4.2.6), each once, however many headers name it: an Attachment of the type
+ * `application/octet-stream` whose data come with the request.
+ */
+function signaturesOf(
   statement: Statement,
   parts: ReadonlyMap<string, AttachmentData>,
-  context: Context,
-): Promise<Verdict<undefined>> {
+): Verdict<readonly Uint8Array[]> {
+  const signatures = new Map<string, Uint8Array>();
   for (const header of statement.attachments ?? []) {
     if (header.usageType !== SIGNATURE_USAGE_TYPE) continue;
-    const data = parts.get(header.sha2.toLowerCase());
+    const hash = header.sha2.toLowerCase();
+    const data = parts.get(hash);
     if (mediaTypeOf(header.contentType) !== "application/octet-stream" || data === undefined) {
       return refused(
         400,
         "The signature of a Statement is an Attachment of the type application/octet-stream whose data come with the request.",
       );
     }
-    const refusal = await refusalOfSignature(statement, data.body, context);
-    if (refusal !== undefined) return refusal;
+    signatures.set(hash, data.body);
+  }
+  return { value: [...signatures.values()] };
+}
+
+/**
+ * Checks the signatures of the Statements that have one (4.2.6): each must be well formed, and must verify when the key is known.
+ * The work grows with the bytes of a signature for each Statement that names it, and many Statements may name one part, so those
+ * bytes, counted once for each Statement, are held to the limit of a body before any is read: 413 above it.
+ */
+async function checkSignatures(
+  statements: readonly Statement[],
+  parts: ReadonlyMap<string, AttachmentData>,
+  context: Context,
+): Promise<Verdict<undefined>> {
+  const signed: [Statement, readonly Uint8Array[]][] = [];
+  let bytes = 0;
+  for (const statement of statements) {
+    const signatures = signaturesOf(statement, parts);
+    if (isRefusal(signatures)) return signatures;
+    signed.push([statement, signatures.value]);
+    for (const signature of signatures.value) bytes += signature.byteLength;
+  }
+  const { maxBodyBytes } = context.settings.limits;
+  if (bytes > maxBodyBytes) {
+    return refused(
+      413,
+      `The signatures of the Statements have ${bytes} bytes, counted once for each Statement that names them, above the limit of ${maxBodyBytes} bytes.`,
+    );
+  }
+  for (const [statement, signatures] of signed) {
+    for (const signature of signatures) {
+      const refusal = await refusalOfSignature(statement, signature, context);
+      if (refusal !== undefined) return refusal;
+    }
   }
   return { value: undefined };
 }
@@ -201,10 +244,8 @@ export async function prepare(
   const statements = identified.map((statement) => completed(statement, stored, context));
   const attachments = matchAttachments(statements, body.parts);
   if (isRefusal(attachments)) return attachments;
-  for (const statement of statements) {
-    const signed = await checkSignature(statement, body.parts, context);
-    if (isRefusal(signed)) return signed;
-  }
+  const signed = await checkSignatures(statements, body.parts, context);
+  if (isRefusal(signed)) return signed;
   const accepted = await acceptable(withSentTimestamps(identified, submitted), context);
   if (isRefusal(accepted)) return accepted;
   return { value: { statements, stored, attachments: attachments.value } };

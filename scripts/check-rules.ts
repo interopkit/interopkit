@@ -4238,9 +4238,9 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A signature that no key verifies still has a payload that is a Statement.",
     file: "packages/learning-records/src/signing/verify-statement-signature.ts",
-    find: 'const signed = payload === undefined ? undefined : readPayload(payload, version);\n  if (signed === undefined) return fail("malformed");',
+    find: 'const signed = payload === undefined ? undefined : readPayload(payload, version, limits);\n  if (signed === undefined) return fail("malformed");',
     replace:
-      "const signed = payload === undefined ? undefined : readPayload(payload, version);\n  if (signed === undefined) return noKey;",
+      "const signed = payload === undefined ? undefined : readPayload(payload, version, limits);\n  if (signed === undefined) return noKey;",
     test: "packages/learning-records/test/signing.test.ts",
   },
   {
@@ -4861,6 +4861,27 @@ export const RULES: readonly Rule[] = [
     find: "        version: context.version,\n",
     replace: "",
     test: "packages/learning-records/test/v1-client.test.ts",
+  },
+  {
+    rule: "The bytes of the signatures of a request, counted once for each Statement that names them, are held to the limit of a body before any is read.",
+    file: "packages/learning-records/src/store/statements/prepare.ts",
+    find: "if (bytes > maxBodyBytes) {",
+    replace: "if (false) {",
+    test: "packages/learning-records/test/store-signatures.test.ts",
+  },
+  {
+    rule: "A signature that a Statement names more than once is verified once.",
+    file: "packages/learning-records/src/store/statements/prepare.ts",
+    find: "signatures.set(hash, data.body);",
+    replace: "signatures.set(`${signatures.size}`, data.body);",
+    test: "packages/learning-records/test/store-signatures.test.ts",
+  },
+  {
+    rule: "The payload of a signature is read within the limits of the JSON of a request.",
+    file: "packages/learning-records/src/store/statements/prepare.ts",
+    find: "{ maxBytes: limits.maxBodyBytes, maxDepth: limits.maxDepth, maxTokens: limits.maxTokens },",
+    replace: "{},",
+    test: "packages/learning-records/test/store-signatures.test.ts",
   },
   {
     rule: "The store is told the route that stored a Statement.",

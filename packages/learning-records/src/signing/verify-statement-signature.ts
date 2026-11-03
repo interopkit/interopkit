@@ -21,7 +21,7 @@ import { toStatementVersion } from "../compare/index.js";
 import { equivalenceKey } from "../compare/internal.js";
 import { type Statement, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 import { parseIsoTimestamp } from "../model/internal.js";
-import { readStatement, readStatementJson } from "../read/index.js";
+import { type ReadStatementJsonOptions, readStatement, readStatementJson } from "../read/index.js";
 import { readEitherVersion } from "../read/internal.js";
 import { isCertificate, SIGNATURE_ALGORITHMS } from "./constants.js";
 
@@ -181,10 +181,14 @@ async function verifyJws(jws: string, { key, algorithm }: VerifyingKey): Promise
 }
 
 /**
- * Reads the payload of a signature as a Statement in the form of the version, or says that it is none. On 1.0.3 the payload
- * may have been signed in either version, and is compared in the form of 1.0.3.
+ * Reads the payload of a signature as a Statement in the form of the version, within the limits of its JSON, or says that it is
+ * none. On 1.0.3 the payload may have been signed in either version, and is compared in the form of 1.0.3.
  */
-function readPayload(payload: Uint8Array, version: XapiVersion): Statement | undefined {
+function readPayload(
+  payload: Uint8Array,
+  version: XapiVersion,
+  limits: ReadStatementJsonOptions,
+): Statement | undefined {
   let text: string;
   try {
     text = textDecoder.decode(payload);
@@ -192,7 +196,7 @@ function readPayload(payload: Uint8Array, version: XapiVersion): Statement | und
     return undefined;
   }
   try {
-    const json = readStatementJson(text);
+    const json = readStatementJson(text, limits);
     return version === "1.0.3" ? toStatementVersion(readEitherVersion(json), "1.0.3") : readStatement(json);
   } catch (error) {
     if (error instanceof DataError) return undefined;
@@ -242,9 +246,15 @@ function unverifiedPayload(jws: string): Uint8Array | undefined {
  * Judges a signature that cannot be verified for want of a key: the payload must still be the JSON of a Statement, and the same
  * Statement as the one received, which the LRS checks whether it holds a key or not (4.2.6). What is left is `no-key`.
  */
-function checkWithoutKey(jws: string, stated: Statement, version: XapiVersion, noKey: Failure): Failure {
+function checkWithoutKey(
+  jws: string,
+  stated: Statement,
+  version: XapiVersion,
+  limits: ReadStatementJsonOptions,
+  noKey: Failure,
+): Failure {
   const payload = unverifiedPayload(jws);
-  const signed = payload === undefined ? undefined : readPayload(payload, version);
+  const signed = payload === undefined ? undefined : readPayload(payload, version, limits);
   if (signed === undefined) return fail("malformed");
   return equivalent(stated, signed) ? noKey : fail("not-equivalent");
 }
@@ -270,10 +280,25 @@ function checkWithoutKey(jws: string, stated: Statement, version: XapiVersion, n
  * @throws The `reason` of the signal when it aborts, and the error of `trustCertificate` when it rejects.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
-export async function verifyStatementSignature(
+export function verifyStatementSignature(
   statement: Statement,
   signature: Uint8Array,
   options?: SignatureVerifyOptions,
+): Promise<SignatureCheck> {
+  return verifySignature(statement, signature, options, {});
+}
+
+/**
+ * Verifies a signature as `verifyStatementSignature` does, and reads its payload within the limits of the JSON of a request that
+ * the handler of an LRS sets, which the defaults of `readStatementJson` would exceed.
+ *
+ * @param limits - The limits of the JSON of the payload, as `readStatementJson` takes them.
+ */
+export async function verifySignature(
+  statement: Statement,
+  signature: Uint8Array,
+  options: SignatureVerifyOptions | undefined,
+  limits: ReadStatementJsonOptions,
 ): Promise<SignatureCheck> {
   const {
     key,
@@ -289,10 +314,12 @@ export async function verifyStatementSignature(
   const parsed = parseJws(signature);
   if (isFailure(parsed)) return parsed;
   const found = await findKey(parsed.header, key);
-  if (isFailure(found)) return found.reason === "no-key" ? checkWithoutKey(parsed.jws, stated, version, found) : found;
+  if (isFailure(found)) {
+    return found.reason === "no-key" ? checkWithoutKey(parsed.jws, stated, version, limits, found) : found;
+  }
   const payload = await verifyJws(parsed.jws, found);
   if (isFailure(payload)) return payload;
-  const signed = readPayload(payload, version);
+  const signed = readPayload(payload, version, limits);
   if (signed === undefined) return fail("malformed");
   if (!equivalent(stated, signed)) return fail("not-equivalent");
   const certified =
