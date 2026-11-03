@@ -68,6 +68,7 @@ that has no body, such as 204, takes `null`.
 | `readJson(request, options)`                | Reads the body as JSON within limits on its size, its depth and its tokens             |
 | `readQuery(request)`                        | Reads the parameters of the query into a map                                           |
 | `readForm(request, options)`                | Reads the parameters of an `application/x-www-form-urlencoded` body into a map         |
+| `bearerTokenOf(request)`                    | Returns the token of an `Authorization` header of the bearer scheme (RFC 6750 section 2.1): the scheme in any case, one or more spaces, a b64token; `undefined` for no header or another scheme or form |
 | `jsonResponse(status, body, headers, type)` | Builds an answer with a JSON body                                                      |
 | `negotiate(accept, offered)`                | Chooses a media type from the `Accept` header                                          |
 | `readOffsetPage(parameters, sizes)`         | Reads the `limit` and `offset` of a query into the page it asks for                    |

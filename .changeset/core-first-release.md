@@ -15,7 +15,7 @@ time. `totalCountOf`, `hasNextLink` and
 `retryAfterSeconds` read the paging and retry headers of an answer, and `linkTarget` gives the address of a link only on the
 origin of the request. `@interopkit/core/http` holds the request
 and the answer of a handler as plain data with bodies as bytes, `readText`, `readJson`, `readQuery` and `readForm` with a limit on its bytes,
-`jsonResponse`, and `negotiate`, which chooses a media type from `Accept`. For the providers of the 1EdTech services it reads
+`bearerTokenOf`, which reads the bearer token of RFC 6750 from `Authorization`, `jsonResponse`, and `negotiate`, which chooses a media type from `Accept`. For the providers of the 1EdTech services it reads
 the `limit` and `offset` of a query (`readOffsetPage`), builds the `Link` header of a page with or without a known total
 (`offsetPageLinks`) and the `imsx_StatusInfo` answer of a failure (`statusInfoResponse`), and reads the decision of a host's
 `authorize` port, allowed with what it grants or refused with 401, 403 or 429, a reason, a challenge and `Retry-After` (`AccessDecision`,

@@ -1,12 +1,11 @@
 import { callPort, DataError, readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
-import { type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { bearerTokenOf, type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
 import { errorBody, MILLISECONDS, toSeconds } from "../../protocol/internal.js";
 import { methodNotAllowed, refusal, serverError } from "../answers.js";
 import { openingKeys } from "../config.js";
 import type { PlatformSettings } from "../options.js";
 import type { RegistrationStore } from "../ports.js";
-import { bearerToken } from "../services/access.js";
 import { offeredScopes } from "../services/routes.js";
 import { openRegistrationToken } from "../tokens.js";
 import {
@@ -40,7 +39,7 @@ async function spendToken(request: HttpRequest, settings: PlatformSettings): Pro
       ? undefined
       : invalidToken("The registration needs the registration token of its initiation.");
   }
-  const sealed = bearerToken(header);
+  const sealed = bearerTokenOf(request);
   const token = sealed === undefined ? undefined : await openRegistrationToken(sealed, openingKeys(settings.config));
   if (token === undefined) return invalidToken("The registration token is not one that this platform issued.");
   if (toSeconds(readClock(settings.clock)) >= token.exp) return invalidToken("The registration token has expired.");

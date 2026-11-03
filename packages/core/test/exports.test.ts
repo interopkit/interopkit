@@ -96,6 +96,7 @@ describe("the public API", () => {
   it("exports from the http subpath only what the package documents", () => {
     expect(Object.keys(http).sort()).toStrictEqual(
       [
+        "bearerTokenOf",
         "checkHttpRequest",
         "jsonResponse",
         "negotiate",

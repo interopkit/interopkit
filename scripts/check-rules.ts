@@ -822,10 +822,10 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "The token of a request is the credential of the Bearer scheme alone.",
-    file: "packages/learning-analytics/src/endpoint/authorization.ts",
+    file: "packages/core/src/http/bearer.ts",
     find: "const BEARER = /^bearer +([A-Za-z0-9\\-._~+/]+=*)$/iu;",
     replace: "const BEARER = /^(?:\\w+ +)?(.+)$/iu;",
-    test: "packages/learning-analytics/test/endpoint.test.ts",
+    test: "packages/core/test/http.test.ts",
   },
   {
     rule: "A decision of authorize is a principal, a non-empty name, and anything else breaks its contract.",

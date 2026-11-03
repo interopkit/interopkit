@@ -2,6 +2,7 @@ import fc from "fast-check";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import {
+  bearerTokenOf,
   checkHttpRequest,
   type HttpRequest,
   jsonResponse,
@@ -191,6 +192,31 @@ describe("the parameters of a query and a form", () => {
       }),
       FUZZ,
     );
+  });
+});
+
+describe("bearerTokenOf", () => {
+  it("returns the b64token of the bearer scheme, the scheme in any case and after one or more spaces", () => {
+    const tokenOf = (authorization?: string) =>
+      bearerTokenOf(request({ headers: authorization === undefined ? {} : { authorization } }));
+    expect(tokenOf("Bearer abc.DEF-_~+/9")).toBe("abc.DEF-_~+/9");
+    expect(tokenOf("bearer   abc==")).toBe("abc==");
+    expect(tokenOf("BEARER abc")).toBe("abc");
+    for (const header of [
+      undefined,
+      "",
+      "Bearer",
+      "Bearer ",
+      "Basic abc",
+      "Bearer a b",
+      "Bearer abc=d",
+      " Bearer abc",
+      "Bearer\tabc",
+    ]) {
+      expect(tokenOf(header), String(header)).toBeUndefined();
+    }
+    // The scheme ends at a space, so a token written against it is no bearer token.
+    expect(tokenOf(`Bearer${"abc"}`)).toBeUndefined();
   });
 });
 
