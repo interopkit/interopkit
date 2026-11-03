@@ -13,6 +13,7 @@ import {
   OPTIONAL_TEXT,
   parseZonedDateTime,
   searchLimit,
+  searchUserId,
   searchValue,
   submissionReviewSchema,
 } from "../claims/index.js";
@@ -228,8 +229,8 @@ export function readLineItemQuery(search: URLSearchParams): LineItemQuery {
 /**
  * Reads the filters of a request for results: `user_id` and `limit`. An unknown parameter is ignored.
  *
- * @throws `DataError` when a parameter is given twice or `limit` is not a positive integer.
+ * @throws `DataError` when a parameter is given twice, `user_id` is empty or `limit` is not a positive integer.
  */
 export function readResultQuery(search: URLSearchParams): ResultQuery {
-  return { userId: searchValue(search, "user_id", RESULT_QUERY), limit: searchLimit(search, RESULT_QUERY) };
+  return { userId: searchUserId(search, RESULT_QUERY), limit: searchLimit(search, RESULT_QUERY) };
 }

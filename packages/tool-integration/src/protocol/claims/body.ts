@@ -121,6 +121,20 @@ export function searchValue(search: URLSearchParams, name: string, label: string
 }
 
 /**
+ * Returns the `user_id` of a query: the identifier of a user, which is never empty, and which an answer that the query filters
+ * names.
+ *
+ * @throws `DataError` when it is given twice or is empty.
+ */
+export function searchUserId(search: URLSearchParams, label: string): string | undefined {
+  const userId = searchValue(search, "user_id", label);
+  if (userId === "") {
+    throw new DataError(`The parameter user_id of the ${label} must name a user, found the empty string.`);
+  }
+  return userId;
+}
+
+/**
  * Returns the `limit` of a query: a positive integer in decimal digits.
  *
  * @throws `DataError` when it is given twice or is not one.

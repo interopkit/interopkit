@@ -6634,10 +6634,17 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A filter of the groups by a user without an identifier is refused before the store is asked.",
-    file: "packages/tool-integration/src/platform/services/groups.ts",
-    find: 'if (query.userId === "") throw new DataError(',
-    replace: "if (false) throw new DataError(",
+    file: "packages/tool-integration/src/protocol/claims/body.ts",
+    find: 'if (userId === "") {',
+    replace: "if (false) {",
     test: "packages/tool-integration/test/platform-roster.test.ts",
+  },
+  {
+    rule: "A filter of the results by a user without an identifier is refused before the store is asked.",
+    file: "packages/tool-integration/src/protocol/claims/body.ts",
+    find: 'if (userId === "") {',
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/platform-grades.test.ts",
   },
   {
     rule: "The data of a Deep Linking request and the session data of a proctored attempt bind the user of the message.",

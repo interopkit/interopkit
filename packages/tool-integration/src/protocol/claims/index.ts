@@ -17,6 +17,7 @@ export {
   parseZonedDateTime,
   searchLimit,
   searchOf,
+  searchUserId,
   searchValue,
   writeExtensions,
 } from "./body.js";

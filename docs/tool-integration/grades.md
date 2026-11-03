@@ -181,7 +181,7 @@ among those of the token that the registration still grants, so that a narrowed 
 | POST a line item          | `lineitem+json`, a `LineItemInput`                                       | 201 with the line item and `Location`; 404 for a context or an `activityId` that the store does not have |
 | GET, PUT a line item      | PUT: `lineitem+json`                                                     | 200 `lineitem+json`                                                                                       |
 | DELETE a line item        |                                                                          | 204                                                                                                       |
-| GET the results           | `user_id`, `limit`, `cursor`                                             | 200 `resultcontainer+json`, each `id` `{line item}/results?user_id=…` and `scoreOf` the line item       |
+| GET the results           | `user_id`, never empty, `limit`, `cursor`                                | 200 `resultcontainer+json`, each `id` `{line item}/results?user_id=…` and `scoreOf` the line item       |
 | POST a score              | `score+json`, a `Score`                                                  | 204, whether the store kept it or a later one                                                            |
 
 A body is refused with 415 for another media type, 413 above `maxBodyBytes`, and 400 when it is not JSON or not its model. A page

@@ -10,7 +10,7 @@ import {
   STRING,
   STRING_ARRAY,
   searchLimit,
-  searchValue,
+  searchUserId,
 } from "../claims/index.js";
 import type { Group, GroupContainer, GroupQuery, GroupSet, GroupSetContainer } from "./model.js";
 
@@ -57,8 +57,8 @@ export function readGroupSetContainer(value: unknown): GroupSetContainer {
 /**
  * Reads the filters of a request for groups: `user_id` and `limit`. An unknown parameter is ignored.
  *
- * @throws `DataError` when a parameter is given twice or `limit` is not a positive integer.
+ * @throws `DataError` when a parameter is given twice, `user_id` is empty or `limit` is not a positive integer.
  */
 export function readGroupQuery(search: URLSearchParams): GroupQuery {
-  return { userId: searchValue(search, "user_id", GROUP_QUERY), limit: searchLimit(search, GROUP_QUERY) };
+  return { userId: searchUserId(search, GROUP_QUERY), limit: searchLimit(search, GROUP_QUERY) };
 }

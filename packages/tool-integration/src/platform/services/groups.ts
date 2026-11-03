@@ -1,4 +1,3 @@
-import { DataError } from "@interopkit/core";
 import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
 import { type Group, type GroupSet, type MessageServices, SCOPES } from "../../protocol/index.js";
 import {
@@ -33,19 +32,11 @@ function groupSetsUrl(origin: string, contextId: string): string {
   return `${origin}/contexts/${encodeURIComponent(contextId)}/group-sets`;
 }
 
-/** Reads the filters of a request for groups or sets. */
-function readQuery(search: URLSearchParams): ReturnType<typeof readGroupQuery> {
-  const query = readGroupQuery(search);
-  // The answer names the user whose groups it lists (section 2.1.2.1), and the identifier of a user is never empty.
-  if (query.userId === "") throw new DataError("The parameter user_id of the group query must not be empty.");
-  return query;
-}
-
 /** GET of the groups of a context, or of the groups a user is enrolled in (Context Groups 1.0 sections 2.1 and 2.1.2), in pages. */
 async function getGroups(call: Call): Promise<HttpResponse> {
   const { url, store, caller, settings } = call;
   const context = call.params.context ?? "";
-  const request = readPagedQuery(call, readQuery);
+  const request = readPagedQuery(call, readGroupQuery);
   if ("status" in request) return request;
   const { userId } = request.query;
   const label = "GroupStore.groups";
@@ -73,7 +64,7 @@ async function getGroups(call: Call): Promise<HttpResponse> {
 async function getGroupSets(call: Call): Promise<HttpResponse> {
   const { url, store, caller, settings } = call;
   const context = call.params.context ?? "";
-  const request = readPagedQuery(call, readQuery);
+  const request = readPagedQuery(call, readGroupQuery);
   if ("status" in request) return request;
   const label = "GroupStore.groupSets";
   const found = await askStore(call, (options) => store.groupSets?.(caller, context, request.page, options));

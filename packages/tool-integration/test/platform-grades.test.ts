@@ -403,6 +403,10 @@ describe("the scores and the results", () => {
     expect(json(one).map((result: { userId: string }) => result.userId)).toEqual(["b"]);
     expect(ctx.gradebook.calls.at(-1)?.args[2]).toEqual({ userId: "b", limit: 5 });
     expect((await handle(ctx, call(`${LINE_ITEM}/results?user_id=a&user_id=b`, token))).status).toBe(400);
+    const calls = ctx.gradebook.calls.length;
+    const empty = await handle(ctx, call(`${LINE_ITEM}/results?user_id=`, token));
+    expect([empty.status, json(empty).error]).toEqual([400, "invalid_request"]);
+    expect(ctx.gradebook.calls.length).toBe(calls);
   });
 });
 
