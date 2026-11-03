@@ -149,7 +149,7 @@ process only grows; the test reports the rise.
 
 | Reader | Worst input | Peak rose by | Budget |
 | --- | --- | ---: | ---: |
-| `readStatementJson` | A million tokens of distinct names, the most that the search for a repeat keeps | 58 MiB | 128 MiB |
+| `readStatementJson` | A million tokens of distinct names, the most that the search for a repeat keeps | 58–65 MiB | 128 MiB |
 | `validateStatements` | A Statement whose context holds a million wrong Activities | 2 MiB | 64 MiB |
 | `readMultipart` | The most parts and bytes that the limits take, 10 MiB | 6–10 MiB | 64 MiB |
 | `handleLrsRequest`, a POST | 1,000 Statements of 1.9 MB near a million tokens | 34–37 MiB | 128 MiB |

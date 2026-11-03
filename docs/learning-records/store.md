@@ -351,7 +351,7 @@ The other scopes of 1.0.3 map to the actions as follows; OAuth itself, and `defi
 | `maxPartBytes`     | 10,485,760 | 413          | One part of a multipart request                                                    |
 | `maxDocumentBytes` | 1,048,576  | 413          | A State or profile document, and the result of a merge                             |
 | `maxDepth`         | 64         | 400          | The nesting of the JSON of a request, a document and an `agent` parameter included |
-| `maxTokens`        | 1,000,000  | 400          | The tokens of the JSON of a request, a document and an `agent` parameter included  |
+| `maxTokens`        | 1,000,000  | 413          | The tokens of the JSON of a request, a document and an `agent` parameter included; the payload of a signature over it is a malformed signature, 400 |
 | `maxFindings`      | 1,000      | 400          | The errors counted in the Statements of a request                                  |
 | 32 parameters      | fixed      | 400          | A form of the alternate request syntax, counted before it is read                  |
 | `mergeRetries`     | 3          | 409          | The tries of a write or removal of a document that loses a race                    |
@@ -433,6 +433,4 @@ A refusal is written as plain text, JSON `{ "message": "..." }` or HTML, as `Acc
 
 | Reference    | Difference                                                                                                                                                                    |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The standard | A Statement that arrives after the Statement that voids it is not voided, since the LRS looks for the target when the voiding Statement arrives                               |
-| The standard | A batch with a Statement that the LRS holds with other content is answered 409 after the new Statements were stored: the ports do not let the handler check all the ids first |
 | RFC 9110     | A member of `If-Match` that is no entity tag names no tag and the answer is 412; a `DELETE` of a document that does not exist is 204                                          |

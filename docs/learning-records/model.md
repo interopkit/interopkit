@@ -200,7 +200,7 @@ finding beyond it, in the rules between properties as in the schema. A text whos
 | Subtags in the registry of IANA                   | The standard asks an LRS to validate the form of a language tag                                                                                   |
 | The grammar of IRIs of RFC 3987                   | The standard asks for a scheme and leaves values to the host; an address that `URL` cannot parse is refused                                       |
 | xAPI Profiles, cmi5                               | Standards of their own; a profile validator can read the findings and add its own                                                                 |
-| Storing, routing and answering requests           | The package reads Statements; a store and its routes are the host's                                                                               |
+| Storing Statements                                | The readers keep nothing; the handler of the [store guide](store.md) answers requests over the stores that the host passes                        |
 
 ## Differences from the references
 

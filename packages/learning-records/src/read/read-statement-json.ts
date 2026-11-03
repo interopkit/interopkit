@@ -73,10 +73,10 @@ const optionsSchema = strictRecord({
  * `JSON.parse` keeps the last of two properties with one name and says nothing, so an LRS that reads a request with it cannot
  * obey the rule that it shall reject a Statement that uses a property more than once (4.2.1). A name is the same when its
  * characters are, whatever the escapes that write them. The size, the depth and the number of tokens are checked before the
- * text is parsed, and a property named `__proto__` is a property of the result and changes no prototype. The syntax tree that
- * the parser builds takes memory for each token and not for each byte, up to 250 bytes: `[0,0,0` and so on is a token for each
- * byte, so a text of 10 MiB would take over 1 GB. `maxTokens` bounds the tree, and a host with less memory than 300 MB, such as
- * a Cloudflare Worker, passes a smaller one.
+ * text is parsed, and a property named `__proto__` is a property of the result and changes no prototype. The parse takes memory
+ * for each token and not for each byte, and `[{},{},` and so on is a token for every byte, so `maxTokens` bounds it: a million
+ * tokens of distinct names, the worst for the search of a repeat, which keeps the names of the open objects and nothing else,
+ * raise the peak of a process by 58 to 65 MiB. A host with less memory, such as a Cloudflare Worker, passes a smaller one.
  *
  * @param text - The text of a request or a file.
  * @param options - The limits.

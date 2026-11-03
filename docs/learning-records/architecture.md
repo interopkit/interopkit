@@ -120,5 +120,5 @@ a list where the input had one Activity.
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | The model of a Statement of xAPI 2.0, its readers and validators, the text of a request, builders, comparison and formats, the message of Attachments, the signature of a Statement, the client of an LRS, the handler of its requests | Storing Statements, a web server, obtaining credentials, xAPI Profiles, cmi5 |
 
-The package makes a request only through the `fetch` that the host passes to the client, answers one only through the ports that the host passes to the handler, keeps nothing between calls, reads no clock and no environment variable, and imports no other
+The package makes a request only through the `fetch` that the host passes to the client, answers one only through the ports that the host passes to the handler, keeps nothing between calls, reads the time only from the `clock` that the host passes to the handler, reads no environment variable, and imports no other
 family of interopkit. It uses no API outside web standards, so it runs in Node.js, browsers, Deno, Bun and Cloudflare Workers.
