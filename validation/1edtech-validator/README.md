@@ -18,7 +18,7 @@ flowchart LR
 | File                                                     | Holds                                                                                                                      |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `validator.lock.json`                                    | The repository, the commit and the SHA-256 of the archive that GitHub serves for it                                         |
-| `Dockerfile`                                             | The image: the archive checked against the hash, `mvn package`, and the library of Ed25519 that the validator loads         |
+| `Dockerfile`                                             | The image: the archive, downloaded with a stall timeout and three retries and checked against the hash, `mvn package`, and the library of Ed25519 that the validator loads |
 | `run.ts`                                                 | Builds the image, starts the container, waits until it lists its validators, runs the test, and always removes its container |
 | `examples/achievement-credentials/test/validator.corpus.test.ts` | The credentials that the validator is sent, the outcome that each comes to, and the verdict of `verifyCredential` beside it |
 

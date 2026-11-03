@@ -3,7 +3,8 @@
 FROM maven@sha256:1a352420f7aba21f5ad08df31bab55f74c013fb491f1ae8ab1dd7ff9ed698584
 ARG COMMIT
 ARG SHA256
-RUN curl -fsSL -o /validator.tar.gz https://codeload.github.com/1EdTech/digital-credentials-public-validator/tar.gz/${COMMIT} \
+# A download that brings no byte for 30 s ends, and one that fails or stalls is retried three times, as scripts/download.ts does.
+RUN curl -fsSL --retry 3 --retry-all-errors --speed-time 30 --speed-limit 1 -o /validator.tar.gz https://codeload.github.com/1EdTech/digital-credentials-public-validator/tar.gz/${COMMIT} \
  && echo "${SHA256}  /validator.tar.gz" | sha256sum -c - \
  && mkdir /validator && tar -xzf /validator.tar.gz --strip-components=1 -C /validator
 WORKDIR /validator
