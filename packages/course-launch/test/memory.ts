@@ -1,10 +1,28 @@
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { build } from "esbuild";
-import { SOURCES } from "../../../scripts/entry-size.js";
+import { join, resolve } from "node:path";
+import { build, type Plugin } from "esbuild";
 import type { ReadingName } from "./memory-readings.js";
+
+/** The packages of the repository. */
+const PACKAGES = resolve(import.meta.dirname, "../..");
+
+/**
+ * Resolves the packages of the repository to their sources, as the aliases of the Vitest configuration do, so that the process
+ * of a reading needs no build.
+ */
+const SOURCES: Plugin = {
+  name: "sources",
+  setup(bundler) {
+    bundler.onResolve({ filter: /^@interopkit\// }, ({ path }) => {
+      const [, name = "", ...rest] = path.split("/");
+      const subpath = rest.join("/");
+      if (name === "core" && subpath === "checks") return { path: resolve(PACKAGES, "core/src/checks.ts") };
+      return { path: resolve(PACKAGES, name, "src", subpath, "index.ts") };
+    });
+  },
+};
 
 /** A mebibyte, in bytes. */
 const MIB = 1024 * 1024;

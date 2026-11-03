@@ -24,7 +24,7 @@ export interface EntrySize {
  * Resolves the packages of the repository and their subpaths to their sources, as the tests do, so that a bundle needs no build.
  * A subpath is a folder with an `index.ts`, except `checks` of `@interopkit/core`, which is a file.
  */
-export const SOURCES: Plugin = {
+const SOURCES: Plugin = {
   name: "sources",
   setup(bundler) {
     bundler.onResolve({ filter: /^@interopkit\// }, ({ path }) => {
