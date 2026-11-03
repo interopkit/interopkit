@@ -334,6 +334,35 @@ describe("checking the status of a credential", () => {
     expect(await inSkew.run()).toMatchObject({ outcome: "passed" });
   });
 
+  it("judges the validity of a list credential under the Data Model 1.1 by its issuanceDate and expirationDate", async () => {
+    const { signCompactJws } = await import("@interopkit/core");
+    const listOf = async (expirationDate: string) => {
+      const vc = {
+        "@context": ["https://www.w3.org/2018/credentials/v1"],
+        type: ["VerifiableCredential", "BitstringStatusListCredential"],
+        issuer: { id: ISSUER, type: ["Profile"] },
+        issuanceDate: "2024-06-01T00:00:00Z",
+        expirationDate,
+        credentialSubject: {
+          id: `${LIST_URL}#list`,
+          type: "BitstringStatusList",
+          statusPurpose: "revocation",
+          encodedList: await encodeList(listWith()),
+        },
+      };
+      // The vc claim form of VC-JWT 1.1, with no time claim: the dates of the credential are its only period.
+      const payload = new TextEncoder().encode(JSON.stringify({ iss: ISSUER, vc }));
+      return await signCompactJws({ typ: "JWT" }, payload, signer);
+    };
+    expect(await status({}, { [LIST_URL]: await listOf("2024-06-14T11:00:00Z") }).run()).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("not valid at this time"),
+    });
+    expect(await status({}, { [LIST_URL]: await listOf("2024-06-15T00:00:00Z") }).run()).toMatchObject({
+      outcome: "passed",
+    });
+  });
+
   it("fails for a credential that is no status list credential", async () => {
     const { signCredentialJwt } = await import("../src/jwt/index.js");
     const plain = {

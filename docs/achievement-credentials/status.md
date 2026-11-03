@@ -126,7 +126,8 @@ result.detail.startsWith("The credential is revoked"); // => true
 The list credential is a compact JWS (read by `readCredentialJwt`) or JSON with a Data Integrity proof (read by `verifyProof`,
 which `verifyCredentialStatus` loads only then, so that a verifier of JWTs never loads a processor of JSON-LD). The proof is
 verified and its key is bound to the issuer of the list, who must be the issuer of the credential or one of `statusIssuers`.
-Its list is inflated once for each list credential, however many credentials name it.
+It is valid at this time from its `validFrom` to its `validUntil`, or under the Data Model 1.1 from its `issuanceDate` to its
+`expirationDate`, within `clockSkewSeconds`. Its list is inflated once for each list credential, however many credentials name it.
 
 ### A revocation list of 1EdTech
 

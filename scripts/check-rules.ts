@@ -5438,15 +5438,22 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A list credential that has expired is refused, within the skew.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "|| now - skew >= expires) {",
+    find: "|| now - skew >= period.until) {",
     replace: "|| false) {",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
     rule: "A list credential that is not valid yet is refused, within the skew.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "if (now + skew < Date.parse(list.validFrom) ||",
+    find: "if (now + skew < period.from ||",
     replace: "if (false ||",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
+    rule: "A list credential under the Data Model 1.1 is valid from its issuanceDate to its expirationDate.",
+    file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
+    find: '"issuanceDate" in list ? [list.issuanceDate, list.expirationDate] : [list.validFrom, list.validUntil];',
+    replace: "[list.validFrom, (list as { validUntil?: string }).validUntil];",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {

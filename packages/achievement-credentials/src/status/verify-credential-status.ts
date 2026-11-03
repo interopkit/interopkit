@@ -2,7 +2,7 @@ import { callService, readClock, ServiceError, untilAborted } from "@interopkit/
 import { checkRecord, describe, isRecord } from "@interopkit/core/checks";
 import { parseJsonText } from "../json-text.js";
 import { readCredentialJwt } from "../jwt/index.js";
-import type { CredentialV1p1, IssuableCredential, VerifiableCredential, VerificationCheck } from "../model/index.js";
+import type { AnyVerifiableCredential, CredentialV1p1, IssuableCredential, VerificationCheck } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
 import { isSet, MIN_LIST_LENGTH } from "./bitstring.js";
 import { decodeList } from "./encoded-list.js";
@@ -125,7 +125,7 @@ async function verifiedList(
   text: string,
   settings: CheckSettings,
   signal: AbortSignal | undefined,
-): Promise<VerifiableCredential> {
+): Promise<AnyVerifiableCredential> {
   const keyed = {
     keys: settings.keys,
     clock: settings.clock,
@@ -166,12 +166,19 @@ async function verifiedList(
 }
 
 /** Checks that a credential is a list credential of the types that Bitstring Status List names. */
-function asList(credential: unknown): VerifiableCredential {
+function asList(credential: unknown): AnyVerifiableCredential {
   const record = isRecord(credential) ? credential : {};
   if (!Array.isArray(record.type) || !record.type.includes(LIST_TYPE)) {
     throw new ListFailure(`The credential at the address is not a ${LIST_TYPE}.`);
   }
-  return credential as VerifiableCredential;
+  return credential as AnyVerifiableCredential;
+}
+
+/** Reads when a list credential becomes valid and stops being valid, under either data model, in milliseconds since 1970. */
+function periodOf(list: AnyVerifiableCredential): { readonly from: number; readonly until: number } {
+  const [from, until] =
+    "issuanceDate" in list ? [list.issuanceDate, list.expirationDate] : [list.validFrom, list.validUntil];
+  return { from: Date.parse(from), until: until === undefined ? Infinity : Date.parse(until) };
 }
 
 /** Fetches the text of a list, within the time and size of the options. */
@@ -190,7 +197,7 @@ async function fetchList(
   url: string,
   settings: CheckSettings,
   signal: AbortSignal | undefined,
-): Promise<VerifiableCredential> {
+): Promise<AnyVerifiableCredential> {
   const accept = "application/vc+jwt, application/ld+json, application/json";
   return await verifiedList(await fetchText(url, "The status list credential", accept, settings), settings, signal);
 }
@@ -286,7 +293,7 @@ function readRevocation(
 const decodedLists = new WeakMap<object, ReturnType<typeof decodeList>>();
 
 /** Decodes the list of a list credential, or returns the decoding that was made of it before. */
-function decodedList(list: VerifiableCredential, encoded: unknown): ReturnType<typeof decodeList> {
+function decodedList(list: AnyVerifiableCredential, encoded: unknown): ReturnType<typeof decodeList> {
   const earlier = decodedLists.get(list);
   if (earlier !== undefined) return earlier;
   const decoding = decodeList(encoded);
@@ -296,7 +303,7 @@ function decodedList(list: VerifiableCredential, encoded: unknown): ReturnType<t
 
 /** Checks a verified list against the entry that names it, and reads the bit. */
 async function readEntry(
-  list: VerifiableCredential,
+  list: AnyVerifiableCredential,
   entry: Entry,
   issuer: string,
   settings: CheckSettings,
@@ -310,8 +317,8 @@ async function readEntry(
   }
   const now = readClock(settings.clock);
   const skew = (settings.clockSkewSeconds ?? DEFAULT_CLOCK_SKEW_SECONDS) * MILLISECONDS_PER_SECOND;
-  const expires = list.validUntil === undefined ? Infinity : Date.parse(list.validUntil);
-  if (now + skew < Date.parse(list.validFrom) || now - skew >= expires) {
+  const period = periodOf(list);
+  if (now + skew < period.from || now - skew >= period.until) {
     return check("failed", "STATUS_VERIFICATION_ERROR: the status list credential is not valid at this time.");
   }
   const subject: unknown = list.credentialSubject;
