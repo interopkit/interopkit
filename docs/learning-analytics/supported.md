@@ -53,3 +53,6 @@ PROFILES.length; // => 16
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | Writing Caliper 1.1, and Caliper 1.0                   | 1.2 supersedes 1.1, and 1EdTech retired 1.0                                                     |
 | Splitting an envelope that is too large                | The host decides how to batch: `maxPayloadBytes` refuses an envelope that is too large          |
+
+[The comparators](comparators.md) map what `ims-caliper`, `@timeback/caliper`, the proof of concept of 1EdTech and the certification guide
+of Caliper 1.2 do against the package: has, partly, excluded with the reason, or missing.

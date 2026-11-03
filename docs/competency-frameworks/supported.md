@@ -54,3 +54,6 @@ flowchart LR
 | The JSON-LD form of CASE 1.0                 | A document form of 1.0 that 1.1 does not have                   |
 | Writing identifiers for a framework          | The host's identifiers are its own; the readers check them, and `caseEntityUri` writes the address of one |
 | A store, writing a framework, authentication | The host's: the provider takes a store and an `authorize`       |
+
+[The comparators](comparators.md) map what `@timeback/case` and OpenSALT do against the package: has, partly, excluded with the
+reason, or missing.
