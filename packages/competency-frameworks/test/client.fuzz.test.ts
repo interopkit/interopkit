@@ -1,7 +1,7 @@
 import { DataError, ServiceError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { caseFilter, readStatusInfo } from "../src/client/index.js";
+import { readStatusInfo, writeCaseFilter } from "../src/client/index.js";
 import { queryString } from "../src/client/internal.js";
 import { type CaseFilter, FILTER_PREDICATES } from "../src/index.js";
 import { parseCaseQuery } from "../src/provider/index.js";
@@ -40,11 +40,11 @@ const filter: fc.Arbitrary<CaseFilter> = fc.oneof(
   fc.tuple(condition, condition).map(([first, second]) => ({ or: [first, second] }) as const),
 );
 
-describe("caseFilter and the filter of the binding", () => {
+describe("writeCaseFilter and the filter of the binding", () => {
   it("writes what the provider of this package reads back as the same filter", () => {
     fc.assert(
       fc.property(filter, (original) => {
-        const read = parseCaseQuery(new Map([["filter", caseFilter(original)]]));
+        const read = parseCaseQuery(new Map([["filter", writeCaseFilter(original)]]));
         // `toEqual`: the generator may build objects without a prototype, which the comparison would tell apart.
         expect(read).toEqual({ filter: original });
       }),
@@ -56,7 +56,7 @@ describe("caseFilter and the filter of the binding", () => {
     fc.assert(
       fc.property(anything, (value) => {
         try {
-          expect(typeof caseFilter(value as never)).toBe("string");
+          expect(typeof writeCaseFilter(value as never)).toBe("string");
         } catch (error) {
           expect(error).toBeInstanceOf(DataError);
         }

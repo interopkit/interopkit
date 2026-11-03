@@ -28,7 +28,7 @@ export interface NodeAssociations {
  * URI, association type or node of an item or an association, or holds a value that cannot be copied.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1/impl | CASE Implementation Guide}, 3.3.7
  */
-export function associationsOf(pkg: CasePackage, identifier: string): NodeAssociations {
+export function listAssociations(pkg: CasePackage, identifier: string): NodeAssociations {
   checkPackageView(pkg, "The package");
   checkNonEmptyString(identifier, "The identifier");
   const key = identifierKey(identifier);

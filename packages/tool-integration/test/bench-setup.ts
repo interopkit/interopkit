@@ -1,22 +1,22 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages, claims and OAuth 2.0 requests are snake_case.
 
-import { type Clock, type Fetch, signerFromCryptoKey } from "@interopkit/core";
+import { type Clock, createCryptoKeySigner, type Fetch } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import { createJwksCache, SCOPES } from "@interopkit/tool-integration";
 import {
   handlePlatformRequest,
   type LaunchStore,
-  ltiPlatformLogin,
   type MessageInput,
   type PlatformConfig,
   type PlatformRequestOptions,
+  prepareToolLaunch,
   type ResourceLinkInput,
   type ToolRegistration,
 } from "@interopkit/tool-integration/platform";
 import {
+  handleLogin,
   type LoginRecord,
   type LtiStore,
-  ltiLogin,
   type PlatformRegistration,
 } from "@interopkit/tool-integration/tool";
 import { MemoryGradebook } from "./gradebook.js";
@@ -44,7 +44,7 @@ const KEY_PARAMETERS = {
 async function generateKeys(algorithm: Algorithm, kid: string) {
   const pair = (await crypto.subtle.generateKey(KEY_PARAMETERS[algorithm], true, ["sign", "verify"])) as CryptoKeyPair;
   const jwk = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid, alg: algorithm, use: "sig" };
-  return { ...pair, kid, jwk, signer: signerFromCryptoKey(pair.privateKey, { algorithm, keyId: kid }) };
+  return { ...pair, kid, jwk, signer: createCryptoKeySigner(pair.privateKey, { algorithm, keyId: kid }) };
 }
 
 /** A message with every claim that `MessageInput` carries and a platform of this package can sign for a learner. */
@@ -188,7 +188,13 @@ export async function createPair(
     keys,
     toolKeys,
     login: (message) =>
-      ltiPlatformLogin(message, { config, clock: CLOCK, registration: lookup, check: async () => undefined, launches }),
+      prepareToolLaunch(message, {
+        config,
+        clock: CLOCK,
+        registration: lookup,
+        check: async () => undefined,
+        launches,
+      }),
   };
 }
 
@@ -246,7 +252,7 @@ export async function authenticate(pair: Pair, message: MessageInput) {
   // Without a storage target the tool binds the login to the browser with a cookie, which is the path that a launch checks first.
   const url = new URL(await pair.login(message));
   url.searchParams.delete("lti_storage_target");
-  const login = await ltiLogin(get(url.href), {
+  const login = await handleLogin(get(url.href), {
     registration: async () => pair.registration,
     clock: CLOCK,
     store: pair.store,

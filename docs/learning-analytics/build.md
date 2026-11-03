@@ -1,13 +1,13 @@
 # Building events
 
 `buildEvent` writes the `@context` of an event and checks every property of it, `mintUrn` gives it an identifier that stays the
-same when the event is reported again, and `caliperTime` writes its times. The classes that an event refers to are those of
+same when the event is reported again, and `formatDateTime` writes its times. The classes that an event refers to are those of
 the [model](./model.md).
 
 ```mermaid
 flowchart LR
   host["Host: its own records"] -->|"parts that identify the event"| mint["mintUrn"]
-  host -->|"epoch milliseconds"| time["caliperTime"]
+  host -->|"epoch milliseconds"| time["formatDateTime"]
   host -->|"actor, action, object"| build["buildEvent"]
   mint -->|"id"| build
   time -->|"eventTime"| build
@@ -28,7 +28,7 @@ bytes.
 | `actor`            | The entity that acted, as an object or an IRI                                                        | required |
 | `action`           | What the actor did: one that the event type allows                                                   | required |
 | `object`           | The entity that the actor acted on                                                                   | required |
-| `eventTime`        | When it happened, as `caliperTime` writes it                                                         | required |
+| `eventTime`        | When it happened, as `formatDateTime` writes it                                                         | required |
 | `profile`          | The profile that governs the event: one of `PROFILES`                                                | none     |
 | `edApp`            | The application that the event happened in                                                           | none     |
 | `generated`        | The entity that the action made, such as an attempt or a score                                       | none     |
@@ -94,7 +94,7 @@ dereference (Caliper 1.2 section 4.2 says an IRI should be one).
 
 ## Times
 
-`caliperTime(at, label)` writes epoch milliseconds as Caliper requires: `YYYY-MM-DDTHH:mm:ss.SSSZ`, in UTC, with
+`formatDateTime(at, label)` writes epoch milliseconds as Caliper requires: `YYYY-MM-DDTHH:mm:ss.SSSZ`, in UTC, with
 milliseconds. A fraction of a millisecond is cut. `label` names the time in the error message.
 
 | Input                                       | Result                                                                |

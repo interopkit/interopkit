@@ -10,25 +10,25 @@ describe("the public API", () => {
     expect(Object.keys(root).sort()).toStrictEqual(
       [
         "buildStatement",
+        "buildVoidingStatement",
         "CONTEXT_ACTIVITY_TYPES",
+        "convertStatementVersion",
         "deriveStatementId",
         "formatDuration",
         "formatStatement",
         "formatTimestamp",
         "INTERACTION_TYPES",
+        "isSameStatement",
         "JsonLimitError",
         "mboxSha1sum",
         "parseDuration",
         "readStatement",
         "readStatementJson",
         "RULE_ROLES",
-        "sameStatement",
         "STATEMENT_FORMATS",
-        "toStatementVersion",
         "validateStatement",
         "validateStatements",
         "VERB_VOIDED",
-        "voidingStatement",
         "XAPI_VERSIONS",
       ].sort(),
     );
@@ -37,7 +37,7 @@ describe("the public API", () => {
   it("exports from the subpaths only what each documents", () => {
     expect(Object.keys(attachments).sort()).toStrictEqual([
       "MultipartLimitError",
-      "attachmentHash",
+      "hashAttachment",
       "readMultipart",
       "writeMultipart",
     ]);

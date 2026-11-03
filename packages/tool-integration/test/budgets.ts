@@ -13,9 +13,9 @@ export const PAGE_SIZE = 1000;
  * explains. Both samples come from one run, so a ratio holds on any machine.
  */
 export const RATIOS = {
-  /** `ltiLaunch` with an RS256 `id_token`, as a multiple of `jwtVerify` of jose on the same token. Measured up to 2.40. */
+  /** `handleLaunch` with an RS256 `id_token`, as a multiple of `jwtVerify` of jose on the same token. Measured up to 2.40. */
   launchRs256: 20,
-  /** `ltiLaunch` with an ES256 `id_token`, as a multiple of `jwtVerify` of jose on the same token. Measured up to 2.05. */
+  /** `handleLaunch` with an ES256 `id_token`, as a multiple of `jwtVerify` of jose on the same token. Measured up to 2.05. */
   launchEs256: 20,
   /** The authorization request that issues an RS256 `id_token` with every claim, as a multiple of `SignJWT` of jose on the same claims. Measured up to 1.36. */
   authorizeRs256: 7,
@@ -49,15 +49,15 @@ export const RATIOS = {
   controlHandler: 20,
   /** The handler of a registration, as a multiple of the same and `JSON.stringify` of its answer. Measured up to 3.39. */
   registrationHandler: 20,
-  /** `createDeepLinkResponse` with five items, one of each type, as a multiple of `SignJWT` of jose on the same claims. Measured up to 1.18. */
+  /** `buildDeepLinkingResponse` with five items, one of each type, as a multiple of `SignJWT` of jose on the same claims. Measured up to 1.18. */
   deepLinkingResponse: 6,
   /** `readDeepLinkingResponse` of the same, as a multiple of `jwtVerify` of jose on its JWT. Measured up to 3.25. */
   readDeepLinkingResponse: 20,
-  /** `createStartAssessmentPage`, as a multiple of `SignJWT` of jose on the same claims. Measured up to 1.13. */
+  /** `buildStartAssessmentPage`, as a multiple of `SignJWT` of jose on the same claims. Measured up to 1.13. */
   startAssessment: 6,
   /** `readStartAssessment` of the same, as a multiple of `jwtVerify` of jose on its JWT. Measured up to 2.53. */
   readStartAssessment: 20,
-  /** `ltiLaunch` of a message with every claim, as a multiple of `verifyLaunch` of `@lti-tool/core` on the same message. Measured up to 1.31. */
+  /** `handleLaunch` of a message with every claim, as a multiple of `verifyLaunch` of `@lti-tool/core` on the same message. Measured up to 1.31. */
   launchAgainstLtiTool: 7,
   /** The same, as a multiple of `validate` of `lti-core`. Measured up to 2.06. */
   launchAgainstLtiCore: 20,

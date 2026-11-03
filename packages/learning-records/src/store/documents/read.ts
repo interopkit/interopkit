@@ -1,4 +1,4 @@
-import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
 import type { DocumentScope, DocumentTarget } from "../../model/index.js";
 import { type Context, isRefusal } from "../verdict.js";
 import { fetchDocument, listDocuments } from "./port.js";
@@ -28,5 +28,5 @@ export async function readIds(
 ): Promise<HttpResponse> {
   const ids = await listDocuments(context, scope, since);
   if (isRefusal(ids)) return context.refuse(ids.status, ids.message);
-  return jsonResponse(200, ids.value);
+  return buildJsonResponse(200, ids.value);
 }

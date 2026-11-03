@@ -2,7 +2,7 @@
 
 import type { HttpRequest } from "@interopkit/core/http";
 import { createJwksCache } from "@interopkit/tool-integration";
-import { ltiLaunch } from "@interopkit/tool-integration/tool";
+import { handleLaunch } from "@interopkit/tool-integration/tool";
 import { decodeJwt, jwtVerify, SignJWT } from "jose";
 import { expect, test } from "vitest";
 import {
@@ -56,7 +56,7 @@ for (const algorithm of ALGORITHMS) {
       store: pair.store,
       jwks: createJwksCache({ fetch: platformFetch(pair), clock: CLOCK }),
     };
-    expect("messageType" in (await ltiLaunch(request, options))).toBe(true);
+    expect("messageType" in (await handleLaunch(request, options))).toBe(true);
     const verify = () =>
       jwtVerify(idToken, pair.keys.publicKey, {
         issuer: ISSUER,
@@ -69,7 +69,7 @@ for (const algorithm of ALGORITHMS) {
       { annotate, bench },
       LAUNCH[algorithm],
       { name: "jwtVerify of jose", fn: verify },
-      { name: "ltiLaunch", fn: () => ltiLaunch(request, options) },
+      { name: "handleLaunch", fn: () => handleLaunch(request, options) },
     );
   });
 }

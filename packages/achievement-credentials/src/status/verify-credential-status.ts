@@ -1,4 +1,4 @@
-import { callService, readClock, ServiceError, untilAborted } from "@interopkit/core";
+import { callService, raceAbort, readClock, ServiceError } from "@interopkit/core";
 import { checkRecord, describe, isRecord } from "@interopkit/core/checks";
 import { parseJsonText } from "../json-text.js";
 import { readCredentialJwt } from "../jwt/index.js";
@@ -397,7 +397,7 @@ export async function verifyCredentialStatus(
       () => load(undefined),
       signal === undefined ? undefined : { signal },
     );
-    return untilAborted(Promise.resolve(shared), signal);
+    return raceAbort(Promise.resolve(shared), signal);
   };
   try {
     if ("revocationList" in read) {

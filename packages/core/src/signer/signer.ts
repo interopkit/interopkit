@@ -1,7 +1,7 @@
 import type { CallOptions } from "../call-options.js";
 import { checkAbortSignal, checkFunction, checkNonEmptyString, checkRecord, describe, isRecord } from "../checks.js";
 import { DataError } from "../errors.js";
-import { untilAborted } from "../until-aborted.js";
+import { raceAbort } from "../race-abort.js";
 import { JWS_ALGORITHMS, type KeySpec } from "./algorithms.js";
 
 /** Signs bytes with a key that the host holds: a `CryptoKey`, a KMS or an HSM. */
@@ -29,7 +29,7 @@ export interface Signer {
   sign(data: Uint8Array, options?: CallOptions): Promise<Uint8Array>;
 }
 
-/** What `signerFromCryptoKey` needs beyond the key. */
+/** What `createCryptoKeySigner` needs beyond the key. */
 export interface CryptoKeySignerOptions {
   /** The JOSE algorithm that the key signs with: `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512` or `EdDSA`. */
   readonly algorithm: string;
@@ -77,8 +77,8 @@ function checkKey(key: unknown, algorithm: string, spec: KeySpec): asserts key i
  * @returns The signer.
  * @throws `DataError` when the algorithm is not one that a `CryptoKey` signs, or the key does not fit it.
  */
-export function signerFromCryptoKey(key: CryptoKey, options: CryptoKeySignerOptions): Signer {
-  checkRecord(options, "The options of signerFromCryptoKey must be an object");
+export function createCryptoKeySigner(key: CryptoKey, options: CryptoKeySignerOptions): Signer {
+  checkRecord(options, "The options of createCryptoKeySigner must be an object");
   const { algorithm, keyId } = options;
   const spec = typeof algorithm === "string" ? JWS_ALGORITHMS.get(algorithm)?.key : undefined;
   if (spec === undefined) {
@@ -95,7 +95,7 @@ export function signerFromCryptoKey(key: CryptoKey, options: CryptoKeySignerOpti
       if (callOptions?.signal !== undefined) checkAbortSignal(callOptions.signal, "The option signal");
       callOptions?.signal?.throwIfAborted();
       // A copy: Web Crypto takes bytes over an ArrayBuffer, and a caller's bytes may lie over another kind of buffer.
-      const signature = await untilAborted(
+      const signature = await raceAbort(
         crypto.subtle.sign(spec.params, key, new Uint8Array(data)),
         callOptions?.signal,
       );

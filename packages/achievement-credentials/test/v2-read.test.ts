@@ -17,9 +17,9 @@ import {
   type BadgeAssertionV2,
   CONTEXTS,
   type CredentialIssue,
-  credentialSummary,
   matchesIdentifier,
   readCredential,
+  summarizeCredential,
   validateCredential,
 } from "../src/index.js";
 import {
@@ -373,7 +373,7 @@ describe("the badges that a script writes with jwcrypto", () => {
     const [badge] = hosted;
     if (badge === undefined) throw new Error("The fixture has no hosted badge.");
     const read = readHosted(badge.input as Json);
-    expect(credentialSummary(read)).toStrictEqual({
+    expect(summarizeCredential(read)).toStrictEqual({
       kind: "badge-v2",
       name: "3-D Printmaster",
       description: "Awarded for passing the 3-D printing knowledge and safety test.",
@@ -386,13 +386,13 @@ describe("the badges that a script writes with jwcrypto", () => {
   });
 });
 
-describe("credentialSummary of an Open Badges 2.0 assertion", () => {
+describe("summarizeCredential of an Open Badges 2.0 assertion", () => {
   it("shows the image of the assertion before that of its BadgeClass, and the address of an image document", () => {
     const value = { ...soundAssertion(), image: { id: "https://example.org/assertions/123/image", caption: "Baked" } };
-    expect(credentialSummary(readCredential(value))).toMatchObject({
+    expect(summarizeCredential(readCredential(value))).toMatchObject({
       image: "https://example.org/assertions/123/image",
     });
-    expect(credentialSummary(readCredential(soundAssertion()))).toStrictEqual({
+    expect(summarizeCredential(readCredential(soundAssertion()))).toStrictEqual({
       kind: "badge-v2",
       name: "3-D Printmaster",
       description: "This badge is awarded for passing the 3-D printing knowledge and safety test.",
@@ -404,7 +404,7 @@ describe("credentialSummary of an Open Badges 2.0 assertion", () => {
   });
 
   it("refuses a 2.0 value with an error, as readCredential does", () => {
-    expect(() => credentialSummary(JSON.parse(JSON.stringify({ ...soundAssertion(), issuedOn: 5 })))).toThrow(
+    expect(() => summarizeCredential(JSON.parse(JSON.stringify({ ...soundAssertion(), issuedOn: 5 })))).toThrow(
       DataError,
     );
   });

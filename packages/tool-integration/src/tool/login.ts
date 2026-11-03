@@ -116,7 +116,7 @@ function authenticationRequest(
  * the initiation names a deployment that the registration does not list.
  * @throws The `reason` of `options.signal` when it aborts before the login is saved.
  */
-export async function ltiLogin(request: HttpRequest, options: LtiLoginOptions): Promise<HttpResponse> {
+export async function handleLogin(request: HttpRequest, options: LtiLoginOptions): Promise<HttpResponse> {
   checkHttpRequest(request);
   checkLoginOptions(options);
   const initiation = readInitiation(request);

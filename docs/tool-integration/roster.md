@@ -37,7 +37,7 @@ A tool reads the members of a context. The sample serves the platform's token en
 that it writes; a real tool passes the `fetch` of its host.
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { createServiceClient } from "@interopkit/tool-integration/tool";
 
 const keys = await crypto.subtle.generateKey(
@@ -54,7 +54,7 @@ const registration = {
   jwksUrl: "https://lms.example.edu/jwks",
   accessTokenUrl: "https://lms.example.edu/token",
   redirectUri: "https://tool.example.com/lti/launch",
-  signer: signerFromCryptoKey(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
+  signer: createCryptoKeySigner(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
 };
 const platform = async (url) =>
   url === registration.accessTokenUrl

@@ -88,13 +88,13 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                  |
 | `packages/core/src/call-options.ts`  | `CallOptions`, the `signal` of every call that waits on I/O                                         |
 | `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`                       |
-| `packages/core/src/answer-headers.ts` | `totalCountOf`, `hasNextLink`, `hasNextPage`, `retryAfterSeconds`, `linkTarget`: the paging and retry headers of an answer |
+| `packages/core/src/answer-headers.ts` | `readTotalCount`, `hasNextLink`, `hasNextPage`, `readRetryAfterSeconds`, `findLinkTarget`: the paging and retry headers of an answer |
 | `packages/core/src/answer.ts`        | `readAnswerJson`, `readAnswer`, `readStatusDetail`: the JSON, the data and the status of the answer of a service, for a client |
 | `packages/core/src/http/`            | The request and answer types and their helpers, which `@interopkit/core/http` exports               |
-| `packages/core/src/signer/`          | `Signer`, `signerFromCryptoKey`, `signCompactJws`                                                   |
+| `packages/core/src/signer/`          | `Signer`, `createCryptoKeySigner`, `signCompactJws`                                                   |
 | `packages/core/src/random.ts`        | `Random`, `SYSTEM_RANDOM`                                                                           |
 | `packages/core/src/oauth/`           | The OAuth 2.0 clients and the token cache, which `@interopkit/core/oauth` exports                   |
-| `packages/core/src/until-aborted.ts` | `untilAborted`, which ends a wait when a signal aborts                                              |
+| `packages/core/src/race-abort.ts` | `raceAbort`, which ends a wait when a signal aborts                                              |
 | `packages/core/src/keyed-cache.ts`   | `createKeyedCache`: values by key with a lifetime, whose loads are shared work                      |
 | `packages/core/src/jwks-cache.ts`    | `createJwksCache`: the JWK Sets of other parties on `createKeyedCache`, which `tool-integration` exports too |
 | `packages/core/src/call-port.ts`     | `callPort`, which turns the failure of a port into a value for a handler                            |
@@ -261,9 +261,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
 | The randomness of `state`, `nonce`, `jti` and hints, and of the fetch codes and tokens of `course-launch`, is not injected | A source that a host or a test could replace could make secrets predictable; tests observe the values in the store instead                           |
 | `custom` is a `Map` in the tool role and a record in the platform role                     | The tool role reads claim names from a token, `__proto__` among them, and the platform role writes what its host gave it                             |
 | The platform role of `tool-integration` seals its hints and tokens with an HMAC `CryptoKey` through `jose`, not a `Signer` | A sealed token is the platform's own, which only the platform opens; a `Signer` cannot verify, and the `id_token`s are signed by the `Signer` of `config.keys` |
-| Some functions are named for what they serve, such as `ltiLaunch` and `ltiPlatformLogin`  | They are the handlers of an endpoint, and the specifications name the endpoint; a verb would not say which one                                       |
-| `ltiLaunch` throws an `LtiError` for a refused launch, and returns a page or a launch      | A refusal needs a reason and an HTTP status for the route; tell the results apart with `"status" in result`                                          |
-| `toCaseVersion` reads the structure that it converts and not every property that it copies | `readPackage` and `readEntity` check the properties; the conversion reports the forms that 1.0 refuses, and it cannot tell the kind of a lone entity |
+| Some functions are named for what they serve, such as `handleLaunch` and `prepareToolLaunch`  | They are the handlers of an endpoint, and the specifications name the endpoint; a verb would not say which one                                       |
+| `handleLaunch` throws an `LtiError` for a refused launch, and returns a page or a launch      | A refusal needs a reason and an HTTP status for the route; tell the results apart with `"status" in result`                                          |
+| `convertCaseVersion` reads the structure that it converts and not every property that it copies | `readPackage` and `readEntity` check the properties; the conversion reports the forms that 1.0 refuses, and it cannot tell the kind of a lone entity |
 | The strings of the three small pages are in English and not in a catalog                   | A person sees them only when the login fails; a host that needs another language builds its own page from the same script                            |
 | The HMAC key and the key of a proof are not injected                                       | A source that a host or a test could replace could make predictable what binds a base proof; the vectors reach fixed ones through `base/internal.ts` |
 | `achievement-credentials` needs Node.js 24 or later (`engines`), the other packages 22         | Every `@interop` package that it adopts declares `node >=24`, Node 24 is LTS, and Node 22 ends about when the package ships; approved 2026-11-01. Its tests still run on Node.js 22 in CI with those of the other packages (the `test`, `spec` and `bench` jobs), where they pass: 53 files and 1,167 tests on 2026-11-04. A dependency that began to need 24 would fail there before `engines` said so |
@@ -276,19 +276,19 @@ Where the code departs from `STANDARDS.md`, with the reason.
   plus a name.
 - No package, folder or brand name holds a specification name: the packages are `tool-integration`, `learning-analytics`,
   `competency-frameworks`, `selective-disclosure`, `achievement-credentials`, `learning-records` and `course-launch`, and
-  `pnpm check:standards` fails on `lti`, `caliper` or `cmi5` in one. Modules and functions use the names descriptively (`ltiLaunch`, `CaliperEvent`).
+  `pnpm check:standards` fails on `lti`, `caliper` or `cmi5` in one. Modules and functions use the names descriptively (`handleLaunch`, `CaliperEvent`).
 - Function options are `<Name>Options`. Labels are string unions in kebab-case (`"key-unknown"`).
 - An error has a kebab-case `reason` where a caller must branch on it, and a `status` where it maps to HTTP.
 - The names of the properties of a specification (`CFItems`, `imsx_codeMajor`) are kept as it writes them: the folders and
   files that define them are listed in the `useNamingConvention` override of `biome.json`.
 - A vocabulary is a `const` tuple, its type is derived from it and its schema is `v.picklist` of it.
 - A finding is a `Finding` of `core` (`path`, `rule`, `message`), extended by a package for its own fields. The `message` reads
-  after the path and does not hold it; the rules are those that `findingsOf` names and those that a table of the guide lists.
+  after the path and does not hold it; the rules are those that `buildFindings` names and those that a table of the guide lists.
 - A reader and a validator that list findings take `maxFindings` (default 1,000, `DEFAULT_MAX_FINDINGS`): they parse with
   `safeParseBounded`, never `v.safeParse`, and fill a `createFindingSink` of `core/checks`, whose last finding says that the list
   stopped; a reader counts errors alone. The checks that follow the schema yield their findings one at a time, so that a full
   list stops them, and a finding names a bounded part of the value. A text of JSON is counted with `hasMoreTokensThan` before
-  `JSON.parse`, or with `exceededJsonLimit` where its levels are bounded too, which reads it once for both, and a client has a
+  `JSON.parse`, or with `findExceededJsonLimit` where its levels are bounded too, which reads it once for both, and a client has a
   `maxTokens` option beside `maxBytes`.
 
 ## Code

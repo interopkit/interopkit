@@ -1,4 +1,4 @@
-import { type CallOptions, ServiceError, untilAborted } from "@interopkit/core";
+import { type CallOptions, raceAbort, ServiceError } from "@interopkit/core";
 import { checkAbortSignal, checkNonEmptyString, checkRecord } from "@interopkit/core/checks";
 import type { KeyResolver, VerificationCheck, VerificationKey } from "../model/index.js";
 import { thumbprintOf } from "./jwk.js";
@@ -75,7 +75,7 @@ export async function verifyIssuerKey(
   try {
     // A resolver is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
     const call = options.signal === undefined ? undefined : { signal: options.signal };
-    published = await untilAborted(options.keys.issuerKeys(issuer, call), options.signal);
+    published = await raceAbort(options.keys.issuerKeys(issuer, call), options.signal);
   } catch (error) {
     if (error instanceof ServiceError) {
       return issuerCheck("unavailable", `The keys of the issuer ${issuer} could not be read: ${error.message}`);

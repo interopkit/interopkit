@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages, claims and OAuth 2.0 requests are snake_case.
 
-import { type Clock, type Fetch, signerFromCryptoKey } from "@interopkit/core";
+import { type Clock, createCryptoKeySigner, type Fetch } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import { vi } from "vitest";
 import { createJwksCache, SCOPES } from "../src/index.js";
@@ -8,11 +8,11 @@ import {
   buildPlatformEndpoints,
   handlePlatformRequest,
   type LaunchStore,
-  ltiPlatformLogin,
   type MessageInput,
   type PlatformConfig,
   type PlatformEndpoints,
   type PlatformRequestOptions,
+  prepareToolLaunch,
   type RegisteredTool,
   type RegistrationStore,
   type ToolMessageOptions,
@@ -84,7 +84,7 @@ async function platformKeys(algorithm: PlatformAlgorithm): Promise<PlatformConfi
     ["sign", "verify"],
   )) as CryptoKeyPair;
   const publicJwk = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid, alg: algorithm, use: "sig" };
-  return { signer: signerFromCryptoKey(pair.privateKey, { algorithm, keyId: kid }), publicKeys: [publicJwk] };
+  return { signer: createCryptoKeySigner(pair.privateKey, { algorithm, keyId: kid }), publicKeys: [publicJwk] };
 }
 
 const hmac = () => crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
@@ -297,7 +297,13 @@ export async function createReferencePlatform(settings: ReferencePlatformOptions
     toolMessage: { config, clock: CLOCK, client, jwks, once },
     handle,
     login: (message) =>
-      ltiPlatformLogin(message, { config, clock: CLOCK, registration: client, check: async () => undefined, launches }),
+      prepareToolLaunch(message, {
+        config,
+        clock: CLOCK,
+        registration: client,
+        check: async () => undefined,
+        launches,
+      }),
     async authenticate(authenticationUrl) {
       const page = await handle({ method: "GET", url: authenticationUrl, headers: {}, body: new Uint8Array() });
       const post = readPost(page);

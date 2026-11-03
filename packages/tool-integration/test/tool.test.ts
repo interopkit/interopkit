@@ -1,14 +1,14 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 responses are snake_case.
 
 import { createHmac } from "node:crypto";
-import { DataError, ServiceError, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, DataError, ServiceError } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
 import { jwtVerify } from "jose";
 import { describe, expect, it } from "vitest";
 import type { LtiMessage } from "../src/index.js";
 import { randomToken } from "../src/protocol/internal.js";
-import { ltiLaunch, ltiLogin, type PlatformRegistration } from "../src/tool/index.js";
+import { handleLaunch, handleLogin, type PlatformRegistration } from "../src/tool/index.js";
 import { getDataPage, requestServiceToken } from "../src/tool/internal.js";
 import {
   ACCESS_TOKEN_URL,
@@ -104,7 +104,7 @@ describe("the request of a service token", () => {
       "sign",
       "verify",
     ])) as CryptoKeyPair;
-    const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "tool-ec-1" });
+    const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "tool-ec-1" });
     const ctx = setup({ signer });
     let assertion = "";
     const fetch: Options["fetch"] = async (_url, init) => {
@@ -173,12 +173,12 @@ describe("the request of a service token", () => {
   });
 });
 
-describe("ltiLaunch", () => {
+describe("handleLaunch", () => {
   describe("on the cookie path", () => {
     it("returns the launch of a resource link, with the claims that the platform sent", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx);
-      expect(launchOf(await ltiLaunch(post, ctx.options))).toMatchObject({
+      expect(launchOf(await handleLaunch(post, ctx.options))).toMatchObject({
         messageType: "LtiResourceLinkRequest",
         issuer: ISSUER,
         clientId: CLIENT_ID,
@@ -212,7 +212,7 @@ describe("ltiLaunch", () => {
     it("returns the settings of a Deep Linking request", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx, { message: "deep-linking" });
-      const launch = deepLinkingOf(await ltiLaunch(post, ctx.options));
+      const launch = deepLinkingOf(await handleLaunch(post, ctx.options));
       expect(launch.settings).toMatchObject({
         returnUrl: RETURN_URL,
         acceptTypes: ["link", "file", "html", "ltiResourceLink", "image"],
@@ -233,7 +233,7 @@ describe("ltiLaunch", () => {
         "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint": { scope: [AGS_SCOPES[2]], lineitem: "" },
       };
       const { request: post } = await cookieLogin(ctx, { claims });
-      const launch = launchOf(await ltiLaunch(post, ctx.options));
+      const launch = launchOf(await handleLaunch(post, ctx.options));
       expect(launch).toMatchObject({ roles: [], custom: new Map(), services: { grades: { scopes: [AGS_SCOPES[2]] } } });
       expect(launch.user.subject).toBeUndefined();
       expect(launch.services.grades?.lineitem).toBeUndefined();
@@ -245,7 +245,7 @@ describe("ltiLaunch", () => {
         "https://purl.imsglobal.org/spec/lti/claim/custom": JSON.parse('{"__proto__":"x","constructor":"y"}'),
       };
       const { request: post } = await cookieLogin(ctx, { claims });
-      const launch = launchOf(await ltiLaunch(post, ctx.options));
+      const launch = launchOf(await handleLaunch(post, ctx.options));
       expect(launch.custom.get("__proto__")).toBe("x");
       expect(launch.custom.get("constructor")).toBe("y");
     });
@@ -253,16 +253,19 @@ describe("ltiLaunch", () => {
     it("completes a login once: the same post fails the second time", async () => {
       const ctx = setup();
       const { request: post, auth } = await cookieLogin(ctx);
-      launchOf(await ltiLaunch(post, ctx.options));
+      launchOf(await handleLaunch(post, ctx.options));
       expect(ctx.store.records.has(auth.state)).toBe(false);
-      await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ name: "LtiError", reason: "state-unknown" });
+      await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({
+        name: "LtiError",
+        reason: "state-unknown",
+      });
     });
 
     it("lets one of two launches that race with one login complete", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx);
       ctx.store.lose = true;
-      await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ name: "LtiError", reason: "state-reused" });
+      await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ name: "LtiError", reason: "state-reused" });
     });
 
     it("refuses a token that answers another login", async () => {
@@ -270,7 +273,7 @@ describe("ltiLaunch", () => {
       const first = await cookieLogin(ctx);
       const second = await cookieLogin(ctx);
       const crossed = formPost({ id_token: first.auth.idToken, state: second.auth.state }, { cookie: second.cookie });
-      await expect(ltiLaunch(crossed, ctx.options)).rejects.toMatchObject({ reason: "nonce-mismatch" });
+      await expect(handleLaunch(crossed, ctx.options)).rejects.toMatchObject({ reason: "nonce-mismatch" });
       expect(ctx.store.records.has(second.auth.state)).toBe(true);
     });
 
@@ -286,13 +289,13 @@ describe("ltiLaunch", () => {
         `lti_state_${first.auth.state}=${first.auth.state}`,
         `x=1; ${second.cookie}`,
       ]) {
-        await expect(ltiLaunch(withCookie(cookie), ctx.options), cookie).rejects.toMatchObject({
+        await expect(handleLaunch(withCookie(cookie), ctx.options), cookie).rejects.toMatchObject({
           name: "LtiError",
           reason: "state-cookie",
         });
       }
       const accepted = withCookie(`other=1; ${first.cookie}; more=2`);
-      expect(launchOf(await ltiLaunch(accepted, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
+      expect(launchOf(await handleLaunch(accepted, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
     });
 
     it("refuses a state that no login of the tool has, without asking the store for a malformed one", async () => {
@@ -301,20 +304,20 @@ describe("ltiLaunch", () => {
       const gets = ctx.store.gets;
       for (const state of ["../etc/passwd", "a".repeat(65), "with space", "ünï"]) {
         const post = formPost({ id_token: auth.idToken, state });
-        await expect(ltiLaunch(post, ctx.options), state).rejects.toMatchObject({ reason: "state-unknown" });
+        await expect(handleLaunch(post, ctx.options), state).rejects.toMatchObject({ reason: "state-unknown" });
       }
       expect(ctx.store.gets).toBe(gets);
       const unknown = formPost({ id_token: auth.idToken, state: randomToken() });
-      await expect(ltiLaunch(unknown, ctx.options)).rejects.toMatchObject({ reason: "state-unknown" });
+      await expect(handleLaunch(unknown, ctx.options)).rejects.toMatchObject({ reason: "state-unknown" });
     });
 
     it("refuses a login after ten minutes", async () => {
       const ctx = setup();
       const finish = async (seconds: number): Promise<LtiMessage | HttpResponse> => {
-        const response = await ltiLogin(ctx.platform.initiation(), ctx.options);
+        const response = await handleLogin(ctx.platform.initiation(), ctx.options);
         ctx.clock.advance(seconds);
         const auth = await ctx.platform.authenticate(response.headers.location ?? "");
-        return ltiLaunch(auth.post({ cookie: cookieOf(response.headers["set-cookie"]) }), ctx.options);
+        return handleLaunch(auth.post({ cookie: cookieOf(response.headers["set-cookie"]) }), ctx.options);
       };
       expect(launchOf(await finish(599)).messageType).toBe("LtiResourceLinkRequest");
       await expect(finish(600)).rejects.toMatchObject({ name: "LtiError", reason: "state-expired" });
@@ -339,7 +342,7 @@ describe("ltiLaunch", () => {
       ] as const;
       for (const [name, token] of forged) {
         const post = formPost({ id_token: await token, state: auth.state }, { cookie });
-        await expect(ltiLaunch(post, ctx.options), name).rejects.toMatchObject({
+        await expect(handleLaunch(post, ctx.options), name).rejects.toMatchObject({
           name: "LtiError",
           reason: "algorithm-unsupported",
         });
@@ -354,14 +357,19 @@ describe("ltiLaunch", () => {
       // The 256 bytes of an RS256 signature of 2,048 bits end in the middle of the last character: its lowest bit is padding.
       const respelled = `${signature.slice(0, -1)}${alphabet[alphabet.indexOf(signature.at(-1) ?? "A") ^ 1]}`;
       const post = formPost({ id_token: `${header}.${payload}.${respelled}`, state: auth.state }, { cookie });
-      await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ name: "LtiError", reason: "token-malformed" });
-      expect(launchOf(await ltiLaunch(auth.post({ cookie }), ctx.options)).messageType).toBe("LtiResourceLinkRequest");
+      await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({
+        name: "LtiError",
+        reason: "token-malformed",
+      });
+      expect(launchOf(await handleLaunch(auth.post({ cookie }), ctx.options)).messageType).toBe(
+        "LtiResourceLinkRequest",
+      );
     });
 
     it("refuses a token whose signature is not the platform's", async () => {
       const ctx = setup();
       const forged = await cookieLogin(ctx, { signer: attackerKey });
-      await expect(ltiLaunch(forged.request, ctx.options)).rejects.toMatchObject({ reason: "signature-invalid" });
+      await expect(handleLaunch(forged.request, ctx.options)).rejects.toMatchObject({ reason: "signature-invalid" });
       const tampered = await cookieLogin(ctx);
       const [header = "", , signature = ""] = tampered.auth.idToken.split(".");
       const claims = { ...tampered.auth.claims, sub: "someone-else" };
@@ -369,16 +377,16 @@ describe("ltiLaunch", () => {
         { id_token: `${header}.${base64url(JSON.stringify(claims))}.${signature}`, state: tampered.auth.state },
         { cookie: tampered.cookie },
       );
-      await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "signature-invalid" });
+      await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "signature-invalid" });
     });
 
     it("refuses a token whose key the platform's key set does not hold", async () => {
       const ctx = setup();
       await expect(
-        ltiLaunch((await cookieLogin(ctx, { signer: rotatedKey })).request, ctx.options),
+        handleLaunch((await cookieLogin(ctx, { signer: rotatedKey })).request, ctx.options),
       ).rejects.toMatchObject({ reason: "key-unknown" });
       const noKid = await cookieLogin(ctx, { header: { kid: undefined } });
-      await expect(ltiLaunch(noKid.request, ctx.options)).rejects.toMatchObject({ reason: "key-unknown" });
+      await expect(handleLaunch(noKid.request, ctx.options)).rejects.toMatchObject({ reason: "key-unknown" });
     });
 
     it("refuses a token signed with a key that cannot verify with RS256, as a key the set does not hold", async () => {
@@ -393,7 +401,7 @@ describe("ltiLaunch", () => {
         ctx.platform.signer = signer;
         ctx.platform.keySetResponse = () => Response.json({ keys: [jwk, { ...attackerKey.publicJwk, kid: jwk.kid }] });
         const { request: post } = await cookieLogin(ctx);
-        await expect(ltiLaunch(post, ctx.options), name).rejects.toMatchObject({
+        await expect(handleLaunch(post, ctx.options), name).rejects.toMatchObject({
           name: "LtiError",
           reason: "key-unknown",
         });
@@ -406,7 +414,7 @@ describe("ltiLaunch", () => {
       const { request: post } = await cookieLogin(ctx);
       for (const body of ["<html>", "[]", '{"keys":{}}', '{"key":[]}', JSON.stringify({ keys: Array(101).fill({}) })]) {
         ctx.platform.keySetResponse = () => new Response(body);
-        await expect(ltiLaunch(post, ctx.options), body).rejects.toMatchObject({
+        await expect(handleLaunch(post, ctx.options), body).rejects.toMatchObject({
           name: "LtiError",
           reason: "key-unknown",
           status: 401,
@@ -417,19 +425,19 @@ describe("ltiLaunch", () => {
 
     it("accepts a token signed with a key that the platform added by rotation", async () => {
       const ctx = setup();
-      launchOf(await ltiLaunch((await cookieLogin(ctx)).request, ctx.options));
+      launchOf(await handleLaunch((await cookieLogin(ctx)).request, ctx.options));
       ctx.platform.published = [rotatedKey, platformKey];
       ctx.platform.signer = rotatedKey;
       ctx.clock.advance(60);
       const { request: post } = await cookieLogin(ctx);
-      expect(launchOf(await ltiLaunch(post, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
+      expect(launchOf(await handleLaunch(post, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
       expect(ctx.platform.requests).toHaveLength(2);
     });
 
     it("refuses a token with a critical header, which names extensions the tool does not support", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx, { header: { crit: ["exp"] } });
-      await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "token-malformed" });
+      await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "token-malformed" });
     });
 
     it("refuses a token that is not a JWT", async () => {
@@ -449,7 +457,7 @@ describe("ltiLaunch", () => {
       ];
       for (const token of tokens) {
         const post = formPost({ id_token: token, state: auth.state }, { cookie });
-        await expect(ltiLaunch(post, ctx.options), token).rejects.toMatchObject({
+        await expect(handleLaunch(post, ctx.options), token).rejects.toMatchObject({
           name: "LtiError",
           reason: "token-malformed",
         });
@@ -459,7 +467,7 @@ describe("ltiLaunch", () => {
     it("refuses a token of another issuer", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx, { claims: { iss: "https://evil.example" } });
-      await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "issuer-mismatch" });
+      await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "issuer-mismatch" });
     });
 
     it("refuses a token whose audience is not the tool alone", async () => {
@@ -467,38 +475,40 @@ describe("ltiLaunch", () => {
       const audiences: readonly unknown[] = ["another-client", ["another-client"], [], undefined, 5];
       for (const aud of audiences) {
         const { request: post } = await cookieLogin(ctx, { claims: { aud } });
-        await expect(ltiLaunch(post, ctx.options), JSON.stringify(aud)).rejects.toMatchObject({
+        await expect(handleLaunch(post, ctx.options), JSON.stringify(aud)).rejects.toMatchObject({
           reason: "audience-mismatch",
         });
       }
       const untrusted = await cookieLogin(ctx, { claims: { aud: [CLIENT_ID, "another-client"] } });
-      await expect(ltiLaunch(untrusted.request, ctx.options)).rejects.toMatchObject({ reason: "audience-untrusted" });
+      await expect(handleLaunch(untrusted.request, ctx.options)).rejects.toMatchObject({
+        reason: "audience-untrusted",
+      });
       const sole = await cookieLogin(ctx, { claims: { aud: [CLIENT_ID, CLIENT_ID] } });
-      expect(launchOf(await ltiLaunch(sole.request, ctx.options)).clientId).toBe(CLIENT_ID);
+      expect(launchOf(await handleLaunch(sole.request, ctx.options)).clientId).toBe(CLIENT_ID);
     });
 
     it("refuses a token whose authorized party is not the tool", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx, { claims: { azp: "another-client" } });
-      await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "authorized-party-mismatch" });
+      await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "authorized-party-mismatch" });
       const invalid = await cookieLogin(ctx, { claims: { azp: 5 } });
-      await expect(ltiLaunch(invalid.request, ctx.options)).rejects.toMatchObject({ reason: "claim-invalid" });
+      await expect(handleLaunch(invalid.request, ctx.options)).rejects.toMatchObject({ reason: "claim-invalid" });
     });
 
     it("refuses a token at its expiry, allowing a minute of clock skew", async () => {
       const ctx = setup();
       const inSkew = await cookieLogin(ctx, { claims: { exp: SECONDS - 59 } });
-      expect(launchOf(await ltiLaunch(inSkew.request, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
+      expect(launchOf(await handleLaunch(inSkew.request, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
       const expired = await cookieLogin(ctx, { claims: { exp: SECONDS - 60 } });
-      await expect(ltiLaunch(expired.request, ctx.options)).rejects.toMatchObject({ reason: "token-expired" });
+      await expect(handleLaunch(expired.request, ctx.options)).rejects.toMatchObject({ reason: "token-expired" });
     });
 
     it("refuses a token issued in the future, allowing a minute of clock skew", async () => {
       const ctx = setup();
       const inSkew = await cookieLogin(ctx, { claims: { iat: SECONDS + 60 } });
-      expect(launchOf(await ltiLaunch(inSkew.request, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
+      expect(launchOf(await handleLaunch(inSkew.request, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
       const future = await cookieLogin(ctx, { claims: { iat: SECONDS + 61 } });
-      await expect(ltiLaunch(future.request, ctx.options)).rejects.toMatchObject({ reason: "issued-in-future" });
+      await expect(handleLaunch(future.request, ctx.options)).rejects.toMatchObject({ reason: "issued-in-future" });
     });
 
     it("refuses a token without a valid exp, iat, nonce or sub", async () => {
@@ -515,14 +525,14 @@ describe("ltiLaunch", () => {
       ];
       for (const [name, claims, reason] of cases) {
         const { request: post } = await cookieLogin(ctx, { claims });
-        await expect(ltiLaunch(post, ctx.options), name).rejects.toMatchObject({ name: "LtiError", reason });
+        await expect(handleLaunch(post, ctx.options), name).rejects.toMatchObject({ name: "LtiError", reason });
       }
     });
 
     it("refuses a token whose nonce is not the login's", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx, { claims: { nonce: "another-nonce" } });
-      await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "nonce-mismatch" });
+      await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "nonce-mismatch" });
     });
 
     it("refuses a message that is not a launch of this tool", async () => {
@@ -555,7 +565,7 @@ describe("ltiLaunch", () => {
       ];
       for (const [name, claims, reason] of cases) {
         const { request: post } = await cookieLogin(ctx, { claims });
-        await expect(ltiLaunch(post, ctx.options), name).rejects.toMatchObject({ name: "LtiError", reason });
+        await expect(handleLaunch(post, ctx.options), name).rejects.toMatchObject({ name: "LtiError", reason });
       }
     });
 
@@ -581,7 +591,7 @@ describe("ltiLaunch", () => {
       ];
       for (const [name, value, reason] of cases) {
         const { request: post } = await cookieLogin(ctx, { message: "deep-linking", claims: { [settings]: value } });
-        await expect(ltiLaunch(post, ctx.options), name).rejects.toMatchObject({ reason });
+        await expect(handleLaunch(post, ctx.options), name).rejects.toMatchObject({ reason });
       }
     });
 
@@ -589,7 +599,7 @@ describe("ltiLaunch", () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx);
       const options: Options = { ...ctx.options, registration: async () => undefined };
-      await expect(ltiLaunch(post, options)).rejects.toMatchObject({ reason: "platform-unknown" });
+      await expect(handleLaunch(post, options)).rejects.toMatchObject({ reason: "platform-unknown" });
     });
 
     it("refuses an LTI 1.1 launch, which is an OAuth 1.0a form without an id_token", async () => {
@@ -601,7 +611,7 @@ describe("ltiLaunch", () => {
         lti_version: "LTI-1p0",
         resource_link_id: "r1",
       });
-      await expect(ltiLaunch(legacy, ctx.options)).rejects.toMatchObject({
+      await expect(handleLaunch(legacy, ctx.options)).rejects.toMatchObject({
         name: "LtiError",
         reason: "legacy-launch",
       });
@@ -635,62 +645,62 @@ describe("ltiLaunch", () => {
         ],
       ];
       for (const [message, post] of cases)
-        await expect(ltiLaunch(post, ctx.options), message).rejects.toThrow(new DataError(message));
+        await expect(handleLaunch(post, ctx.options), message).rejects.toThrow(new DataError(message));
     });
 
     it("throws DataError for a request and options of other types", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx);
       const cases: readonly [string, () => Promise<unknown>][] = [
-        ["The request must be an object, found null.", () => ltiLaunch(JSON.parse("null"), ctx.options)],
+        ["The request must be an object, found null.", () => handleLaunch(JSON.parse("null"), ctx.options)],
         [
           "The URL of the request must be a string, found 5.",
-          () => ltiLaunch({ ...post, url: JSON.parse("5") }, ctx.options),
+          () => handleLaunch({ ...post, url: JSON.parse("5") }, ctx.options),
         ],
         [
           'The URL of the request must be an absolute URL, found "/lti/launch".',
-          () => ltiLaunch({ ...post, url: "/lti/launch" }, ctx.options),
+          () => handleLaunch({ ...post, url: "/lti/launch" }, ctx.options),
         ],
         [
           "The body of the request must be a Uint8Array, found null: encode text with a TextEncoder.",
-          () => ltiLaunch({ ...post, body: JSON.parse("null") }, ctx.options),
+          () => handleLaunch({ ...post, body: JSON.parse("null") }, ctx.options),
         ],
         [
           "The body of the request must be a Uint8Array, found a string: encode text with a TextEncoder.",
-          () => ltiLaunch({ ...post, body: JSON.parse('"id_token=a"') }, ctx.options),
+          () => handleLaunch({ ...post, body: JSON.parse('"id_token=a"') }, ctx.options),
         ],
         [
           "The headers of the request must be an object, found an array.",
-          () => ltiLaunch({ ...post, headers: JSON.parse("[]") }, ctx.options),
+          () => handleLaunch({ ...post, headers: JSON.parse("[]") }, ctx.options),
         ],
         [
           'The header "cookie" of the request must be a string, found 5.',
-          () => ltiLaunch({ ...post, headers: JSON.parse('{"cookie":5}') }, ctx.options),
+          () => handleLaunch({ ...post, headers: JSON.parse('{"cookie":5}') }, ctx.options),
         ],
         [
           'The header names of the request must be in lower case, found "Cookie".',
-          () => ltiLaunch({ ...post, headers: { Cookie: "a=b" } }, ctx.options),
+          () => handleLaunch({ ...post, headers: { Cookie: "a=b" } }, ctx.options),
         ],
-        ["The options must be an object, found null.", () => ltiLaunch(post, JSON.parse("null"))],
+        ["The options must be an object, found null.", () => handleLaunch(post, JSON.parse("null"))],
         [
           "The option registration must be a function, found null.",
-          () => ltiLaunch(post, { ...ctx.options, registration: JSON.parse("null") }),
+          () => handleLaunch(post, { ...ctx.options, registration: JSON.parse("null") }),
         ],
         [
           "The option store is invalid: expected an object with the functions put, get and delete, found null.",
-          () => ltiLaunch(post, { ...ctx.options, store: JSON.parse("null") }),
+          () => handleLaunch(post, { ...ctx.options, store: JSON.parse("null") }),
         ],
         [
           "The option store is invalid: expected an object with the functions put, get and delete, found an object.",
           () =>
-            ltiLaunch(post, {
+            handleLaunch(post, {
               ...ctx.options,
               store: { put: ctx.store.put, get: ctx.store.get, delete: JSON.parse("null") },
             }),
         ],
         [
           "The option jwks must be an object, found null.",
-          () => ltiLaunch(post, { ...ctx.options, jwks: JSON.parse("null") }),
+          () => handleLaunch(post, { ...ctx.options, jwks: JSON.parse("null") }),
         ],
       ];
       for (const [message, call] of cases) await expect(call(), message).rejects.toThrow(new DataError(message));
@@ -705,17 +715,17 @@ describe("ltiLaunch", () => {
         delete: ctx.store.delete.bind(ctx.store),
         get: async () => JSON.parse(JSON.stringify({ ...record, nonce: 5 })),
       };
-      await expect(ltiLaunch(post, { ...ctx.options, store })).rejects.toThrow(
+      await expect(handleLaunch(post, { ...ctx.options, store })).rejects.toThrow(
         new DataError("The login record is invalid at nonce: expected a string, found 5."),
       );
       const http = { ...ctx.registration, jwksUrl: "http://lms.example.edu/jwks" };
-      await expect(ltiLaunch(post, { ...ctx.options, registration: async () => http })).rejects.toThrow(
+      await expect(handleLaunch(post, { ...ctx.options, registration: async () => http })).rejects.toThrow(
         new DataError(
           'The registration is invalid at jwksUrl: expected an absolute https URL, found "http://lms.example.edu/jwks".',
         ),
       );
       const other = { ...ctx.registration, issuer: "https://other.example" };
-      await expect(ltiLaunch(post, { ...ctx.options, registration: async () => other })).rejects.toMatchObject({
+      await expect(handleLaunch(post, { ...ctx.options, registration: async () => other })).rejects.toMatchObject({
         reason: "platform-unknown",
       });
     });
@@ -725,7 +735,7 @@ describe("ltiLaunch", () => {
     it("answers the post of the platform with a page that fetches the values from the platform's storage", async () => {
       const ctx = setup();
       const { auth, config, response } = await storageLogin(ctx);
-      const page = await ltiLaunch(auth.post(), ctx.options);
+      const page = await handleLaunch(auth.post(), ctx.options);
       expect("status" in page).toBe(true);
       const view = readPage(page as HttpResponse);
       expect(view.config).toEqual({
@@ -754,7 +764,7 @@ describe("ltiLaunch", () => {
     it("sends the verification page with a CSP that names its script and nothing else, and a referrer to its own origin alone", async () => {
       const ctx = setup();
       const { auth } = await storageLogin(ctx);
-      const page = (await ltiLaunch(auth.post(), ctx.options)) as HttpResponse;
+      const page = (await handleLaunch(auth.post(), ctx.options)) as HttpResponse;
       const view = readPage(page);
       expect(page).toMatchObject({ status: 200 });
       expect(page.headers["content-type"]).toBe("text/html; charset=utf-8");
@@ -773,7 +783,7 @@ describe("ltiLaunch", () => {
       const { auth } = await storageLogin(ctx);
       const hostile = `"><script>alert('x')</script>&amp;`;
       const post = formPost({ id_token: hostile, state: auth.state });
-      const view = readPage((await ltiLaunch(post, ctx.options)) as HttpResponse);
+      const view = readPage((await handleLaunch(post, ctx.options)) as HttpResponse);
       expect(view.scripts).toBe(1);
       expect(view.inputs.get("id_token")).toBe(hostile);
     });
@@ -781,7 +791,7 @@ describe("ltiLaunch", () => {
     it("completes the launch when the platform's storage returns the values of the login", async () => {
       const ctx = setup();
       const { auth, storage } = await storageLogin(ctx);
-      const launch = launchOf(await ltiLaunch(verificationPost(auth, storage), ctx.options));
+      const launch = launchOf(await handleLaunch(verificationPost(auth, storage), ctx.options));
       expect(launch).toMatchObject({
         messageType: "LtiResourceLinkRequest",
         user: { subject: "a6d5c443-1f51-4783-ba1a-7686ffe3b54a" },
@@ -793,7 +803,7 @@ describe("ltiLaunch", () => {
       const ctx = setup();
       const { auth, response } = await storageLogin(ctx);
       const post = auth.post({ cookie: cookieOf(response.headers["set-cookie"]) });
-      expect(launchOf(await ltiLaunch(post, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
+      expect(launchOf(await handleLaunch(post, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
       expect(ctx.store.records.size).toBe(0);
     });
 
@@ -801,12 +811,12 @@ describe("ltiLaunch", () => {
       const ctx = setup();
       const first = await storageLogin(ctx);
       const second = await storageLogin(ctx);
-      const page = await ltiLaunch(
+      const page = await handleLaunch(
         second.auth.post({ cookie: cookieOf(first.response.headers["set-cookie"]) }),
         ctx.options,
       );
       expect(readPage(page as HttpResponse).config.state).toBe(second.auth.state);
-      expect(launchOf(await ltiLaunch(verificationPost(second.auth, second.storage), ctx.options)).messageType).toBe(
+      expect(launchOf(await handleLaunch(verificationPost(second.auth, second.storage), ctx.options)).messageType).toBe(
         "LtiResourceLinkRequest",
       );
     });
@@ -816,14 +826,14 @@ describe("ltiLaunch", () => {
       const { auth, storage } = await storageLogin(ctx);
       const post = verificationPost(auth, storage);
       expect(post.headers.cookie).toBeUndefined();
-      expect(launchOf(await ltiLaunch(post, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
+      expect(launchOf(await handleLaunch(post, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
     });
 
     it("completes a login once", async () => {
       const ctx = setup();
       const { auth, storage } = await storageLogin(ctx);
-      launchOf(await ltiLaunch(verificationPost(auth, storage), ctx.options));
-      await expect(ltiLaunch(verificationPost(auth, storage), ctx.options)).rejects.toMatchObject({
+      launchOf(await handleLaunch(verificationPost(auth, storage), ctx.options));
+      await expect(handleLaunch(verificationPost(auth, storage), ctx.options)).rejects.toMatchObject({
         reason: "state-unknown",
       });
     });
@@ -840,7 +850,7 @@ describe("ltiLaunch", () => {
       ];
       for (const headers of foreign) {
         await expect(
-          ltiLaunch(verificationPost(auth, storage, headers), ctx.options),
+          handleLaunch(verificationPost(auth, storage, headers), ctx.options),
           JSON.stringify(headers),
         ).rejects.toMatchObject({
           name: "LtiError",
@@ -866,12 +876,12 @@ describe("ltiLaunch", () => {
         ],
       ];
       for (const [name, post] of posts) {
-        await expect(ltiLaunch(post, ctx.options), name).rejects.toMatchObject({
+        await expect(handleLaunch(post, ctx.options), name).rejects.toMatchObject({
           name: "LtiError",
           reason: "storage-mismatch",
         });
       }
-      expect(launchOf(await ltiLaunch(verificationPost(auth, storage), ctx.options)).messageType).toBe(
+      expect(launchOf(await handleLaunch(verificationPost(auth, storage), ctx.options)).messageType).toBe(
         "LtiResourceLinkRequest",
       );
     });
@@ -879,15 +889,15 @@ describe("ltiLaunch", () => {
     it("checks the token on this path as on the cookie path", async () => {
       const ctx = setup();
       const forged = await storageLogin(ctx, { signer: attackerKey });
-      await expect(ltiLaunch(verificationPost(forged.auth, forged.storage), ctx.options)).rejects.toMatchObject({
+      await expect(handleLaunch(verificationPost(forged.auth, forged.storage), ctx.options)).rejects.toMatchObject({
         reason: "signature-invalid",
       });
       const wrongNonce = await storageLogin(ctx, { claims: { nonce: "another" } });
-      await expect(ltiLaunch(verificationPost(wrongNonce.auth, wrongNonce.storage), ctx.options)).rejects.toMatchObject(
-        {
-          reason: "nonce-mismatch",
-        },
-      );
+      await expect(
+        handleLaunch(verificationPost(wrongNonce.auth, wrongNonce.storage), ctx.options),
+      ).rejects.toMatchObject({
+        reason: "nonce-mismatch",
+      });
     });
 
     it("does not let the values of the storage stand in for the cookie of a login that used a cookie", async () => {
@@ -897,15 +907,15 @@ describe("ltiLaunch", () => {
         { id_token: auth.idToken, state: auth.state, stored_state: auth.state, stored_nonce: auth.nonce },
         { origin: TOOL_ORIGIN },
       );
-      await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "state-cookie" });
+      await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "state-cookie" });
     });
   });
 });
 
-describe("ltiLogin", () => {
+describe("handleLogin", () => {
   it("answers the initiation with the authentication request and a state cookie", async () => {
     const ctx = setup();
-    const response = await ltiLogin(ctx.platform.initiation(), ctx.options);
+    const response = await handleLogin(ctx.platform.initiation(), ctx.options);
     expect(response.status).toBe(302);
     const location = new URL(response.headers.location ?? "");
     expect(`${location.origin}${location.pathname}`).toBe(AUTHENTICATION_URL);
@@ -944,7 +954,7 @@ describe("ltiLogin", () => {
     const ctx = setup();
     const hint = "a b&c=d/é?";
     for (const method of ["GET", "POST"] as const) {
-      const response = await ltiLogin(ctx.platform.initiation({ method, messageHint: hint }), ctx.options);
+      const response = await handleLogin(ctx.platform.initiation({ method, messageHint: hint }), ctx.options);
       expect(new URL(response.headers.location ?? "").searchParams.get("lti_message_hint"), method).toBe(hint);
     }
   });
@@ -954,21 +964,24 @@ describe("ltiLogin", () => {
     const initiation = request({
       url: `${LOGIN_URL}?iss=${encodeURIComponent(ISSUER)}&login_hint=1&target_link_uri=${encodeURIComponent(TARGET_LINK_URI)}`,
     });
-    const response = await ltiLogin(initiation, ctx.options);
+    const response = await handleLogin(initiation, ctx.options);
     expect(new URL(response.headers.location ?? "").searchParams.has("lti_message_hint")).toBe(false);
   });
 
   it("looks up the registration by the issuer, and the client when the platform names one", async () => {
     const ctx = setup();
-    await ltiLogin(ctx.platform.initiation(), ctx.options);
-    await ltiLogin(ctx.platform.initiation({ clientId: true }), ctx.options);
+    await handleLogin(ctx.platform.initiation(), ctx.options);
+    await handleLogin(ctx.platform.initiation({ clientId: true }), ctx.options);
     expect(ctx.lookups).toEqual([`${ISSUER} undefined`, `${ISSUER} ${CLIENT_ID}`]);
   });
 
   it("gives each login its own state and nonce", async () => {
     const ctx = setup();
     const locations = await Promise.all(
-      Array.from({ length: 20 }, async () => (await ltiLogin(ctx.platform.initiation(), ctx.options)).headers.location),
+      Array.from(
+        { length: 20 },
+        async () => (await handleLogin(ctx.platform.initiation(), ctx.options)).headers.location,
+      ),
     );
     const params = locations.map((location) => new URL(location ?? "").searchParams);
     expect(new Set(params.map((p) => p.get("state"))).size).toBe(20);
@@ -978,7 +991,7 @@ describe("ltiLogin", () => {
 
   it("keeps a query that the authentication endpoint already has", async () => {
     const ctx = setup({ authenticationUrl: `${AUTHENTICATION_URL}?tenant=7` });
-    const response = await ltiLogin(ctx.platform.initiation(), ctx.options);
+    const response = await handleLogin(ctx.platform.initiation(), ctx.options);
     const location = new URL(response.headers.location ?? "");
     expect(location.searchParams.get("tenant")).toBe("7");
     expect(location.searchParams.get("scope")).toBe("openid");
@@ -986,7 +999,7 @@ describe("ltiLogin", () => {
 
   it("answers an initiation with lti_storage_target with a page that stores state and nonce in the platform, and the state cookie", async () => {
     const ctx = setup();
-    const response = await ltiLogin(ctx.platform.initiation({ storageTarget: "_parent" }), ctx.options);
+    const response = await handleLogin(ctx.platform.initiation({ storageTarget: "_parent" }), ctx.options);
     expect(response.status).toBe(200);
     const view = readPage(response);
     const request = new URL(view.config.authenticationRequest ?? "");
@@ -1018,7 +1031,7 @@ describe("ltiLogin", () => {
 
   it("sends the storage page with a CSP that names its script and nothing else", async () => {
     const ctx = setup();
-    const response = await ltiLogin(ctx.platform.initiation({ storageTarget: "frame" }), ctx.options);
+    const response = await handleLogin(ctx.platform.initiation({ storageTarget: "frame" }), ctx.options);
     const view = readPage(response);
     expect(response.headers["content-security-policy"]).toBe(
       `default-src 'none'; script-src 'sha256-${view.hash}'; base-uri 'none'; form-action 'self'`,
@@ -1033,7 +1046,7 @@ describe("ltiLogin", () => {
   it("writes the name of the target frame into the page as text, whatever it holds", async () => {
     const ctx = setup();
     const hostile = `"><script>alert(1)</script>'&`;
-    const response = await ltiLogin(ctx.platform.initiation({ storageTarget: hostile }), ctx.options);
+    const response = await handleLogin(ctx.platform.initiation({ storageTarget: hostile }), ctx.options);
     const view = readPage(response);
     expect(view.scripts).toBe(1);
     expect(view.config.frame).toBe(hostile);
@@ -1044,7 +1057,7 @@ describe("ltiLogin", () => {
     const initiation = request({
       url: `${LOGIN_URL}?iss=${encodeURIComponent("https://unknown.example")}&login_hint=1&target_link_uri=${encodeURIComponent(TARGET_LINK_URI)}`,
     });
-    await expect(ltiLogin(initiation, ctx.options)).rejects.toMatchObject({
+    await expect(handleLogin(initiation, ctx.options)).rejects.toMatchObject({
       name: "LtiError",
       reason: "platform-unknown",
     });
@@ -1052,9 +1065,9 @@ describe("ltiLogin", () => {
     const other = request({
       url: `${LOGIN_URL}?iss=${encodeURIComponent(ISSUER)}&client_id=other&login_hint=1&target_link_uri=${encodeURIComponent(TARGET_LINK_URI)}`,
     });
-    await expect(ltiLogin(other, ctx.options)).rejects.toMatchObject({ reason: "platform-unknown" });
+    await expect(handleLogin(other, ctx.options)).rejects.toMatchObject({ reason: "platform-unknown" });
     const mismatch = { ...ctx.options, registration: async () => ({ ...ctx.registration, clientId: "another" }) };
-    await expect(ltiLogin(ctx.platform.initiation({ clientId: true }), mismatch)).rejects.toMatchObject({
+    await expect(handleLogin(ctx.platform.initiation({ clientId: true }), mismatch)).rejects.toMatchObject({
       reason: "platform-unknown",
     });
   });
@@ -1093,31 +1106,31 @@ describe("ltiLogin", () => {
       ],
     ];
     for (const [message, initiation] of cases)
-      await expect(ltiLogin(initiation, ctx.options), message).rejects.toThrow(new DataError(message));
+      await expect(handleLogin(initiation, ctx.options), message).rejects.toThrow(new DataError(message));
   });
 
   it("throws DataError for a request and options of other types", async () => {
     const ctx = setup();
     const initiation = ctx.platform.initiation();
     const cases: readonly [string, () => Promise<unknown>][] = [
-      ['The request must be an object, found "GET".', () => ltiLogin(JSON.parse('"GET"'), ctx.options)],
+      ['The request must be an object, found "GET".', () => handleLogin(JSON.parse('"GET"'), ctx.options)],
       [
         "The method of the request must be a string, found 5.",
-        () => ltiLogin({ ...initiation, method: JSON.parse("5") }, ctx.options),
+        () => handleLogin({ ...initiation, method: JSON.parse("5") }, ctx.options),
       ],
-      ["The options must be an object, found null.", () => ltiLogin(initiation, JSON.parse("null"))],
+      ["The options must be an object, found null.", () => handleLogin(initiation, JSON.parse("null"))],
       [
         'The option registration must be a function, found "r".',
-        () => ltiLogin(initiation, { ...ctx.options, registration: JSON.parse('"r"') }),
+        () => handleLogin(initiation, { ...ctx.options, registration: JSON.parse('"r"') }),
       ],
       [
         "The option clock must be an object, found 5.",
-        () => ltiLogin(initiation, { ...ctx.options, clock: JSON.parse("5") }),
+        () => handleLogin(initiation, { ...ctx.options, clock: JSON.parse("5") }),
       ],
       [
         "The option store is invalid: expected an object with the functions put, get and delete, found null.",
         () =>
-          ltiLogin(initiation, {
+          handleLogin(initiation, {
             registration: ctx.options.registration,
             clock: ctx.clock,
             store: JSON.parse("null"),
@@ -1204,7 +1217,7 @@ describe("ltiLogin", () => {
     ];
     for (const [message, found] of bad) {
       const options = { ...ctx.options, registration: async () => found };
-      await expect(ltiLogin(ctx.platform.initiation(), options), message).rejects.toThrow(new DataError(message));
+      await expect(handleLogin(ctx.platform.initiation(), options), message).rejects.toThrow(new DataError(message));
     }
   });
 });
@@ -1220,7 +1233,7 @@ describe("properties", () => {
     const ctx = setup();
     await fc.assert(
       fc.asyncProperty(fc.string({ minLength: 1, maxLength: 60, unit: "binary" }), async (name) => {
-        const response = await ltiLogin(ctx.platform.initiation({ storageTarget: name }), ctx.options);
+        const response = await handleLogin(ctx.platform.initiation({ storageTarget: name }), ctx.options);
         const view = readPage(response);
         expect(view.config.frame).toBe(name);
         expect(view.scripts).toBe(1);

@@ -4,11 +4,11 @@ import { readCourseStructure } from "../src/index.js";
 import {
   abandonSession,
   createRegistration,
+  deriveCourseProgress,
   extendLrsOptions,
   handleFetchRequest,
   importCourse,
   prepareLaunch,
-  progressOf,
   waiveAu,
 } from "../src/lms/index.js";
 import { AU1, AU2, COURSE_XML, LEARNER, NAMESPACE, ORIGIN, testHost } from "./lms-host.js";
@@ -187,7 +187,7 @@ describe("the inputs of the functions of the LMS", () => {
     expect(() => extendLrsOptions({ ...host.lrsOptions, statements: JSON.parse("null") }, host.options)).toThrow(
       DataError,
     );
-    expect(() => progressOf(JSON.parse("null"), host.course)).toThrow(DataError);
-    expect(() => progressOf(JSON.parse("{}"), JSON.parse("[]"))).toThrow(DataError);
+    expect(() => deriveCourseProgress(JSON.parse("null"), host.course)).toThrow(DataError);
+    expect(() => deriveCourseProgress(JSON.parse("{}"), JSON.parse("[]"))).toThrow(DataError);
   });
 });

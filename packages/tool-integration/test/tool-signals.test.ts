@@ -2,7 +2,7 @@
 
 import { type CallOptions, DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
-import { type LtiStore, ltiLaunch, ltiLogin } from "../src/tool/index.js";
+import { handleLaunch, handleLogin, type LtiStore } from "../src/tool/index.js";
 import { requestServiceToken } from "../src/tool/internal.js";
 import { DEPLOYMENT_ID, JWKS_URL } from "./fake-platform.js";
 import { cookieLogin, type Setup, setup } from "./tool-setup.js";
@@ -54,12 +54,12 @@ function spying(
   return { options: { ...ctx.options, store, registration, signal }, seen };
 }
 
-describe("ltiLogin and a signal", () => {
+describe("handleLogin and a signal", () => {
   it("hands the signal to the registration lookup and to the store", async () => {
     const ctx = setup();
     const { signal } = new AbortController();
     const { options, seen } = spying(ctx, signal);
-    await ltiLogin(ctx.platform.initiation(), options);
+    await handleLogin(ctx.platform.initiation(), options);
     expect(seen.lookup).toStrictEqual([signal]);
     expect(seen.put).toStrictEqual([signal]);
   });
@@ -67,19 +67,19 @@ describe("ltiLogin and a signal", () => {
   it("rejects with the reason of an aborted signal and saves nothing", async () => {
     const ctx = setup();
     const { options, seen } = spying(ctx, AbortSignal.abort(REASON));
-    await expect(ltiLogin(ctx.platform.initiation(), options)).rejects.toBe(REASON);
+    await expect(handleLogin(ctx.platform.initiation(), options)).rejects.toBe(REASON);
     expect(seen.put).toStrictEqual([]);
     expect(ctx.store.records.size).toBe(0);
   });
 });
 
-describe("ltiLaunch and a signal", () => {
+describe("handleLaunch and a signal", () => {
   it("hands the signal to the lookup, the store and the key set", async () => {
     const ctx = setup();
     const { request: post } = await cookieLogin(ctx);
     const { signal } = new AbortController();
     const { options, seen } = spying(ctx, signal);
-    await ltiLaunch(post, options);
+    await handleLaunch(post, options);
     expect(seen.lookup).toStrictEqual([signal]);
     expect(seen.get).toStrictEqual([signal]);
     expect(seen.delete).toStrictEqual([signal]);
@@ -102,10 +102,10 @@ describe("ltiLaunch and a signal", () => {
       },
     };
     const { options, seen } = spying({ ...ctx, options: { ...ctx.options, jwks } }, controller.signal);
-    await expect(ltiLaunch(post, options)).rejects.toBe(REASON);
+    await expect(handleLaunch(post, options)).rejects.toBe(REASON);
     expect(seen.delete).toStrictEqual([]);
     expect(ctx.store.records.size).toBe(1);
-    expect(await ltiLaunch(post, ctx.options)).toMatchObject({ messageType: "LtiResourceLinkRequest" });
+    expect(await handleLaunch(post, ctx.options)).toMatchObject({ messageType: "LtiResourceLinkRequest" });
   });
 
   it("ends the wait for a key set that is slow, and lets the fetch run on", async () => {
@@ -117,12 +117,12 @@ describe("ltiLaunch and a signal", () => {
       return Response.json({ keys: ctx.platform.published.map((key) => key.publicJwk) });
     };
     const controller = new AbortController();
-    const wait = ltiLaunch(post, { ...ctx.options, signal: controller.signal });
+    const wait = handleLaunch(post, { ...ctx.options, signal: controller.signal });
     await waitFor(() => expect(ctx.platform.requests).toContain(`GET ${JWKS_URL}`));
     controller.abort(REASON);
     await expect(wait).rejects.toBe(REASON);
     gate.resolve();
-    expect(await ltiLaunch(post, ctx.options)).toMatchObject({ messageType: "LtiResourceLinkRequest" });
+    expect(await handleLaunch(post, ctx.options)).toMatchObject({ messageType: "LtiResourceLinkRequest" });
     expect(ctx.platform.requests.filter((request) => request === `GET ${JWKS_URL}`)).toHaveLength(1);
   });
 });
@@ -158,7 +158,7 @@ describe("the option signal", () => {
   it("is refused when it is not an AbortSignal", async () => {
     const ctx = setup();
     const options = { ...ctx.options, signal: JSON.parse('{"aborted":false}') };
-    await expect(ltiLogin(ctx.platform.initiation(), options)).rejects.toStrictEqual(
+    await expect(handleLogin(ctx.platform.initiation(), options)).rejects.toStrictEqual(
       new DataError("The option signal must be an AbortSignal, found an object."),
     );
   });

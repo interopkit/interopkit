@@ -22,7 +22,7 @@ export interface PendingAuthorization {
   readonly redirectUri: string;
 }
 
-/** What `authorizationRequest` asks for. */
+/** What `startAuthorization` asks for. */
 export interface AuthorizationRequestParameters {
   /** Where the server sends the browser back to, an absolute URL that the client registered. */
   readonly redirectUri: string;
@@ -44,7 +44,7 @@ export interface AuthorizationRequestParameters {
  * @returns The address and what the callback needs.
  * @throws `DataError` when an argument is not valid, or the server has no authorization endpoint.
  */
-export async function authorizationRequest(
+export async function startAuthorization(
   server: AuthorizationServer,
   client: OAuthClient,
   request: AuthorizationRequestParameters,
@@ -131,7 +131,7 @@ function checkCallback(
  * @param server - The authorization server.
  * @param client - The client and how it authenticates.
  * @param callbackUrl - The address that the server sent the browser back to, with its query.
- * @param pending - What `authorizationRequest` returned.
+ * @param pending - What `startAuthorization` returned.
  * @param options - The `fetch`, the deadline, the signal and the clock.
  * @returns The token.
  * @throws `DataError` when an argument is not valid, or the callback does not match the request: another `state`, another

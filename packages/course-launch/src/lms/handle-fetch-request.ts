@@ -1,6 +1,6 @@
 import { callPort, readClock } from "@interopkit/core";
 import { isUuid } from "@interopkit/core/checks";
-import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, checkHttpRequest, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 import { type LmsOptions, type LmsSettings, readLmsOptions, signalOf, withRetries } from "./options.js";
 import type { Session } from "./records.js";
 import { hashOf, newSecret, sameHash } from "./secrets.js";
@@ -23,7 +23,7 @@ const ERRORS = {
 
 /** Answers the fetch URL with a body of the specification, always with 200 (8.2.1). */
 function answer(body: Readonly<Record<string, string>>): HttpResponse {
-  return jsonResponse(200, body, NO_STORE);
+  return buildJsonResponse(200, body, NO_STORE);
 }
 
 /** Gives the session of a fetch code its token, once: the conditional write of the session makes the code single use. */

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { mutate, mutations } from "../../../scripts/json-mutation.js";
 import {
   buildStatement,
+  buildVoidingStatement,
   deriveStatementId,
   formatDuration,
   formatTimestamp,
@@ -10,7 +11,6 @@ import {
   parseDuration,
   readStatement,
   type StatementInput,
-  voidingStatement,
 } from "../src/index.js";
 import { providerStatement } from "./full-statement.js";
 import { anything, RUNS, returnsOrRefuses, STRINGS } from "./fuzz.js";
@@ -28,7 +28,7 @@ describe("the builders and the data types on any value", () => {
     fc.assert(
       fc.property(anything, anything, (value, other) => {
         returnsOrRefuses(() => buildStatement(value as StatementInput));
-        returnsOrRefuses(() => voidingStatement(other as string, value as never));
+        returnsOrRefuses(() => buildVoidingStatement(other as string, value as never));
         returnsOrRefuses(() => deriveStatementId(value as string, other as string));
         returnsOrRefuses(() => mboxSha1sum(value as string));
         returnsOrRefuses(() => formatDuration(value as number));

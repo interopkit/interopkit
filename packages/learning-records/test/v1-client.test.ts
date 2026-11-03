@@ -1,6 +1,6 @@
-import { DataError, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, DataError } from "@interopkit/core";
 import { beforeAll, describe, expect, it } from "vitest";
-import { attachmentHash, writeMultipart } from "../src/attachments/index.js";
+import { hashAttachment, writeMultipart } from "../src/attachments/index.js";
 import { type AttachmentData, buildStatement, type Statement } from "../src/index.js";
 import { SIGNATURE_USAGE_TYPE, signStatement, verifyStatementSignature } from "../src/signing/index.js";
 import { handleLrsRequest } from "../src/store/index.js";
@@ -85,7 +85,7 @@ describe("a client of 1.0.3", () => {
 
   it("sends a batch with the Attachments that a provider of 1.0.3 writes", async () => {
     const body = new TextEncoder().encode("a certificate");
-    const sha2 = attachmentHash(body);
+    const sha2 = hashAttachment(body);
     const statement: Statement = {
       ...statementV1(4),
       attachments: [
@@ -187,7 +187,7 @@ describe("a signature on the route of 1.0.3", () => {
   });
 
   /** A signer of the tests. */
-  const signer = () => signerFromCryptoKey(pair.privateKey, { algorithm: "RS256" });
+  const signer = () => createCryptoKeySigner(pair.privateKey, { algorithm: "RS256" });
 
   /** A Statement of 2.0 with `contextAgents`, signed. */
   async function signedOfV2() {
@@ -272,7 +272,7 @@ describe("a signature on the route of 1.0.3", () => {
   it("lets the LRS take on that route a signed Statement whose time is in such a form, and writes the time in UTC", async () => {
     const statement = { ...statementV1(15), version: "1.0.3", timestamp: "20240613T204603+0200" };
     const jws = await jwsOf(statement);
-    const sha2 = attachmentHash(jws);
+    const sha2 = hashAttachment(jws);
     const signed: Statement = {
       ...statement,
       attachments: [

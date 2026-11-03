@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { DEFAULT_MAX_FINDINGS, refusalOf } from "@interopkit/core/checks";
+import { DEFAULT_MAX_FINDINGS, describeRefusal } from "@interopkit/core/checks";
 import type { Activity, ActivityDefinition, Verb } from "../model/index.js";
 import { inspectStatement, issueSink } from "../read/internal.js";
 import { definitionInOneLanguage, oneLanguage } from "./language.js";
@@ -20,7 +20,7 @@ function checkedDefinition(id: string, definition: unknown): ActivityDefinition 
   const errors = sink.list();
   if (value === undefined || errors.length > 0) {
     throw new DataError(
-      refusalOf(`The definition of ${JSON.stringify(id)} in the option activities`, errors, "validateStatement"),
+      describeRefusal(`The definition of ${JSON.stringify(id)} in the option activities`, errors, "validateStatement"),
     );
   }
   return "definition" in value.object ? value.object.definition : undefined;

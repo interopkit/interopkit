@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { refusalOf } from "@interopkit/core/checks";
+import { describeRefusal } from "@interopkit/core/checks";
 import { type StatementIssue, validateStatement } from "@interopkit/learning-records";
 import { CMI5_VERBS } from "../model/index.js";
 
@@ -31,5 +31,5 @@ function partErrors(part: "actor" | "context", value: unknown): StatementIssue[]
  */
 export function checkXapiPart(part: "actor" | "context", value: unknown, label: string): void {
   const errors = partErrors(part, value);
-  if (errors.length > 0) throw new DataError(refusalOf(label, errors, "validateStatement"));
+  if (errors.length > 0) throw new DataError(describeRefusal(label, errors, "validateStatement"));
 }

@@ -6,20 +6,20 @@ implements these specifications and is not certified by 1EdTech.
 ```mermaid
 flowchart LR
   login["Third-party login<br/>+ client-side login"] --> launch["Launch<br/>id_token validation, claims"]
-  launch --> dl["Deep Linking<br/>createDeepLinkResponse,<br/>readDeepLinkingResponse"]
+  launch --> dl["Deep Linking<br/>buildDeepLinkingResponse,<br/>readDeepLinkingResponse"]
   launch --> ags["AGS<br/>createServiceClient: line items,<br/>results, scores, cached tokens"]
   launch --> roster["Roster services<br/>members, groups, preferences record"]
-  launch --> proctoring["Proctoring<br/>createStartAssessmentPage, control"]
+  launch --> proctoring["Proctoring<br/>buildStartAssessmentPage, control"]
   registration["Dynamic Registration<br/>discoverPlatform, registerTool,<br/>getToolRegistration"] --> login
 ```
 
 | Area                                | Specification              | Tool role                                                                 | Not yet                                                                                                                                                                                |
 | ----------------------------------- | -------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Third-party login | Core 4.1, Security 5.1.1 | `ltiLogin`: GET and POST of at most 65,536 bytes, `lti_message_hint`, `client_id`; `lti_deployment_id` and `target_link_uri` kept for the launch |  |
+| Third-party login | Core 4.1, Security 5.1.1 | `handleLogin`: GET and POST of at most 65,536 bytes, `lti_message_hint`, `client_id`; `lti_deployment_id` and `target_link_uri` kept for the launch |  |
 | Authentication request and response | Security 5.1.1 | State cookie, or the platform's storage; the error response is refused as `platform-error` |  |
 | Token validation | Security 5.1.3, 5.4 | Signature, `iss`, `aud` with the registration's `trustedAudiences`, `azp`, `exp`, `iat`, `nonce`, `kid` |  |
 | Algorithms | Security 7.2 | RS256, RS384, RS512, ES256, ES384, ES512, or the registration's `algorithms`; the tool signs with any of the six through its `Signer` |  |
-| Required claims                     | Core 5.3                   | `ltiLaunch`, with the message type, version and deployment                |                                                                                                                                                                                        |
+| Required claims                     | Core 5.3                   | `handleLaunch`, with the message type, version and deployment                |                                                                                                                                                                                        |
 | Message types | Core 5, DL 4.4, SR 2, Proctoring 4 | The five messages a platform sends, as `LtiMessage`; others by name with `otherMessageTypes`, and versions with `versions` |  |
 | Anonymous launch                    | Core 5.3.6.1               | `user.subject` absent                                                     |                                                                                                                                                                                        |
 | Optional claims                     | Core 5.4                   | `context`, `organization`, `tool_platform`, `role_scope_mentor`, `launch_presentation`, `lis` |                                                                                                                                                                  |
@@ -30,9 +30,9 @@ flowchart LR
 | Migration claim | Migration Guide | `lti1p1`, read; `verified` when `legacySecret` gives the secret that signs the consumer key |  |
 | Custom properties                   | Core 5.4.6                 | A map of strings                                                          |                                                                                                                                                                                        |
 | Key sets | Security 6.3, 6.4 | Reads the platform's with `createJwksCache`; serves the tool's with `serveToolJwks`, every key of a rotation with `max-age` |  |
-| Service tokens | Core 6.2, Security 4.1 | `clientCredentialsToken` of `core/oauth` with `private_key_jwt` and the deployment claim; one token for each scope, kept until it is about to expire, dropped on a 401 |  |
+| Service tokens | Core 6.2, Security 4.1 | `requestClientCredentialsToken` of `core/oauth` with `private_key_jwt` and the deployment claim; one token for each scope, kept until it is about to expire, dropped on a 401 |  |
 | Deep Linking request                | DL 4.4                     | The ten settings of DL 4.4.1                                              |                                                                                                                                                                                        |
-| Deep Linking response               | DL 3, 4.5                  | `createDeepLinkResponse`: the five item types and the types that others define, with their extensions, `lineItem` with `gradesReleased`, `available`, `submission`, `msg`, `log`, `errormsg`, `errorlog`; the items held to the settings of the request |                                                                                                                                                                                        |
+| Deep Linking response               | DL 3, 4.5                  | `buildDeepLinkingResponse`: the five item types and the types that others define, with their extensions, `lineItem` with `gradesReleased`, `available`, `submission`, `msg`, `log`, `errormsg`, `errorlog`; the items held to the settings of the request |                                                                                                                                                                                        |
 | AGS claim                           | AGS 3.1                    | `services.grades` of the launch                                           |                                                                                                                                                                                        |
 | Line item service                   | AGS 3.2                    | `createServiceClient`: container with filters and pages, read, create, update, delete | |
 | Result service                      | AGS 3.3                    | `results`, by user, in pages | |
@@ -41,9 +41,9 @@ flowchart LR
 | postMessage Storage                 | PM Storage 0.1             | The two pages                                                             |                                                                                                                                                                                        |
 | Capabilities | postMessages 0.1 | Both pages ask `lti.capabilities` and use the frame that the answer names, else `lti_storage_target` |  |
 | Names and Role Provisioning         | NRPS 2.0                   | `services.roster`, the claim; `members`: role, limit, resource link with its message section, groups, differences, `next` and `differences` links |  |
-| Dynamic Registration | DR 1.0 | `readRegistrationInitiation`, `discoverPlatform` (the address checked before the fetch, the configuration below its issuer, every endpoint a public host), `registerTool` (the registration endpoint on the issuer's origin or `registrationOrigins`), `toPlatformRegistration`, `createRegistrationClosePage`; `getToolRegistration` and `updateToolRegistration` with the registration access token or a token of `lti-reg` |  |
+| Dynamic Registration | DR 1.0 | `readRegistrationInitiation`, `discoverPlatform` (the address checked before the fetch, the configuration below its issuer, every endpoint a public host), `registerTool` (the registration endpoint on the issuer's origin or `registrationOrigins`), `buildPlatformRegistration`, `buildRegistrationClosePage`; `getToolRegistration` and `updateToolRegistration` with the registration access token or a token of `lti-reg` |  |
 | Submission Review                   | SR 1.0                     | The request, as `SubmissionReviewMessage`; `submissionReview` of a line item | |
-| Proctoring | Proctoring 1.0 | `LtiStartProctoring` and `LtiEndAssessment`, as messages; `createStartAssessmentPage`: the Start Assessment message with the session data, the resource link and the attempt copied, the verified claims held to the values that the platform sent; `control` of the Assessment Control Service |  |
+| Proctoring | Proctoring 1.0 | `LtiStartProctoring` and `LtiEndAssessment`, as messages; `buildStartAssessmentPage`: the Start Assessment message with the session data, the resource link and the attempt copied, the verified claims held to the values that the platform sent; `control` of the Assessment Control Service |  |
 | Context Groups                      | Groups 1.0                 | `services.groups`, the claim; `groups` with the user filter, `groupSets`, paging |  |
 | AfA PNP connector                   | PNP Connector 1.0          | `services.preferences`, the claim; `preferences`: the record of a user for an activity, the `fields` filter |  |
 
@@ -51,7 +51,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  login["ltiPlatformLogin<br/>ltiPlatformFrame<br/>LaunchStore"] --> authorize["/authorize<br/>id_token"]
+  login["prepareToolLaunch<br/>prepareToolFrame<br/>LaunchStore"] --> authorize["/authorize<br/>id_token"]
   authorize --> token["/jwks<br/>/token"]
   login -.-> storage["/storage<br/>buildCapabilitiesScript"]
   token --> ags["/contexts/.../line-items<br/>GradebookStore"]
@@ -62,7 +62,7 @@ flowchart LR
 
 | Area                                | Specification              | Platform role                                                                                                   | Not yet                                                    |
 | ----------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Third-party login                   | Core 4.1, Security 5.1.1   | `ltiPlatformLogin`: all parameters; the message kept in the `LaunchStore`, two sealed hints                     |                                                            |
+| Third-party login                   | Core 4.1, Security 5.1.1   | `prepareToolLaunch`: all parameters; the message kept in the `LaunchStore`, two sealed hints                     |                                                            |
 | Authentication request and response | Security 5.1.1             | `/authorize`, GET and form POST; a refusal is the authentication error response of 5.1.1.5                     |                                                            |
 | Client assertions                   | Security 4.1.1, 5.1.3, 5.4 | The six approved algorithms, or the registration's `algorithms`; audiences, `message_type`, deployment, `jti`  |                                                            |
 | Algorithms                          | Security 7.2               | Signs with the `Signer` of the key set, one of the six; verifies the six                                        |                                                            |
@@ -86,7 +86,7 @@ flowchart LR
 | Capabilities                        | postMessages 0.1           | `buildCapabilitiesScript` for the host's frame page                                                             |                                                            |
 | AGS                                 | AGS 2.0                    | Over a `GradebookStore` of the methods it supports: the claim with `lineitems` and `lineitem`, line items with filters and pages, results, scores kept by AGS 3.4.9; the client and the scopes checked again on every call | |
 | Names and Role Provisioning         | NRPS 2.0                   | Over a `RosterStore`: the claim, `role`, `limit`, `rlid` with the message section, `groups`, the `differences` link and `since`, `next` links, `lti11_legacy_user_id`; only what the request asked for is shared | |
-| Dynamic Registration                | DR 1.0                     | Over a `RegistrationStore`: `createRegistrationInitiation` with a single-use token, the OpenID configuration below the issuer, `/registration` (the token spent before the body is read, every address a public host on no origin of the platform, the scopes narrowed), `/registration/{client}` with a token of `lti-reg`, `toToolRegistration` | |
+| Dynamic Registration                | DR 1.0                     | Over a `RegistrationStore`: `buildRegistrationInitiation` with a single-use token, the OpenID configuration below the issuer, `/registration` (the token spent before the body is read, every address a public host on no origin of the platform, the scopes narrowed), `/registration/{client}` with a token of `lti-reg`, `buildToolRegistration` | |
 | Submission Review                   | SR 1.0                     | The request, with the line item of its message | |
 | Context Groups                      | Groups 1.0                 | Over a `GroupStore`: the claim with the sets URL on request when the store has them, groups and groups of a user, group sets, `next` links | |
 | AfA PNP connector                   | PNP Connector 1.0          | Over a `PreferencesStore`: the claim, the record of a user for an activity below `/ims/afapnp/v1p0`, held to the `fields` asked for | |

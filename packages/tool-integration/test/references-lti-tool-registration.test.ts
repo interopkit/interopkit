@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SCOPES } from "../src/index.js";
-import { createRegistrationInitiation, toToolRegistration } from "../src/platform/index.js";
+import { buildRegistrationInitiation, buildToolRegistration } from "../src/platform/index.js";
 import { createTool, launch } from "./references-lti-tool.js";
 import {
   CLOCK,
@@ -50,7 +50,7 @@ async function createWorld() {
 /** The steps of the tool's administrator: it opens the initiation URL of the platform and asks for the services. */
 async function register(world: Awaited<ReturnType<typeof createWorld>>, token?: string): Promise<string> {
   const initiation = new URL(
-    await createRegistrationInitiation(`${TOOL}/lti/register`, { config: world.platform.options.config, clock: CLOCK }),
+    await buildRegistrationInitiation(`${TOOL}/lti/register`, { config: world.platform.options.config, clock: CLOCK }),
   );
   const form = await world.tool.initiateDynamicRegistration(
     {
@@ -97,7 +97,7 @@ describe("@lti-tool/core registers itself through Dynamic Registration", () => {
     if (registered === undefined) throw new Error("No registration.");
     setup.platform.tools.set(
       registered.clientId,
-      toToolRegistration(registered, {
+      buildToolRegistration(registered, {
         scopes: [SCOPES.lineitemReadonly, SCOPES.score],
         deploymentIds: [DEPLOYMENT],
       }),
@@ -118,7 +118,7 @@ describe("@lti-tool/core registers itself through Dynamic Registration", () => {
   it("refuses a second registration with the token of the first", async () => {
     const setup = await createWorld();
     const initiation = new URL(
-      await createRegistrationInitiation(`${TOOL}/lti/register`, {
+      await buildRegistrationInitiation(`${TOOL}/lti/register`, {
         config: setup.platform.options.config,
         clock: CLOCK,
       }),

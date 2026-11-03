@@ -1,5 +1,5 @@
 import type { AnyVerifiableCredential, Profile } from "@interopkit/achievement-credentials";
-import { newerCredential, sameCredential } from "@interopkit/achievement-credentials";
+import { isSameCredential, selectNewerCredential } from "@interopkit/achievement-credentials";
 import { handleCredentialsRequest } from "@interopkit/achievement-credentials/provider";
 import type { VerifyOptions } from "@interopkit/achievement-credentials/verify";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
@@ -78,13 +78,13 @@ export function createWallet(config: WalletConfig): Wallet {
             return { credentials: all.slice(offset, offset + limit), total: all.length };
           },
           async upsert(_owner, { received, credential }) {
-            const known = [...held.entries()].find(([, each]) => sameCredential(each.credential, credential));
+            const known = [...held.entries()].find(([, each]) => isSameCredential(each.credential, credential));
             if (known === undefined) {
               held.set(String(held.size + 1), { received, credential });
               return "created";
             }
             const [key, current] = known;
-            if (newerCredential(current.credential, credential) === current.credential) return "unchanged";
+            if (selectNewerCredential(current.credential, credential) === current.credential) return "unchanged";
             held.set(key, { received, credential });
             return "replaced";
           },

@@ -1,8 +1,8 @@
 import { callPort, DataError } from "@interopkit/core";
 import { isLanguageTag } from "@interopkit/core/checks";
-import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
 import { writeMultipart } from "../../attachments/index.js";
-import { toStatementVersion } from "../../compare/index.js";
+import { convertStatementVersion } from "../../compare/index.js";
 import { sameActor } from "../../compare/internal.js";
 import { formatStatement } from "../../format/index.js";
 import type { ActivityDefinition, Actor, Statement, StatementFormat, StatementResult } from "../../model/index.js";
@@ -53,7 +53,7 @@ async function inFormat(
   format: StatementFormat,
 ): Promise<Verdict<readonly Statement[]>> {
   const statements =
-    context.version === "1.0.3" ? held.map((statement) => toStatementVersion(statement, "1.0.3")) : held;
+    context.version === "1.0.3" ? held.map((statement) => convertStatementVersion(statement, "1.0.3")) : held;
   if (format === "exact") return { value: statements };
   const languages = languagesOf(context.request.headers["accept-language"]);
   if (format === "ids") {
@@ -86,7 +86,7 @@ async function present(
   attachments: boolean,
   headers: Readonly<Record<string, string>>,
 ): Promise<HttpResponse> {
-  if (!attachments) return jsonResponse(200, document, headers);
+  if (!attachments) return buildJsonResponse(200, document, headers);
   const { signal } = context.settings;
   const hashes = [...new Set(statements.flatMap(attachmentHeadersOf).map(({ sha2 }) => sha2.toLowerCase()))];
   const asked = await callPort(() => context.settings.statements.attachments(hashes, { signal }), signal);

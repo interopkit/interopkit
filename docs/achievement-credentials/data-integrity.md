@@ -40,7 +40,7 @@ flowchart LR
 import { buildAchievementCredential } from "@interopkit/achievement-credentials";
 import { addProof, createContextLoader, verifyProof } from "@interopkit/achievement-credentials/data-integrity";
 import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 
 const pair = await crypto.subtle.generateKey("Ed25519", true, ["sign", "verify"]);
 const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
@@ -85,7 +85,7 @@ const credential = buildAchievementCredential({
     criteria: { narrative: "Pass the final assessment." },
   },
 });
-const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "EdDSA", keyId: `${issuer}#key-1` });
+const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "EdDSA", keyId: `${issuer}#key-1` });
 const signed = await addProof(credential, signer, { contexts, clock });
 signed.proof?.[0]?.cryptosuite; // => "eddsa-rdfc-2022"
 signed.proof?.[0]?.created; // => "2024-06-14T00:00:00Z"

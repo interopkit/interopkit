@@ -16,9 +16,9 @@ import {
   writeToolMessage,
 } from "../src/protocol/internal.js";
 import {
-  createDeepLinkResponse,
+  buildDeepLinkingResponse,
   createServiceClient,
-  ltiLaunch,
+  handleLaunch,
   type PlatformRegistration,
 } from "../src/tool/index.js";
 import { FakeLms, LINE_ITEM_URL } from "./fake-lms.js";
@@ -228,11 +228,11 @@ describe("the Deep Linking response of Deep Linking Appendix B", () => {
     // The example response is not within its request: it places a PDF where the request accepts the media types `image/*` and
     // `text/html` (which the portal prints with `:::asterisk:::` for the asterisk), and an item of a type that `accept_types`
     // does not list (spec-gaps.md). The tool refuses the example as printed, one reason at a time.
-    await expect(createDeepLinkResponse(launch, placing, options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(launch, placing, options)).rejects.toThrow(
       'The item 6 is a file of the media type "application/pdf"',
     );
     const withPdf = { ...launch, settings: { ...launch.settings, acceptMediaTypes: ["image/*", "application/pdf"] } };
-    await expect(createDeepLinkResponse(withPdf, placing, options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(withPdf, placing, options)).rejects.toThrow(
       'The item 7 has the type "https://www.example.com/custom_type"',
     );
     const accepting = {
@@ -242,7 +242,7 @@ describe("the Deep Linking response of Deep Linking Appendix B", () => {
         acceptTypes: [...launch.settings.acceptTypes, "https://www.example.com/custom_type"],
       },
     };
-    const page = await createDeepLinkResponse(accepting, placing, options);
+    const page = await buildDeepLinkingResponse(accepting, placing, options);
     const { fields, action } = readPost(page);
     expect(action).toBe((request[`${DL}deep_linking_settings`] as Record<string, unknown>).deep_link_return_url);
     const { payload } = readToken(fields.get("JWT") ?? "");
@@ -358,7 +358,7 @@ describe("the scores of AGS section 3.4", () => {
     const ctx = setup();
     const lms = new FakeLms(ctx.platform);
     const { request: post } = await cookieLogin(ctx, { claims: { sub: String(score.userId) } });
-    const launch = (await ltiLaunch(post, ctx.options)) as LtiMessage;
+    const launch = (await handleLaunch(post, ctx.options)) as LtiMessage;
     const received: unknown[] = [];
     const fetch: typeof lms.fetch = async (url, init) => {
       if (url !== `${LINE_ITEM_URL}/scores`) return lms.fetch(url, init);

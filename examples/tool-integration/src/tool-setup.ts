@@ -1,4 +1,4 @@
-import { type Clock, type Fetch, signerFromCryptoKey } from "@interopkit/core";
+import { type Clock, createCryptoKeySigner, type Fetch } from "@interopkit/core";
 import { createJwksCache } from "@interopkit/tool-integration";
 import type { LoginRecord, LtiLaunchOptions, PlatformRegistration } from "@interopkit/tool-integration/tool";
 
@@ -18,7 +18,7 @@ export const LAUNCH_PATH = "/lti/launch";
 
 /** What the tool is configured with: the options of its functions, which hold its registration, its store and its key set cache. */
 export interface ToolSetup {
-  /** The options of `ltiLogin`, `ltiLaunch` and `createServiceClient`, but its scopes. */
+  /** The options of `handleLogin`, `handleLaunch` and `createServiceClient`, but its scopes. */
   readonly options: LtiLaunchOptions & { readonly fetch: Fetch };
 }
 
@@ -39,7 +39,7 @@ export function setupTool(
     accessTokenUrl: platform.accessTokenUrl,
     redirectUri: `${origin}${LAUNCH_PATH}`,
     // The signer could as well call a KMS that holds the key; the platform reads the public key under the keyId.
-    signer: signerFromCryptoKey(keys.signingKey, { algorithm: "ES256", keyId: keys.keyId }),
+    signer: createCryptoKeySigner(keys.signingKey, { algorithm: "ES256", keyId: keys.keyId }),
   };
   // The tool keeps the logins in progress in memory; a real tool keeps them where every process can reach them.
   const logins = new Map<string, LoginRecord>();

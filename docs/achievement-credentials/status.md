@@ -46,7 +46,7 @@ flowchart TD
 import { buildAchievementCredential } from "@interopkit/achievement-credentials";
 import { allocateStatusIndex, createStatusList, issueStatusListCredential, setCredentialStatus, verifyCredentialStatus } from "@interopkit/achievement-credentials/status";
 import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
-import { SYSTEM_RANDOM, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, SYSTEM_RANDOM } from "@interopkit/core";
 
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
 const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
@@ -58,7 +58,7 @@ const controller = {
   assertionMethod: [`${issuer}#key-1`],
 };
 const clock = { now: () => Date.UTC(2024, 5, 14) };
-const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: `${issuer}#key-1` });
+const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: `${issuer}#key-1` });
 
 // The issuer gives the credential an index that says nothing of the order of issue, and revokes it.
 const index = allocateStatusIndex(new Set(), { length: 131_072, random: SYSTEM_RANDOM });

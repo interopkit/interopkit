@@ -1,10 +1,10 @@
 import type { CasePackage, CaseQuery, CFPckgItem } from "@interopkit/competency-frameworks";
 import type { CaseClient } from "@interopkit/competency-frameworks/client";
 import {
+  buildFrameworkTree,
   crosswalk,
   diffPackages,
   type FrameworkNode,
-  frameworkTree,
   isNewer,
 } from "@interopkit/competency-frameworks/graph";
 import type { CallOptions } from "@interopkit/core";
@@ -69,7 +69,7 @@ export function outline(framework: CasePackage): readonly string[] {
       walk(children, depth + 1);
     }
   };
-  walk(frameworkTree(framework), 0);
+  walk(buildFrameworkTree(framework), 0);
   return lines;
 }
 

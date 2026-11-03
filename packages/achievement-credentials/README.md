@@ -18,8 +18,8 @@ flowchart LR
   subgraph pkg["@interopkit/achievement-credentials"]
     read["readCredential, readEntity<br/>schemas, then the rules of the subject"]
     validate["validateCredential, validateEntity"]
-    build["buildAchievementCredential, buildEndorsementCredential,<br/>buildClrCredential, caseAlignment"]
-    compare["sameCredential, newerCredential,<br/>credentialSummary, hashIdentifier"]
+    build["buildAchievementCredential, buildEndorsementCredential,<br/>buildClrCredential, buildCaseAlignment"]
+    compare["isSameCredential, selectNewerCredential,<br/>summarizeCredential, hashIdentifier"]
     baking["baking: bakePng, readPng,<br/>bakeSvg, readSvg"]
     client["client: discoverService,<br/>createCredentialsClient"]
     provider["provider: handleCredentialsRequest"]
@@ -69,9 +69,9 @@ npm install @interopkit/achievement-credentials
 | `@interopkit/achievement-credentials` | `readCredential`, `readEntity`, `ReadOptions`: read a credential or another object of the model, and throw `DataError` on an error                                                                                 |
 |                                       | `validateCredential`, `validateEntity`, `CredentialIssue`: judge a value and return every finding, errors and warnings, as data                                                                                    |
 |                                       | `buildAchievementCredential`, `buildEndorsementCredential`, `buildClrCredential`, `AchievementCredentialInput`, `EndorsementCredentialInput`, `ClrCredentialInput`: write a credential from its parts and check it |
-|                                       | `caseAlignment`, `CaseItem`: the `Alignment` of an achievement to an item of a CASE framework                                                                                                                      |
+|                                       | `buildCaseAlignment`, `CaseItem`: the `Alignment` of an achievement to an item of a CASE framework                                                                                                                      |
 |                                       | `hashIdentifier`, `matchesIdentifier`, `KnownIdentity`: the `sha256$` hash of a recipient's identity, and whether a recipient of 3.0 or 2.0 is a known identity                                                    |
-|                                       | `sameCredential`, `newerCredential`, `credentialSummary`, `CredentialSummary`: equality and replacement as Open Badges 10, and what a wallet shows                                                                 |
+|                                       | `isSameCredential`, `selectNewerCredential`, `summarizeCredential`, `CredentialSummary`: equality and replacement as Open Badges 10, and what a wallet shows                                                                 |
 |                                       | `AchievementCredential`, `EndorsementCredential`, `ClrCredential`, `VerifiableCredential`, `Achievement`, `Profile` and the other classes of Open Badges and CLR: the model                                        |
 |                                       | `AchievementCredentialV1p1`, `EndorsementCredentialV1p1`, `ClrCredentialV1p1`, `VerifiableCredentialV1p1`: the credentials under the Verifiable Credentials Data Model 1.1                                         |
 |                                       | `BadgeAssertionV2`, `AssertionV2`, `BadgeClassV2`, `ProfileV2`, `IdentityObjectV2`, `VerificationObjectV2` and the other classes of Open Badges 2.0, which the readers read and nothing writes                       |

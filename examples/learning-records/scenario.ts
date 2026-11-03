@@ -1,4 +1,4 @@
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import type { About, Activity, Person } from "@interopkit/learning-records";
 import { ANA, BUDI, DIRECTORY, ORIGIN, STATISTICS } from "./src/campus.ts";
 import { clientFor, DASHBOARD, PLATFORM } from "./src/clients.ts";
@@ -100,7 +100,7 @@ export async function runScenario(): Promise<ScenarioResult> {
   const certificateId = await sendCertificate(
     platform,
     ANA,
-    signerFromCryptoKey(privateKey, { algorithm: "RS256" }),
+    createCryptoKeySigner(privateKey, { algorithm: "RS256" }),
     at(8),
   );
 

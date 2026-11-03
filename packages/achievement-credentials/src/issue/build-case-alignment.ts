@@ -35,7 +35,7 @@ const caseItemSchema: Schema<CaseItem> = strictRecord({
  * @throws `DataError` that names every fault of the item, such as a `uri` that is not an absolute URI.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#alignment | Open Badges 3.0, Alignment}
  */
-export function caseAlignment(item: CaseItem): Alignment {
+export function buildCaseAlignment(item: CaseItem): Alignment {
   const { uri, name, code, framework } = readInput(caseItemSchema, item, "The item");
   const written = {
     type: ["Alignment"],

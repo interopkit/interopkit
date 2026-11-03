@@ -33,7 +33,7 @@ flowchart LR
 ## Quick start
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { addBaseProof, deriveProof } from "@interopkit/selective-disclosure";
 
 const contexts = new Map([
@@ -46,7 +46,7 @@ const credential = {
   credentialSubject: { type: "Person", name: "Sam Taylor", birthDate: "2001-05-17" },
 };
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
-const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "https://example.org/issuers/1#key-1" });
+const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "https://example.org/issuers/1#key-1" });
 
 // The type of the subject is mandatory too, so that every disclosure says what it is about.
 const base = await addBaseProof(credential, {

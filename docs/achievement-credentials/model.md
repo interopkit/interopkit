@@ -29,7 +29,7 @@ flowchart TD
 | `model`   | The types of the classes, the vocabularies as tuples with their types, `CONTEXTS`, `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CredentialIssue` |
 | `read`    | `readCredential`, `readEntity`, `validateCredential`, `validateEntity`, `ReadOptions`                                                    |
 | `issue`   | The builders, the identity hash and the CASE alignment: see [Building credentials and comparing them](issue.md)                          |
-| `compare` | `sameCredential`, `newerCredential`, `credentialSummary`: see the same guide                                                             |
+| `compare` | `isSameCredential`, `selectNewerCredential`, `summarizeCredential`: see the same guide                                                             |
 
 All of them come from `@interopkit/achievement-credentials`. The package depends on `@interopkit/core` for the errors, the
 formats, the copy of JSON and the findings, and on `valibot` for the schemas. Its test suite reads the schemas of 1EdTech with

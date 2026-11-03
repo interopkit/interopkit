@@ -7,7 +7,7 @@ mapping from it to Caliper events is the part that a host writes for its product
 
 ```mermaid
 flowchart LR
-  record["AttemptRecord<br/>the host's own record"] --> events["attemptEvents<br/>buildEvent, mintUrn, caliperTime"]
+  record["AttemptRecord<br/>the host's own record"] --> events["attemptEvents<br/>buildEvent, mintUrn, formatDateTime"]
   events --> sensor["createSensor: report"]
   clock["Clock"] -->|"sendTime of each send"| sensor
   sensor -->|"sendCaliper, Caliper 1.2"| endpoint[("createEndpoint<br/>handleCaliperRequest")]

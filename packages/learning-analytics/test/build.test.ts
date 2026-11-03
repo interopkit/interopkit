@@ -8,9 +8,9 @@ import {
   CALIPER_CONTEXT,
   type CaliperEntity,
   type CaliperEvent,
-  caliperTime,
   checkIri,
   type EventInput,
+  formatDateTime,
   mintUrn,
   readEntity,
 } from "../src/index.js";
@@ -101,15 +101,15 @@ describe("mintUrn", () => {
   });
 });
 
-describe("caliperTime", () => {
+describe("formatDateTime", () => {
   it("writes millisecond precision in UTC, as Caliper requires", () => {
-    expect(caliperTime(0, "The time")).toBe("1970-01-01T00:00:00.000Z");
-    expect(caliperTime(1_700_000_000_123, "The time")).toBe("2023-11-14T22:13:20.123Z");
-    expect(caliperTime(MAX_TIME, "The time")).toBe("9999-12-31T23:59:59.999Z");
+    expect(formatDateTime(0, "The time")).toBe("1970-01-01T00:00:00.000Z");
+    expect(formatDateTime(1_700_000_000_123, "The time")).toBe("2023-11-14T22:13:20.123Z");
+    expect(formatDateTime(MAX_TIME, "The time")).toBe("9999-12-31T23:59:59.999Z");
   });
 
   it("truncates a fraction of a millisecond, as a deadline may have one", () => {
-    expect(caliperTime(1000.9, "The time")).toBe("1970-01-01T00:00:01.000Z");
+    expect(formatDateTime(1000.9, "The time")).toBe("1970-01-01T00:00:01.000Z");
   });
 
   it("rejects times that the form cannot write, and other types", () => {
@@ -122,25 +122,25 @@ describe("caliperTime", () => {
       fromJson("null"),
       fromJson("[]"),
     ]) {
-      expect(() => caliperTime(bad, "The time of the event"), String(bad)).toThrow(DataError);
+      expect(() => formatDateTime(bad, "The time of the event"), String(bad)).toThrow(DataError);
     }
-    expect(() => caliperTime(-1, "The time of the event")).toThrow(
+    expect(() => formatDateTime(-1, "The time of the event")).toThrow(
       "The time of the event must be epoch milliseconds from 1970 to the end of the year 9999, found -1.",
     );
   });
 
   it("says what it found for a value that cannot be turned into text", () => {
-    expect(() => caliperTime(fromJson('{"toString":""}'), "The time")).toThrow(
+    expect(() => formatDateTime(fromJson('{"toString":""}'), "The time")).toThrow(
       "The time must be epoch milliseconds from 1970 to the end of the year 9999, found an object.",
     );
-    expect(() => caliperTime(Object.create(null), "The time")).toThrow(DataError);
-    expect(() => caliperTime("5", "The time")).toThrow('found "5".');
+    expect(() => formatDateTime(Object.create(null), "The time")).toThrow(DataError);
+    expect(() => formatDateTime("5", "The time")).toThrow('found "5".');
   });
 
   it("writes a time that reads back as the same millisecond", () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: MAX_TIME }), (at) => {
-        const text = caliperTime(at, "The time");
+        const text = formatDateTime(at, "The time");
         expect(text).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u);
         expect(Date.parse(text)).toBe(at);
       }),
@@ -342,7 +342,7 @@ describe("buildEvent", () => {
   it("builds an event that is valid JSON-LD input for any valid time, identifier and score", () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: MAX_TIME }), fc.string(), SCORES, (at, session, score) => {
-        const time = caliperTime(at, "The time");
+        const time = formatDateTime(at, "The time");
         const event: CaliperEvent = buildEvent({
           ...startedInput(),
           id: mintUrn(["event", session, at]),
@@ -390,7 +390,7 @@ describe("the checks of identifiers, times and IRIs", () => {
       fc.property(fc.jsonValue(), (value) => {
         for (const run of [
           () => mintUrn(value as never),
-          () => caliperTime(value, "The time"),
+          () => formatDateTime(value, "The time"),
           () => checkIri(value, "The IRI"),
         ]) {
           try {

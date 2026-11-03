@@ -10,9 +10,9 @@ with their path, rule, sentence and severity, as data: identifiers, the voided v
 each interaction's response patterns, and for a provider UTC times and what the LRS sets. `readStatementJson` parses the text of
 a request within limits of size, depth and tokens, at four to seven times the time of `JSON.parse`, and refuses an object that
 names a property twice; a text over a limit of its size throws `JsonLimitError`. `buildStatement` makes the
-Statement of an event with the time in UTC, and checks it against the rules of a provider; `voidingStatement` makes the one that
+Statement of an event with the time in UTC, and checks it against the rules of a provider; `buildVoidingStatement` makes the one that
 voids another; `deriveStatementId` gives an event an id that a resend repeats; `formatDuration`, `parseDuration`,
-`formatTimestamp` and `mboxSha1sum` write and read the durations, times and hashes of the standard. `sameStatement` compares two
+`formatTimestamp` and `mboxSha1sum` write and read the durations, times and hashes of the standard. `isSameStatement` compares two
 Statements by the rules of immutability, and `formatStatement` returns a Statement as `ids`, `exact` or `canonical`.
 `@interopkit/learning-records/attachments` writes and reads the `multipart/mixed` message of Statements and Attachment data, matched
 by SHA-2 hash and read within limits of parts and bytes, and `@interopkit/learning-records/signing` signs a Statement over a
@@ -34,7 +34,7 @@ An LRS that the handler answers for passes the 1,442 tests of the ADL conformanc
 agrees with SQL LRS on 147 of the 153 rules of the standard; the client takes the answer of a resend that an LRS gives with
 no ids.
 xAPI 1.0.3 runs beside 2.0. The readers take `version`, with the rules of 1.0.3 for each role; `buildStatement`,
-`voidingStatement` and `signStatement` take it too; `toStatementVersion` gives a Statement in the form of 1.0.3. The client
+`buildVoidingStatement` and `signStatement` take it too; `convertStatementVersion` gives a Statement in the form of 1.0.3. The client
 speaks the version it is given, and `handleLrsRequest` routes each request by its `X-Experience-API-Version` header among the
 option `versions`, with the alternate request syntax, the preconditions of 1.0.3 through an unconditional write of
 `DocumentStore`, and reads and resends across routes. It passes the 1,365 tests of the ADL suite for 1.0.3.

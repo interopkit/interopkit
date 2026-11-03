@@ -394,7 +394,7 @@ export interface RegistrationRefusal {
 export interface RegistrationStore {
   /**
    * Records a new registration. The tool is not active yet: an administrator reviews it, and the host then gives
-   * `toToolRegistration` of it to its lookup of tools. A store of a platform with `openRegistration` caps the registrations that
+   * `buildToolRegistration` of it to its lookup of tools. A store of a platform with `openRegistration` caps the registrations that
    * wait for review, since anyone may then ask for one.
    *
    * @param configuration - The configuration, valid, with its scopes narrowed to those that the platform offers.

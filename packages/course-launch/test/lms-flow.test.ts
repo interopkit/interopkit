@@ -6,7 +6,7 @@ import {
   readCourseStructure,
   readLaunchUrl,
 } from "../src/index.js";
-import { abandonSession, importCourse, prepareLaunch, progressOf, waiveAu } from "../src/lms/index.js";
+import { abandonSession, deriveCourseProgress, importCourse, prepareLaunch, waiveAu } from "../src/lms/index.js";
 import { AU1, AU2, AU3, LEARNER, NAMESPACE, ORIGIN, testHost } from "./lms-host.js";
 import {
   jsonOf,
@@ -56,7 +56,7 @@ describe("a session from launch to satisfaction", () => {
     expect(satisfied?.actor).toStrictEqual(LEARNER);
     expect(satisfied?.authority).toStrictEqual({ objectType: "Agent", account: { homePage: ORIGIN, name: "lms" } });
     expect(
-      progressOf((await host.store.registration(registration.id)) ?? expect.unreachable(), host.course),
+      deriveCourseProgress((await host.store.registration(registration.id)) ?? expect.unreachable(), host.course),
     ).toStrictEqual({
       satisfied: false,
       blocks: [{ id: PUBLISHER_BLOCK, satisfied: true }],

@@ -77,7 +77,7 @@ function inOrder(edges: readonly Edge[]): Edge[] {
  * association, or holds a value that cannot be copied.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1/impl | CASE Implementation Guide}, 3.3
  */
-export function frameworkTree(pkg: CasePackage): readonly FrameworkNode[] {
+export function buildFrameworkTree(pkg: CasePackage): readonly FrameworkNode[] {
   checkPackageView(pkg, "The package");
   const items = itemsByKey(pkg);
   const root = identifierKey(pkg.CFDocument.identifier);

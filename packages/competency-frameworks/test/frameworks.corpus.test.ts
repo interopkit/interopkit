@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { requireSchemas } from "../../../scripts/schemas.js";
-import { diffPackages, frameworkTree } from "../src/graph/index.js";
-import { type CasePackage, readPackage, toCaseVersion, validatePackage } from "../src/index.js";
+import { buildFrameworkTree, diffPackages } from "../src/graph/index.js";
+import { type CasePackage, convertCaseVersion, readPackage, validatePackage } from "../src/index.js";
 import { officialValidator } from "./official.js";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
@@ -97,7 +97,7 @@ function asPackage(framework: Json): Json {
   };
 }
 
-const countNodes = (nodes: ReturnType<typeof frameworkTree>): number =>
+const countNodes = (nodes: ReturnType<typeof buildFrameworkTree>): number =>
   nodes.reduce((total, node) => total + 1 + countNodes(node.children), 0);
 
 describe.each(FRAMEWORKS)("the framework $title of $provider", ({ file, linksTheDocument, warnings }) => {
@@ -122,7 +122,7 @@ describe.each(FRAMEWORKS)("the framework $title of $provider", ({ file, linksThe
 
   it("reads into the model and is written back as it was published, apart from the order of the keys", () => {
     const framework = read();
-    const written = toCaseVersion(framework, "1.0");
+    const written = convertCaseVersion(framework, "1.0");
     expect(written.dropped).toStrictEqual([]);
     expect(sortKeys(written.value)).toStrictEqual(sortKeys(asPackage(published)));
     expect(framework).toStrictEqual(readPackage(asPackage(published), { version: "1.0" }));
@@ -130,7 +130,7 @@ describe.each(FRAMEWORKS)("the framework $title of $provider", ({ file, linksThe
 
   it("has a tree that holds each item once, and no difference from itself", () => {
     const framework = read();
-    expect(countNodes(frameworkTree(framework))).toBe(items);
+    expect(countNodes(buildFrameworkTree(framework))).toBe(items);
     const diff = diffPackages(framework, framework);
     expect([diff.added, diff.removed, diff.changed, diff.replaced].map((list) => list.length)).toStrictEqual([
       0, 0, 0, 0,

@@ -45,7 +45,7 @@ The Caliper Analytics Connector is a specification for members and is not read; 
 | `@timeback/caliper` | Events sent in an envelope that the client builds | Has | `sendCaliper` |
 | `@timeback/caliper` | An envelope sent as the caller wrote it | Has | The four properties of section 5.2 are the options and the data of `sendCaliper`, and no other is sent |
 | `@timeback/caliper` | Events judged against the specification without storing them | Has | `validateEvent` and `validateEntity` in the process, where it asks the vendor's server ([judging events](validate.md)) |
-| `@timeback/caliper` | OAuth 2.0 client credentials with a cache of tokens | Has | `clientCredentialsToken` and `createTokenCache` of `@interopkit/core/oauth`, whose token goes in `token` |
+| `@timeback/caliper` | OAuth 2.0 client credentials with a cache of tokens | Has | `requestClientCredentialsToken` and `createTokenCache` of `@interopkit/core/oauth`, whose token goes in `token` |
 | `@timeback/caliper` | Shortcuts for the events of an item seen, answered and graded | Has | `buildEvent` of an `AssessmentItemEvent` and a `GradeEvent`; which step of a product becomes which event is the adapter's |
 | `@timeback/caliper` | A `fetch` of the caller and a time limit | Has | `fetch` and `timeoutMs` |
 | `@timeback/caliper` | The events of the vendor's own profile | Excluded | Not a profile of Caliper; a sender's own data goes in the `extensions` of an event of Caliper |

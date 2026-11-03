@@ -15,7 +15,7 @@ flowchart LR
   subgraph platform["School platform"]
     client["createCaseClient"] --> sync["syncFrameworks<br/>documents, isNewer, package"]
     sync --> copies[("Copies")]
-    copies --> views["outline, alignments, changesBetween<br/>frameworkTree, crosswalk, diffPackages"]
+    copies --> views["outline, alignments, changesBetween<br/>buildFrameworkTree, crosswalk, diffPackages"]
     guide["pacingGuide"] --> views
   end
   handler <-->|"fetch"| client
@@ -25,7 +25,7 @@ flowchart LR
 | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `src/ministry.ts`          | The two editions of the mathematics framework, with every class and property of CASE 1.1, and a plain reading framework |
 | `src/district.ts`          | The pacing guide of a district, aligned with the standards of the ministry by `exactMatchOf` and `isRelatedTo` |
-| `src/identifiers.ts`       | Identifiers, and the addresses that `caseEntityUri` builds                                                    |
+| `src/identifiers.ts`       | Identifiers, and the addresses that `buildEntityUri` builds                                                    |
 | `src/catalog.ts`           | `createCatalog`: a `FrameworkStore` over frameworks in memory, and `publish` for a new edition                |
 | `src/provider.ts`          | `createProvider`: the handler for both versions, the check of the bearer token, and a `fetch` that reaches it  |
 | `src/consumer.ts`          | `syncFrameworks`, `outline`, `alignments` and `changesBetween`                                                |

@@ -1,4 +1,4 @@
-import { exceededJsonLimit, hasMoreTokensThan } from "@interopkit/core/checks";
+import { findExceededJsonLimit, hasMoreTokensThan } from "@interopkit/core/checks";
 
 /** What a text of JSON may be before it is parsed. */
 export interface JsonLimits {
@@ -15,7 +15,7 @@ export interface JsonLimits {
 function overLimit(text: string, limits: JsonLimits, what: string): string | undefined {
   // One reading finds the first limit that the text passes. The tokens are refused before the levels, so a text that passes
   // the levels first is read on for its tokens.
-  const excess = exceededJsonLimit(text, limits.maxDepth, limits.maxTokens);
+  const excess = findExceededJsonLimit(text, limits.maxDepth, limits.maxTokens);
   if (excess === "tokens" || (excess === "depth" && hasMoreTokensThan(text, limits.maxTokens))) {
     return `${what} has more than the ${limits.maxTokens} tokens of JSON that it may have.`;
   }

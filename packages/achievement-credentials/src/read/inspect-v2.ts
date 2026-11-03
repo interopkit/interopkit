@@ -62,7 +62,7 @@ interface ReadDocument<TDocument> {
   readonly copy: JsonValue | undefined;
 }
 
-/** Joins a place and a path below it, as `pathOf` of `core/checks` writes a path. */
+/** Joins a place and a path below it, as `formatIssuePath` of `core/checks` writes a path. */
 function at(place: string, path: string): string {
   if (place === "") return path;
   if (path === "") return place;

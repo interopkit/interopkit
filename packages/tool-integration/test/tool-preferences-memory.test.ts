@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type LtiMessage, SCOPES } from "../src/index.js";
-import { createServiceClient, ltiLaunch } from "../src/tool/index.js";
+import { createServiceClient, handleLaunch } from "../src/tool/index.js";
 import { FakeRosterLms, PNP_HOST } from "./fake-roster.js";
 import { cookieLogin, setup } from "./tool-setup.js";
 
@@ -22,7 +22,7 @@ describe("the peak memory of a preferences record", () => {
     const ctx = setup();
     const lms = new FakeRosterLms(ctx.platform);
     const { request } = await cookieLogin(ctx);
-    const launch = (await ltiLaunch(request, ctx.options)) as LtiMessage;
+    const launch = (await handleLaunch(request, ctx.options)) as LtiMessage;
     const client = createServiceClient(launch, {
       ...ctx.options,
       fetch: lms.fetch,

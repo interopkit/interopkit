@@ -23,7 +23,7 @@ import { type AuthorizationServer, checkAuthorizationServer, libraryServer } fro
  * names the OAuth `error` and `body` holds the answer.
  * @throws The `reason` of the signal when it aborts.
  */
-export async function clientCredentialsToken(
+export async function requestClientCredentialsToken(
   server: AuthorizationServer,
   client: OAuthClient,
   scopes: readonly string[],

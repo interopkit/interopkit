@@ -1,7 +1,7 @@
 import type { CallOptions } from "./call-options.js";
 import { checkAbortSignal, checkArray, checkFunction, checkPositiveInteger, checkRecord, describe } from "./checks.js";
 import { DataError, ServiceError } from "./errors.js";
-import { untilAborted } from "./until-aborted.js";
+import { raceAbort } from "./race-abort.js";
 
 /** The most bytes that the answer of a service may have unless the caller says otherwise: a key set or a token response is a few kilobytes. */
 export const DEFAULT_MAX_BYTES = 65_536;
@@ -122,7 +122,7 @@ async function readBytes(response: Response, maxBytes: number, signal: AbortSign
   let finished = false;
   try {
     for (;;) {
-      const { done, value } = await untilAborted(reader.read(), signal);
+      const { done, value } = await raceAbort(reader.read(), signal);
       if (done) {
         finished = true;
         return { bytes: join(chunks, size), complete: true };
@@ -272,7 +272,7 @@ export async function requestService(
   let answer: Answer;
   try {
     pending = Promise.resolve(call(url, { ...init, redirect: "manual", signal }));
-    response = await untilAborted(pending, signal);
+    response = await raceAbort(pending, signal);
     answer = await readBytes(response, maxBytes, signal);
   } catch (error) {
     if (response === undefined) release(pending);

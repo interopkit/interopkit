@@ -8,10 +8,10 @@ import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import {
   type CredentialApi,
   type IssuableCredential,
-  newerCredential,
+  isSameCredential,
   type Profile,
   readEntity,
-  sameCredential,
+  selectNewerCredential,
 } from "../src/index.js";
 import type {
   CredentialList,
@@ -109,8 +109,8 @@ interface Held {
 }
 
 /**
- * Stores in memory that do what the ports promise: an upsert finds the same credential with `sameCredential` and keeps the
- * newer with `newerCredential`; a list pages in the order of arrival and counts unless told not to.
+ * Stores in memory that do what the ports promise: an upsert finds the same credential with `isSameCredential` and keeps the
+ * newer with `selectNewerCredential`; a list pages in the order of arrival and counts unless told not to.
  */
 export function memoryStores(options: { readonly count?: boolean; readonly asked?: Asked[] } = {}) {
   const { count = true, asked = [] } = options;
@@ -131,13 +131,16 @@ export function memoryStores(options: { readonly count?: boolean; readonly asked
     async upsert(owner: string, received: ReceivedCredential, call?: CallOptions): Promise<UpsertOutcome> {
       record("upsert", { owner, received }, call);
       const mine = held.credentials.get(owner) ?? [];
-      const index = mine.findIndex((each) => sameCredential(each.credential, received.credential));
+      const index = mine.findIndex((each) => isSameCredential(each.credential, received.credential));
       const found = mine[index];
       if (found === undefined) {
         held.credentials.set(owner, [...mine, received]);
         return "created";
       }
-      const kept = newerCredential(found.credential as IssuableCredential, received.credential as IssuableCredential);
+      const kept = selectNewerCredential(
+        found.credential as IssuableCredential,
+        received.credential as IssuableCredential,
+      );
       if (kept === found.credential) return "unchanged";
       mine[index] = received;
       return "replaced";

@@ -1,7 +1,7 @@
 import {
+  describeIssue,
   finiteSchema,
   httpsUrlSchema,
-  issueText,
   mapSchema,
   nonEmptyStringSchema,
   positiveSchema,
@@ -79,7 +79,7 @@ export const CUSTOM_RECORD = mapSchema(
 /** The failure of a claim: `claim-missing` when it is absent, else `claim-invalid`. */
 function invalid(owner: string, name: string, issue: v.BaseIssue<unknown>): LtiError {
   return new LtiError(
-    `${owner} is invalid at ${JSON.stringify(name)}: ${issueText(issue)}.`,
+    `${owner} is invalid at ${JSON.stringify(name)}: ${describeIssue(issue)}.`,
     issue.received === "undefined" ? "claim-missing" : "claim-invalid",
   );
 }

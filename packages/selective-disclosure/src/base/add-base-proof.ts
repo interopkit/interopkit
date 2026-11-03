@@ -1,4 +1,4 @@
-import { type CallOptions, DataError, type Signer, untilAborted } from "@interopkit/core";
+import { type CallOptions, DataError, raceAbort, type Signer } from "@interopkit/core";
 import { checkFunction, checkNonEmptyString, checkRecord, describe, isDateTime } from "@interopkit/core/checks";
 import {
   canonicalizeAndGroup,
@@ -161,7 +161,7 @@ export async function addBaseProofWith(
   );
 
   const toSign = signData(proofHash, proofKey.publicKey, mandatoryHash);
-  const [signatures, signed] = await untilAborted(
+  const [signatures, signed] = await raceAbort(
     Promise.all([
       Promise.all(nonMandatory.map((statement) => proofKey.sign(statement))),
       options.signer.sign(toSign, signal === undefined ? undefined : { signal }),

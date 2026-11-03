@@ -2,12 +2,12 @@
 
 import { compactVerify, decodeProtectedHeader, jwtVerify } from "jose";
 import { describe, expect, it } from "vitest";
-import { DataError, type Signer, signerFromCryptoKey } from "../src/index.js";
+import { createCryptoKeySigner, DataError, type Signer } from "../src/index.js";
 import {
   type ClientAuthentication,
-  clientCredentialsToken,
   type OAuthClient,
   refreshAccessToken,
+  requestClientCredentialsToken,
   revokeToken,
 } from "../src/oauth/index.js";
 import {
@@ -44,7 +44,7 @@ describe("private_key_jwt", () => {
   it("authenticates with a signed assertion in the body, and no secret and no Authorization header", async () => {
     const { client, publicKey } = await assertionClient();
     const server = fakeServer(() => json({ access_token: "at", token_type: "Bearer" }));
-    await clientCredentialsToken(SERVER, client, ["read"], callOptions(server.fetch));
+    await requestClientCredentialsToken(SERVER, client, ["read"], callOptions(server.fetch));
     const [seen] = server.requests;
     expect(seen?.headers.authorization).toBeUndefined();
     expect(Object.fromEntries(seen?.form ?? [])).toMatchObject({
@@ -70,7 +70,7 @@ describe("private_key_jwt", () => {
     const deployment = "https://purl.imsglobal.org/spec/lti/claim/deployment_id";
     const claims = { [deployment]: "07940580-b309-415e-a37c-914d387c1150", extra: { list: [1, null, "a"] } };
     const server = fakeServer(() => json({ access_token: "at", token_type: "bearer" }));
-    await clientCredentialsToken(SERVER, withClaims(client, claims), ["read"], callOptions(server.fetch));
+    await requestClientCredentialsToken(SERVER, withClaims(client, claims), ["read"], callOptions(server.fetch));
     expect(await claimsOf(server.requests[0]?.form.get("client_assertion") ?? "", publicKey)).toStrictEqual({
       ...claims,
       iss: client.clientId,
@@ -86,7 +86,7 @@ describe("private_key_jwt", () => {
     const { client } = await assertionClient();
     const server = fakeServer(() => json({ access_token: "at", token_type: "bearer" }));
     const call = (claims: unknown) =>
-      failureOf(clientCredentialsToken(SERVER, withClaims(client, claims), [], callOptions(server.fetch)));
+      failureOf(requestClientCredentialsToken(SERVER, withClaims(client, claims), [], callOptions(server.fetch)));
     for (const name of ["iss", "sub", "aud", "exp", "nbf", "iat", "jti"]) {
       expect(await call({ [name]: "x" })).toStrictEqual(
         new DataError(
@@ -107,7 +107,8 @@ describe("private_key_jwt", () => {
   it("gives every request an assertion of its own, with a fresh jti", async () => {
     const { client, publicKey } = await assertionClient();
     const server = fakeServer(() => json({ access_token: "at", token_type: "bearer" }));
-    for (let call = 0; call < 3; call += 1) await clientCredentialsToken(SERVER, client, [], callOptions(server.fetch));
+    for (let call = 0; call < 3; call += 1)
+      await requestClientCredentialsToken(SERVER, client, [], callOptions(server.fetch));
     const identifiers = await Promise.all(
       server.requests.map(async (seen) => (await claimsOf(seen.form.get("client_assertion") ?? "", publicKey)).jti),
     );
@@ -119,8 +120,13 @@ describe("private_key_jwt", () => {
   it("names the server's audience when it has one, and the token endpoint when it has none", async () => {
     const { client, publicKey } = await assertionClient();
     const server = fakeServer(() => json({ access_token: "at", token_type: "bearer" }));
-    await clientCredentialsToken({ ...SERVER, audience: "https://as.example" }, client, [], callOptions(server.fetch));
-    await clientCredentialsToken(SERVER, client, [], callOptions(server.fetch));
+    await requestClientCredentialsToken(
+      { ...SERVER, audience: "https://as.example" },
+      client,
+      [],
+      callOptions(server.fetch),
+    );
+    await requestClientCredentialsToken(SERVER, client, [], callOptions(server.fetch));
     const audiences = await Promise.all(
       server.requests.map(async (seen) => (await claimsOf(seen.form.get("client_assertion") ?? "", publicKey)).aud),
     );
@@ -132,7 +138,7 @@ describe("private_key_jwt", () => {
     const server = fakeServer(() => json({ access_token: "at", token_type: "bearer" }));
     // A time with milliseconds: iat is the whole second below it.
     const clock = { now: () => NOW + 999 };
-    await clientCredentialsToken(SERVER, client, [], callOptions(server.fetch, { clock }));
+    await requestClientCredentialsToken(SERVER, client, [], callOptions(server.fetch, { clock }));
     const claims = await claimsOf(server.requests[0]?.form.get("client_assertion") ?? "", publicKey);
     expect(claims).toMatchObject({ iat: SECONDS, exp: SECONDS + 45 });
   });
@@ -140,7 +146,7 @@ describe("private_key_jwt", () => {
   it("omits the kid when the signer has no key id", async () => {
     const { client } = await assertionClient({ keyId: undefined });
     const server = fakeServer(() => json({ access_token: "at", token_type: "bearer" }));
-    await clientCredentialsToken(SERVER, client, [], callOptions(server.fetch));
+    await requestClientCredentialsToken(SERVER, client, [], callOptions(server.fetch));
     expect(decodeProtectedHeader(server.requests[0]?.form.get("client_assertion") ?? "")).toStrictEqual({
       alg: "RS256",
       typ: "JWT",
@@ -156,11 +162,11 @@ describe("private_key_jwt", () => {
       clientId: "c1",
       authentication: {
         method: "private_key_jwt",
-        signer: signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "ec-1" }),
+        signer: createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "ec-1" }),
       },
     } as const;
     const server = fakeServer(() => json({ access_token: "at", token_type: "bearer" }));
-    await clientCredentialsToken(SERVER, client, [], callOptions(server.fetch));
+    await requestClientCredentialsToken(SERVER, client, [], callOptions(server.fetch));
     const assertion = server.requests[0]?.form.get("client_assertion") ?? "";
     expect(decodeProtectedHeader(assertion)).toMatchObject({ alg: "ES256", kid: "ec-1" });
     await expect(compactVerify(assertion, pair.publicKey)).resolves.toBeDefined();
@@ -182,7 +188,7 @@ describe("private_key_jwt", () => {
 
   it("gives the signer the signal of the call", async () => {
     const pair = await rsaKeyPair();
-    const real = signerFromCryptoKey(pair.privateKey, { algorithm: "RS256" });
+    const real = createCryptoKeySigner(pair.privateKey, { algorithm: "RS256" });
     const seen: (AbortSignal | undefined)[] = [];
     const signer: Signer = {
       algorithm: "RS256",
@@ -193,7 +199,7 @@ describe("private_key_jwt", () => {
     };
     const controller = new AbortController();
     const server = fakeServer(() => json({ access_token: "at", token_type: "bearer" }));
-    await clientCredentialsToken(
+    await requestClientCredentialsToken(
       SERVER,
       { clientId: "c1", authentication: { method: "private_key_jwt", signer } },
       [],
@@ -208,7 +214,7 @@ describe("private_key_jwt", () => {
     const failing: Signer = { algorithm: "RS256", sign: () => Promise.reject(down) };
     const der: Signer = { algorithm: "ES256", sign: async () => new Uint8Array(71) };
     const call = (signer: Signer) =>
-      clientCredentialsToken(
+      requestClientCredentialsToken(
         SERVER,
         { clientId: "c1", authentication: { method: "private_key_jwt", signer } },
         [],
@@ -246,7 +252,9 @@ describe("private_key_jwt", () => {
       ],
     ];
     for (const [message, authentication] of cases) {
-      const error = await failureOf(clientCredentialsToken(SERVER, { clientId: "c1", authentication }, [], options));
+      const error = await failureOf(
+        requestClientCredentialsToken(SERVER, { clientId: "c1", authentication }, [], options),
+      );
       expect(error, message).toStrictEqual(new DataError(message));
     }
   });
@@ -288,9 +296,9 @@ describe("a token request in the shape that LTI requires", () => {
         scope: `${AGS_SCORE} ${AGS_LINE_ITEM}`,
       });
     });
-    const token = await clientCredentialsToken(SERVER, client, scopes, callOptions(platform.fetch));
+    const token = await requestClientCredentialsToken(SERVER, client, scopes, callOptions(platform.fetch));
     expect(token).toStrictEqual({ accessToken: "ya29.token", expiresAt: NOW + 3_600_000, scopes });
-    await clientCredentialsToken(SERVER, client, scopes, callOptions(platform.fetch));
+    await requestClientCredentialsToken(SERVER, client, scopes, callOptions(platform.fetch));
     expect(seenIdentifiers.size).toBe(2);
   });
 
@@ -299,7 +307,9 @@ describe("a token request in the shape that LTI requires", () => {
     const platform = fakeServer(() =>
       json({ error: "invalid_client", error_description: "The assertion does not verify." }, 400),
     );
-    const error = await failureOf(clientCredentialsToken(SERVER, client, [AGS_SCORE], callOptions(platform.fetch)));
+    const error = await failureOf(
+      requestClientCredentialsToken(SERVER, client, [AGS_SCORE], callOptions(platform.fetch)),
+    );
     expect(error).toMatchObject({
       status: 400,
       message: `The token endpoint ${TOKEN_URL} refused the request: invalid_client (The assertion does not verify.).`,

@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { describe, expect, it, vi } from "vitest";
-import { attachmentHash, MultipartLimitError, readMultipart, writeMultipart } from "../src/attachments/index.js";
+import { hashAttachment, MultipartLimitError, readMultipart, writeMultipart } from "../src/attachments/index.js";
 import type { Statement } from "../src/index.js";
 import { minimalStatement, subStatementStatement } from "./full-statement.js";
 import { dataOf, messageOf, sha2Of, statementWithAttachments } from "./multipart.js";
@@ -26,19 +26,19 @@ function part(text: string, extra: string[] = [], hash = sha2Of(text)) {
   };
 }
 
-describe("attachmentHash", () => {
+describe("hashAttachment", () => {
   it("returns the SHA-256 of the data as 64 hexadecimal digits in lower case", () => {
     // The worked examples of FIPS 180-4: the hash of "abc" and of the empty message.
-    expect(attachmentHash(encoder.encode("abc"))).toBe(
+    expect(hashAttachment(encoder.encode("abc"))).toBe(
       "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
     );
-    expect(attachmentHash(new Uint8Array())).toBe("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    expect(hashAttachment(new Uint8Array())).toBe("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
   });
 
   it("refuses what is not bytes", () => {
     for (const value of [JSON.parse('"abc"'), JSON.parse("[1,2]"), JSON.parse("null"), JSON.parse("{}")]) {
-      expect(() => attachmentHash(value)).toThrow(DataError);
-      expect(() => attachmentHash(value)).toThrow(/^The body must be a Uint8Array, found /);
+      expect(() => hashAttachment(value)).toThrow(DataError);
+      expect(() => hashAttachment(value)).toThrow(/^The body must be a Uint8Array, found /);
     }
   });
 });

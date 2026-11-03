@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import { DataError, ServiceError } from "../src/index.js";
-import { type ClientMetadata, clientCredentialsToken, registerClient } from "../src/oauth/index.js";
+import { type ClientMetadata, registerClient, requestClientCredentialsToken } from "../src/oauth/index.js";
 import { callOptions, failureOf, fakeServer, json, NOW, SERVER, TOKEN_URL } from "./oauth-fixtures.js";
 
 const METADATA: ClientMetadata = {
@@ -146,7 +146,7 @@ describe("registerClient", () => {
     const registry = fakeServer(() => json(REGISTERED, 201));
     const client = await registerClient(SERVER, METADATA, callOptions(registry.fetch));
     const tokens = fakeServer(() => json({ access_token: "at", token_type: "bearer", expires_in: 60 }));
-    const token = await clientCredentialsToken(SERVER, client, ["offline_access"], callOptions(tokens.fetch));
+    const token = await requestClientCredentialsToken(SERVER, client, ["offline_access"], callOptions(tokens.fetch));
     expect(token.expiresAt).toBe(NOW + 60_000);
     // The server decodes the form encoding of RFC 6749 section 2.3.1 to the id and the secret that it issued.
     const [id = "", secret = ""] = Buffer.from(

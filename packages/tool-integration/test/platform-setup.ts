@@ -1,18 +1,18 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of OAuth 2.0 requests are snake_case.
 
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import { createJwksCache, type KeySet } from "../src/index.js";
 import {
   buildPlatformEndpoints,
   handlePlatformRequest,
   type LaunchStore,
-  ltiPlatformLogin,
   type MessageInput,
   type MessageInputBase,
   type PlatformConfig,
   type PlatformLoginOptions,
   type PlatformRequestOptions,
+  prepareToolLaunch,
   type ResourceLinkInput,
   type ToolMessageOptions,
   type ToolRegistration,
@@ -53,7 +53,7 @@ async function platformKeySet(kid: string): Promise<KeySet & { readonly privateK
   ])) as CryptoKeyPair;
   const publicJwk = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid, alg: "ES256", use: "sig" };
   return {
-    signer: signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: kid }),
+    signer: createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: kid }),
     publicKeys: [publicJwk],
     privateKey: pair.privateKey,
   };
@@ -201,7 +201,7 @@ export async function begin(
   ctx: Setup,
   message: MessageInput = baseMessage,
 ): Promise<{ initiation: Initiation; parameters: URLSearchParams; url: string }> {
-  const url = await ltiPlatformLogin(message, ctx.login);
+  const url = await prepareToolLaunch(message, ctx.login);
   const initiation = readInitiation(url, ctx.tools.get(message.clientId)?.loginUrl ?? TOOL_LOGIN_URL);
   const redirect = ctx.tools.get(message.clientId)?.redirectUris[0];
   return { initiation, parameters: authenticationParameters(initiation, "state-1", "nonce-1", redirect), url };

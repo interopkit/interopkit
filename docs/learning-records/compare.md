@@ -1,7 +1,7 @@
 # Comparing Statements
 
-`sameStatement` tells whether two Statements are the same Statement by the rules of immutability. An LRS needs it when it meets
-an id it holds already: the same Statement is a resend (204), another is a conflict (409). `toStatementVersion` gives a Statement
+`isSameStatement` tells whether two Statements are the same Statement by the rules of immutability. An LRS needs it when it meets
+an id it holds already: the same Statement is a resend (204), another is a conflict (409). `convertStatementVersion` gives a Statement
 in the form of 1.0.3, which the route of 1.0.3 answers and compares a resend with: [the versions guide](versions.md) says how.
 
 ```mermaid
@@ -18,7 +18,7 @@ flowchart TD
 ## Quick start
 
 ```ts
-import { sameStatement } from "@interopkit/learning-records";
+import { isSameStatement } from "@interopkit/learning-records";
 
 const first = {
   id: "6690e6c9-3ef0-4ed3-8b37-7f3964730bee",
@@ -37,8 +37,8 @@ const resend = {
   result: { duration: "PT90M" },
   timestamp: "2030-01-01T00:00:00.000Z",
 };
-sameStatement(first, resend); // => true
-sameStatement(first, { ...first, result: { duration: "PT1H30M0.01S" } }); // => false
+isSameStatement(first, resend); // => true
+isSameStatement(first, { ...first, result: { duration: "PT1H30M0.01S" } }); // => false
 ```
 
 ## What counts
@@ -67,7 +67,7 @@ and `PT3600.004S`); a day is not 24 hours.
 | Not included                                                   | Why                                                                                                                 |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Normalizing percent-encoding, ports and dot segments of an IRI | The standard allows simple comparison or syntax-based normalization; the package folds the parts the standard names |
-| Comparing with `sameStatement` across versions                 | `toStatementVersion` gives the form to compare; the rules of immutability are the same in both versions             |
+| Comparing with `isSameStatement` across versions                 | `convertStatementVersion` gives the form to compare; the rules of immutability are the same in both versions             |
 
 ## Differences from the references
 

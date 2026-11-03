@@ -2,7 +2,7 @@
 
 import { type CallOptions, callService, DataError } from "@interopkit/core";
 import { checkArray, checkNonEmptyString, checkPositiveInteger, checkRecord, describe } from "@interopkit/core/checks";
-import { caliperTime } from "../build/index.js";
+import { formatDateTime } from "../build/index.js";
 import { CALIPER_CONTEXT, type CaliperEvent, type EntityDocument, LIBRARY_PROFILE_CONTEXT } from "../model/index.js";
 import { bearerHeaders, type CaliperSender, checkSender, DEFAULT_CALIPER_TIMEOUT_MS } from "./sender.js";
 
@@ -88,7 +88,7 @@ export async function sendCaliper(
   const { endpoint, token, sensor, sendTime, fetch, signal, timeoutMs = DEFAULT_CALIPER_TIMEOUT_MS } = options;
   const body = envelopeText({
     sensor,
-    sendTime: caliperTime(sendTime, "The option sendTime"),
+    sendTime: formatDateTime(sendTime, "The option sendTime"),
     dataVersion: CALIPER_CONTEXT,
     data,
   });

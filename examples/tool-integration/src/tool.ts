@@ -9,11 +9,11 @@ import {
 } from "@interopkit/tool-integration";
 import {
   advanceScoreTimestamp,
-  createDeepLinkResponse,
+  buildDeepLinkingResponse,
+  buildStartAssessmentPage,
   createServiceClient,
-  createStartAssessmentPage,
-  ltiLaunch,
-  ltiLogin,
+  handleLaunch,
+  handleLogin,
 } from "@interopkit/tool-integration/tool";
 import type { Handler } from "./network.ts";
 import { LAUNCH_PATH, LOGIN_PATH, type ToolSetup } from "./tool-setup.ts";
@@ -74,9 +74,9 @@ export function createTool({ options }: ToolSetup): Tool {
   const launches: LtiMessage[] = [];
   const handle: Handler = async (request: HttpRequest): Promise<HttpResponse> => {
     const { pathname } = new URL(request.url);
-    if (pathname === LOGIN_PATH) return ltiLogin(request, options);
+    if (pathname === LOGIN_PATH) return handleLogin(request, options);
     if (pathname !== LAUNCH_PATH) return { status: 404, headers: {}, body: "" };
-    const launch = await ltiLaunch(request, options);
+    const launch = await handleLaunch(request, options);
     if ("status" in launch) return launch;
     launches.push(launch);
     if (launch.messageType === "LtiDeepLinkingRequest") return chooseContent(launch);
@@ -90,7 +90,7 @@ export function createTool({ options }: ToolSetup): Tool {
   // A real tool shows its content and lets the user choose; here the user picks the second tryout. The answer is a page that
   // posts the signed response to the platform's return URL.
   const chooseContent = (launch: DeepLinkingRequestMessage): Promise<HttpResponse> =>
-    createDeepLinkResponse(
+    buildDeepLinkingResponse(
       launch,
       {
         items: [
@@ -109,7 +109,7 @@ export function createTool({ options }: ToolSetup): Tool {
   // A real proctoring tool checks the room and the candidate first; here it verified the name against an identity document and
   // sends the candidate back to start. The answer is a page that posts the signed message to the start assessment URL.
   const proctor = (launch: StartProctoringMessage): Promise<HttpResponse> =>
-    createStartAssessmentPage(
+    buildStartAssessmentPage(
       launch,
       { verifiedUser: launch.user.name === undefined ? {} : { name: launch.user.name } },
       options,

@@ -1,5 +1,5 @@
-import { signerFromCryptoKey } from "@interopkit/core";
-import { buildStatement, type Statement, sameStatement } from "@interopkit/learning-records";
+import { createCryptoKeySigner } from "@interopkit/core";
+import { buildStatement, isSameStatement, type Statement } from "@interopkit/learning-records";
 import { createLrsClient, type LrsClient } from "@interopkit/learning-records/client";
 import { signStatement, verifyStatementSignature } from "@interopkit/learning-records/signing";
 import { describe, expect, it } from "vitest";
@@ -50,7 +50,7 @@ describe("forwarding from one LRS to another", () => {
     const target = lrsAt("https://target.example");
     const signed = await signStatement(
       statementOf(ids[0] as string),
-      signerFromCryptoKey(privateKey, { algorithm: "RS256" }),
+      createCryptoKeySigner(privateKey, { algorithm: "RS256" }),
     );
     await source.client().sendStatements([signed.statement], { attachments: [signed.signature] });
     await source.client("1.0.3").sendStatement(statementOf(ids[1] as string, "1.0.3"));
@@ -69,7 +69,7 @@ describe("forwarding from one LRS to another", () => {
     const data = first?.attachments.get(signed.signature.sha2);
     expect(first === undefined || data === undefined).toBe(false);
     if (first === undefined || data === undefined) return;
-    expect(sameStatement(first.statement, signed.statement)).toBe(true);
+    expect(isSameStatement(first.statement, signed.statement)).toBe(true);
     expect(await verifyStatementSignature(first.statement, data.body, { key: publicKey })).toStrictEqual({
       valid: true,
       certified: false,

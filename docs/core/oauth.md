@@ -8,7 +8,7 @@ redirects and the signals of the other calls hold here too.
 
 ```mermaid
 flowchart LR
-  host["The host"] -->|"server, client, scopes, options"| calls["clientCredentialsToken<br/>authorizationRequest, exchangeCode<br/>refreshAccessToken, revokeToken<br/>registerClient"]
+  host["The host"] -->|"server, client, scopes, options"| calls["requestClientCredentialsToken<br/>startAuthorization, exchangeCode<br/>refreshAccessToken, revokeToken<br/>registerClient"]
   calls -->|"builds the request and its authentication"| lib["oauth4webapi"]
   lib -->|"fetch replaced by"| service["requestService"]
   service -->|"your fetch"| as["Authorization server"]
@@ -20,10 +20,10 @@ flowchart LR
 ## Quick start
 
 ```ts
-import { clientCredentialsToken } from "@interopkit/core/oauth";
+import { requestClientCredentialsToken } from "@interopkit/core/oauth";
 
 const fetch = async () => Response.json({ access_token: "at-1", token_type: "Bearer", expires_in: 3600, scope: "read" });
-const token = await clientCredentialsToken(
+const token = await requestClientCredentialsToken(
   { tokenEndpoint: "https://as.example/token" },
   { clientId: "client-1", authentication: { method: "client_secret_basic", clientSecret: "secret" } },
   ["read"],
@@ -37,27 +37,27 @@ In a host, `fetch` is `globalThis.fetch` and the clock is `SYSTEM_CLOCK`.
 The grant that LTI tools use, with a JWT assertion that a `Signer` signs (the `Signer` guide shows how to make one):
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
-import { clientCredentialsToken } from "@interopkit/core/oauth";
+import { createCryptoKeySigner } from "@interopkit/core";
+import { requestClientCredentialsToken } from "@interopkit/core/oauth";
 
 const rsa = { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" };
 const pair = await crypto.subtle.generateKey(rsa, false, ["sign", "verify"]);
-const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "RS256", keyId: "tool-key-1" });
+const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "RS256", keyId: "tool-key-1" });
 const client = { clientId: "tool-1", authentication: { method: "private_key_jwt", signer } };
 const fetch = async (_url, init) => Response.json({ access_token: init.body.includes("&client_assertion=") ? "signed" : "unsigned", token_type: "Bearer" });
 const options = { fetch, timeoutMs: 10_000, clock: { now: () => 1_700_000_000_000 } };
-const token = await clientCredentialsToken({ tokenEndpoint: "https://lms.example/token" }, client, [], options);
+const token = await requestClientCredentialsToken({ tokenEndpoint: "https://lms.example/token" }, client, [], options);
 token.accessToken; // => "signed"
 ```
 
 The authorization code flow starts with the address that the host sends the user's browser to:
 
 ```ts
-import { authorizationRequest } from "@interopkit/core/oauth";
+import { startAuthorization } from "@interopkit/core/oauth";
 
 const server = { tokenEndpoint: "https://as.example/token", authorizationEndpoint: "https://as.example/authorize" };
 const client = { clientId: "client-1", authentication: { method: "none" } };
-const pending = await authorizationRequest(server, client, { redirectUri: "https://app.example/callback", scopes: ["read"] });
+const pending = await startAuthorization(server, client, { redirectUri: "https://app.example/callback", scopes: ["read"] });
 new URL(pending.url).searchParams.get("code_challenge_method"); // => "S256"
 ```
 
@@ -65,8 +65,8 @@ new URL(pending.url).searchParams.get("code_challenge_method"); // => "S256"
 
 | Function                                                      | Does                                                                                                                  |
 | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `clientCredentialsToken(server, client, scopes, options)`     | Gets a token for the client itself (RFC 6749 section 4.4); with `private_key_jwt` it is the LTI token request         |
-| `authorizationRequest(server, client, request)`               | Builds the address of the authorization endpoint with PKCE S256 and a random `state` (RFC 6749 section 4.1, RFC 7636) |
+| `requestClientCredentialsToken(server, client, scopes, options)`     | Gets a token for the client itself (RFC 6749 section 4.4); with `private_key_jwt` it is the LTI token request         |
+| `startAuthorization(server, client, request)`               | Builds the address of the authorization endpoint with PKCE S256 and a random `state` (RFC 6749 section 4.1, RFC 7636) |
 | `exchangeCode(server, client, callbackUrl, pending, options)` | Checks the callback and exchanges its code for a token                                                                |
 | `refreshAccessToken(server, client, refreshToken, options)`   | Gets a new token with a refresh token (RFC 6749 section 6)                                                            |
 | `revokeToken(server, client, token, options)`                 | Revokes an access token or a refresh token (RFC 7009)                                                                 |
@@ -89,7 +89,7 @@ new URL(pending.url).searchParams.get("code_challenge_method"); // => "S256"
 | Field                   | Meaning                                                                                                                                 | Default                                      |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | `tokenEndpoint`         | The token endpoint, an `https` URL                                                                                                      | Required                                     |
-| `authorizationEndpoint` | The authorization endpoint; `authorizationRequest` needs it                                                                             | none                                         |
+| `authorizationEndpoint` | The authorization endpoint; `startAuthorization` needs it                                                                             | none                                         |
 | `registrationEndpoint`  | The registration endpoint; `registerClient` needs it                                                                                    | none                                         |
 | `revocationEndpoint`    | The revocation endpoint; `revokeToken` needs it                                                                                         | none                                         |
 | `audience`              | The `aud` of a JWT client assertion                                                                                                     | `tokenEndpoint`                              |
@@ -129,7 +129,7 @@ sequenceDiagram
   participant H as Host
   participant B as User's browser
   participant A as Authorization server
-  H->>H: authorizationRequest: state, verifier, S256 challenge
+  H->>H: startAuthorization: state, verifier, S256 challenge
   H->>B: send to pending.url (the host keeps pending)
   B->>A: authorization request
   A-->>B: redirect to the callback with code, state and iss
@@ -141,7 +141,7 @@ sequenceDiagram
 
 | Step                   | Rule                                                                                                                                                                                                                                                                       |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `authorizationRequest` | The `state` and the code verifier are random (`crypto.getRandomValues`) and new for each request; the challenge is S256; the query of the endpoint is kept; no scope parameter when `scopes` is empty                                                                      |
+| `startAuthorization` | The `state` and the code verifier are random (`crypto.getRandomValues`) and new for each request; the challenge is S256; the query of the endpoint is kept; no scope parameter when `scopes` is empty                                                                      |
 | The callback           | `state` must equal the request's. The `iss` must equal `server.issuer` when the server names one. An `error` in the callback is the server's refusal. A callback with no `code`, or with an `id_token` or `token` (implicit and hybrid flows), does not answer the request |
 | `exchangeCode`         | Sends the code, the redirect URI of the request and the verifier. `scopes` are those the server names, else those of the request                                                                                                                                           |
 | Where `pending` lives  | It holds the verifier, a secret until the token request: keep it in a server-side session, not in a cookie that a script can read                                                                                                                                          |

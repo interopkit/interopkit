@@ -4,7 +4,7 @@ import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import { SCOPES } from "@interopkit/tool-integration";
 import {
   type AssessmentControl,
-  createRegistrationInitiation,
+  buildRegistrationInitiation,
   type GradebookStore,
   type RegistrationStore,
   type RosterStore,
@@ -105,7 +105,7 @@ beforeAll(async () => {
     incidentTime: "2023-11-14T22:13:20Z",
     incidentSeverity: 0.5,
   });
-  const address = await createRegistrationInitiation("https://tool.example.org/lti/register", {
+  const address = await buildRegistrationInitiation("https://tool.example.org/lti/register", {
     config: pair.requests.config,
     clock: CLOCK,
   });

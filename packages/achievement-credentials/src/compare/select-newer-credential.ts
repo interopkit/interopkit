@@ -19,7 +19,7 @@ function validFromOf(validFrom: string | undefined, label: string): number {
  * replacement of the other.
  *
  * @remarks
- * Two credentials are equal when `sameCredential` says so. The function returns one of its arguments, and the first when both
+ * Two credentials are equal when `isSameCredential` says so. The function returns one of its arguments, and the first when both
  * became valid at the same instant. `validFrom` is compared as an instant, so that offsets do not matter. A credential under
  * the Verifiable Credentials Data Model 1.1 became valid at its `issuanceDate`.
  *
@@ -30,7 +30,7 @@ function validFromOf(validFrom: string | undefined, label: string): number {
  * are not the same credential.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#credential-equality-and-comparison-algorithm | Open Badges 3.0, 10}
  */
-export function newerCredential<TCredential extends IssuableCredential | CredentialV1p1>(
+export function selectNewerCredential<TCredential extends IssuableCredential | CredentialV1p1>(
   a: TCredential,
   b: TCredential,
 ): TCredential {

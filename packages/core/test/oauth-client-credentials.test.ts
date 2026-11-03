@@ -2,15 +2,20 @@
 
 import { describe, expect, it } from "vitest";
 import { DataError, ServiceError } from "../src/index.js";
-import { clientCredentialsToken, refreshAccessToken, revokeToken } from "../src/oauth/index.js";
+import { refreshAccessToken, requestClientCredentialsToken, revokeToken } from "../src/oauth/index.js";
 import { callOptions, failureOf, fakeServer, json, NOW, SECRET_CLIENT, SERVER, TOKEN_URL } from "./oauth-fixtures.js";
 
 const TOKEN = { access_token: "at-1", token_type: "Bearer", expires_in: 3600 };
 
-describe("clientCredentialsToken", () => {
+describe("requestClientCredentialsToken", () => {
   it("posts the grant and the scopes as a form and reads the token", async () => {
     const server = fakeServer(() => json({ ...TOKEN, scope: "read write" }));
-    const token = await clientCredentialsToken(SERVER, SECRET_CLIENT, ["read", "write"], callOptions(server.fetch));
+    const token = await requestClientCredentialsToken(
+      SERVER,
+      SECRET_CLIENT,
+      ["read", "write"],
+      callOptions(server.fetch),
+    );
     expect(token).toStrictEqual({ accessToken: "at-1", expiresAt: NOW + 3_600_000, scopes: ["read", "write"] });
     const [seen] = server.requests;
     expect(seen).toMatchObject({ url: TOKEN_URL, method: "POST" });
@@ -24,7 +29,7 @@ describe("clientCredentialsToken", () => {
 
   it("sends a client secret in the Authorization header, form-encoded as the OAuth 2.0 specification says, and not in the body", async () => {
     const server = fakeServer(() => json(TOKEN));
-    await clientCredentialsToken(SERVER, SECRET_CLIENT, ["read"], callOptions(server.fetch));
+    await requestClientCredentialsToken(SERVER, SECRET_CLIENT, ["read"], callOptions(server.fetch));
     // "app 1" and "k:ey/ü" encode as "app+1" and "k%3Aey%2F%C3%BC" before they are joined with a colon.
     const expected = Buffer.from("app+1:k%3Aey%2F%C3%BC").toString("base64");
     expect(server.requests[0]?.headers.authorization).toBe(`Basic ${expected}`);
@@ -35,8 +40,8 @@ describe("clientCredentialsToken", () => {
   it("sends the secret and the id in the body for client_secret_post, and the id alone for none", async () => {
     const server = fakeServer(() => json(TOKEN));
     const post = { clientId: "c1", authentication: { method: "client_secret_post", clientSecret: "shh" } } as const;
-    await clientCredentialsToken(SERVER, post, [], callOptions(server.fetch));
-    await clientCredentialsToken(
+    await requestClientCredentialsToken(SERVER, post, [], callOptions(server.fetch));
+    await requestClientCredentialsToken(
       SERVER,
       { clientId: "c2", authentication: { method: "none" } },
       [],
@@ -55,33 +60,33 @@ describe("clientCredentialsToken", () => {
 
   it("gives the scopes that were asked for when the server names none, and none when it expires no token", async () => {
     const server = fakeServer(() => json({ access_token: "at-2", token_type: "bearer" }));
-    const token = await clientCredentialsToken(SERVER, SECRET_CLIENT, ["a", "b"], callOptions(server.fetch));
+    const token = await requestClientCredentialsToken(SERVER, SECRET_CLIENT, ["a", "b"], callOptions(server.fetch));
     expect(token).toStrictEqual({ accessToken: "at-2", scopes: ["a", "b"] });
     expect(Object.hasOwn(token, "expiresAt")).toBe(false);
   });
 
   it("gives the scopes that the server names when they are fewer than those asked for", async () => {
     const server = fakeServer(() => json({ ...TOKEN, scope: "a" }));
-    const token = await clientCredentialsToken(SERVER, SECRET_CLIENT, ["a", "b"], callOptions(server.fetch));
+    const token = await requestClientCredentialsToken(SERVER, SECRET_CLIENT, ["a", "b"], callOptions(server.fetch));
     expect(token.scopes).toStrictEqual(["a"]);
   });
 
   it("keeps the refresh token that the server issues", async () => {
     const server = fakeServer(() => json({ ...TOKEN, refresh_token: "rt-1" }));
-    const token = await clientCredentialsToken(SERVER, SECRET_CLIENT, [], callOptions(server.fetch));
+    const token = await requestClientCredentialsToken(SERVER, SECRET_CLIENT, [], callOptions(server.fetch));
     expect(token).toMatchObject({ accessToken: "at-1", refreshToken: "rt-1" });
   });
 
   it("takes the expiry from the clock of the options", async () => {
     const server = fakeServer(() => json({ ...TOKEN, expires_in: 90.5 }));
     const clock = { now: () => 5_000 };
-    const token = await clientCredentialsToken(SERVER, SECRET_CLIENT, [], callOptions(server.fetch, { clock }));
+    const token = await requestClientCredentialsToken(SERVER, SECRET_CLIENT, [], callOptions(server.fetch, { clock }));
     expect(token.expiresAt).toBe(5_000 + 90_500);
   });
 
   describe("a server that refuses or fails", () => {
     const call = (response: () => Response | Promise<Response>) =>
-      clientCredentialsToken(SERVER, SECRET_CLIENT, ["x"], callOptions(fakeServer(response).fetch));
+      requestClientCredentialsToken(SERVER, SECRET_CLIENT, ["x"], callOptions(fakeServer(response).fetch));
     const what = `The token endpoint ${TOKEN_URL}`;
 
     it("is a ServiceError of status 400 that names the OAuth error, with the answer in body", async () => {
@@ -157,7 +162,7 @@ describe("clientCredentialsToken", () => {
 
     it("is a ServiceError of status 0 when the server does not answer", async () => {
       const error = await failureOf(
-        clientCredentialsToken(
+        requestClientCredentialsToken(
           SERVER,
           SECRET_CLIENT,
           [],
@@ -170,7 +175,7 @@ describe("clientCredentialsToken", () => {
     it("is a ServiceError of status 0 at the deadline", async () => {
       const hanging = () => new Promise<Response>(() => undefined);
       const error = await failureOf(
-        clientCredentialsToken(SERVER, SECRET_CLIENT, [], callOptions(hanging, { timeoutMs: 20 })),
+        requestClientCredentialsToken(SERVER, SECRET_CLIENT, [], callOptions(hanging, { timeoutMs: 20 })),
       );
       expect(error).toMatchObject({ message: `${what} did not answer within 20 ms.`, status: 0 });
     });
@@ -189,7 +194,7 @@ describe("clientCredentialsToken", () => {
       const server = fakeServer(() => json(TOKEN));
       const reason = new Error("Left the page.");
       const options = callOptions(server.fetch, { signal: AbortSignal.abort(reason) });
-      expect(await failureOf(clientCredentialsToken(SERVER, SECRET_CLIENT, [], options))).toBe(reason);
+      expect(await failureOf(requestClientCredentialsToken(SERVER, SECRET_CLIENT, [], options))).toBe(reason);
       expect(server.requests).toHaveLength(0);
     });
 
@@ -197,7 +202,7 @@ describe("clientCredentialsToken", () => {
       const controller = new AbortController();
       const reason = new Error("The wait ended.");
       const hanging = () => new Promise<Response>(() => undefined);
-      const call = clientCredentialsToken(
+      const call = requestClientCredentialsToken(
         SERVER,
         SECRET_CLIENT,
         [],
@@ -213,36 +218,36 @@ describe("clientCredentialsToken", () => {
     const cases: readonly [string, () => Promise<unknown>][] = [
       [
         "The authorization server must be an object, found null.",
-        () => clientCredentialsToken(JSON.parse("null"), SECRET_CLIENT, [], options),
+        () => requestClientCredentialsToken(JSON.parse("null"), SECRET_CLIENT, [], options),
       ],
       [
         'The tokenEndpoint of the authorization server must be an absolute https URL, found "http://as.example/token".',
-        () => clientCredentialsToken({ tokenEndpoint: "http://as.example/token" }, SECRET_CLIENT, [], options),
+        () => requestClientCredentialsToken({ tokenEndpoint: "http://as.example/token" }, SECRET_CLIENT, [], options),
       ],
       [
         "The tokenEndpoint of the authorization server must be a string, found undefined.",
-        () => clientCredentialsToken(JSON.parse("{}"), SECRET_CLIENT, [], options),
+        () => requestClientCredentialsToken(JSON.parse("{}"), SECRET_CLIENT, [], options),
       ],
       [
         'The audience of the authorization server must be a non-empty string, found "".',
-        () => clientCredentialsToken({ ...SERVER, audience: "" }, SECRET_CLIENT, [], options),
+        () => requestClientCredentialsToken({ ...SERVER, audience: "" }, SECRET_CLIENT, [], options),
       ],
       [
         "The client must be an object, found null.",
-        () => clientCredentialsToken(SERVER, JSON.parse("null"), [], options),
+        () => requestClientCredentialsToken(SERVER, JSON.parse("null"), [], options),
       ],
       [
         'The clientId of the client must be a non-empty string, found "".',
-        () => clientCredentialsToken(SERVER, { clientId: "", authentication: { method: "none" } }, [], options),
+        () => requestClientCredentialsToken(SERVER, { clientId: "", authentication: { method: "none" } }, [], options),
       ],
       [
         "The authentication of the client must be an object, found null.",
-        () => clientCredentialsToken(SERVER, JSON.parse('{"clientId":"a","authentication":null}'), [], options),
+        () => requestClientCredentialsToken(SERVER, JSON.parse('{"clientId":"a","authentication":null}'), [], options),
       ],
       [
         'The authentication method of the client must be client_secret_basic, client_secret_post, private_key_jwt or none, found "basic".',
         () =>
-          clientCredentialsToken(
+          requestClientCredentialsToken(
             SERVER,
             JSON.parse('{"clientId":"a","authentication":{"method":"basic"}}'),
             [],
@@ -252,7 +257,7 @@ describe("clientCredentialsToken", () => {
       [
         'The clientSecret of the client must be a non-empty string, found "".',
         () =>
-          clientCredentialsToken(
+          requestClientCredentialsToken(
             SERVER,
             JSON.parse('{"clientId":"a","authentication":{"method":"client_secret_post","clientSecret":""}}'),
             [],
@@ -262,7 +267,7 @@ describe("clientCredentialsToken", () => {
       [
         "The signer of the client must be an object, found undefined.",
         () =>
-          clientCredentialsToken(
+          requestClientCredentialsToken(
             SERVER,
             JSON.parse('{"clientId":"a","authentication":{"method":"private_key_jwt"}}'),
             [],
@@ -271,24 +276,24 @@ describe("clientCredentialsToken", () => {
       ],
       [
         "The scopes must be an array, found null.",
-        () => clientCredentialsToken(SERVER, SECRET_CLIENT, JSON.parse("null"), options),
+        () => requestClientCredentialsToken(SERVER, SECRET_CLIENT, JSON.parse("null"), options),
       ],
       [
         'A scope must be a non-empty string without spaces, quotes or backslashes, found "a b".',
-        () => clientCredentialsToken(SERVER, SECRET_CLIENT, ["a b"], options),
+        () => requestClientCredentialsToken(SERVER, SECRET_CLIENT, ["a b"], options),
       ],
       [
         "A scope must be a non-empty string without spaces, quotes or backslashes, found 5.",
-        () => clientCredentialsToken(SERVER, SECRET_CLIENT, JSON.parse("[5]"), options),
+        () => requestClientCredentialsToken(SERVER, SECRET_CLIENT, JSON.parse("[5]"), options),
       ],
       [
         "The options of a call must be an object, found null.",
-        () => clientCredentialsToken(SERVER, SECRET_CLIENT, [], JSON.parse("null")),
+        () => requestClientCredentialsToken(SERVER, SECRET_CLIENT, [], JSON.parse("null")),
       ],
       [
         "The option clock must be an object, found undefined.",
         () =>
-          clientCredentialsToken(
+          requestClientCredentialsToken(
             SERVER,
             SECRET_CLIENT,
             [],
@@ -297,7 +302,13 @@ describe("clientCredentialsToken", () => {
       ],
       [
         'The option fetch must be a function, found "x".',
-        () => clientCredentialsToken(SERVER, SECRET_CLIENT, [], JSON.parse('{"fetch":"x","timeoutMs":10,"clock":{}}')),
+        () =>
+          requestClientCredentialsToken(
+            SERVER,
+            SECRET_CLIENT,
+            [],
+            JSON.parse('{"fetch":"x","timeoutMs":10,"clock":{}}'),
+          ),
       ],
     ];
     for (const [message, call] of cases) expect(await failureOf(call()), message).toStrictEqual(new DataError(message));

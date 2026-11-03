@@ -4,9 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import {
   type CaseClient,
   type CaseClientConfig,
-  caseFilter,
   createCaseClient,
   readStatusInfo,
+  writeCaseFilter,
 } from "../src/client/index.js";
 import type { CasePackage, CFDocument } from "../src/index.js";
 import { type FakeProvider, fakeProvider, type Reply } from "./fake-provider.js";
@@ -673,13 +673,13 @@ describe("documents: the fields asked for", () => {
   });
 });
 
-describe("caseFilter", () => {
+describe("writeCaseFilter", () => {
   const equals = (field: string, value: string) => ({ field, predicate: "=", value }) as const;
 
   it("writes a comparison as the field, the predicate and the value in single quotes", () => {
-    expect(caseFilter(equals("version", "1.0"))).toBe("version='1.0'");
+    expect(writeCaseFilter(equals("version", "1.0"))).toBe("version='1.0'");
     for (const predicate of ["=", "!=", ">", ">=", "<", "<=", "~"] as const) {
-      expect(caseFilter({ field: "title", predicate, value: "Math" })).toBe(`title${predicate}'Math'`);
+      expect(writeCaseFilter({ field: "title", predicate, value: "Math" })).toBe(`title${predicate}'Math'`);
     }
   });
 
@@ -688,28 +688,28 @@ describe("caseFilter", () => {
       equals("version", "1.0"),
       { field: "lastChangeDateTime", predicate: ">", value: "2016-12-12T00:00:00Z" },
     ] as const;
-    expect(caseFilter({ and: two })).toBe("version='1.0' AND lastChangeDateTime>'2016-12-12T00:00:00Z'");
-    expect(caseFilter({ or: two })).toBe("version='1.0' OR lastChangeDateTime>'2016-12-12T00:00:00Z'");
+    expect(writeCaseFilter({ and: two })).toBe("version='1.0' AND lastChangeDateTime>'2016-12-12T00:00:00Z'");
+    expect(writeCaseFilter({ or: two })).toBe("version='1.0' OR lastChangeDateTime>'2016-12-12T00:00:00Z'");
   });
 
   it("writes a path through nested objects with dots", () => {
-    expect(caseFilter(equals("extensions.sourceItemIdentifier", "x"))).toBe("extensions.sourceItemIdentifier='x'");
+    expect(writeCaseFilter(equals("extensions.sourceItemIdentifier", "x"))).toBe("extensions.sourceItemIdentifier='x'");
   });
 
   it("writes a single quote in a value twice", () => {
-    expect(caseFilter(equals("title", "children's 'quoted' text"))).toBe("title='children''s ''quoted'' text'");
-    expect(caseFilter(equals("title", "'"))).toBe("title=''''");
+    expect(writeCaseFilter(equals("title", "children's 'quoted' text"))).toBe("title='children''s ''quoted'' text'");
+    expect(writeCaseFilter(equals("title", "'"))).toBe("title=''''");
   });
 
   it("writes an empty value and a value that holds the operators and the punctuation of a filter", () => {
-    expect(caseFilter(equals("title", ""))).toBe("title=''");
-    expect(caseFilter(equals("title", 'a AND b OR c=d, e~f (g) \\ " é'))).toBe(
+    expect(writeCaseFilter(equals("title", ""))).toBe("title=''");
+    expect(writeCaseFilter(equals("title", 'a AND b OR c=d, e~f (g) \\ " é'))).toBe(
       "title='a AND b OR c=d, e~f (g) \\ \" é'",
     );
   });
 
   it("refuses what the binding cannot carry, with a sentence that names the part", () => {
-    const refused = (filter: string) => () => caseFilter(fromJson(filter));
+    const refused = (filter: string) => () => writeCaseFilter(fromJson(filter));
     expect(refused('{"field":"a b","predicate":"=","value":"x"}')).toThrow(
       'The field of the filter must be a field of the entity or a path of fields with dots, such as extensions.level, found "a b".',
     );

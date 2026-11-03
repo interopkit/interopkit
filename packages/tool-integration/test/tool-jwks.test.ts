@@ -1,4 +1,4 @@
-import { DataError, signCompactJws, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, DataError, signCompactJws } from "@interopkit/core";
 import { createLocalJWKSet, jwtVerify } from "jose";
 import { describe, expect, it } from "vitest";
 import type { KeySet } from "../src/index.js";
@@ -23,7 +23,7 @@ async function keyOf(algorithm: "RS256" | "ES256", kid: string) {
   const pair = (await crypto.subtle.generateKey(parameters, true, ["sign", "verify"])) as CryptoKeyPair;
   const jwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
   return {
-    signer: signerFromCryptoKey(pair.privateKey, { algorithm, keyId: kid }),
+    signer: createCryptoKeySigner(pair.privateKey, { algorithm, keyId: kid }),
     publicKey: { ...jwk, kid, alg: algorithm, use: "sig" } as JsonWebKey,
   };
 }

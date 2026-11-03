@@ -4,17 +4,17 @@ import { createServer, type Server } from "node:http";
 import { exportJWK, generateKeyPair } from "jose";
 import Provider from "oidc-provider";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { type Fetch, SYSTEM_CLOCK, signerFromCryptoKey } from "../src/index.js";
+import { createCryptoKeySigner, type Fetch, SYSTEM_CLOCK } from "../src/index.js";
 import {
-  authorizationRequest,
-  clientCredentialsToken,
   exchangeCode,
   type GrantType,
   type OAuthCallOptions,
   type OAuthClient,
   refreshAccessToken,
   registerClient,
+  requestClientCredentialsToken,
   revokeToken,
+  startAuthorization,
 } from "../src/oauth/index.js";
 import { failureOf } from "./oauth-fixtures.js";
 
@@ -187,7 +187,7 @@ describe("registration at an independent authorization server", () => {
       authentication: { method: "client_secret_basic", clientSecret: expect.any(String) },
     });
     expect(client.registrationAccessToken).toEqual(expect.any(String));
-    const token = await clientCredentialsToken(SERVER, client, ["read"], options());
+    const token = await requestClientCredentialsToken(SERVER, client, ["read"], options());
     expect(token).toMatchObject({ accessToken: expect.any(String), scopes: ["read"] });
     expect(token.expiresAt).toBeGreaterThan(Date.now());
   });
@@ -195,7 +195,7 @@ describe("registration at an independent authorization server", () => {
   it("registers for client_secret_post, and for none", async () => {
     const post = await register("client_secret_post", ["client_credentials"]);
     expect(post.authentication).toMatchObject({ method: "client_secret_post" });
-    expect((await clientCredentialsToken(SERVER, post, ["write"], options())).scopes).toStrictEqual(["write"]);
+    expect((await requestClientCredentialsToken(SERVER, post, ["write"], options())).scopes).toStrictEqual(["write"]);
     const none = await register("none");
     expect(none.authentication).toStrictEqual({ method: "none" });
   });
@@ -214,11 +214,11 @@ describe("client credentials at an independent authorization server", () => {
       clientId: "tool-1",
       authentication: {
         method: "private_key_jwt",
-        signer: signerFromCryptoKey(toolKey.privateKey, { algorithm: "RS256", keyId: "tool-key-1" }),
+        signer: createCryptoKeySigner(toolKey.privateKey, { algorithm: "RS256", keyId: "tool-key-1" }),
       },
     };
-    const first = await clientCredentialsToken(SERVER, client, ["read", "write"], options());
-    const second = await clientCredentialsToken(SERVER, client, ["read"], options());
+    const first = await requestClientCredentialsToken(SERVER, client, ["read", "write"], options());
+    const second = await requestClientCredentialsToken(SERVER, client, ["read"], options());
     expect(first).toMatchObject({ accessToken: expect.any(String), scopes: ["read", "write"] });
     expect(second.accessToken).not.toBe(first.accessToken);
   });
@@ -229,7 +229,7 @@ describe("client credentials at an independent authorization server", () => {
       clientId: registered.clientId,
       authentication: { method: "client_secret_basic", clientSecret: "not-the-secret" },
     };
-    const error = await failureOf(clientCredentialsToken(SERVER, wrong, ["read"], options()));
+    const error = await failureOf(requestClientCredentialsToken(SERVER, wrong, ["read"], options()));
     expect(error).toMatchObject({ status: 401, body: expect.stringContaining("invalid_client") });
   });
 
@@ -243,10 +243,10 @@ describe("client credentials at an independent authorization server", () => {
       clientId: "tool-1",
       authentication: {
         method: "private_key_jwt",
-        signer: signerFromCryptoKey((other as CryptoKeyPair).privateKey, { algorithm: "RS256", keyId: "tool-key-1" }),
+        signer: createCryptoKeySigner((other as CryptoKeyPair).privateKey, { algorithm: "RS256", keyId: "tool-key-1" }),
       },
     };
-    const error = await failureOf(clientCredentialsToken(SERVER, forger, ["read"], options()));
+    const error = await failureOf(requestClientCredentialsToken(SERVER, forger, ["read"], options()));
     expect(error).toMatchObject({ status: 401, message: expect.stringMatching(/invalid_client|challenged/u) });
   });
 });
@@ -254,7 +254,7 @@ describe("client credentials at an independent authorization server", () => {
 describe("the authorization code flow at an independent authorization server", () => {
   /** Runs the flow to the callback as a user who continues, and returns the pending request and the callback. */
   async function authorize(client: OAuthClient, scopes: readonly string[] = ["read", "write"]) {
-    const pending = await authorizationRequest(SERVER, client, { redirectUri: REDIRECT_URI, scopes });
+    const pending = await startAuthorization(SERVER, client, { redirectUri: REDIRECT_URI, scopes });
     return { pending, callback: await browse(pending.url, "continue") };
   }
 
@@ -295,7 +295,7 @@ describe("the authorization code flow at an independent authorization server", (
 
   it("carries the refusal of a user who denies the request", async () => {
     const client = await register();
-    const pending = await authorizationRequest(SERVER, client, { redirectUri: REDIRECT_URI, scopes: ["read"] });
+    const pending = await startAuthorization(SERVER, client, { redirectUri: REDIRECT_URI, scopes: ["read"] });
     const callback = await browse(pending.url, "deny");
     const error = await failureOf(exchangeCode(SERVER, client, callback.href, pending, options()));
     expect(error).toMatchObject({ status: 400, message: expect.stringContaining("access_denied") });
@@ -308,7 +308,7 @@ describe("the authorization code flow at an independent authorization server", (
       exchangeCode({ ...SERVER, issuer: "https://other.example" }, client, callback.href, pending, options()),
     );
     expect(mixedUp).toMatchObject({ message: expect.stringContaining('unexpected "iss"') });
-    const other = await authorizationRequest(SERVER, client, { redirectUri: REDIRECT_URI, scopes: ["read"] });
+    const other = await startAuthorization(SERVER, client, { redirectUri: REDIRECT_URI, scopes: ["read"] });
     const swapped = await failureOf(exchangeCode(SERVER, client, callback.href, other, options()));
     expect(swapped).toMatchObject({ message: expect.stringContaining('unexpected "state"') });
   });

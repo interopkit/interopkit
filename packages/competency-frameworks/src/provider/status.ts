@@ -1,4 +1,4 @@
-import { type AccessRefusal, type HttpResponse, statusInfoResponse } from "@interopkit/core/http";
+import { type AccessRefusal, buildStatusInfoResponse, type HttpResponse } from "@interopkit/core/http";
 import type { StatusCodeMinorValue } from "../model/index.js";
 
 /**
@@ -16,7 +16,7 @@ export function failure(
   minor?: StatusCodeMinorValue,
   headers: Readonly<Record<string, string>> = {},
 ): HttpResponse {
-  return statusInfoResponse(status, description, { headers, ...(minor === undefined ? {} : { minor }) });
+  return buildStatusInfoResponse(status, description, { headers, ...(minor === undefined ? {} : { minor }) });
 }
 
 /** The answer for an object, or a path, that this provider does not have: 404 with the statement that the binding gives. */

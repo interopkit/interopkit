@@ -1,24 +1,24 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the configurations of Dynamic Registration are those of the specification.
 
-import { type CallOptions, DataError, type Fetch, signerFromCryptoKey } from "@interopkit/core";
+import { type CallOptions, createCryptoKeySigner, DataError, type Fetch } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { SCOPES, type ToolConfiguration } from "../src/index.js";
 import {
-  createRegistrationInitiation,
+  buildRegistrationInitiation,
+  buildToolRegistration,
   type PlatformConfig,
   type PlatformRequestOptions,
   type RegisteredTool,
   type RegistrationStore,
-  toToolRegistration,
 } from "../src/platform/index.js";
 import { openToken, sealToken } from "../src/platform/internal.js";
 import { readPlatformConfiguration, readToolRegistrationResult } from "../src/protocol/internal.js";
 import {
+  buildPlatformRegistration,
   createServiceClient,
   discoverPlatform,
   readRegistrationInitiation,
   registerTool,
-  toPlatformRegistration,
 } from "../src/tool/index.js";
 import {
   clientAssertion,
@@ -63,7 +63,7 @@ const drConfig: PlatformConfig = {
   ...config,
   issuer: ISSUER,
   keys: {
-    signer: signerFromCryptoKey(rsaPlatform.privateKey, { algorithm: "RS256", keyId: rsaPlatform.kid }),
+    signer: createCryptoKeySigner(rsaPlatform.privateKey, { algorithm: "RS256", keyId: rsaPlatform.kid }),
     publicKeys: [rsaPlatform.publicJwk],
   },
   instance: { guid: "platform-instance-1", productFamilyCode: "interopkit-tests", version: "2.1" },
@@ -161,7 +161,7 @@ function toolRequest(change: Record<string, unknown> = {}, lti: Record<string, u
 
 /** The registration token of a new initiation of the platform. */
 async function registrationToken(ctx: Setup): Promise<string> {
-  const url = new URL(await createRegistrationInitiation(INITIATION_URL, { config: drConfig, clock: ctx.clock }));
+  const url = new URL(await buildRegistrationInitiation(INITIATION_URL, { config: drConfig, clock: ctx.clock }));
   return url.searchParams.get("registration_token") ?? "";
 }
 
@@ -180,10 +180,10 @@ async function register(
   return handle(ctx, posted, options.change);
 }
 
-describe("createRegistrationInitiation", () => {
+describe("buildRegistrationInitiation", () => {
   it("adds the configuration below the issuer and a registration token for an hour to the tool's initiation URL", async () => {
     const ctx = setup();
-    const url = new URL(await createRegistrationInitiation(INITIATION_URL, { config: drConfig, clock: ctx.clock }));
+    const url = new URL(await buildRegistrationInitiation(INITIATION_URL, { config: drConfig, clock: ctx.clock }));
     expect(`${url.origin}${url.pathname}`).toBe(`${TOOL_ORIGIN}/lti/register`);
     expect(url.searchParams.get("institution")).toBe("7");
     expect(url.searchParams.get("openid_configuration")).toBe(CONFIGURATION_URL);
@@ -192,7 +192,7 @@ describe("createRegistrationInitiation", () => {
     ]);
     expect(sealed).toEqual({ id: expect.stringMatching(/^[\w-]{27}$/u), exp: SECONDS + 3600 });
     const shorter = new URL(
-      await createRegistrationInitiation(INITIATION_URL, { config: drConfig, clock: ctx.clock, ttlSeconds: 600 }),
+      await buildRegistrationInitiation(INITIATION_URL, { config: drConfig, clock: ctx.clock, ttlSeconds: 600 }),
     );
     const opened = await openToken(shorter.searchParams.get("registration_token") ?? "", "registration", [
       drConfig.hintKey,
@@ -208,18 +208,16 @@ describe("createRegistrationInitiation", () => {
       { ...drConfig, keys: config.keys },
       { ...drConfig, instance: { guid: "platform-instance-1" } },
     ]) {
-      await expect(createRegistrationInitiation(INITIATION_URL, { config: platform, clock })).rejects.toThrow(
-        DataError,
-      );
+      await expect(buildRegistrationInitiation(INITIATION_URL, { config: platform, clock })).rejects.toThrow(DataError);
     }
     await expect(
-      createRegistrationInitiation("http://tool.example.com/register", { config: drConfig, clock }),
+      buildRegistrationInitiation("http://tool.example.com/register", { config: drConfig, clock }),
     ).rejects.toThrow(DataError);
     for (const text of ["null", "5", "[]"]) {
-      await expect(createRegistrationInitiation(JSON.parse(text), { config: drConfig, clock })).rejects.toThrow(
+      await expect(buildRegistrationInitiation(JSON.parse(text), { config: drConfig, clock })).rejects.toThrow(
         DataError,
       );
-      await expect(createRegistrationInitiation(INITIATION_URL, JSON.parse(text))).rejects.toThrow(DataError);
+      await expect(buildRegistrationInitiation(INITIATION_URL, JSON.parse(text))).rejects.toThrow(DataError);
     }
   });
 });
@@ -488,7 +486,7 @@ async function activated(scope: string): Promise<Setup & { registrations: Memory
   if (registered === undefined) throw new Error("The tool is not registered.");
   ctx.tools.set(
     TOOL_CLIENT_ID,
-    toToolRegistration(registered, {
+    buildToolRegistration(registered, {
       scopes: [SCOPES.registrationReadonly, SCOPES.registration],
       deploymentIds: [TOOL_DEPLOYMENT_ID],
     }),
@@ -604,13 +602,13 @@ describe("the client configuration endpoint", () => {
   });
 });
 
-describe("toToolRegistration", () => {
+describe("buildToolRegistration", () => {
   it("makes the registration of a tool from what the tool registered and what the administrator grants", async () => {
     const ctx = registering({ openRegistration: true });
     await register(ctx, toolRequest(), null);
     const registered = ctx.registrations.tools.get(TOOL_CLIENT_ID);
     if (registered === undefined) throw new Error("The tool is not registered.");
-    expect(toToolRegistration(registered, { scopes: [SCOPES.score], deploymentIds: ["d-1", "d-2"] })).toEqual({
+    expect(buildToolRegistration(registered, { scopes: [SCOPES.score], deploymentIds: ["d-1", "d-2"] })).toEqual({
       clientId: TOOL_CLIENT_ID,
       deploymentIds: ["d-1", "d-2"],
       loginUrl: TOOL_LOGIN_URL,
@@ -626,9 +624,9 @@ describe("toToolRegistration", () => {
     await register(ctx, toolRequest(), null);
     const registered = ctx.registrations.tools.get(TOOL_CLIENT_ID);
     if (registered === undefined) throw new Error("The tool is not registered.");
-    expect(() => toToolRegistration(registered, { scopes: [], deploymentIds: [] })).toThrow(DataError);
+    expect(() => buildToolRegistration(registered, { scopes: [], deploymentIds: [] })).toThrow(DataError);
     expect(() =>
-      toToolRegistration(
+      buildToolRegistration(
         { ...registered, configuration: { ...registered.configuration, jwksUri: "http://x.example" } },
         {
           scopes: [],
@@ -637,8 +635,8 @@ describe("toToolRegistration", () => {
       ),
     ).toThrow(DataError);
     for (const text of ["null", "5", "[]", '{"clientId":""}']) {
-      expect(() => toToolRegistration(JSON.parse(text), { scopes: [], deploymentIds: ["d-1"] })).toThrow(DataError);
-      expect(() => toToolRegistration(registered, JSON.parse(text))).toThrow(DataError);
+      expect(() => buildToolRegistration(JSON.parse(text), { scopes: [], deploymentIds: ["d-1"] })).toThrow(DataError);
+      expect(() => buildToolRegistration(registered, JSON.parse(text))).toThrow(DataError);
     }
   });
 });
@@ -652,7 +650,7 @@ describe("a tool of this package and this platform", () => {
       const answer = await handle(ctx, request({ url, method: init.method, headers: { ...init.headers }, body }));
       return new Response(answer.body as BodyInit, { status: answer.status, headers: answer.headers });
     };
-    const opened = await createRegistrationInitiation(INITIATION_URL, { config: drConfig, clock: ctx.clock });
+    const opened = await buildRegistrationInitiation(INITIATION_URL, { config: drConfig, clock: ctx.clock });
     const initiation = readRegistrationInitiation(request({ url: opened }));
     const platform = await discoverPlatform(initiation, { fetch });
     expect(platform).toMatchObject({ issuer: ISSUER, registrationEndpoint: REGISTRATION_URL });
@@ -674,10 +672,10 @@ describe("a tool of this package and this platform", () => {
     if (registered === undefined) throw new Error("The platform did not keep the registration.");
     ctx.tools.set(
       result.clientId,
-      toToolRegistration(registered, { scopes: [SCOPES.registrationReadonly], deploymentIds: [TOOL_DEPLOYMENT_ID] }),
+      buildToolRegistration(registered, { scopes: [SCOPES.registrationReadonly], deploymentIds: [TOOL_DEPLOYMENT_ID] }),
     );
-    const signer = signerFromCryptoKey(toolKeys.privateKey, { algorithm: "RS256", keyId: toolKeys.kid });
-    const record = toPlatformRegistration(platform, result, {
+    const signer = createCryptoKeySigner(toolKeys.privateKey, { algorithm: "RS256", keyId: toolKeys.kid });
+    const record = buildPlatformRegistration(platform, result, {
       signer,
       redirectUri: TOOL_REDIRECT_URI,
       deploymentIds: [TOOL_DEPLOYMENT_ID],

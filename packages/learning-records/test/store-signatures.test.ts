@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { attachmentHash, writeMultipart } from "../src/attachments/index.js";
+import { hashAttachment, writeMultipart } from "../src/attachments/index.js";
 import type { Statement } from "../src/index.js";
 import { SIGNATURE_USAGE_TYPE } from "../src/signing/index.js";
 import { handleLrsRequest, type LrsOptions } from "../src/store/index.js";
@@ -29,7 +29,7 @@ async function sendSigned(
   header: { contentType?: string; withData?: boolean } = {},
 ) {
   const body = encoder.encode(signature);
-  const sha2 = attachmentHash(body);
+  const sha2 = hashAttachment(body);
   const signed: Statement = {
     ...statement,
     attachments: [
@@ -133,7 +133,7 @@ describe("a signed Statement", () => {
       display: { "en-US": "Signature" },
       contentType: "application/octet-stream",
       length: body.byteLength,
-      sha2: attachmentHash(body),
+      sha2: hashAttachment(body),
     };
     const message = writeMultipart({ ...good.statement, attachments: [header, header] }, [
       { sha2: header.sha2, contentType: header.contentType, body },
@@ -174,7 +174,7 @@ describe("the signatures of a request", () => {
   function signatureOf(definition: object): { readonly jws: string; readonly sha2: string } {
     const payload = { actor, verb, object: { ...object, definition } };
     const jws = `${base64url('{"alg":"RS256"}')}.${base64url(JSON.stringify(payload))}.${base64url("signature")}`;
-    return { jws, sha2: attachmentHash(encoder.encode(jws)) };
+    return { jws, sha2: hashAttachment(encoder.encode(jws)) };
   }
 
   /** Posts Statements that each name the signature, with its data in one part. */

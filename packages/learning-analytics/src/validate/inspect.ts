@@ -1,4 +1,4 @@
-import { copyJson, type FindingSink, findingsOf, safeParseBounded } from "@interopkit/core/checks";
+import { buildFindings, copyJson, type FindingSink, safeParseBounded } from "@interopkit/core/checks";
 import type * as v from "valibot";
 import type { CaliperEvent, CaliperVersion, EntityDocument } from "../model/index.js";
 import { SCHEMA_SETS } from "../read/internal.js";
@@ -8,7 +8,7 @@ import { type CaliperFinding, error } from "./finding.js";
 
 /** Turns the issues of a parse into findings that are all errors. */
 function shapeFindings(issues: readonly v.BaseIssue<unknown>[]): CaliperFinding[] {
-  return findingsOf(issues).map((finding) => ({ ...finding, severity: "error" }));
+  return buildFindings(issues).map((finding) => ({ ...finding, severity: "error" }));
 }
 
 /**

@@ -1,4 +1,4 @@
-import { type HttpResponse, jsonResponse, negotiate } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse, negotiate } from "@interopkit/core/http";
 
 /** Builds the answer of a refused request. */
 export type Refuse = (status: number, message: string, headers?: Readonly<Record<string, string>>) => HttpResponse;
@@ -19,7 +19,7 @@ function escapeHtml(text: string): string {
 export function refusalWriter(accept: string | undefined): Refuse {
   const type = negotiate(accept, [TEXT_TYPE, JSON_TYPE, HTML_TYPE]);
   return (status, message, headers = {}) => {
-    if (type === JSON_TYPE) return jsonResponse(status, { message }, headers);
+    if (type === JSON_TYPE) return buildJsonResponse(status, { message }, headers);
     if (type === TEXT_TYPE) {
       return { status, headers: { "content-type": "text/plain;charset=UTF-8", ...headers }, body: message };
     }

@@ -1,6 +1,6 @@
 import { callPort } from "@interopkit/core";
 import { nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
-import { bearerTokenOf, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
+import { type HttpRequest, type HttpResponse, readBearerToken } from "@interopkit/core/http";
 import * as v from "valibot";
 import type { EndpointSettings } from "./options.js";
 import { internalError, unauthorized } from "./status.js";
@@ -19,7 +19,7 @@ export async function principalOf(
   settings: EndpointSettings,
 ): Promise<{ readonly principal: string } | { readonly refusal: HttpResponse }> {
   const { authorize, signal } = settings;
-  const asked = await callPort(() => authorize(bearerTokenOf(request), { signal }), signal);
+  const asked = await callPort(() => authorize(readBearerToken(request), { signal }), signal);
   if (asked === undefined) return { refusal: internalError() };
   if (asked.value === undefined) return { refusal: unauthorized() };
   return { principal: parseWith(grantSchema, asked.value, "The decision of authorize").principal };

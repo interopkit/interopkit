@@ -36,7 +36,7 @@ export interface ReceivedCredential {
   readonly received: string | Readonly<Record<string, unknown>>;
   /**
    * The credential in the model: the JSON object or the payload of the JWS, read with `readCredential`. It is what
-   * `sameCredential` and `newerCredential` compare.
+   * `isSameCredential` and `selectNewerCredential` compare.
    */
   readonly credential: AnyVerifiableCredential;
 }
@@ -60,7 +60,7 @@ export interface CredentialStore {
    * issuer), atomically, and says which happened.
    *
    * @remarks
-   * `sameCredential` finds the credential the store holds. `"replaced"` is for a credential that `newerCredential` finds newer
+   * `isSameCredential` finds the credential the store holds. `"replaced"` is for a credential that `selectNewerCredential` finds newer
    * than the one held, and `"unchanged"` keeps the one held. The provider has checked the credential before the call.
    */
   upsert(owner: string, credential: ReceivedCredential, options?: CallOptions): Promise<UpsertOutcome>;

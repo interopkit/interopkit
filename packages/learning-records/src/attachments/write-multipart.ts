@@ -4,7 +4,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import type { AttachmentData, Statement, StatementResult } from "../model/index.js";
 import { attachmentDataSchema, attachmentHeadersOf, readEitherVersion } from "../read/internal.js";
-import { hashesTo } from "./attachment-hash.js";
+import { hashesTo } from "./hash-attachment.js";
 
 const encoder = new TextEncoder();
 

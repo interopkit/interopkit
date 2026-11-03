@@ -1,5 +1,5 @@
 import { callPort, readClock } from "@interopkit/core";
-import { bearerTokenOf, type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpRequest, type HttpResponse, readBearerToken } from "@interopkit/core/http";
 import { errorBody, toSeconds } from "../../protocol/internal.js";
 import { serverError } from "../answers.js";
 import { openingKeys } from "../config.js";
@@ -10,7 +10,7 @@ import { openAccess } from "../tokens.js";
 
 /** Builds the answer of a service to a request whose token is missing, unusable or too narrow (RFC 6750 section 3). */
 function refusal(status: 401 | 403, challenge: string, error: string, description: string): HttpResponse {
-  return jsonResponse(status, errorBody(error, description), { "www-authenticate": challenge });
+  return buildJsonResponse(status, errorBody(error, description), { "www-authenticate": challenge });
 }
 
 /** The answer to a request whose token is missing, expired, not this platform's, or of a tool it no longer has. */
@@ -36,7 +36,7 @@ export async function authorizeService(
   if (header === undefined) {
     return refusal(401, "Bearer", "invalid_token", "The request needs an access token of the platform.");
   }
-  const token = bearerTokenOf(request);
+  const token = readBearerToken(request);
   const access = token === undefined ? undefined : await openAccess(token, openingKeys(settings.config));
   if (access === undefined) return invalidToken("The access token is not one that this platform issued.");
   if (toSeconds(readClock(settings.clock)) >= access.exp) return invalidToken("The access token has expired.");

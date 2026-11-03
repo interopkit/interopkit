@@ -1,11 +1,11 @@
 import { callPort, DataError } from "@interopkit/core";
 import { isDateTime, parseWith } from "@interopkit/core/checks";
 import {
+  buildJsonResponse,
+  buildPageLinks,
   type HttpRequest,
   type HttpResponse,
-  jsonResponse,
   type OffsetPage,
-  offsetPageLinks,
   readOffsetPage,
   readQuery,
 } from "@interopkit/core/http";
@@ -62,12 +62,12 @@ export async function answerList(
   const objects = credentials.filter((each) => typeof each !== "string");
   const signed = credentials.filter((each) => typeof each === "string");
   const extent = total === undefined ? { more: credentials.length === page.limit } : { total };
-  return jsonResponse(
+  return buildJsonResponse(
     200,
     { credential: objects, compactJwsString: signed },
     {
       ...(total === undefined ? {} : { "x-total-count": String(total) }),
-      link: offsetPageLinks(request.url, page, extent),
+      link: buildPageLinks(request.url, page, extent),
     },
   );
 }

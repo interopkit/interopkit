@@ -38,7 +38,7 @@ const INPUT_PROPERTIES = ["verifiedUser", "endAssessmentReturn"];
 const IDENTITY_TEXT = ["name", "givenName", "familyName", "middleName", "email", "locale"] as const;
 const IDENTITY_PROPERTIES = [...IDENTITY_TEXT, "emailVerified", "picture"];
 
-/** Checks the launch that the host passes: a Start Proctoring message that `ltiLaunch` returned. */
+/** Checks the launch that the host passes: a Start Proctoring message that `handleLaunch` returned. */
 function checkLaunch(value: unknown): asserts value is StartProctoringMessage {
   checkRecord(value, "The launch must be an object");
   if (value.messageType !== MESSAGE_TYPE) {
@@ -113,7 +113,7 @@ function checkInput(value: unknown, launch: StartProctoringMessage): asserts val
  * that session.
  *
  * @see {@link https://www.imsglobal.org/spec/proctoring/v1p0 | Proctoring Services 1.0}
- * @param launch - The Start Proctoring message that `ltiLaunch` returned.
+ * @param launch - The Start Proctoring message that `handleLaunch` returned.
  * @param input - The claims that the tool verified, and whether it wants the End Assessment message.
  * @param options - The registrations of the tool and its clock.
  * @returns The page to send to the browser.
@@ -123,7 +123,7 @@ function checkInput(value: unknown, launch: StartProctoringMessage): asserts val
  * deployment of the launch.
  * @throws The error of the signer when it fails, and the `reason` of `options.signal` when it aborts.
  */
-export async function createStartAssessmentPage(
+export async function buildStartAssessmentPage(
   launch: StartProctoringMessage,
   input: StartAssessmentInput,
   options: ToolOptions,

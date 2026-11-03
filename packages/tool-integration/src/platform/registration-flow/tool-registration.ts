@@ -47,7 +47,7 @@ function configurationOf(value: unknown): ToolConfiguration {
  * @returns The registration of the tool.
  * @throws `DataError` when an argument has the wrong type, or the configuration breaks Dynamic Registration 1.0 section 2.2.
  */
-export function toToolRegistration(registered: RegisteredTool, grant: RegistrationGrant): ToolRegistration {
+export function buildToolRegistration(registered: RegisteredTool, grant: RegistrationGrant): ToolRegistration {
   checkRecord(registered, "The registered tool must be an object");
   checkNonEmptyString(registered.clientId, "The client identifier of the registered tool");
   const configuration = configurationOf(registered.configuration);

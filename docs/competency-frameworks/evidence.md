@@ -31,7 +31,7 @@ flowchart LR
 ## Real frameworks
 
 `pnpm schemas` downloads six frameworks from two public providers at the hash that `scripts/schemas.lock.json` pins, each under the identifier of its document. They are
-not committed. Each is read as CASE 1.0, which both providers speak, and written back with `toCaseVersion`.
+not committed. Each is read as CASE 1.0, which both providers speak, and written back with `convertCaseVersion`.
 
 | Framework (identifier of the document, the name of its download)                       | Provider            | Items | Associations | Reads as published | Written back as published |
 | -------------------------------------------------------------------------------------- | ------------------- | ----: | -----------: | ------------------ | ------------------------- |
@@ -116,7 +116,7 @@ warm-up, and the gate is the fastest sample.
 | ---------------------------------- | ---------------------------------------------------------------- | -----------------------: | -------: | ------------------------------------------- |
 | `readPackage`                      | Reading and checking the parsed framework                        |                  75.6 ms |   400 ms | A machine of the class of the CI runner     |
 | `validatePackage`                  | The findings of the framework                                    |                  74.9 ms |   400 ms | A machine of the class of the CI runner     |
-| `frameworkTree`                    | The tree of 10,000 items                                         |                  58.9 ms |   300 ms | A machine of the class of the CI runner     |
+| `buildFrameworkTree`                    | The tree of 10,000 items                                         |                  58.9 ms |   300 ms | A machine of the class of the CI runner     |
 | `queryEntities`                    | A filter and a sort over 10,000 documents                        |                   6.5 ms |    40 ms | A machine of the class of the CI runner     |
 
 The other benchmarks are ratios to a reference in the same run, so they hold on any machine. The ratios are the fastest samples
@@ -127,11 +127,11 @@ of seven runs on a laptop at a load of 10 to 28; the official schemas are applie
 | `readPackage` of the framework              | the package schema of CASE 1.1, 144 to 237 ms   | 0.20–0.38 |      1 |
 | `readEntity` of each item alone             | the item schema of CASE 1.1, 76 to 112 ms       | 0.25–0.45 |      1 |
 | `readPackage` of the framework              | `JSON.parse` of its text; 2.1 to 3.4 on CI      |   3.7–5.3 |     20 |
-| `frameworkTree`                             | the same                                        |   2.4–3.1 |     20 |
-| `toCaseVersion` to 1.0                      | the same                                        |   1.5–2.0 |     10 |
+| `buildFrameworkTree`                             | the same                                        |   2.4–3.1 |     20 |
+| `convertCaseVersion` to 1.0                      | the same                                        |   1.5–2.0 |     10 |
 | `diffPackages` of the framework and an edition | the same                                     |   2.3–3.3 |     20 |
 | `crosswalk` to the framework it matches     | the same                                        |   0.7–1.2 |      7 |
-| `associationsOf` an item                    | the same                                        |   0.6–1.2 |      6 |
+| `listAssociations` an item                    | the same                                        |   0.6–1.2 |      6 |
 | `handleCaseRequest` for the package in 1.1  | `JSON.stringify` of the package                 |   1.0–1.1 |      6 |
 | `handleCaseRequest` for the package in 1.0  | the same                                        |  8.5–11.8 |     60 |
 | `package` of a client                       | `JSON.parse` of the answer                      |  6.1–11.0 |     60 |
@@ -141,10 +141,10 @@ digit, and a time five times the fastest sample of the runner of CI (`ubuntu-lat
 `bench` job, whose fastest samples of one benchmark differ by up to 2.2 times from run to run. A budget changes only with the
 reason in the commit that changes it. No other library reads CASE packages, so the references are the schemas and the JSON.
 
-`toCaseVersion` copies a string, a number, a list of them and a node of plain values without the deep copy, and writes the path of
+`convertCaseVersion` copies a string, a number, a list of them and a node of plain values without the deep copy, and writes the path of
 a member only for a warning or an error, so it takes 0.74 to 0.83 of the time of the build before, alternated in one process, and
 the 1.0 answer of a provider 0.76; the checks of a package write a path only for a finding, about 0.95. The six real frameworks,
-each with an edited copy, read and convert to the same values and findings. `associationsOf` checks the whole package at each
+each with an edited copy, read and convert to the same values and findings. `listAssociations` checks the whole package at each
 call, as every function of the graph checks its argument, so a host that asks for the associations of each item walks
 `CFAssociations` once instead.
 

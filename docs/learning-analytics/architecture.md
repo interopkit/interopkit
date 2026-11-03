@@ -12,7 +12,7 @@ flowchart BT
   v11["v1p1<br/>what differs in Caliper 1.1"]
   read["read<br/>one schema for each class and version,<br/>readEntity, readEvent"]
   validate["validate<br/>validateEvent, validateEntity,<br/>the tables of the profiles"]
-  build["build<br/>buildEvent, mintUrn, caliperTime, checkIri"]
+  build["build<br/>buildEvent, mintUrn, formatDateTime, checkIri"]
   send["send<br/>sendCaliper, pingEndpoint"]
   endpointNode["endpoint<br/>handleCaliperRequest, readEnvelope"]
   v11 --> model
@@ -49,7 +49,7 @@ flowchart BT
 | `v1p1`  | What differs in Caliper 1.1: its extension contexts, the terms of 1.2 that it lacks and the classes it deprecated ([Caliper 1.1](./versions.md))        |
 | `read`  | A schema for each class and each version, `readEvent` and `readEntity`, which take a document from outside into the model                            |
 | `validate` | `validateEvent`, `validateEntity` and the tables of the profiles of section 3 and of the certification guide ([judging events](./validate.md))     |
-| `build` | `buildEvent`, `mintUrn`, `caliperTime`, `checkIri` ([building events](./build.md))                                                                    |
+| `build` | `buildEvent`, `mintUrn`, `formatDateTime`, `checkIri` ([building events](./build.md))                                                                    |
 | `send`  | `sendCaliper`, `pingEndpoint`, `CaliperSender`, `SendCaliperOptions`, `PingResult`, `DEFAULT_CALIPER_TIMEOUT_MS` ([sending events](./send.md))        |
 | `endpoint` | `handleCaliperRequest`, `readEnvelope`, `ReceivedEnvelope`, `CaliperEndpointOptions`, from `@interopkit/learning-analytics/endpoint` ([receiving events](./endpoint.md)) |
 
@@ -59,7 +59,7 @@ and the call to the service, on `uuid` for name-based UUIDs and on `valibot` for
 ## Quick start
 
 ```ts
-import { buildEvent, caliperTime, mintUrn, readEntity } from "@interopkit/learning-analytics";
+import { buildEvent, formatDateTime, mintUrn, readEntity } from "@interopkit/learning-analytics";
 
 const event = buildEvent({
   id: mintUrn(["event", "session-1", 1]),
@@ -68,7 +68,7 @@ const event = buildEvent({
   actor: { id: "urn:uuid:3f0c8a8e-7b8e-4b6a-9c1d-2a4f6e8b0c1d", type: "Person" },
   action: "Started",
   object: { id: "https://exam.example/tests/42", type: "Assessment" },
-  eventTime: caliperTime(1_700_000_000_000, "The time of the event"),
+  eventTime: formatDateTime(1_700_000_000_000, "The time of the event"),
   edApp: "https://exam.example",
 });
 event.id; // => "urn:uuid:017072c6-a4a4-5227-a083-38da34a6f364"

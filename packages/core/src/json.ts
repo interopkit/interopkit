@@ -216,7 +216,11 @@ const ROLES = Uint8Array.from({ length: ASCII }, (_, unit) => {
  * @param maxTokens - The most tokens that are allowed.
  * @returns `"depth"` or `"tokens"`, the first limit that the text passes, or `undefined` when it passes neither.
  */
-export function exceededJsonLimit(text: string, maxDepth: number, maxTokens: number): "depth" | "tokens" | undefined {
+export function findExceededJsonLimit(
+  text: string,
+  maxDepth: number,
+  maxTokens: number,
+): "depth" | "tokens" | undefined {
   let depth = 0;
   let tokens = 0;
   let inLiteral = false;
@@ -266,7 +270,7 @@ export function exceededJsonLimit(text: string, maxDepth: number, maxTokens: num
  * @returns Whether the text nests deeper.
  */
 export function nestsDeeperThan(text: string, maxDepth: number): boolean {
-  return exceededJsonLimit(text, maxDepth, Number.POSITIVE_INFINITY) === "depth";
+  return findExceededJsonLimit(text, maxDepth, Number.POSITIVE_INFINITY) === "depth";
 }
 
 /**
@@ -282,5 +286,5 @@ export function nestsDeeperThan(text: string, maxDepth: number): boolean {
  * @returns Whether the text has more.
  */
 export function hasMoreTokensThan(text: string, maxTokens: number): boolean {
-  return exceededJsonLimit(text, Number.POSITIVE_INFINITY, maxTokens) === "tokens";
+  return findExceededJsonLimit(text, Number.POSITIVE_INFINITY, maxTokens) === "tokens";
 }

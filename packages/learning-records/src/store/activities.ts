@@ -1,6 +1,6 @@
 import { callPort, DataError } from "@interopkit/core";
 import { absoluteUriSchema, parseWith } from "@interopkit/core/checks";
-import { type HttpResponse, jsonResponse, readQuery } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse, readQuery } from "@interopkit/core/http";
 import { iriKey } from "../compare/internal.js";
 import { activitySchema } from "../read/internal.js";
 import { checkNames } from "./parameters.js";
@@ -23,12 +23,12 @@ export async function handleActivities(context: Context): Promise<HttpResponse> 
   const { activities, signal } = context.settings;
   const found = await callPort(() => activities.get(id.value, { signal }), signal);
   if (found === undefined) return context.refuse(500, FAILED);
-  if (found.value === undefined) return jsonResponse(200, { objectType: "Activity", id: id.value });
+  if (found.value === undefined) return buildJsonResponse(200, { objectType: "Activity", id: id.value });
   const activity = parseWith(activitySchema, found.value, "The answer of ActivityStore.get");
   if (iriKey(activity.id) !== iriKey(id.value)) {
     throw new DataError(
       `The answer of ActivityStore.get is the Activity ${activity.id}, and the request asked for ${id.value}.`,
     );
   }
-  return jsonResponse(200, { ...activity, objectType: "Activity" });
+  return buildJsonResponse(200, { ...activity, objectType: "Activity" });
 }

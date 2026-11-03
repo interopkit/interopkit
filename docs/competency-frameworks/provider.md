@@ -22,7 +22,7 @@ flowchart TD
   uuid -->|"no"| invalid["404 Invalid UUID"]
   uuid -->|"yes"| store
   store -->|"rejects"| failed["500"]
-  store -->|"answers"| version["The form of the version of the path<br/>1.1 as stored, 1.0 by toCaseVersion"]
+  store -->|"answers"| version["The form of the version of the path<br/>1.1 as stored, 1.0 by convertCaseVersion"]
   version --> ok["200 with the entity<br/>the list also sends X-Total-Count and Link"]
 ```
 
@@ -260,10 +260,10 @@ with a total.
 ## Versions
 
 The path chooses the form of the answer. `/ims/case/v1p1` serves what the store holds. `/ims/case/v1p0` serves the same objects
-through `toCaseVersion`: no `extensions`, `frameworkType`, `caseVersion`, item `subject`, association `notes` or `targetType`;
+through `convertCaseVersion`: no `extensions`, `frameworkType`, `caseVersion`, item `subject`, association `notes` or `targetType`;
 an association whose type or node 1.0 cannot say is 404, and the associations of an item that 1.0 cannot say are left out of its
 set, or the set is 404 when none remains. Identifiers and URIs that 1.0 would refuse stay as the store holds them
-(`form-not-in-1.0` of `toCaseVersion`): a host that serves 1.0 consumers keeps identifiers of the form of the Information Model.
+(`form-not-in-1.0` of `convertCaseVersion`): a host that serves 1.0 consumers keeps identifiers of the form of the Information Model.
 
 ## Service discovery
 

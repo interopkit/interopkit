@@ -1,7 +1,7 @@
 import type { CallOptions } from "../call-options.js";
 import { checkAbortSignal, checkRecord, describe, isRecord } from "../checks.js";
 import { DataError } from "../errors.js";
-import { untilAborted } from "../until-aborted.js";
+import { raceAbort } from "../race-abort.js";
 import { JWS_ALGORITHMS } from "./algorithms.js";
 import { encodeBase64Url } from "./base64url.js";
 import { checkSigner, type Signer } from "./signer.js";
@@ -85,7 +85,7 @@ export async function signCompactJws(
   }
   options?.signal?.throwIfAborted();
   const signingInput = `${encodeBase64Url(encoder.encode(protectedHeader))}.${encodeBase64Url(payload)}`;
-  const signature = await untilAborted(signer.sign(encoder.encode(signingInput), options), options?.signal);
+  const signature = await raceAbort(signer.sign(encoder.encode(signingInput), options), options?.signal);
   checkSignature(signature, signer.algorithm);
   return `${signingInput}.${encodeBase64Url(signature)}`;
 }

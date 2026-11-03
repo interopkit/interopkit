@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 import { deepFreeze } from "../../../scripts/json-mutation.js";
 import {
   ADOPTION_STATUSES,
-  adoptionStatus,
-  associationsOf,
-  caseEntityUri,
+  buildEntityUri,
+  buildFrameworkTree,
   crosswalk,
   diffPackages,
   type FrameworkNode,
-  frameworkTree,
   isNewer,
+  listAssociations,
+  readAdoptionStatus,
 } from "../src/graph/index.js";
 import type { CasePackage, CFPckgItem } from "../src/index.js";
 import { copyOf } from "./fixture.js";
@@ -41,10 +41,10 @@ const withItems = (pkg: CasePackage, replacement: readonly CFPckgItem[]): CasePa
   CFItems: replacement,
 });
 
-describe("frameworkTree", () => {
+describe("buildFrameworkTree", () => {
   it("puts the items whose parent is the document at the top, each with its children", () => {
     const pkg = framework(items(2, 3, 4, 5), [childOf(2, 1), childOf(3, 2), childOf(4, 2), childOf(5, 1)]);
-    expect(shapeOf(frameworkTree(pkg))).toStrictEqual([
+    expect(shapeOf(buildFrameworkTree(pkg))).toStrictEqual([
       [
         2,
         [
@@ -57,12 +57,12 @@ describe("frameworkTree", () => {
   });
 
   it("returns nothing for a package without items or associations", () => {
-    expect(frameworkTree({ CFDocument: framework([]).CFDocument })).toStrictEqual([]);
+    expect(buildFrameworkTree({ CFDocument: framework([]).CFDocument })).toStrictEqual([]);
   });
 
   it("orders siblings by sequence number, and puts the items without one after those with one", () => {
     const pkg = framework(items(2, 3, 4, 5), [childOf(2, 1), childOf(3, 1, 20), childOf(4, 1, 3), childOf(5, 1, 3)]);
-    expect(frameworkTree(pkg).map(({ item }) => numberOf(item.identifier))).toStrictEqual([4, 5, 3, 2]);
+    expect(buildFrameworkTree(pkg).map(({ item }) => numberOf(item.identifier))).toStrictEqual([4, 5, 3, 2]);
   });
 
   it("orders siblings with one sequence number by code, reading numbers inside a code as numbers", () => {
@@ -71,7 +71,7 @@ describe("frameworkTree", () => {
       codes.map((code, at) => ({ number: 2 + at, code })),
       codes.map((_, at) => childOf(2 + at, 1, 1)),
     );
-    expect(frameworkTree(pkg).map(({ item }) => item.humanCodingScheme)).toStrictEqual([
+    expect(buildFrameworkTree(pkg).map(({ item }) => item.humanCodingScheme)).toStrictEqual([
       "RL.4.9",
       "RL.5.1",
       "RL.5.2",
@@ -85,7 +85,7 @@ describe("frameworkTree", () => {
       [{ number: 2 }, { number: 3, code: "B" }, { number: 4 }, { number: 5, code: "A" }],
       [childOf(2, 1), childOf(3, 1), childOf(4, 1), childOf(5, 1)],
     );
-    expect(frameworkTree(pkg).map(({ item }) => numberOf(item.identifier))).toStrictEqual([5, 3, 2, 4]);
+    expect(buildFrameworkTree(pkg).map(({ item }) => numberOf(item.identifier))).toStrictEqual([5, 3, 2, 4]);
   });
 
   it("places an item once, under the first parent that the walk reaches level by level", () => {
@@ -98,7 +98,7 @@ describe("frameworkTree", () => {
       childOf(6, 4),
       childOf(5, 1),
     ]);
-    expect(shapeOf(frameworkTree(pkg))).toStrictEqual([
+    expect(shapeOf(buildFrameworkTree(pkg))).toStrictEqual([
       [2, [[3, []]]],
       [4, [[6, []]]],
       [5, []],
@@ -107,12 +107,12 @@ describe("frameworkTree", () => {
 
   it("leaves out items that no chain of isChildOf associations leads to the document from, loops included", () => {
     const pkg = framework(items(2, 3, 4, 5, 6), [childOf(2, 1), childOf(3, 4), childOf(4, 3), childOf(6, 5)]);
-    expect(shapeOf(frameworkTree(pkg))).toStrictEqual([[2, []]]);
+    expect(shapeOf(buildFrameworkTree(pkg))).toStrictEqual([[2, []]]);
   });
 
   it("walks a loop that includes an item below the document once", () => {
     const pkg = framework(items(2, 3), [childOf(2, 1), childOf(3, 2), childOf(2, 3)]);
-    expect(shapeOf(frameworkTree(pkg))).toStrictEqual([[2, [[3, []]]]]);
+    expect(shapeOf(buildFrameworkTree(pkg))).toStrictEqual([[2, [[3, []]]]]);
   });
 
   it("ignores associations of other types, nodes outside the package and nodes that are not of CASE", () => {
@@ -126,7 +126,7 @@ describe("frameworkTree", () => {
         { ...foreign, destinationNodeURI: { ...foreign.destinationNodeURI, targetType: VIDEO } },
       ],
     };
-    expect(shapeOf(frameworkTree(outsideCase))).toStrictEqual([[2, []]]);
+    expect(shapeOf(buildFrameworkTree(outsideCase))).toStrictEqual([[2, []]]);
   });
 
   it("matches identifiers in either case", () => {
@@ -136,12 +136,12 @@ describe("frameworkTree", () => {
       (association.originNodeURI as { identifier: string }).identifier =
         association.originNodeURI.identifier.toUpperCase();
     }
-    expect(shapeOf(frameworkTree(upper))).toStrictEqual([[2, [[3, []]]]]);
+    expect(shapeOf(buildFrameworkTree(upper))).toStrictEqual([[2, [[3, []]]]]);
   });
 
   it("returns copies that share nothing with the package, and leaves the package as it was", () => {
     const pkg = deepFreeze(framework(items(2, 3), [childOf(2, 1), childOf(3, 2)]));
-    const [top] = frameworkTree(pkg);
+    const [top] = buildFrameworkTree(pkg);
     expect(top?.item).toStrictEqual(pkg.CFItems?.[0]);
     expect(top?.item).not.toBe(pkg.CFItems?.[0]);
     expect(Object.isFrozen(top?.item)).toBe(false);
@@ -153,7 +153,7 @@ describe("frameworkTree", () => {
       ...base,
       CFItems: [...(base.CFItems ?? []), itemOf({ number: 2, statement: "Second" })],
     };
-    expect(frameworkTree(pkg).map(({ item }) => item.fullStatement)).toStrictEqual(["Statement 2"]);
+    expect(buildFrameworkTree(pkg).map(({ item }) => item.fullStatement)).toStrictEqual(["Statement 2"]);
   });
 
   it("builds a chain of twenty thousand levels and a flat list of ten thousand children without overflowing", () => {
@@ -163,7 +163,7 @@ describe("frameworkTree", () => {
       items(...numbers),
       numbers.map((number) => childOf(number, number - 1)),
     );
-    let node: FrameworkNode | undefined = frameworkTree(chain)[0];
+    let node: FrameworkNode | undefined = buildFrameworkTree(chain)[0];
     let levels = 0;
     for (; node !== undefined; node = node.children[0]) levels += 1;
     expect(levels).toBe(depth);
@@ -172,18 +172,20 @@ describe("frameworkTree", () => {
       items(...flatNumbers),
       flatNumbers.map((number) => childOf(number, 1)),
     );
-    expect(frameworkTree(flat)).toHaveLength(10_000);
+    expect(buildFrameworkTree(flat)).toHaveLength(10_000);
   });
 
   it("refuses a value that is not a package, naming the first missing property", () => {
-    expect(() => frameworkTree(JSON.parse("null"))).toThrow(DataError);
-    expect(() => frameworkTree(fromJson({}))).toThrow('The package is invalid: missing the property "CFDocument".');
-    expect(() => frameworkTree(fromJson({ CFDocument: { identifier: "a", uri: "b" }, CFItems: "x" }))).toThrow(
+    expect(() => buildFrameworkTree(JSON.parse("null"))).toThrow(DataError);
+    expect(() => buildFrameworkTree(fromJson({}))).toThrow(
+      'The package is invalid: missing the property "CFDocument".',
+    );
+    expect(() => buildFrameworkTree(fromJson({ CFDocument: { identifier: "a", uri: "b" }, CFItems: "x" }))).toThrow(
       'The package is invalid at CFItems: expected an array, found "x".',
     );
     const broken = copyOf(framework(items(2), [childOf(2, 1)]));
     (broken.CFAssociations?.[0] as unknown as { associationType: number }).associationType = 5;
-    expect(() => frameworkTree(broken)).toThrow("The package is invalid at CFAssociations[0].associationType");
+    expect(() => buildFrameworkTree(broken)).toThrow("The package is invalid at CFAssociations[0].associationType");
   });
 
   it("refuses a package that holds something that cannot be copied", () => {
@@ -192,7 +194,9 @@ describe("frameworkTree", () => {
       ...pkg,
       CFItems: [{ ...itemOf({ number: 2 }), extensions: { run: () => 1 } as never }],
     };
-    expect(() => frameworkTree(withFunction)).toThrow("must be plain data that can be copied: it holds a function");
+    expect(() => buildFrameworkTree(withFunction)).toThrow(
+      "must be plain data that can be copied: it holds a function",
+    );
   });
 });
 
@@ -262,7 +266,7 @@ function naturalCompare(first: string, second: string): number {
   return a.length - b.length;
 }
 
-describe("frameworkTree on random frameworks", () => {
+describe("buildFrameworkTree on random frameworks", () => {
   const RUNS = { seed: 20_241_103, numRuns: 200 };
 
   it("holds exactly the items that the document leads to, each once", () => {
@@ -275,7 +279,7 @@ describe("frameworkTree on random frameworks", () => {
             visit(node.children);
           }
         };
-        visit(frameworkTree(pkg));
+        visit(buildFrameworkTree(pkg));
         expect(new Set(listed).size).toBe(listed.length);
         expect(new Set(listed)).toStrictEqual(reachableItems(pkg));
       }),
@@ -311,7 +315,7 @@ describe("frameworkTree on random frameworks", () => {
             }
           }
         };
-        check(DOCUMENT, frameworkTree(pkg));
+        check(DOCUMENT, buildFrameworkTree(pkg));
       }),
       RUNS,
     );
@@ -322,14 +326,14 @@ describe("a package without items or associations", () => {
   const bare: CasePackage = { CFDocument: framework([]).CFDocument };
 
   it("has no tree, no associations, no links and no difference", () => {
-    expect(frameworkTree(bare)).toStrictEqual([]);
-    expect(associationsOf(bare, id(2))).toStrictEqual({ origin: [], destination: [] });
+    expect(buildFrameworkTree(bare)).toStrictEqual([]);
+    expect(listAssociations(bare, id(2))).toStrictEqual({ origin: [], destination: [] });
     expect(crosswalk(bare, bare)).toStrictEqual([]);
     expect(diffPackages(bare, bare)).toStrictEqual({ added: [], removed: [], changed: [], replaced: [] });
   });
 });
 
-describe("associationsOf", () => {
+describe("listAssociations", () => {
   const pkg = framework(items(2, 3, 4), [
     childOf(2, 1),
     childOf(3, 2),
@@ -339,23 +343,23 @@ describe("associationsOf", () => {
   const typesOf = (list: readonly { readonly associationType: string }[]) => list.map((a) => a.associationType);
 
   it("lists the associations that start at a node and those that end at it, in the order of the package", () => {
-    const found = associationsOf(pkg, id(2));
+    const found = listAssociations(pkg, id(2));
     expect(typesOf(found.origin)).toStrictEqual(["isChildOf", "precedes"]);
     expect(typesOf(found.destination)).toStrictEqual(["isChildOf", "isRelatedTo"]);
   });
 
   it("finds the associations of the document", () => {
-    const found = associationsOf(pkg, id(DOCUMENT));
+    const found = listAssociations(pkg, id(DOCUMENT));
     expect(found.origin).toStrictEqual([]);
     expect(typesOf(found.destination)).toStrictEqual(["isChildOf"]);
   });
 
   it("matches the identifier in either case", () => {
-    expect(associationsOf(pkg, id(2).toUpperCase())).toStrictEqual(associationsOf(pkg, id(2)));
+    expect(listAssociations(pkg, id(2).toUpperCase())).toStrictEqual(listAssociations(pkg, id(2)));
   });
 
   it("returns empty lists for a node that the package has nothing about", () => {
-    expect(associationsOf(pkg, id(77))).toStrictEqual({ origin: [], destination: [] });
+    expect(listAssociations(pkg, id(77))).toStrictEqual({ origin: [], destination: [] });
   });
 
   it("does not match a node that is not of CASE", () => {
@@ -364,21 +368,21 @@ describe("associationsOf", () => {
       ...pkg,
       CFAssociations: [{ ...foreign, destinationNodeURI: { ...foreign.destinationNodeURI, targetType: VIDEO } }],
     };
-    expect(associationsOf(withForeign, id(5))).toStrictEqual({ origin: [], destination: [] });
-    expect(typesOf(associationsOf(withForeign, id(3)).origin)).toStrictEqual(["isRelatedTo"]);
+    expect(listAssociations(withForeign, id(5))).toStrictEqual({ origin: [], destination: [] });
+    expect(typesOf(listAssociations(withForeign, id(3)).origin)).toStrictEqual(["isRelatedTo"]);
   });
 
   it("returns copies that share nothing with the package", () => {
     const frozen = deepFreeze(copyOf(pkg));
-    const [first] = associationsOf(frozen, id(2)).origin;
+    const [first] = listAssociations(frozen, id(2)).origin;
     expect(first).toStrictEqual(frozen.CFAssociations?.[0]);
     expect(first).not.toBe(frozen.CFAssociations?.[0]);
   });
 
   it("refuses an identifier that is not a string, and a package that is not one", () => {
-    expect(() => associationsOf(pkg, JSON.parse("5"))).toThrow("The identifier must be a non-empty string, found 5.");
-    expect(() => associationsOf(pkg, "")).toThrow(DataError);
-    expect(() => associationsOf(JSON.parse("[]"), id(2))).toThrow(DataError);
+    expect(() => listAssociations(pkg, JSON.parse("5"))).toThrow("The identifier must be a non-empty string, found 5.");
+    expect(() => listAssociations(pkg, "")).toThrow(DataError);
+    expect(() => listAssociations(JSON.parse("[]"), id(2))).toThrow(DataError);
   });
 });
 
@@ -674,7 +678,7 @@ describe("isNewer", () => {
 });
 
 describe("adoptionStatus", () => {
-  const of = (status?: string) => adoptionStatus(status === undefined ? {} : { adoptionStatus: status });
+  const of = (status?: string) => readAdoptionStatus(status === undefined ? {} : { adoptionStatus: status });
 
   it("reads each status that the working group recommends as itself", () => {
     expect(ADOPTION_STATUSES.map((status) => of(status))).toStrictEqual([...ADOPTION_STATUSES]);
@@ -697,18 +701,18 @@ describe("adoptionStatus", () => {
   });
 
   it("reads the document of a package", () => {
-    expect(adoptionStatus({ ...fullPackage().CFDocument, adoptionStatus: "Adopted" })).toBe("Implemented");
+    expect(readAdoptionStatus({ ...fullPackage().CFDocument, adoptionStatus: "Adopted" })).toBe("Implemented");
   });
 
   it("refuses a value that is not a document, and a status that is not a string", () => {
-    expect(() => adoptionStatus(JSON.parse("null"))).toThrow("The document must be an object, found null.");
-    expect(() => adoptionStatus(JSON.parse('{"adoptionStatus":3}'))).toThrow(
+    expect(() => readAdoptionStatus(JSON.parse("null"))).toThrow("The document must be an object, found null.");
+    expect(() => readAdoptionStatus(JSON.parse('{"adoptionStatus":3}'))).toThrow(
       "The adoptionStatus of the document must be a string, found 3.",
     );
   });
 });
 
-describe("caseEntityUri", () => {
+describe("buildEntityUri", () => {
   const BASE = "https://standards.example.org";
 
   it("builds the address of the endpoint of each class that a provider serves by identifier", () => {
@@ -724,48 +728,48 @@ describe("caseEntityUri", () => {
       "CFRubric",
     ] as const;
     for (const kind of kinds) {
-      expect(caseEntityUri(BASE, kind, id(2))).toBe(`${BASE}/ims/case/v1p1/${kind}s/${id(2)}`);
+      expect(buildEntityUri(BASE, kind, id(2))).toBe(`${BASE}/ims/case/v1p1/${kind}s/${id(2)}`);
     }
   });
 
   it("builds the path of 1.0 when asked", () => {
-    expect(caseEntityUri(BASE, "CFItem", id(2), { version: "1.0" })).toBe(`${BASE}/ims/case/v1p0/CFItems/${id(2)}`);
+    expect(buildEntityUri(BASE, "CFItem", id(2), { version: "1.0" })).toBe(`${BASE}/ims/case/v1p0/CFItems/${id(2)}`);
   });
 
   it("keeps the path of the base and drops its trailing slash", () => {
-    expect(caseEntityUri(`${BASE}/standards/`, "CFItem", id(2))).toBe(
+    expect(buildEntityUri(`${BASE}/standards/`, "CFItem", id(2))).toBe(
       `${BASE}/standards/ims/case/v1p1/CFItems/${id(2)}`,
     );
   });
 
   it("encodes an identifier that is not a UUID so that it stays one path segment", () => {
-    expect(caseEntityUri(BASE, "CFItem", "a/b?c#d e")).toBe(`${BASE}/ims/case/v1p1/CFItems/a%2Fb%3Fc%23d%20e`);
+    expect(buildEntityUri(BASE, "CFItem", "a/b?c#d e")).toBe(`${BASE}/ims/case/v1p1/CFItems/a%2Fb%3Fc%23d%20e`);
   });
 
   it("refuses a base that is not an https address without credentials, query or fragment", () => {
-    expect(() => caseEntityUri("http://standards.example.org", "CFItem", id(2))).toThrow(
+    expect(() => buildEntityUri("http://standards.example.org", "CFItem", id(2))).toThrow(
       "The base URL must be an absolute https URL",
     );
-    expect(() => caseEntityUri(`${BASE}?x=1`, "CFItem", id(2))).toThrow("must have no credentials, query or fragment");
-    expect(() => caseEntityUri("https://user:secret@standards.example.org", "CFItem", id(2))).toThrow(
+    expect(() => buildEntityUri(`${BASE}?x=1`, "CFItem", id(2))).toThrow("must have no credentials, query or fragment");
+    expect(() => buildEntityUri("https://user:secret@standards.example.org", "CFItem", id(2))).toThrow(
       "must have no credentials, query or fragment",
     );
-    expect(() => caseEntityUri(`${BASE}#top`, "CFItem", id(2))).toThrow("must have no credentials, query or fragment");
-    expect(() => caseEntityUri(`${BASE}/ims/case/v1p1`, "CFItem", id(2))).toThrow(
+    expect(() => buildEntityUri(`${BASE}#top`, "CFItem", id(2))).toThrow("must have no credentials, query or fragment");
+    expect(() => buildEntityUri(`${BASE}/ims/case/v1p1`, "CFItem", id(2))).toThrow(
       "must be the address before /ims/case/v1p1",
     );
   });
 
   it("refuses an identifier that would change the path, a class that is not served, and options that are not valid", () => {
-    expect(() => caseEntityUri(BASE, "CFItem", "..")).toThrow(
+    expect(() => buildEntityUri(BASE, "CFItem", "..")).toThrow(
       'The identifier must not be "..", which a URL resolves to another path.',
     );
-    expect(() => caseEntityUri(BASE, "CFItem", ".")).toThrow(DataError);
-    expect(() => caseEntityUri(BASE, "CFItem", "")).toThrow("The identifier must be a non-empty string");
-    expect(() => caseEntityUri(BASE, JSON.parse('"CFPackage"'), id(2))).toThrow("The kind is invalid");
-    expect(() => caseEntityUri(BASE, "CFItem", id(2), JSON.parse('{"version":"2.0"}'))).toThrow(
+    expect(() => buildEntityUri(BASE, "CFItem", ".")).toThrow(DataError);
+    expect(() => buildEntityUri(BASE, "CFItem", "")).toThrow("The identifier must be a non-empty string");
+    expect(() => buildEntityUri(BASE, JSON.parse('"CFPackage"'), id(2))).toThrow("The kind is invalid");
+    expect(() => buildEntityUri(BASE, "CFItem", id(2), JSON.parse('{"version":"2.0"}'))).toThrow(
       "The options is invalid at version",
     );
-    expect(() => caseEntityUri(BASE, "CFItem", id(2), JSON.parse("null"))).toThrow(DataError);
+    expect(() => buildEntityUri(BASE, "CFItem", id(2), JSON.parse("null"))).toThrow(DataError);
   });
 });

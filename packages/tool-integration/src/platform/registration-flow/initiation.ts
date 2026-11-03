@@ -28,7 +28,7 @@ const DEFAULT_TTL_SECONDS = 3600;
  * Dynamic Registration: its issuer is not on its origin, it does not sign with RS256, or `config.instance` has no
  * `productFamilyCode`.
  */
-export async function createRegistrationInitiation(
+export async function buildRegistrationInitiation(
   initiationUrl: string,
   options: RegistrationInitiationOptions,
 ): Promise<string> {

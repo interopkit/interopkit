@@ -3,7 +3,7 @@ import * as v from "valibot";
 import { CASE_VERSIONS, type CaseVersion, SERVED_KINDS, type ServedKind } from "../model/index.js";
 import { checkEndpointIdentifier, endpointUrl, serviceRoot } from "../model/internal.js";
 
-/** What `caseEntityUri` may be asked. */
+/** What `buildEntityUri` may be asked. */
 export interface CaseEntityUriOptions {
   /**
    * The version of CASE whose path the address has. The Implementation Guide asks for the latest version that the publisher
@@ -34,7 +34,7 @@ const optionsSchema = strictRecord({ version: v.optional(v.picklist(CASE_VERSION
  * @throws `DataError` when an argument is not valid.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1/impl | CASE Implementation Guide}, 4.1
  */
-export function caseEntityUri(
+export function buildEntityUri(
   baseUrl: string,
   kind: ServedKind,
   identifier: string,

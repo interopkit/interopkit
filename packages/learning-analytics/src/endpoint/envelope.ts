@@ -1,12 +1,12 @@
 import { DataError } from "@interopkit/core";
 import {
   DEFAULT_MAX_FINDINGS,
+  describeRefusal,
   type FindingSink,
   isRecord,
   nonEmptyStringSchema,
   parseWith,
   positiveIntegerSchema,
-  refusalOf,
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
@@ -126,7 +126,7 @@ export function assembleEnvelope(
 /** The sentence that refuses an envelope under `strict`, or `undefined` when no item has an error. */
 export function strictRefusal(envelope: ReceivedEnvelope): string | undefined {
   const errors = envelope.findings.filter(({ severity }) => severity === "error");
-  return errors.length === 0 ? undefined : refusalOf("The envelope", errors, "readEnvelope without strict");
+  return errors.length === 0 ? undefined : describeRefusal("The envelope", errors, "readEnvelope without strict");
 }
 
 /**

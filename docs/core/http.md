@@ -13,7 +13,7 @@ flowchart LR
   check --> read["readText, readJson,<br/>readQuery, readForm, readOffsetPage"]
   read --> handler["A handler of a package"]
   decision["readAccessDecision<br/>the host's decision"] --> handler
-  handler --> build["jsonResponse, negotiate,<br/>offsetPageLinks, statusInfoResponse"]
+  handler --> build["buildJsonResponse, negotiate,<br/>buildPageLinks, buildStatusInfoResponse"]
   build --> response["HttpResponse"]
   response -->|"status, headers, body"| framework
 ```
@@ -21,7 +21,7 @@ flowchart LR
 ## Quick start
 
 ```ts
-import { jsonResponse, negotiate, readForm, readJson } from "@interopkit/core/http";
+import { buildJsonResponse, negotiate, readForm, readJson } from "@interopkit/core/http";
 
 const form = {
   method: "POST",
@@ -40,7 +40,7 @@ const statement = {
 readJson(statement); // => { verb: { id: "https://example.com/completed" } }
 
 negotiate("text/plain;q=0.9, application/json", ["application/json", "text/plain"]); // => "application/json"
-jsonResponse(404, { error: "not_found" }); // => { status: 404, headers: { "content-type": "application/json;charset=UTF-8" }, body: '{"error":"not_found"}' }
+buildJsonResponse(404, { error: "not_found" }); // => { status: 404, headers: { "content-type": "application/json;charset=UTF-8" }, body: '{"error":"not_found"}' }
 ```
 
 A host turns a web `Request` into an `HttpRequest` like this, with the header names in lower case, which `Headers` gives:
@@ -69,12 +69,12 @@ that has no body, such as 204, takes `null`.
 | `readJson(request, options)`                | Reads the body as JSON within limits on its size, its depth and its tokens             |
 | `readQuery(request)`                        | Reads the parameters of the query into a map                                           |
 | `readForm(request, options)`                | Reads the parameters of an `application/x-www-form-urlencoded` body into a map         |
-| `bearerTokenOf(request)`                    | Returns the token of an `Authorization` header of the bearer scheme (RFC 6750 section 2.1): the scheme in any case, one or more spaces, a b64token; `undefined` for no header or another scheme or form |
-| `jsonResponse(status, body, headers, type)` | Builds an answer with a JSON body                                                      |
+| `readBearerToken(request)`                    | Returns the token of an `Authorization` header of the bearer scheme (RFC 6750 section 2.1): the scheme in any case, one or more spaces, a b64token; `undefined` for no header or another scheme or form |
+| `buildJsonResponse(status, body, headers, type)` | Builds an answer with a JSON body                                                      |
 | `negotiate(accept, offered)`                | Chooses a media type from the `Accept` header                                          |
 | `readOffsetPage(parameters, sizes)`         | Reads the `limit` and `offset` of a query into the page it asks for                    |
-| `offsetPageLinks(url, page, extent)`        | Builds the `Link` header of a page: first, prev, next, and last when the total is known |
-| `statusInfoResponse(status, description, options)` | Builds the answer of a failure of a 1EdTech service, with its `imsx_StatusInfo` |
+| `buildPageLinks(url, page, extent)`        | Builds the `Link` header of a page: first, prev, next, and last when the total is known |
+| `buildStatusInfoResponse(status, description, options)` | Builds the answer of a failure of a 1EdTech service, with its `imsx_StatusInfo` |
 | `readAccessDecision(value, label, options)` | Reads what a host's `authorize` port decided: allowed, with what it grants, or refused  |
 
 | Type           | Fields                                                                                                                                       |
@@ -95,13 +95,13 @@ that has no body, such as 204, takes `null`.
 | `readJson` `options.maxDepth` | 64                               | levels | `DataError`  | Arrays and objects nested inside each other: `[]` is 1, `[[]]` is 2 |
 | `readJson` `options.maxTokens` | 1,000,000                       | tokens | `DataError`  | Each bracket, brace, colon and comma, each string, each number and each `true`, `false` and `null` |
 | `readForm` `options.maxBytes` | none                             | bytes  | `DataError`  | The size of the body, counted before anything is decoded            |
-| `jsonResponse` `headers`      | none                             |        |              | Win over the `content-type` that it sets                            |
-| `jsonResponse` `type`         | `application/json;charset=UTF-8` |        |              | The media type of the answer                                        |
+| `buildJsonResponse` `headers`      | none                             |        |              | Win over the `content-type` that it sets                            |
+| `buildJsonResponse` `type`         | `application/json;charset=UTF-8` |        |              | The media type of the answer                                        |
 | `readOffsetPage` `limit`      | `sizes.pageSize`, at most `sizes.maxPageSize` | items | `DataError` | A whole number of at least 1 in digits; a larger one is lowered to `maxPageSize` |
 | `readOffsetPage` `offset`     | 0                                | items  | `DataError`  | A whole number of at least 0 in digits                              |
-| `statusInfoResponse` `options.minor` | none                      |        |              | The code of the detail, from the vocabulary of the specification    |
-| `statusInfoResponse` `options.severity` | `"error"`              |        |              | `"error"`, or `"status"` where the specification pairs the code with it |
-| `statusInfoResponse` `options.headers` | none                    |        |              | More headers, such as `Retry-After` or `Allow`                      |
+| `buildStatusInfoResponse` `options.minor` | none                      |        |              | The code of the detail, from the vocabulary of the specification    |
+| `buildStatusInfoResponse` `options.severity` | `"error"`              |        |              | `"error"`, or `"status"` where the specification pairs the code with it |
+| `buildStatusInfoResponse` `options.headers` | none                    |        |              | More headers, such as `Retry-After` or `Allow`                      |
 
 `readText` and `readQuery` set no limit, nor does `readForm` without `maxBytes`: the host caps the size of a body before it
 builds the request, as the handlers of the packages document. A handler that reads a form passes its own limit, so that a
@@ -126,7 +126,7 @@ The REST bindings of CASE, Open Badges and CLR page a list with `limit` and `off
 may go on, and the port allows it, with what it grants such as the owner of the resources, or refuses it with 401, 403 or 429.
 
 ```ts
-import { offsetPageLinks, readOffsetPage, readQuery, statusInfoResponse } from "@interopkit/core/http";
+import { buildPageLinks, buildStatusInfoResponse, readOffsetPage, readQuery } from "@interopkit/core/http";
 
 const list = {
   method: "GET",
@@ -135,8 +135,8 @@ const list = {
   body: new Uint8Array(),
 };
 const page = readOffsetPage(readQuery(list), { pageSize: 100, maxPageSize: 1000 }); // => { limit: 2, offset: 2 }
-offsetPageLinks(list.url, page, { more: true }); // => '<https://badges.example.org/ims/ob/v3p0/credentials?limit=2&offset=0>; rel="first", <https://badges.example.org/ims/ob/v3p0/credentials?limit=2&offset=0>; rel="prev", <https://badges.example.org/ims/ob/v3p0/credentials?limit=2&offset=4>; rel="next"'
-const busy = statusInfoResponse(429, "Retry later.", { minor: "server_busy", headers: { "retry-after": "60" } });
+buildPageLinks(list.url, page, { more: true }); // => '<https://badges.example.org/ims/ob/v3p0/credentials?limit=2&offset=0>; rel="first", <https://badges.example.org/ims/ob/v3p0/credentials?limit=2&offset=0>; rel="prev", <https://badges.example.org/ims/ob/v3p0/credentials?limit=2&offset=4>; rel="next"'
+const busy = buildStatusInfoResponse(429, "Retry later.", { minor: "server_busy", headers: { "retry-after": "60" } });
 busy.headers; // => { "content-type": "application/json;charset=UTF-8", "retry-after": "60" }
 JSON.parse(String(busy.body)); // => { imsx_codeMajor: "failure", imsx_severity: "error", imsx_description: "Retry later.", imsx_codeMinor: { imsx_codeMinorField: [{ imsx_codeMinorFieldName: "TargetEndSystem", imsx_codeMinorFieldValue: "server_busy" }] } }
 ```
@@ -180,7 +180,7 @@ negotiate(ranges, ["text/html", "image/jpeg", "text/plain"]); // => "text/plain"
 | `DataError` | `readQuery`, `readForm`: a parameter occurs twice, or a form has another media type                                                                                | Answer 400, or 415 for the media type                            |
 | `DataError` | `negotiate`: `accept` is not a string, or `offered` is not a list of at least one `type/subtype` without parameters                                                | Fix the call                                                     |
 | `DataError` | `readOffsetPage`: `limit` is not a whole number of at least 1, or `offset` one of at least 0, in digits                                                            | Answer 400 with the message, which names the parameter           |
-| `DataError` | `readOffsetPage`, `offsetPageLinks`, `statusInfoResponse`: an argument of another type, a status outside 400 to 599, an empty description                          | Fix the call                                                     |
+| `DataError` | `readOffsetPage`, `buildPageLinks`, `buildStatusInfoResponse`: an argument of another type, a status outside 400 to 599, an empty description                          | Fix the call                                                     |
 | `DataError` | `readAccessDecision`: the port answered another shape: a status other than 401, 403 or 429, a delay that is not whole, an allowed decision without its grant           | Fix the port: a broken contract is a bug of the host             |
 
 The message of a `DataError` names the offending value, except for a text body, which it does not repeat, since a body may

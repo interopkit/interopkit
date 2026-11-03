@@ -15,16 +15,16 @@ sequenceDiagram
   participant T as Tool<br/>(the host's routes)
   P->>B: send to the tool's login URL
   B->>T: login (iss, login_hint, target_link_uri, lti_deployment_id, ...)
-  T->>T: ltiLogin: state, nonce, deployment and target into the LtiStore
+  T->>T: handleLogin: state, nonce, deployment and target into the LtiStore
   T-->>B: redirect to the authentication request, or the storage page
   B->>P: authentication request
   P-->>B: form_post of the id_token to the redirect URI
   B->>T: POST id_token and state
   P->>T: GET the tool's key set (serveToolJwks), when it checks a tool JWT
-  T->>T: ltiLaunch: signature, claims, nonce, deployment and target; delete the login
+  T->>T: handleLaunch: signature, claims, nonce, deployment and target; delete the login
   T-->>B: the launch
   opt Deep Linking request
-    T->>P: createDeepLinkResponse: a page that posts the signed JWT to the return URL
+    T->>P: buildDeepLinkingResponse: a page that posts the signed JWT to the return URL
   end
   opt Grade and roster services
     T->>P: createServiceClient: a cached access token, then the line item, the score, the results, the members, the groups
@@ -33,15 +33,15 @@ sequenceDiagram
 
 | Function                                      | Does                                                                                          |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `ltiLogin(request, options)`                  | Answers the platform's third-party initiated login with the authentication request            |
-| `ltiLaunch(request, options)`                 | Validates the `id_token` and returns the launch, or the verification page of the storage path |
+| `handleLogin(request, options)`                  | Answers the platform's third-party initiated login with the authentication request            |
+| `handleLaunch(request, options)`                 | Validates the `id_token` and returns the launch, or the verification page of the storage path |
 | `serveToolJwks(request, keys, options)`       | Answers the request for the tool's key set: the public keys of its `KeySet`                   |
-| `createDeepLinkResponse(launch, response, options)` | Checks the items, signs the response to a Deep Linking request and returns the page that posts it ([Deep Linking](deep-linking.md)) |
-| `createStartAssessmentPage(launch, input, options)` | Signs the Start Assessment message of a proctored attempt and returns the page that posts it ([proctoring](proctoring.md)) |
+| `buildDeepLinkingResponse(launch, response, options)` | Checks the items, signs the response to a Deep Linking request and returns the page that posts it ([Deep Linking](deep-linking.md)) |
+| `buildStartAssessmentPage(launch, input, options)` | Signs the Start Assessment message of a proctored attempt and returns the page that posts it ([proctoring](proctoring.md)) |
 | `createServiceClient(deployment, options)`    | Returns the client of the services of a platform: grades ([grade services](grades.md)), members, groups and preferences ([roster services](roster.md)), the control of an attempt ([proctoring](proctoring.md)), and the tool's registration ([registration](registration.md)) |
-| `readRegistrationInitiation`, `discoverPlatform`, `registerTool`, `toPlatformRegistration`, `createRegistrationClosePage` | The steps of Dynamic Registration ([registration](registration.md)) |
+| `readRegistrationInitiation`, `discoverPlatform`, `registerTool`, `buildPlatformRegistration`, `buildRegistrationClosePage` | The steps of Dynamic Registration ([registration](registration.md)) |
 | `advanceScoreTimestamp(lastSent, now)`        | Returns a timestamp of a score strictly later than the last one sent                          |
-| `createJwksCache(options)`                    | Creates the cache of the platforms' key sets that `ltiLaunch` verifies signatures with        |
+| `createJwksCache(options)`                    | Creates the cache of the platforms' key sets that `handleLaunch` verifies signatures with        |
 
 The handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md), plain objects that a host builds from any web framework. The
 host owns the routes, the sessions, the database and the keys. The [example](../../examples/tool-integration/README.md) runs a tool
@@ -68,9 +68,9 @@ an `HttpRequest` (with the header names in lower case, as `Object.fromEntries(re
 bytes, as `new Uint8Array(await request.arrayBuffer())` gives it) and the `HttpResponse` back into a response.
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { createJwksCache } from "@interopkit/tool-integration";
-import { ltiLogin } from "@interopkit/tool-integration/tool";
+import { handleLogin } from "@interopkit/tool-integration/tool";
 
 const keys = await crypto.subtle.generateKey(
   { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
@@ -85,7 +85,7 @@ const registration = {
   jwksUrl: "https://lms.example.edu/jwks",
   accessTokenUrl: "https://lms.example.edu/token",
   redirectUri: "https://tool.example.com/lti/launch",
-  signer: signerFromCryptoKey(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
+  signer: createCryptoKeySigner(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
 };
 
 const clock = { now: () => Date.now() };
@@ -113,7 +113,7 @@ login.search = new URLSearchParams({
   target_link_uri: "https://tool.example.com/lti/launch",
   client_id: registration.clientId,
 }).toString();
-const response = await ltiLogin({ method: "GET", url: login.href, headers: {}, body: new Uint8Array() }, options);
+const response = await handleLogin({ method: "GET", url: login.href, headers: {}, body: new Uint8Array() }, options);
 response.status; // => 302
 const authentication = new URL(response.headers.location);
 authentication.origin + authentication.pathname; // => "https://lms.example.edu/auth"
@@ -121,7 +121,7 @@ authentication.searchParams.get("scope"); // => "openid"
 logins.size; // => 1
 ```
 
-The route of the redirect URI passes the platform's post and, on the storage path, the verification page's post to `ltiLaunch`.
+The route of the redirect URI passes the platform's post and, on the storage path, the verification page's post to `handleLaunch`.
 It returns a launch, or a response that the host sends.
 
 ## Registrations
@@ -139,7 +139,7 @@ call and must match the issuer and the client.
 | `jwksUrl`           | The platform's key set                                                                                       |
 | `accessTokenUrl`    | The platform's token endpoint, also the `aud` of the client assertion unless `audience` is set               |
 | `audience`          | Optional: the `aud` of the client assertion, for a platform that wants a value other than its token endpoint |
-| `redirectUri`       | The tool's launch URL. The route of `ltiLaunch` must answer it                                               |
+| `redirectUri`       | The tool's launch URL. The route of `handleLaunch` must answer it                                               |
 | `signer`            | Signs the tool's client assertions and Deep Linking responses: one of RS256, RS384, RS512, ES256, ES384 and ES512, with a `keyId` that is the `kid` of its public key in the tool's key set. A key in a KMS or an HSM works |
 | `algorithms`        | Optional: the algorithms accepted on the platform's tokens. Default: all six of Security Framework section 7.2 |
 | `trustedAudiences`  | Optional: the parties besides the client that an `id_token`'s `aud` may name (Security Framework section 5.1.3). Default: none |
@@ -150,7 +150,7 @@ key set that `serveToolJwks` answers or from its own registration of the tool.
 
 ## The login store
 
-`LtiStore` keeps the logins in progress, by `state`. `ltiLogin` calls `put`, `ltiLaunch` calls `get` and then `delete`.
+`LtiStore` keeps the logins in progress, by `state`. `handleLogin` calls `put`, `handleLaunch` calls `get` and then `delete`.
 
 | Method                        | Contract                                                                                          |
 | ----------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -163,7 +163,7 @@ a login complete once.
 
 ## Login and launch
 
-The platform sends the browser to the login URL (Security Framework section 5.1.1.1). `ltiLogin` creates a `state` and a `nonce`
+The platform sends the browser to the login URL (Security Framework section 5.1.1.1). `handleLogin` creates a `state` and a `nonce`
 of 160 random bits each, saves them in the store and answers with the authentication request (section 5.1.1.2): `scope=openid`,
 `response_type=id_token`, `client_id`, `redirect_uri`, `login_hint`, `state`, `response_mode=form_post`, `nonce`,
 `prompt=none`, and `lti_message_hint` unchanged when the platform sent it. The initiation may be a GET or a form POST of at
@@ -172,12 +172,12 @@ one, which must be a deployment of the registration (`deployment-unknown`): the 
 4.1.2 and 5.3.4).
 
 The tool must tie the launch to the browser that logged in, or an attacker could make a victim's browser launch with the
-attacker's token (login CSRF, Security Framework 1.1 section 7.4.1). Every answer of `ltiLogin` sets the state cookie,
+attacker's token (login CSRF, Security Framework 1.1 section 7.4.1). Every answer of `handleLogin` sets the state cookie,
 `__Host-lti_state_<state>=<state>; Max-Age=600; Path=/; Secure; HttpOnly; SameSite=None`, and a launch whose post carries it is
 bound by it. When the platform names a storage frame, the tool also stores the values in the platform, for a browser that does
 not keep the cookie.
 
-| Path    | When                                       | The answer of `ltiLogin`                                                                   | What binds the browser                                                                                                     |
+| Path    | When                                       | The answer of `handleLogin`                                                                   | What binds the browser                                                                                                     |
 | ------- | ------------------------------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | Cookie  | The initiation has no `lti_storage_target` | A 302 to the authentication request, with the cookie                                       | The cookie, which the launch compares with `state`                                                                         |
 | Storage | The initiation has `lti_storage_target`    | A page that stores `state` and `nonce` in the platform with `lti.put_data`, then redirects; with the cookie | The cookie when the browser kept it; else the platform's storage, which the verification page reads with `lti.get_data` at the launch |
@@ -199,20 +199,20 @@ silent for 10 seconds, the page shows a message and stops. A page in a window th
 tab that the platform opened with `noopener`, has no frame of the platform to store in: it navigates to the authentication
 request at once, and the cookie binds its launch.
 
-At the launch, the platform posts the `id_token` to the redirect URI. When the post carries the state cookie, `ltiLaunch` completes
-the launch. When the browser did not keep it, as a frame of another site does not, `ltiLaunch` answers with the verification page: it asks
+At the launch, the platform posts the `id_token` to the redirect URI. When the post carries the state cookie, `handleLaunch` completes
+the launch. When the browser did not keep it, as a frame of another site does not, `handleLaunch` answers with the verification page: it asks
 for the capabilities in the same way, fetches `state_<state>` and `nonce_<nonce>` with `lti.get_data` and submits the form with `id_token`, `state`, `stored_state`
-and `stored_nonce` to the same URL. That second request completes the launch, so the host routes both to `ltiLaunch`. It must
-pass the `origin` header, because `ltiLaunch` accepts the second request only from the origin of the redirect URI: without
+and `stored_nonce` to the same URL. That second request completes the launch, so the host routes both to `handleLaunch`. It must
+pass the `origin` header, because `handleLaunch` accepts the second request only from the origin of the redirect URI: without
 cookies, nothing else stops a cross-site form from posting a token of the attacker's with values of its own.
 
 The scripts of the two pages use only features that Chromium 111, Firefox 115 and Safari 16.4 have, and later versions. Both pages carry a CSP that allows their one script by hash (`default-src 'none'; script-src 'sha256-...'; base-uri 'none';
 form-action 'self'`), `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`, and every value in them is
 HTML-encoded. The storage page sends no referrer; the verification page sends one to its own origin alone
-(`Referrer-Policy: same-origin`), since under `no-referrer` a browser posts its form with `Origin: null`, which `ltiLaunch` refuses. `ltiLaunch` echoes the `id_token` of the platform's post into the verification page before it verifies it, and
+(`Referrer-Policy: same-origin`), since under `no-referrer` a browser posts its form with `Origin: null`, which `handleLaunch` refuses. `handleLaunch` echoes the `id_token` of the platform's post into the verification page before it verifies it, and
 only for a `state` that the tool issued.
 
-### What `ltiLaunch` checks
+### What `handleLaunch` checks
 
 A request that is not a POST of a form with `id_token` and `state` is a `DataError`. Then, in this order, a failure throws
 `LtiError` with the reason in the table. The login stays in the store until the launch succeeds or expires.
@@ -247,7 +247,7 @@ A host answers with the `status` of an `LtiError`, which the table of errors bel
 
 ### The launch
 
-`ltiLaunch` returns an `LtiMessage` or an `HttpResponse`: the second post of the storage path is answered with the verification page, which the route sends to the browser as it is. Tell them apart with `"status" in result`, which is true for the `HttpResponse`; an `LtiMessage` has a `messageType`. A launch that fails a check does not return: it throws an `LtiError` with a `reason` and a `status`, and the route answers with them.
+`handleLaunch` returns an `LtiMessage` or an `HttpResponse`: the second post of the storage path is answered with the verification page, which the route sends to the browser as it is. Tell them apart with `"status" in result`, which is true for the `HttpResponse`; an `LtiMessage` has a `messageType`. A launch that fails a check does not return: it throws an `LtiError` with a `reason` and a `status`, and the route answers with them.
 
 An `LtiMessage` is a union by `messageType`; [Messages and vocabularies](model.md) lists every property. The ones a tool reads first:
 
@@ -268,21 +268,21 @@ An `LtiMessage` is a union by `messageType`; [Messages and vocabularies](model.m
 A message holds a `Map`; a host that stores it converts `custom` to an array of entries.
 
 **The LTI 1.1 migration claim.** A platform that moved from LTI 1.1 signs the `oauth_consumer_key` of the integration with the
-shared secret of 1.1 (`oauth_consumer_key_sign`, the Migration Guide). With `legacySecret`, `ltiLaunch` asks the host for that
+shared secret of 1.1 (`oauth_consumer_key_sign`, the Migration Guide). With `legacySecret`, `handleLaunch` asks the host for that
 secret by consumer key and sets `migration.verified`; the host maps the 1.1 `user_id` and `context_id` to its records only when it
 is `true`. The secret is used for one HMAC and kept nowhere.
 
 ## Deep Linking
 
-When `ltiLaunch` returns a Deep Linking request, the host lets the user choose, then answers with `createDeepLinkResponse(launch,
+When `handleLaunch` returns a Deep Linking request, the host lets the user choose, then answers with `buildDeepLinkingResponse(launch,
 response, options)`: the items are checked against what the request accepts, the response is signed with the registration's
 `signer`, and the result is the page that posts it to `launch.settings.returnUrl`, also when no item was chosen (Deep Linking 2.0
 section 2.3). The [Deep Linking guide](deep-linking.md) has the five item types, the checks and the platform's reader.
 
 ## Proctoring
 
-When `ltiLaunch` returns a Start Proctoring message, the proctoring tool checks the candidate and the room, then sends the browser
-back with `createStartAssessmentPage(launch, input, options)`: the page posts the signed Start Assessment message, which returns the
+When `handleLaunch` returns a Start Proctoring message, the proctoring tool checks the candidate and the room, then sends the browser
+back with `buildStartAssessmentPage(launch, input, options)`: the page posts the signed Start Assessment message, which returns the
 session data, the resource link and the attempt of the launch, to `launch.startAssessmentUrl`. During and after the attempt the tool
 calls the Assessment Control Service of `launch.assessmentControl` with `control` of `createServiceClient`. The
 [proctoring guide](proctoring.md) has the verified claims, the actions and the platform's side.
@@ -292,8 +292,8 @@ calls the Assessment Control Service of `launch.assessmentControl` with `control
 A tool registers itself with a platform in steps, so that the host may show its own pages between them:
 `readRegistrationInitiation(request)` at the initiation route, behind the session of the tool's administrator;
 `discoverPlatform(initiation, { fetch })`, which checks that the configuration lies below its issuer; `registerTool(platform, tool,
-initiation, { fetch })`; `toPlatformRegistration(platform, result, { signer, redirectUri })`, the record that the host keeps; and the
-page of `createRegistrationClosePage()`. The [registration guide](registration.md) has the checks, the options and the platform's
+initiation, { fetch })`; `buildPlatformRegistration(platform, result, { signer, redirectUri })`, the record that the host keeps; and the
+page of `buildRegistrationClosePage()`. The [registration guide](registration.md) has the checks, the options and the platform's
 side.
 
 ## The tool's key set
@@ -305,12 +305,12 @@ the tool: its `signer` and the `publicKeys` that it publishes, each with a `kid`
 twice, or a signer whose `keyId` no public key has is a `DataError`, so it never reaches a platform.
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { serveToolJwks } from "@interopkit/tool-integration/tool";
 
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
 const publicKey = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid: "tool-2026-11", alg: "ES256", use: "sig" };
-const keys = { signer: signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "tool-2026-11" }), publicKeys: [publicKey] };
+const keys = { signer: createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "tool-2026-11" }), publicKeys: [publicKey] };
 const answer = serveToolJwks({ method: "GET", url: "https://tool.example.com/jwks", headers: {}, body: new Uint8Array() }, keys);
 answer.headers["cache-control"]; // => "public, max-age=3600"
 JSON.parse(answer.body).keys[0].kid; // => "tool-2026-11"
@@ -322,7 +322,7 @@ token that it signed has expired (300 seconds), plus one `max-age`; then remove 
 
 ## Access tokens and the services
 
-The client of the services, `createServiceClient`, asks the platform for access tokens with `clientCredentialsToken` of
+The client of the services, `createServiceClient`, asks the platform for access tokens with `requestClientCredentialsToken` of
 [`@interopkit/core/oauth`](../core/oauth.md) and `private_key_jwt`: a form to `accessTokenUrl` with
 `grant_type=client_credentials`, `client_id`, `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
 `client_assertion` and `scope`, as Security Framework section 4.1.1 describes. The registration's `signer` signs the assertion:
@@ -379,11 +379,11 @@ read no other clock.
 ## Deployment
 
 - Serve every route over HTTPS, and limit the size of a request body: the handlers read what the host gives them.
-- Route the login URL to `ltiLogin`, and the redirect URI to `ltiLaunch` for both requests of the storage path.
+- Route the login URL to `handleLogin`, and the redirect URI to `handleLaunch` for both requests of the storage path.
 - Pass the `cookie` and `origin` headers of every launch, in lower case.
 - Check `launch.targetLinkUri` against your own routes before you redirect to it.
 - Make `LtiStore.delete` atomic, and delete expired records.
-- Start the host's own session after `ltiLaunch` returns a launch; the state cookie serves the login only.
+- Start the host's own session after `handleLaunch` returns a launch; the state cookie serves the login only.
 - Keep the tool's private key in the host's key store or a KMS, behind a `Signer`, and serve its public keys with
   `serveToolJwks`; rotate them as the key set section shows.
 - Name `serviceOrigins` in the registration of a platform whose services are on a private network.
@@ -394,13 +394,13 @@ read no other clock.
 | -------------- | --------------------------------------------------- | ----------------------------------------------------------- |
 | `registration` | required                                            | Looks up the registration of a platform (see Registrations) |
 | `clock`        | required                                            | The source of the time                                      |
-| `store`        | required for `ltiLogin` and `ltiLaunch`             | The store of logins                                         |
-| `jwks`         | required for `ltiLaunch`                            | The cache of key sets                                       |
+| `store`        | required for `handleLogin` and `handleLaunch`             | The store of logins                                         |
+| `jwks`         | required for `handleLaunch`                            | The cache of key sets                                       |
 | `fetch`        | required for `createServiceClient`                  | The `fetch` that calls the platform ([grade services](grades.md) has the other options of the client) |
-| `versions`     | `["1.3.0"]`                                         | `ltiLaunch`: the values of the `version` claim that it accepts |
-| `otherMessageTypes` | none                                           | `ltiLaunch`: message types beyond the five modeled ones, returned as an `OtherMessage` with every claim, such as those of a specification that the package does not implement |
-| `maxFormBytes` | 65,536                                              | `ltiLaunch`: the most bytes of the posted form              |
-| `legacySecret` | none: the migration claim is never verified         | `ltiLaunch`: returns the LTI 1.1 secret of a consumer key, or `undefined` |
+| `versions`     | `["1.3.0"]`                                         | `handleLaunch`: the values of the `version` claim that it accepts |
+| `otherMessageTypes` | none                                           | `handleLaunch`: message types beyond the five modeled ones, returned as an `OtherMessage` with every claim, such as those of a specification that the package does not implement |
+| `maxFormBytes` | 65,536                                              | `handleLaunch`: the most bytes of the posted form              |
+| `legacySecret` | none: the migration claim is never verified         | `handleLaunch`: returns the LTI 1.1 secret of a consumer key, or `undefined` |
 | `signal`       | none                                                | Ends this caller's wait (see Signals)                       |
 
 | Limit                                   | Value        |
@@ -423,22 +423,22 @@ read no other clock.
 | Port or call                       | Fails                                                                                                                                  | Hangs                                                                                | Called again                                                                                                      |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | `registration`                     | Rejects: the call rejects. `undefined`: `platform-unknown`                                                                             | It receives the `signal` and bounds itself                                           | Pure; a host may cache                                                                                            |
-| `LtiStore.put`                     | `ltiLogin` rejects and sends no redirect                                                                                               | It receives the `signal` and bounds itself                                           | Each login has a new `state`                                                                                      |
-| `LtiStore.get`                     | `ltiLaunch` rejects; the login stays                                                                                                   | The same                                                                             | Reads only                                                                                                        |
-| `LtiStore.delete`                  | `ltiLaunch` rejects after validation, and the platform may post again until the login expires                                          | The same                                                                             | Atomic: of two calls one gets `true`, and the other is `state-reused`. An unfinished login expires at `expiresAt` |
+| `LtiStore.put`                     | `handleLogin` rejects and sends no redirect                                                                                               | It receives the `signal` and bounds itself                                           | Each login has a new `state`                                                                                      |
+| `LtiStore.get`                     | `handleLaunch` rejects; the login stays                                                                                                   | The same                                                                             | Reads only                                                                                                        |
+| `LtiStore.delete`                  | `handleLaunch` rejects after validation, and the platform may post again until the login expires                                          | The same                                                                             | Atomic: of two calls one gets `true`, and the other is `state-reused`. An unfinished login expires at `expiresAt` |
 | The key set                        | Fresh keys are unaffected. Past `ttlSeconds` the call rejects with `ServiceError`: launches fail closed, and stale keys are never used | Shared work: it runs to `timeoutMs`; one caller's abort ends only that caller's wait | An unknown `kid` fetches once, at most every `refreshSeconds`, then `key-unknown`. Callers share one fetch        |
 | The call to the platform (`fetch`) | `ServiceError` with the status, or 0 when there was no answer                                                                          | `timeoutMs`, then `ServiceError` with status 0                                       | A token request is safe: a new `jti`. A score needs a later timestamp                                             |
-| `legacySecret`                     | `ltiLaunch` rejects with its error, and the login stays                                                                                | It receives the `signal` and bounds itself                                           | Once per launch with a migration claim                                                                            |
+| `legacySecret`                     | `handleLaunch` rejects with its error, and the login stays                                                                                | It receives the `signal` and bounds itself                                           | Once per launch with a migration claim                                                                            |
 | The `signer`                       | The call rejects with its error; nothing half-signed is sent                                                                           | It receives the `signal`                                                             | An ECDSA signature differs from call to call; each verifies                                                       |
 
 ## Signals
 
 | Point                                          | Effect of an aborted signal                                                                                                 |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `ltiLogin`, before `put`                       | Rejects with `signal.reason`; nothing is saved. After `put`, an orphan record expires                                       |
-| `ltiLaunch`, before `store.delete`             | Rejects with `signal.reason`; the login stays, and the platform may post again. After `delete` starts, the launch completes |
-| `createDeepLinkResponse`, in the registration lookup or the signer | Rejects with `signal.reason`                                                                                |
-| `ltiLaunch`, in `legacySecret`                 | Rejects with `signal.reason`; the login stays                                                                               |
+| `handleLogin`, before `put`                       | Rejects with `signal.reason`; nothing is saved. After `put`, an orphan record expires                                       |
+| `handleLaunch`, before `store.delete`             | Rejects with `signal.reason`; the login stays, and the platform may post again. After `delete` starts, the launch completes |
+| `buildDeepLinkingResponse`, in the registration lookup or the signer | Rejects with `signal.reason`                                                                                |
+| `handleLaunch`, in `legacySecret`                 | Rejects with `signal.reason`; the login stays                                                                               |
 | A call of the service client                   | Rejects with `signal.reason`; a token request it shares runs on. A score in flight is in doubt: resend with a later timestamp |
 | A key set fetch                                | One caller's abort ends that caller's wait. The fetch runs on for the others, to `timeoutMs`                                |
 
@@ -456,8 +456,8 @@ read no other clock.
 
 | Data                                                        | Comes from                         | Goes to                                                            | Kept by the package                    |
 | ----------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------ | -------------------------------------- |
-| The claims of a launch: `sub`, roles, names, e-mail, custom | The platform's `id_token`          | The `LtiMessage` that `ltiLaunch` returns to the host               | No                                     |
-| `state` and `nonce` of a login                              | `ltiLogin`                         | The host's `LtiStore`, and the browser (the cookie or the storage) | Only in the store, until used or 600 s |
+| The claims of a launch: `sub`, roles, names, e-mail, custom | The platform's `id_token`          | The `LtiMessage` that `handleLaunch` returns to the host               | No                                     |
+| `state` and `nonce` of a login                              | `handleLogin`                         | The host's `LtiStore`, and the browser (the cookie or the storage) | Only in the store, until used or 600 s |
 | The client assertion                                        | Signed by the tool's `signer`      | The platform's token endpoint                                      | No                                     |
 | The LTI 1.1 secret of a consumer key                        | `legacySecret`                     | One HMAC of the migration claim                                    | No                                     |
 | The access token                                            | The platform's token endpoint      | The services of the platform, in the `Authorization` header, and the host's `TokenStore` when given | In the memory of the client, until near its expiry |

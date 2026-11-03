@@ -5,10 +5,10 @@
  *
  * @module @interopkit/competency-frameworks/graph
  */
-export { ADOPTION_STATUSES, type AdoptionStatus, adoptionStatus } from "./adoption-status.js";
-export { associationsOf, type NodeAssociations } from "./associations.js";
+export { ADOPTION_STATUSES, type AdoptionStatus, readAdoptionStatus } from "./adoption-status.js";
+export { listAssociations, type NodeAssociations } from "./associations.js";
 export { type CrosswalkLink, type CrosswalkOptions, crosswalk } from "./crosswalk.js";
 export { type ChangedItem, diffPackages, type PackageDiff, type ReplacedItem } from "./diff.js";
-export { type CaseEntityUriOptions, caseEntityUri } from "./entity-uri.js";
+export { buildEntityUri, type CaseEntityUriOptions } from "./entity-uri.js";
 export { isNewer } from "./staleness.js";
-export { type FrameworkNode, frameworkTree } from "./tree.js";
+export { buildFrameworkTree, type FrameworkNode } from "./tree.js";

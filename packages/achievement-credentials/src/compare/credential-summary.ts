@@ -81,7 +81,7 @@ function achievementOf(credential: AnyVerifiableCredential): Shown | undefined {
  * credential, a CLR nor an endorsement, which the specifications give nothing to show for.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/cert/ | Open Badges 3.0 conformance, 4}
  */
-export function credentialSummary(credential: AnyCredential): CredentialSummary {
+export function summarizeCredential(credential: AnyCredential): CredentialSummary {
   const read = readCredential(credential);
   // Every verifiable credential has a context, and a 2.0 badge has none.
   return "@context" in read ? summaryOf(read) : summaryV2(read);

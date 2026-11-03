@@ -6,7 +6,7 @@ import { comparableOf, isSame } from "./comparable.js";
  * the percent-encoded characters are unescaped and the white space around them is trimmed.
  *
  * @remarks
- * A credential with no `id` is the same as none. The comparison does not look at `validFrom`: `newerCredential` tells which of
+ * A credential with no `id` is the same as none. The comparison does not look at `validFrom`: `selectNewerCredential` tells which of
  * two equal credentials is the more recent.
  *
  * @param a - A credential.
@@ -15,7 +15,7 @@ import { comparableOf, isSame } from "./comparable.js";
  * @throws `DataError` when a credential is not an object with an `issuer` that is an address or a profile with an `id`.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#credential-equality-and-comparison-algorithm | Open Badges 3.0, 10}
  */
-export function sameCredential(
+export function isSameCredential(
   a: IssuableCredential | CredentialV1p1,
   b: IssuableCredential | CredentialV1p1,
 ): boolean {

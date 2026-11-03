@@ -18,6 +18,6 @@ import { equivalenceKey } from "./canonical.js";
  * @throws `DataError` when either is not a Statement, as `readStatement` says.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
-export function sameStatement(a: Statement, b: Statement): boolean {
+export function isSameStatement(a: Statement, b: Statement): boolean {
   return equivalenceKey(readEitherVersion(a)) === equivalenceKey(readEitherVersion(b));
 }

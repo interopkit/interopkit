@@ -1,5 +1,5 @@
 import { callPort, DataError, readClock } from "@interopkit/core";
-import { isUuid, refusalOf } from "@interopkit/core/checks";
+import { describeRefusal, isUuid } from "@interopkit/core/checks";
 import { type AttachmentData, formatTimestamp, type Statement, type StatementIssue } from "../../model/index.js";
 import { mediaTypeOf, STATEMENT_VERSIONS, VERSION_PATTERNS } from "../../model/internal.js";
 import { attachmentHeadersOf, inspectBatch, issueSink } from "../../read/internal.js";
@@ -188,7 +188,7 @@ async function acceptable(statements: readonly Statement[], context: Context): P
   const errors = asked.value.filter((issue: StatementIssue) => issue.severity === "error");
   return errors.length === 0
     ? { value: undefined }
-    : refused(context.settings.acceptStatus, refusalOf("The batch of Statements", errors, "accept"));
+    : refused(context.settings.acceptStatus, describeRefusal("The batch of Statements", errors, "accept"));
 }
 
 /** Refuses a Statement of a version that the LRS does not take, and a Statement whose id is not the `statementId` of a PUT. */
@@ -234,7 +234,7 @@ export async function prepare(
   const sink = issueSink(maxFindings, true);
   const read = inspectBatch(list, { role: "lrs", version: context.version }, sink);
   const errors = sink.list();
-  if (errors.length > 0) return refused(400, refusalOf("The batch of Statements", errors, "validateStatements"));
+  if (errors.length > 0) return refused(400, describeRefusal("The batch of Statements", errors, "validateStatements"));
   const refusal = checkIdentity(read, single);
   if (refusal !== undefined) return refusal;
   const stored = formatTimestamp(readClock(context.settings.clock));

@@ -40,7 +40,7 @@ import { buildAchievementCredential } from "@interopkit/achievement-credentials"
 import { signCredentialJwt } from "@interopkit/achievement-credentials/jwt";
 import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
 import { verifyCredential } from "@interopkit/achievement-credentials/verify";
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 
 const issuer = "https://example.edu/issuers/565049";
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
@@ -71,7 +71,7 @@ const credential = buildAchievementCredential({
     criteria: { narrative: "Pass the final assessment." },
   },
 });
-const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256" });
+const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256" });
 const jws = await signCredentialJwt(credential, signer, { kid: `${issuer}#key-1` });
 
 const result = await verifyCredential(jws, { keys, clock });
@@ -80,7 +80,7 @@ result.checks.map(({ check, outcome }) => `${check} ${outcome}`).join(", "); // 
 
 // A good signature by a key that the issuer does not publish proves nothing about the issuer.
 const other = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
-const forged = await signCredentialJwt(credential, signerFromCryptoKey(other.privateKey, { algorithm: "ES256" }), {
+const forged = await signCredentialJwt(credential, createCryptoKeySigner(other.privateKey, { algorithm: "ES256" }), {
   jwk: await crypto.subtle.exportKey("jwk", other.publicKey),
 });
 const refused = await verifyCredential(forged, { keys, clock });

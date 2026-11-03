@@ -68,9 +68,9 @@ resolution, and `checkRemoteUrl` does not replace it.
 | Export                                              | Reads                                                                                                                                                                                                                                                                                                                       |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `parseWith(schema, input, label)`                   | Parses with any valibot schema and stops at the first issue: `<label> is invalid at items[0].id: expected a string, found 1.`                                                                                                                                                                                               |
-| `pathOf(issue.path)`                                | Where an issue is, as code writes it: `items[0].session.status`, and the empty string for the value as a whole                                                                                                                                                                                                              |
-| `issueText(issue)`                                  | The text of one issue with its path, for a message that wraps the issue of a nested parse                                                                                                                                                                                                                                   |
-| `findingsOf(issues)`                                | The issues of a parse as findings, `{ path, rule, message }`, for a reader or a validator that returns them as data (see Findings)                                                                                                                                                                                          |
+| `formatIssuePath(issue.path)`                                | Where an issue is, as code writes it: `items[0].session.status`, and the empty string for the value as a whole                                                                                                                                                                                                              |
+| `describeIssue(issue)`                                  | The text of one issue with its path, for a message that wraps the issue of a nested parse                                                                                                                                                                                                                                   |
+| `buildFindings(issues)`                                | The issues of a parse as findings, `{ path, rule, message }`, for a reader or a validator that returns them as data (see Findings)                                                                                                                                                                                          |
 | `looseRecord(entries)`                              | An object with the given entries that keeps the properties it does not know, and refuses an array                                                                                                                                                                                                                           |
 | `strictRecord(entries)`                             | An object with the given entries that refuses a property it does not know, as `additionalProperties: false` does, and refuses an array                                                                                                                                                                                      |
 | `openRecord(entries)`                               | An object with the given entries that keeps the properties it does not know, as `additionalProperties: true` does, for a JSON-LD class that anyone may extend: they are copied, so they must be JSON, and a member named `__proto__`, `constructor` or `prototype` of the object itself is not carried. It refuses an array |
@@ -94,8 +94,8 @@ The `Schema<TOutput>` type is a valibot schema of unknown input.
 ## Findings
 
 A reader that returns what is wrong as data, and not as an exception, returns findings: `Finding` is `{ path, rule, message }`.
-`path` is where the fault is, as `pathOf` writes it. `message` is a sentence that reads after the path and does not repeat it.
-A package adds fields to its own finding, such as a `severity`, by extending `Finding`. `findingsOf(issues)` makes the findings of a
+`path` is where the fault is, as `formatIssuePath` writes it. `message` is a sentence that reads after the path and does not repeat it.
+A package adds fields to its own finding, such as a `severity`, by extending `Finding`. `buildFindings(issues)` makes the findings of a
 parse and owns the rule names:
 
 | `rule`             | When                                                                                                                           |
@@ -107,7 +107,7 @@ parse and owns the rule names:
 | `invalid-value`    | A value is outside a vocabulary, or a guard or a transform refuses it                                                          |
 | `too-few-entries`  | A list is shorter than the least that the schema allows                                                                        |
 
-A reader that throws writes the sentence of its `DataError` with `refusalOf(label, errors, validator)`: the first error with its
+A reader that throws writes the sentence of its `DataError` with `describeRefusal(label, errors, validator)`: the first error with its
 path, how many errors follow, and the function that lists them, such as `The statement is invalid at actor: needs exactly one of
 mbox, mbox_sha1sum, openid and account, found none. 1 more error: validateStatement lists every finding.` When the list stopped at
 its limit, the sentence says that there may be more.
@@ -163,15 +163,15 @@ A member named `__proto__` stays a member of the copy and never changes its prot
 
 `nestsDeeperThan(text, maxDepth)` tells whether the arrays and objects of a text of JSON nest deeper than a limit, without parsing it: the text may be
 any string, and a string literal hides its brackets. `readStatementJson` checks the depth with it before it parses.
-`exceededJsonLimit(text, maxDepth, maxTokens)` reads the text once for both limits and tells which it passes first, in the order of
+`findExceededJsonLimit(text, maxDepth, maxTokens)` reads the text once for both limits and tells which it passes first, in the order of
 the text; `readJson` and the readers of `achievement-credentials` bound a text with it, at the cost of one reading instead of two.
 
 ```ts
-import { exceededJsonLimit } from "@interopkit/core/checks";
+import { findExceededJsonLimit } from "@interopkit/core/checks";
 
-exceededJsonLimit('{"a":[[["b"]]]}', 3, 100); // => "depth"
-exceededJsonLimit("[1, 2, 3]", 64, 6); // => "tokens"
-exceededJsonLimit('["[[[["]', 2, 10); // => undefined
+findExceededJsonLimit('{"a":[[["b"]]]}', 3, 100); // => "depth"
+findExceededJsonLimit("[1, 2, 3]", 64, 6); // => "tokens"
+findExceededJsonLimit('["[[[["]', 2, 10); // => undefined
 ```
 
 ## Errors

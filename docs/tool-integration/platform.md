@@ -2,7 +2,7 @@
 
 `@interopkit/tool-integration/platform` launches tools as an LTI 1.3 platform. The host describes what it launches as a
 `MessageInput` of plain data: a resource link, a Deep Linking request, a Start Proctoring or an End Assessment message.
-`ltiPlatformLogin` keeps it in the host's `LaunchStore` and returns the URL of the tool's login; one handler,
+`prepareToolLaunch` keeps it in the host's `LaunchStore` and returns the URL of the tool's login; one handler,
 `handlePlatformRequest`, answers every request to the platform's origin: the tool's authentication request with the `id_token`
 of the kept message, the key set, the token requests, the storage page and the routes of the services whose stores the host
 gives ([grade services](grades.md), [roster services](roster.md), [proctoring](proctoring.md)), and Dynamic Registration over a
@@ -17,7 +17,7 @@ sequenceDiagram
   participant S as LaunchStore
   participant T as Tool
   P->>H: open the resource
-  H->>K: ltiPlatformFrame(message, options)
+  H->>K: prepareToolFrame(message, options)
   K->>H: check(message), registration(clientId)
   K->>S: put(id, message, 300 s)
   K-->>H: url, storageUrl, allow
@@ -32,15 +32,15 @@ sequenceDiagram
 
 | Function                                   | Does                                                                                                      |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `ltiPlatformLogin(message, options)`       | Keeps a message for a tool and returns the URL of the tool's third-party initiated login                  |
-| `ltiPlatformFrame(message, options)`       | Does the same and returns what the page needs: that URL, the storage page and the `allow` list            |
+| `prepareToolLaunch(message, options)`       | Keeps a message for a tool and returns the URL of the tool's third-party initiated login                  |
+| `prepareToolFrame(message, options)`       | Does the same and returns what the page needs: that URL, the storage page and the `allow` list            |
 | `handlePlatformRequest(request, options)`  | Answers every request to the platform's origin                                                            |
 | `buildPlatformEndpoints(config)`           | Returns the URLs of the endpoints, which the tool's administrator registers with the tool                 |
 | `buildCapabilitiesScript(options)`         | Returns the inline script, with its CSP hash, that answers `lti.capabilities` on the host's frame page     |
 | `readDeepLinkingResponse(request, options)` | Reads and verifies the form that a tool posts to the return URL of a Deep Linking request ([Deep Linking](deep-linking.md)) |
 | `readStartAssessment(request, options)`    | Reads and verifies the form that a proctoring tool posts to the start assessment URL ([proctoring](proctoring.md)) |
-| `createRegistrationInitiation(url, options)` | Returns the tool's initiation URL with the configuration and a single-use registration token ([registration](registration.md)) |
-| `toToolRegistration(registered, grant)`    | Returns the `ToolRegistration` of a tool that registered itself, with what the administrator grants ([registration](registration.md)) |
+| `buildRegistrationInitiation(url, options)` | Returns the tool's initiation URL with the configuration and a single-use registration token ([registration](registration.md)) |
+| `buildToolRegistration(registered, grant)`    | Returns the `ToolRegistration` of a tool that registered itself, with what the administrator grants ([registration](registration.md)) |
 
 Handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md). The host owns the
 routes, the sessions and the stores: `check` confirms that a message is the caller's, `launches` keeps the messages, `once` records
@@ -50,8 +50,8 @@ launches a tool from a platform built on these functions.
 ## Quick start
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
-import { buildPlatformEndpoints, handlePlatformRequest, ltiPlatformFrame } from "@interopkit/tool-integration/platform";
+import { createCryptoKeySigner } from "@interopkit/core";
+import { buildPlatformEndpoints, handlePlatformRequest, prepareToolFrame } from "@interopkit/tool-integration/platform";
 import { createJwksCache } from "@interopkit/tool-integration";
 
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
@@ -61,7 +61,7 @@ const config = {
   origin: "https://lti.platform.example",
   frameOrigin: "https://app.platform.example",
   reservedOrigins: ["https://assets.platform.example"],
-  keys: { signer: signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "platform-1" }), publicKeys: [publicKey] },
+  keys: { signer: createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "platform-1" }), publicKeys: [publicKey] },
   hintKey: await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]),
 };
 buildPlatformEndpoints(config).token; // => "https://lti.platform.example/token"
@@ -84,7 +84,7 @@ const launches = {
   },
 };
 const clock = { now: () => 1_700_000_000_000 };
-const frame = await ltiPlatformFrame(
+const frame = await prepareToolFrame(
   {
     messageType: "LtiResourceLinkRequest",
     clientId: "tool-1",
@@ -218,7 +218,7 @@ the issuer, the client, the `exp` and the `nonce` of the `id_token`, and drops t
 
 ## The login
 
-`ltiPlatformLogin` reads the message, holds it to the rules of the sender, calls `check(message)` (which must throw when the
+`prepareToolLaunch` reads the message, holds it to the rules of the sender, calls `check(message)` (which must throw when the
 message is not the caller's), looks up the tool with `registration(clientId)`, refuses a deployment that is not the tool's
 (`deployment-unknown`) and the platform's own origins (`origin-refused`), and only then keeps the message with
 `launches.put(id, message, expiresAt)` for 300 seconds under a random identifier of 160 bits. The URL of the tool's login carries
@@ -380,7 +380,7 @@ A port that answers with something other than its contract (a registration that 
 
 | Point                                                        | Effect of an aborted signal                                                   |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| `ltiPlatformLogin` and `ltiPlatformFrame`, before `put`      | Rejects with `signal.reason`; nothing is kept or signed                       |
+| `prepareToolLaunch` and `prepareToolFrame`, before `put`      | Rejects with `signal.reason`; nothing is kept or signed                       |
 | `/authorize`, before `take`                                  | Rejects with `signal.reason`; the message stays                               |
 | `/authorize`, after `take`                                   | Rejects with `signal.reason`; the launch is spent, so the tool starts again   |
 | `/token`, before `once`                                      | Rejects with `signal.reason`; the assertion is unspent                        |
@@ -393,8 +393,8 @@ A port that answers with something other than its contract (a registration that 
 
 | Error                                                   | When                                                                                  | What to do                                                        |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `LtiError` `tool-unknown`, `deployment-unknown`         | `ltiPlatformLogin`: the tool or its deployment is not the platform's                  | Register the tool, or launch one of its deployments               |
-| `LtiError` `origin-refused`                             | `ltiPlatformLogin`: the target or the tool is on an origin of the platform            | Move the tool, or the platform's handler, to another origin       |
+| `LtiError` `tool-unknown`, `deployment-unknown`         | `prepareToolLaunch`: the tool or its deployment is not the platform's                  | Register the tool, or launch one of its deployments               |
+| `LtiError` `origin-refused`                             | `prepareToolLaunch`: the target or the tool is on an origin of the platform            | Move the tool, or the platform's handler, to another origin       |
 | `LtiError` of `readDeepLinkingResponse`                 | A response fails a check: see [Deep Linking](deep-linking.md)                         | Answer with its `status`                                          |
 | `LtiError` of `readStartAssessment`                     | A Start Assessment message fails a check: see [proctoring](proctoring.md)             | Answer with its `status`                                          |
 | `DataError`                                             | An argument, a message, a request or an option has the wrong shape, or a port broke its contract | Fix the caller or the port                              |

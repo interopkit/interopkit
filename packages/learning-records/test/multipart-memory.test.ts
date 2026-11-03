@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attachmentHash, readMultipart } from "../src/attachments/index.js";
+import { hashAttachment, readMultipart } from "../src/attachments/index.js";
 
 const MIB = 1024 * 1024;
 /** The bytes that the reading may raise the peak of the process by: the parts of a message of 10 MiB are 10 MiB, and a copy. */
@@ -16,7 +16,7 @@ function largestMessage(): Uint8Array {
   for (let index = 0; index < 99; index += 1) {
     const data = new Uint8Array(size).fill(index + 1);
     chunks.push(
-      encoder.encode(`--b\r\nX-Experience-API-Hash: ${attachmentHash(data)}\r\n\r\n`),
+      encoder.encode(`--b\r\nX-Experience-API-Hash: ${hashAttachment(data)}\r\n\r\n`),
       data,
       encoder.encode("\r\n"),
     );

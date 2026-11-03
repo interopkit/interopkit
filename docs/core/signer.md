@@ -10,7 +10,7 @@ flowchart LR
     key["A CryptoKey"]
     kms["A KMS or an HSM"]
   end
-  key -->|"signerFromCryptoKey"| signer["Signer<br/>algorithm, keyId, sign(bytes)"]
+  key -->|"createCryptoKeySigner"| signer["Signer<br/>algorithm, keyId, sign(bytes)"]
   kms -->|"the host writes it"| signer
   signer --> jws["signCompactJws<br/>header, payload, signer"]
   jws -->|"checks the header and the signature"| compact["header.payload.signature"]
@@ -20,10 +20,10 @@ flowchart LR
 ## Quick start
 
 ```ts
-import { signCompactJws, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, signCompactJws } from "@interopkit/core";
 
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, false, ["sign", "verify"]);
-const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "key-1" });
+const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "key-1" });
 const jws = await signCompactJws({ typ: "JWT" }, new TextEncoder().encode('{"sub":"user-1"}'), signer);
 jws.split(".").length; // => 3
 JSON.parse(atob(jws.split(".")[0].replaceAll("-", "+").replaceAll("_", "/")));
@@ -35,7 +35,7 @@ JSON.parse(atob(jws.split(".")[0].replaceAll("-", "+").replaceAll("_", "/")));
 | Export                                             | Does                                                                                                                |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `Signer`                                           | The port: `algorithm`, an optional `keyId`, and `sign(data, options)`, which answers the signature in its JOSE form |
-| `signerFromCryptoKey(key, options)`                | Makes a `Signer` from a private `CryptoKey`, after checking that the key fits the algorithm                         |
+| `createCryptoKeySigner(key, options)`                | Makes a `Signer` from a private `CryptoKey`, after checking that the key fits the algorithm                         |
 | `signCompactJws(header, payload, signer, options)` | Signs `payload` and returns the compact JWS, after checking the header, the signer and the signature                |
 
 ## Algorithms
@@ -43,7 +43,7 @@ JSON.parse(atob(jws.split(".")[0].replaceAll("-", "+").replaceAll("_", "/")));
 `algorithm` is a JOSE name (RFC 7518, RFC 8037, RFC 8812). `none` and the HMAC algorithms are refused: a signer holds a private
 key.
 
-| Algorithm                 | Key of `signerFromCryptoKey`                                         | Signature                                       |
+| Algorithm                 | Key of `createCryptoKeySigner`                                         | Signature                                       |
 | ------------------------- | -------------------------------------------------------------------- | ----------------------------------------------- |
 | `RS256`, `RS384`, `RS512` | `RSASSA-PKCS1-v1_5`, imported with `SHA-256`, `SHA-384` or `SHA-512` | The size of the modulus                         |
 | `PS256`, `PS384`, `PS512` | `RSA-PSS`, imported with the same hash; salt as long as the hash     | The size of the modulus                         |
@@ -77,8 +77,8 @@ key.
 
 | Option                            | Default  | Where                                         |
 | --------------------------------- | -------- | --------------------------------------------- |
-| `signerFromCryptoKey` `algorithm` | Required | The JOSE algorithm of the key                 |
-| `signerFromCryptoKey` `keyId`     | none     | The `kid` of the signatures                   |
+| `createCryptoKeySigner` `algorithm` | Required | The JOSE algorithm of the key                 |
+| `createCryptoKeySigner` `keyId`     | none     | The `kid` of the signatures                   |
 | `signCompactJws` `signal`         | none     | Ends the caller's wait and goes to the signer |
 
 Neither function limits the size of a payload: the host bounds what it signs.
@@ -98,7 +98,7 @@ Neither function limits the size of a payload: the host bounds what it signs.
 
 | Error                      | When                                                                                                                                                  | What to do                                                |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `DataError`                | `signerFromCryptoKey`: the algorithm is not one that a `CryptoKey` signs, the key is not private or does not fit the algorithm (kind, hash or curve)  | Import or generate the key for the algorithm              |
+| `DataError`                | `createCryptoKeySigner`: the algorithm is not one that a `CryptoKey` signs, the key is not private or does not fit the algorithm (kind, hash or curve)  | Import or generate the key for the algorithm              |
 | `DataError`                | `signCompactJws`: the signer has no known algorithm or no `sign` function, the header or the payload has the wrong type, or the header cannot be JSON | Fix the arguments                                         |
 | `DataError`                | `signCompactJws`: the header names another algorithm or key than the signer's, or its `jwk` holds `d`                                                 | Leave `alg` and `kid` to the signer; publish a public key |
 | `DataError`                | `signCompactJws`: the signature is not a `Uint8Array`, or an ES256, ES384, ES512 or ES256K signature has the wrong length                             | Convert DER to the fixed-length R and S in the signer     |

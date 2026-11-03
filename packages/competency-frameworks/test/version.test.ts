@@ -6,8 +6,8 @@ import {
   type CasePackage,
   type CFAssociation,
   type CFAssociationSet,
+  convertCaseVersion,
   ENTITY_KINDS,
-  toCaseVersion,
   validateEntity,
   validatePackage,
 } from "../src/index.js";
@@ -23,9 +23,9 @@ function propertyPaths(value: unknown, prefix = ""): string[] {
   });
 }
 
-describe("toCaseVersion of a package", () => {
+describe("convertCaseVersion of a package", () => {
   const input = fullPackage();
-  const { value, dropped } = toCaseVersion(deepFreeze(copyOf(input)), "1.0");
+  const { value, dropped } = convertCaseVersion(deepFreeze(copyOf(input)), "1.0");
 
   it("leaves out exactly the properties that 1.0 does not have, and reports each of them", () => {
     // The associations that 1.0 cannot hold are the last two, so that dropping them moves no other index.
@@ -86,15 +86,15 @@ describe("toCaseVersion of a package", () => {
   });
 
   it("changes nothing in a package of 1.0, and reports nothing", () => {
-    const form10 = toCaseVersion(fullPackage(), "1.0").value;
-    expect(toCaseVersion(form10, "1.0")).toStrictEqual({ value: form10, dropped: [] });
-    expect(toCaseVersion(minimalPackage(), "1.0")).toStrictEqual({ value: minimalPackage(), dropped: [] });
+    const form10 = convertCaseVersion(fullPackage(), "1.0").value;
+    expect(convertCaseVersion(form10, "1.0")).toStrictEqual({ value: form10, dropped: [] });
+    expect(convertCaseVersion(minimalPackage(), "1.0")).toStrictEqual({ value: minimalPackage(), dropped: [] });
   });
 
   it("leaves out an association whose node is not a node of CASE, which 1.0 would read as one", () => {
     const pkg: Record<string, any> = copyOf(fullPackage());
     pkg.CFAssociations[1].originNodeURI.targetType = "ext:video";
-    const converted = toCaseVersion(pkg as CasePackage, "1.0");
+    const converted = convertCaseVersion(pkg as CasePackage, "1.0");
     expect(summary(converted.dropped.filter(({ rule }) => rule === "target-type-not-in-1.0"))).toStrictEqual([
       { path: "CFAssociations[1]", rule: "target-type-not-in-1.0", severity: "warning" },
     ]);
@@ -102,10 +102,10 @@ describe("toCaseVersion of a package", () => {
   });
 
   it("keeps the absent lists absent and an emptied list empty", () => {
-    expect(toCaseVersion(minimalPackage(), "1.0").value).not.toHaveProperty("CFAssociations");
+    expect(convertCaseVersion(minimalPackage(), "1.0").value).not.toHaveProperty("CFAssociations");
     const only11: Record<string, any> = copyOf(minimalPackage());
     only11.CFAssociations = [{ ...fullPackage().CFAssociations?.[5] }];
-    expect(toCaseVersion(only11 as CasePackage, "1.0").value.CFAssociations).toStrictEqual([]);
+    expect(convertCaseVersion(only11 as CasePackage, "1.0").value.CFAssociations).toStrictEqual([]);
   });
 });
 
@@ -114,7 +114,7 @@ describe("the forms that 1.0 refuses", () => {
   function converted(change: (pkg: Record<string, any>) => void) {
     const pkg: Record<string, any> = copyOf(fullPackage());
     change(pkg);
-    const { value, dropped } = toCaseVersion(pkg as CasePackage, "1.0");
+    const { value, dropped } = convertCaseVersion(pkg as CasePackage, "1.0");
     return {
       value,
       forms: dropped.filter(({ rule }) => rule === "form-not-in-1.0").map(({ path }) => path),
@@ -201,7 +201,7 @@ describe("the forms that 1.0 refuses", () => {
   });
 
   it("says what 1.0 asks for and that the value is kept", () => {
-    const { dropped } = toCaseVersion(
+    const { dropped } = convertCaseVersion(
       { ...minimalPackage(), CFDocument: { ...minimalPackage().CFDocument, identifier: "X", uri: "u" } },
       "1.0",
     );
@@ -212,13 +212,13 @@ describe("the forms that 1.0 refuses", () => {
   });
 });
 
-describe("toCaseVersion of an entity", () => {
+describe("convertCaseVersion of an entity", () => {
   const entities = fullEntities();
 
   it.each(ENTITY_KINDS.filter((kind) => kind !== "CFAssociation" && kind !== "CFAssociationSet"))(
     "gives %s in the form of 1.0, which is judged in 1.0 without an error",
     (kind) => {
-      const { value } = toCaseVersion(deepFreeze(copyOf(entities[kind])), "1.0");
+      const { value } = convertCaseVersion(deepFreeze(copyOf(entities[kind])), "1.0");
       expect(
         validateEntity(kind, value, { version: "1.0" }).filter(({ severity }) => severity === "error"),
       ).toStrictEqual([]);
@@ -230,7 +230,7 @@ describe("toCaseVersion of an entity", () => {
       ...(entities.CFAssociation as CFAssociation),
       associationType: "isTranslationOf",
     };
-    const converted = toCaseVersion(association, "1.0");
+    const converted = convertCaseVersion(association, "1.0");
     expect(converted.value).toBeUndefined();
     expect(summary(converted.dropped)).toStrictEqual([
       { path: "", rule: "association-type-not-in-1.0", severity: "warning" },
@@ -238,7 +238,7 @@ describe("toCaseVersion of an entity", () => {
   });
 
   it("gives an association of a type that 1.0 has, without what 1.1 adds to it", () => {
-    const converted = toCaseVersion(entities.CFAssociation as CFAssociation, "1.0");
+    const converted = convertCaseVersion(entities.CFAssociation as CFAssociation, "1.0");
     expect(converted.value).toBeDefined();
     expect(validateEntity("CFAssociation", converted.value, { version: "1.0" })).toStrictEqual([]);
     expect(converted.dropped.map(({ path }) => path).sort()).toStrictEqual(["extensions", "notes"]);
@@ -246,14 +246,14 @@ describe("toCaseVersion of an entity", () => {
 
   it("gives the set of an item's associations with those that 1.0 has, and none when it has none", () => {
     const set = entities.CFAssociationSet as CFAssociationSet;
-    const partial = toCaseVersion(set, "1.0");
+    const partial = convertCaseVersion(set, "1.0");
     expect(partial.value?.CFAssociations).toHaveLength(3);
     expect(validateEntity("CFAssociationSet", partial.value, { version: "1.0" })).toStrictEqual([]);
     const translation: CFAssociation = {
       ...(entities.CFAssociation as CFAssociation),
       associationType: "isTranslationOf",
     };
-    const none = toCaseVersion({ ...set, CFAssociations: [translation] }, "1.0");
+    const none = convertCaseVersion({ ...set, CFAssociations: [translation] }, "1.0");
     expect(none.value).toBeUndefined();
     expect(none.dropped.filter(({ rule }) => rule !== "property-not-in-1.0").map(({ rule }) => rule)).toStrictEqual([
       "association-type-not-in-1.0",
@@ -262,10 +262,10 @@ describe("toCaseVersion of an entity", () => {
   });
 });
 
-describe("the arguments of toCaseVersion", () => {
+describe("the arguments of convertCaseVersion", () => {
   it.each([[null], ["package"], [5], [[]]])("refuses the value %j", (value) => {
-    expect(() => toCaseVersion(value as never, "1.0")).toThrow(DataError);
-    expect(() => toCaseVersion(value as never, "1.0")).toThrow("The value must be an object");
+    expect(() => convertCaseVersion(value as never, "1.0")).toThrow(DataError);
+    expect(() => convertCaseVersion(value as never, "1.0")).toThrow("The value must be an object");
   });
 
   it.each([
@@ -274,7 +274,7 @@ describe("the arguments of toCaseVersion", () => {
     [null, 'The version is invalid: expected "1.0", found null.'],
     [undefined, 'The version is invalid: expected "1.0", found undefined.'],
   ])("refuses the version %j", (version, sentence) => {
-    expect(() => toCaseVersion(minimalPackage(), version as never)).toThrow(new DataError(sentence));
+    expect(() => convertCaseVersion(minimalPackage(), version as never)).toThrow(new DataError(sentence));
   });
 
   it.each([
@@ -311,12 +311,12 @@ describe("the arguments of toCaseVersion", () => {
       "CFDefinitions must be an object, found an array.",
     ],
   ])("refuses %s with a sentence", (_name, value, sentence) => {
-    expect(() => toCaseVersion(value as never, "1.0")).toThrow(new DataError(sentence));
+    expect(() => convertCaseVersion(value as never, "1.0")).toThrow(new DataError(sentence));
   });
 
   it("refuses a property that it copies and JSON cannot hold, and says where", () => {
     const pkg = { ...minimalPackage(), CFItems: [{ language: () => 1 }] };
-    expect(() => toCaseVersion(pkg as never, "1.0")).toThrow(
+    expect(() => convertCaseVersion(pkg as never, "1.0")).toThrow(
       new DataError("CFItems[0].language is a function, which JSON cannot hold."),
     );
   });
@@ -324,20 +324,20 @@ describe("the arguments of toCaseVersion", () => {
   it("refuses a value that nests deeper than any package or entity does, whatever its depth", () => {
     let deep: Record<string, unknown> = {};
     for (let level = 0; level < 200_000; level += 1) deep = { CFItem: deep };
-    expect(() => toCaseVersion(deep as never, "1.0")).toThrow(DataError);
-    expect(() => toCaseVersion(deep as never, "1.0")).toThrow(
+    expect(() => convertCaseVersion(deep as never, "1.0")).toThrow(DataError);
+    expect(() => convertCaseVersion(deep as never, "1.0")).toThrow(
       `nests more than ${MAX_JSON_DEPTH} levels, the most that a package or an entity has.`,
     );
     let list: Record<string, unknown> = {};
     for (let level = 0; level < 200_000; level += 1) list = { CFRubrics: [list] };
-    expect(() => toCaseVersion(list as never, "1.0")).toThrow(DataError);
+    expect(() => convertCaseVersion(list as never, "1.0")).toThrow(DataError);
   });
 
   it("keeps a member named __proto__ as a member of the result, and never as its prototype", () => {
     const pkg: Record<string, unknown> = JSON.parse(
       JSON.stringify({ ...minimalPackage() }).replace(/^\{/u, '{"__proto__":{"top":1},'),
     );
-    const { value } = toCaseVersion(pkg as never, "1.0");
+    const { value } = convertCaseVersion(pkg as never, "1.0");
     expect(Object.getPrototypeOf(value)).toBe(Object.prototype);
     expect(Object.hasOwn(value, "__proto__")).toBe(true);
     expect(Reflect.get(value, "top")).toBeUndefined();

@@ -5,4 +5,4 @@
  * @module
  */
 export { signCompactJws } from "./jws.js";
-export { type CryptoKeySignerOptions, type Signer, signerFromCryptoKey } from "./signer.js";
+export { type CryptoKeySignerOptions, createCryptoKeySigner, type Signer } from "./signer.js";

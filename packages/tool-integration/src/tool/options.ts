@@ -29,14 +29,14 @@ export interface ToolOptions extends CallOptions {
   readonly clock: Clock;
 }
 
-/** The options of `ltiLogin`. */
+/** The options of `handleLogin`. */
 export interface LtiLoginOptions extends ToolOptions {
   /** Where the tool keeps the logins in progress. */
   readonly store: LtiStore;
 }
 
 /**
- * The options of `ltiLaunch`.
+ * The options of `handleLaunch`.
  *
  * @typeParam TOther - The message types beyond the modeled ones that the tool accepts.
  */
@@ -87,7 +87,7 @@ export function checkToolOptions(options: unknown): asserts options is ToolOptio
 }
 
 /**
- * Checks the options of `ltiLogin`.
+ * Checks the options of `handleLogin`.
  *
  * @throws `DataError` when they are not.
  */
@@ -104,7 +104,7 @@ function checkStrings(value: unknown, name: string): void {
 }
 
 /**
- * Checks the options of `ltiLaunch`.
+ * Checks the options of `handleLaunch`.
  *
  * @throws `DataError` when they are not.
  */

@@ -5,7 +5,7 @@ import {
   buildEntity,
   buildEvent,
   CALIPER_CONTEXT,
-  caliperTime,
+  formatDateTime,
   mintUrn,
   pingEndpoint,
   readEntity,
@@ -27,7 +27,7 @@ const SENDER = { endpoint: "https://lrs.example/caliper", token: "token-123", se
 
 /** An event that follows every rule of its profile, with an identifier from the parts that name it. */
 function startedEvent() {
-  const at = caliperTime(1_479_204_900_000, "The time of the event");
+  const at = formatDateTime(1_479_204_900_000, "The time of the event");
   return buildEvent({
     id: mintUrn(["event", "attempt-1", "started"]),
     type: "AssessmentEvent",

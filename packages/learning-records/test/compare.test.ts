@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { mutate, mutations } from "../../../scripts/json-mutation.js";
 import { equivalenceKey } from "../src/compare/internal.js";
-import { type Statement, sameStatement } from "../src/index.js";
+import { isSameStatement, type Statement } from "../src/index.js";
 import { copyOf } from "./fixture.js";
 import { fullStatement, minimalStatement, subStatementStatement, uuid } from "./full-statement.js";
 
@@ -14,13 +14,13 @@ function changed(change: (statement: Record<string, any>) => void): Statement {
   return statement as unknown as Statement;
 }
 
-describe("sameStatement", () => {
+describe("isSameStatement", () => {
   it.each([
     ["the full Statement", fullStatement],
     ["the smallest Statement", minimalStatement],
     ["a Statement with a SubStatement", subStatementStatement],
   ])("holds %s to be the same as a copy of itself", (_name, make) => {
-    expect(sameStatement(make(), make())).toBe(true);
+    expect(isSameStatement(make(), make())).toBe(true);
   });
 
   describe("what the standard says is not immutable", () => {
@@ -46,7 +46,7 @@ describe("sameStatement", () => {
       ["the type of the Activity written", (s: Record<string, any>) => delete s.object.objectType],
       ["the type of the Agent written", (s: Record<string, any>) => delete s.actor.objectType],
     ])("holds a Statement to be the same with %s changed", (_name, change) => {
-      expect(sameStatement(fullStatement(), changed(change))).toBe(true);
+      expect(isSameStatement(fullStatement(), changed(change))).toBe(true);
     });
 
     it("holds Groups to be the same when their members are in another order", () => {
@@ -56,8 +56,8 @@ describe("sameStatement", () => {
         { mbox: "mailto:c@example.org" },
       ];
       const withMembers = (list: unknown[]) => changed((s) => (s.actor = { objectType: "Group", member: list }));
-      expect(sameStatement(withMembers(members), withMembers([...members].reverse()))).toBe(true);
-      expect(sameStatement(withMembers(members), withMembers(members.slice(0, 2)))).toBe(false);
+      expect(isSameStatement(withMembers(members), withMembers([...members].reverse()))).toBe(true);
+      expect(isSameStatement(withMembers(members), withMembers(members.slice(0, 2)))).toBe(false);
     });
 
     it("holds Statements to be the same when a Group in the context has its members in another order", () => {
@@ -67,21 +67,21 @@ describe("sameStatement", () => {
         );
       const a = { mbox: "mailto:a@example.org" };
       const b = { mbox: "mailto:b@example.org" };
-      expect(sameStatement(group([a, b]), group([b, a]))).toBe(true);
+      expect(isSameStatement(group([a, b]), group([b, a]))).toBe(true);
     });
 
     it("holds a duration to be the same to 0.01 second, whatever units write it", () => {
       const duration = (text: string) => changed((s) => (s.result.duration = text));
-      expect(sameStatement(duration("PT1H30M15.25S"), duration("PT1H30M15.259S"))).toBe(true);
-      expect(sameStatement(duration("PT1H30M15.25S"), duration("PT5415.25S"))).toBe(true);
-      expect(sameStatement(duration("PT1H"), duration("PT60M"))).toBe(true);
-      expect(sameStatement(duration("PT1H30M15.25S"), duration("PT1H30M15.26S"))).toBe(false);
-      expect(sameStatement(duration("P1D"), duration("PT24H"))).toBe(false);
+      expect(isSameStatement(duration("PT1H30M15.25S"), duration("PT1H30M15.259S"))).toBe(true);
+      expect(isSameStatement(duration("PT1H30M15.25S"), duration("PT5415.25S"))).toBe(true);
+      expect(isSameStatement(duration("PT1H"), duration("PT60M"))).toBe(true);
+      expect(isSameStatement(duration("PT1H30M15.25S"), duration("PT1H30M15.26S"))).toBe(false);
+      expect(isSameStatement(duration("P1D"), duration("PT24H"))).toBe(false);
     });
 
     it("holds a single Activity of the context to be the same as a list of one", () => {
       expect(
-        sameStatement(
+        isSameStatement(
           fullStatement(),
           changed((s) => (s.context.contextActivities.parent = s.context.contextActivities.parent[0])),
         ),
@@ -130,7 +130,7 @@ describe("sameStatement", () => {
     ])("holds a Statement to be the same when %s differs in case", (_name, change) => {
       const other = copyOf(base) as unknown as Record<string, any>;
       change(other);
-      expect(sameStatement(base, other as unknown as Statement)).toBe(true);
+      expect(isSameStatement(base, other as unknown as Statement)).toBe(true);
     });
 
     it.each([
@@ -147,7 +147,7 @@ describe("sameStatement", () => {
         (s: Record<string, any>) => (s.context.extensions = { "https://example.org/xapi/extensions/device": "Tablet" }),
       ],
     ])("holds Statements to differ when %s differs in case", (_name, change) => {
-      expect(sameStatement(fullStatement(), changed(change))).toBe(false);
+      expect(isSameStatement(fullStatement(), changed(change))).toBe(false);
     });
   });
 
@@ -204,27 +204,27 @@ describe("sameStatement", () => {
       ["the language", (s: Record<string, any>) => (s.context.language = "fr-FR")],
       ["no context", (s: Record<string, any>) => delete s.context],
     ])("holds Statements to differ when %s differs", (_name, change) => {
-      expect(sameStatement(fullStatement(), changed(change))).toBe(false);
+      expect(isSameStatement(fullStatement(), changed(change))).toBe(false);
     });
 
     it("holds Statements to differ when the SubStatement differs in what makes a Statement", () => {
       const base = subStatementStatement();
       const other = copyOf(base) as unknown as { object: { verb: { id: string }; timestamp: string } };
       other.object.timestamp = "2030-01-01T00:00:00.000Z";
-      expect(sameStatement(base, other as unknown as Statement)).toBe(true);
+      expect(isSameStatement(base, other as unknown as Statement)).toBe(true);
       other.object.verb.id = "http://adlnet.gov/expapi/verbs/attempted";
-      expect(sameStatement(base, other as unknown as Statement)).toBe(false);
+      expect(isSameStatement(base, other as unknown as Statement)).toBe(false);
     });
 
     it("holds Statements to differ when two members of an anonymous Group differ", () => {
       const group = (mbox: string) => changed((s) => (s.actor = { objectType: "Group", member: [{ mbox }] }));
-      expect(sameStatement(group("mailto:a@example.org"), group("mailto:b@example.org"))).toBe(false);
+      expect(isSameStatement(group("mailto:a@example.org"), group("mailto:b@example.org"))).toBe(false);
     });
 
     it("holds an anonymous Group and an identified Group to differ", () => {
       const anonymous = changed((s) => (s.actor = { objectType: "Group", member: [{ mbox: "mailto:a@example.org" }] }));
       const identified = changed((s) => (s.actor = { objectType: "Group", mbox: "mailto:a@example.org" }));
-      expect(sameStatement(anonymous, identified)).toBe(false);
+      expect(isSameStatement(anonymous, identified)).toBe(false);
     });
   });
 
@@ -233,26 +233,26 @@ describe("sameStatement", () => {
 
     it("is compared as it is written", () => {
       const seconds = `PT${"1".repeat(1_000_000)}S`;
-      expect(sameStatement(withDuration(seconds), withDuration(seconds))).toBe(true);
-      expect(sameStatement(withDuration(seconds), withDuration(`PT${"1".repeat(999_999)}2S`))).toBe(false);
+      expect(isSameStatement(withDuration(seconds), withDuration(seconds))).toBe(true);
+      expect(isSameStatement(withDuration(seconds), withDuration(`PT${"1".repeat(999_999)}2S`))).toBe(false);
     });
 
     it("is another Statement than the same time in fewer digits", () => {
-      expect(sameStatement(withDuration(`PT${"0".repeat(70)}1S`), withDuration("PT1S"))).toBe(false);
-      expect(sameStatement(withDuration(`PT${"0".repeat(50)}1S`), withDuration("PT1S"))).toBe(true);
+      expect(isSameStatement(withDuration(`PT${"0".repeat(70)}1S`), withDuration("PT1S"))).toBe(false);
+      expect(isSameStatement(withDuration(`PT${"0".repeat(50)}1S`), withDuration("PT1S"))).toBe(true);
     });
   });
 
   it("compares Statements of 1.0.3 that have a form of a time that 2.0 does not take", () => {
     const basic = { ...minimalStatement(), timestamp: "20240613T184603Z" };
-    expect(sameStatement(basic, minimalStatement())).toBe(true);
+    expect(isSameStatement(basic, minimalStatement())).toBe(true);
   });
 
   describe("IRIs with no authority", () => {
     it("holds the case of the scheme to be nothing, and the case of the rest to be something", () => {
       const urn = (id: string) => changed((s) => (s.verb.id = id));
-      expect(sameStatement(urn("urn:example:verbs:answered"), urn("URN:example:verbs:answered"))).toBe(true);
-      expect(sameStatement(urn("urn:example:verbs:answered"), urn("urn:Example:verbs:answered"))).toBe(false);
+      expect(isSameStatement(urn("urn:example:verbs:answered"), urn("URN:example:verbs:answered"))).toBe(true);
+      expect(isSameStatement(urn("urn:example:verbs:answered"), urn("urn:Example:verbs:answered"))).toBe(false);
     });
   });
 
@@ -264,13 +264,13 @@ describe("sameStatement", () => {
           change(s);
         });
       expect(
-        sameStatement(
+        isSameStatement(
           light(() => undefined),
           light(() => undefined),
         ),
       ).toBe(true);
       expect(
-        sameStatement(
+        isSameStatement(
           light(() => undefined),
           light((s) => (s.context.contextAgents[0].relevantTypes = ["https://example.org/t"])),
         ),
@@ -280,8 +280,8 @@ describe("sameStatement", () => {
           (s) =>
             (s.actor = { objectType: "Group", mbox: "mailto:g@example.org", ...(members ? { member: members } : {}) }),
         );
-      expect(sameStatement(group(), group())).toBe(true);
-      expect(sameStatement(group(), group([{ mbox: "mailto:a@example.org" }]))).toBe(false);
+      expect(isSameStatement(group(), group())).toBe(true);
+      expect(isSameStatement(group(), group([{ mbox: "mailto:a@example.org" }]))).toBe(false);
     });
   });
 
@@ -291,8 +291,8 @@ describe("sameStatement", () => {
   });
 
   it("refuses a Statement that is not one, with the sentence of the reader", () => {
-    expect(() => sameStatement(null as never, minimalStatement())).toThrow(DataError);
-    expect(() => sameStatement(minimalStatement(), { ...minimalStatement(), extra: 1 } as never)).toThrow(
+    expect(() => isSameStatement(null as never, minimalStatement())).toThrow(DataError);
+    expect(() => isSameStatement(minimalStatement(), { ...minimalStatement(), extra: 1 } as never)).toThrow(
       /^The statement is invalid/,
     );
   });
@@ -304,7 +304,7 @@ describe("sameStatement", () => {
         const b = mutate(JSON.parse(JSON.stringify(fullStatement())), second) as Statement;
         const compare = (x: Statement, y: Statement): boolean | undefined => {
           try {
-            return sameStatement(x, y);
+            return isSameStatement(x, y);
           } catch {
             return undefined;
           }

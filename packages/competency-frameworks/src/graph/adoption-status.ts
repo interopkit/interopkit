@@ -35,7 +35,7 @@ const STATUSES: ReadonlyMap<string, AdoptionStatus> = new Map([
  * @throws `DataError` when the document is not an object, or its `adoptionStatus` is not a string.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1/impl | CASE Implementation Guide}, 4.2
  */
-export function adoptionStatus(document: Pick<CFPckgDocument, "adoptionStatus">): AdoptionStatus | undefined {
+export function readAdoptionStatus(document: Pick<CFPckgDocument, "adoptionStatus">): AdoptionStatus | undefined {
   checkRecord(document, "The document must be an object");
   const { adoptionStatus: status } = document;
   if (status !== undefined && typeof status !== "string") {

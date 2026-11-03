@@ -5,7 +5,7 @@ import { createLocalJWKSet, type JSONWebKeySet } from "jose";
 import { describe, expect, it, vi } from "vitest";
 import { createJwksCache } from "../src/index.js";
 import { readMessage, signConsumerKey, verifyJwt, verifyMigration } from "../src/protocol/internal.js";
-import { ltiLaunch } from "../src/tool/index.js";
+import { handleLaunch } from "../src/tool/index.js";
 import { formPost, JWKS_URL, MemoryStore, registrationOf } from "./fake-platform.js";
 import { createClock } from "./fixture.js";
 import { toolKey } from "./tool-setup.js";
@@ -186,7 +186,7 @@ describe("tokens signed by PyJWT", () => {
     };
     const token = fixture.cases[0]?.token ?? "";
     const post = formPost({ id_token: token, state }, { cookie: `__Host-lti_state_${state}=${state}` });
-    expect(await ltiLaunch(post, options)).toMatchObject({
+    expect(await handleLaunch(post, options)).toMatchObject({
       messageType: "LtiResourceLinkRequest",
       deploymentId: fixture.deploymentId,
       user: { subject: "a6d5c443-1f51-4783-ba1a-7686ffe3b54a" },

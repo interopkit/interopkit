@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { refusalOf } from "@interopkit/core/checks";
+import { describeRefusal } from "@interopkit/core/checks";
 import type { CaseEntityKind, CaseEntityMap, CaseIssue } from "../model/index.js";
 import { inspectEntity, issueSink } from "./inspect.js";
 import { type ReadOptions, readKind, readSettings } from "./options.js";
@@ -33,7 +33,7 @@ export function readEntity<TKind extends CaseEntityKind>(
   const entity = inspectEntity(checkedKind, value, version, sink);
   const errors = sink.list();
   if (entity === undefined || errors.length > 0)
-    throw new DataError(refusalOf(`The ${checkedKind}`, errors, "validateEntity"));
+    throw new DataError(describeRefusal(`The ${checkedKind}`, errors, "validateEntity"));
   // The schema of the kind has just read the value, so it is the entity of that kind.
   return entity as CaseEntityMap[TKind];
 }

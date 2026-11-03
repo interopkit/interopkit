@@ -2,12 +2,12 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   DataError,
+  findLinkTarget,
   hasNextLink,
   hasNextPage,
-  linkTarget,
-  retryAfterSeconds,
+  readRetryAfterSeconds,
+  readTotalCount,
   ServiceError,
-  totalCountOf,
 } from "../src/index.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
@@ -40,13 +40,13 @@ describe("the paging headers", () => {
   });
 
   it("read the count of a collection when it is a number and give nothing otherwise", () => {
-    expect(totalCountOf({ "x-total-count": "503" })).toBe(503);
-    expect(totalCountOf({ "x-total-count": " 12 " })).toBe(12);
-    expect(totalCountOf({ "x-total-count": "0" })).toBe(0);
+    expect(readTotalCount({ "x-total-count": "503" })).toBe(503);
+    expect(readTotalCount({ "x-total-count": " 12 " })).toBe(12);
+    expect(readTotalCount({ "x-total-count": "0" })).toBe(0);
     for (const value of ["", "-1", "1.5", "abc", "12 13", "1e3", "9999999999999999"]) {
-      expect(totalCountOf({ "x-total-count": value })).toBeUndefined();
+      expect(readTotalCount({ "x-total-count": value })).toBeUndefined();
     }
-    expect(totalCountOf({})).toBeUndefined();
+    expect(readTotalCount({})).toBeUndefined();
   });
 
   it("say whether a page follows by the count first, then by the Link header, then by a page as long as the request", () => {
@@ -69,19 +69,19 @@ describe("the address of a link", () => {
   it("is the address of the relation, resolved against the request, on the request's origin", () => {
     const link =
       '<https://lms.example.edu/api/lti/courses/7/line_items?page=2&limit=2>; rel="next", <https://lms.example.edu/api/lti/courses/7/line_items?page=1&limit=2>; rel="first"';
-    expect(linkTarget({ link }, "next", Page)).toBe(
+    expect(findLinkTarget({ link }, "next", Page)).toBe(
       "https://lms.example.edu/api/lti/courses/7/line_items?page=2&limit=2",
     );
-    expect(linkTarget({ link }, "first", Page)).toBe(
+    expect(findLinkTarget({ link }, "first", Page)).toBe(
       "https://lms.example.edu/api/lti/courses/7/line_items?page=1&limit=2",
     );
-    expect(linkTarget({ link: "</api/lti/courses/7/line_items?page=3>; rel=NEXT" }, "next", Page)).toBe(
+    expect(findLinkTarget({ link: "</api/lti/courses/7/line_items?page=3>; rel=NEXT" }, "next", Page)).toBe(
       "https://lms.example.edu/api/lti/courses/7/line_items?page=3",
     );
-    expect(linkTarget({ link: "<line_items?page=4>; rel=next" }, "next", Page)).toBe(
+    expect(findLinkTarget({ link: "<line_items?page=4>; rel=next" }, "next", Page)).toBe(
       "https://lms.example.edu/api/lti/courses/7/line_items?page=4",
     );
-    expect(linkTarget({ link: '<memberships?since=abc>; rel="differences"' }, "Differences", Page)).toBe(
+    expect(findLinkTarget({ link: '<memberships?since=abc>; rel="differences"' }, "Differences", Page)).toBe(
       "https://lms.example.edu/api/lti/courses/7/memberships?since=abc",
     );
   });
@@ -98,33 +98,35 @@ describe("the address of a link", () => {
       "javascript:alert(1)",
       "https://[::1/",
     ]) {
-      expect(linkTarget({ link: `<${target}>; rel="next"` }, "next", Page), target).toBeUndefined();
+      expect(findLinkTarget({ link: `<${target}>; rel="next"` }, "next", Page), target).toBeUndefined();
     }
   });
 
   it("is that of the first value with the relation, and nothing without one or without a header", () => {
     const link = '<https://evil.example/a>; rel="next", <https://lms.example.edu/b>; rel="next"';
-    expect(linkTarget({ link }, "next", Page)).toBeUndefined();
-    expect(linkTarget({ link: '<https://lms.example.edu/a>; rel="prev"' }, "next", Page)).toBeUndefined();
-    expect(linkTarget({ link: '<https://lms.example.edu/a?rel=next;rel=next>; rel="first"' }, "next", Page)).toBe(
+    expect(findLinkTarget({ link }, "next", Page)).toBeUndefined();
+    expect(findLinkTarget({ link: '<https://lms.example.edu/a>; rel="prev"' }, "next", Page)).toBeUndefined();
+    expect(findLinkTarget({ link: '<https://lms.example.edu/a?rel=next;rel=next>; rel="first"' }, "next", Page)).toBe(
       undefined,
     );
-    expect(linkTarget({}, "next", Page)).toBeUndefined();
+    expect(findLinkTarget({}, "next", Page)).toBeUndefined();
   });
 
   it("refuses a relation or a request URL of other types", () => {
-    expect(() => linkTarget({}, "", Page)).toThrow(new DataError('The relation must be a non-empty string, found "".'));
-    expect(() => linkTarget({}, "next", "http://lms.example.edu/")).toThrow(
+    expect(() => findLinkTarget({}, "", Page)).toThrow(
+      new DataError('The relation must be a non-empty string, found "".'),
+    );
+    expect(() => findLinkTarget({}, "next", "http://lms.example.edu/")).toThrow(
       new DataError('The request URL must be an absolute https URL, found "http://lms.example.edu/".'),
     );
-    expect(() => linkTarget({}, JSON.parse("null"), Page)).toThrow(DataError);
+    expect(() => findLinkTarget({}, JSON.parse("null"), Page)).toThrow(DataError);
   });
 
   it("is an https address on the origin of the request, or nothing, for any header", () => {
     fc.assert(
       fc.property(fc.string(), fc.webUrl(), (text, url) => {
         for (const link of [text, `<${url}>; rel="next"`]) {
-          const target = linkTarget({ link }, "next", Page);
+          const target = findLinkTarget({ link }, "next", Page);
           if (target !== undefined) expect(new URL(target).origin).toBe("https://lms.example.edu");
         }
       }),
@@ -135,19 +137,19 @@ describe("the address of a link", () => {
 
 describe("the retry header", () => {
   it("is read when it gives a number of seconds, and not when it gives a date or anything else", () => {
-    expect(retryAfterSeconds({ "retry-after": "30" })).toBe(30);
-    expect(retryAfterSeconds({ "retry-after": " 7 " })).toBe(7);
-    expect(retryAfterSeconds({ "retry-after": "0" })).toBe(0);
+    expect(readRetryAfterSeconds({ "retry-after": "30" })).toBe(30);
+    expect(readRetryAfterSeconds({ "retry-after": " 7 " })).toBe(7);
+    expect(readRetryAfterSeconds({ "retry-after": "0" })).toBe(0);
     for (const value of ["Wed, 21 Oct 2026 07:28:00 GMT", "-5", "1e3", "soon", "", "9999999999999999", "1 2"]) {
-      expect(retryAfterSeconds({ "retry-after": value })).toBeUndefined();
+      expect(readRetryAfterSeconds({ "retry-after": value })).toBeUndefined();
     }
-    expect(retryAfterSeconds({})).toBeUndefined();
+    expect(readRetryAfterSeconds({})).toBeUndefined();
   });
 
   it("reads the headers of a ServiceError as the call gave them", () => {
     const error = new ServiceError("Busy.", 429, "", { headers: { "retry-after": "12", "x-total-count": "3" } });
-    expect(retryAfterSeconds(error.headers)).toBe(12);
-    expect(totalCountOf(error.headers)).toBe(3);
+    expect(readRetryAfterSeconds(error.headers)).toBe(12);
+    expect(readTotalCount(error.headers)).toBe(3);
   });
 });
 
@@ -155,7 +157,7 @@ describe("the readers of the headers on any text", () => {
   it("give a count or nothing, and a flag or nothing", () => {
     fc.assert(
       fc.property(fc.string(), (text) => {
-        const count = totalCountOf({ "x-total-count": text });
+        const count = readTotalCount({ "x-total-count": text });
         expect(count === undefined || (Number.isSafeInteger(count) && count >= 0)).toBe(true);
         expect([true, false]).toContain(hasNextLink({ link: text }));
       }),
@@ -185,7 +187,7 @@ describe("the readers of the headers on any text", () => {
   it("give a number of seconds or nothing", () => {
     fc.assert(
       fc.property(fc.string(), (text) => {
-        const seconds = retryAfterSeconds({ "retry-after": text });
+        const seconds = readRetryAfterSeconds({ "retry-after": text });
         expect(seconds === undefined || (Number.isSafeInteger(seconds) && seconds >= 0)).toBe(true);
       }),
       RUNS,

@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { checkNonEmptyString, checkRecord, checkRemoteUrl, describe, isRecord } from "@interopkit/core/checks";
-import { type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 import type { ToolConfiguration } from "../../protocol/index.js";
 import { readToolConfiguration, writeToolConfiguration, writeToolRegistrationResult } from "../../protocol/internal.js";
 import { NO_STORE, refusal } from "../answers.js";
@@ -146,5 +146,5 @@ export function registrationAnswer(status: number, tool: RegisteredTool, setting
     clientId: tool.clientId,
     ...(configurable ? { registrationClientUri: registrationClientUrl(settings.config.origin, tool.clientId) } : {}),
   };
-  return jsonResponse(status, writeToolRegistrationResult(result), NO_STORE, REGISTRATION_MEDIA_TYPE);
+  return buildJsonResponse(status, writeToolRegistrationResult(result), NO_STORE, REGISTRATION_MEDIA_TYPE);
 }

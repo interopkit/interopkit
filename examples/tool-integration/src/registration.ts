@@ -1,10 +1,10 @@
 import type { ToolConfiguration } from "@interopkit/tool-integration";
 import {
+  buildToolRegistration,
   type RegisteredTool,
   type RegistrationGrant,
   type RegistrationStore,
   type ToolRegistration,
-  toToolRegistration,
 } from "@interopkit/tool-integration/platform";
 
 /** The registrations of the platform in memory: those that wait for review, and the tools that its administrator activated. */
@@ -43,7 +43,7 @@ export function createRegistrations(): Registrations {
     activate(clientId, grant) {
       const tool = registered.get(clientId);
       if (tool === undefined) throw new Error(`No tool registered as ${clientId}.`);
-      const registration = toToolRegistration(tool, grant);
+      const registration = buildToolRegistration(tool, grant);
       activated.set(clientId, registration);
       return registration;
     },

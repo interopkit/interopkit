@@ -9,10 +9,10 @@ import {
   type ToolMessageOptions,
 } from "@interopkit/tool-integration/platform";
 import {
-  createDeepLinkResponse,
-  createStartAssessmentPage,
+  buildDeepLinkingResponse,
+  buildStartAssessmentPage,
+  handleLaunch,
   type LtiLaunchOptions,
-  ltiLaunch,
 } from "@interopkit/tool-integration/tool";
 import { decodeJwt, jwtVerify, SignJWT } from "jose";
 import { expect, test } from "vitest";
@@ -88,7 +88,7 @@ async function launchOf(pair: Pair, message: MessageInput) {
     store: pair.store,
     jwks: createJwksCache({ fetch: platformFetch(pair), clock: CLOCK }),
   };
-  const launch = await ltiLaunch(
+  const launch = await handleLaunch(
     { method: "POST", url: pair.registration.redirectUri, headers: { ...FORM, cookie }, body },
     options,
   );
@@ -97,7 +97,7 @@ async function launchOf(pair: Pair, message: MessageInput) {
 }
 
 /** The request that the page of the tool posts to the platform, and the JWT in it. */
-function postOf(page: Awaited<ReturnType<typeof createDeepLinkResponse>>, url: string) {
+function postOf(page: Awaited<ReturnType<typeof buildDeepLinkingResponse>>, url: string) {
   const jwt = postedFields(page).get("JWT") ?? "";
   const request: HttpRequest = {
     method: "POST",
@@ -140,14 +140,14 @@ test("answers a Deep Linking request with five items within a multiple of jose's
   const pair = await createPair("RS256");
   const { launch, options } = await launchOf(pair, deepLinkingMessage());
   if (launch.messageType !== "LtiDeepLinkingRequest") throw new Error("The launch is not a Deep Linking request.");
-  const answer = () => createDeepLinkResponse(launch, { items: ITEMS, message: "Placed." }, options);
+  const answer = () => buildDeepLinkingResponse(launch, { items: ITEMS, message: "Placed." }, options);
   const { jwt, request } = postOf(await answer(), RETURN_URL);
   expect((await readDeepLinkingResponse(request, readOptions(pair))).items).toHaveLength(ITEMS.length);
   await expectRatioInTurns(
     { annotate, bench },
     "deepLinkingResponse",
     { name: "SignJWT of jose", fn: signAgain(pair, jwt) },
-    { name: "createDeepLinkResponse", fn: answer },
+    { name: "buildDeepLinkingResponse", fn: answer },
   );
 });
 
@@ -158,7 +158,7 @@ test("reads a Deep Linking response with five items within a multiple of jose's 
   const pair = await createPair("RS256");
   const { launch, options } = await launchOf(pair, deepLinkingMessage());
   if (launch.messageType !== "LtiDeepLinkingRequest") throw new Error("The launch is not a Deep Linking request.");
-  const { jwt, request } = postOf(await createDeepLinkResponse(launch, { items: ITEMS }, options), RETURN_URL);
+  const { jwt, request } = postOf(await buildDeepLinkingResponse(launch, { items: ITEMS }, options), RETURN_URL);
   await verifyAgain(pair, jwt)();
   await expectRatioInTurns(
     { annotate, bench },
@@ -175,14 +175,14 @@ test("sends a Start Assessment message within a multiple of jose's signing of th
   const pair = await createPair("RS256");
   const { launch, options } = await launchOf(pair, startProctoringMessage());
   if (launch.messageType !== "LtiStartProctoring") throw new Error("The launch is not a Start Proctoring message.");
-  const page = () => createStartAssessmentPage(launch, { endAssessmentReturn: true }, options);
+  const page = () => buildStartAssessmentPage(launch, { endAssessmentReturn: true }, options);
   const { jwt, request } = postOf(await page(), START_ASSESSMENT_URL);
   expect(await readStartAssessment(request, readOptions(pair))).toMatchObject({ attemptNumber: 1 });
   await expectRatioInTurns(
     { annotate, bench },
     "startAssessment",
     { name: "SignJWT of jose", fn: signAgain(pair, jwt) },
-    { name: "createStartAssessmentPage", fn: page },
+    { name: "buildStartAssessmentPage", fn: page },
   );
 });
 
@@ -193,7 +193,7 @@ test("reads a Start Assessment message within a multiple of jose's verification 
   const pair = await createPair("RS256");
   const { launch, options } = await launchOf(pair, startProctoringMessage());
   if (launch.messageType !== "LtiStartProctoring") throw new Error("The launch is not a Start Proctoring message.");
-  const { jwt, request } = postOf(await createStartAssessmentPage(launch, {}, options), START_ASSESSMENT_URL);
+  const { jwt, request } = postOf(await buildStartAssessmentPage(launch, {}, options), START_ASSESSMENT_URL);
   await verifyAgain(pair, jwt)();
   await expectRatioInTurns(
     { annotate, bench },

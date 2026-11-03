@@ -1,4 +1,4 @@
-import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
 import { type Group, type GroupSet, type MessageServices, SCOPES } from "../../protocol/index.js";
 import {
   GROUP_CONTAINER_MEDIA_TYPE,
@@ -57,7 +57,7 @@ async function getGroups(call: Call): Promise<HttpResponse> {
     readGroupContainer(written);
     return written;
   });
-  return jsonResponse(200, body, headers, GROUP_CONTAINER_MEDIA_TYPE);
+  return buildJsonResponse(200, body, headers, GROUP_CONTAINER_MEDIA_TYPE);
 }
 
 /** GET of the group sets of a context (Context Groups 1.0 sections 2.2 and 2.5.2), in pages. */
@@ -79,7 +79,7 @@ async function getGroupSets(call: Call): Promise<HttpResponse> {
     readGroupSetContainer(written);
     return written;
   });
-  return jsonResponse(200, body, headers, GROUP_SET_CONTAINER_MEDIA_TYPE);
+  return buildJsonResponse(200, body, headers, GROUP_SET_CONTAINER_MEDIA_TYPE);
 }
 
 /**

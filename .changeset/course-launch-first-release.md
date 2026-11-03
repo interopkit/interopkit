@@ -35,7 +35,7 @@ to 3. `extendLrsOptions` makes the host's LRS of `@interopkit/learning-records` 
 before the fetch, after terminated or abandoned and after `maxSessionSeconds`, a unit reads and writes only what is its own and
 never changes `LMS.LaunchData`, its statements are judged by the rules of the session and refused with 403, and once the store
 holds them the LMS writes the satisfied statements of the blocks and the course that they make due. `abandonSession` and
-`waiveAu` write the abandoned and waived statements, and `progressOf` tells what a registration holds. The host keeps the
+`waiveAu` write the abandoned and waived statements, and `deriveCourseProgress` tells what a registration holds. The host keeps the
 records in its `Cmi5Store`, whose puts compare a revision.
 `@interopkit/course-launch/au` is the runtime of an assignable unit, without a DOM. `startAuSession` reads the launch URL,
 refuses an LMS outside `trustedOrigins`, posts to the fetch URL once and turns its error codes into refusals, reads the launch

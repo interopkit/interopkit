@@ -3,28 +3,31 @@
  *
  * @remarks
  * The tool starts the OpenID Connect login (with a cookie, or with the platform's browser storage in an iframe), validates
- * the launch of every message type, serves its key set, answers a Deep Linking request with `createDeepLinkResponse`, and calls
+ * the launch of every message type, serves its key set, answers a Deep Linking request with `buildDeepLinkingResponse`, and calls
  * the services of the platform with `createServiceClient`: the line items, results and scores of the Assignment and Grade
  * Services, the members of a context, its groups, the preferences record of a user and the Assessment Control Service of a
  * proctored attempt, with access tokens that its signer asks for and that it reuses. A proctoring tool sends the candidate back to
- * start the assessment with `createStartAssessmentPage`. A tool registers itself with a platform through Dynamic Registration:
- * `readRegistrationInitiation`, `discoverPlatform`, `registerTool`, `toPlatformRegistration` and `createRegistrationClosePage`, and
+ * start the assessment with `buildStartAssessmentPage`. A tool registers itself with a platform through Dynamic Registration:
+ * `readRegistrationInitiation`, `discoverPlatform`, `registerTool`, `buildPlatformRegistration` and `buildRegistrationClosePage`, and
  * reads and changes its registration later through the same service client.
  *
  * @module @interopkit/tool-integration/tool
  */
-export { createDeepLinkResponse, type DeepLinkingResponseInput } from "./deep-linking.js";
+export { buildDeepLinkingResponse, type DeepLinkingResponseInput } from "./deep-linking.js";
 export { type ServeToolJwksOptions, serveToolJwks } from "./jwks.js";
-export { ltiLaunch } from "./launch.js";
-export { ltiLogin } from "./login.js";
+export { handleLaunch } from "./launch.js";
+export { handleLogin } from "./login.js";
 export type { LtiLaunchOptions, LtiLoginOptions, ToolOptions } from "./options.js";
-export { createStartAssessmentPage, type StartAssessmentInput } from "./proctoring/start-assessment.js";
+export { buildStartAssessmentPage, type StartAssessmentInput } from "./proctoring/start-assessment.js";
 export type { PlatformRegistration } from "./registration.js";
-export { createRegistrationClosePage } from "./registration-flow/close-page.js";
+export { buildRegistrationClosePage } from "./registration-flow/close-page.js";
 export { discoverPlatform } from "./registration-flow/discover.js";
 export { type RegistrationInitiation, readRegistrationInitiation } from "./registration-flow/initiation.js";
 export type { DiscoverPlatformOptions, RegisterToolOptions } from "./registration-flow/options.js";
-export { type PlatformRegistrationInput, toPlatformRegistration } from "./registration-flow/platform-registration.js";
+export {
+  buildPlatformRegistration,
+  type PlatformRegistrationInput,
+} from "./registration-flow/platform-registration.js";
 export { registerTool } from "./registration-flow/register.js";
 export type { ToolConfigurationInput } from "./registration-flow/tool-configuration.js";
 export type { Page } from "./services/access.js";

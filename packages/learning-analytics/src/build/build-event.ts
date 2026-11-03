@@ -1,10 +1,10 @@
 import { DataError } from "@interopkit/core";
 import {
+  describeRefusal,
   isRecord,
   type JsonObject,
   jsonObjectSchema,
   parseWith,
-  refusalOf,
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
@@ -79,7 +79,7 @@ export function buildEvent(input: EventInput, options?: BuildOptions): CaliperEv
   const context = contextOf(input, LIBRARY_EVENT_TYPES, options, "The event");
   const event = readEvent(isRecord(input) ? { "@context": context, ...input } : input);
   const errors = [...eventFindings(event)].filter(({ severity }) => severity === "error");
-  if (errors.length > 0) throw new DataError(refusalOf("The event", errors, "validateEvent"));
+  if (errors.length > 0) throw new DataError(describeRefusal("The event", errors, "validateEvent"));
   return event;
 }
 

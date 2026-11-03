@@ -3,13 +3,13 @@
 import { createServer, type Server } from "node:http";
 import { type Fetch, type ServiceError, SYSTEM_CLOCK } from "@interopkit/core";
 import {
-  authorizationRequest,
   createTokenCache,
   exchangeCode,
   type OAuthCallOptions,
   refreshAccessToken,
   registerClient,
   revokeToken,
+  startAuthorization,
 } from "@interopkit/core/oauth";
 import { exportJWK, generateKeyPair } from "jose";
 import Provider from "oidc-provider";
@@ -205,7 +205,7 @@ describe("the client with an independent authorization server", () => {
     if (client.authentication.method !== "client_secret_basic") throw new Error("The server issued no secret.");
     introspectionAuth = `Basic ${btoa(`${client.clientId}:${client.authentication.clientSecret}`)}`;
     const scopes = [...service.scopes, "offline_access"];
-    const pending = await authorizationRequest(server, client, { redirectUri: REDIRECT_URI, scopes });
+    const pending = await startAuthorization(server, client, { redirectUri: REDIRECT_URI, scopes });
     const callback = await browse(pending.url);
     const first = await exchangeCode(server, client, callback.href, pending, options);
     expect(first.refreshToken).toEqual(expect.any(String));

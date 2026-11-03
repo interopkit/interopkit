@@ -33,7 +33,7 @@ const TOKEN_KEY = "token";
  * how long it is good, so each call obtains one, and callers that arrive together still share it. A failed call is not
  * kept: the next call tries again. Each cache holds one token, so a host that uses several clients makes several caches.
  *
- * @param obtain - Gets a new token, such as `clientCredentialsToken` with the client and scopes bound.
+ * @param obtain - Gets a new token, such as `requestClientCredentialsToken` with the client and scopes bound.
  * @param options - The clock and the skew.
  * @returns A function that returns the access token, as the string to send in `Authorization: Bearer`. It takes the `signal`
  * that ends the caller's wait.

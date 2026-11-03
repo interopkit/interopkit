@@ -2,7 +2,7 @@
  * Keys, documents and a `fetch` for the tests of keys and proofs. The keys come from Web Crypto, and the multibase forms are
  * written here from the multicodec table, so that no expected value comes from the code under test.
  */
-import { type Clock, type Fetch, signerFromCryptoKey } from "@interopkit/core";
+import { type Clock, createCryptoKeySigner, type Fetch } from "@interopkit/core";
 import { exportJWK, generateKeyPair } from "jose";
 
 // The 58 characters of the bitcoin alphabet: the digits and letters without 0, O, I and l, in the order of ASCII.
@@ -66,7 +66,7 @@ export const KEYS = {
 
 /** The signer over a test key, with the identifier that its signature names. */
 export function signerOf(key: TestKey, keyId?: string) {
-  return signerFromCryptoKey(key.privateKey, { algorithm: key.algorithm, ...(keyId === undefined ? {} : { keyId }) });
+  return createCryptoKeySigner(key.privateKey, { algorithm: key.algorithm, ...(keyId === undefined ? {} : { keyId }) });
 }
 
 /** A clock that tells a time the test sets. */

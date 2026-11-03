@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { deepFreeze } from "../../../scripts/json-mutation.js";
 import {
   buildAchievementCredential,
+  buildCaseAlignment,
   buildClrCredential,
   buildEndorsementCredential,
   CONTEXTS,
-  caseAlignment,
   readCredential,
   readEntity,
   validateCredential,
@@ -290,23 +290,23 @@ describe("buildClrCredential", () => {
   });
 });
 
-describe("caseAlignment", () => {
+describe("buildCaseAlignment", () => {
   it("builds the alignment to an item of a CASE framework, with its code and framework when it has them", () => {
     const item = { uri: "https://standards.example.org/ims/case/v1p1/CFItems/2b6d1c9e", name: "Understand fractions" };
-    expect(caseAlignment(item)).toStrictEqual({
+    expect(buildCaseAlignment(item)).toStrictEqual({
       type: ["Alignment"],
       targetUrl: item.uri,
       targetName: item.name,
       targetType: "CFItem",
     });
-    expect(caseAlignment({ ...item, code: "3.NF.A.1", framework: "Common Core" })).toMatchObject({
+    expect(buildCaseAlignment({ ...item, code: "3.NF.A.1", framework: "Common Core" })).toMatchObject({
       targetCode: "3.NF.A.1",
       targetFramework: "Common Core",
     });
   });
 
   it("is an alignment that a credential can hold", () => {
-    const alignment = caseAlignment({ uri: "https://standards.example.org/items/1", name: "Fractions" });
+    const alignment = buildCaseAlignment({ uri: "https://standards.example.org/items/1", name: "Fractions" });
     const credential = buildAchievementCredential({
       ...achievementInput(),
       achievement: { ...ACHIEVEMENT, alignment: [alignment] },
@@ -315,10 +315,10 @@ describe("caseAlignment", () => {
   });
 
   it("refuses an item that is wrong, and names every fault", () => {
-    expect(() => caseAlignment({ uri: "items/1", name: 5 as never })).toThrow(
+    expect(() => buildCaseAlignment({ uri: "items/1", name: 5 as never })).toThrow(
       /^The item is invalid: uri: expected a URI with a scheme.*; name: expected a string, found 5\.$/u,
     );
-    expect(() => caseAlignment({ uri: "https://x.example/1", name: "n", extra: 1 } as never)).toThrow(
+    expect(() => buildCaseAlignment({ uri: "https://x.example/1", name: "n", extra: 1 } as never)).toThrow(
       'unexpected property "extra"',
     );
   });
@@ -329,7 +329,7 @@ describe("the builders on input of other types", () => {
     ["buildAchievementCredential", buildAchievementCredential],
     ["buildEndorsementCredential", buildEndorsementCredential],
     ["buildClrCredential", buildClrCredential],
-    ["caseAlignment", caseAlignment],
+    ["buildCaseAlignment", buildCaseAlignment],
   ] as const;
 
   it.each(builders)("%s refuses what JSON or JavaScript hands over that is not its input", (_name, build) => {

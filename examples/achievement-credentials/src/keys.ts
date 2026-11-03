@@ -1,4 +1,4 @@
-import { type Signer, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, type Signer } from "@interopkit/core";
 import { base58 } from "@scure/base";
 
 /** The JOSE algorithm of a key, and so the kind of key: Ed25519 for `EdDSA`, P-256 for `ES256`. */
@@ -57,6 +57,6 @@ export async function createSigningKey(algorithm: SigningAlgorithm): Promise<Sig
     publicKeyJwk,
     multikey,
     did: `did:key:${multikey}`,
-    signer: (keyId) => signerFromCryptoKey(pair.privateKey, { algorithm, keyId }),
+    signer: (keyId) => createCryptoKeySigner(pair.privateKey, { algorithm, keyId }),
   };
 }

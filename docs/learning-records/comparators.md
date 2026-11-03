@@ -47,7 +47,7 @@ and the second implements cmi5, a profile with a standard of its own.
 | Learning Locker | Queues of statement processing and their priorities | Excluded | An application's scheduling; the handler answers one request |
 | Learning Locker | Error tracking with New Relic and Sentry | Excluded | No side channels: the host logs |
 | SQL LRS | The seven resources of 2.0 and 1.0.3 | Has | `handleLrsRequest` with `versions` |
-| SQL LRS | A Statement of 2.0 answered on the route of 1.0.3 | Has | `toStatementVersion`, applied by the handler ([versions](versions.md)) |
+| SQL LRS | A Statement of 2.0 answered on the route of 1.0.3 | Has | `convertStatementVersion`, applied by the handler ([versions](versions.md)) |
 | SQL LRS | Credentials with scopes, `statements/read/mine` included | Has | `access`, `readBasicAuthorization`, `statements.read.mine` |
 | SQL LRS | A template that maps credentials to the authority | Has | `access` returns the `authority` |
 | SQL LRS | Signed Statements | Has | As Learning Locker |
@@ -84,7 +84,7 @@ and the second implements cmi5, a profile with a standard of its own.
 | `@xapi/xapi` | A client of every resource | Has | `createLrsClient` |
 | `@xapi/xapi` | Attachments in a multipart request and answer | Has | `attachments` of a send and of a read |
 | `@xapi/xapi` | Going on from the `more` of a page | Has | `moreStatements` |
-| `@xapi/xapi` | Voiding a Statement | Has | `voidingStatement`, then a send |
+| `@xapi/xapi` | Voiding a Statement | Has | `buildVoidingStatement`, then a send |
 | `@xapi/xapi` | ISO 8601 durations from milliseconds | Has | `formatDuration`, and `parseDuration` back |
 | `@xapi/xapi` | ETags and preconditions of documents | Has | `precondition` of a write, required where the version requires it |
 | `@xapi/xapi` | A transport that the host chooses | Has | `fetch` of the configuration |
@@ -97,7 +97,7 @@ and the second implements cmi5, a profile with a standard of its own.
 | TinCanJS | A value of a language map in the preferred language | Has | `formatStatement` with `canonical` and `languages` |
 | TinCanJS | Durations both ways | Has | `formatDuration`, `parseDuration` |
 | TinCanJS | Attachments | Has | As `@xapi/xapi` |
-| TinCanJS | Hashes and UUIDs | Has | `mboxSha1sum`, `attachmentHash`, `deriveStatementId` |
+| TinCanJS | Hashes and UUIDs | Has | `mboxSha1sum`, `hashAttachment`, `deriveStatementId` |
 | TinCanJS | Going on from `more` | Has | `moreStatements` |
 | TinCanJS | Several LRSs written at once | Excluded | A host sends with several clients; nothing is shared between them |
 | TinCanJS | Launch from the query string | Excluded | As `@xapi/xapi` |
@@ -112,7 +112,7 @@ and the second implements cmi5, a profile with a standard of its own.
 
 ## What no comparator has
 
-The rules of the provider role, a reader that refuses a property given twice, the immutability rules of 4.2 in `sameStatement`,
-the formats `ids` and `canonical` as a function, `toStatementVersion`, signing through a `Signer` in a KMS, the trust of a chain
+The rules of the provider role, a reader that refuses a property given twice, the immutability rules of 4.2 in `isSameStatement`,
+the formats `ids` and `canonical` as a function, `convertStatementVersion`, signing through a `Signer` in a KMS, the trust of a chain
 as a port, an `AbortSignal` on every call, and limits of bytes, tokens, depth, parts and findings on every reader of untrusted
 input.

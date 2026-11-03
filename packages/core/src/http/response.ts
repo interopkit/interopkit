@@ -20,7 +20,7 @@ export interface HttpResponse {
  * @param type - The media type. Default: `application/json;charset=UTF-8`.
  * @returns The answer.
  */
-export function jsonResponse(
+export function buildJsonResponse(
   status: number,
   body: unknown,
   headers: Readonly<Record<string, string>> = {},

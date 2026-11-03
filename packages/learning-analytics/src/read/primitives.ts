@@ -21,7 +21,7 @@ const LAST_HOUR = 23;
 const LAST_MINUTE = 59;
 const LAST_SECOND = 59;
 
-/** Tells whether text is a time in the form that `caliperTime` writes, of a day that exists and a time of that day. */
+/** Tells whether text is a time in the form that `formatDateTime` writes, of a day that exists and a time of that day. */
 function isCaliperTime(text: string): boolean {
   // The form fixes where each field is, so the fields are read without a pattern that captures them.
   return (

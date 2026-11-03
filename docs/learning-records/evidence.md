@@ -95,14 +95,14 @@ node:crypto for a hash and jose for a signature. The ratios are the fastest samp
 | `validateStatements` of the batch | the same | 0.46–0.71 | 1 |
 | `readStatementJson` of its text | `JSON.parse` of the text | 3.4–3.8 | 40 |
 | `buildStatement` of the batch | the validator of Learning Locker | 0.76–0.79 | 4 |
-| `toStatementVersion`, `formatStatement` | the same | 0.52–0.60 | 3 |
-| `sameStatement` of each and its copy | the same | 2.3–3.4 | 20 |
+| `convertStatementVersion`, `formatStatement` | the same | 0.52–0.60 | 3 |
+| `isSameStatement` of each and its copy | the same | 2.3–3.4 | 20 |
 | `matchesStatementQuery` over the batch | the same | 0.06–0.08 | 0.4 |
 | `handleLrsRequest`, a POST of the batch | the same | 0.76–1.60 | 8 |
 | `handleLrsRequest`, a GET of 100 | `JSON.stringify` of the page | 1.18–1.24 | 7 |
 | `mboxSha1sum` of 1,000 addresses | the SHA-1 of node:crypto | 1.6–1.9 | 10 |
 | `deriveStatementId` of 1,000 names | the same | 5.6–6.1 | 40 |
-| `attachmentHash` of 1 MiB, 3.8 to 7.2 ms | the SHA-256 of node:crypto, 0.33 to 0.39 ms | 11–20 | 100 |
+| `hashAttachment` of 1 MiB, 3.8 to 7.2 ms | the SHA-256 of node:crypto, 0.33 to 0.39 ms | 11–20 | 100 |
 | `readMultipart` of 99 Statements with 6.2 MiB of data | the parser of the package and the SHA-256 of node:crypto | 8.7–11.5 | 60 |
 | `writeMultipart` of the same | their JSON, the SHA-256 of node:crypto and a copy | 10.5–15.8 | 80 |
 | `signStatement`, RSA of 2,048 bits | the `CompactSign` of jose | 1.07–1.17 | 6 |
@@ -123,8 +123,8 @@ a Statement to write the paths of its members, which takes 0.79 of the time of t
 the same findings for every rule of both tables in both roles and versions.
 
 The gaps have causes outside the code of the package. The hashes are those of `@noble/hashes` in JavaScript, because
-`attachmentHash`, `readMultipart` and `writeMultipart` answer at once and the digest of Web Crypto is asynchronous and has no
-SHA-224; the hash is most of the time of a message. `deriveStatementId` is the name-based UUID of `uuid`. `sameStatement` reads both
+`hashAttachment`, `readMultipart` and `writeMultipart` answer at once and the digest of Web Crypto is asynchronous and has no
+SHA-224; the hash is most of the time of a message. `deriveStatementId` is the name-based UUID of `uuid`. `isSameStatement` reads both
 Statements and writes their canonical text; a text written without `JSON.stringify` gained 5 percent and was not kept.
 
 ## Size

@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { type FindingSink, refusalOf } from "@interopkit/core/checks";
+import { describeRefusal, type FindingSink } from "@interopkit/core/checks";
 import type { AnyCredential, AnyVerifiableCredential, CredentialIssue, CredentialKind } from "../model/index.js";
 import { inspectCredential, issueSink } from "./inspect.js";
 import {
@@ -63,7 +63,7 @@ export function readCredential(value: unknown, options?: ReadOptions): AnyCreden
   const credential = inspectAny(value, kind, sink);
   const errors = sink.list();
   if (credential === undefined || errors.length > 0) {
-    throw new DataError(refusalOf("The credential", errors, "validateCredential"));
+    throw new DataError(describeRefusal("The credential", errors, "validateCredential"));
   }
   return credential;
 }

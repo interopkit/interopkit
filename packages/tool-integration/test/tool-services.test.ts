@@ -8,7 +8,7 @@ import { type LtiMessage, type ResourceLinkMessage, SCOPES, type Score } from ".
 import {
   advanceScoreTimestamp,
   createServiceClient,
-  ltiLaunch,
+  handleLaunch,
   type ServiceClientOptions,
   type TokenStore,
 } from "../src/tool/index.js";
@@ -46,7 +46,7 @@ async function launched(registration: Parameters<typeof setup>[0] = {}): Promise
   const ctx = setup(registration);
   const lms = new FakeLms(ctx.platform);
   const { request: post } = await cookieLogin(ctx, { claims: { sub: SUBJECT } });
-  const launch: LtiMessage = (await ltiLaunch(post, ctx.options)) as LtiMessage;
+  const launch: LtiMessage = (await handleLaunch(post, ctx.options)) as LtiMessage;
   if (launch.messageType !== "LtiResourceLinkRequest") throw new Error("Not a resource link launch.");
   return { ctx, lms, launch, options: { ...ctx.options, fetch: lms.fetch, scopes: OFFERED } };
 }

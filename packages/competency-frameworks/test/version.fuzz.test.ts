@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { ENTITY_KINDS, toCaseVersion } from "../src/index.js";
+import { convertCaseVersion, ENTITY_KINDS } from "../src/index.js";
 import { fullEntities, fullPackage } from "./full-package.js";
 import { anything, convertsOrRefuses, RUNS, returnsOrRefuses } from "./fuzz.js";
 
@@ -9,7 +9,7 @@ describe("the conversion on any value", () => {
     fc.assert(
       fc.property(anything, (value) => {
         returnsOrRefuses(() => {
-          const result = toCaseVersion(value as never, "1.0");
+          const result = convertCaseVersion(value as never, "1.0");
           expect(Array.isArray(result.dropped)).toBe(true);
         });
       }),

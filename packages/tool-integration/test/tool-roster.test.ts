@@ -3,7 +3,7 @@
 import { DataError, type Fetch } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { type LtiMessage, type PreferencesClaim, SCOPES } from "../src/index.js";
-import { createServiceClient, ltiLaunch, type ServiceClientOptions } from "../src/tool/index.js";
+import { createServiceClient, handleLaunch, type ServiceClientOptions } from "../src/tool/index.js";
 import { ACCESS_TOKEN_URL, ISSUER } from "./fake-platform.js";
 import {
   FakeRosterLms,
@@ -40,7 +40,7 @@ async function launched(registration: Parameters<typeof setup>[0] = {}): Promise
   const ctx = setup(registration);
   const lms = new FakeRosterLms(ctx.platform);
   const { request: post } = await cookieLogin(ctx);
-  const launch = (await ltiLaunch(post, ctx.options)) as LtiMessage;
+  const launch = (await handleLaunch(post, ctx.options)) as LtiMessage;
   return { ctx, lms, launch, options: { ...ctx.options, fetch: lms.fetch, scopes: OFFERED } };
 }
 

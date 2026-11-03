@@ -1,4 +1,4 @@
-import { createFindingSink, type FindingSink, findingsOf, safeParseBounded } from "@interopkit/core/checks";
+import { buildFindings, createFindingSink, type FindingSink, safeParseBounded } from "@interopkit/core/checks";
 import type { Statement, StatementIssue } from "../model/index.js";
 import type { RuleSet } from "./options.js";
 import { judgeRules } from "./rules.js";
@@ -29,7 +29,7 @@ export function inspectStatement(
 ): Statement | undefined {
   const result = safeParseBounded(STATEMENT_SCHEMAS[rules.version], input, sink.room);
   if (!result.success) {
-    sink.add(findingsOf(result.issues).map((finding) => ({ ...finding, severity: "error" })));
+    sink.add(buildFindings(result.issues).map((finding) => ({ ...finding, severity: "error" })));
     return undefined;
   }
   judgeRules(result.output, rules, input, sink);

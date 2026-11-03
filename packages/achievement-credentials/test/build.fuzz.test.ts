@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { BAD_STRINGS, mutate, mutations } from "../../../scripts/json-mutation.js";
 import {
   buildAchievementCredential,
+  buildCaseAlignment,
   buildClrCredential,
   buildEndorsementCredential,
-  caseAlignment,
-  credentialSummary,
   hashIdentifier,
+  isSameCredential,
   matchesIdentifier,
-  newerCredential,
   readCredential,
-  sameCredential,
+  selectNewerCredential,
+  summarizeCredential,
   validateCredential,
 } from "../src/index.js";
 import { ACHIEVEMENT, achievementCredential, PROFILE } from "./fixtures.js";
@@ -84,12 +84,12 @@ describe("the builders and the comparisons on any value", () => {
       fc.property(anything, anything, (first, second) => {
         for (const { build } of Object.values(INPUTS))
           returnsOrRefuses(() => (build as (input: unknown) => unknown)(first));
-        returnsOrRefuses(() => caseAlignment(first as never));
+        returnsOrRefuses(() => buildCaseAlignment(first as never));
         returnsOrRefuses(() => hashIdentifier(first as never, second as never));
         returnsOrRefuses(() => matchesIdentifier(first as never, second as never));
-        returnsOrRefuses(() => sameCredential(first as never, second as never));
-        returnsOrRefuses(() => newerCredential(first as never, second as never));
-        returnsOrRefuses(() => credentialSummary(first as never));
+        returnsOrRefuses(() => isSameCredential(first as never, second as never));
+        returnsOrRefuses(() => selectNewerCredential(first as never, second as never));
+        returnsOrRefuses(() => summarizeCredential(first as never));
       }),
       RUNS,
     );

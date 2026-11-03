@@ -13,7 +13,7 @@ flowchart BT
   model["model<br/>types, vocabularies, durations, times, formats"]
   read["read<br/>schemas, rules, readers, text of a request"]
   build["build<br/>Statements, ids, hashes"]
-  compare["compare<br/>sameStatement, toStatementVersion"]
+  compare["compare<br/>isSameStatement, convertStatementVersion"]
   format["format<br/>ids, exact, canonical"]
   attachments["attachments<br/>hash, multipart message"]
   signing["signing<br/>signStatement, verifyStatementSignature"]
@@ -63,12 +63,12 @@ flowchart BT
 |               | `provider.ts`                                                                                               | What only a Learning Record Provider is held to                                                                                                |
 |               | `identified.ts`, `statement-query.ts`                                                                       | The Agents and Groups that a request may name, and the filters of a query                                                                      |
 |               | `inspect.ts`, `read-statement.ts`, `options.ts`, `read-statement-json.ts`                                   | The parse, the readers and validators, the check of the options, and the text of a request                                                     |
-| `build`       | `build-statement.ts`, `voiding-statement.ts`                                                                | The Statement of an event and the Statement that voids another                                                                                 |
+| `build`       | `build-statement.ts`, `build-voiding-statement.ts`                                                                | The Statement of an event and the Statement that voids another                                                                                 |
 |               | `derive-statement-id.ts`, `mbox-sha1sum.ts`                                                                 | The id of an event, as a UUID of version 5, and the hash of an address                                                                         |
-| `compare`     | `same-statement.ts`, `canonical.ts`                                                                         | The comparison, and the canonical text that two Statements share when they are the same                                                        |
+| `compare`     | `is-same-statement.ts`, `canonical.ts`                                                                         | The comparison, and the canonical text that two Statements share when they are the same                                                        |
 | `format`      | `format-statement.ts`, `options.ts`                                                                         | `formatStatement` and the check of its format and options                                                                                      |
 |               | `format-ids.ts`, `format-canonical.ts`, `language.ts`, `transform.ts`                                       | The two formats that change a Statement, the choice of a language, and the copy that changes Agents, Activities and Verbs                      |
-| `attachments` | `attachment-hash.ts`, `limits.ts`                                                                           | The SHA-256 of the data and the hash of any length, and the limits of a message                                                                |
+| `attachments` | `hash-attachment.ts`, `limits.ts`                                                                           | The SHA-256 of the data and the hash of any length, and the limits of a message                                                                |
 |               | `read-multipart.ts`, `write-multipart.ts`                                                                   | The `multipart/mixed` message of Statements and Attachments, read and written                                                                  |
 | `signing`     | `constants.ts`, `sign-statement.ts`, `verify-statement-signature.ts`                                        | The usage type, the algorithms, the signature of a Statement and its verification                                                              |
 | `client`      | `config.ts`, `request.ts`, `options.ts`                                                                     | The checks of the configuration and the one place that makes a request                                                                         |

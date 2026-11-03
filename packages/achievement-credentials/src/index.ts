@@ -12,15 +12,20 @@ export type {
   DiscoverOptions,
   ServiceDescription,
 } from "./client/index.js";
-export { type CredentialSummary, credentialSummary, newerCredential, sameCredential } from "./compare/index.js";
+export {
+  type CredentialSummary,
+  isSameCredential,
+  selectNewerCredential,
+  summarizeCredential,
+} from "./compare/index.js";
 export {
   type AchievementCredentialInput,
   buildAchievementCredential,
+  buildCaseAlignment,
   buildClrCredential,
   buildEndorsementCredential,
   type CaseItem,
   type ClrCredentialInput,
-  caseAlignment,
   type EndorsementCredentialInput,
   hashIdentifier,
   type KnownIdentity,

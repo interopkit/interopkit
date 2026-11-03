@@ -1,4 +1,4 @@
-import { buildAchievementCredential, credentialSummary, type Profile } from "@interopkit/achievement-credentials";
+import { buildAchievementCredential, type Profile, summarizeCredential } from "@interopkit/achievement-credentials";
 import { bakePng, bakeSvg, readPng, readSvg } from "@interopkit/achievement-credentials/baking";
 import { createCredentialsClient } from "@interopkit/achievement-credentials/client";
 import { signCredentialJwt } from "@interopkit/achievement-credentials/jwt";
@@ -264,7 +264,7 @@ export async function runScenario(): Promise<ScenarioResult> {
     refreshed,
     images: { png, svg },
     badgeV2: {
-      name: badge.credential === undefined ? "" : credentialSummary(badge.credential).name,
+      name: badge.credential === undefined ? "" : summarizeCredential(badge.credential).name,
       verified: badge.verified,
     },
     vcApi: await vcApiFlows(fetch, edDsa, sd),

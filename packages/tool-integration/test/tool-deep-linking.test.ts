@@ -1,11 +1,11 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI claims and of the settings of Deep Linking are those of the specifications.
 
-import { DataError, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { jwtVerify } from "jose";
 import { describe, expect, it } from "vitest";
 import type { ContentItem, DeepLinkingRequestMessage } from "../src/index.js";
-import { createDeepLinkResponse, type DeepLinkingResponseInput, ltiLaunch } from "../src/tool/index.js";
+import { buildDeepLinkingResponse, type DeepLinkingResponseInput, handleLaunch } from "../src/tool/index.js";
 import {
   CLIENT_ID,
   DEPLOYMENT_ID,
@@ -39,7 +39,7 @@ async function deepLinkingRequest(
 ): Promise<DeepLinkingRequestMessage> {
   const claims: Issue["claims"] = settings === undefined ? {} : { [SETTINGS]: { ...EVERYTHING, ...settings } };
   const { request: post } = await cookieLogin(ctx, { message: "deep-linking", claims });
-  return deepLinkingOf(await ltiLaunch(post, ctx.options));
+  return deepLinkingOf(await handleLaunch(post, ctx.options));
 }
 
 /** The settings of a platform that takes one resource link and nothing else. */
@@ -57,7 +57,7 @@ async function answer(
   response: DeepLinkingResponseInput,
   options: Setup["options"] = ctx.options,
 ) {
-  const page = await createDeepLinkResponse(launch, response, options);
+  const page = await buildDeepLinkingResponse(launch, response, options);
   const post = readPost(page);
   const jwt = post.fields.get("JWT") ?? "";
   return { page, post, jwt, ...readToken(jwt) };
@@ -73,7 +73,7 @@ const test: ContentItem = {
   lineItem: { scoreMaximum: 100, label: "Tryout 1", resourceId: "tryout-1", tag: "exam" },
 };
 
-describe("createDeepLinkResponse", () => {
+describe("buildDeepLinkingResponse", () => {
   it("answers with the page that posts the signed response to the return URL, and nothing else", async () => {
     const ctx = setup();
     const launch = await deepLinkingRequest(ctx);
@@ -220,7 +220,7 @@ describe("createDeepLinkResponse", () => {
     for (const accept of [{ accept_multiple: false }, {}]) {
       const one = await deepLinkingRequest(ctx, { ...ONLY_RESOURCE_LINKS, ...accept });
       await expect(answer(ctx, one, { items: items.slice(0, 1) })).resolves.toMatchObject({ jwt: expect.any(String) });
-      await expect(createDeepLinkResponse(one, { items }, ctx.options)).rejects.toThrow(
+      await expect(buildDeepLinkingResponse(one, { items }, ctx.options)).rejects.toThrow(
         new DataError("The platform does not say that it accepts several items, and 2 were given."),
       );
     }
@@ -232,10 +232,10 @@ describe("createDeepLinkResponse", () => {
       accept_types: ["link", "file"],
       accept_presentation_document_targets: ["iframe"],
     });
-    await expect(createDeepLinkResponse(launch, { items: [test] }, ctx.options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(launch, { items: [test] }, ctx.options)).rejects.toThrow(
       new DataError('The item 1 has the type "ltiResourceLink", and the platform accepts the types "link, file".'),
     );
-    await expect(createDeepLinkResponse(launch, { items: [] }, ctx.options)).resolves.toMatchObject({ status: 200 });
+    await expect(buildDeepLinkingResponse(launch, { items: [] }, ctx.options)).resolves.toMatchObject({ status: 200 });
   });
 
   it("refuses a file of a media type that the platform does not accept, and takes one that a pattern names", async () => {
@@ -250,11 +250,11 @@ describe("createDeepLinkResponse", () => {
     });
     for (const accepted of ["image/png", "IMAGE/SVG+XML", "text/html; charset=utf-8", undefined]) {
       await expect(
-        createDeepLinkResponse(launch, file(accepted), ctx.options),
+        buildDeepLinkingResponse(launch, file(accepted), ctx.options),
         String(accepted),
       ).resolves.toMatchObject({ status: 200 });
     }
-    await expect(createDeepLinkResponse(launch, file("application/pdf"), ctx.options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(launch, file("application/pdf"), ctx.options)).rejects.toThrow(
       new DataError(
         'The item 1 is a file of the media type "application/pdf", and the platform accepts the media types "image/*, text/html".',
       ),
@@ -264,7 +264,7 @@ describe("createDeepLinkResponse", () => {
       accept_presentation_document_targets: ["iframe"],
       accept_media_types: "*/*",
     });
-    await expect(createDeepLinkResponse(anything, file("application/pdf"), ctx.options)).resolves.toMatchObject({
+    await expect(buildDeepLinkingResponse(anything, file("application/pdf"), ctx.options)).resolves.toMatchObject({
       status: 200,
     });
   });
@@ -272,15 +272,15 @@ describe("createDeepLinkResponse", () => {
   it("sends a line item unless the platform says it ignores them", async () => {
     const ctx = setup();
     const ignores = await deepLinkingRequest(ctx, { ...ONLY_RESOURCE_LINKS, accept_lineitem: false });
-    await expect(createDeepLinkResponse(ignores, { items: [test] }, ctx.options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(ignores, { items: [test] }, ctx.options)).rejects.toThrow(
       new DataError("The item 1 has a line item, and the platform ignores them."),
     );
     await expect(
-      createDeepLinkResponse(ignores, { items: [{ type: "ltiResourceLink", title: "No score" }] }, ctx.options),
+      buildDeepLinkingResponse(ignores, { items: [{ type: "ltiResourceLink", title: "No score" }] }, ctx.options),
     ).resolves.toMatchObject({ status: 200 });
     for (const accept of [{ accept_lineitem: true }, {}]) {
       const takes = await deepLinkingRequest(ctx, { ...ONLY_RESOURCE_LINKS, ...accept });
-      await expect(createDeepLinkResponse(takes, { items: [test] }, ctx.options)).resolves.toMatchObject({
+      await expect(buildDeepLinkingResponse(takes, { items: [test] }, ctx.options)).resolves.toMatchObject({
         status: 200,
       });
     }
@@ -296,16 +296,16 @@ describe("createDeepLinkResponse", () => {
     const both: ContentItem = { ...iframe, window: {} };
     const embed: ContentItem = { type: "link", url: `${TOOL_ORIGIN}/a`, embed: { html: "<b></b>" } };
     const resource: ContentItem = { type: "ltiResourceLink", iframe: { height: 200 } };
-    await expect(createDeepLinkResponse(launch, { items: [iframe] }, ctx.options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(launch, { items: [iframe] }, ctx.options)).rejects.toThrow(
       new DataError('The item 1 offers the presentations "iframe", and the platform supports "window".'),
     );
-    await expect(createDeepLinkResponse(launch, { items: [embed] }, ctx.options)).rejects.toThrow("embed");
-    await expect(createDeepLinkResponse(launch, { items: [resource] }, ctx.options)).rejects.toThrow("iframe");
-    await expect(createDeepLinkResponse(launch, { items: [both] }, ctx.options)).resolves.toMatchObject({
+    await expect(buildDeepLinkingResponse(launch, { items: [embed] }, ctx.options)).rejects.toThrow("embed");
+    await expect(buildDeepLinkingResponse(launch, { items: [resource] }, ctx.options)).rejects.toThrow("iframe");
+    await expect(buildDeepLinkingResponse(launch, { items: [both] }, ctx.options)).resolves.toMatchObject({
       status: 200,
     });
     const plain: ContentItem = { type: "link", url: `${TOOL_ORIGIN}/a` };
-    await expect(createDeepLinkResponse(launch, { items: [plain] }, ctx.options)).resolves.toMatchObject({
+    await expect(buildDeepLinkingResponse(launch, { items: [plain] }, ctx.options)).resolves.toMatchObject({
       status: 200,
     });
   });
@@ -321,18 +321,18 @@ describe("createDeepLinkResponse", () => {
 
   it("refuses a launch that is not a Deep Linking request, or whose registration changed", async () => {
     const ctx = setup();
-    const resourceLink = await ltiLaunch((await cookieLogin(ctx)).request, ctx.options);
+    const resourceLink = await handleLaunch((await cookieLogin(ctx)).request, ctx.options);
     await expect(
-      createDeepLinkResponse(JSON.parse(JSON.stringify(resourceLink)), { items: [] }, ctx.options),
+      buildDeepLinkingResponse(JSON.parse(JSON.stringify(resourceLink)), { items: [] }, ctx.options),
     ).rejects.toThrow(
       new DataError('The launch must be a LtiDeepLinkingRequest, found the message type "LtiResourceLinkRequest".'),
     );
     const launch = await deepLinkingRequest(ctx);
     await expect(
-      createDeepLinkResponse({ ...launch, deploymentId: "other" }, { items: [] }, ctx.options),
+      buildDeepLinkingResponse({ ...launch, deploymentId: "other" }, { items: [] }, ctx.options),
     ).rejects.toMatchObject({ name: "LtiError", reason: "deployment-unknown" });
     await expect(
-      createDeepLinkResponse({ ...launch, issuer: "https://other.example" }, { items: [] }, ctx.options),
+      buildDeepLinkingResponse({ ...launch, issuer: "https://other.example" }, { items: [] }, ctx.options),
     ).rejects.toMatchObject({ name: "LtiError", reason: "platform-unknown" });
   });
 
@@ -358,13 +358,13 @@ describe("createDeepLinkResponse", () => {
     ];
     for (const [message, text] of bad) {
       const item = JSON.parse(text);
-      const attempt = createDeepLinkResponse(launch, { items: [item] }, ctx.options);
+      const attempt = buildDeepLinkingResponse(launch, { items: [item] }, ctx.options);
       await expect(attempt, text).rejects.toThrow(DataError);
       await expect(attempt, text).rejects.toThrow(message);
     }
     const custom = new Map([["exam", JSON.parse("1")]]);
     await expect(
-      createDeepLinkResponse(launch, { items: [{ type: "ltiResourceLink", custom }] }, ctx.options),
+      buildDeepLinkingResponse(launch, { items: [{ type: "ltiResourceLink", custom }] }, ctx.options),
     ).rejects.toThrow(DataError);
   });
 
@@ -372,24 +372,24 @@ describe("createDeepLinkResponse", () => {
     const ctx = setup();
     const launch = await deepLinkingRequest(ctx);
     const parse = (value: string) => JSON.parse(value);
-    await expect(createDeepLinkResponse(parse("null"), { items: [] }, ctx.options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(parse("null"), { items: [] }, ctx.options)).rejects.toThrow(
       new DataError("The launch must be an object, found null."),
     );
-    await expect(createDeepLinkResponse(launch, parse('{"items":{"length":0}}'), ctx.options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(launch, parse('{"items":{"length":0}}'), ctx.options)).rejects.toThrow(
       new DataError("The items must be an array, found an object."),
     );
-    await expect(createDeepLinkResponse(launch, parse("null"), ctx.options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(launch, parse("null"), ctx.options)).rejects.toThrow(
       new DataError("The response must be an object, found null."),
     );
-    await expect(createDeepLinkResponse(launch, parse('{"items":[],"extra":1}'), ctx.options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(launch, parse('{"items":[],"extra":1}'), ctx.options)).rejects.toThrow(
       new DataError(
         'A Deep Linking response has the properties "items", "message", "log", "errorMessage" and "errorLog", found "extra".',
       ),
     );
-    await expect(createDeepLinkResponse(launch, parse('{"items":[],"message":5}'), ctx.options)).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(launch, parse('{"items":[],"message":5}'), ctx.options)).rejects.toThrow(
       new DataError("The message of a Deep Linking response must be a string, found 5."),
     );
-    await expect(createDeepLinkResponse(launch, { items: [] }, parse("null"))).rejects.toThrow(
+    await expect(buildDeepLinkingResponse(launch, { items: [] }, parse("null"))).rejects.toThrow(
       new DataError("The options must be an object, found null."),
     );
     const settings = launch.settings as unknown as Record<string, unknown>;
@@ -416,7 +416,7 @@ describe("createDeepLinkResponse", () => {
       ["The issuer of the launch must be a non-empty string, found 5.", { issuer: parse("5") }],
     ];
     for (const [message, change] of changes) {
-      const attempt = createDeepLinkResponse({ ...launch, ...change } as never, { items: [] }, ctx.options);
+      const attempt = buildDeepLinkingResponse({ ...launch, ...change } as never, { items: [] }, ctx.options);
       await expect(attempt, message).rejects.toThrow(new DataError(message));
     }
   });
@@ -428,7 +428,7 @@ describe("the signature of a Deep Linking response", () => {
       "sign",
       "verify",
     ])) as CryptoKeyPair;
-    const ctx = setup({ signer: signerFromCryptoKey(pair.privateKey, { algorithm: "ES384", keyId: "tool-ec-2" }) });
+    const ctx = setup({ signer: createCryptoKeySigner(pair.privateKey, { algorithm: "ES384", keyId: "tool-ec-2" }) });
     const launch = await deepLinkingRequest(ctx);
     const { jwt } = await answer(ctx, launch, { items: [] });
     const { payload, protectedHeader } = await jwtVerify(jwt, pair.publicKey, {
@@ -444,9 +444,9 @@ describe("the signature of a Deep Linking response", () => {
     const down = new Error("The KMS is down.");
     const ctx = setup({ signer: { algorithm: "RS256", keyId: "tool-1", sign: () => Promise.reject(down) } });
     const launch = await deepLinkingRequest(ctx);
-    await expect(createDeepLinkResponse(launch, { items: [] }, ctx.options)).rejects.toBe(down);
+    await expect(buildDeepLinkingResponse(launch, { items: [] }, ctx.options)).rejects.toBe(down);
     await expect(
-      createDeepLinkResponse(launch, { items: [] }, { ...ctx.options, signal: AbortSignal.abort(REASON) }),
+      buildDeepLinkingResponse(launch, { items: [] }, { ...ctx.options, signal: AbortSignal.abort(REASON) }),
     ).rejects.toBe(REASON);
   });
 
@@ -459,7 +459,7 @@ describe("the signature of a Deep Linking response", () => {
       seen.push(call?.signal);
       return ctx.options.registration(issuer, clientId);
     };
-    await createDeepLinkResponse(launch, { items: [] }, { ...ctx.options, registration, signal });
+    await buildDeepLinkingResponse(launch, { items: [] }, { ...ctx.options, registration, signal });
     expect(seen).toStrictEqual([signal]);
   });
 

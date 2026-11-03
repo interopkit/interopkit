@@ -4,20 +4,20 @@ import { describe, expect, it } from "vitest";
 import { parseWith } from "../src/checks.js";
 import {
   basePathSchema,
-  bearerTokenOf,
+  buildJsonResponse,
+  buildPageLinks,
+  buildStatusInfoResponse,
   checkHttpRequest,
   type HttpRequest,
-  jsonResponse,
   negotiate,
-  offsetPageLinks,
   type ReadJsonOptions,
   readAccessDecision,
+  readBearerToken,
   readForm,
   readJson,
   readOffsetPage,
   readQuery,
   readText,
-  statusInfoResponse,
 } from "../src/http/index.js";
 import { DataError } from "../src/index.js";
 
@@ -220,10 +220,10 @@ describe("the parameters of a query and a form", () => {
   });
 });
 
-describe("bearerTokenOf", () => {
+describe("readBearerToken", () => {
   it("returns the b64token of the bearer scheme, the scheme in any case and after one or more spaces", () => {
     const tokenOf = (authorization?: string) =>
-      bearerTokenOf(request({ headers: authorization === undefined ? {} : { authorization } }));
+      readBearerToken(request({ headers: authorization === undefined ? {} : { authorization } }));
     expect(tokenOf("Bearer abc.DEF-_~+/9")).toBe("abc.DEF-_~+/9");
     expect(tokenOf("bearer   abc==")).toBe("abc==");
     expect(tokenOf("BEARER abc")).toBe("abc");
@@ -445,9 +445,9 @@ describe("readJson", () => {
   });
 });
 
-describe("jsonResponse", () => {
+describe("buildJsonResponse", () => {
   it("serializes the body and sets the media type", () => {
-    expect(jsonResponse(200, { keys: [] })).toStrictEqual({
+    expect(buildJsonResponse(200, { keys: [] })).toStrictEqual({
       status: 200,
       headers: { "content-type": "application/json;charset=UTF-8" },
       body: '{"keys":[]}',
@@ -456,13 +456,13 @@ describe("jsonResponse", () => {
 
   it("takes more headers, which win over the media type, and another media type", () => {
     expect(
-      jsonResponse(403, { error: "x" }, { "www-authenticate": "Bearer" }, "application/problem+json"),
+      buildJsonResponse(403, { error: "x" }, { "www-authenticate": "Bearer" }, "application/problem+json"),
     ).toStrictEqual({
       status: 403,
       headers: { "content-type": "application/problem+json", "www-authenticate": "Bearer" },
       body: '{"error":"x"}',
     });
-    expect(jsonResponse(200, 1, { "content-type": "text/plain" }).headers).toStrictEqual({
+    expect(buildJsonResponse(200, 1, { "content-type": "text/plain" }).headers).toStrictEqual({
       "content-type": "text/plain",
     });
   });
@@ -646,13 +646,13 @@ describe("readOffsetPage", () => {
   });
 });
 
-describe("offsetPageLinks", () => {
+describe("buildPageLinks", () => {
   const url = "https://provider.example/ims/case/v1p1/CFDocuments?sort=title";
   const at = (offset: number) =>
     `https://provider.example/ims/case/v1p1/CFDocuments?sort=title&limit=10&offset=${offset}`;
 
   it("gives the first, previous, next and last pages of 503 items, as the example of the CASE binding pages them", () => {
-    expect(offsetPageLinks(url, { limit: 10, offset: 10 }, { total: 503 })).toBe(
+    expect(buildPageLinks(url, { limit: 10, offset: 10 }, { total: 503 })).toBe(
       [`<${at(0)}>; rel="first"`, `<${at(0)}>; rel="prev"`, `<${at(20)}>; rel="next"`, `<${at(500)}>; rel="last"`].join(
         ", ",
       ),
@@ -660,25 +660,25 @@ describe("offsetPageLinks", () => {
   });
 
   it("leaves out prev on the first page and next on the last, which the paging of Open Badges asks for only then", () => {
-    expect(offsetPageLinks(url, { limit: 10, offset: 0 }, { total: 10 })).toBe(
+    expect(buildPageLinks(url, { limit: 10, offset: 0 }, { total: 10 })).toBe(
       `<${at(0)}>; rel="first", <${at(0)}>; rel="last"`,
     );
-    expect(offsetPageLinks(url, { limit: 10, offset: 0 }, { total: 0 })).toBe(
+    expect(buildPageLinks(url, { limit: 10, offset: 0 }, { total: 0 })).toBe(
       `<${at(0)}>; rel="first", <${at(0)}>; rel="last"`,
     );
   });
 
   it("gives no last page when the total is unknown, and a next page when more may follow", () => {
-    expect(offsetPageLinks(url, { limit: 10, offset: 20 }, { more: true })).toBe(
+    expect(buildPageLinks(url, { limit: 10, offset: 20 }, { more: true })).toBe(
       `<${at(0)}>; rel="first", <${at(10)}>; rel="prev", <${at(30)}>; rel="next"`,
     );
-    expect(offsetPageLinks(url, { limit: 10, offset: 20 }, { more: false })).toBe(
+    expect(buildPageLinks(url, { limit: 10, offset: 20 }, { more: false })).toBe(
       `<${at(0)}>; rel="first", <${at(10)}>; rel="prev"`,
     );
   });
 
   it("replaces the limit and the offset of the request and keeps its other parameters", () => {
-    const links = offsetPageLinks(
+    const links = buildPageLinks(
       "https://p.example/c?since=2024-01-01T00%3A00%3A00Z&limit=3&offset=3",
       {
         limit: 3,
@@ -696,20 +696,22 @@ describe("offsetPageLinks", () => {
   });
 
   it("names the argument of another type", () => {
-    expect(() => offsetPageLinks("/c", { limit: 1, offset: 0 }, { total: 1 })).toThrow(
+    expect(() => buildPageLinks("/c", { limit: 1, offset: 0 }, { total: 1 })).toThrow(
       new DataError('The URL must be an absolute URL, found "/c".'),
     );
-    expect(() => offsetPageLinks(url, JSON.parse('{"limit":0,"offset":0}'), { total: 1 })).toThrow(DataError);
-    expect(() => offsetPageLinks(url, { limit: 1, offset: 0 }, JSON.parse('{"total":"5"}'))).toThrow(DataError);
-    expect(() => offsetPageLinks(url, { limit: 1, offset: 0 }, JSON.parse("{}"))).toThrow(
+    expect(() => buildPageLinks(url, JSON.parse('{"limit":0,"offset":0}'), { total: 1 })).toThrow(DataError);
+    expect(() => buildPageLinks(url, { limit: 1, offset: 0 }, JSON.parse('{"total":"5"}'))).toThrow(DataError);
+    expect(() => buildPageLinks(url, { limit: 1, offset: 0 }, JSON.parse("{}"))).toThrow(
       new DataError("The extent of the list must have a whole total or a boolean more, found an object."),
     );
   });
 });
 
-describe("statusInfoResponse", () => {
+describe("buildStatusInfoResponse", () => {
   it("writes the imsx_StatusInfo of a failure with the detail of TargetEndSystem, as the REST bindings print it", () => {
-    expect(statusInfoResponse(429, "Busy.", { minor: "server_busy", headers: { "retry-after": "30" } })).toStrictEqual({
+    expect(
+      buildStatusInfoResponse(429, "Busy.", { minor: "server_busy", headers: { "retry-after": "30" } }),
+    ).toStrictEqual({
       status: 429,
       headers: { "content-type": "application/json;charset=UTF-8", "retry-after": "30" },
       body: JSON.stringify({
@@ -726,23 +728,25 @@ describe("statusInfoResponse", () => {
   });
 
   it("leaves out the detail when there is no code, and takes the severity status", () => {
-    expect(JSON.parse(String(statusInfoResponse(404, "Gone.", { severity: "status" }).body))).toStrictEqual({
+    expect(JSON.parse(String(buildStatusInfoResponse(404, "Gone.", { severity: "status" }).body))).toStrictEqual({
       imsx_codeMajor: "failure",
       imsx_severity: "status",
       imsx_description: "Gone.",
     });
-    expect(statusInfoResponse(405, "No.").headers).toStrictEqual({ "content-type": "application/json;charset=UTF-8" });
+    expect(buildStatusInfoResponse(405, "No.").headers).toStrictEqual({
+      "content-type": "application/json;charset=UTF-8",
+    });
   });
 
   it("refuses a status that reports no failure, and options of another type", () => {
-    expect(() => statusInfoResponse(304, "Same.")).toThrow(
+    expect(() => buildStatusInfoResponse(304, "Same.")).toThrow(
       new DataError("The status must be a whole number from 400 to 599, found 304."),
     );
-    expect(() => statusInfoResponse(JSON.parse('"500"'), "x")).toThrow(DataError);
-    expect(() => statusInfoResponse(500, "")).toThrow(DataError);
-    expect(() => statusInfoResponse(500, "x", JSON.parse('{"severity":"warning"}'))).toThrow(DataError);
-    expect(() => statusInfoResponse(500, "x", JSON.parse('{"headers":{"allow":5}}'))).toThrow(DataError);
-    expect(() => statusInfoResponse(500, "x", JSON.parse("null"))).toThrow(DataError);
+    expect(() => buildStatusInfoResponse(JSON.parse('"500"'), "x")).toThrow(DataError);
+    expect(() => buildStatusInfoResponse(500, "")).toThrow(DataError);
+    expect(() => buildStatusInfoResponse(500, "x", JSON.parse('{"severity":"warning"}'))).toThrow(DataError);
+    expect(() => buildStatusInfoResponse(500, "x", JSON.parse('{"headers":{"allow":5}}'))).toThrow(DataError);
+    expect(() => buildStatusInfoResponse(500, "x", JSON.parse("null"))).toThrow(DataError);
   });
 });
 

@@ -26,7 +26,7 @@ flowchart LR
 
 ## Quick start
 
-`ltiLaunch` returns a message of the model. Compare roles by their URIs, which `canonicalizeRole` gives for the simple names
+`handleLaunch` returns a message of the model. Compare roles by their URIs, which `canonicalizeRole` gives for the simple names
 that LTI 1.3 deprecates:
 
 ```ts

@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { DEFAULT_MAX_FINDINGS, describe, type FindingSink, isRecord, refusalOf } from "@interopkit/core/checks";
+import { DEFAULT_MAX_FINDINGS, describe, describeRefusal, type FindingSink, isRecord } from "@interopkit/core/checks";
 import type { Statement, StatementIssue } from "../model/index.js";
 import { error } from "./finding.js";
 import { inspectStatement, issueSink } from "./inspect.js";
@@ -30,7 +30,7 @@ export function readStatement(value: unknown, options?: ReadOptions): Statement 
   const statement = inspectStatement(value, rules, sink);
   const errors = sink.list();
   if (statement === undefined || errors.length > 0) {
-    throw new DataError(refusalOf("The statement", errors, "validateStatement"));
+    throw new DataError(describeRefusal("The statement", errors, "validateStatement"));
   }
   return statement;
 }
@@ -73,7 +73,7 @@ export function readEitherVersion(value: unknown): Statement {
   const other = issueSink(DEFAULT_MAX_FINDINGS, true);
   const earlier = inspectStatement(value, { role: "lrs", version: "1.0.3" }, other);
   if (earlier !== undefined && other.list().length === 0) return earlier;
-  throw new DataError(refusalOf("The statement", errors, "validateStatement"));
+  throw new DataError(describeRefusal("The statement", errors, "validateStatement"));
 }
 
 /** Writes the path of a finding about the Statement at an index of a batch. */

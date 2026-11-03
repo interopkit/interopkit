@@ -13,13 +13,14 @@ export {
   readStatusDetail,
   type StatusDetail,
 } from "./answer.js";
-export { hasNextLink, hasNextPage, linkTarget, retryAfterSeconds, totalCountOf } from "./answer-headers.js";
+export { findLinkTarget, hasNextLink, hasNextPage, readRetryAfterSeconds, readTotalCount } from "./answer-headers.js";
 export type { CallOptions } from "./call-options.js";
 export { callPort, type PortOutcome } from "./call-port.js";
 export { type Clock, checkClock, readClock, SYSTEM_CLOCK } from "./clock.js";
 export { DataError, InteropkitError, ServiceError, type ServiceErrorOptions } from "./errors.js";
 export { createJwksCache, type JwksCache, type JwksCacheOptions } from "./jwks-cache.js";
 export { createKeyedCache, type KeyedCache, type KeyedCacheOptions } from "./keyed-cache.js";
+export { raceAbort } from "./race-abort.js";
 export { type Random, SYSTEM_RANDOM } from "./random.js";
 export {
   callService,
@@ -33,5 +34,4 @@ export {
   type ServiceInit,
   type ServiceResponse,
 } from "./service.js";
-export { type CryptoKeySignerOptions, type Signer, signCompactJws, signerFromCryptoKey } from "./signer/index.js";
-export { untilAborted } from "./until-aborted.js";
+export { type CryptoKeySignerOptions, createCryptoKeySigner, type Signer, signCompactJws } from "./signer/index.js";

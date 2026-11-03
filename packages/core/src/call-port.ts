@@ -1,4 +1,4 @@
-import { untilAborted } from "./until-aborted.js";
+import { raceAbort } from "./race-abort.js";
 
 /** What a call to a port gave: the value, or `undefined` when the port failed. */
 export type PortOutcome<T> =
@@ -24,7 +24,7 @@ export type PortOutcome<T> =
 export async function callPort<T>(call: () => Promise<T> | T, signal?: AbortSignal): Promise<PortOutcome<T>> {
   try {
     signal?.throwIfAborted();
-    return { value: await untilAborted(Promise.resolve(call()), signal) };
+    return { value: await raceAbort(Promise.resolve(call()), signal) };
   } catch (error) {
     if (signal?.aborted) throw error;
     return undefined;

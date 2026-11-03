@@ -1,5 +1,5 @@
 import type { LinkURI, ServedKind } from "@interopkit/competency-frameworks";
-import { caseEntityUri } from "@interopkit/competency-frameworks/graph";
+import { buildEntityUri } from "@interopkit/competency-frameworks/graph";
 
 /** The width of the last group of an identifier: twelve hexadecimal digits. */
 const LAST_GROUP_DIGITS = 12;
@@ -14,10 +14,10 @@ export function identifierOf(number: number): string {
 
 /** Returns the `uri` that an entity has at a provider: the address from which a consumer retrieves it. */
 export function uriOf(origin: string, kind: ServedKind, number: number): string {
-  return caseEntityUri(origin, kind, identifierOf(number));
+  return buildEntityUri(origin, kind, identifierOf(number));
 }
 
-/** Returns the address of a package, or of a part of a rubric, which `caseEntityUri` does not name. */
+/** Returns the address of a package, or of a part of a rubric, which `buildEntityUri` does not name. */
 export function partUriOf(origin: string, collection: PartCollection, identifier: string): string {
   return `${origin}/ims/case/v1p1/${collection}/${identifier}`;
 }

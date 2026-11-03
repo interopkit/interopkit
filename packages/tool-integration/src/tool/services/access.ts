@@ -1,7 +1,7 @@
 import {
   type CallOptions,
   DataError,
-  linkTarget,
+  findLinkTarget,
   requestService,
   ServiceError,
   type ServiceInit,
@@ -262,10 +262,10 @@ export function createServiceAccess(deployment: LtiDeployment, settings: Service
       return readAnswer(response, what, settings.maxTokens, reader);
     },
     next(response, url) {
-      return linkTarget(response.headers, "next", url);
+      return findLinkTarget(response.headers, "next", url);
     },
     link(response, relation, url) {
-      return linkTarget(response.headers, relation, url);
+      return findLinkTarget(response.headers, relation, url);
     },
   };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type LtiMessage, SCOPES } from "../src/index.js";
-import { createServiceClient, ltiLaunch } from "../src/tool/index.js";
+import { createServiceClient, handleLaunch } from "../src/tool/index.js";
 import { ISSUER } from "./fake-platform.js";
 import { cookieLogin, setup } from "./tool-setup.js";
 
@@ -23,7 +23,7 @@ describe("the peak memory of a control status", () => {
   }) => {
     const ctx = setup();
     const { request } = await cookieLogin(ctx);
-    const launch = (await ltiLaunch(request, ctx.options)) as LtiMessage;
+    const launch = (await handleLaunch(request, ctx.options)) as LtiMessage;
     let body = "";
     const client = createServiceClient(launch, {
       ...ctx.options,

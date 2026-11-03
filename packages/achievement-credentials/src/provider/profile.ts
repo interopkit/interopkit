@@ -1,6 +1,6 @@
 import { callPort, DataError } from "@interopkit/core";
 import { isRecord, parseWith } from "@interopkit/core/checks";
-import { type HttpRequest, type HttpResponse, jsonResponse, readJson } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
 import type { Profile } from "../model/index.js";
 import { readEntity } from "../read/index.js";
 import { bodyTypeOf } from "./body.js";
@@ -17,7 +17,7 @@ export async function answerProfile(owner: string, settings: ProviderSettings): 
   const asked = await callPort(() => settings.profiles.get(owner, { signal }), signal);
   if (asked === undefined) return internalError();
   const profile = parseWith(foundProfileSchema, asked.value, "The answer of ProfileStore.get");
-  return profile === undefined ? failure(404, "There is no profile.", "not_found") : jsonResponse(200, profile);
+  return profile === undefined ? failure(404, "There is no profile.", "not_found") : buildJsonResponse(200, profile);
 }
 
 /** Reads the whole profile that a request to replace it carries, or the answer that refuses it. */
@@ -55,5 +55,5 @@ export async function answerProfileUpdate(
   const { signal } = settings;
   const asked = await callPort(() => settings.profiles.put(owner, read.profile, { signal }), signal);
   if (asked === undefined) return internalError();
-  return jsonResponse(200, parseWith(profileSchema, asked.value, "The answer of ProfileStore.put"));
+  return buildJsonResponse(200, parseWith(profileSchema, asked.value, "The answer of ProfileStore.put"));
 }

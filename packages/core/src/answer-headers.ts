@@ -16,7 +16,7 @@ const RELATION = /;\s*rel\s*=\s*(?:"([^"]*)"|([^\s;,"]+))/iu;
  * @param headers - The headers of the answer by name in lower case, as `ServiceResponse` and `ServiceError` give them.
  * @returns The count, or `undefined` when the header is absent or is not a count of at most 15 digits.
  */
-export function totalCountOf(headers: Readonly<Record<string, string>>): number | undefined {
+export function readTotalCount(headers: Readonly<Record<string, string>>): number | undefined {
   const text = headers["x-total-count"]?.trim();
   return text !== undefined && WHOLE_NUMBER.test(text) ? Number(text) : undefined;
 }
@@ -38,7 +38,7 @@ function targetsOf(link: string, relation: string): string[] {
  *
  * @remarks
  * The relation is read quoted or not, in any case, and among several (`rel="prev next"`). An address with commas or semicolons
- * in it does not end a value early. Only whether a next page exists is answered: `linkTarget` gives the address, and only on
+ * in it does not end a value early. Only whether a next page exists is answered: `findLinkTarget` gives the address, and only on
  * the origin of the request.
  *
  * @param headers - The headers of the answer by name in lower case.
@@ -71,7 +71,7 @@ export function hasNextPage(
   received: number,
   limit: number,
 ): boolean {
-  const total = totalCountOf(headers);
+  const total = readTotalCount(headers);
   if (total !== undefined) return offset < total;
   return hasNextLink(headers) ?? received >= limit;
 }
@@ -94,7 +94,7 @@ export function hasNextPage(
  * @throws `DataError` when the relation is not a non-empty string or the request URL is not an absolute `https` URL.
  * @see {@link https://www.rfc-editor.org/rfc/rfc8288 | RFC 8288, Web Linking}
  */
-export function linkTarget(
+export function findLinkTarget(
   headers: Readonly<Record<string, string>>,
   relation: string,
   requestUrl: string,
@@ -126,7 +126,7 @@ export function linkTarget(
  * @returns The seconds, or `undefined` when the header is absent, gives a date, or is not a whole number of at most 15 digits.
  * @see {@link https://www.rfc-editor.org/rfc/rfc9110#field.retry-after | RFC 9110, Retry-After}
  */
-export function retryAfterSeconds(headers: Readonly<Record<string, string>>): number | undefined {
+export function readRetryAfterSeconds(headers: Readonly<Record<string, string>>): number | undefined {
   const delay = headers["retry-after"]?.trim();
   return delay !== undefined && WHOLE_NUMBER.test(delay) ? Number(delay) : undefined;
 }

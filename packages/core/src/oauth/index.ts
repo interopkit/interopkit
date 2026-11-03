@@ -8,12 +8,12 @@
 export type { AccessToken } from "./access-token.js";
 export {
   type AuthorizationRequestParameters,
-  authorizationRequest,
   exchangeCode,
   type PendingAuthorization,
+  startAuthorization,
 } from "./authorization-code.js";
 export type { ClientAuthentication, OAuthClient } from "./client.js";
-export { clientCredentialsToken } from "./client-credentials.js";
+export { requestClientCredentialsToken } from "./client-credentials.js";
 export { refreshAccessToken } from "./refresh.js";
 export {
   type ClientMetadata,

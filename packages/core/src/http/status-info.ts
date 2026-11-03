@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import { checkNonEmptyString, describe, nonEmptyStringSchema, parseWith, strictRecord } from "../checks.js";
 import { DataError } from "../errors.js";
-import { type HttpResponse, jsonResponse } from "./response.js";
+import { buildJsonResponse, type HttpResponse } from "./response.js";
 
 /** The severities of a failure that the services of 1EdTech give: an error, or a status such as a resource not found. */
 const FAILURE_SEVERITIES = ["error", "status"] as const;
@@ -22,7 +22,7 @@ const optionsSchema = strictRecord({
   headers: v.optional(v.record(v.string(), v.string())),
 });
 
-/** The options of `statusInfoResponse`. */
+/** The options of `buildStatusInfoResponse`. */
 export interface StatusInfoOptions {
   /**
    * The code of the detail, from the vocabulary of the specification, such as `server_busy` or `invalid_uuid`.
@@ -61,7 +61,11 @@ export interface StatusInfoOptions {
  * wrong type.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#org.1edtech.ob.v3p0.imsx_statusinfo.class | Open Badges 3.0, Imsx_StatusInfo}
  */
-export function statusInfoResponse(status: number, description: string, options: StatusInfoOptions = {}): HttpResponse {
+export function buildStatusInfoResponse(
+  status: number,
+  description: string,
+  options: StatusInfoOptions = {},
+): HttpResponse {
   if (!Number.isSafeInteger(status) || status < LOWEST_FAILURE || status > HIGHEST_STATUS) {
     throw new DataError(`The status must be a whole number from 400 to 599, found ${describe(status)}.`);
   }
@@ -70,7 +74,7 @@ export function statusInfoResponse(status: number, description: string, options:
     minor,
     severity = "error",
     headers = {},
-  } = parseWith(optionsSchema, options, "The options of statusInfoResponse");
+  } = parseWith(optionsSchema, options, "The options of buildStatusInfoResponse");
   const body = {
     imsx_codeMajor: "failure",
     imsx_severity: severity,
@@ -83,5 +87,5 @@ export function statusInfoResponse(status: number, description: string, options:
           },
         }),
   };
-  return jsonResponse(status, body, headers);
+  return buildJsonResponse(status, body, headers);
 }

@@ -1,6 +1,6 @@
 /**
- * The platform role of LTI 1.3: what launches tools. The host keeps a message for a tool with `ltiPlatformLogin` or
- * `ltiPlatformFrame`, whose URL its page opens in the tool's frame, and routes every request to the platform's origin to
+ * The platform role of LTI 1.3: what launches tools. The host keeps a message for a tool with `prepareToolLaunch` or
+ * `prepareToolFrame`, whose URL its page opens in the tool's frame, and routes every request to the platform's origin to
  * `handlePlatformRequest`: the tool's authentication request, which receives the `id_token` of the kept message, the key set,
  * the token requests, the storage page of the client-side login, and the routes of the services whose stores the host gives:
  * the line items, results and scores of the Assignment and Grade Services over a `GradebookStore`, the members of a context over a
@@ -9,7 +9,7 @@
  * Linking request reads the tool's response with `readDeepLinkingResponse`, and its route at the `start_assessment_url` of a Start
  * Proctoring message reads the proctoring tool's Start Assessment message with `readStartAssessment`. With a `RegistrationStore`, the
  * handler serves Dynamic Registration: the OpenID configuration, the registration endpoint, which takes the token of
- * `createRegistrationInitiation`, and the client configuration endpoint; `toToolRegistration` turns a reviewed registration into the
+ * `buildRegistrationInitiation`, and the client configuration endpoint; `buildToolRegistration` turns a reviewed registration into the
  * registration of a tool.
  *
  * @module @interopkit/tool-integration/platform
@@ -17,7 +17,7 @@
 export { buildCapabilitiesScript, type CapabilitiesScript, type CapabilitiesScriptOptions } from "./capabilities.js";
 export { buildPlatformEndpoints, type PlatformConfig, type PlatformEndpoints } from "./config.js";
 export { type ReceivedDeepLinkingResponse, readDeepLinkingResponse } from "./deep-linking/response.js";
-export { ltiPlatformFrame, ltiPlatformLogin, type PlatformFrame } from "./login.js";
+export { type PlatformFrame, prepareToolFrame, prepareToolLaunch } from "./login.js";
 export type {
   DeepLinkingInputSettings,
   DeepLinkingRequestInput,
@@ -63,6 +63,6 @@ export type {
 } from "./ports.js";
 export { type ReceivedStartAssessment, readStartAssessment } from "./proctoring/start-assessment.js";
 export type { ToolRegistration } from "./registration.js";
-export { createRegistrationInitiation } from "./registration-flow/initiation.js";
-export { type RegistrationGrant, toToolRegistration } from "./registration-flow/tool-registration.js";
+export { buildRegistrationInitiation } from "./registration-flow/initiation.js";
+export { buildToolRegistration, type RegistrationGrant } from "./registration-flow/tool-registration.js";
 export { handlePlatformRequest } from "./router.js";

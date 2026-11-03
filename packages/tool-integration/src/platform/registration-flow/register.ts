@@ -1,6 +1,6 @@
 import { callPort, DataError, readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
-import { bearerTokenOf, type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpRequest, type HttpResponse, readBearerToken } from "@interopkit/core/http";
 import { errorBody, MILLISECONDS, toSeconds } from "../../protocol/internal.js";
 import { methodNotAllowed, refusal, serverError } from "../answers.js";
 import { openingKeys } from "../config.js";
@@ -20,7 +20,7 @@ const LABEL = "RegistrationStore.register";
 
 /** The answer to a registration request whose token is missing, not this platform's, expired or used (RFC 6750 section 3.1). */
 function invalidToken(description: string): HttpResponse {
-  return jsonResponse(401, errorBody("invalid_token", description), {
+  return buildJsonResponse(401, errorBody("invalid_token", description), {
     "www-authenticate": 'Bearer error="invalid_token"',
     "cache-control": "no-store",
   });
@@ -39,7 +39,7 @@ async function spendToken(request: HttpRequest, settings: PlatformSettings): Pro
       ? undefined
       : invalidToken("The registration needs the registration token of its initiation.");
   }
-  const sealed = bearerTokenOf(request);
+  const sealed = readBearerToken(request);
   const token = sealed === undefined ? undefined : await openRegistrationToken(sealed, openingKeys(settings.config));
   if (token === undefined) return invalidToken("The registration token is not one that this platform issued.");
   if (toSeconds(readClock(settings.clock)) >= token.exp) return invalidToken("The registration token has expired.");

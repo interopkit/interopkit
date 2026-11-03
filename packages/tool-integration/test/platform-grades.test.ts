@@ -5,9 +5,9 @@ import { describe, expect, it } from "vitest";
 import { SCOPES } from "../src/index.js";
 import {
   type GradebookStore,
-  ltiPlatformLogin,
   type MessageInput,
   type PlatformRequestOptions,
+  prepareToolLaunch,
 } from "../src/platform/index.js";
 import { readMessage } from "../src/protocol/internal.js";
 import { clientAssertion, TOOL_CLIENT_ID, TOOL_DEPLOYMENT_ID, tokenRequest, toolRegistration } from "./fake-tool.js";
@@ -105,7 +105,7 @@ describe("the claim of the grade services", () => {
 
   it("refuses a message that offers the grade services without its context", async () => {
     const ctx = graded();
-    await expect(ltiPlatformLogin({ ...withGrades, context: undefined }, ctx.login)).rejects.toThrow(
+    await expect(prepareToolLaunch({ ...withGrades, context: undefined }, ctx.login)).rejects.toThrow(
       "need its context",
     );
   });
@@ -126,7 +126,7 @@ describe("the claim of the grade services", () => {
       services: { grades: { lineitem: LINE_ITEM } },
     });
     await expect(
-      ltiPlatformLogin({ ...review, services: { grades: { container: false } } } as never, ctx.login),
+      prepareToolLaunch({ ...review, services: { grades: { container: false } } } as never, ctx.login),
     ).rejects.toThrow(DataError);
   });
 });

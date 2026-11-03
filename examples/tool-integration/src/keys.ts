@@ -1,4 +1,4 @@
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import type { KeySet } from "@interopkit/tool-integration";
 
 /** An elliptic curve key pair on P-256 for ES256: what a tool generates for itself. */
@@ -12,7 +12,7 @@ export function generateSigningKeys(): Promise<CryptoKeyPair> {
 /** The key set of a tool for ES256, as `serveToolJwks` publishes it: a signer and its public key under the same `kid`. */
 export async function toolKeySet(pair: CryptoKeyPair, keyId: string): Promise<KeySet> {
   const publicKey = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid: keyId, alg: "ES256", use: "sig" };
-  return { signer: signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId }), publicKeys: [publicKey] };
+  return { signer: createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId }), publicKeys: [publicKey] };
 }
 
 /**
@@ -26,7 +26,7 @@ export async function generatePlatformKeys(keyId: string): Promise<KeySet> {
     ["sign", "verify"],
   )) as CryptoKeyPair;
   const publicKey = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid: keyId, alg: "RS256", use: "sig" };
-  return { signer: signerFromCryptoKey(pair.privateKey, { algorithm: "RS256", keyId }), publicKeys: [publicKey] };
+  return { signer: createCryptoKeySigner(pair.privateKey, { algorithm: "RS256", keyId }), publicKeys: [publicKey] };
 }
 
 /** The HMAC key with which a platform seals its hints and access tokens. */

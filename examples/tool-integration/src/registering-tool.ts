@@ -7,14 +7,14 @@ import {
   type ToolRegistrationResult,
 } from "@interopkit/tool-integration";
 import {
-  createRegistrationClosePage,
+  buildPlatformRegistration,
+  buildRegistrationClosePage,
   createServiceClient,
   discoverPlatform,
   type PlatformRegistration,
   readRegistrationInitiation,
   registerTool,
   serveToolJwks,
-  toPlatformRegistration,
 } from "@interopkit/tool-integration/tool";
 import type { Handler } from "./network.ts";
 
@@ -66,7 +66,7 @@ export function createRegisteringTool(origin: string, keys: KeySet, fetch: Fetch
       { fetch },
     );
     Object.assign(registered, { platform, result });
-    return createRegistrationClosePage();
+    return buildRegistrationClosePage();
   };
   const handle: Handler = async (request) => {
     const { pathname } = new URL(request.url);
@@ -82,7 +82,7 @@ export function createRegisteringTool(origin: string, keys: KeySet, fetch: Fetch
     activate(deploymentId) {
       const { platform, result } = registered;
       if (platform === undefined || result === undefined) throw new Error("The tool has not registered.");
-      return toPlatformRegistration(platform, result, {
+      return buildPlatformRegistration(platform, result, {
         signer: keys.signer,
         redirectUri: `${origin}/lti/launch`,
         deploymentIds: [deploymentId],

@@ -139,10 +139,10 @@ the runners of CI.
 
 | Benchmark | Reference in the same run | Ratio | Budget |
 | --- | --- | ---: | ---: |
-| `ltiLaunch`, a message with every claim, 0.067 ms | `verifyLaunch` of `@lti-tool/core`, same message | 1.28–1.31 | 7 |
+| `handleLaunch`, a message with every claim, 0.067 ms | `verifyLaunch` of `@lti-tool/core`, same message | 1.28–1.31 | 7 |
 | The same | `validate` of `lti-core`, same message | 1.98–2.06 | 20 |
-| `ltiLaunch` with an RS256 `id_token` | `jwtVerify` of jose, same token | 2.35–2.40 | 20 |
-| `ltiLaunch` with an ES256 `id_token` | the same | 1.76–1.78 | 20 |
+| `handleLaunch` with an RS256 `id_token` | `jwtVerify` of jose, same token | 2.35–2.40 | 20 |
+| `handleLaunch` with an ES256 `id_token` | the same | 1.76–1.78 | 20 |
 | The authorization request that signs an RS256 `id_token` with every claim | `SignJWT` of jose, same claims | 1.28 | 7 |
 | The same, ES256 | the same | 1.99–2.98 | 20 |
 | The same, substituting the 44 variables of the platform | the same request with the names written plainly | 0.99–1.02 | 5 |
@@ -156,7 +156,7 @@ the runners of CI.
 | The members of a context, a page of 1,000, 1.1 ms | `JSON.stringify` of the page | 6.14–6.24 | 40 |
 | The results of a line item, a page of 1,000, 1.0 ms | the same | 7.65–8.06 | 50 |
 | A score, a control request, a registration | `compactVerify` of jose on the token and `JSON.parse` of the body | 2.80–3.39 | 20 |
-| `createDeepLinkResponse` with five items, `createStartAssessmentPage` | `SignJWT` of jose, same claims | 1.06–1.14 | 6 |
+| `buildDeepLinkingResponse` with five items, `buildStartAssessmentPage` | `SignJWT` of jose, same claims | 1.06–1.14 | 6 |
 | `readDeepLinkingResponse`, `readStartAssessment` | `jwtVerify` of jose on the JWT | 2.49–3.25 | 20 |
 
 Substituting 44 variables costs what a request without them costs, since the signature takes the time. Four fixes changed no
@@ -168,10 +168,10 @@ test of the check of a token against jose's own round trip. Timed in turns again
 | --- | --- |
 | A writer drops its `undefined` members in a loop; `Object.fromEntries` took half of the page of members | The members of a context 2.2 to 1.1 ms; the results 2.2 to 1.0 ms with the next fix; a score posted 12 percent less |
 | The address of each result is the address of the results, parsed once, with its user as the query; the platform reads what its store gives without the addresses it then checked again | The results of a line item |
-| A part of a token is canonical base64url by its alphabet, its length and its spare bits, without decoding and encoding it | `ltiLaunch` 0.078 to 0.064 ms; `readDeepLinkingResponse` and `readStartAssessment` 17 and 18 percent less; the token endpoint 15 |
+| A part of a token is canonical base64url by its alphabet, its length and its spare bits, without decoding and encoding it | `handleLaunch` 0.078 to 0.064 ms; `readDeepLinkingResponse` and `readStartAssessment` 17 and 18 percent less; the token endpoint 15 |
 | Extensions are found by the names of the members | `lineItems` 9 percent less |
 
-The gaps that remain have named causes. `ltiLaunch` reads the form and the cookie, checks the registration that the lookup returns,
+The gaps that remain have named causes. `handleLaunch` reads the form and the cookie, checks the registration that the lookup returns,
 counts the JSON tokens of the payload before it parses it, and reads every claim of the message with its schema; `lti-core` reads
 fewer claims and verifies RS256 alone. The key set cache checks the URL of each call, 0.19 of its 0.40 µs, which jose checks once
 when it makes a set; a launch spends 0.5 percent of its time there. A handler of a page reads each item of the store with the
@@ -199,8 +199,8 @@ the peak of a process only grows; the test reports the rise. The rises are those
 
 | Reader | Worst input | Peak rose by | Budget |
 | --- | --- | ---: | ---: |
-| `ltiLogin` | Forms and queries of 64 KiB of repeated and of distinct parameters, and a form of 64 MiB | 0.1–1.3 MiB | 32 MiB |
-| `ltiLaunch` | A form of 64 KiB whose token is one array of small objects, and a form of 64 MiB | 1.3–5.0 MiB | 32 MiB |
+| `handleLogin` | Forms and queries of 64 KiB of repeated and of distinct parameters, and a form of 64 MiB | 0.1–1.3 MiB | 32 MiB |
+| `handleLaunch` | A form of 64 KiB whose token is one array of small objects, and a form of 64 MiB | 1.3–5.0 MiB | 32 MiB |
 | The claims of a token before its signature | A payload of 3.6 million tokens, refused by their number | 1.2–2.2 MiB | 64 MiB |
 | A key set, `createJwksCache` | 64 KiB of empty keys, refused above 100; 100 keys of 64 KiB; one nested 32,000 deep; 64 MiB | 12–15 MiB | 32 MiB |
 | `lineItems` and the other pages | A page of a million tokens in an extension that the reader copies; 1 MiB of empty objects | 84–126 MiB | 256 MiB |

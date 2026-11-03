@@ -1,18 +1,18 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the configurations of Dynamic Registration are those of the specification.
 
-import { DataError, type Fetch, ServiceError, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, DataError, type Fetch, ServiceError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { type LtiMessage, SCOPES, type ToolRegistrationResult } from "../src/index.js";
 import {
-  createRegistrationClosePage,
+  buildPlatformRegistration,
+  buildRegistrationClosePage,
   createServiceClient,
   discoverPlatform,
-  ltiLaunch,
+  handleLaunch,
   type RegistrationInitiation,
   readRegistrationInitiation,
   registerTool,
   type ToolConfigurationInput,
-  toPlatformRegistration,
 } from "../src/tool/index.js";
 import { CLIENT_ID, DEPLOYMENT_ID, ISSUER, REDIRECT_URI, TOOL_ORIGIN } from "./fake-platform.js";
 import { readPost, request } from "./fixture.js";
@@ -390,14 +390,14 @@ describe("registerTool", () => {
   });
 });
 
-describe("toPlatformRegistration", () => {
+describe("buildPlatformRegistration", () => {
   it("makes the tool's record of the platform from its configuration and the registration", async () => {
     const ctx = setup();
     const registrar = new FakeRegistrar(ctx);
     const platform = await discoverPlatform(initiation, { fetch: registrar.fetch });
     const result = await registerTool(platform, tool, initiation, { fetch: registrar.fetch });
-    const signer = signerFromCryptoKey(toolKey.privateKey, { algorithm: "RS256", keyId: toolKey.kid });
-    expect(toPlatformRegistration(platform, result, { signer, redirectUri: REDIRECT_URI })).toEqual({
+    const signer = createCryptoKeySigner(toolKey.privateKey, { algorithm: "RS256", keyId: toolKey.kid });
+    expect(buildPlatformRegistration(platform, result, { signer, redirectUri: REDIRECT_URI })).toEqual({
       issuer: ISSUER,
       clientId: CLIENT_ID,
       deploymentIds: [DEPLOYMENT_ID],
@@ -409,7 +409,7 @@ describe("toPlatformRegistration", () => {
     });
     const audience = { ...platform, authorizationServer: `${ISSUER}/as` };
     expect(
-      toPlatformRegistration(audience, result, { signer, redirectUri: REDIRECT_URI, deploymentIds: ["d-2"] }),
+      buildPlatformRegistration(audience, result, { signer, redirectUri: REDIRECT_URI, deploymentIds: ["d-2"] }),
     ).toMatchObject({
       audience: `${ISSUER}/as`,
       deploymentIds: ["d-2"],
@@ -420,26 +420,26 @@ describe("toPlatformRegistration", () => {
     const registrar = new FakeRegistrar(setup());
     const platform = await discoverPlatform(initiation, { fetch: registrar.fetch });
     const result = await registerTool(platform, tool, initiation, { fetch: registrar.fetch });
-    const signer = signerFromCryptoKey(toolKey.privateKey, { algorithm: "RS256", keyId: toolKey.kid });
-    expect(() => toPlatformRegistration(platform, result, { signer, redirectUri: `${TOOL_ORIGIN}/other` })).toThrow(
+    const signer = createCryptoKeySigner(toolKey.privateKey, { algorithm: "RS256", keyId: toolKey.kid });
+    expect(() => buildPlatformRegistration(platform, result, { signer, redirectUri: `${TOOL_ORIGIN}/other` })).toThrow(
       DataError,
     );
     const withoutDeployment = { ...result, lti: { ...result.lti, deploymentId: undefined } };
-    expect(() => toPlatformRegistration(platform, withoutDeployment, { signer, redirectUri: REDIRECT_URI })).toThrow(
+    expect(() => buildPlatformRegistration(platform, withoutDeployment, { signer, redirectUri: REDIRECT_URI })).toThrow(
       "deploymentIds",
     );
     for (const text of ["null", "5", "{}"]) {
-      expect(() => toPlatformRegistration(platform, result, JSON.parse(text))).toThrow(DataError);
-      expect(() => toPlatformRegistration(platform, JSON.parse(text), { signer, redirectUri: REDIRECT_URI })).toThrow(
-        DataError,
-      );
+      expect(() => buildPlatformRegistration(platform, result, JSON.parse(text))).toThrow(DataError);
+      expect(() =>
+        buildPlatformRegistration(platform, JSON.parse(text), { signer, redirectUri: REDIRECT_URI }),
+      ).toThrow(DataError);
     }
   });
 });
 
-describe("createRegistrationClosePage", () => {
+describe("buildRegistrationClosePage", () => {
   it("answers with a page whose one script tells the platform's window that it may close", async () => {
-    const page = await createRegistrationClosePage();
+    const page = await buildRegistrationClosePage();
     const { scripts, hash } = readPost(page);
     expect(scripts).toBe(1);
     expect(textOf(page.body)).toContain(
@@ -455,7 +455,7 @@ describe("createRegistrationClosePage", () => {
 /** A launch of the platform, for the client of its services. */
 async function launched(ctx: Setup): Promise<LtiMessage> {
   const { request: post } = await cookieLogin(ctx);
-  return (await ltiLaunch(post, ctx.options)) as LtiMessage;
+  return (await handleLaunch(post, ctx.options)) as LtiMessage;
 }
 
 describe("the client of the client configuration endpoint", () => {

@@ -2,7 +2,7 @@
 
 import { base64url } from "jose";
 import { describe, expect, it } from "vitest";
-import { ltiLaunch } from "../src/tool/index.js";
+import { handleLaunch } from "../src/tool/index.js";
 import { formPost } from "./fake-platform.js";
 import { cookieLogin, setup } from "./tool-setup.js";
 
@@ -32,8 +32,8 @@ describe("the peak memory of a launch", () => {
     expect(atLimit.body.byteLength).toBeGreaterThan(MAX_FORM_BYTES - 8);
     const huge = formPost({ id_token: "a".repeat(64 * MIB), state: auth.state }, { cookie });
     const before = peak();
-    await expect(ltiLaunch(atLimit, ctx.options)).rejects.toMatchObject({ reason: "token-malformed" });
-    await expect(ltiLaunch(huge, ctx.options)).rejects.toMatchObject({ reason: "form-too-large" });
+    await expect(handleLaunch(atLimit, ctx.options)).rejects.toMatchObject({ reason: "token-malformed" });
+    await expect(handleLaunch(huge, ctx.options)).rejects.toMatchObject({ reason: "form-too-large" });
     const rise = peak() - before;
     await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
     expect(rise).toBeLessThan(BUDGET);

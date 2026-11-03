@@ -5,12 +5,12 @@ import { describe, expect, it } from "vitest";
 import { deepFreeze } from "../../../scripts/json-mutation.js";
 import {
   buildStatement,
+  buildVoidingStatement,
   deriveStatementId,
   mboxSha1sum,
   readStatement,
   type StatementInput,
   validateStatement,
-  voidingStatement,
 } from "../src/index.js";
 import { copyOf, sharesNothing, summary } from "./fixture.js";
 import { providerStatement, uuid } from "./full-statement.js";
@@ -137,7 +137,7 @@ describe("buildStatement", () => {
   });
 });
 
-describe("voidingStatement", () => {
+describe("buildVoidingStatement", () => {
   const voiding = {
     id: uuid(8),
     actor: { mbox: "mailto:teacher@example.org" },
@@ -145,7 +145,7 @@ describe("voidingStatement", () => {
   };
 
   it("builds the Statement with the voided verb and a reference to the target", () => {
-    expect(voidingStatement(uuid(1), voiding)).toStrictEqual({
+    expect(buildVoidingStatement(uuid(1), voiding)).toStrictEqual({
       id: uuid(8),
       actor: { mbox: "mailto:teacher@example.org" },
       verb: { id: "http://adlnet.gov/expapi/verbs/voided", display: { "en-US": "voided" } },
@@ -156,7 +156,7 @@ describe("voidingStatement", () => {
   });
 
   it("builds a Statement that a reader accepts, whose target need not exist", () => {
-    const statement = voidingStatement(uuid(404), voiding);
+    const statement = buildVoidingStatement(uuid(404), voiding);
     expect(readStatement(statement, { role: "provider" })).toStrictEqual(statement);
   });
 
@@ -166,20 +166,20 @@ describe("voidingStatement", () => {
     [5, "The target must be a string, found 5."],
     [null, "The target must be a string, found null."],
   ])("refuses the target %j", (target, sentence) => {
-    expect(() => voidingStatement(target as string, voiding)).toThrow(new DataError(sentence));
+    expect(() => buildVoidingStatement(target as string, voiding)).toThrow(new DataError(sentence));
   });
 
   it("refuses an input that is not one, or that has a property it does not take", () => {
-    expect(() => voidingStatement(uuid(1), null as never)).toThrow(
+    expect(() => buildVoidingStatement(uuid(1), null as never)).toThrow(
       /^The voiding input must be an object, found null\.$/,
     );
-    expect(() => voidingStatement(uuid(1), { ...voiding, verb: { id: "x" } } as never)).toThrow(
+    expect(() => buildVoidingStatement(uuid(1), { ...voiding, verb: { id: "x" } } as never)).toThrow(
       /^The voiding input has the properties "id", "actor" and "timestamp", found "verb"\.$/,
     );
   });
 
   it("refuses an input whose Statement cannot be built, as buildStatement does", () => {
-    expect(() => voidingStatement(uuid(1), { ...voiding, timestamp: "x" })).toThrow("At timestamp:");
+    expect(() => buildVoidingStatement(uuid(1), { ...voiding, timestamp: "x" })).toThrow("At timestamp:");
   });
 });
 

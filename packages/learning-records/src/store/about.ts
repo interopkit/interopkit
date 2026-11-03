@@ -1,4 +1,4 @@
-import { type HttpResponse, jsonResponse, readQuery } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse, readQuery } from "@interopkit/core/http";
 import { checkNames } from "./parameters.js";
 import { attempt, type Context, isRefusal } from "./verdict.js";
 
@@ -8,6 +8,9 @@ export function handleAbout(context: Context): Promise<HttpResponse> {
   if (isRefusal(checked)) return Promise.resolve(context.refuse(checked.status, checked.message));
   const { aboutExtensions, versions } = context.settings;
   return Promise.resolve(
-    jsonResponse(200, { version: versions, ...(aboutExtensions === undefined ? {} : { extensions: aboutExtensions }) }),
+    buildJsonResponse(200, {
+      version: versions,
+      ...(aboutExtensions === undefined ? {} : { extensions: aboutExtensions }),
+    }),
   );
 }

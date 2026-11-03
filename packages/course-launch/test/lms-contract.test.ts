@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
-import { abandonSession, createRegistration, prepareLaunch, progressOf, waiveAu } from "../src/lms/index.js";
+import { abandonSession, createRegistration, deriveCourseProgress, prepareLaunch, waiveAu } from "../src/lms/index.js";
 import { AU_AUTHORITY, AU1, AU3, LMS_CREDENTIAL, testHost } from "./lms-host.js";
 import { launchUnit, register, sendStatement, unitStatement } from "./lms-session.js";
 
@@ -170,7 +170,7 @@ describe("moveOn of every kind", () => {
       expect((await sendStatement(host, launched, unitStatement(launched, verb, result))).status).toBe(204);
     }
     const record = (await host.store.registration(registration.id)) ?? expect.unreachable();
-    expect(progressOf(record, host.course).aus[0]?.satisfied).toBe(satisfied);
+    expect(deriveCourseProgress(record, host.course).aus[0]?.satisfied).toBe(satisfied);
   });
 
   it("launches a unit without launch parameters or mastery score, and makes ids with crypto.randomUUID by default", async () => {

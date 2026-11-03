@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { exceededJsonLimit, isRecord, nestsDeeperThan } from "@interopkit/core/checks";
+import { findExceededJsonLimit, isRecord, nestsDeeperThan } from "@interopkit/core/checks";
 import type { Extensions } from "../../model/index.js";
 import { JsonLimitError } from "../../read/index.js";
 
@@ -25,7 +25,7 @@ export function readObject(
     throw new DataError(`${what} must be a JSON object, and it holds bytes that are not UTF-8.`);
   }
   // The depth is refused before the tokens, as the text of a request is, so a text that passes the tokens first is read on.
-  const excess = exceededJsonLimit(text, maxDepth, maxTokens);
+  const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
   if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
     throw new DataError(`${what} must be a JSON object, and it nests deeper than the limit of ${maxDepth} levels.`);
   }

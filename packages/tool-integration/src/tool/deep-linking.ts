@@ -53,7 +53,7 @@ export interface DeepLinkingResponseInput {
 
 const RESPONSE_PROPERTIES = ["items", "message", "log", "errorMessage", "errorLog"];
 
-/** Checks the launch that the host passes: a Deep Linking request that `ltiLaunch` returned. */
+/** Checks the launch that the host passes: a Deep Linking request that `handleLaunch` returned. */
 function checkLaunch(value: unknown): asserts value is DeepLinkingRequestMessage {
   checkRecord(value, "The launch must be an object");
   if (value.messageType !== MESSAGE_TYPE) {
@@ -120,7 +120,7 @@ function writeItem(item: unknown, index: number): { readonly written: JsonObject
  * of the return URL. The tool answers even when it places no item.
  *
  * @see {@link https://standards.1edtech.org/lti/specifications/launch_messages/deep_linking/lti-deep-linking-spec | LTI Deep Linking 2.0}
- * @param launch - The Deep Linking request that `ltiLaunch` returned.
+ * @param launch - The Deep Linking request that `handleLaunch` returned.
  * @param response - The items to place, and the messages for the user and the log.
  * @param options - The registrations of the tool and its clock.
  * @returns The page to send to the browser.
@@ -130,7 +130,7 @@ function writeItem(item: unknown, index: number): { readonly written: JsonObject
  * deployment of the launch.
  * @throws The error of the signer when it fails, and the `reason` of `options.signal` when it aborts.
  */
-export async function createDeepLinkResponse(
+export async function buildDeepLinkingResponse(
   launch: DeepLinkingRequestMessage,
   response: DeepLinkingResponseInput,
   options: ToolOptions,

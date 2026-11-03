@@ -1,4 +1,4 @@
-import { type CredentialSummary, credentialSummary } from "@interopkit/achievement-credentials";
+import { type CredentialSummary, summarizeCredential } from "@interopkit/achievement-credentials";
 import { createCredentialsClient } from "@interopkit/achievement-credentials/client";
 import { type VerifyOptions, verifyCredential } from "@interopkit/achievement-credentials/verify";
 import type { Fetch } from "@interopkit/core";
@@ -40,7 +40,7 @@ export function createEmployer(config: EmployerConfig) {
         failed: result.checks
           .filter(({ outcome }) => outcome === "failed" || outcome === "unavailable")
           .map(({ check }) => check),
-        summary: result.credential === undefined ? undefined : credentialSummary(result.credential),
+        summary: result.credential === undefined ? undefined : summarizeCredential(result.credential),
       };
     },
     /** Shows every credential in the wallet, in the order the wallet lists them. */

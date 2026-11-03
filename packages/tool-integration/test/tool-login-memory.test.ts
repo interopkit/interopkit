@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
-import { ltiLogin } from "../src/tool/index.js";
+import { handleLogin } from "../src/tool/index.js";
 import { LOGIN_URL } from "./fake-platform.js";
 import { request } from "./fixture.js";
 import { setup } from "./tool-setup.js";
@@ -46,7 +46,7 @@ describe("the peak memory of a login initiation", () => {
       request({ url: `${LOGIN_URL}?${distinct}` }),
     ];
     const before = peak();
-    for (const initiation of initiations) await expect(ltiLogin(initiation, ctx.options)).rejects.toThrow(DataError);
+    for (const initiation of initiations) await expect(handleLogin(initiation, ctx.options)).rejects.toThrow(DataError);
     const rise = peak() - before;
     await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
     expect(rise).toBeLessThan(BUDGET);

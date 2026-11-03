@@ -10,6 +10,7 @@ describe("the public API", () => {
       [
         "ASSOCIATION_TYPES",
         "CASE_VERSIONS",
+        "convertCaseVersion",
         "ENTITY_KINDS",
         "FILTER_PREDICATES",
         "readEntity",
@@ -19,7 +20,6 @@ describe("the public API", () => {
         "STATUS_CODES_MAJOR",
         "STATUS_CODES_MINOR",
         "STATUS_SEVERITIES",
-        "toCaseVersion",
         "validateEntity",
         "validatePackage",
       ].sort(),
@@ -27,20 +27,20 @@ describe("the public API", () => {
   });
 
   it("exports only what the client module documents", () => {
-    expect(Object.keys(client).sort()).toStrictEqual(["caseFilter", "createCaseClient", "readStatusInfo"].sort());
+    expect(Object.keys(client).sort()).toStrictEqual(["writeCaseFilter", "createCaseClient", "readStatusInfo"].sort());
   });
 
   it("exports only what the graph module documents", () => {
     expect(Object.keys(graph).sort()).toStrictEqual(
       [
         "ADOPTION_STATUSES",
-        "adoptionStatus",
-        "associationsOf",
-        "caseEntityUri",
+        "buildEntityUri",
+        "buildFrameworkTree",
         "crosswalk",
         "diffPackages",
-        "frameworkTree",
         "isNewer",
+        "listAssociations",
+        "readAdoptionStatus",
       ].sort(),
     );
   });

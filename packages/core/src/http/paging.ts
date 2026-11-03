@@ -84,7 +84,7 @@ export function readOffsetPage(parameters: ReadonlyMap<string, string>, sizes: P
  * @throws `DataError` when the URL is not absolute or the page or the extent is not whole numbers.
  * @see {@link https://www.rfc-editor.org/rfc/rfc8288 | RFC 8288, Web Linking}
  */
-export function offsetPageLinks(url: string, page: OffsetPage, extent: ListExtent): string {
+export function buildPageLinks(url: string, page: OffsetPage, extent: ListExtent): string {
   checkString(url, "The URL");
   if (!URL.canParse(url)) throw new DataError(`The URL must be an absolute URL, found ${describe(url)}.`);
   checkRecord(page, "The page must be an object");

@@ -4,7 +4,7 @@
 and that wallets and backpacks still hold. A 2.0 badge is three documents of JSON-LD under the context
 `https://w3id.org/openbadges/v2`: the assertion, its BadgeClass and the Profile of its issuer, each embedded in the document that
 names it or hosted at its own address. `readCredential` reads them into a `BadgeAssertionV2`, `validateCredential` lists what is
-wrong with them, `credentialSummary` shows one, and `matchesIdentifier` tells whether its recipient is a known person. A 2.0
+wrong with them, `summarizeCredential` shows one, and `matchesIdentifier` tells whether its recipient is a known person. A 2.0
 badge is read and never written.
 
 ```mermaid
@@ -26,13 +26,13 @@ flowchart TD
 | ----------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | `readCredential`        | An assertion that embeds its BadgeClass, which embeds its issuer; or a `BadgeAssertionV2`, as parsed JSON       | A `BadgeAssertionV2`, or a `DataError` on an error     |
 | `validateCredential`    | The same                                                                                                      | Every finding, errors and warnings, as data            |
-| `credentialSummary`     | A `BadgeAssertionV2`                                                                                          | The name, description, image, issuer and dates to show |
+| `summarizeCredential`     | A `BadgeAssertionV2`                                                                                          | The name, description, image, issuer and dates to show |
 | `matchesIdentifier`     | The `recipient` of an assertion and an identity that the caller knows                                         | Whether they are the same person                       |
 
 ## Quick start
 
 ```ts
-import { credentialSummary, matchesIdentifier, readCredential, validateCredential } from "@interopkit/achievement-credentials";
+import { matchesIdentifier, readCredential, summarizeCredential, validateCredential } from "@interopkit/achievement-credentials";
 
 const assertion = {
   "@context": "https://w3id.org/openbadges/v2",
@@ -66,7 +66,7 @@ const badge = readCredential(assertion);
 "assertion" in badge && badge.assertion.verification; // => { type: ["HostedBadge"] }
 "assertion" in badge && badge.assertion.badge; // => "https://example.org/badges/5"
 "assertion" in badge && matchesIdentifier(badge.assertion.recipient, { type: "email", value: "alice@example.org" }); // => true
-credentialSummary(badge).issuerName; // => "Example Maker Society"
+summarizeCredential(badge).issuerName; // => "Example Maker Society"
 
 // A hosted assertion usually names its BadgeClass by its address, which reading does not follow.
 validateCredential({ ...assertion, badge: "https://example.org/badges/5" }).map((finding) => `${finding.rule} at ${finding.path}`); // => ["not-embedded at badge"]
@@ -163,7 +163,7 @@ its findings stop at the limit.
 | Case                                                                     | Result                                                                                                                                            |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `readCredential` is given an assertion with an error                     | `DataError`: `The credential is invalid at badge: is the IRI of the BadgeClass, which is not embedded: embed it, or verify the assertion, which fetches it.` |
-| `credentialSummary` or `matchesIdentifier` is given a value that is not one | `DataError` that names the path of the first error                                                                                              |
+| `summarizeCredential` or `matchesIdentifier` is given a value that is not one | `DataError` that names the path of the first error                                                                                              |
 | `validateCredential` is given any value                                   | The findings. It does not throw                                                                                                                  |
 
 ## Not included

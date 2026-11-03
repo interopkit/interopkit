@@ -1,6 +1,6 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
-import { createFindingSink, DEFAULT_MAX_FINDINGS, findingsOf, safeParseBounded } from "../src/checks.js";
+import { buildFindings, createFindingSink, DEFAULT_MAX_FINDINGS, safeParseBounded } from "../src/checks.js";
 
 /** A finding of a package, which adds a severity to those of the core. */
 interface Issue {
@@ -91,15 +91,15 @@ describe("safeParseBounded", () => {
     const parsed = safeParseBounded(schema, value, 12);
     expect(full.issues).toHaveLength(12);
     expect(parsed.success).toBe(false);
-    expect(findingsOf(parsed.issues)).toStrictEqual(findingsOf(full.issues ?? []));
+    expect(buildFindings(parsed.issues)).toStrictEqual(buildFindings(full.issues ?? []));
   });
 
   it("stops at the first issue beyond the limit and reads no further", () => {
     const parsed = safeParseBounded(schema, wrong(100_000), 10);
     // Each entry has three missing properties, so the issue beyond the limit is the second of the fourth entry.
     expect(parsed.issues).toHaveLength(11);
-    expect(findingsOf(parsed.issues)).toStrictEqual(
-      findingsOf(v.safeParse(schema, wrong(4)).issues?.slice(0, 11) ?? []),
+    expect(buildFindings(parsed.issues)).toStrictEqual(
+      buildFindings(v.safeParse(schema, wrong(4)).issues?.slice(0, 11) ?? []),
     );
   });
 

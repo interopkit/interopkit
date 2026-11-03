@@ -1,5 +1,5 @@
 import type { CallOptions, Clock, Fetch } from "@interopkit/core";
-import { type AccessToken, clientCredentialsToken } from "@interopkit/core/oauth";
+import { type AccessToken, requestClientCredentialsToken } from "@interopkit/core/oauth";
 import { CLAIM } from "../protocol/internal.js";
 import type { PlatformRegistration } from "./registration.js";
 
@@ -36,7 +36,7 @@ export function requestServiceToken(
   call: TokenCall,
 ): Promise<AccessToken> {
   const { accessTokenUrl, audience, clientId, signer } = registration;
-  return clientCredentialsToken(
+  return requestClientCredentialsToken(
     { tokenEndpoint: accessTokenUrl, ...(audience === undefined ? {} : { audience }) },
     { clientId, authentication: { method: "private_key_jwt", signer, claims: { [CLAIM.deploymentId]: deploymentId } } },
     scopes,

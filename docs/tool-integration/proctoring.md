@@ -3,7 +3,7 @@
 Proctoring Services 1.0 in both roles. A platform that delivers an assessment sends the candidate to a proctoring tool with an
 `LtiStartProctoring` message; the tool secures the session, then sends the candidate back with a signed `LtiStartAssessment`
 message, and may control the attempt through the Assessment Control Service (ACS) while it runs and after it ends. In the tool
-role, `createStartAssessmentPage` signs the Start Assessment message and returns the page that posts it, and `control` of
+role, `buildStartAssessmentPage` signs the Start Assessment message and returns the page that posts it, and `control` of
 `createServiceClient` calls the ACS. In the platform role, `readStartAssessment` reads the posted message against the session
 data that the platform sealed into the Start Proctoring message, and `handlePlatformRequest` serves the ACS over the host's
 `AssessmentControl`. The control request and status are the [service models](services.md) that both roles share.
@@ -14,11 +14,11 @@ sequenceDiagram
   participant P as Platform role
   participant B as Browser
   participant T as Proctoring tool
-  H->>P: ltiPlatformFrame(LtiStartProctoring, services.control)
+  H->>P: prepareToolFrame(LtiStartProctoring, services.control)
   P-->>B: login, then the id_token: session_data sealed, the acs claim
-  B->>T: ltiLaunch
+  B->>T: handleLaunch
   T->>T: checks of the candidate and the room
-  T-->>B: createStartAssessmentPage: page that posts JWT to start_assessment_url
+  T-->>B: buildStartAssessmentPage: page that posts JWT to start_assessment_url
   B->>H: POST JWT (the host's route)
   H->>P: readStartAssessment(request, options)
   P-->>H: the message and the subject of the session data
@@ -30,19 +30,19 @@ sequenceDiagram
 
 | Role     | Function                                              | Does                                                                                                  |
 | -------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Tool     | `createStartAssessmentPage(launch, input, options)`   | Signs the Start Assessment message and returns the page that posts it to the start assessment URL     |
+| Tool     | `buildStartAssessmentPage(launch, input, options)`   | Signs the Start Assessment message and returns the page that posts it to the start assessment URL     |
 | Tool     | `createServiceClient(deployment, options).control(url, request)` | Sends an action on an attempt and returns its status                                       |
 | Platform | `readStartAssessment(request, options)`               | Reads the form the tool posted, verifies it and its session data, and returns the message             |
 | Platform | `handlePlatformRequest(request, options)`             | With `services.control`, serves `/assessment-control` and offers the `acs` claim in a Start Proctoring message |
 
 ## Quick start
 
-A proctoring tool sends the candidate back to start. The sample builds the launch by hand where a tool gets it from `ltiLaunch`, and
+A proctoring tool sends the candidate back to start. The sample builds the launch by hand where a tool gets it from `handleLaunch`, and
 signs with a key that it generates where a tool uses the key that the platform's administrator registered.
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
-import { createStartAssessmentPage } from "@interopkit/tool-integration/tool";
+import { createCryptoKeySigner } from "@interopkit/core";
+import { buildStartAssessmentPage } from "@interopkit/tool-integration/tool";
 
 const keys = await crypto.subtle.generateKey(
   { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
@@ -57,7 +57,7 @@ const registration = {
   jwksUrl: "https://assessment.example/jwks",
   accessTokenUrl: "https://assessment.example/token",
   redirectUri: "https://proctor.example.com/lti/launch",
-  signer: signerFromCryptoKey(keys.privateKey, { algorithm: "RS256", keyId: "proctor-key-1" }),
+  signer: createCryptoKeySigner(keys.privateKey, { algorithm: "RS256", keyId: "proctor-key-1" }),
 };
 const launch = {
   messageType: "LtiStartProctoring",
@@ -70,7 +70,7 @@ const launch = {
   startAssessmentUrl: "https://assessment.example/proctoring/start",
   sessionData: "opaque-session-data-of-the-platform",
 };
-const page = await createStartAssessmentPage(
+const page = await buildStartAssessmentPage(
   launch,
   { verifiedUser: { givenName: "Ana", familyName: "Candidate" } },
   { registration: async () => registration, clock: { now: () => 1_700_000_000_000 } },
@@ -82,12 +82,12 @@ page.headers["content-security-policy"].endsWith("form-action https://assessment
 
 A whole flow, a platform that delivers an exam and a tool that proctors it, runs in the
 [example](../../examples/tool-integration/README.md): `src/tool.ts` answers a Start Proctoring message with
-`createStartAssessmentPage` and pauses the attempt, `src/platform.ts` has the route at the start assessment URL that calls
+`buildStartAssessmentPage` and pauses the attempt, `src/platform.ts` has the route at the start assessment URL that calls
 `readStartAssessment`, and `src/proctoring.ts` holds the attempts behind the ACS.
 
 ## The tool role
 
-`createStartAssessmentPage(launch, input, options)` takes the `StartProctoringMessage` that `ltiLaunch` returned, what the tool says,
+`buildStartAssessmentPage(launch, input, options)` takes the `StartProctoringMessage` that `handleLaunch` returned, what the tool says,
 and the options of the tool role (`registration`, `clock`, `signal`). The tool calls it only when the assessment may proceed;
 otherwise it sends the browser to the `returnUrl` of the launch presentation with `lti_errormsg` (Proctoring Services 3.3).
 
@@ -195,7 +195,7 @@ after the end. The host maps the actions to its delivery, such as the pause of a
 
 | Error                                                   | When                                                                                 | What to do                                                 |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| `DataError` from `createStartAssessmentPage`            | An argument has the wrong type, a verified claim is not one that the launch carried with that value, or the picture is the platform's | Verify only what the platform sent; take the picture |
+| `DataError` from `buildStartAssessmentPage`            | An argument has the wrong type, a verified claim is not one that the launch carried with that value, or the picture is the platform's | Verify only what the platform sent; take the picture |
 | `DataError` from `control`                              | The request breaks section 5.1, or the answer is not a status                        | Fix the request; the platform's answer is refused          |
 | `LtiError` `scope-unavailable`, `service-origin-refused` | The platform offered no `control.all`, or the URL may not receive the token          | Pass the scope; name the platform's private origin in `serviceOrigins` |
 | `LtiError` of `readStartAssessment`, 400 or 401         | The form or the token fails a check                                                   | Answer with its `status`                                   |

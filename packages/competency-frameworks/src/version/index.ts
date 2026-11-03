@@ -3,4 +3,4 @@
  *
  * @module
  */
-export { type Converted, toCaseVersion, type VersionedValue } from "./to-case-version.js";
+export { type Converted, convertCaseVersion, type VersionedValue } from "./convert-case-version.js";

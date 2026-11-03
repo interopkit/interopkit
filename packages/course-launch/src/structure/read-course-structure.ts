@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { createFindingSink, type FindingSink, refusalOf } from "@interopkit/core/checks";
+import { createFindingSink, describeRefusal, type FindingSink } from "@interopkit/core/checks";
 import type { CourseIssue, CourseStructure } from "../model/index.js";
 import { inspectCourseStructure } from "./inspect.js";
 import { type CourseReadOptions, type CourseReadSettings, readCourseReadOptions } from "./options.js";
@@ -26,7 +26,7 @@ export function readStructureWith(xml: unknown, settings: CourseReadSettings): C
   const structure = inspectCourseStructure(xml, settings, sink);
   const errors = sink.list();
   if (structure === undefined || errors.length > 0) {
-    throw new DataError(refusalOf("The course structure", errors, "validateCourseStructure"));
+    throw new DataError(describeRefusal("The course structure", errors, "validateCourseStructure"));
   }
   return structure;
 }

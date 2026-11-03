@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { BAD_STRINGS, mutate, mutations } from "../../../scripts/json-mutation.js";
 import { soundAssertion, soundRevocationList } from "../../../scripts/open-badges-v2-rules.js";
-import { CONTEXTS, credentialSummary, readCredential, validateCredential } from "../src/index.js";
+import { CONTEXTS, readCredential, summarizeCredential, validateCredential } from "../src/index.js";
 import { inspectDocumentV2, issueSink, readJwsPayload } from "../src/read/internal.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
@@ -48,7 +48,7 @@ describe("the reader of Open Badges 2.0 on any value", () => {
         for (const value of [document, parts]) {
           expect(Array.isArray(validateCredential(value))).toBe(true);
           returnsOrRefuses(() => readCredential(value));
-          returnsOrRefuses(() => credentialSummary(value as never));
+          returnsOrRefuses(() => summarizeCredential(value as never));
         }
         const sink = issueSink(1000, false);
         expect(() => inspectDocumentV2("revocation-list", members, sink)).not.toThrow();

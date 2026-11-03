@@ -12,7 +12,7 @@ flowchart BT
   core["@interopkit/core<br/>DataError, checks"]
   model["model<br/>types, terms, query, status"]
   read["read<br/>schemas, findings, rules of a package"]
-  version["version<br/>toCaseVersion"]
+  version["version<br/>convertCaseVersion"]
   graph["graph<br/>tree, associations, crosswalk,<br/>diff, staleness, status, addresses"]
   client["client<br/>twelve endpoints, paging, filter, errors"]
   provider["provider<br/>router, query grammar, discovery"]
@@ -42,11 +42,11 @@ flowchart BT
 | `read`     | `schemas.ts`, `extension-term.ts`, `open-api.ts`                                           | The valibot schemas of each version, built once, the form of an extension term, and the schema of an OpenAPI document                                                 |
 |            | `inspect.ts`, `issues.ts`, `integrity.ts`, `package-form.ts`                               | The parse, the conversion of an issue to a `CaseIssue`, the rules of a package, and the warnings of the links that the form of a package lacks                        |
 |            | `read-package.ts`, `read-entity.ts`, `options.ts`                                          | The readers, the validators and the check of their options                                                                                                            |
-| `version`  | `to-case-version.ts`                                                                       | The conversion of a package or an entity to the form of 1.0                                                                                                           |
-| `graph`    | `tree.ts`, `associations.ts`, `crosswalk.ts`, `diff.ts`                                    | `frameworkTree`, `associationsOf`, `crosswalk` and `diffPackages` over a package                                                                                      |
-|            | `staleness.ts`, `adoption-status.ts`, `entity-uri.ts`, `package-view.ts`                   | `isNewer`, `adoptionStatus`, `caseEntityUri`, and the check and the copy of a package that the others share                                                           |
+| `version`  | `convert-case-version.ts`                                                                       | The conversion of a package or an entity to the form of 1.0                                                                                                           |
+| `graph`    | `tree.ts`, `associations.ts`, `crosswalk.ts`, `diff.ts`                                    | `buildFrameworkTree`, `listAssociations`, `crosswalk` and `diffPackages` over a package                                                                                      |
+|            | `staleness.ts`, `adoption-status.ts`, `entity-uri.ts`, `package-view.ts`                   | `isNewer`, `readAdoptionStatus`, `buildEntityUri`, and the check and the copy of a package that the others share                                                           |
 | `client`   | `client.ts`, `config.ts`                                                                   | `createCaseClient` with its twelve calls and the iteration of the documents, and the check of the configuration                                                       |
-|            | `query.ts`, `status.ts`                                                                    | `caseFilter` and the parameters of a request, and `readStatusInfo`. `@interopkit/core` reads `X-Total-Count`, `Link` and `Retry-After`                                |
+|            | `query.ts`, `status.ts`                                                                    | `writeCaseFilter` and the parameters of a request, and `readStatusInfo`. `@interopkit/core` reads `X-Total-Count`, `Link` and `Retry-After`                                |
 | `provider` | `handle-request.ts`, `routes.ts`, `options.ts`, `store.ts`, `status.ts`                    | The handler, the twelve routes, the options and the port, and the `imsx_StatusInfo` answers; `@interopkit/core/http` reads `limit` and `offset` and writes `Link` |
 |            | `parse-query.ts`, `filter-text.ts`, `fields.ts`                                            | The parameters of the list, the grammar of a filter, and the names of a CFDocument in each version                                                                    |
 |            | `query-entities.ts`, `values.ts`                                                           | The filter and the sort in memory, and the values at a path, with the order of text, numbers and times                                                                |

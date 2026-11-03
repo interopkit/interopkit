@@ -126,20 +126,20 @@ export interface PlatformFrame {
  * anything is signed.
  * @throws The `reason` of `options.signal` when it aborts.
  */
-export async function ltiPlatformLogin(message: MessageInput, options: PlatformLoginOptions): Promise<string> {
+export async function prepareToolLaunch(message: MessageInput, options: PlatformLoginOptions): Promise<string> {
   return (await prepare(message, options)).url;
 }
 
 /**
- * Keeps a message for a tool as `ltiPlatformLogin` does, and returns what the page that shows the tool needs: the URL of the
+ * Keeps a message for a tool as `prepareToolLaunch` does, and returns what the page that shows the tool needs: the URL of the
  * login, the URL of the storage page, and the `allow` list of the tool's registration.
  *
  * @param message - The message to send the tool.
  * @param options - The platform, its tools, the check of the caller and the store of launches.
  * @returns The frame of the tool.
- * @throws As {@link ltiPlatformLogin} does.
+ * @throws As {@link prepareToolLaunch} does.
  */
-export async function ltiPlatformFrame(message: MessageInput, options: PlatformLoginOptions): Promise<PlatformFrame> {
+export async function prepareToolFrame(message: MessageInput, options: PlatformLoginOptions): Promise<PlatformFrame> {
   const { url, registration } = await prepare(message, options);
   const { allow } = registration;
   return { url, storageUrl: endpointsOf(options.config).storage, ...(allow === undefined ? {} : { allow }) };

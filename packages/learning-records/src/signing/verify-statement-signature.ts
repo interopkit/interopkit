@@ -1,4 +1,4 @@
-import { type CallOptions, DataError, untilAborted } from "@interopkit/core";
+import { type CallOptions, DataError, raceAbort } from "@interopkit/core";
 import {
   abortSignalSchema,
   describe,
@@ -17,7 +17,7 @@ import {
   type ProtectedHeaderParameters,
 } from "jose";
 import * as v from "valibot";
-import { toStatementVersion } from "../compare/index.js";
+import { convertStatementVersion } from "../compare/index.js";
 import { equivalenceKey } from "../compare/internal.js";
 import { type Statement, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 import { parseIsoTimestamp } from "../model/internal.js";
@@ -69,7 +69,7 @@ export interface SignatureVerifyOptions extends CallOptions {
   readonly trustCertificate?: (chain: readonly string[], options?: CallOptions) => Promise<boolean>;
   /**
    * The version of xAPI of the route that the Statement came from. On `1.0.3` the Statement is read with the rules of 1.0.3,
-   * and the payload, which may have been signed in either version, is compared in the form of 1.0.3 (`toStatementVersion`):
+   * and the payload, which may have been signed in either version, is compared in the form of 1.0.3 (`convertStatementVersion`):
    * the route of 1.0.3 answers a Statement of 2.0 without what 1.0.3 does not have, and its signature keeps them.
    *
    * @defaultValue `"2.0.0"`
@@ -197,7 +197,7 @@ function readPayload(
   }
   try {
     const json = readStatementJson(text, limits);
-    return version === "1.0.3" ? toStatementVersion(readEitherVersion(json), "1.0.3") : readStatement(json);
+    return version === "1.0.3" ? convertStatementVersion(readEitherVersion(json), "1.0.3") : readStatement(json);
   } catch (error) {
     if (error instanceof DataError) return undefined;
     throw error;
@@ -266,7 +266,7 @@ function checkWithoutKey(
  * @remarks
  * The algorithm must be RS256, RS384 or RS512, and the JWS must be in compact serialization; the JWS JSON serialization is
  * `malformed`. A key that the JWS carries in a `jwk` header is not used, since the signer chose it. The Statement given is the
- * one received, with whatever the LRS added; the payload is compared to it by the rules of `sameStatement`, and the `id`, the
+ * one received, with whatever the LRS added; the payload is compared to it by the rules of `isSameStatement`, and the `id`, the
  * `timestamp` and the Attachments that the payload has must be kept. The chain is not validated: `trustCertificate` decides
  * whether it is trusted, and without it `certified` is `false`. A signature that is not good is a value in the result; a
  * Statement or options that are not valid throw.
@@ -324,7 +324,7 @@ export async function verifySignature(
   if (!equivalent(stated, signed)) return fail("not-equivalent");
   const certified =
     found.chain !== undefined && trustCertificate !== undefined
-      ? await untilAborted(trustCertificate(found.chain, signal === undefined ? undefined : { signal }), signal)
+      ? await raceAbort(trustCertificate(found.chain, signal === undefined ? undefined : { signal }), signal)
       : false;
   return { valid: true, certified };
 }

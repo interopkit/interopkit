@@ -14,8 +14,8 @@ import {
 import type { AttachmentData } from "../model/index.js";
 import { isMediaType, isSha2Hex, mediaTypeOf } from "../model/internal.js";
 import { readStatementJson } from "../read/index.js";
-import { checkBytes, hashesTo } from "./attachment-hash.js";
 import { type MultipartLimit, MultipartLimitError } from "./errors.js";
+import { checkBytes, hashesTo } from "./hash-attachment.js";
 import { type MultipartLimits, readLimits } from "./limits.js";
 
 const MULTIPART_MIXED = "multipart/mixed";

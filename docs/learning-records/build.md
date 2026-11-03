@@ -1,7 +1,7 @@
 # Building Statements
 
 A Learning Record Provider makes a Statement of an event with `buildStatement`, gives it an id that a resend repeats with
-`deriveStatementId`, and voids it with `voidingStatement`. `formatDuration` and `formatTimestamp` write the two values that a
+`deriveStatementId`, and voids it with `buildVoidingStatement`. `formatDuration` and `formatTimestamp` write the two values that a
 provider is most often wrong about, and `mboxSha1sum` hides an email address behind its hash.
 
 ```mermaid
@@ -12,7 +12,7 @@ flowchart LR
   data --> build
   build -->|"errors"| error["DataError<br/>every error and its path"]
   build -->|"sound"| statement["Statement"]
-  statement --> void["voidingStatement<br/>the voided verb and a reference"]
+  statement --> void["buildVoidingStatement<br/>the voided verb and a reference"]
 ```
 
 ## Quick start
@@ -20,11 +20,11 @@ flowchart LR
 ```ts
 import {
   buildStatement,
+  buildVoidingStatement,
   deriveStatementId,
   formatDuration,
   formatTimestamp,
   mboxSha1sum,
-  voidingStatement,
 } from "@interopkit/learning-records";
 
 // A UUID that the host keeps for all time: it is part of every id it derives.
@@ -46,7 +46,7 @@ statement.version; // => "2.0.0"
 statement.actor.mbox_sha1sum?.length; // => 40
 formatTimestamp(1_718_304_363_250); // => "2024-06-13T18:46:03.250Z"
 
-const voiding = voidingStatement(id, {
+const voiding = buildVoidingStatement(id, {
   id: deriveStatementId(NAMESPACE, "learner-1/course-1/attempt-1/void"),
   actor: { mbox: "mailto:admin@example.org" },
   timestamp: "2024-06-14T09:00:00Z",
@@ -59,7 +59,7 @@ voiding.object; // => { objectType: "StatementRef", id }
 | Function                             | Does                                                                                                                                                             | Throws                                                |
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | `buildStatement(input, options?)`    | Copies the input, writes `timestamp` in UTC with milliseconds and the `version`, and reads the result with the rules of a provider of that version. Returns the Statement | `DataError` that names every error with its path      |
-| `voidingStatement(target, input, options?)` | Builds the Statement with the voided verb, whose Object is a Statement Reference to `target`. The target need not exist                                          | `DataError` for the target, or as `buildStatement`    |
+| `buildVoidingStatement(target, input, options?)` | Builds the Statement with the voided verb, whose Object is a Statement Reference to `target`. The target need not exist                                          | `DataError` for the target, or as `buildStatement`    |
 | `deriveStatementId(namespace, name)` | Returns the UUID of version 5 of a name in a namespace, so that a resend of an event repeats the id and an LRS keeps the first copy                              | `DataError` for a namespace or a name that is wrong   |
 | `formatDuration(milliseconds)`       | Writes a length of time as an ISO 8601 duration of hours, minutes and seconds, cut at 0.01 second: `PT1H30M32.15S`                                               | `DataError` for anything but a whole number from 0    |
 | `parseDuration(text)`                | Reads a duration of ISO 8601 4.4.3.2 into years, months, days, hours, minutes and seconds, or returns `undefined`                                                | none                                                  |
@@ -83,7 +83,7 @@ rules call it a warning, and a warning does not keep a Statement from being buil
 
 | Option    | Of                                   | Default   | Meaning                                                                                                     |
 | --------- | ------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------- |
-| `version` | `buildStatement`, `voidingStatement` | `"2.0.0"` | The provider rules that apply: `"2.0.0"`, or `"1.0.3"`, whose Statements carry `1.0.0` and have no `contextAgents` or `contextGroups` |
+| `version` | `buildStatement`, `buildVoidingStatement` | `"2.0.0"` | The provider rules that apply: `"2.0.0"`, or `"1.0.3"`, whose Statements carry `1.0.0` and have no `contextAgents` or `contextGroups` |
 
 ## Limits
 

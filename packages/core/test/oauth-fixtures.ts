@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of the OAuth 2.0 parameters and responses are snake_case.
 
-import { type Clock, type Fetch, signerFromCryptoKey } from "../src/index.js";
+import { type Clock, createCryptoKeySigner, type Fetch } from "../src/index.js";
 import type { AuthorizationServer, OAuthCallOptions, OAuthClient } from "../src/oauth/index.js";
 
 /** The time of every test that needs one: a whole second, which `iat` shows exactly. */
@@ -85,7 +85,7 @@ export async function assertionClient(
 ): Promise<{ readonly client: OAuthClient; readonly publicKey: CryptoKey }> {
   const pair = await rsaKeyPair();
   const keyId = "keyId" in more ? more.keyId : "tool-key-1";
-  const signer = signerFromCryptoKey(pair.privateKey, {
+  const signer = createCryptoKeySigner(pair.privateKey, {
     algorithm: "RS256",
     ...(keyId === undefined ? {} : { keyId }),
   });

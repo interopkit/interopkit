@@ -79,7 +79,7 @@ handlers, and `scenario.ts` plays sessions against it.
 | `extendLrsOptions(lrs, options)` | The host's LRS options with the access and the rules of cmi5, and its store of Statements wrapped for satisfaction |
 | `abandonSession(session, options)` | Ends a session that its unit did not terminate, and writes its abandoned statement |
 | `waiveAu(input, options)` | Writes the waived statement of a unit and the satisfied statements it causes |
-| `progressOf(registration, course)` | Tells what each unit, block and the course hold, for a host that shows progress or sequences units |
+| `deriveCourseProgress(registration, course)` | Tells what each unit, block and the course hold, for a host that shows progress or sequences units |
 
 ## Sessions and tokens
 

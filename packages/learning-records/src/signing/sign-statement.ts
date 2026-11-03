@@ -1,7 +1,7 @@
 import { type CallOptions, DataError, type Signer, signCompactJws } from "@interopkit/core";
 import { abortSignalSchema, checkRecord, describe, parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
-import { attachmentHash } from "../attachments/index.js";
+import { hashAttachment } from "../attachments/index.js";
 import {
   type Attachment,
   type AttachmentData,
@@ -107,7 +107,7 @@ export async function signStatement(
     signal === undefined ? undefined : { signal },
   );
   const body = encoder.encode(jws);
-  const sha2 = attachmentHash(body);
+  const sha2 = hashAttachment(body);
   const header: Attachment = {
     usageType: SIGNATURE_USAGE_TYPE,
     display: { "en-US": "Signature" },

@@ -1,18 +1,18 @@
 import { callPort, DataError } from "@interopkit/core";
 import { isUuid, parseWith } from "@interopkit/core/checks";
 import {
+  buildJsonResponse,
+  buildPageLinks,
   checkHttpRequest,
   type HttpRequest,
   type HttpResponse,
-  jsonResponse,
   type OffsetPage,
-  offsetPageLinks,
   readAccessDecision,
   readOffsetPage,
   readQuery,
 } from "@interopkit/core/http";
 import type { CaseEntity, CasePackage, CaseVersion, CFDocumentSet } from "../model/index.js";
-import { toCaseVersion } from "../version/index.js";
+import { convertCaseVersion } from "../version/index.js";
 import { selectFields } from "./fields.js";
 import { type CaseProviderOptions, type ProviderSettings, readProviderOptions } from "./options.js";
 import { parseQuery } from "./parse-query.js";
@@ -23,7 +23,7 @@ import { lookupSchema, pageSchema } from "./store.js";
 /** Returns an object of the model in the form of a version of CASE. It is `undefined` when 1.0 has no form for it. */
 function inVersion(value: CaseEntity | CasePackage, version: CaseVersion): CaseEntity | CasePackage | undefined {
   if (version === "1.1") return value;
-  return toCaseVersion(value, "1.0").value;
+  return convertCaseVersion(value, "1.0").value;
 }
 
 /**
@@ -77,13 +77,13 @@ async function answerDocuments(
     );
   }
   const listed: CFDocumentSet = { CFDocuments: answer.documents };
-  const { CFDocuments } = version === "1.1" ? listed : toCaseVersion(listed, "1.0").value;
+  const { CFDocuments } = version === "1.1" ? listed : convertCaseVersion(listed, "1.0").value;
   const { fields } = query;
   const documents = fields === undefined ? CFDocuments : CFDocuments.map((each) => selectFields(each, fields));
-  return jsonResponse(
+  return buildJsonResponse(
     200,
     { CFDocuments: documents },
-    { "x-total-count": String(answer.total), link: offsetPageLinks(request.url, page, { total: answer.total }) },
+    { "x-total-count": String(answer.total), link: buildPageLinks(request.url, page, { total: answer.total }) },
   );
 }
 
@@ -98,7 +98,7 @@ async function answerEntity(
   if (asked === undefined) return internalError();
   const found = parseWith(lookupSchema, asked.value, "The answer of FrameworkStore");
   const converted = found === undefined ? undefined : inVersion(found, route.version);
-  return converted === undefined ? unknownObject() : jsonResponse(200, converted);
+  return converted === undefined ? unknownObject() : buildJsonResponse(200, converted);
 }
 
 /**
@@ -133,7 +133,7 @@ export async function handleCaseRequest(request: HttpRequest, options: CaseProvi
   const route = routeOf(new URL(request.url).pathname, settings);
   if (route === undefined) return unknownObject();
   if (request.method !== "GET") return methodNotAllowed(request.method);
-  if (route.kind === "discovery") return jsonResponse(200, settings.discovery);
+  if (route.kind === "discovery") return buildJsonResponse(200, settings.discovery);
   const refusal = await refusalOf(request, settings);
   if (refusal !== undefined) return refusal;
   return route.kind === "documents" ? answerDocuments(request, route.version, settings) : answerEntity(route, settings);

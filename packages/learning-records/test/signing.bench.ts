@@ -1,4 +1,4 @@
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { readStatement } from "@interopkit/learning-records";
 import { signStatement, verifyStatementSignature } from "@interopkit/learning-records/signing";
 import { CompactSign, compactVerify } from "jose";
@@ -18,7 +18,7 @@ beforeAll(async () => {
 test("signs and verifies a Statement within a few times of the JWS of jose alone", async ({ annotate, bench }) => {
   const statement = readStatement(benchStatement(1));
   const payload = new TextEncoder().encode(JSON.stringify(statement));
-  const signer = signerFromCryptoKey(keys.privateKey, { algorithm: "RS256" });
+  const signer = createCryptoKeySigner(keys.privateKey, { algorithm: "RS256" });
   const { statement: signed, signature } = await signStatement(statement, signer);
   expect(await verifyStatementSignature(signed, signature.body, { key: keys.publicKey })).toStrictEqual({
     valid: true,

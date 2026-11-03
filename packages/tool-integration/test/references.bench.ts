@@ -2,7 +2,7 @@
 
 import type { HttpRequest } from "@interopkit/core/http";
 import { createJwksCache } from "@interopkit/tool-integration";
-import { ltiLaunch } from "@interopkit/tool-integration/tool";
+import { handleLaunch } from "@interopkit/tool-integration/tool";
 import { LTITool } from "@lti-tool/core";
 import { createLtiTool, type OneTimeStore } from "lti-core";
 import { afterAll, beforeAll, expect, test, vi } from "vitest";
@@ -65,8 +65,8 @@ async function ownLaunch() {
     store: pair.store,
     jwks: createJwksCache({ fetch: platformFetch(pair), clock: CLOCK }),
   };
-  expect(await ltiLaunch(request, options)).toMatchObject({ messageType: "LtiResourceLinkRequest" });
-  return () => ltiLaunch(request, options);
+  expect(await handleLaunch(request, options)).toMatchObject({ messageType: "LtiResourceLinkRequest" });
+  return () => handleLaunch(request, options);
 }
 
 /** The parameters of the platform's login of the message, as a tool's login route receives them. */
@@ -121,7 +121,7 @@ test("validates a launch within a multiple of @lti-tool/core's validation of the
     { annotate, bench },
     "launchAgainstLtiTool",
     { name: "verifyLaunch of @lti-tool/core", fn: () => tool.verifyLaunch(idToken, state) },
-    { name: "ltiLaunch", fn: await ownLaunch() },
+    { name: "handleLaunch", fn: await ownLaunch() },
   );
 });
 
@@ -161,6 +161,6 @@ test("validates a launch within a multiple of lti-core's validation of the same 
     { annotate, bench },
     "launchAgainstLtiCore",
     { name: "validate of lti-core", fn: () => tool.validate({ state, id_token: idToken }) },
-    { name: "ltiLaunch", fn: await ownLaunch() },
+    { name: "handleLaunch", fn: await ownLaunch() },
   );
 });

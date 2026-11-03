@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type LtiMessage, SCOPES } from "../src/index.js";
-import { createServiceClient, ltiLaunch } from "../src/tool/index.js";
+import { createServiceClient, handleLaunch } from "../src/tool/index.js";
 import { CONTAINER_URL, FakeLms, SUBJECT } from "./fake-lms.js";
 import { cookieLogin, setup } from "./tool-setup.js";
 
@@ -23,7 +23,7 @@ describe("the peak memory of a page of a service", () => {
     const ctx = setup();
     const lms = new FakeLms(ctx.platform);
     const { request } = await cookieLogin(ctx, { claims: { sub: SUBJECT } });
-    const launch = (await ltiLaunch(request, ctx.options)) as LtiMessage;
+    const launch = (await handleLaunch(request, ctx.options)) as LtiMessage;
     const client = createServiceClient(launch, { ...ctx.options, fetch: lms.fetch, scopes: [SCOPES.lineitem] });
     // One line item with an extension of empty objects, three bytes and three tokens each: the most that the limit of 1,000,000
     // tokens lets in, which the reader copies.

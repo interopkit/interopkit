@@ -1,10 +1,10 @@
 import { callPort } from "@interopkit/core";
 import { nonEmptyStringSchema } from "@interopkit/core/checks";
 import {
+  buildJsonResponse,
   checkHttpRequest,
   type HttpRequest,
   type HttpResponse,
-  jsonResponse,
   readAccessDecision,
 } from "@interopkit/core/http";
 import * as v from "valibot";
@@ -96,7 +96,7 @@ export async function handleCredentialsRequest(
   if (route === undefined) return notFound();
   const operation = route.get(request.method);
   if (operation === undefined) return notAllowed(request.method, [...route.keys()]);
-  if (operation === "getServiceDescription") return jsonResponse(200, readDescription(settings));
+  if (operation === "getServiceDescription") return buildJsonResponse(200, readDescription(settings));
   const access = await ownerOf(request, API_SCOPES[settings.api][operation], settings);
   if ("refusal" in access) return access.refusal;
   return answerFor(operation, request, access.owner, settings);

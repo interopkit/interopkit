@@ -5,7 +5,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { schemaArbitrary } from "../../../scripts/schema-arbitrary.js";
 import { readSchema, schemaValidator } from "../../../scripts/schema-oracle.js";
-import { type CaseVersion, type CFDocument, toCaseVersion } from "../src/index.js";
+import { type CaseVersion, type CFDocument, convertCaseVersion } from "../src/index.js";
 import {
   type CaseProviderOptions,
   type FrameworkStore,
@@ -280,7 +280,7 @@ describe("the answers on the path of 1.0 against the schemas of 1.0", () => {
       fc.assert(
         fc.asyncProperty(responseValues(path), async (value) => {
           const response = await get(holding({ [method]: value }), `${V10}${path.replace("{sourcedId}", KEY)}`);
-          const converted = toCaseVersion(value as never, "1.0");
+          const converted = convertCaseVersion(value as never, "1.0");
           expect(converted.dropped.filter(({ rule }) => rule === "form-not-in-1.0")).toStrictEqual([]);
           if (converted.value === undefined) {
             expect(response.status).toBe(404);

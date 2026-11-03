@@ -16,8 +16,8 @@ export const BUDGETS = {
   readPackage: 400,
   /** `validatePackage` of the same framework. */
   validatePackage: 400,
-  /** `frameworkTree` of the same framework. */
-  frameworkTree: 300,
+  /** `buildFrameworkTree` of the same framework. */
+  buildFrameworkTree: 300,
   /** `queryEntities` with a filter and a sort over 10,000 documents. */
   queryDocuments: 40,
 } as const;
@@ -41,15 +41,15 @@ export const RATIOS = {
   readPackageAgainstSchema: 1,
   /** `readEntity` of each item alone, as a multiple of the item schema of CASE 1.1: parity or better. */
   readEntityAgainstSchema: 1,
-  /** `frameworkTree` of the framework, as a multiple of `JSON.parse` of its text. */
+  /** `buildFrameworkTree` of the framework, as a multiple of `JSON.parse` of its text. */
   frameworkTreeAgainstParse: 20,
-  /** `toCaseVersion` of the framework to 1.0, as a multiple of `JSON.parse` of its text. */
+  /** `convertCaseVersion` of the framework to 1.0, as a multiple of `JSON.parse` of its text. */
   toCaseVersionAgainstParse: 10,
   /** `diffPackages` of the framework and an edition of it, as a multiple of `JSON.parse` of its text. */
   diffPackagesAgainstParse: 20,
   /** `crosswalk` of the framework and the one it matches, as a multiple of `JSON.parse` of its text. */
   crosswalkAgainstParse: 7,
-  /** `associationsOf` an item of the framework, as a multiple of `JSON.parse` of its text. */
+  /** `listAssociations` an item of the framework, as a multiple of `JSON.parse` of its text. */
   associationsOfAgainstParse: 6,
   /** `handleCaseRequest` for the package of the framework in 1.1, as a multiple of `JSON.stringify` of it. */
   serve11AgainstStringify: 6,

@@ -1,5 +1,5 @@
 import { readClock } from "@interopkit/core";
-import { isRecord, refusalOf } from "@interopkit/core/checks";
+import { describeRefusal, isRecord } from "@interopkit/core/checks";
 import type { BadgeAssertionV2, VerificationCheck, VerificationResult } from "../model/index.js";
 import {
   DOCUMENT_PLACES,
@@ -124,7 +124,9 @@ async function assemble(assertion: Json, context: Context): Promise<Assembled> {
   );
   const errors = sink.list();
   if (read === undefined || errors.length > 0) {
-    return { checks: { format: checkOf("format", "failed", refusalOf("The badge", errors, "validateCredential")) } };
+    return {
+      checks: { format: checkOf("format", "failed", describeRefusal("The badge", errors, "validateCredential")) },
+    };
   }
   return { badge: read };
 }

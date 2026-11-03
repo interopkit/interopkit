@@ -1,4 +1,4 @@
-import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
 import type { EndpointConfiguration } from "../model/index.js";
 import { BYTES_PER_KILOBYTE, type EndpointSettings } from "./options.js";
 import { contextOfVersion } from "./versions.js";
@@ -10,5 +10,5 @@ export function configurationAnswer(settings: EndpointSettings): HttpResponse {
     caliperSupportedVersions: settings.versions.map(contextOfVersion),
     ...(settings.extensions === undefined ? {} : { caliperSupportedExtensions: settings.extensions }),
   };
-  return jsonResponse(200, configuration);
+  return buildJsonResponse(200, configuration);
 }

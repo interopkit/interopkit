@@ -7,7 +7,7 @@ never import one another: `base` is the issuer's, `derive` the holder's and `ver
 
 ```mermaid
 flowchart BT
-  core["@interopkit/core<br/>DataError, checks, Signer, untilAborted"]
+  core["@interopkit/core<br/>DataError, checks, Signer, raceAbort"]
   prim["@digitalbazaar/di-sd-primitives<br/>jsonld, rdf-canonize"]
   pv["proof-value<br/>CBOR of the proofs, isBaseProof, signData"]
   keys["keys<br/>proof key, statement signatures, Web Crypto keys"]

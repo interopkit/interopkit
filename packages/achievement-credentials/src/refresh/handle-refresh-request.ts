@@ -1,6 +1,6 @@
 import { type CallOptions, callPort, DataError } from "@interopkit/core";
 import { checkAbortSignal, checkFunction, checkRecord } from "@interopkit/core/checks";
-import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, checkHttpRequest, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 
 /** The options of `handleRefreshRequest`. */
 export interface RefreshHandlerOptions extends CallOptions {
@@ -64,5 +64,5 @@ export async function handleRefreshRequest(
   if (typeof refreshed !== "object" || refreshed === null) {
     throw new DataError("The refresh port must answer a credential as an object, a compact JWS, or undefined.");
   }
-  return jsonResponse(200, refreshed);
+  return buildJsonResponse(200, refreshed);
 }

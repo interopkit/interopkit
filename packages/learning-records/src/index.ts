@@ -9,13 +9,13 @@
 export {
   type BuildOptions,
   buildStatement,
+  buildVoidingStatement,
   deriveStatementId,
   mboxSha1sum,
   type StatementInput,
   type VoidingInput,
-  voidingStatement,
 } from "./build/index.js";
-export { sameStatement, toStatementVersion } from "./compare/index.js";
+export { convertStatementVersion, isSameStatement } from "./compare/index.js";
 export { type FormatOptions, formatStatement } from "./format/index.js";
 export {
   type About,

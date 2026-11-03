@@ -5,7 +5,7 @@
  *
  * @module @interopkit/learning-analytics
  */
-export { type BuildOptions, buildEntity, buildEvent, caliperTime, checkIri, mintUrn } from "./build/index.js";
+export { type BuildOptions, buildEntity, buildEvent, checkIri, formatDateTime, mintUrn } from "./build/index.js";
 export * from "./model/index.js";
 export { type ReadOptions, readEntity, readEvent } from "./read/index.js";
 export {

@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { DataError, ServiceError } from "../src/index.js";
-import { authorizationRequest, exchangeCode, type PendingAuthorization } from "../src/oauth/index.js";
+import { exchangeCode, type PendingAuthorization, startAuthorization } from "../src/oauth/index.js";
 import { callOptions, failureOf, fakeServer, json, NOW, SECRET_CLIENT, SERVER, TOKEN_URL } from "./oauth-fixtures.js";
 
 const REDIRECT_URI = "https://client.example/callback?tenant=a";
@@ -16,7 +16,7 @@ const challengeOf = (verifier: string): string => createHash("sha256").update(ve
 
 /** Starts a flow, and returns what it gives with the parameters of its address. */
 async function start(scopes: readonly string[] = ["read", "write"]) {
-  const pending = await authorizationRequest(SERVER, SECRET_CLIENT, { redirectUri: REDIRECT_URI, scopes });
+  const pending = await startAuthorization(SERVER, SECRET_CLIENT, { redirectUri: REDIRECT_URI, scopes });
   return { pending, query: new URL(pending.url).searchParams };
 }
 
@@ -24,7 +24,7 @@ async function start(scopes: readonly string[] = ["read", "write"]) {
 const callback = (parameters: Record<string, string>): string =>
   `${REDIRECT_URI.split("?")[0]}?${new URLSearchParams(parameters)}`;
 
-describe("authorizationRequest", () => {
+describe("startAuthorization", () => {
   it("builds the address of the authorization endpoint with the parameters of the code flow and PKCE S256", async () => {
     const { pending, query } = await start();
     expect(new URL(pending.url).origin + new URL(pending.url).pathname).toBe(SERVER.authorizationEndpoint);
@@ -52,7 +52,7 @@ describe("authorizationRequest", () => {
 
   it("keeps the query that the endpoint has, and leaves the scope out when none is asked for", async () => {
     const server = { ...SERVER, authorizationEndpoint: "https://as.example/authorize?tenant=a" };
-    const pending = await authorizationRequest(server, SECRET_CLIENT, { redirectUri: REDIRECT_URI, scopes: [] });
+    const pending = await startAuthorization(server, SECRET_CLIENT, { redirectUri: REDIRECT_URI, scopes: [] });
     const query = new URL(pending.url).searchParams;
     expect(query.get("tenant")).toBe("a");
     expect(query.has("scope")).toBe(false);
@@ -63,27 +63,27 @@ describe("authorizationRequest", () => {
       [
         "The authorization server must have a authorizationEndpoint for this call, found none.",
         () =>
-          authorizationRequest({ tokenEndpoint: TOKEN_URL }, SECRET_CLIENT, { redirectUri: REDIRECT_URI, scopes: [] }),
+          startAuthorization({ tokenEndpoint: TOKEN_URL }, SECRET_CLIENT, { redirectUri: REDIRECT_URI, scopes: [] }),
       ],
       [
         "The authorization request must be an object, found null.",
-        () => authorizationRequest(SERVER, SECRET_CLIENT, JSON.parse("null")),
+        () => startAuthorization(SERVER, SECRET_CLIENT, JSON.parse("null")),
       ],
       [
         'The redirectUri of the authorization request must be an absolute URL, found "/callback".',
-        () => authorizationRequest(SERVER, SECRET_CLIENT, { redirectUri: "/callback", scopes: [] }),
+        () => startAuthorization(SERVER, SECRET_CLIENT, { redirectUri: "/callback", scopes: [] }),
       ],
       [
         "The redirectUri of the authorization request must be an absolute URL, found undefined.",
-        () => authorizationRequest(SERVER, SECRET_CLIENT, JSON.parse('{"scopes":[]}')),
+        () => startAuthorization(SERVER, SECRET_CLIENT, JSON.parse('{"scopes":[]}')),
       ],
       [
         "The scopes must be an array, found undefined.",
-        () => authorizationRequest(SERVER, SECRET_CLIENT, JSON.parse('{"redirectUri":"https://c.example/cb"}')),
+        () => startAuthorization(SERVER, SECRET_CLIENT, JSON.parse('{"redirectUri":"https://c.example/cb"}')),
       ],
       [
         "The client must be an object, found null.",
-        () => authorizationRequest(SERVER, JSON.parse("null"), { redirectUri: REDIRECT_URI, scopes: [] }),
+        () => startAuthorization(SERVER, JSON.parse("null"), { redirectUri: REDIRECT_URI, scopes: [] }),
       ],
     ];
     for (const [message, call] of cases) expect(await failureOf(call()), message).toStrictEqual(new DataError(message));

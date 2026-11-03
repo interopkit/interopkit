@@ -1,5 +1,5 @@
 import type { Fetch } from "@interopkit/core";
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { buildStatement, type Statement } from "@interopkit/learning-records";
 import { createLrsClient } from "@interopkit/learning-records/client";
 import { signStatement, verifyStatementSignature } from "@interopkit/learning-records/signing";
@@ -58,7 +58,7 @@ describe("the platform and the dashboard against SQL LRS", () => {
       false,
       ["sign", "verify"],
     );
-    const signer = signerFromCryptoKey(privateKey, { algorithm: "RS256" });
+    const signer = createCryptoKeySigner(privateKey, { algorithm: "RS256" });
     const plain: Statement = {
       id: "90000000-0000-4000-8000-000000000001",
       actor: ANA,

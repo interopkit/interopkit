@@ -1,6 +1,6 @@
 import { DataError, type Signer } from "@interopkit/core";
 import { checkNonEmptyString, checkRecord, checkString, describe, isRecord } from "@interopkit/core/checks";
-import { type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 import { base64url } from "jose";
 import { APPROVED_ALGORITHMS } from "./claims/index.js";
 import { MIN_RSA_MODULUS_BITS } from "./keys.js";
@@ -136,7 +136,7 @@ export function keySetResponse(request: HttpRequest, keys: KeySet, maxAgeSeconds
   if (request.method !== "GET" && request.method !== "HEAD") {
     return { status: 405, headers: { allow: "GET, HEAD" }, body: "" };
   }
-  const response = jsonResponse(
+  const response = buildJsonResponse(
     200,
     { keys: keys.publicKeys },
     { "cache-control": `public, max-age=${maxAgeSeconds}` },

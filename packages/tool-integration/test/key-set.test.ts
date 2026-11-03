@@ -1,4 +1,4 @@
-import { DataError, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import type { KeySet } from "../src/index.js";
 import { checkKeySet } from "../src/protocol/internal.js";
@@ -27,7 +27,7 @@ async function keySetOf(algorithm: (typeof ALGORITHMS)[number], kid = "key-1"): 
   const [name, parameters] = algorithm;
   const pair = (await crypto.subtle.generateKey(parameters, true, ["sign", "verify"])) as CryptoKeyPair;
   const publicKey = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid };
-  return { signer: signerFromCryptoKey(pair.privateKey, { algorithm: name, keyId: kid }), publicKeys: [publicKey] };
+  return { signer: createCryptoKeySigner(pair.privateKey, { algorithm: name, keyId: kid }), publicKeys: [publicKey] };
 }
 
 const keys = await Promise.all(ALGORITHMS.map((algorithm) => keySetOf(algorithm)));

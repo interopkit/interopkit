@@ -2,6 +2,7 @@ import fc from "fast-check";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import {
+  buildFindings,
   checkAbortSignal,
   checkArray,
   checkFunction,
@@ -14,13 +15,14 @@ import {
   checkRemoteUrl,
   checkString,
   dateTimeSchema,
+  describeIssue,
+  describeRefusal,
   describe as describeValue,
-  findingsOf,
   finiteSchema,
+  formatIssuePath,
   guardSchema,
   httpsUrlSchema,
   isRecord,
-  issueText,
   jsonObjectSchema,
   looseRecord,
   mapSchema,
@@ -29,10 +31,8 @@ import {
   nonNegativeIntegerSchema,
   openRecord,
   parseWith,
-  pathOf,
   positiveIntegerSchema,
   positiveSchema,
-  refusalOf,
   remoteUrlSchema,
   strictRecord,
 } from "../src/checks.js";
@@ -359,15 +359,15 @@ describe("parseWith", () => {
   });
 });
 
-describe("pathOf", () => {
+describe("formatIssuePath", () => {
   it("writes a path as code does: names after a dot, indexes in brackets, other names quoted", () => {
     const schema = v.strictObject({ items: v.array(v.record(v.string(), v.string())) });
     const [issue] = v.safeParse(schema, { items: [{ "a-b": 1 }] }).issues ?? [];
-    expect(pathOf(issue?.path)).toBe('items[0]["a-b"]');
+    expect(formatIssuePath(issue?.path)).toBe('items[0]["a-b"]');
   });
 
   it("gives the empty string for the value as a whole", () => {
-    expect(pathOf(undefined)).toBe("");
+    expect(formatIssuePath(undefined)).toBe("");
   });
 });
 
@@ -385,10 +385,10 @@ const findingsSchema = strictRecord({
 
 /** The findings of a value that the schema above reads. */
 function findingsOfValue(value: unknown) {
-  return findingsOf(v.safeParse(findingsSchema, value).issues ?? []);
+  return buildFindings(v.safeParse(findingsSchema, value).issues ?? []);
 }
 
-describe("findingsOf", () => {
+describe("buildFindings", () => {
   it.each([
     ["a value that is not an object", null, "", "wrong-type", "expected an object, found null."],
     ["an array where an object is", [], "", "wrong-type", "expected an object, found an array."],
@@ -455,7 +455,7 @@ describe("findingsOf", () => {
   });
 });
 
-describe("findingsOf for a variant", () => {
+describe("buildFindings for a variant", () => {
   const schema = v.pipe(
     guardSchema(isRecord, "an object"),
     v.variant(
@@ -466,7 +466,7 @@ describe("findingsOf for a variant", () => {
   );
 
   it("gives an invalid value, at the discriminator, for a kind that no option has", () => {
-    expect(findingsOf(v.safeParse(schema, { kind: "c" }).issues ?? [])).toStrictEqual([
+    expect(buildFindings(v.safeParse(schema, { kind: "c" }).issues ?? [])).toStrictEqual([
       { path: "kind", rule: "invalid-value", message: 'expected "a" or "b", found "c".' },
     ]);
   });
@@ -476,39 +476,41 @@ describe("findingsOf for a variant", () => {
   });
 });
 
-describe("refusalOf", () => {
+describe("describeRefusal", () => {
   const first = { path: "actor", rule: "identifier-count", message: "needs one identifier." };
   const second = { path: "verb", rule: "missing-property", message: 'missing the property "id".' };
 
   it("names the path and the sentence of the first error", () => {
-    expect(refusalOf("The statement", [first], "validateStatement")).toBe(
+    expect(describeRefusal("The statement", [first], "validateStatement")).toBe(
       "The statement is invalid at actor: needs one identifier.",
     );
   });
 
   it("leaves out the path of an error about the value as a whole", () => {
-    expect(refusalOf("The statement", [{ ...first, path: "" }], "validateStatement")).toBe(
+    expect(describeRefusal("The statement", [{ ...first, path: "" }], "validateStatement")).toBe(
       "The statement is invalid: needs one identifier.",
     );
   });
 
   it("counts the other errors and names the function that lists them", () => {
-    expect(refusalOf("The statement", [first, second], "validateStatement")).toBe(
+    expect(describeRefusal("The statement", [first, second], "validateStatement")).toBe(
       "The statement is invalid at actor: needs one identifier. 1 more error: validateStatement lists every finding.",
     );
-    expect(refusalOf("The statement", [first, second, second], "validateStatement")).toContain("2 more errors: ");
+    expect(describeRefusal("The statement", [first, second, second], "validateStatement")).toContain("2 more errors: ");
   });
 
   it("says that there is an error when it is given none", () => {
-    expect(refusalOf("The statement", [], "validateStatement")).toBe("The statement is invalid: it has an error.");
+    expect(describeRefusal("The statement", [], "validateStatement")).toBe(
+      "The statement is invalid: it has an error.",
+    );
   });
 
   it("says that there may be more errors when the list stopped at its limit", () => {
     const stopped = { path: "", rule: "findings-stopped", message: "the check stopped." };
-    expect(refusalOf("The statement", [first, second, stopped], "validateStatement")).toBe(
+    expect(describeRefusal("The statement", [first, second, stopped], "validateStatement")).toBe(
       "The statement is invalid at actor: needs one identifier. At least 1 more error: the check stopped at its limit, and validateStatement with a higher maxFindings lists more.",
     );
-    expect(refusalOf("The statement", [first, stopped], "validateStatement")).toBe(
+    expect(describeRefusal("The statement", [first, stopped], "validateStatement")).toBe(
       "The statement is invalid at actor: needs one identifier. There may be more errors: the check stopped at its limit, and validateStatement with a higher maxFindings lists more.",
     );
   });
@@ -525,7 +527,7 @@ describe("strictRecord", () => {
 
   it("reports one unknown property of an object", () => {
     expect(
-      findingsOf(v.safeParse(schema, { id: "a", first: 1, second: 2 }).issues ?? []).map(({ path }) => path),
+      buildFindings(v.safeParse(schema, { id: "a", first: 1, second: 2 }).issues ?? []).map(({ path }) => path),
     ).toStrictEqual(["first"]);
   });
 });
@@ -548,7 +550,7 @@ describe("openRecord", () => {
 
   it("refuses a property it does not know that is not JSON, and says which", () => {
     const issues = v.safeParse(schema, { id: "a", extra: { at: () => 1 } }).issues ?? [];
-    expect(findingsOf(issues)).toStrictEqual([
+    expect(buildFindings(issues)).toStrictEqual([
       { path: "extra", rule: "invalid-value", message: "extra.at is a function, which JSON cannot hold." },
     ]);
   });
@@ -574,22 +576,22 @@ describe("jsonObjectSchema", () => {
 
   it("refuses an object that holds what JSON cannot, with a finding that says where", () => {
     const issues = v.safeParse(jsonObjectSchema, { list: [{ at: () => 1 }] }).issues ?? [];
-    expect(findingsOf(issues)).toStrictEqual([
+    expect(buildFindings(issues)).toStrictEqual([
       { path: "", rule: "invalid-value", message: "list[0].at is a function, which JSON cannot hold." },
     ]);
   });
 });
 
-describe("issueText", () => {
+describe("describeIssue", () => {
   it("gives the text of an issue with its path", () => {
     const schema = v.strictObject({ items: v.array(v.strictObject({ id: v.string() })) });
     const [issue] = v.safeParse(schema, { items: [{ id: 1 }] }).issues ?? [];
-    expect(issue === undefined ? "" : issueText(issue)).toBe("items[0].id: expected a string, found 1");
+    expect(issue === undefined ? "" : describeIssue(issue)).toBe("items[0].id: expected a string, found 1");
   });
 
   it("gives the text alone for an issue at the root", () => {
     const [issue] = v.safeParse(v.string(), 5).issues ?? [];
-    expect(issue === undefined ? "" : issueText(issue)).toBe("expected a string, found 5");
+    expect(issue === undefined ? "" : describeIssue(issue)).toBe("expected a string, found 5");
   });
 });
 

@@ -79,14 +79,14 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait for the answer ends at the deadline, even when fetch ignores its signal.",
     file: "packages/core/src/service.ts",
-    find: "response = await untilAborted(pending, signal);",
+    find: "response = await raceAbort(pending, signal);",
     replace: "response = await pending;",
     test: "packages/core/test/service.test.ts",
   },
   {
     rule: "The wait for the body ends at the deadline, even when the body stalls.",
     file: "packages/core/src/service.ts",
-    find: "await untilAborted(reader.read(), signal);",
+    find: "await raceAbort(reader.read(), signal);",
     replace: "await reader.read();",
     test: "packages/core/test/service.test.ts",
   },
@@ -106,7 +106,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A signal that aborts before the wait begins still ends the wait.",
-    file: "packages/core/src/until-aborted.ts",
+    file: "packages/core/src/race-abort.ts",
     find: "if (signal.aborted) abort();",
     replace: "",
     test: "packages/core/test/service.test.ts",
@@ -430,7 +430,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The envelope carries the time of this send, in the form of Caliper.",
     file: "packages/learning-analytics/src/send/send-caliper.ts",
-    find: 'sendTime: caliperTime(sendTime, "The option sendTime"),',
+    find: 'sendTime: formatDateTime(sendTime, "The option sendTime"),',
     replace: "sendTime: String(sendTime),",
     test: "packages/learning-analytics/test/send.test.ts",
   },
@@ -626,7 +626,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A builder refuses an event that the rules of its profile find an error in.",
     file: "packages/learning-analytics/src/build/build-event.ts",
-    find: 'if (errors.length > 0) throw new DataError(refusalOf("The event", errors, "validateEvent"));',
+    find: 'if (errors.length > 0) throw new DataError(describeRefusal("The event", errors, "validateEvent"));',
     replace: "",
     test: "packages/learning-analytics/test/validate.test.ts",
   },
@@ -1868,42 +1868,42 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "An association whose type CASE 1.0 lacks is left out of the 1.0 form.",
-    file: "packages/competency-frameworks/src/version/to-case-version.ts",
+    file: "packages/competency-frameworks/src/version/convert-case-version.ts",
     find: "!ASSOCIATION_TYPES_1_0.includes(type)",
     replace: "false",
     test: "packages/competency-frameworks/test/version.test.ts",
   },
   {
     rule: "An association with a node that is not of CASE is left out of the 1.0 form, which would read the node as one.",
-    file: "packages/competency-frameworks/src/version/to-case-version.ts",
+    file: "packages/competency-frameworks/src/version/convert-case-version.ts",
     find: 'target !== undefined && target !== "CASE"',
     replace: "false",
     test: "packages/competency-frameworks/test/version.test.ts",
   },
   {
     rule: "What only CASE 1.1 has is left out of the 1.0 form.",
-    file: "packages/competency-frameworks/src/version/to-case-version.ts",
+    file: "packages/competency-frameworks/src/version/convert-case-version.ts",
     find: "if (isOnlyIn11(entity, name)) {",
     replace: "if (false) {",
     test: "packages/competency-frameworks/test/version.test.ts",
   },
   {
     rule: "An identifier that 1.0 would refuse is reported by the conversion.",
-    file: "packages/competency-frameworks/src/version/to-case-version.ts",
+    file: "packages/competency-frameworks/src/version/convert-case-version.ts",
     find: "!INFORMATION_MODEL_UUID.test(value)",
     replace: "false",
     test: "packages/competency-frameworks/test/version.test.ts",
   },
   {
     rule: "A value that nests deeper than any package or entity does is refused by the conversion.",
-    file: "packages/competency-frameworks/src/version/to-case-version.ts",
+    file: "packages/competency-frameworks/src/version/convert-case-version.ts",
     find: "if (depth > MAX_JSON_DEPTH) {",
     replace: "if (false) {",
     test: "packages/competency-frameworks/test/version.test.ts",
   },
   {
     rule: "A member named __proto__ stays a member of the 1.0 form and never changes its prototype.",
-    file: "packages/competency-frameworks/src/version/to-case-version.ts",
+    file: "packages/competency-frameworks/src/version/convert-case-version.ts",
     find: "return Object.fromEntries(members);",
     replace:
       "return members.reduce<Record<string, unknown>>((object, [name, item]) => { object[name] = item; return object; }, {});",
@@ -1912,8 +1912,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A request for the discovery file is answered without asking authorize.",
     file: "packages/competency-frameworks/src/provider/handle-request.ts",
-    find: 'if (route.kind === "discovery") return jsonResponse(200, settings.discovery);',
-    replace: "if (false) return jsonResponse(200, settings.discovery);",
+    find: 'if (route.kind === "discovery") return buildJsonResponse(200, settings.discovery);',
+    replace: "if (false) return buildJsonResponse(200, settings.discovery);",
     test: "packages/competency-frameworks/test/ports.test.ts",
   },
   {
@@ -1968,8 +1968,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "An object that 1.0 cannot say is answered 404.",
     file: "packages/competency-frameworks/src/provider/handle-request.ts",
-    find: "return converted === undefined ? unknownObject() : jsonResponse(200, converted);",
-    replace: "return jsonResponse(200, converted);",
+    find: "return converted === undefined ? unknownObject() : buildJsonResponse(200, converted);",
+    replace: "return buildJsonResponse(200, converted);",
     test: "packages/competency-frameworks/test/provider.test.ts",
   },
   {
@@ -2073,8 +2073,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The service description is served without asking authorize.",
     file: "packages/achievement-credentials/src/provider/handle-request.ts",
-    find: 'if (operation === "getServiceDescription") return jsonResponse(200, readDescription(settings));',
-    replace: "if (false) return jsonResponse(200, readDescription(settings));",
+    find: 'if (operation === "getServiceDescription") return buildJsonResponse(200, readDescription(settings));',
+    replace: "if (false) return buildJsonResponse(200, readDescription(settings));",
     test: "packages/achievement-credentials/test/provider.test.ts",
   },
   {
@@ -2129,35 +2129,35 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait for the key of a JWS ends when the signal aborts, whatever the resolver does.",
     file: "packages/achievement-credentials/src/jwt/read-credential-jwt.ts",
-    find: "await untilAborted(settings.keys.resolve(kid, call), settings.signal);",
+    find: "await raceAbort(settings.keys.resolve(kid, call), settings.signal);",
     replace: "await settings.keys.resolve(kid, call);",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {
     rule: "The wait for the key of a Data Integrity proof ends when the signal aborts, whatever the resolver does.",
     file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
-    find: "await untilAborted(settings.keys.resolve(method, call), settings.signal);",
+    find: "await raceAbort(settings.keys.resolve(method, call), settings.signal);",
     replace: "await settings.keys.resolve(method, call);",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {
     rule: "The wait for what an issuer publishes ends when the signal aborts, whatever the resolver does.",
     file: "packages/achievement-credentials/src/keys/verify-issuer-key.ts",
-    find: "await untilAborted(options.keys.issuerKeys(issuer, call), options.signal);",
+    find: "await raceAbort(options.keys.issuerKeys(issuer, call), options.signal);",
     replace: "await options.keys.issuerKeys(issuer, call);",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {
     rule: "The wait for a context ends when the signal aborts, whatever the loader of the host does.",
     file: "packages/achievement-credentials/src/data-integrity/document-loader.ts",
-    find: "document: await untilAborted(",
+    find: "document: await raceAbort(",
     replace: "document: await Promise.resolve(",
     test: "packages/achievement-credentials/test/data-integrity.test.ts",
   },
   {
     rule: "The wait for a suite of the host ends when the signal aborts, whatever the suite does.",
     file: "packages/achievement-credentials/src/data-integrity/verify-proof.ts",
-    find: "return await untilAborted(",
+    find: "return await raceAbort(",
     replace: "return await Promise.resolve(",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
@@ -2346,7 +2346,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait for the processors ends when the caller's signal aborts.",
     file: "packages/selective-disclosure/src/document/loader.ts",
-    find: "return await untilAborted(work, signal);",
+    find: "return await raceAbort(work, signal);",
     replace: "return await work;",
     test: "packages/selective-disclosure/test/loader.test.ts",
   },
@@ -2864,7 +2864,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "An alignment to a CASE item has the target type CFItem.",
-    file: "packages/achievement-credentials/src/issue/case-alignment.ts",
+    file: "packages/achievement-credentials/src/issue/build-case-alignment.ts",
     find: 'targetType: "CFItem",',
     replace: 'targetType: "CFRubric",',
     test: "packages/achievement-credentials/test/build.test.ts",
@@ -3186,14 +3186,14 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "The newer of two credentials is the one with the later validFrom.",
-    file: "packages/achievement-credentials/src/compare/newer-credential.ts",
+    file: "packages/achievement-credentials/src/compare/select-newer-credential.ts",
     find: "return secondFrom > firstFrom ? b : a;",
     replace: "return a;",
     test: "packages/achievement-credentials/test/compare.test.ts",
   },
   {
     rule: "Two credentials that are not equal have no newer one.",
-    file: "packages/achievement-credentials/src/compare/newer-credential.ts",
+    file: "packages/achievement-credentials/src/compare/select-newer-credential.ts",
     find: "if (!isSame(first, second)) {",
     replace: "if (false) {",
     test: "packages/achievement-credentials/test/compare.test.ts",
@@ -3488,7 +3488,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A chain is certified only when the host's function trusts it.",
     file: "packages/learning-records/src/signing/verify-statement-signature.ts",
-    find: "await untilAborted(trustCertificate(found.chain, signal === undefined ? undefined : { signal }), signal)",
+    find: "await raceAbort(trustCertificate(found.chain, signal === undefined ? undefined : { signal }), signal)",
     replace: "true",
     test: "packages/learning-records/test/signing.test.ts",
   },
@@ -3685,7 +3685,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A batch with a Statement that has an error is refused whole.",
     file: "packages/learning-records/src/store/statements/prepare.ts",
-    find: 'if (errors.length > 0) return refused(400, refusalOf("The batch of Statements", errors, "validateStatements"));',
+    find: 'if (errors.length > 0) return refused(400, describeRefusal("The batch of Statements", errors, "validateStatements"));',
     replace: 'if (false) return refused(400, "");',
     test: "packages/learning-records/test/store-statements.test.ts",
   },
@@ -3720,8 +3720,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The check of the host refuses a batch with the status of acceptStatus.",
     file: "packages/learning-records/src/store/statements/prepare.ts",
-    find: ': refused(context.settings.acceptStatus, refusalOf("The batch of Statements", errors, "accept"));',
-    replace: ': refused(400, refusalOf("The batch of Statements", errors, "accept"));',
+    find: ': refused(context.settings.acceptStatus, describeRefusal("The batch of Statements", errors, "accept"));',
+    replace: ': refused(400, describeRefusal("The batch of Statements", errors, "accept"));',
     test: "packages/learning-records/test/store-statements.test.ts",
   },
   {
@@ -3741,7 +3741,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A Statement with an id that the LRS holds is compared with the one held.",
     file: "packages/learning-records/src/store/statements/insert.ts",
-    find: "if (!sameStatement(answered, sent)) {",
+    find: "if (!isSameStatement(answered, sent)) {",
     replace: "if (false) {",
     test: "packages/learning-records/test/store-statements.test.ts",
   },
@@ -4364,14 +4364,14 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "The Statement that voids another has the voided verb.",
-    file: "packages/learning-records/src/build/voiding-statement.ts",
+    file: "packages/learning-records/src/build/build-voiding-statement.ts",
     find: "verb: { id: VERB_VOIDED, display: VOIDED_DISPLAY },",
     replace: 'verb: { id: "http://adlnet.gov/expapi/verbs/completed" },',
     test: "packages/learning-records/test/build.test.ts",
   },
   {
     rule: "The target of a voiding Statement is the id of a Statement.",
-    file: "packages/learning-records/src/build/voiding-statement.ts",
+    file: "packages/learning-records/src/build/build-voiding-statement.ts",
     find: "if (!isUuid(target)) {",
     replace: "if (false) {",
     test: "packages/learning-records/test/build.test.ts",
@@ -4596,7 +4596,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait of a call of the Open Badges client for the token of the host ends when the call or the client aborts.",
     file: "packages/achievement-credentials/src/client/request.ts",
-    find: `const token = await untilAborted(
+    find: `const token = await raceAbort(
     Promise.resolve(settings.token(either === undefined ? undefined : { signal: either })),
     either,
   );`,
@@ -4697,7 +4697,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait of a call of the CASE client for the credential of the host ends when the call or the client aborts.",
     file: "packages/competency-frameworks/src/client/client.ts",
-    find: `: await untilAborted(
+    find: `: await raceAbort(
           Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
           either,
         );`,
@@ -4762,28 +4762,28 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "The form of 1.0.3 has no contextAgents and no contextGroups.",
-    file: "packages/learning-records/src/compare/to-statement-version.ts",
+    file: "packages/learning-records/src/compare/convert-statement-version.ts",
     find: "const { contextAgents: _agents, contextGroups: _groups, ...kept } = context;",
     replace: "const kept = context;",
     test: "packages/learning-records/test/v1-version.test.ts",
   },
   {
     rule: "The form of 1.0.3 changes a SubStatement too.",
-    file: "packages/learning-records/src/compare/to-statement-version.ts",
+    file: "packages/learning-records/src/compare/convert-statement-version.ts",
     find: "object: objectV1(object),",
     replace: "object,",
     test: "packages/learning-records/test/v1-version.test.ts",
   },
   {
     rule: "The form of 1.0.3 has a version of 1.0.x.",
-    file: "packages/learning-records/src/compare/to-statement-version.ts",
+    file: "packages/learning-records/src/compare/convert-statement-version.ts",
     find: 'VERSION_PATTERNS["1.0.3"].test(written) ? written : STATEMENT_VERSIONS["1.0.3"]',
     replace: "written",
     test: "packages/learning-records/test/v1-version.test.ts",
   },
   {
     rule: "The form of 1.0.3 writes its times as ISO 8601.",
-    file: "packages/learning-records/src/compare/to-statement-version.ts",
+    file: "packages/learning-records/src/compare/convert-statement-version.ts",
     find: "return isIsoTimestamp(time) ? time : formatTimestamp(time);",
     replace: "return time;",
     test: "packages/learning-records/test/v1-version.test.ts",
@@ -4819,7 +4819,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The payload of a signature on the route of 1.0.3 is compared in the form of 1.0.3.",
     file: "packages/learning-records/src/signing/verify-statement-signature.ts",
-    find: 'return version === "1.0.3" ? toStatementVersion(readEitherVersion(json), "1.0.3") : readStatement(json);',
+    find: 'return version === "1.0.3" ? convertStatementVersion(readEitherVersion(json), "1.0.3") : readStatement(json);',
     replace: "return readStatement(json);",
     test: "packages/learning-records/test/v1-client.test.ts",
   },
@@ -4840,7 +4840,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A client of 1.0.3 reads an answer into the form of 1.0.3.",
     file: "packages/learning-records/src/client/statements.ts",
-    find: 'return version === "1.0.3" ? toStatementVersion(readEitherVersion(value), "1.0.3") : readStatement(value);',
+    find: 'return version === "1.0.3" ? convertStatementVersion(readEitherVersion(value), "1.0.3") : readStatement(value);',
     replace: "return readStatement(value);",
     test: "packages/learning-records/test/v1-client.test.ts",
   },
@@ -4875,8 +4875,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "About lists the versions that the LRS serves.",
     file: "packages/learning-records/src/store/about.ts",
-    find: "jsonResponse(200, { version: versions,",
-    replace: 'jsonResponse(200, { version: ["2.0.0", "1.0.3"],',
+    find: "version: versions,",
+    replace: 'version: ["2.0.0", "1.0.3"],',
     test: "packages/learning-records/test/store.test.ts",
   },
   {
@@ -4952,14 +4952,14 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A resend on the route of 1.0.3 is compared with what that route answers.",
     file: "packages/learning-records/src/store/statements/insert.ts",
-    find: 'const answered = context.version === "1.0.3" ? toStatementVersion(held.statement, "1.0.3") : held.statement;',
+    find: 'const answered = context.version === "1.0.3" ? convertStatementVersion(held.statement, "1.0.3") : held.statement;',
     replace: "const answered = held.statement;",
     test: "packages/learning-records/test/v1-store.test.ts",
   },
   {
     rule: "The route of 1.0.3 answers a Statement in the form of 1.0.3.",
     file: "packages/learning-records/src/store/statements/answer.ts",
-    find: 'context.version === "1.0.3" ? held.map((statement) => toStatementVersion(statement, "1.0.3")) : held;',
+    find: 'context.version === "1.0.3" ? held.map((statement) => convertStatementVersion(statement, "1.0.3")) : held;',
     replace: "held;",
     test: "packages/learning-records/test/v1-store.test.ts",
   },
@@ -5043,7 +5043,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait of a call for the credential of the host ends when the call or the client aborts.",
     file: "packages/learning-records/src/client/request.ts",
-    find: `: await untilAborted(
+    find: `: await raceAbort(
           Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
           either,
         );`,
@@ -5263,7 +5263,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait of addProof for the signer of the host ends when the signal aborts, whatever the signer does.",
     file: "packages/achievement-credentials/src/data-integrity/add-proof.ts",
-    find: "sign: ({ data }: { data: Uint8Array }) => untilAborted(Promise.resolve(signer.sign(data, withSignal)), signal),",
+    find: "sign: ({ data }: { data: Uint8Array }) => raceAbort(Promise.resolve(signer.sign(data, withSignal)), signal),",
     replace: "sign: ({ data }: { data: Uint8Array }) => signer.sign(data, withSignal),",
     test: "packages/achievement-credentials/test/data-integrity.test.ts",
   },
@@ -5473,7 +5473,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The wait for a cache of status lists of the host ends when the signal aborts, whatever the cache does.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "return untilAborted(Promise.resolve(shared), signal);",
+    find: "return raceAbort(Promise.resolve(shared), signal);",
     replace: "return shared;",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
@@ -6006,7 +6006,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A refresh gives the same credential and no other.",
     file: "packages/achievement-credentials/src/verify/check-refresh.ts",
-    find: "if (!sameCredential(authentic.credential, refreshed.authentic.credential)) {",
+    find: "if (!isSameCredential(authentic.credential, refreshed.authentic.credential)) {",
     replace: "if (false) {",
     test: "packages/achievement-credentials/test/verify-checks.test.ts",
   },
@@ -6890,7 +6890,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The client follows a next link only on the origin of the request.",
     file: "packages/tool-integration/src/tool/services/access.ts",
-    find: 'return linkTarget(response.headers, "next", url);',
+    find: 'return findLinkTarget(response.headers, "next", url);',
     replace: 'return /<([^>]*)>/u.exec(response.headers.link ?? "")?.[1];',
     test: "packages/tool-integration/test/tool-services.test.ts",
   },
@@ -7352,7 +7352,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The client follows a link of a relation, such as the differences, only on the origin of the request.",
     file: "packages/tool-integration/src/tool/services/access.ts",
-    find: "return linkTarget(response.headers, relation, url);",
+    find: "return findLinkTarget(response.headers, relation, url);",
     replace: 'return /<([^>]*)>/u.exec(response.headers.link ?? "")?.[1];',
     test: "packages/tool-integration/test/tool-roster.test.ts",
   },

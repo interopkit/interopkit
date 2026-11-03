@@ -1,4 +1,4 @@
-import { DataError, type HttpMethod, requestService, type ServiceResponse, untilAborted } from "@interopkit/core";
+import { DataError, type HttpMethod, raceAbort, requestService, type ServiceResponse } from "@interopkit/core";
 import { readStatementJson } from "../read/index.js";
 import type { Settings } from "./config.js";
 
@@ -45,7 +45,7 @@ export async function send(
   const authorization =
     settings.authorization === undefined
       ? undefined
-      : await untilAborted(
+      : await raceAbort(
           Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
           either,
         );

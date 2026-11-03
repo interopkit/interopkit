@@ -1,7 +1,7 @@
 import { type CallOptions, DataError } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
 import { describe, expect, it, vi } from "vitest";
-import { ltiPlatformLogin, type MessageInput, type ToolRegistration } from "../src/platform/index.js";
+import { type MessageInput, prepareToolLaunch, type ToolRegistration } from "../src/platform/index.js";
 import { openToken, sealToken } from "../src/platform/internal.js";
 import { authenticationRequest, clientAssertion, TOOL_CLIENT_ID, tokenRequest, toolRegistration } from "./fake-tool.js";
 import { generateKeyPair, readPost } from "./fixture.js";
@@ -38,7 +38,7 @@ describe("the login when a port of the host fails", () => {
     const ctx = setup();
     const failure = new Error("cause: the store is down");
     await expect(
-      ltiPlatformLogin(baseMessage, {
+      prepareToolLaunch(baseMessage, {
         ...ctx.login,
         launches: { ...ctx.login.launches, put: () => Promise.reject(failure) },
       }),
@@ -55,7 +55,7 @@ describe("the login when a port of the host fails", () => {
         seen.push((args.at(-1) as CallOptions | undefined)?.signal);
         return value;
       };
-    await ltiPlatformLogin(baseMessage, {
+    await prepareToolLaunch(baseMessage, {
       ...ctx.login,
       signal,
       check: record(undefined),
@@ -70,7 +70,7 @@ describe("the login when a port of the host fails", () => {
     const controller = new AbortController();
     const reason = new Error("gone");
     const check = async () => controller.abort(reason);
-    await expect(ltiPlatformLogin(baseMessage, { ...ctx.login, signal: controller.signal, check })).rejects.toBe(
+    await expect(prepareToolLaunch(baseMessage, { ...ctx.login, signal: controller.signal, check })).rejects.toBe(
       reason,
     );
     expect(ctx.kept.size).toBe(0);
@@ -92,7 +92,7 @@ describe("the login when a port of the host fails", () => {
     ];
     for (const registration of cases) {
       await expect(
-        ltiPlatformLogin(baseMessage, { ...ctx.login, registration: async () => registration as ToolRegistration }),
+        prepareToolLaunch(baseMessage, { ...ctx.login, registration: async () => registration as ToolRegistration }),
       ).rejects.toThrow(DataError);
     }
     expect(ctx.kept.size).toBe(0);

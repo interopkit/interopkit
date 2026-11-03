@@ -3,10 +3,10 @@
 Dynamic Registration 1.0 in both roles. A platform's administrator opens the tool's initiation URL with the address of the
 platform's OpenID configuration and a registration token; the tool discovers the platform, registers with it, and closes the
 window; each administrator then reviews and activates its side. In the tool role, `readRegistrationInitiation`, `discoverPlatform`,
-`registerTool`, `toPlatformRegistration` and `createRegistrationClosePage` are the steps, so that the host may show its own pages
-between them, and the service client reads and changes the registration later. In the platform role, `createRegistrationInitiation`
+`registerTool`, `buildPlatformRegistration` and `buildRegistrationClosePage` are the steps, so that the host may show its own pages
+between them, and the service client reads and changes the registration later. In the platform role, `buildRegistrationInitiation`
 starts a registration, `handlePlatformRequest` serves the configuration, the registration endpoint and the client configuration
-endpoint over the host's `RegistrationStore`, and `toToolRegistration` turns a reviewed registration into the record of a tool. The
+endpoint over the host's `RegistrationStore`, and `buildToolRegistration` turns a reviewed registration into the record of a tool. The
 configurations are the [service models](services.md) that both roles share.
 
 ```mermaid
@@ -15,7 +15,7 @@ sequenceDiagram
   participant P as Platform role
   participant B as Browser
   participant T as Tool
-  A->>P: createRegistrationInitiation(initiation URL)
+  A->>P: buildRegistrationInitiation(initiation URL)
   P-->>B: initiation URL, openid_configuration, registration_token (single use, an hour)
   B->>T: readRegistrationInitiation
   T->>P: discoverPlatform: GET the configuration, with the token
@@ -24,9 +24,9 @@ sequenceDiagram
   P->>P: token spent, configuration validated, scopes narrowed
   P->>A: RegistrationStore.register
   P-->>T: 201: client_id, registration_client_uri, the recorded configuration
-  T-->>B: createRegistrationClosePage: org.imsglobal.lti.close
-  A->>P: toToolRegistration(registered, grant): the tool is active
-  T->>T: toPlatformRegistration: the platform is active
+  T-->>B: buildRegistrationClosePage: org.imsglobal.lti.close
+  A->>P: buildToolRegistration(registered, grant): the tool is active
+  T->>T: buildPlatformRegistration: the platform is active
   T->>P: getToolRegistration, updateToolRegistration: a token of lti-reg
 ```
 
@@ -35,12 +35,12 @@ sequenceDiagram
 | Tool     | `readRegistrationInitiation(request)`                        | Reads the address of the configuration and the token from the initiation request        |
 | Tool     | `discoverPlatform(initiation, options)`                      | Fetches the configuration and checks it against its address                              |
 | Tool     | `registerTool(platform, tool, initiation, options)`          | Posts the tool's configuration and returns the registration that the platform recorded   |
-| Tool     | `toPlatformRegistration(platform, result, tool)`             | Returns the tool's record of the platform                                                |
-| Tool     | `createRegistrationClosePage()`                              | Returns the page that tells the platform's window to close                               |
+| Tool     | `buildPlatformRegistration(platform, result, tool)`             | Returns the tool's record of the platform                                                |
+| Tool     | `buildRegistrationClosePage()`                              | Returns the page that tells the platform's window to close                               |
 | Tool     | `createServiceClient(deployment, options).getToolRegistration(result)`, `.updateToolRegistration(result, tool)` | Read and change the registration                   |
-| Platform | `createRegistrationInitiation(initiationUrl, options)`       | Returns the initiation URL with the configuration and a single-use registration token     |
+| Platform | `buildRegistrationInitiation(initiationUrl, options)`       | Returns the initiation URL with the configuration and a single-use registration token     |
 | Platform | `handlePlatformRequest(request, options)`                    | With `services.registrations`, serves the configuration, `/registration` and `/registration/{client}` |
-| Platform | `toToolRegistration(registered, grant)`                      | Returns the `ToolRegistration` of a reviewed tool, with the scopes and deployments granted |
+| Platform | `buildToolRegistration(registered, grant)`                      | Returns the `ToolRegistration` of a reviewed tool, with the scopes and deployments granted |
 
 ## Quick start
 
@@ -105,11 +105,11 @@ must the `registration_client_uri` of the answer. A platform answers at once, an
 reviews it. Then the host:
 
 1. Keeps the `ToolRegistrationResult`, which the client of the services reads and changes later.
-2. Makes its record of the platform with `toPlatformRegistration(platform, result, { signer, redirectUri, deploymentIds })`: the
+2. Makes its record of the platform with `buildPlatformRegistration(platform, result, { signer, redirectUri, deploymentIds })`: the
    issuer, the authorization, token and key set endpoints, the `authorization_server` as the audience of client assertions, and the
    client identifier. `deploymentIds` defaults to the `deployment_id` of the answer, when the platform combined registration and
    deployment; without one, the host gives it.
-3. Sends the browser `createRegistrationClosePage()`, whether the registration succeeded or not (section 3.7).
+3. Sends the browser `buildRegistrationClosePage()`, whether the registration succeeded or not (section 3.7).
 
 `getToolRegistration(result)` and `updateToolRegistration(result, tool)` of `createServiceClient` read and change the registration at
 its `registration_client_uri`: with the `registration_access_token` of the result when the platform gave one, else with an access
@@ -134,7 +134,7 @@ the platform, which the options check: the issuer on `config.origin` (the config
 | Route                                                  | Methods  | Answers                                                                              |
 | ------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------ |
 | The issuer's path, then `/.well-known/openid-configuration` | GET | The configuration of section 2.1                                                  |
-| `/registration`                                        | POST     | A registration, with the token of `createRegistrationInitiation`                     |
+| `/registration`                                        | POST     | A registration, with the token of `buildRegistrationInitiation`                     |
 | `/registration/{client}`                               | GET, PUT | The registration of the calling tool, with an access token of a scope of `lti-reg`   |
 
 The configuration names the endpoints, `private_key_jwt` with the six approved algorithms, `openid` and the scopes of every service
@@ -150,7 +150,7 @@ and what `discovery` and `config.instance` say.
 | `discovery.subjectTypesSupported` | `["public"]`                               | `public` or `pairwise`                                                     |
 | `maxBodyBytes`                    | 65,536                                     | The most bytes of a registration or an update                              |
 
-`createRegistrationInitiation(initiationUrl, { config, clock, ttlSeconds })` returns the address that the administrator's page opens:
+`buildRegistrationInitiation(initiationUrl, { config, clock, ttlSeconds })` returns the address that the administrator's page opens:
 the tool's initiation URL with `openid_configuration` and a `registration_token`, sealed with the hint key, that names one
 registration for `ttlSeconds` (3,600 by default).
 
@@ -176,7 +176,7 @@ store without both answers no `registration_client_uri`, `/registration/{client}
 neither listed in the configuration nor granted. A store with one serves its method, answers 405 to the other, and offers only the
 scope that it needs: `registration.readonly` for `get`, `registration` for `update`.
 
-When the administrator activates a tool, the host gives `toToolRegistration(registered, { scopes, deploymentIds })` to its lookup of
+When the administrator activates a tool, the host gives `buildToolRegistration(registered, { scopes, deploymentIds })` to its lookup of
 tools: the login initiation URL, the redirect URIs, the key set URL and the custom properties of the configuration, with the scopes
 and the deployments that the administrator grants.
 
@@ -223,7 +223,7 @@ administrator escape them, and fetch a logo, if at all, through the host's guard
 
 | What                                                             | Reason                                                                      |
 | ---------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| The review screen, the activation and the deployments            | The host's: the store keeps the registrations, `toToolRegistration` makes the record |
+| The review screen, the activation and the deployments            | The host's: the store keeps the registrations, `buildToolRegistration` makes the record |
 | A `registration_access_token` issued by the platform role        | Section 4.2 lets a tool use an access token of the token endpoint, which the platform checks against the registration on every call |
 | A provisional update applied later                               | The host's: section 4 leaves the mechanism to the platform                  |
 

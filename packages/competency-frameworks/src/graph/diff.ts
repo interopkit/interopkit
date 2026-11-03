@@ -65,7 +65,7 @@ function sameJson(first: unknown, second: unknown): boolean {
  * has and the earlier lacks, matched by the identifier of the association: the item retired is the origin and the item that
  * replaces it the destination (4.3.5). Each is given by the `uri` of the item in the packages when they hold it, and by the
  * `uri` of the node otherwise. Associations of other types, definitions, rubrics and the document are not compared; a
- * consumer compares `lastChangeDateTime` of the documents with `isNewer`, and reads the associations with `associationsOf`.
+ * consumer compares `lastChangeDateTime` of the documents with `isNewer`, and reads the associations with `listAssociations`.
  *
  * @param before - The earlier package, such as `readPackage` returns.
  * @param after - The later package.

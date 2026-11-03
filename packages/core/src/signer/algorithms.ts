@@ -47,7 +47,7 @@ export const JWS_ALGORITHMS: ReadonlyMap<string, JwsAlgorithm> = new Map<string,
   ["ES256", ecdsa("256", "P-256", 64)],
   ["ES384", ecdsa("384", "P-384", 96)],
   ["ES512", ecdsa("512", "P-521", 132)],
-  // Web Crypto has no secp256k1, so a signer with this algorithm comes from a KMS, not from `signerFromCryptoKey`.
+  // Web Crypto has no secp256k1, so a signer with this algorithm comes from a KMS, not from `createCryptoKeySigner`.
   ["ES256K", { signatureBytes: 64 }],
   ["EdDSA", { key: { name: "Ed25519", params: { name: "Ed25519" } } }],
 ]);

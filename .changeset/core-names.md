@@ -1,0 +1,5 @@
+---
+"@interopkit/core": major
+---
+
+Every function is named by what it does, with one verb for one meaning: `startAuthorization` (was `authorizationRequest`), `readBearerToken` (was `bearerTokenOf`), `requestClientCredentialsToken` (was `clientCredentialsToken`), `findExceededJsonLimit` (was `exceededJsonLimit`), `buildFindings` (was `findingsOf`), `describeIssue` (was `issueText`), `buildJsonResponse` (was `jsonResponse`), `findLinkTarget` (was `linkTarget`), `buildPageLinks` (was `offsetPageLinks`), `formatIssuePath` (was `pathOf`), `describeRefusal` (was `refusalOf`), `readRetryAfterSeconds` (was `retryAfterSeconds`), `createCryptoKeySigner` (was `signerFromCryptoKey`), `buildStatusInfoResponse` (was `statusInfoResponse`), `readTotalCount` (was `totalCountOf`) and `raceAbort` (was `untilAborted`). A function that reads or writes a form that a standard defines is named `read` or `write`, one that assembles plain data `build`, one that returns an object with behavior `create`, one that answers an HTTP request `handle`, a lookup `find` or `list`, a predicate `is`, and no old name is kept as an alias.

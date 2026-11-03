@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { compactVerify, decodeProtectedHeader } from "jose";
 import { describe, expect, it } from "vitest";
-import { DataError, type Signer, signCompactJws, signerFromCryptoKey } from "../src/index.js";
+import { createCryptoKeySigner, DataError, type Signer, signCompactJws } from "../src/index.js";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -75,7 +75,7 @@ async function failureOf(call: Promise<unknown>): Promise<unknown> {
 describe("a signer over a CryptoKey", () => {
   it.each(ALGORITHMS)("signs a compact JWS with %s that jose verifies", async (algorithm, parameters) => {
     const pair = await generate(parameters);
-    const signer = signerFromCryptoKey(pair.privateKey, { algorithm, keyId: "key-1" });
+    const signer = createCryptoKeySigner(pair.privateKey, { algorithm, keyId: "key-1" });
     const jws = await signCompactJws({ typ: "JWT" }, PAYLOAD, signer);
     const verified = await compactVerify(jws, pair.publicKey);
     expect(decoder.decode(verified.payload)).toBe('{"sub":"user-1"}');
@@ -87,7 +87,7 @@ describe("a signer over a CryptoKey", () => {
 
   it("signs any payload, whatever bytes it holds", async () => {
     const pair = await generate({ name: "ECDSA", namedCurve: "P-256" });
-    const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256" });
+    const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256" });
     await fc.assert(
       fc.asyncProperty(fc.uint8Array({ maxLength: 200 }), async (payload) => {
         const verified = await compactVerify(await signCompactJws({}, payload, signer), pair.publicKey);
@@ -99,7 +99,7 @@ describe("a signer over a CryptoKey", () => {
 
   it("signs a payload of every byte value and one longer than a chunk of the encoder", async () => {
     const pair = await generate({ name: "Ed25519" });
-    const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "EdDSA" });
+    const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "EdDSA" });
     for (const payload of [
       Uint8Array.from({ length: 256 }, (_unused, index) => index),
       new Uint8Array(100_000).fill(251),
@@ -111,11 +111,11 @@ describe("a signer over a CryptoKey", () => {
 
   it("states its algorithm and key id, and has no key id when it is given none", async () => {
     const pair = await generate({ name: "ECDSA", namedCurve: "P-256" });
-    expect(signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "k" })).toMatchObject({
+    expect(createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "k" })).toMatchObject({
       algorithm: "ES256",
       keyId: "k",
     });
-    expect(Object.hasOwn(signerFromCryptoKey(pair.privateKey, { algorithm: "ES256" }), "keyId")).toBe(false);
+    expect(Object.hasOwn(createCryptoKeySigner(pair.privateKey, { algorithm: "ES256" }), "keyId")).toBe(false);
   });
 
   it("refuses a key that does not fit the algorithm, and says why", async () => {
@@ -125,31 +125,31 @@ describe("a signer over a CryptoKey", () => {
     const cases: readonly [string, () => unknown][] = [
       [
         'The key must be a private key, found a "public" key: a signer holds a private key.',
-        () => signerFromCryptoKey(p256.publicKey, { algorithm: "ES256" }),
+        () => createCryptoKeySigner(p256.publicKey, { algorithm: "ES256" }),
       ],
       [
         "The key is not on the curve P-384, which ES384 needs.",
-        () => signerFromCryptoKey(p256.privateKey, { algorithm: "ES384" }),
+        () => createCryptoKeySigner(p256.privateKey, { algorithm: "ES384" }),
       ],
       [
         "The key is not a RSASSA-PKCS1-v1_5 key, which RS256 needs.",
-        () => signerFromCryptoKey(p256.privateKey, { algorithm: "RS256" }),
+        () => createCryptoKeySigner(p256.privateKey, { algorithm: "RS256" }),
       ],
       [
         "The key was not made for the hash SHA-384, which RS384 needs.",
-        () => signerFromCryptoKey(rsa256.privateKey, { algorithm: "RS384" }),
+        () => createCryptoKeySigner(rsa256.privateKey, { algorithm: "RS384" }),
       ],
       [
         "The key is not a RSA-PSS key, which PS256 needs.",
-        () => signerFromCryptoKey(rsa256.privateKey, { algorithm: "PS256" }),
+        () => createCryptoKeySigner(rsa256.privateKey, { algorithm: "PS256" }),
       ],
       [
         "The key is not a RSASSA-PKCS1-v1_5 key, which RS256 needs.",
-        () => signerFromCryptoKey(pss256.privateKey, { algorithm: "RS256" }),
+        () => createCryptoKeySigner(pss256.privateKey, { algorithm: "RS256" }),
       ],
       [
         "The key is not a Ed25519 key, which EdDSA needs.",
-        () => signerFromCryptoKey(p256.privateKey, { algorithm: "EdDSA" }),
+        () => createCryptoKeySigner(p256.privateKey, { algorithm: "EdDSA" }),
       ],
     ];
     for (const [message, call] of cases) expect(call, message).toThrow(new DataError(message));
@@ -160,22 +160,22 @@ describe("a signer over a CryptoKey", () => {
     const message =
       "The option algorithm must be one of RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, EdDSA, found";
     for (const algorithm of ["none", "HS256", "ES256K", "es256", "", JSON.parse("5"), JSON.parse("null")]) {
-      expect(() => signerFromCryptoKey(pair.privateKey, { algorithm }), String(algorithm)).toThrow(message);
+      expect(() => createCryptoKeySigner(pair.privateKey, { algorithm }), String(algorithm)).toThrow(message);
     }
-    expect(() => signerFromCryptoKey(pair.privateKey, JSON.parse("null"))).toThrow(
-      new DataError("The options of signerFromCryptoKey must be an object, found null."),
+    expect(() => createCryptoKeySigner(pair.privateKey, JSON.parse("null"))).toThrow(
+      new DataError("The options of createCryptoKeySigner must be an object, found null."),
     );
-    expect(() => signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "" })).toThrow(
+    expect(() => createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "" })).toThrow(
       new DataError('The option keyId must be a non-empty string, found "".'),
     );
-    expect(() => signerFromCryptoKey(JSON.parse("null"), { algorithm: "ES256" })).toThrow(
+    expect(() => createCryptoKeySigner(JSON.parse("null"), { algorithm: "ES256" })).toThrow(
       new DataError("The key must be a CryptoKey, found null."),
     );
   });
 
   it("ends the wait when the signal aborts, and signs nothing when it is aborted before", async () => {
     const pair = await generate({ name: "ECDSA", namedCurve: "P-256" });
-    const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256" });
+    const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256" });
     const reason = new Error("Left the page.");
     expect(await failureOf(signer.sign(PAYLOAD, { signal: AbortSignal.abort(reason) }))).toBe(reason);
     const controller = new AbortController();
@@ -189,7 +189,7 @@ describe("signCompactJws", () => {
   const signing = async (algorithm = "ES256") => {
     const parameters = ALGORITHMS.find(([name]) => name === algorithm)?.[1] ?? ALGORITHMS[6][1];
     const pair = await generate(parameters);
-    return { pair, signer: signerFromCryptoKey(pair.privateKey, { algorithm, keyId: "key-1" }) };
+    return { pair, signer: createCryptoKeySigner(pair.privateKey, { algorithm, keyId: "key-1" }) };
   };
   /** A signer whose calls are counted. */
   const counting = (signer: Signer): { readonly signer: Signer; readonly calls: () => number } => {
@@ -263,7 +263,7 @@ describe("signCompactJws", () => {
 
   it("lets a header name a key when the signer names none", async () => {
     const pair = await generate({ name: "ECDSA", namedCurve: "P-256" });
-    const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256" });
+    const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256" });
     expect(parts(await signCompactJws({ kid: "did:example:1#key-1" }, PAYLOAD, signer)).header.kid).toBe(
       "did:example:1#key-1",
     );

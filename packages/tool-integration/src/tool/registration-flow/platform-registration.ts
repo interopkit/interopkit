@@ -35,11 +35,11 @@ function resultOf(value: unknown): ToolRegistrationResult {
  * @param platform - What `discoverPlatform` returned.
  * @param result - What `registerTool` returned.
  * @param tool - The signer, the launch URL and the deployments.
- * @returns The registration of the platform, which `ltiLogin`, `ltiLaunch` and `createServiceClient` read.
+ * @returns The registration of the platform, which `handleLogin`, `handleLaunch` and `createServiceClient` read.
  * @throws `DataError` when an argument has the wrong type, the launch URL is not a redirect URI of the registration, or the
  * platform named no deployment and `tool.deploymentIds` gives none.
  */
-export function toPlatformRegistration(
+export function buildPlatformRegistration(
   platform: PlatformConfiguration,
   result: ToolRegistrationResult,
   tool: PlatformRegistrationInput,

@@ -36,7 +36,7 @@ flowchart LR
 | 6.1 Import                                       | `importCourse`: the ids of the LMS for the course, its blocks and units, the same in every registration                    |
 | 8.1, 8.2 Launch and fetch URL                    | `prepareLaunch`, `handleFetchRequest`: a fetch code of one use, a token for the session, error codes 1 to 3                |
 | 9.3 The verbs of the LMS                         | launched, abandoned (`abandonSession` and on a new launch), waived (`waiveAu`), satisfied for blocks and the course        |
-| 9.6.1.1, 9.3.9 Satisfaction                      | By `moveOn` at registration and when the store holds a unit's statement; `progressOf`                                      |
+| 9.6.1.1, 9.3.9 Satisfaction                      | By `moveOn` at registration and when the store holds a unit's statement; `deriveCourseProgress`                                      |
 | 4.1, 8.1, 8.2 The unit's start                   | `startAuSession`: the five parameters, the fetch URL posted to once, the token as Basic, the endpoint as the base of xAPI |
 | 9.3, 9.5, 10.2, 11.0 The unit's session          | `AuSession`: the verbs of a unit with their results, durations and mastery score, the launch modes, the preferences read at start and saved, a 403 taken as no error |
 | 10.0, 11.0 The documents of a launch             | `LMS.LaunchData` before each launch and read-only to units; the preferences read before initialized, written only when valid |

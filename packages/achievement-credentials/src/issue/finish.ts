@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { copyJson, DEFAULT_MAX_FINDINGS, findingsOf, type Schema, safeParseBounded } from "@interopkit/core/checks";
+import { buildFindings, copyJson, DEFAULT_MAX_FINDINGS, type Schema, safeParseBounded } from "@interopkit/core/checks";
 import type { CredentialIssue } from "../model/index.js";
 import { issueSink, parseJson } from "../read/internal.js";
 import { refuseWith } from "./refusal.js";
@@ -15,7 +15,7 @@ export function readInput<TInput>(schema: Schema<TInput>, input: unknown, label:
   const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
   const result = safeParseBounded(schema, copy.value, sink.room);
   if (!result.success) {
-    sink.add(findingsOf(result.issues).map((finding) => ({ ...finding, severity: "error" as const })));
+    sink.add(buildFindings(result.issues).map((finding) => ({ ...finding, severity: "error" as const })));
     throw refuseWith(label, sink.list());
   }
   return result.output;

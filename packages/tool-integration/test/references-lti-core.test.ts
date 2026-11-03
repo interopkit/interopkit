@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages, claims and OAuth 2.0 requests are snake_case.
 
-import { jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse } from "@interopkit/core/http";
 import { createLtiTool, LtiError, type LtiLaunch, type LtiTool, MemoryOneTimeStore } from "lti-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readDeepLinkingResponse } from "../src/platform/index.js";
@@ -64,7 +64,7 @@ async function world(algorithm: PlatformAlgorithm): Promise<{ platform: Referenc
     },
   });
   systems[PLATFORM] = platform.handle;
-  systems[TOOL] = async () => jsonResponse(200, tool.jwks());
+  systems[TOOL] = async () => buildJsonResponse(200, tool.jwks());
   return { platform, tool };
 }
 

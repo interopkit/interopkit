@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { checkNonEmptyString, isRecord } from "@interopkit/core/checks";
-import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
 import { type LineItem, type MessageServices, type Result, SCOPES } from "../../protocol/index.js";
 import {
   LINE_ITEM_CONTAINER_MEDIA_TYPE,
@@ -73,7 +73,12 @@ function storedLineItem(label: string, value: unknown, origin: string, contextId
 
 /** Answers with a line item. */
 function lineItemAnswer(status: number, item: LineItem): HttpResponse {
-  return jsonResponse(status, writeLineItem(item), status === 201 ? { location: item.id } : {}, LINE_ITEM_MEDIA_TYPE);
+  return buildJsonResponse(
+    status,
+    writeLineItem(item),
+    status === 201 ? { location: item.id } : {},
+    LINE_ITEM_MEDIA_TYPE,
+  );
 }
 
 /** GET of the line items of a context (AGS 3.2.4), filtered and in pages. */
@@ -90,7 +95,7 @@ async function getLineItems(call: Call): Promise<HttpResponse> {
   const label = "GradebookStore.lineItems";
   const items = storePage(label, found, (item) => storedLineItem(label, item, settings.config.origin, context));
   const headers = pageHeaders(url, items, page, label);
-  return jsonResponse(200, writeLineItems(items.items), headers, LINE_ITEM_CONTAINER_MEDIA_TYPE);
+  return buildJsonResponse(200, writeLineItems(items.items), headers, LINE_ITEM_CONTAINER_MEDIA_TYPE);
 }
 
 /** POST of a line item to the container of a context (AGS 3.2.5), answered with 201 and the line item. */
@@ -158,7 +163,7 @@ async function getResults(call: Call): Promise<HttpResponse> {
     return { id, scoreOf, ...readStoredResult(item) };
   });
   const headers = pageHeaders(url, results, page, label);
-  return jsonResponse(200, writeResults(results.items), headers, RESULT_CONTAINER_MEDIA_TYPE);
+  return buildJsonResponse(200, writeResults(results.items), headers, RESULT_CONTAINER_MEDIA_TYPE);
 }
 
 /** Reads the body of a score, with the instant of its timestamp for the store to order it by. */

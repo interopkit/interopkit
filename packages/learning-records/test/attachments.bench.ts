@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { type AttachmentData, readStatement, type Statement } from "@interopkit/learning-records";
-import { attachmentHash, readMultipart, writeMultipart } from "@interopkit/learning-records/attachments";
+import { hashAttachment, readMultipart, writeMultipart } from "@interopkit/learning-records/attachments";
 import { parseMultipart } from "@remix-run/multipart-parser";
 import { expect, test } from "vitest";
 import { benchStatement } from "./batch.js";
@@ -85,12 +85,12 @@ test("writes and reads a message of 99 Statements with 6.2 MiB of Attachments wi
 
 test("hashes 1 MiB of an Attachment within a few times of the SHA-256 of node:crypto", async ({ annotate, bench }) => {
   const body = new Uint8Array(1_048_576).map((_, index) => index % 251);
-  expect(attachmentHash(body)).toBe(nativeSha256(body));
+  expect(hashAttachment(body)).toBe(nativeSha256(body));
   const native = await bench("node:crypto SHA-256", () => nativeSha256(body)).run(BENCH_OPTIONS);
-  const hashed = await bench("attachmentHash", () => attachmentHash(body)).run(BENCH_OPTIONS);
+  const hashed = await bench("hashAttachment", () => hashAttachment(body)).run(BENCH_OPTIONS);
   await expectRatio(
     annotate,
-    "attachmentHash",
+    "hashAttachment",
     hashed,
     { ...native, name: "the SHA-256 of node:crypto" },
     RATIOS.attachmentHashAgainstNative,

@@ -37,7 +37,7 @@ export interface PlatformOptions {
   readonly clock: Clock;
 }
 
-/** The options of `ltiPlatformLogin` and `ltiPlatformFrame`. */
+/** The options of `prepareToolLaunch` and `prepareToolFrame`. */
 export interface PlatformLoginOptions extends PlatformOptions, CallOptions {
   /** Looks up the registration of a tool by its client identifier, or returns `undefined` when there is none. */
   readonly registration: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
@@ -179,7 +179,7 @@ export interface PlatformRequestOptions extends PlatformOptions, CallOptions {
    * Accepts a registration request without a registration token (Dynamic Registration 1.0 section 3.5 allows it), so that
    * anyone may ask for a registration; the `RegistrationStore` then caps the registrations that wait for review.
    *
-   * @defaultValue `false`: a registration needs a token of `createRegistrationInitiation`, used once
+   * @defaultValue `false`: a registration needs a token of `buildRegistrationInitiation`, used once
    */
   readonly openRegistration?: boolean;
   /**
@@ -389,7 +389,7 @@ function checkRegistrationConfig(config: PlatformConfig): void {
   }
 }
 
-/** The options of `createRegistrationInitiation`. */
+/** The options of `buildRegistrationInitiation`. */
 export interface RegistrationInitiationOptions extends PlatformOptions {
   /**
    * How long the registration token is valid, in seconds: the time that the tool's administrator may take on the tool's pages
@@ -407,7 +407,7 @@ const initiationOptionsSchema = strictRecord({
 });
 
 /**
- * Checks the options of `createRegistrationInitiation`, and that the platform can serve Dynamic Registration.
+ * Checks the options of `buildRegistrationInitiation`, and that the platform can serve Dynamic Registration.
  *
  * @throws `DataError` that names the option and what it must be.
  */
@@ -418,7 +418,7 @@ export function readInitiationOptions(options: unknown): RegistrationInitiationO
 }
 
 /**
- * Checks the options of `ltiPlatformLogin` and `ltiPlatformFrame`.
+ * Checks the options of `prepareToolLaunch` and `prepareToolFrame`.
  *
  * @throws `DataError` that names the option and what it must be.
  */

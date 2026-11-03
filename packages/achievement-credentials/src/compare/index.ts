@@ -3,6 +3,6 @@
  *
  * @module
  */
-export { type CredentialSummary, credentialSummary } from "./credential-summary.js";
-export { newerCredential } from "./newer-credential.js";
-export { sameCredential } from "./same-credential.js";
+export { type CredentialSummary, summarizeCredential } from "./credential-summary.js";
+export { isSameCredential } from "./is-same-credential.js";
+export { selectNewerCredential } from "./select-newer-credential.js";

@@ -16,7 +16,7 @@ const LAST_TIME = 253_402_300_799_999;
  * @throws `DataError` when it is not epoch milliseconds in that range.
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2 | Caliper Analytics 1.2}
  */
-export function caliperTime(at: unknown, label: string): string {
+export function formatDateTime(at: unknown, label: string): string {
   if (typeof at !== "number" || !Number.isFinite(at) || at < 0 || at > LAST_TIME) {
     throw new DataError(
       `${label} must be epoch milliseconds from 1970 to the end of the year 9999, found ${describe(at)}.`,

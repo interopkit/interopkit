@@ -16,7 +16,7 @@ describe("the public API", () => {
         "CALIPER_1_1_CONTEXT",
         "CALIPER_CONTEXT",
         "CALIPER_VERSIONS",
-        "caliperTime",
+        "formatDateTime",
         "checkIri",
         "COURSE_OFFERING_TYPES",
         "DEFAULT_CALIPER_TIMEOUT_MS",

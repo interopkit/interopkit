@@ -18,8 +18,8 @@ flowchart LR
     ports["Ports<br/>LtiStore, LaunchStore, GradebookStore,<br/>registration lookup, fetch, Clock"]
   end
   subgraph pkg["@interopkit/tool-integration"]
-    tool["/tool<br/>ltiLogin, ltiLaunch, serveToolJwks,<br/>createDeepLinkResponse, createStartAssessmentPage,<br/>createServiceClient"]
-    platformRole["/platform<br/>ltiPlatformFrame,<br/>handlePlatformRequest"]
+    tool["/tool<br/>handleLogin, handleLaunch, serveToolJwks,<br/>buildDeepLinkingResponse, buildStartAssessmentPage,<br/>createServiceClient"]
+    platformRole["/platform<br/>prepareToolFrame,<br/>handlePlatformRequest"]
     root["root<br/>LtiError, createJwksCache,<br/>the model of messages, vocabularies"]
   end
   http["@interopkit/core/http<br/>HttpRequest, HttpResponse"]
@@ -48,13 +48,13 @@ npm install @interopkit/tool-integration
 | Subpath                                 | Exports                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@interopkit/tool-integration`          | `LtiError`, with a `reason` and an HTTP `status`; `createJwksCache`, `JwksCache`, `JwksCacheOptions`; the model of the messages: `LtiMessage`, `ToolMessage`, the seven message types (`ResourceLinkMessage`, `DeepLinkingRequestMessage`, `SubmissionReviewMessage`, `StartProctoringMessage`, `EndAssessmentMessage`, `DeepLinkingResponseMessage`, `StartAssessmentMessage`, `OtherMessage`) and their parts; `KeySet`; the vocabularies `SYSTEM_ROLES`, `INSTITUTION_ROLES`, `CONTEXT_ROLES`, `CONTEXT_SUB_ROLES`, `LTI_SYSTEM_ROLES`, `CONTEXT_TYPES`; `canonicalizeRole`, `canonicalizeContextType`, `APPROVED_ALGORITHMS`, `SCOPES`, `MESSAGE_TYPES`; the models of the bodies of the services: `LineItem`, `LineItemInput`, `Score`, `Result`, `Membership`, `Member`, `GroupContainer`, `GroupSetContainer`, `ContentItem` and its five types, `PlatformConfiguration`, `ToolConfiguration`, `ToolRegistrationResult`, `ControlRequest`, `ControlStatus`, `PreferencesRecord`, their queries, and the vocabularies `ACTIVITY_PROGRESS`, `GRADING_PROGRESS`, `MEMBER_STATUSES`, `CONTENT_ITEM_TYPES`, `CONTROL_ACTIONS`, `ATTEMPT_STATUSES` |
-| `@interopkit/tool-integration/platform` | `ltiPlatformLogin`, `ltiPlatformFrame`, `handlePlatformRequest`, `readDeepLinkingResponse`, `readStartAssessment`, `createRegistrationInitiation`, `toToolRegistration`, `buildPlatformEndpoints`, `buildCapabilitiesScript`; `MessageInput` and its five types (`ResourceLinkInput`, `DeepLinkingRequestInput`, `SubmissionReviewInput`, `StartProctoringInput`, `EndAssessmentInput`) with `MessageInputBase`, `MessageServicesInput` and `DeepLinkingInputSettings`; `ToolRegistration`, `PlatformConfig`, `PlatformEndpoints`, `PlatformFrame`, `CapabilitiesScript`, `LaunchToCheck`; the ports `LaunchStore`, `Substitution`, `GradebookStore`, `RosterStore`, `GroupStore`, `PreferencesStore`, `AssessmentControl`, `RegistrationStore` with `RegistrationRefusal`, and `PlatformServices`, with `ServiceCaller`, `StorePage`, `StoredLineItem`, `StoredResult`, `ReceivedScore`, `StoreLineItemQuery`, `StoreResultQuery`, `StoreMemberQuery`, `StoreMemberPage`, `StoreGroupQuery`; `ReceivedDeepLinkingResponse`, `ReceivedStartAssessment`, `RegisteredTool`, `RegistrationGrant`; the options `PlatformOptions`, `PlatformLoginOptions`, `PlatformRequestOptions`, `PlatformDiscovery`, `ToolMessageOptions`, `RegistrationInitiationOptions`, `CapabilitiesScriptOptions` |
-| `@interopkit/tool-integration/tool`     | `ltiLogin`, `ltiLaunch`, `serveToolJwks`, `createDeepLinkResponse`, `createStartAssessmentPage`, `createServiceClient`, `advanceScoreTimestamp`, `readRegistrationInitiation`, `discoverPlatform`, `registerTool`, `toPlatformRegistration`, `createRegistrationClosePage`; `PlatformRegistration`, `LtiStore`, `LoginRecord`, `DeepLinkingResponseInput`, `StartAssessmentInput`, `RegistrationInitiation`, `ToolConfigurationInput`, `PlatformRegistrationInput`, `ServiceClient`, `GradesClient`, `MembersClient`, `GroupsClient`, `PreferencesClient`, `ControlClient`, `RegistrationClient`, `Page`, `MemberPage`, `TokenStore`; the options `ToolOptions`, `LtiLoginOptions`, `LtiLaunchOptions`, `ServeToolJwksOptions`, `ServiceClientOptions`, `DiscoverPlatformOptions`, `RegisterToolOptions` |
+| `@interopkit/tool-integration/platform` | `prepareToolLaunch`, `prepareToolFrame`, `handlePlatformRequest`, `readDeepLinkingResponse`, `readStartAssessment`, `buildRegistrationInitiation`, `buildToolRegistration`, `buildPlatformEndpoints`, `buildCapabilitiesScript`; `MessageInput` and its five types (`ResourceLinkInput`, `DeepLinkingRequestInput`, `SubmissionReviewInput`, `StartProctoringInput`, `EndAssessmentInput`) with `MessageInputBase`, `MessageServicesInput` and `DeepLinkingInputSettings`; `ToolRegistration`, `PlatformConfig`, `PlatformEndpoints`, `PlatformFrame`, `CapabilitiesScript`, `LaunchToCheck`; the ports `LaunchStore`, `Substitution`, `GradebookStore`, `RosterStore`, `GroupStore`, `PreferencesStore`, `AssessmentControl`, `RegistrationStore` with `RegistrationRefusal`, and `PlatformServices`, with `ServiceCaller`, `StorePage`, `StoredLineItem`, `StoredResult`, `ReceivedScore`, `StoreLineItemQuery`, `StoreResultQuery`, `StoreMemberQuery`, `StoreMemberPage`, `StoreGroupQuery`; `ReceivedDeepLinkingResponse`, `ReceivedStartAssessment`, `RegisteredTool`, `RegistrationGrant`; the options `PlatformOptions`, `PlatformLoginOptions`, `PlatformRequestOptions`, `PlatformDiscovery`, `ToolMessageOptions`, `RegistrationInitiationOptions`, `CapabilitiesScriptOptions` |
+| `@interopkit/tool-integration/tool`     | `handleLogin`, `handleLaunch`, `serveToolJwks`, `buildDeepLinkingResponse`, `buildStartAssessmentPage`, `createServiceClient`, `advanceScoreTimestamp`, `readRegistrationInitiation`, `discoverPlatform`, `registerTool`, `buildPlatformRegistration`, `buildRegistrationClosePage`; `PlatformRegistration`, `LtiStore`, `LoginRecord`, `DeepLinkingResponseInput`, `StartAssessmentInput`, `RegistrationInitiation`, `ToolConfigurationInput`, `PlatformRegistrationInput`, `ServiceClient`, `GradesClient`, `MembersClient`, `GroupsClient`, `PreferencesClient`, `ControlClient`, `RegistrationClient`, `Page`, `MemberPage`, `TokenStore`; the options `ToolOptions`, `LtiLoginOptions`, `LtiLaunchOptions`, `ServeToolJwksOptions`, `ServiceClientOptions`, `DiscoverPlatformOptions`, `RegisterToolOptions` |
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { createJwksCache } from "@interopkit/tool-integration";
-import { ltiLogin } from "@interopkit/tool-integration/tool";
+import { handleLogin } from "@interopkit/tool-integration/tool";
 
 const keys = await crypto.subtle.generateKey(
   { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
@@ -69,7 +69,7 @@ const registration = {
   jwksUrl: "https://lms.example.edu/jwks",
   accessTokenUrl: "https://lms.example.edu/token",
   redirectUri: "https://tool.example.com/lti/launch",
-  signer: signerFromCryptoKey(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
+  signer: createCryptoKeySigner(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
 };
 const logins = new Map();
 const clock = { now: () => Date.now() };
@@ -90,7 +90,7 @@ login.search = new URLSearchParams({
   login_hint: "user-1",
   target_link_uri: "https://tool.example.com/lti/launch",
 }).toString();
-const response = await ltiLogin({ method: "GET", url: login.href, headers: {}, body: new Uint8Array() }, options);
+const response = await handleLogin({ method: "GET", url: login.href, headers: {}, body: new Uint8Array() }, options);
 response.status; // => 302
 logins.size; // => 1
 ```

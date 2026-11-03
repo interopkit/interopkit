@@ -9,7 +9,7 @@ export interface AuthorizationServer {
   /** The address of the token endpoint, an `https` URL. */
   readonly tokenEndpoint: string;
   /**
-   * The address of the authorization endpoint, which `authorizationRequest` needs.
+   * The address of the authorization endpoint, which `startAuthorization` needs.
    *
    * @defaultValue none
    */

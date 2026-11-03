@@ -9,7 +9,7 @@ import { verifyCredentialStatus } from "@interopkit/achievement-credentials/stat
 import type { VerifyOptions } from "@interopkit/achievement-credentials/verify";
 import { DataError, type Random, type Signer } from "@interopkit/core";
 import { isRecord } from "@interopkit/core/checks";
-import { type HttpRequest, type HttpResponse, jsonResponse, readJson } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
 import type { SigningAlgorithm } from "./keys.ts";
 import { createStatusLists, dateTimeOf, type StatusLists, type StatusPurpose } from "./status-lists.ts";
 
@@ -60,7 +60,7 @@ function suiteOf(issuer: VcApiIssuer): SigningCryptosuite {
 
 /** The error body of the API: what failed, for each cause. */
 function failure(status: number, message: string, name = "Error"): HttpResponse {
-  return jsonResponse(status, { errors: [{ name, message }] });
+  return buildJsonResponse(status, { errors: [{ name, message }] });
 }
 
 /** Reads the body as a JSON object with the object that the operation needs, and returns both. */
@@ -109,7 +109,7 @@ async function issue(service: Service, request: HttpRequest, name: string): Prom
     contexts: service.config.verify.contexts,
     clock: service.config.verify.clock,
   });
-  return jsonResponse(201, signed);
+  return buildJsonResponse(201, signed);
 }
 
 /** Derives a disclosure of the credential of the request, revealing the pointers it selects. */
@@ -120,7 +120,7 @@ async function derive(service: Service, request: HttpRequest): Promise<HttpRespo
     selectivePointers: Array.isArray(selectivePointers) ? (selectivePointers as string[]) : [],
     contexts: service.config.verify.contexts,
   });
-  return jsonResponse(201, disclosed);
+  return buildJsonResponse(201, disclosed);
 }
 
 /** Serves the status list credential of an issuer: a Data Integrity proof for a key that signs it, and a JWS otherwise. */
@@ -136,7 +136,7 @@ async function statusList(service: Service, name: string, purpose: string): Prom
   if (list === undefined) return failure(404, "There is no such status list.");
   return typeof list === "string"
     ? { status: 200, headers: { "content-type": "application/jwt" }, body: list }
-    : jsonResponse(200, list, {}, "application/ld+json");
+    : buildJsonResponse(200, list, {}, "application/ld+json");
 }
 
 /** The checks of the API that the service offers, each by a function of the package. */
@@ -187,7 +187,7 @@ async function check(service: Service, request: HttpRequest): Promise<HttpRespon
     );
   }
   const { passed, errors } = await checksOf(service, value, names);
-  return jsonResponse(errors.length === 0 ? 200 : 400, {
+  return buildJsonResponse(errors.length === 0 ? 200 : 400, {
     verified: errors.length === 0,
     checks: passed,
     warnings: [],

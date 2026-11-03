@@ -13,11 +13,11 @@ export {
   readAccessDecision,
 } from "./access.js";
 export { basePathSchema } from "./base-path.js";
-export { bearerTokenOf } from "./bearer.js";
+export { readBearerToken } from "./bearer.js";
 export { type ReadJsonOptions, readJson, readText } from "./body.js";
 export { negotiate } from "./negotiate.js";
-export { type ListExtent, type OffsetPage, offsetPageLinks, type PageSizes, readOffsetPage } from "./paging.js";
+export { buildPageLinks, type ListExtent, type OffsetPage, type PageSizes, readOffsetPage } from "./paging.js";
 export { type ReadFormOptions, readForm, readQuery } from "./parameters.js";
 export { checkHttpRequest, type HttpRequest } from "./request.js";
-export { type HttpResponse, jsonResponse } from "./response.js";
-export { type StatusInfoOptions, statusInfoResponse } from "./status-info.js";
+export { buildJsonResponse, type HttpResponse } from "./response.js";
+export { buildStatusInfoResponse, type StatusInfoOptions } from "./status-info.js";

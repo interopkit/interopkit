@@ -1,4 +1,4 @@
-import { type AccessRefusal, type HttpResponse, statusInfoResponse } from "@interopkit/core/http";
+import { type AccessRefusal, buildStatusInfoResponse, type HttpResponse } from "@interopkit/core/http";
 import type { StatusCodeMinorValue } from "../model/index.js";
 
 /**
@@ -13,7 +13,7 @@ export function failure(
 ): HttpResponse {
   // OB B.3.6 pairs `not_found` with the severity `status`, and every other code of a failure with `error`.
   const severity = minor === "not_found" ? "status" : "error";
-  return statusInfoResponse(status, description, { minor, severity, headers });
+  return buildStatusInfoResponse(status, description, { minor, severity, headers });
 }
 
 /** The answer for a path that is no endpoint of the API: 404. */

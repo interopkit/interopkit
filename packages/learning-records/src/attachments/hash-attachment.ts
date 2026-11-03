@@ -29,7 +29,7 @@ export function checkBytes(value: unknown, label: string): asserts value is Uint
  * @throws `DataError` when the data are not a `Uint8Array`.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
-export function attachmentHash(body: Uint8Array): string {
+export function hashAttachment(body: Uint8Array): string {
   checkBytes(body, "The body");
   return bytesToHex(sha256(body));
 }

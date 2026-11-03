@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { refusalOf } from "@interopkit/core/checks";
+import { describeRefusal } from "@interopkit/core/checks";
 import type { CaseIssue, CasePackage } from "../model/index.js";
 import { inspectPackage, issueSink } from "./inspect.js";
 import { type ReadOptions, readSettings } from "./options.js";
@@ -25,7 +25,8 @@ export function readPackage(value: unknown, options?: ReadOptions): CasePackage 
   const sink = issueSink(maxFindings, true);
   const pkg = inspectPackage(value, version, sink);
   const errors = sink.list();
-  if (pkg === undefined || errors.length > 0) throw new DataError(refusalOf("The package", errors, "validatePackage"));
+  if (pkg === undefined || errors.length > 0)
+    throw new DataError(describeRefusal("The package", errors, "validatePackage"));
   return pkg;
 }
 

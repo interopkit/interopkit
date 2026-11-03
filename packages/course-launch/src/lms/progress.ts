@@ -145,7 +145,7 @@ export function withSatisfactions(registration: Registration, written: readonly 
  * @returns The progress, in the order of the structure.
  * @throws `DataError` when an argument is not an object.
  */
-export function progressOf(registration: Registration, course: ImportedCourse): CourseProgress {
+export function deriveCourseProgress(registration: Registration, course: ImportedCourse): CourseProgress {
   checkRecord(registration, "The registration must be an object");
   checkRecord(course, "The course must be an object");
   const satisfied = satisfactionOf(course, registration);

@@ -14,9 +14,9 @@ flowchart LR
   subgraph pkg["@interopkit/competency-frameworks"]
     read["readPackage, readEntity<br/>schemas, then identifiers, links, tree"]
     validate["validatePackage, validateEntity"]
-    version["toCaseVersion"]
-    graph["/graph<br/>frameworkTree, crosswalk,<br/>diffPackages, isNewer"]
-    client["/client<br/>createCaseClient, caseFilter"]
+    version["convertCaseVersion"]
+    graph["/graph<br/>buildFrameworkTree, crosswalk,<br/>diffPackages, isNewer"]
+    client["/client<br/>createCaseClient, writeCaseFilter"]
     provider["/provider<br/>handleCaseRequest over a FrameworkStore<br/>paging, filter, sort, fields, discovery"]
   end
   model["CasePackage, CFItem, ...<br/>the model of CASE 1.1"]
@@ -55,20 +55,20 @@ npm install @interopkit/competency-frameworks
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@interopkit/competency-frameworks` | `readPackage`, `readEntity`, `ReadOptions`: read a package or an entity of either version into the model of 1.1, and throw `DataError` on an error                                                                                                        |
 |                                     | `validatePackage`, `validateEntity`, `CaseIssue`: judge a value and return every finding, errors and warnings, as data                                                                                                                                    |
-|                                     | `toCaseVersion`, `VersionedValue`, `Converted`: a package or an entity in the form of 1.0, and what was left out                                                                                                                                          |
+|                                     | `convertCaseVersion`, `VersionedValue`, `Converted`: a package or an entity in the form of 1.0, and what was left out                                                                                                                                          |
 |                                     | `CasePackage`, `CFPckgDocument`, `CFPckgItem`, `CFPckgAssociation`, `CFDocument`, `CFItem`, `CFAssociation`, `CFDefinition` and the other classes: the model                                                                                              |
 |                                     | `ASSOCIATION_TYPES`, `CASE_VERSIONS`, `ENTITY_KINDS`, `SERVED_KINDS`, `CaseEntityMap`, `STATUS_CODES_MAJOR`, `STATUS_CODES_MINOR`, `STATUS_SEVERITIES`, `CaseVersion`, `CaseEntityKind`, `CaseEntity`, `ImsxStatusInfo` and the types of the vocabularies |
 |                                     | `CaseQuery`, `CaseFilter`, `CaseCondition`, `OpenApiDocument`, `FILTER_PREDICATES`, `SORT_ORDERS`: what the provider and a client of the endpoints share                                                                                                  |
 | `.../client`                        | `createCaseClient`, `CaseClient`, `CaseClientConfig`: a call for each of the twelve endpoints, paging, errors                                                                                                                                             |
-|                                     | `caseFilter`, `readStatusInfo`, `StatusDetail`, `SelectedDocument`: the filter of a request, and the status and `Retry-After` of a refusal                                                                                                                |
-| `.../graph`                         | `frameworkTree`, `associationsOf`, `crosswalk`, `diffPackages`, `isNewer`, `adoptionStatus`, `caseEntityUri`: the questions a consumer asks of a package; `ADOPTION_STATUSES` and the types of the answers and options: `FrameworkNode`, `NodeAssociations`, `CrosswalkLink`, `CrosswalkOptions`, `PackageDiff`, `ChangedItem`, `ReplacedItem`, `AdoptionStatus`, `CaseEntityUriOptions` |
+|                                     | `writeCaseFilter`, `readStatusInfo`, `StatusDetail`, `SelectedDocument`: the filter of a request, and the status and `Retry-After` of a refusal                                                                                                                |
+| `.../graph`                         | `buildFrameworkTree`, `listAssociations`, `crosswalk`, `diffPackages`, `isNewer`, `readAdoptionStatus`, `buildEntityUri`: the questions a consumer asks of a package; `ADOPTION_STATUSES` and the types of the answers and options: `FrameworkNode`, `NodeAssociations`, `CrosswalkLink`, `CrosswalkOptions`, `PackageDiff`, `ChangedItem`, `ReplacedItem`, `AdoptionStatus`, `CaseEntityUriOptions` |
 | `.../provider`                      | `handleCaseRequest`, `CaseProviderOptions`: serve the twelve endpoints of the binding, in 1.1 and in 1.0, over a store                                                                                                                  |
 |                                     | `FrameworkStore`, `DocumentPage`: what the provider needs from the host                                                                                                                                                                       |
 |                                     | `parseCaseQuery`, `ParsedCaseQuery`, `QueryRefusal`, `queryEntities`, `QueryEntitiesOptions`: the query grammar, and the filter and sort in memory                                                                                                        |
 |                                     | `localizeOpenApi`, `LocalizeOpenApiOptions`: the OpenAPI file of 1EdTech made into the localized discovery file                                                                                                                                           |
 
 ```ts
-import { readPackage, toCaseVersion, validatePackage } from "@interopkit/competency-frameworks";
+import { convertCaseVersion, readPackage, validatePackage } from "@interopkit/competency-frameworks";
 
 const input = {
   CFDocument: {
@@ -94,7 +94,7 @@ pkg === input; // => false
 
 validatePackage(pkg).map((finding) => `${finding.severity} ${finding.rule} at ${finding.path}`); // => ["warning item-outside-tree at CFItems[0]"]
 
-const old = toCaseVersion(pkg, "1.0");
+const old = convertCaseVersion(pkg, "1.0");
 old.dropped.map((finding) => finding.path); // => ["CFDocument.caseVersion"]
 "caseVersion" in old.value.CFDocument; // => false
 

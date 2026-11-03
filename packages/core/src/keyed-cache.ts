@@ -1,7 +1,7 @@
 import type { CallOptions } from "./call-options.js";
 import { checkAbortSignal, checkFunction, checkPositiveInteger, checkRecord } from "./checks.js";
 import { type Clock, checkClock, readClock } from "./clock.js";
-import { untilAborted } from "./until-aborted.js";
+import { raceAbort } from "./race-abort.js";
 
 /** What a cache keeps: the value, when it was loaded and when it stops being good, in milliseconds since 1970. */
 interface Entry<TValue> {
@@ -96,7 +96,7 @@ export function createKeyedCache<TValue>(options: KeyedCacheOptions<TValue>): Ke
         const recent = reloadAfter === undefined || now - entry.loadedAt < reloadAfter;
         if (now < entry.expiresAt && recent) return entry.value;
       }
-      return await untilAborted(loading.get(key) ?? start(key, load), callOptions?.signal);
+      return await raceAbort(loading.get(key) ?? start(key, load), callOptions?.signal);
     },
   };
 }

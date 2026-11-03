@@ -1,6 +1,6 @@
 import { callPort } from "@interopkit/core";
 import { parseWith } from "@interopkit/core/checks";
-import { type HttpResponse, jsonResponse, readQuery } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse, readQuery } from "@interopkit/core/http";
 import type { Agent, Person } from "../model/index.js";
 import { personSchema } from "../read/internal.js";
 import { checkNames, readAgent } from "./parameters.js";
@@ -29,8 +29,8 @@ export async function handleAgents(context: Context): Promise<HttpResponse> {
   });
   if (isRefusal(asked)) return context.refuse(asked.status, asked.message);
   const { agents, signal } = settings;
-  if (agents === undefined) return jsonResponse(200, personOf(asked.value));
+  if (agents === undefined) return buildJsonResponse(200, personOf(asked.value));
   const found = await callPort(() => agents.person(asked.value, { signal }), signal);
   if (found === undefined) return context.refuse(500, FAILED);
-  return jsonResponse(200, parseWith(personSchema, found.value, "The answer of AgentStore.person"));
+  return buildJsonResponse(200, parseWith(personSchema, found.value, "The answer of AgentStore.person"));
 }

@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 import { type ControlRequest, type ControlStatus, SCOPES } from "../src/index.js";
 import {
   type AssessmentControl,
-  ltiPlatformLogin,
   type MessageInput,
+  prepareToolLaunch,
   readStartAssessment,
   type ServiceCaller,
 } from "../src/platform/index.js";
@@ -371,12 +371,12 @@ describe("the claim of the Assessment Control Service", () => {
   it("is refused in any message but a Start Proctoring message, and with no action or an unknown one", async () => {
     const ctx = proctored();
     const offered = { services: { control: { actions: ["pause"] } } };
-    await expect(ltiPlatformLogin({ ...baseMessage, ...offered } as MessageInput, ctx.login)).rejects.toThrow(
+    await expect(prepareToolLaunch({ ...baseMessage, ...offered } as MessageInput, ctx.login)).rejects.toThrow(
       "only a Start Proctoring message carries",
     );
     for (const actions of [[], ["explode"]]) {
       await expect(
-        ltiPlatformLogin(startProctoring({ services: { control: { actions } } } as never), ctx.login),
+        prepareToolLaunch(startProctoring({ services: { control: { actions } } } as never), ctx.login),
       ).rejects.toThrow(DataError);
     }
   });

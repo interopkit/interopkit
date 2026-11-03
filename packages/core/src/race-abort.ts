@@ -10,7 +10,7 @@
  * @param signal - Ends the wait. Default: none, and then the promise is returned as it is.
  * @returns A promise that settles with `promise`, or rejects with the `reason` of `signal` when it aborts first.
  */
-export function untilAborted<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+export function raceAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
   if (signal === undefined) return promise;
   return new Promise<T>((resolve, reject) => {
     const abort = (): void => reject(signal.reason);

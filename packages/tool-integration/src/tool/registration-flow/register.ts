@@ -32,8 +32,8 @@ export function platformOf(value: unknown): PlatformConfiguration {
  * The registration token goes to the registration endpoint, so the endpoint must be on the origin of the issuer, or on one of the
  * `registrationOrigins` that the host trusts, and name a public host; so must the `registration_client_uri` of the answer, which
  * receives tokens later. The platform answers at once, but the tool is active only after the platform's administrator reviews it:
- * the host keeps the result, makes its registration of the platform with `toPlatformRegistration`, and sends the browser the page
- * of `createRegistrationClosePage`. A registration is not idempotent, and a platform spends its token: after a timeout the
+ * the host keeps the result, makes its registration of the platform with `buildPlatformRegistration`, and sends the browser the page
+ * of `buildRegistrationClosePage`. A registration is not idempotent, and a platform spends its token: after a timeout the
  * administrator starts again.
  *
  * @see {@link https://www.imsglobal.org/spec/lti-dr/v1p0 | LTI Dynamic Registration 1.0}

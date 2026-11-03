@@ -47,7 +47,7 @@ npm install @interopkit/selective-disclosure
 |                                    | `JsonDocument`: a document or a proof as plain JSON                                                                      |
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { addBaseProof, deriveProof, isBaseProof, selectiveDisclosureSuite } from "@interopkit/selective-disclosure";
 
 // The contexts of the credential: a host serves the ones it has checked, here from memory.
@@ -63,7 +63,7 @@ const credential = {
 
 // The issuer signs with ES256. A KMS or an HSM gives a Signer as well.
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
-const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "https://example.org/issuers/1#key-1" });
+const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "https://example.org/issuers/1#key-1" });
 const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
 
 const base = await addBaseProof(credential, {

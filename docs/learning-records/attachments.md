@@ -17,10 +17,10 @@ flowchart LR
 ## Quick start
 
 ```ts
-import { attachmentHash, readMultipart, writeMultipart } from "@interopkit/learning-records/attachments";
+import { hashAttachment, readMultipart, writeMultipart } from "@interopkit/learning-records/attachments";
 
 const body = new TextEncoder().encode("A certificate of completion");
-const sha2 = attachmentHash(body);
+const sha2 = hashAttachment(body);
 const statement = {
   actor: { name: "Example Learner", mbox: "mailto:learner@example.org" },
   verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },

@@ -73,7 +73,7 @@ function writeFilter(filter: unknown, label: string): string {
  * that is not one of `FILTER_PREDICATES`, or a value that is not a string.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1, REST binding 3.3}
  */
-export function caseFilter(filter: CaseFilter): string {
+export function writeCaseFilter(filter: CaseFilter): string {
   return writeFilter(filter, "The filter");
 }
 

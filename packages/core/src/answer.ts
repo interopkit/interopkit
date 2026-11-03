@@ -1,7 +1,7 @@
-import { retryAfterSeconds } from "./answer-headers.js";
+import { readRetryAfterSeconds } from "./answer-headers.js";
 import { checkPositiveInteger, checkRecord } from "./checks.js";
 import { DataError, ServiceError } from "./errors.js";
-import { exceededJsonLimit, hasMoreTokensThan, MAX_JSON_DEPTH, MAX_JSON_TOKENS, nestsDeeperThan } from "./json.js";
+import { findExceededJsonLimit, hasMoreTokensThan, MAX_JSON_DEPTH, MAX_JSON_TOKENS, nestsDeeperThan } from "./json.js";
 import type { ServiceResponse } from "./service.js";
 
 /** Throws on bytes that are not UTF-8, where the default decoder would replace them. */
@@ -53,7 +53,7 @@ export function readAnswerJson(response: ServiceResponse, what: string, options:
   }
   // One reading finds the first limit that the text passes. The depth is refused before the tokens, so a text that passes the
   // tokens first is read on for its depth.
-  const excess = exceededJsonLimit(text, maxDepth, maxTokens);
+  const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
   if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
     throw new DataError(`${what} answered with JSON that nests more than ${maxDepth} levels.`);
   }
@@ -133,7 +133,7 @@ export function readStatusDetail<TInfo>(error: ServiceError, readInfo: (json: un
       // A body that is not JSON, or not a status, is an answer without detail and not a fault of the caller.
     }
   }
-  const seconds = retryAfterSeconds(error.headers);
+  const seconds = readRetryAfterSeconds(error.headers);
   if (seconds !== undefined) detail.retryAfterSeconds = seconds;
   return detail;
 }

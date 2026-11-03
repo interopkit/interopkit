@@ -155,7 +155,7 @@ const FAILURE =
 /**
  * Builds a page with one script, for the browser to run in the frame of the platform.
  *
- * @param referrerPolicy - `same-origin` for the verification page, whose post `ltiLaunch` accepts only with the `Origin` of the
+ * @param referrerPolicy - `same-origin` for the verification page, whose post `handleLaunch` accepts only with the `Origin` of the
  * tool, which a browser sends as `null` under `no-referrer`.
  */
 function respond(
@@ -222,7 +222,7 @@ export interface StorageGet {
  * Builds the verification page: it asks the platform for its capabilities, fetches `state` and `nonce` from the platform's
  * storage with `lti.get_data` and submits them with the token to the launch URL (LTI Client Side OIDC 0.1 section 2.7,
  * Client Side postMessages 0.1 section 4.1). Its referrer policy is `same-origin`, so that the post carries the `Origin` of the
- * tool, which `ltiLaunch` checks.
+ * tool, which `handleLaunch` checks.
  */
 export function getDataPage(get: StorageGet): Promise<HttpResponse> {
   const { frame, state, nonce, authenticationUrl, redirectUri, idToken } = get;

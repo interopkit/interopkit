@@ -1,4 +1,4 @@
-import { DataError, untilAborted } from "@interopkit/core";
+import { DataError, raceAbort } from "@interopkit/core";
 import { copyJson, describe, isRecord } from "@interopkit/core/checks";
 import { MAX_DEEP_ITERATIONS } from "../limits.js";
 import type { Contexts } from "./options.js";
@@ -58,7 +58,7 @@ export function createProcessing(contexts: Contexts, signal?: AbortSignal): Proc
     options: { documentLoader, maxDeepIterations: MAX_DEEP_ITERATIONS, ...(signal === undefined ? {} : { signal }) },
     async wait(work) {
       try {
-        return await untilAborted(work, signal);
+        return await raceAbort(work, signal);
       } catch (error) {
         if (failure !== undefined) throw failure.error;
         if (signal?.aborted) throw signal.reason;

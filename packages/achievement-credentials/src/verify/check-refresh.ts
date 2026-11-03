@@ -1,5 +1,5 @@
 import { DataError, ServiceError } from "@interopkit/core";
-import { sameCredential } from "../compare/index.js";
+import { isSameCredential } from "../compare/index.js";
 import { VERIFICATION_CHECKS, type VerificationCheck } from "../model/index.js";
 import { refreshCredential } from "../refresh/index.js";
 import { type Authentic, type Authenticated, authenticate } from "./authenticate.js";
@@ -78,7 +78,7 @@ export async function refresh(authentic: Authentic, context: Context): Promise<R
   if (refreshed.authentic === undefined || refreshed.checks.issuer?.outcome === "unavailable") {
     return unavailable(`The refreshed credential is not authentic: ${firstProblem(refreshed.checks)}`);
   }
-  if (!sameCredential(authentic.credential, refreshed.authentic.credential)) {
+  if (!isSameCredential(authentic.credential, refreshed.authentic.credential)) {
     return unavailable("The refreshed credential is another credential: its id or its issuer differs.");
   }
   return {

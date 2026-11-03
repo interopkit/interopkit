@@ -1,11 +1,11 @@
 import {
+  buildFindings,
   copyJson,
   createFindingSink,
   DEFAULT_MAX_FINDINGS,
+  describeRefusal,
   type FindingSink,
-  findingsOf,
   isRecord,
-  refusalOf,
   type Schema,
   safeParseBounded,
 } from "@interopkit/core/checks";
@@ -51,7 +51,7 @@ function isV1p1(value: unknown): boolean {
 
 /** Turns the issues of a parse into findings that are all errors. */
 function toIssues(issues: readonly v.BaseIssue<unknown>[]): CredentialIssue[] {
-  return findingsOf(issues).map((finding) => ({ ...finding, severity: "error" }));
+  return buildFindings(issues).map((finding) => ({ ...finding, severity: "error" }));
 }
 
 /**
@@ -141,7 +141,7 @@ export function credentialOrReason(
   const credential = payload ? inspectClrPayload(value, sink) : inspectCredential(value, undefined, sink);
   const errors = sink.list();
   return credential === undefined || errors.length > 0
-    ? { reason: refusalOf(label, errors, "validateCredential") }
+    ? { reason: describeRefusal(label, errors, "validateCredential") }
     : { value: credential };
 }
 

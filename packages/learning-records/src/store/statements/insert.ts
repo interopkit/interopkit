@@ -1,5 +1,5 @@
 import { callPort, DataError } from "@interopkit/core";
-import { sameStatement, toStatementVersion } from "../../compare/index.js";
+import { convertStatementVersion, isSameStatement } from "../../compare/index.js";
 import { iriKey } from "../../compare/internal.js";
 import { type Activity, type Statement, VERB_VOIDED } from "../../model/index.js";
 import type { StoredStatement } from "../ports.js";
@@ -59,8 +59,8 @@ function resends(
       throw new DataError(`The answer of StatementStore.insert names ${id}, which is no Statement of the batch.`);
     }
     // A resend on the route of 1.0.3 is compared with what that route answers for the Statement held (2.5 of the gaps page).
-    const answered = context.version === "1.0.3" ? toStatementVersion(held.statement, "1.0.3") : held.statement;
-    if (!sameStatement(answered, sent)) {
+    const answered = context.version === "1.0.3" ? convertStatementVersion(held.statement, "1.0.3") : held.statement;
+    if (!isSameStatement(answered, sent)) {
       return refused(409, `The LRS holds another Statement with the id ${id}, and a Statement is not changed.`);
     }
     same.set(id, held.statement);

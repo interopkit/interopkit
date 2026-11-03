@@ -1,4 +1,4 @@
-import { type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 import { APPROVED_ALGORITHMS, type PlatformConfiguration } from "../../protocol/index.js";
 import { PLATFORM_MESSAGE_TYPES, writePlatformConfiguration } from "../../protocol/internal.js";
 import { methodNotAllowed } from "../answers.js";
@@ -58,5 +58,5 @@ function platformConfiguration(settings: PlatformSettings): PlatformConfiguratio
 /** Answers a GET of the OpenID configuration of the platform. */
 export function answerConfiguration(request: HttpRequest, settings: PlatformSettings): HttpResponse {
   if (request.method !== "GET") return methodNotAllowed(request.method, "GET");
-  return jsonResponse(200, writePlatformConfiguration(platformConfiguration(settings)));
+  return buildJsonResponse(200, writePlatformConfiguration(platformConfiguration(settings)));
 }

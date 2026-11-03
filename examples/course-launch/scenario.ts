@@ -1,6 +1,6 @@
 import { readCourseStructure } from "@interopkit/course-launch";
 import type { Recorded } from "@interopkit/course-launch/au";
-import { type CourseProgress, progressOf } from "@interopkit/course-launch/lms";
+import { type CourseProgress, deriveCourseProgress } from "@interopkit/course-launch/lms";
 import { readCoursePackage, writeCoursePackage } from "@interopkit/course-launch/package";
 import type { Agent } from "@interopkit/learning-records";
 import { openUnit, playLesson } from "./src/au.ts";
@@ -129,7 +129,7 @@ export async function runScenario(): Promise<ScenarioResult> {
     resumed,
     review,
     abandoned: { oldSession, duration: abandoned?.statement.result?.duration },
-    progress: { ana: progressOf(records.ana, course), budi: progressOf(records.budi, course) },
+    progress: { ana: deriveCourseProgress(records.ana, course), budi: deriveCourseProgress(records.budi, course) },
   };
 }
 

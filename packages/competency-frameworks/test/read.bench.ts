@@ -1,5 +1,5 @@
 import { type CFDocument, readEntity, readPackage, validatePackage } from "@interopkit/competency-frameworks";
-import { frameworkTree } from "@interopkit/competency-frameworks/graph";
+import { buildFrameworkTree } from "@interopkit/competency-frameworks/graph";
 import { queryEntities } from "@interopkit/competency-frameworks/provider";
 import { expect, test } from "vitest";
 import { framework } from "./bank.js";
@@ -25,10 +25,10 @@ test("reads, validates and walks a framework of 10,000 items", async ({ annotate
   await expectWithin(annotate, "validatePackage", validate, BUDGETS.validatePackage);
 
   const pkg = readPackage(parsed);
-  expect(frameworkTree(pkg)).toHaveLength(10);
-  const tree = await bench("frameworkTree", () => frameworkTree(pkg)).run(BENCH_OPTIONS);
-  await expectWithin(annotate, "frameworkTree", tree, BUDGETS.frameworkTree);
-  await expectRatio(annotate, "frameworkTree", tree, named, RATIOS.frameworkTreeAgainstParse);
+  expect(buildFrameworkTree(pkg)).toHaveLength(10);
+  const tree = await bench("buildFrameworkTree", () => buildFrameworkTree(pkg)).run(BENCH_OPTIONS);
+  await expectWithin(annotate, "buildFrameworkTree", tree, BUDGETS.buildFrameworkTree);
+  await expectRatio(annotate, "buildFrameworkTree", tree, named, RATIOS.frameworkTreeAgainstParse);
 });
 
 test("reads a framework of 10,000 items, and 10,000 items alone, faster than the official schemas of CASE 1.1 check them", async ({

@@ -1,6 +1,6 @@
 import { createPublicKey, verify } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { DataError, signCompactJws, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, DataError, signCompactJws } from "@interopkit/core";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { readMultipart, writeMultipart } from "../src/attachments/index.js";
 import { readStatement, type Statement } from "../src/index.js";
@@ -119,7 +119,7 @@ describe("signStatement", () => {
   it.each(Object.keys(HASHES) as Algorithm[])(
     "signs a Statement with %s so that an independent implementation verifies it",
     async (algorithm) => {
-      const signer = signerFromCryptoKey(pairs[algorithm].privateKey, { algorithm });
+      const signer = createCryptoKeySigner(pairs[algorithm].privateKey, { algorithm });
       const statement = statementToSign();
       const signed = await signStatement(statement, signer);
 
@@ -146,7 +146,7 @@ describe("signStatement", () => {
   it("adds the header of the signature to the attachments, and returns the signature as the data of that Attachment", async () => {
     const signed = await signStatement(
       statementToSign(),
-      signerFromCryptoKey(pairs.RS256.privateKey, { algorithm: "RS256" }),
+      createCryptoKeySigner(pairs.RS256.privateKey, { algorithm: "RS256" }),
     );
     expect(signed.statement).toStrictEqual({
       ...statementToSign(),
@@ -182,7 +182,10 @@ describe("signStatement", () => {
         },
       ],
     };
-    const signed = await signStatement(statement, signerFromCryptoKey(pairs.RS256.privateKey, { algorithm: "RS256" }));
+    const signed = await signStatement(
+      statement,
+      createCryptoKeySigner(pairs.RS256.privateKey, { algorithm: "RS256" }),
+    );
     expect(signed.statement.attachments).toHaveLength(2);
     expect(signed.statement.attachments?.[0]).toStrictEqual(statement.attachments?.[0]);
     expect(signed.statement.attachments?.[1]?.usageType).toBe(SIGNATURE_USAGE_TYPE);
@@ -196,7 +199,7 @@ describe("signStatement", () => {
   });
 
   it("writes the key id of the signer as kid and the chain as x5c", async () => {
-    const signer = signerFromCryptoKey(pairs.RS256.privateKey, {
+    const signer = createCryptoKeySigner(pairs.RS256.privateKey, {
       algorithm: "RS256",
       keyId: "https://example.org/keys/1",
     });
@@ -209,7 +212,7 @@ describe("signStatement", () => {
   });
 
   it("gives the same signature for the same Statement and key, since RSA PKCS#1 v1.5 is deterministic", async () => {
-    const signer = signerFromCryptoKey(pairs.RS384.privateKey, { algorithm: "RS384" });
+    const signer = createCryptoKeySigner(pairs.RS384.privateKey, { algorithm: "RS384" });
     const first = await signStatement(statementToSign(), signer);
     expect(await signStatement(statementToSign(), signer)).toStrictEqual(first);
   });
@@ -217,7 +220,10 @@ describe("signStatement", () => {
   it("changes nothing of its input and shares nothing with it", async () => {
     const statement = statementToSign();
     const before = copyOf(statement);
-    const signed = await signStatement(statement, signerFromCryptoKey(pairs.RS256.privateKey, { algorithm: "RS256" }));
+    const signed = await signStatement(
+      statement,
+      createCryptoKeySigner(pairs.RS256.privateKey, { algorithm: "RS256" }),
+    );
     expect(statement).toStrictEqual(before);
     expect(sharesNothing(statement, signed.statement)).toBe(true);
   });
@@ -225,7 +231,7 @@ describe("signStatement", () => {
   it("makes a Statement that a provider may send and that verifies against the key", async () => {
     const signed = await signStatement(
       statementToSign(),
-      signerFromCryptoKey(pairs.RS512.privateKey, { algorithm: "RS512" }),
+      createCryptoKeySigner(pairs.RS512.privateKey, { algorithm: "RS512" }),
     );
     expect(readStatement(signed.statement, { role: "provider" })).toStrictEqual(signed.statement);
     expect(
@@ -239,7 +245,7 @@ describe("signStatement", () => {
   it("makes a message that writeMultipart writes and readMultipart reads, with the signature as an Attachment", async () => {
     const signed = await signStatement(
       statementToSign(),
-      signerFromCryptoKey(pairs.RS256.privateKey, { algorithm: "RS256" }),
+      createCryptoKeySigner(pairs.RS256.privateKey, { algorithm: "RS256" }),
     );
     const written = writeMultipart(signed.statement, [signed.signature]);
     const { parts } = readMultipart(written.contentType, written.body);
@@ -247,7 +253,7 @@ describe("signStatement", () => {
   });
 
   describe("input that cannot be signed", () => {
-    const signer = () => signerFromCryptoKey(pairs.RS256.privateKey, { algorithm: "RS256" });
+    const signer = () => createCryptoKeySigner(pairs.RS256.privateKey, { algorithm: "RS256" });
 
     it("refuses a Statement that breaks a rule of a provider, and one that has a signature already", async () => {
       await expect(signStatement({ actor: {} } as never, signer())).rejects.toThrow("The statement is invalid");
@@ -341,7 +347,7 @@ describe("verifyStatementSignature", () => {
       await signCompactJws(
         header,
         payload ?? encoder.encode(JSON.stringify(statementToSign())),
-        signerFromCryptoKey(pairs[algorithm].privateKey, { algorithm }),
+        createCryptoKeySigner(pairs[algorithm].privateKey, { algorithm }),
       ),
     );
 
@@ -349,7 +355,7 @@ describe("verifyStatementSignature", () => {
     for (const algorithm of Object.keys(HASHES) as Algorithm[]) {
       const signed = await signStatement(
         statementToSign(),
-        signerFromCryptoKey(pairs[algorithm].privateKey, { algorithm }),
+        createCryptoKeySigner(pairs[algorithm].privateKey, { algorithm }),
       );
       expect(
         await verifyStatementSignature(signed.statement, signed.signature.body, { key: pairs[algorithm].publicKey }),
@@ -360,7 +366,7 @@ describe("verifyStatementSignature", () => {
   it("refuses a Statement that is no longer the one that was signed, in any property that equivalence counts", async () => {
     const signed = await signStatement(
       statementToSign(),
-      signerFromCryptoKey(pairs.RS256.privateKey, { algorithm: "RS256" }),
+      createCryptoKeySigner(pairs.RS256.privateKey, { algorithm: "RS256" }),
     );
     const other = { ...signed.statement, verb: { id: "http://adlnet.gov/expapi/verbs/failed" } };
     expect(await verifyStatementSignature(other, signed.signature.body, { key: pairs.RS256.publicKey })).toStrictEqual({
@@ -372,7 +378,7 @@ describe("verifyStatementSignature", () => {
   it("accepts a Statement with what the LRS added", async () => {
     const signed = await signStatement(
       statementToSign(),
-      signerFromCryptoKey(pairs.RS256.privateKey, { algorithm: "RS256" }),
+      createCryptoKeySigner(pairs.RS256.privateKey, { algorithm: "RS256" }),
     );
     const stored = {
       ...signed.statement,
@@ -389,7 +395,7 @@ describe("verifyStatementSignature", () => {
   });
 
   describe("what a signature keeps, which the equivalence of Statements leaves out", () => {
-    const signer = () => signerFromCryptoKey(pairs.RS256.privateKey, { algorithm: "RS256" });
+    const signer = () => createCryptoKeySigner(pairs.RS256.privateKey, { algorithm: "RS256" });
     const verify = (statement: Statement, signature: Uint8Array) =>
       verifyStatementSignature(statement, signature, { key: pairs.RS256.publicKey });
     const attachment = {
@@ -505,7 +511,10 @@ describe("verifyStatementSignature", () => {
       false,
       ["sign", "verify"],
     );
-    const signed = await signStatement(statementToSign(), signerFromCryptoKey(weak.privateKey, { algorithm: "RS256" }));
+    const signed = await signStatement(
+      statementToSign(),
+      createCryptoKeySigner(weak.privateKey, { algorithm: "RS256" }),
+    );
     expect(
       await verifyStatementSignature(signed.statement, signed.signature.body, { key: weak.publicKey }),
     ).toStrictEqual({

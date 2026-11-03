@@ -11,7 +11,7 @@ import { getDataPage, STORED_NONCE, STORED_STATE } from "./pages.js";
 import type { PlatformRegistration } from "./registration.js";
 import { checkLoginRecord, type LoginRecord } from "./store.js";
 
-// The states that ltiLogin creates are base64url; anything else is not one, and is not looked up in the store.
+// The states that handleLogin creates are base64url; anything else is not one, and is not looked up in the store.
 const STATE_FORMAT = /^[A-Za-z0-9_-]{1,64}$/u;
 // The form of a launch holds an id_token and a state; an id_token with every claim of a launch is a few kilobytes.
 const DEFAULT_MAX_FORM_BYTES = 65_536;
@@ -167,7 +167,7 @@ function checkVerification(
  * @throws The rejection of `options.legacySecret`, and `DataError` when it resolves with something that is not a string.
  * @throws The `reason` of `options.signal` when it aborts before the login is deleted: the login stays.
  */
-export async function ltiLaunch<TOther extends string = never>(
+export async function handleLaunch<TOther extends string = never>(
   request: HttpRequest,
   options: LtiLaunchOptions<TOther>,
 ): Promise<LtiMessage<TOther> | HttpResponse> {

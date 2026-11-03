@@ -8,7 +8,7 @@ an entity describe from outside against its class, as an object or an IRI wherev
 tables do not allow. `readEvent` reads the 21 events of Appendix A and the 3 of the Library Use Profile with the actions and the
 classes of entities that their tables allow; `buildEvent` and `buildEntity` write the `@context`, a list of contexts included, and
 check the same rules; `mintUrn` makes the identifier of an event from the parts that identify it, so that reporting the same
-thing again gives the same identifier; `caliperTime` and `checkIri` check what Caliper requires of a time and an entity.
+thing again gives the same identifier; `formatDateTime` and `checkIri` check what Caliper requires of a time and an entity.
 
 `validateEvent` and `validateEntity` list findings with a severity: the shape that the readers check, then the rows of the profile
 tables of section 3 (91 rows, the General Profile and the Library Use Profile) and of the event conformance tables of the

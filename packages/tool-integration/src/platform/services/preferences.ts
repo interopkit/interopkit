@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
 import { type MessageServices, SCOPES } from "../../protocol/index.js";
 import {
   PREFERENCES_BASE_PATH,
@@ -38,7 +38,7 @@ async function getRecord(call: Call): Promise<HttpResponse> {
     fields === undefined
       ? record
       : Object.fromEntries(Object.entries(record).filter(([name]) => fields.includes(name)));
-  return jsonResponse(200, body, {}, PREFERENCES_MEDIA_TYPE);
+  return buildJsonResponse(200, body, {}, PREFERENCES_MEDIA_TYPE);
 }
 
 /**

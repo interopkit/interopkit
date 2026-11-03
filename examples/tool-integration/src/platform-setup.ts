@@ -34,7 +34,7 @@ const FRAME_ORIGIN = "https://app.lms.example";
 
 /** What the platform is configured with: the options of its login and of its handler, and its endpoints. */
 export interface PlatformSetup {
-  /** The options of `ltiPlatformFrame`. */
+  /** The options of `prepareToolFrame`. */
   readonly login: PlatformLoginOptions;
   /** The options of `handlePlatformRequest`. */
   readonly requests: PlatformRequestOptions;

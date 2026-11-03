@@ -1,5 +1,5 @@
 import type { HttpResponse } from "@interopkit/core/http";
-import { jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse } from "@interopkit/core/http";
 import type { Context } from "../verdict.js";
 import { isRefusal } from "../verdict.js";
 import { answerMany, answerOne } from "./answer.js";
@@ -34,7 +34,7 @@ async function write(context: Context, method: "PUT" | "POST"): Promise<HttpResp
   if (isRefusal(through)) return context.refuse(through.status, through.message);
   const headers = { [CONSISTENT_THROUGH]: through.value };
   if (method === "POST" && (stored.value.created || stored.value.ids.length === 0))
-    return jsonResponse(200, stored.value.ids, headers);
+    return buildJsonResponse(200, stored.value.ids, headers);
   return { status: 204, headers, body: "" };
 }
 

@@ -30,7 +30,7 @@ export interface VoidingInput {
  * @throws `DataError` when the target is not a UUID, or the Statement cannot be built as `buildStatement` says.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
-export function voidingStatement(target: string, input: VoidingInput, options?: BuildOptions): Statement {
+export function buildVoidingStatement(target: string, input: VoidingInput, options?: BuildOptions): Statement {
   const version = versionOf(options);
   checkString(target, "The target");
   if (!isUuid(target)) {

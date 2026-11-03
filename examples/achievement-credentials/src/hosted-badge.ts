@@ -1,4 +1,4 @@
-import { jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse } from "@interopkit/core/http";
 import type { Handler } from "./network.ts";
 
 /** The address of the assertion that the guild hosts. */
@@ -38,5 +38,5 @@ const DOCUMENTS: Readonly<Record<string, unknown>> = {
 /** Serves an Open Badges 2.0 badge as a guild hosts it. Open Badges 2.0 is read and verified, and never issued. */
 export const hostedBadge: Handler = async (request) => {
   const document = DOCUMENTS[new URL(request.url).pathname];
-  return document === undefined ? { status: 404, headers: {}, body: "" } : jsonResponse(200, document);
+  return document === undefined ? { status: 404, headers: {}, body: "" } : buildJsonResponse(200, document);
 };

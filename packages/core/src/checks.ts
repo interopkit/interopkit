@@ -32,7 +32,7 @@ export {
 } from "./formats.js";
 export {
   copyJson,
-  exceededJsonLimit,
+  findExceededJsonLimit,
   hasMoreTokensThan,
   type JsonObject,
   type JsonObjectCopy,
@@ -293,7 +293,7 @@ const DEFAULT_MESSAGE = "Invalid ";
  * @param path - The `path` of a valibot issue.
  * @returns The path, and the empty string for the value as a whole.
  */
-export function pathOf(path: readonly v.IssuePathItem[] | undefined): string {
+export function formatIssuePath(path: readonly v.IssuePathItem[] | undefined): string {
   let text = "";
   for (const { key } of path ?? []) {
     if (typeof key === "number") text += `[${key}]`;
@@ -344,10 +344,10 @@ function detailOf(issue: v.BaseIssue<unknown>): { readonly text: string; readonl
   return { text: `expected ${expectedOf(issue)}, found ${foundOf(issue)}`, property: false };
 }
 
-/** Returns where an issue is, as {@link pathOf} writes it, and what is wrong there. */
+/** Returns where an issue is, as {@link formatIssuePath} writes it, and what is wrong there. */
 function locate(issue: v.BaseIssue<unknown>): { readonly path: string; readonly text: string } {
   const { text, property } = detailOf(issue);
-  return { path: pathOf(property ? issue.path?.slice(0, -1) : issue.path), text };
+  return { path: formatIssuePath(property ? issue.path?.slice(0, -1) : issue.path), text };
 }
 
 /** Writes a `DataError` for the first issue of a parse. */
@@ -361,7 +361,7 @@ function toError(issue: v.BaseIssue<unknown>, label: string): DataError {
  *
  * @param issue - The issue.
  */
-export function issueText(issue: v.BaseIssue<unknown>): string {
+export function describeIssue(issue: v.BaseIssue<unknown>): string {
   const { path, text } = locate(issue);
   return path === "" ? text : `${path}: ${text}`;
 }
@@ -605,9 +605,9 @@ function ruleOf(issue: v.BaseIssue<unknown>): string {
  * @param issues - The issues of `v.safeParse` with no `abortEarly`.
  * @returns A finding for each issue, in their order.
  */
-export function findingsOf(issues: readonly v.BaseIssue<unknown>[]): Finding[] {
+export function buildFindings(issues: readonly v.BaseIssue<unknown>[]): Finding[] {
   return issues.map((issue) => ({
-    path: pathOf(issue.path),
+    path: formatIssuePath(issue.path),
     rule: ruleOf(issue),
     message: `${detailOf(issue).text}.`,
   }));
@@ -625,7 +625,7 @@ export function findingsOf(issues: readonly v.BaseIssue<unknown>[]): Finding[] {
  * @param validator - The function that lists the findings, such as `validateStatement`.
  * @returns A sentence such as `The statement is invalid at actor: needs exactly one of mbox, found none. 2 more errors: validateStatement lists every finding.`
  */
-export function refusalOf(label: string, errors: readonly Finding[], validator: string): string {
+export function describeRefusal(label: string, errors: readonly Finding[], validator: string): string {
   const stopped = errors.at(-1)?.rule === FINDINGS_STOPPED_RULE;
   const [first, ...others] = stopped ? errors.slice(0, -1) : errors;
   const where = first === undefined || first.path === "" ? "" : ` at ${first.path}`;

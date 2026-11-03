@@ -1,4 +1,4 @@
-import { exceededJsonLimit, hasMoreTokensThan, MAX_JSON_DEPTH } from "@interopkit/core/checks";
+import { findExceededJsonLimit, hasMoreTokensThan, MAX_JSON_DEPTH } from "@interopkit/core/checks";
 
 /**
  * Says whether a credential has more tokens of JSON than the JSON-LD processors may read, or nests deeper than they recurse,
@@ -20,7 +20,7 @@ export function processingProblem(credential: unknown, maxTokens: number): strin
   }
   // One reading finds the first limit that the text passes. The tokens are refused before the levels, so a text that passes
   // the levels first is read on for its tokens.
-  const excess = exceededJsonLimit(text, MAX_JSON_DEPTH, maxTokens);
+  const excess = findExceededJsonLimit(text, MAX_JSON_DEPTH, maxTokens);
   if (excess === "tokens" || (excess === "depth" && hasMoreTokensThan(text, maxTokens))) {
     return `The credential has more than the ${maxTokens} tokens of JSON that the option maxJsonLdTokens allows a JSON-LD processor.`;
   }

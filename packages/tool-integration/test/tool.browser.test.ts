@@ -1,15 +1,15 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
 
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
 import { afterEach, describe, expect, inject, it } from "vitest";
 import { createJwksCache } from "../src/index.js";
 import {
+  handleLaunch,
+  handleLogin,
   type LoginRecord,
   type LtiLaunchOptions,
   type LtiStore,
-  ltiLaunch,
-  ltiLogin,
   type PlatformRegistration,
 } from "../src/tool/index.js";
 import { hostileOrigin, requestsTo, seenBy } from "./hostile.js";
@@ -37,7 +37,7 @@ const registration: PlatformRegistration = {
   jwksUrl: "https://lms.example.edu/jwks",
   accessTokenUrl: "https://lms.example.edu/token",
   redirectUri: "https://tool.example.com/lti/launch",
-  signer: signerFromCryptoKey(pair.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
+  signer: createCryptoKeySigner(pair.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
 };
 const clock = { now: () => 1_700_000_000_000 };
 
@@ -254,7 +254,7 @@ async function login(
     ["target_link_uri", "https://tool.example.com/lti/t"],
     ["lti_storage_target", storageTarget],
   ]);
-  const page = await ltiLogin(
+  const page = await handleLogin(
     { method: "GET", url: `https://tool.example.com/lti/login?${initiation}`, headers: {}, body: new Uint8Array() },
     ctx.options,
   );
@@ -404,7 +404,7 @@ describe("the verification page", () => {
         ["state", state],
       ]).toString(),
     );
-    const page = await ltiLaunch(
+    const page = await handleLaunch(
       {
         method: "POST",
         url: registration.redirectUri,
@@ -523,8 +523,8 @@ describe("the verification page", () => {
     expect(submitted()).toBeUndefined();
   });
 
-  it("posts from the origin of the tool, which ltiLaunch checks, when the browser runs it with the headers of its answer", async () => {
-    // The page is served by a server of its own, with the headers that ltiLaunch gave it, so that the browser applies its
+  it("posts from the origin of the tool, which handleLaunch checks, when the browser runs it with the headers of its answer", async () => {
+    // The page is served by a server of its own, with the headers that handleLaunch gave it, so that the browser applies its
     // referrer policy to the post as it would in a launch; the frames of the other tests load it from text, without them.
     const storage = new PlatformStorage(window);
     const { page, state, nonce } = await verification("_parent");

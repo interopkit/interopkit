@@ -1,6 +1,6 @@
 import type { CasePackage, CFPckgAssociation, CFPckgItem } from "@interopkit/competency-frameworks";
 import { createCaseClient } from "@interopkit/competency-frameworks/client";
-import { associationsOf, diffPackages } from "@interopkit/competency-frameworks/graph";
+import { diffPackages, listAssociations } from "@interopkit/competency-frameworks/graph";
 import { DataError, type Fetch, ServiceError } from "@interopkit/core";
 import { beforeAll, describe, expect, it } from "vitest";
 import { importFramework, OPENSALT_ORIGIN, type Session, signIn } from "../../../validation/opensalt/session.ts";
@@ -258,7 +258,7 @@ describe("the client reading OpenSALT", () => {
 
   it("holds in the package the same associations of an item as the provider's set", async () => {
     const found = await client.package(id(MATHEMATICS.document));
-    const { origin, destination } = associationsOf(found ?? sent.mathematics, id(MATHEMATICS.numberLine));
+    const { origin, destination } = listAssociations(found ?? sent.mathematics, id(MATHEMATICS.numberLine));
     const fromProvider = await ministry().client.itemAssociations(id(MATHEMATICS.numberLine));
     expect([...origin, ...destination].map(({ identifier }) => identifier).sort()).toStrictEqual(
       (fromProvider?.CFAssociations ?? []).map(({ identifier }) => identifier).sort(),

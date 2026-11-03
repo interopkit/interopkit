@@ -3,11 +3,11 @@ import {
   type Activity,
   type Agent,
   buildStatement,
+  buildVoidingStatement,
   type DocumentTarget,
   type Statement,
-  voidingStatement,
 } from "@interopkit/learning-records";
-import { attachmentHash } from "@interopkit/learning-records/attachments";
+import { hashAttachment } from "@interopkit/learning-records/attachments";
 import type { LrsClient } from "@interopkit/learning-records/client";
 import { signStatement } from "@interopkit/learning-records/signing";
 import { idOf, STATISTICS, SURVEY, VERBS } from "./campus.ts";
@@ -96,7 +96,7 @@ export async function voidMistake(client: LrsClient, learner: Agent, platform: A
     result: { completion: true },
   });
   await client.sendStatements([mistake]);
-  const voiding = voidingStatement(mistake.id ?? "", {
+  const voiding = buildVoidingStatement(mistake.id ?? "", {
     id: idOf("voiding", platform, at),
     actor: platform,
     timestamp: at,
@@ -125,12 +125,12 @@ export async function sendCertificate(client: LrsClient, learner: Agent, signer:
         display: { "en-US": "Certificate" },
         contentType: "text/plain",
         length: CERTIFICATE.byteLength,
-        sha2: attachmentHash(CERTIFICATE),
+        sha2: hashAttachment(CERTIFICATE),
       },
     ],
   });
   const signed = await signStatement(statement, signer);
-  const data = { sha2: attachmentHash(CERTIFICATE), contentType: "text/plain", body: CERTIFICATE };
+  const data = { sha2: hashAttachment(CERTIFICATE), contentType: "text/plain", body: CERTIFICATE };
   await client.sendStatement(signed.statement, { attachments: [data, signed.signature] });
   return statement.id ?? "";
 }

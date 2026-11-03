@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages, claims and OAuth 2.0 requests are snake_case.
 
-import { jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse } from "@interopkit/core/http";
 import { type LTIConfig, type LTISession, LTITool } from "@lti-tool/core";
 import { expect } from "vitest";
 import {
@@ -51,7 +51,7 @@ export async function createTool(
     });
     await tool.addDeployment(clientId, { deploymentId: DEPLOYMENT_ID });
   }
-  return { tool, storage, handler: async () => jsonResponse(200, await tool.getJWKS()) };
+  return { tool, storage, handler: async () => buildJsonResponse(200, await tool.getJWKS()) };
 }
 
 /** A platform that signs with `algorithm` and the tool that it launches, which reach each other through the network. */

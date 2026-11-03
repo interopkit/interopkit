@@ -117,10 +117,10 @@ const PROPERTY_ALIASES: ReadonlyMap<string, string> = new Map([...ALIASES_V2].fi
 /** The aliases that name a class, as a value of `type`, by alias. */
 const CLASS_ALIASES: ReadonlyMap<string, string> = new Map([...ALIASES_V2].filter(([, term]) => isClassTerm(term)));
 
-/** A name that a path writes after a dot; another is written in brackets, as `pathOf` of `core/checks` does. */
+/** A name that a path writes after a dot; another is written in brackets, as `formatIssuePath` of `core/checks` does. */
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/u;
 
-/** Joins a path and the name of a member, as `pathOf` of `core/checks` writes it. */
+/** Joins a path and the name of a member, as `formatIssuePath` of `core/checks` writes it. */
 function memberPath(path: string, name: string): string {
   if (!IDENTIFIER.test(name)) return `${path}[${JSON.stringify(name)}]`;
   return path === "" ? name : `${path}.${name}`;

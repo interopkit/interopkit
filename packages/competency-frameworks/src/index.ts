@@ -67,4 +67,4 @@ export {
   validateEntity,
   validatePackage,
 } from "./read/index.js";
-export { type Converted, toCaseVersion, type VersionedValue } from "./version/index.js";
+export { type Converted, convertCaseVersion, type VersionedValue } from "./version/index.js";

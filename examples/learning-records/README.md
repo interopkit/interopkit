@@ -43,7 +43,7 @@ flowchart LR
 | Actions                   | The platform may read and write; the dashboard may read                                                                                                  |
 | About                     | Answered to anyone, with no credential: the host's `access` allows it, as the ADL suite asks it without one                                              |
 | Ids                       | A Statement has an id that comes from its event, so that a resend of a batch is the same Statements and nothing is stored twice                          |
-| Voiding                   | The platform voids a mistake with `voidingStatement`; a query by id no longer finds it, and a query for voided Statements does                           |
+| Voiding                   | The platform voids a mistake with `buildVoidingStatement`; a query by id no longer finds it, and a query for voided Statements does                           |
 | Concurrency               | Progress is a State document: created with `If-None-Match: *`, replaced under the tag that was read, so a stale copy is 412                              |
 | Activities                | The first sender of an Activity defines it, only that authority adds to it, and the languages of every Statement are joined                              |
 | Where a real host differs | Its stores are a database with an index on what a query filters by, its credentials come from an account system, and its clock is the system's           |

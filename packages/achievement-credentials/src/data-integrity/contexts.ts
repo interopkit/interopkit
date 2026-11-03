@@ -4,8 +4,8 @@ import {
   DataError,
   DEFAULT_TIMEOUT_MS,
   type Fetch,
+  raceAbort,
   ServiceError,
-  untilAborted,
 } from "@interopkit/core";
 import {
   checkFunction,
@@ -254,6 +254,6 @@ export function createContextLoader(options: ContextLoaderOptions): ContextLoade
 
   return async (url: string, callOptions?: CallOptions) => {
     checkHttpsUrl(url, "The address of a context");
-    return structuredClone(await untilAborted(loadOnce(url), callOptions?.signal));
+    return structuredClone(await raceAbort(loadOnce(url), callOptions?.signal));
   };
 }

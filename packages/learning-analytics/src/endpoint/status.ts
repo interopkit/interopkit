@@ -1,4 +1,4 @@
-import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
 
 /** The media type of a problem detail (RFC 9457). */
 const PROBLEM_TYPE = "application/problem+json";
@@ -14,7 +14,7 @@ function problem(
   headers: Readonly<Record<string, string>> = {},
 ): HttpResponse {
   const body = { type: "about:blank", title, status, ...(detail === undefined ? {} : { detail }) };
-  return jsonResponse(status, body, headers, PROBLEM_TYPE);
+  return buildJsonResponse(status, body, headers, PROBLEM_TYPE);
 }
 
 /** Shortens a sentence to the most characters that an answer quotes. */

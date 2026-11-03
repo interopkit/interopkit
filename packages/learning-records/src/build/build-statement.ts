@@ -68,7 +68,7 @@ export interface StatementInput {
   readonly attachments?: readonly Attachment[];
 }
 
-/** The options of `buildStatement` and `voidingStatement`. */
+/** The options of `buildStatement` and `buildVoidingStatement`. */
 export interface BuildOptions {
   /**
    * The version of xAPI whose provider rules the Statement follows and whose `version` it carries: `2.0.0`, or `1.0.3`, whose

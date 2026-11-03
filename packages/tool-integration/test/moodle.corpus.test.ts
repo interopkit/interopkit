@@ -2,8 +2,8 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { canonicalizeRole, SCOPES } from "../src/index.js";
-import { createRegistrationInitiation, toToolRegistration } from "../src/platform/index.js";
-import { advanceScoreTimestamp, createDeepLinkResponse, createServiceClient } from "../src/tool/index.js";
+import { buildRegistrationInitiation, buildToolRegistration } from "../src/platform/index.js";
+import { advanceScoreTimestamp, buildDeepLinkingResponse, createServiceClient } from "../src/tool/index.js";
 import { type HttpsHost, serveHttps } from "./https-host.js";
 import { Browser, createLocalNetwork } from "./local-network.js";
 import { callService, formOf, setup, signIn } from "./moodle-driver.js";
@@ -252,7 +252,7 @@ describe("Moodle as the platform", () => {
     const browser = new Browser(network.send);
     await signIn(browser, MOODLE, "jane", "Passw0rd!-jane");
     tool.answerDeepLinking = (request) =>
-      createDeepLinkResponse(
+      buildDeepLinkingResponse(
         request,
         {
           items: [
@@ -362,7 +362,7 @@ describe("Moodle as the tool", () => {
 
   it("registers itself with the platform, which the administrator of the platform then activates", async () => {
     const draft = await setup<{ url: string }>("draft-registration", { name: "Reference platform" });
-    const url = await createRegistrationInitiation(draft.url, { config: platform.options.config, clock: CLOCK });
+    const url = await buildRegistrationInitiation(draft.url, { config: platform.options.config, clock: CLOCK });
     const answer = await admin.browser.request("GET", url);
     expect(answer.status, answer.text.slice(0, 600)).toBe(200);
     expect(answer.text).toContain("org.imsglobal.lti.close");
@@ -385,7 +385,7 @@ describe("Moodle as the tool", () => {
     ]);
     platform.tools.set(
       clientId,
-      toToolRegistration(registered, {
+      buildToolRegistration(registered, {
         scopes: [SCOPES.lineitem, SCOPES.resultReadonly, SCOPES.score, SCOPES.contextMembershipReadonly],
         deploymentIds: [DEPLOYMENT],
       }),

@@ -3,14 +3,14 @@ import {
   checkString,
   DEFAULT_MAX_FINDINGS,
   describe,
+  describeRefusal,
   parseWith,
-  refusalOf,
   strictRecord,
   uuidSchema,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { readMultipart, writeMultipart } from "../attachments/index.js";
-import { toStatementVersion } from "../compare/index.js";
+import { convertStatementVersion } from "../compare/index.js";
 import {
   type AttachmentData,
   RULE_ROLES,
@@ -155,7 +155,7 @@ const resultSchema = strictRecord({ statements: v.array(v.unknown()), more: v.op
  * LRS that serves both versions may answer a Statement of 2.0 as it holds it.
  */
 function readAnswered(value: unknown, version: XapiVersion): Statement {
-  return version === "1.0.3" ? toStatementVersion(readEitherVersion(value), "1.0.3") : readStatement(value);
+  return version === "1.0.3" ? convertStatementVersion(readEitherVersion(value), "1.0.3") : readStatement(value);
 }
 
 /** The body of a request: the Statements as JSON, or as a multipart message when the caller sends Attachments. */
@@ -229,7 +229,7 @@ export async function sendStatements(
   const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
   const batch = inspectBatch(statements, { role, version: settings.version }, sink);
   const errors = sink.list();
-  if (errors.length > 0) throw new DataError(refusalOf("The batch of Statements", errors, "validateStatements"));
+  if (errors.length > 0) throw new DataError(describeRefusal("The batch of Statements", errors, "validateStatements"));
   const { contentType, body } = bodyOf(batch, attachments);
   const url = urlOf(settings, "statements");
   const response = await send(

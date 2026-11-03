@@ -1,4 +1,4 @@
-import { DataError, requestService, type ServiceResponse, untilAborted } from "@interopkit/core";
+import { DataError, raceAbort, requestService, type ServiceResponse } from "@interopkit/core";
 import { checkAbortSignal, checkRecord } from "@interopkit/core/checks";
 import type { Settings } from "./config.js";
 
@@ -35,7 +35,7 @@ export function signalOf(options: unknown): AbortSignal | undefined {
 async function bearer(settings: Settings, signals: AbortSignal[]): Promise<string> {
   const either = signals.length === 0 ? undefined : AbortSignal.any(signals);
   // The host's function gets the signal and should stop, but the wait of the caller ends when it aborts whether the function does or not.
-  const token = await untilAborted(
+  const token = await raceAbort(
     Promise.resolve(settings.token(either === undefined ? undefined : { signal: either })),
     either,
   );

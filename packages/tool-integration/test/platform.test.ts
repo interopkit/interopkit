@@ -10,14 +10,14 @@ import {
   buildPlatformEndpoints,
   handlePlatformRequest,
   type LaunchToCheck,
-  ltiPlatformFrame,
-  ltiPlatformLogin,
   type MessageInput,
   type PlatformConfig,
+  prepareToolFrame,
+  prepareToolLaunch,
 } from "../src/platform/index.js";
 import { LAUNCH_TTL_SECONDS, openHint, openToken, sealHint } from "../src/platform/internal.js";
 import { readMessage, verifyMigration } from "../src/protocol/internal.js";
-import { ltiLaunch, ltiLogin, type PlatformRegistration } from "../src/tool/index.js";
+import { handleLaunch, handleLogin, type PlatformRegistration } from "../src/tool/index.js";
 import { cookieOf, MemoryStore } from "./fake-platform.js";
 import {
   authenticationRequest,
@@ -156,11 +156,11 @@ describe("buildPlatformEndpoints and the configuration", () => {
     const ctx = setup();
     const broken: PlatformConfig = { ...config, frameOrigin: PLATFORM_ORIGIN };
     await expect(handle(ctx, get(endpoints.jwks), { config: broken })).rejects.toThrow(DataError);
-    await expect(ltiPlatformLogin(baseMessage, { ...ctx.login, config: broken })).rejects.toThrow(DataError);
+    await expect(prepareToolLaunch(baseMessage, { ...ctx.login, config: broken })).rejects.toThrow(DataError);
   });
 });
 
-describe("ltiPlatformLogin and ltiPlatformFrame", () => {
+describe("prepareToolLaunch and prepareToolFrame", () => {
   it("builds the third-party initiated login of the tool with the parameters of LTI 1.3 Core section 4.1", async () => {
     const ctx = setup();
     const { initiation } = await begin(ctx);
@@ -202,15 +202,15 @@ describe("ltiPlatformLogin and ltiPlatformFrame", () => {
 
   it("names the frame of the storage page as the host says, and gives the frame the storage page and the allow list", async () => {
     const ctx = setup({ tools: [toolRegistration({ allow: "microphone" })] });
-    const url = await ltiPlatformLogin(baseMessage, { ...ctx.login, storageTarget: "frame-2" });
+    const url = await prepareToolLaunch(baseMessage, { ...ctx.login, storageTarget: "frame-2" });
     expect(new URL(url).searchParams.get("lti_storage_target")).toBe("frame-2");
-    const frame = await ltiPlatformFrame(baseMessage, ctx.login);
+    const frame = await prepareToolFrame(baseMessage, ctx.login);
     expect(frame).toEqual({
       url: expect.stringContaining(TOOL_ORIGIN),
       storageUrl: endpoints.storage,
       allow: "microphone",
     });
-    const plain = await ltiPlatformFrame(baseMessage, setup().login);
+    const plain = await prepareToolFrame(baseMessage, setup().login);
     expect("allow" in plain).toBe(false);
   });
 
@@ -219,7 +219,7 @@ describe("ltiPlatformLogin and ltiPlatformFrame", () => {
     const order: string[] = [];
     const refused = new Error("not yours");
     await expect(
-      ltiPlatformLogin(baseMessage, {
+      prepareToolLaunch(baseMessage, {
         ...ctx.login,
         check: async () => {
           order.push("check");
@@ -237,10 +237,10 @@ describe("ltiPlatformLogin and ltiPlatformFrame", () => {
 
   it("refuses a deployment that is not the tool's, and a tool that the platform does not have, before anything is kept", async () => {
     const ctx = setup();
-    await expect(ltiPlatformLogin({ ...baseMessage, deploymentId: "other" }, ctx.login)).rejects.toMatchObject({
+    await expect(prepareToolLaunch({ ...baseMessage, deploymentId: "other" }, ctx.login)).rejects.toMatchObject({
       reason: "deployment-unknown",
     });
-    await expect(ltiPlatformLogin({ ...baseMessage, clientId: "nobody" }, ctx.login)).rejects.toMatchObject({
+    await expect(prepareToolLaunch({ ...baseMessage, clientId: "nobody" }, ctx.login)).rejects.toMatchObject({
       reason: "tool-unknown",
     });
     expect(ctx.kept.size).toBe(0);
@@ -249,10 +249,10 @@ describe("ltiPlatformLogin and ltiPlatformFrame", () => {
   it("refuses a launch whose target or tool is on the origin of the platform, the frame page or a reserved origin", async () => {
     for (const origin of [PLATFORM_ORIGIN, PLAYER_ORIGIN, ASSET_ORIGIN]) {
       const ctx = setup({ tools: [toolRegistration({ redirectUris: [TOOL_REDIRECT_URI, `${origin}/launch`] })] });
-      await expect(ltiPlatformLogin(baseMessage, ctx.login)).rejects.toMatchObject({ reason: "origin-refused" });
+      await expect(prepareToolLaunch(baseMessage, ctx.login)).rejects.toMatchObject({ reason: "origin-refused" });
       const other = setup();
       await expect(
-        ltiPlatformLogin({ ...baseMessage, targetLinkUri: `${origin}/tool` }, other.login),
+        prepareToolLaunch({ ...baseMessage, targetLinkUri: `${origin}/tool` }, other.login),
       ).rejects.toMatchObject({ reason: "origin-refused" });
       expect(other.kept.size).toBe(0);
     }
@@ -270,12 +270,12 @@ describe("ltiPlatformLogin and ltiPlatformFrame", () => {
       { ...baseMessage, context: { id: "c", type: ["Not a type"] } },
     ];
     for (const message of broken) {
-      await expect(ltiPlatformLogin(message as MessageInput, ctx.login), JSON.stringify(message)).rejects.toThrow(
+      await expect(prepareToolLaunch(message as MessageInput, ctx.login), JSON.stringify(message)).rejects.toThrow(
         DataError,
       );
     }
     expect(ctx.checked).toEqual([]);
-    await ltiPlatformLogin({ ...baseMessage, roles: [MENTOR], roleScopeMentor: ["a"] }, ctx.login);
+    await prepareToolLaunch({ ...baseMessage, roles: [MENTOR], roleScopeMentor: ["a"] }, ctx.login);
   });
 
   it("refuses a message that is not one, as JSON gives it", async () => {
@@ -292,13 +292,13 @@ describe("ltiPlatformLogin and ltiPlatformFrame", () => {
       JSON.stringify({ ...baseMessage, migration: { oauthConsumerKey: "k", oauthConsumerKeySign: "s" } }),
     ];
     for (const text of messages) {
-      await expect(ltiPlatformLogin(JSON.parse(text), ctx.login), text).rejects.toThrow(DataError);
+      await expect(prepareToolLaunch(JSON.parse(text), ctx.login), text).rejects.toThrow(DataError);
     }
   });
 
   it("keeps a custom property named __proto__ as data", async () => {
     const ctx = setup();
-    await ltiPlatformLogin({ ...baseMessage, custom: JSON.parse('{"__proto__":"x"}') }, ctx.login);
+    await prepareToolLaunch({ ...baseMessage, custom: JSON.parse('{"__proto__":"x"}') }, ctx.login);
     const [entry] = ctx.kept.values();
     expect(Object.getOwnPropertyNames(entry?.message.custom)).toEqual(["__proto__"]);
     expect(Object.getPrototypeOf(entry?.message.custom)).toBe(Object.prototype);
@@ -306,7 +306,7 @@ describe("ltiPlatformLogin and ltiPlatformFrame", () => {
 
   it("keeps the query of the login URL of the tool", async () => {
     const ctx = setup({ tools: [toolRegistration({ loginUrl: `${TOOL_ORIGIN}/lti/login?tenant=7` })] });
-    const url = new URL(await ltiPlatformLogin(baseMessage, ctx.login));
+    const url = new URL(await prepareToolLaunch(baseMessage, ctx.login));
     expect(url.searchParams.get("tenant")).toBe("7");
     expect(url.searchParams.get("iss")).toBe(ISSUER);
   });
@@ -322,7 +322,7 @@ describe("ltiPlatformLogin and ltiPlatformFrame", () => {
       { ...ctx.login, clock: JSON.parse("{}") },
     ];
     for (const options of cases) {
-      await expect(ltiPlatformLogin(baseMessage, options as never)).rejects.toThrow(DataError);
+      await expect(prepareToolLaunch(baseMessage, options as never)).rejects.toThrow(DataError);
     }
   });
 });
@@ -815,7 +815,7 @@ describe("the authentication request", () => {
   it("opens a hint that a previous hint key sealed, and refuses one of a key it does not hold", async () => {
     const ctx = setup();
     const rotated = { ...ctx.login, config: { ...config, hintKey: previousHintKey, previousHintKeys: [] } };
-    const url = await ltiPlatformLogin(baseMessage, rotated);
+    const url = await prepareToolLaunch(baseMessage, rotated);
     const search = new URL(url).searchParams;
     const parameters = new URLSearchParams([
       ["scope", "openid"],
@@ -832,7 +832,7 @@ describe("the authentication request", () => {
     const page = await handle(ctx, authenticationRequest(endpoints.authorization, parameters));
     expect(readPost(page).fields.has("id_token")).toBe(true);
     const unknown = setup();
-    await ltiPlatformLogin(baseMessage, { ...unknown.login, config: rotated.config });
+    await prepareToolLaunch(baseMessage, { ...unknown.login, config: rotated.config });
     const refused = await handle(unknown, authenticationRequest(endpoints.authorization, parameters), {
       config: { ...config, previousHintKeys: [] },
     });
@@ -1213,12 +1213,12 @@ describe("the tool role and the platform role together", () => {
       store: new MemoryStore(),
       jwks: createJwksCache({ fetch: platformFetch, clock: ctx.clock }),
     };
-    const initiation = new URL(await ltiPlatformLogin(message, ctx.login));
+    const initiation = new URL(await prepareToolLaunch(message, ctx.login));
     initiation.searchParams.delete("lti_storage_target");
-    const login = await ltiLogin(request({ url: initiation.href }), options);
+    const login = await handleLogin(request({ url: initiation.href }), options);
     const page = await handle(ctx, request({ url: login.headers.location ?? "" }));
     const post = readPost(page);
-    const launched = await ltiLaunch(
+    const launched = await handleLaunch(
       request({
         url: post.action,
         method: "POST",

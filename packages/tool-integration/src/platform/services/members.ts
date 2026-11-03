@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import { nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
-import { type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
 import * as v from "valibot";
 import { canonicalizeRole, type Member, type MessageServices, SCOPES } from "../../protocol/index.js";
 import {
@@ -85,7 +85,7 @@ async function getMembers(call: Call): Promise<HttpResponse> {
     links.push(`<${differences.href}>; rel="differences"`);
   }
   const link = links.filter((value) => value !== undefined).join(", ");
-  return jsonResponse(200, body, link === "" ? {} : { link }, MEMBERSHIP_MEDIA_TYPE);
+  return buildJsonResponse(200, body, link === "" ? {} : { link }, MEMBERSHIP_MEDIA_TYPE);
 }
 
 /** Writes the claim of Names and Role Provisioning (NRPS 2.0 section 4.1) into the services of a message that asks for it. */

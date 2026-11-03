@@ -2,11 +2,11 @@ import {
   type CallOptions,
   DataError,
   hasNextPage,
+  raceAbort,
   readAnswer,
   readAnswerJson,
   requestService,
   type ServiceResponse,
-  untilAborted,
 } from "@interopkit/core";
 import { checkAbortSignal, checkRecord, describe, isRecord, MAX_JSON_DEPTH, parseWith } from "@interopkit/core/checks";
 import type {
@@ -141,7 +141,7 @@ async function get(
   const authorization =
     settings.authorization === undefined
       ? undefined
-      : await untilAborted(
+      : await raceAbort(
           Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
           either,
         );

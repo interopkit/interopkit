@@ -4,10 +4,10 @@ import { deepFreeze } from "../../../scripts/json-mutation.js";
 import {
   type CaseEntityKind,
   type CasePackage,
+  convertCaseVersion,
   ENTITY_KINDS,
   readEntity,
   readPackage,
-  toCaseVersion,
   validateEntity,
   validatePackage,
 } from "../src/index.js";
@@ -17,7 +17,7 @@ import { fullEntities, fullPackage, id, uri } from "./full-package.js";
 /** Judges a full package that a test has changed, and returns where, which rule and how serious. */
 function found(change: (pkg: Record<string, any>) => void, version?: "1.0" | "1.1") {
   const pkg: Record<string, any> = copyOf(
-    version === "1.0" ? toCaseVersion(fullPackage(), "1.0").value : fullPackage(),
+    version === "1.0" ? convertCaseVersion(fullPackage(), "1.0").value : fullPackage(),
   );
   change(pkg);
   return summary(validatePackage(pkg, version === undefined ? undefined : { version }));
@@ -58,7 +58,7 @@ describe("readPackage", () => {
   });
 
   it("reads a package of 1.0, which is a package of 1.1 without what 1.1 adds", () => {
-    const form10 = toCaseVersion(fullPackage(), "1.0").value;
+    const form10 = convertCaseVersion(fullPackage(), "1.0").value;
     expect(readPackage(form10, { version: "1.0" })).toStrictEqual(form10);
     expect(readPackage(form10)).toStrictEqual(form10);
   });
@@ -135,7 +135,7 @@ describe("validatePackage", () => {
   });
 
   it("judges a package of 1.0 with the option, and one of 1.1 as 1.0 with what 1.1 adds as findings", () => {
-    const form10 = toCaseVersion(fullPackage(), "1.0").value;
+    const form10 = convertCaseVersion(fullPackage(), "1.0").value;
     expect(validatePackage(form10, { version: "1.0" })).toStrictEqual([]);
     expect(validatePackage(fullPackage(), { version: "1.0" }).length).toBeGreaterThan(0);
   });
@@ -489,7 +489,7 @@ describe("the links that the form of a package lacks", () => {
   it.each(["1.0", "1.1"] as const)(
     "are read in %s with a warning for each list that has them, and left out of the package",
     (version) => {
-      const pkg = version === "1.0" ? toCaseVersion(fullPackage(), "1.0").value : fullPackage();
+      const pkg = version === "1.0" ? convertCaseVersion(fullPackage(), "1.0").value : fullPackage();
       const linked = linkedPackage(pkg);
       const findings = validatePackage(linked, { version });
       expect(findings.map(({ path, rule, severity, message }) => ({ path, rule, severity, message }))).toStrictEqual([
@@ -573,7 +573,7 @@ describe("readEntity", () => {
   });
 
   it("reads a set of a version, and refuses what only 1.1 has in 1.0", () => {
-    const converted = toCaseVersion(entities.CFItem, "1.0").value;
+    const converted = convertCaseVersion(entities.CFItem, "1.0").value;
     expect(readEntity("CFItem", converted, { version: "1.0" })).toStrictEqual(converted);
     expect(() => readEntity("CFItem", entities.CFItem, { version: "1.0" })).toThrow(DataError);
     expect(() => readEntity("CFConceptSet", { CFConcepts: [entities.CFConcept] }, { version: "1.0" })).toThrow(

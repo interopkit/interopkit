@@ -17,7 +17,7 @@ flowchart LR
 ## Quick start
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { signStatement, verifyStatementSignature } from "@interopkit/learning-records/signing";
 
 const { privateKey, publicKey } = await crypto.subtle.generateKey(
@@ -25,7 +25,7 @@ const { privateKey, publicKey } = await crypto.subtle.generateKey(
   false,
   ["sign", "verify"],
 );
-const signer = signerFromCryptoKey(privateKey, { algorithm: "RS256" });
+const signer = createCryptoKeySigner(privateKey, { algorithm: "RS256" });
 const { statement, signature } = await signStatement(
   {
     actor: { name: "Example Learner", mbox: "mailto:learner@example.org" },
@@ -46,7 +46,7 @@ of that Attachment. The host sends both, with `writeMultipart` of `@interopkit/l
 
 | Step       | Signing                                                                                                                                | Verifying                                                                                                    |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Payload    | The JSON of the Statement as a provider reads it, before the signature is added                                                        | The JSON must be a Statement that an LRS reads, and the same Statement as the one received (`sameStatement`) |
+| Payload    | The JSON of the Statement as a provider reads it, before the signature is added                                                        | The JSON must be a Statement that an LRS reads, and the same Statement as the one received (`isSameStatement`) |
 | Header     | `alg` of the signer, `kid` when the signer has a key id, `x5c` when the option gives a chain                                           | `alg` must be RS256, RS384 or RS512; `x5c`, when present, is a list of base64 certificates                   |
 | Key        | The `Signer` signs; its algorithm is RS256, RS384 or RS512                                                                             | The leaf of `x5c` verifies; else `key`; a `jwk` in the header is never used                                  |
 | Attachment | `usageType` `http://adlnet.gov/expapi/attachments/signature`, `contentType` `application/octet-stream`, `length` and `sha2` of the JWS | Not read: the caller gives the bytes of the part that holds the signature                                    |
@@ -121,6 +121,6 @@ An error of the signer, of `trustCertificate`, and the `reason` of a `signal` pa
 
 | Reference    | Difference                                                                                                                                                                                                                |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The standard | "Logically equivalent" is not defined for a signature; the package uses the equivalence of the immutability rules (`sameStatement`) and, since that leaves them out, holds the `id`, the `timestamp` and the Attachments of the payload to the Statement; `stored`, `authority` and `version` are the LRS's to set |
+| The standard | "Logically equivalent" is not defined for a signature; the package uses the equivalence of the immutability rules (`isSameStatement`) and, since that leaves them out, holds the `id`, the `timestamp` and the Attachments of the payload to the Statement; `stored`, `authority` and `version` are the LRS's to set |
 | The standard | The Statement signed is "the complete Statement before the signature was added"; a Statement without an id is signed without one, and the LRS may give it one without breaking the signature                              |
 | jwcrypto     | Signatures made by jwcrypto with RS256, RS384 and RS512 and an X.509 chain verify, and the cases in which they must not are refused with the reasons above (`validation/xapi_signatures.py`)                              |

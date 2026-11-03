@@ -53,7 +53,7 @@ function objectV1(object: StatementObject): StatementObject {
  * @throws `DataError` when the version is not `1.0.3`, or the Statement is not valid in either version.
  * @see {@link https://github.com/adlnet/xAPI-Spec/blob/1.0.3/xAPI-Data.md | xAPI 1.0.3, Data}
  */
-export function toStatementVersion(statement: Statement, version: "1.0.3"): Statement {
+export function convertStatementVersion(statement: Statement, version: "1.0.3"): Statement {
   if (version !== "1.0.3") {
     throw new DataError(`The version must be "1.0.3", the version whose form is returned, found ${describe(version)}.`);
   }

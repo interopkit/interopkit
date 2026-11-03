@@ -4,5 +4,6 @@
  *
  * @module
  */
-export { sameStatement } from "./same-statement.js";
-export { toStatementVersion } from "./to-statement-version.js";
+
+export { convertStatementVersion } from "./convert-statement-version.js";
+export { isSameStatement } from "./is-same-statement.js";

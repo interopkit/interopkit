@@ -18,7 +18,7 @@ const BEARER = /^bearer +([A-Za-z0-9\-._~+/]+=*)$/iu;
  * @returns The token, or `undefined` when the request has no `Authorization` header, or one of another scheme or form.
  * @see {@link https://www.rfc-editor.org/rfc/rfc6750#section-2.1 | RFC 6750 section 2.1}
  */
-export function bearerTokenOf(request: HttpRequest): string | undefined {
+export function readBearerToken(request: HttpRequest): string | undefined {
   const header = request.headers.authorization;
   return header === undefined ? undefined : BEARER.exec(header)?.[1];
 }

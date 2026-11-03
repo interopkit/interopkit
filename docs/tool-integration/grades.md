@@ -68,7 +68,7 @@ path of the line item at `/results` and the scores at `/scores`, with the query 
 ### Tokens
 
 Each call asks for a token of the narrowest scope that allows it and that the platform offered (`scope-unavailable` when none),
-with `clientCredentialsToken` of [`@interopkit/core/oauth`](../core/oauth.md), `private_key_jwt` signed by the registration's
+with `requestClientCredentialsToken` of [`@interopkit/core/oauth`](../core/oauth.md), `private_key_jwt` signed by the registration's
 `signer`, and the deployment claim of LTI 1.3 Core section 6.2.1. A token that does not hold the scope is `scope-denied`. The
 token of a scope is kept by `createTokenCache` until `refreshSkewSeconds` before its expiry: callers that arrive together share
 one token request, which runs to its own deadline and takes no caller's signal. A 401 drops the token of the scope, and the next

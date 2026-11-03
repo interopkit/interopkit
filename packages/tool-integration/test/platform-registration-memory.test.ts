@@ -1,4 +1,4 @@
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { generateKeyPair, request } from "./fixture.js";
 import { config, handle, PLATFORM_ORIGIN, setup } from "./platform-setup.js";
@@ -22,7 +22,7 @@ describe("the peak memory of the bodies of the registration endpoint", () => {
         ...config,
         issuer: PLATFORM_ORIGIN,
         keys: {
-          signer: signerFromCryptoKey(key.privateKey, { algorithm: "RS256", keyId: key.kid }),
+          signer: createCryptoKeySigner(key.privateKey, { algorithm: "RS256", keyId: key.kid }),
           publicKeys: [key.publicJwk],
         },
         instance: { guid: "platform-1", productFamilyCode: "tests" },

@@ -1,6 +1,6 @@
 import { InteropkitError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
-import { abandonSession, createRegistration, prepareLaunch, progressOf, waiveAu } from "../src/lms/index.js";
+import { abandonSession, createRegistration, deriveCourseProgress, prepareLaunch, waiveAu } from "../src/lms/index.js";
 import { AU1, AU3, LEARNER, testHost } from "./lms-host.js";
 import { launchUnit, register, sendStatement, statementsOf, unitStatement, verbsOf } from "./lms-session.js";
 
@@ -228,6 +228,6 @@ describe("registrations", () => {
       "no course",
     );
     const registration = await register(host);
-    expect(() => progressOf({ ...registration, aus: {} }, host.course)).toThrow("holds no assignable unit");
+    expect(() => deriveCourseProgress({ ...registration, aus: {} }, host.course)).toThrow("holds no assignable unit");
   });
 });

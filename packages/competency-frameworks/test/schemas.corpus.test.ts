@@ -6,11 +6,11 @@ import {
   ASSOCIATION_TYPES,
   type CaseEntityKind,
   type CaseVersion,
+  convertCaseVersion,
   ENTITY_KINDS,
   STATUS_CODES_MAJOR,
   STATUS_CODES_MINOR,
   STATUS_SEVERITIES,
-  toCaseVersion,
 } from "../src/index.js";
 import { ASSOCIATION_TYPES_1_0 } from "../src/model/internal.js";
 import { SCHEMAS } from "../src/read/internal.js";
@@ -215,7 +215,7 @@ describe("the conversion to CASE 1.0 against the official JSON schemas of 1.0", 
     const official = officialValidator("1.0", "package");
     fc.assert(
       fc.property(officialArbitrary("1.1", "package", "1.1"), (pkg) => {
-        const { value, dropped } = toCaseVersion(JSON.parse(JSON.stringify(pkg)), "1.0");
+        const { value, dropped } = convertCaseVersion(JSON.parse(JSON.stringify(pkg)), "1.0");
         expect(official(value), JSON.stringify(value)).toBe(!reportsForm(dropped));
         if (!reportsForm(dropped)) expect(readsPackage("1.0", value)).toBe(true);
       }),
@@ -229,7 +229,7 @@ describe("the conversion to CASE 1.0 against the official JSON schemas of 1.0", 
       const official = officialValidator("1.0", kind);
       fc.assert(
         fc.property(officialArbitrary("1.1", kind, "1.1"), (entity) => {
-          const { value, dropped } = toCaseVersion(JSON.parse(JSON.stringify(entity)), "1.0");
+          const { value, dropped } = convertCaseVersion(JSON.parse(JSON.stringify(entity)), "1.0");
           if (value === undefined) return;
           expect(official(value), JSON.stringify(value)).toBe(!reportsForm(dropped));
         }),
@@ -239,10 +239,10 @@ describe("the conversion to CASE 1.0 against the official JSON schemas of 1.0", 
   );
 
   it("gives the full package and the full entities in the form of 1.0", () => {
-    expect(officialValidator("1.0", "package")(toCaseVersion(fullPackage(), "1.0").value)).toBe(true);
+    expect(officialValidator("1.0", "package")(convertCaseVersion(fullPackage(), "1.0").value)).toBe(true);
     for (const [kind, entity] of Object.entries(fullEntities())) {
       if (kind === "imsx_StatusInfo") continue;
-      const { value } = toCaseVersion(entity, "1.0");
+      const { value } = convertCaseVersion(entity, "1.0");
       expect(value === undefined || officialValidator("1.0", kind as CaseEntityKind)(value), kind).toBe(true);
     }
   });
@@ -252,7 +252,7 @@ describe("the cases in which a reader is stricter than the validator that reads 
   /** The verdict of the validator and of the reader on the full package of a version with one change. */
   function verdicts(version: CaseVersion, change: (pkg: Record<string, any>) => void) {
     const pkg: Record<string, any> = JSON.parse(
-      JSON.stringify(version === "1.1" ? fullPackage() : toCaseVersion(fullPackage(), "1.0").value),
+      JSON.stringify(version === "1.1" ? fullPackage() : convertCaseVersion(fullPackage(), "1.0").value),
     );
     change(pkg);
     return { validator: officialValidator(version, "package")(pkg), reader: readsPackage(version, pkg) };

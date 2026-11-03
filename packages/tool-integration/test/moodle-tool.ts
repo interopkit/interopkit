@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of the form fields of a launch are snake_case.
 
-import { type Fetch, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, type Fetch } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import {
   createJwksCache,
@@ -12,17 +12,17 @@ import {
   type ToolRegistrationResult,
 } from "../src/index.js";
 import {
-  createRegistrationClosePage,
+  buildPlatformRegistration,
+  buildRegistrationClosePage,
   discoverPlatform,
+  handleLaunch,
+  handleLogin,
   type LoginRecord,
   type LtiLaunchOptions,
-  ltiLaunch,
-  ltiLogin,
   type PlatformRegistration,
   readRegistrationInitiation,
   registerTool,
   serveToolJwks,
-  toPlatformRegistration,
 } from "../src/tool/index.js";
 
 const REGISTER_PATH = "/lti/register";
@@ -76,7 +76,7 @@ export async function createReferenceTool(origin: string, fetch: Fetch): Promise
   const kid = "reference-tool-key";
   const publicJwk = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid, alg: "RS256", use: "sig" };
   const keys: KeySet = {
-    signer: signerFromCryptoKey(pair.privateKey, { algorithm: "RS256", keyId: kid }),
+    signer: createCryptoKeySigner(pair.privateKey, { algorithm: "RS256", keyId: kid }),
     publicKeys: [publicJwk],
   };
   const platforms: PlatformRegistration[] = [];
@@ -122,11 +122,11 @@ export async function createReferenceTool(origin: string, fetch: Fetch): Promise
       { fetch },
     );
     Object.assign(registered, { platform, result });
-    return createRegistrationClosePage();
+    return buildRegistrationClosePage();
   };
 
   const launch = async (request: HttpRequest): Promise<HttpResponse> => {
-    const message = await ltiLaunch(request, options);
+    const message = await handleLaunch(request, options);
     if ("status" in message) return message;
     launches.push(message);
     if (message.messageType === "LtiDeepLinkingRequest" && tool.answerDeepLinking !== undefined) {
@@ -142,7 +142,7 @@ export async function createReferenceTool(origin: string, fetch: Fetch): Promise
   const handle = async (request: HttpRequest): Promise<HttpResponse> => {
     const { pathname } = new URL(request.url);
     if (pathname === REGISTER_PATH) return register(request);
-    if (pathname === LOGIN_PATH) return ltiLogin(request, options);
+    if (pathname === LOGIN_PATH) return handleLogin(request, options);
     if (pathname === LAUNCH_PATH) return launch(request);
     if (pathname === JWKS_PATH) return serveToolJwks(request, keys);
     return { status: 404, headers: {}, body: "" };
@@ -160,7 +160,7 @@ export async function createReferenceTool(origin: string, fetch: Fetch): Promise
     activate(deploymentIds) {
       const { platform, result } = registered;
       if (platform === undefined || result === undefined) throw new Error("The tool has not registered.");
-      const record = toPlatformRegistration(platform, result, {
+      const record = buildPlatformRegistration(platform, result, {
         signer: keys.signer,
         redirectUri: launchUrl,
         ...(deploymentIds === undefined ? {} : { deploymentIds }),

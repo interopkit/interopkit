@@ -17,9 +17,9 @@ forms of a `relatedResource` (`related-resource-form`, `related-resource-id`, `r
 `buildAchievementCredential`, `buildEndorsementCredential` and `buildClrCredential` write the contexts, the types, the subject
 and the official `credentialSchema` around the parts that an issuer gives, check the result as the readers do, and throw a
 `DataError` that names every fault; `buildClrCredential` writes the payload of a CLR in a JWT when its credentials are compact
-JWS. `caseAlignment` aligns an achievement to a CASE item. `hashIdentifier` writes the `sha256$` hash of a recipient's
+JWS. `buildCaseAlignment` aligns an achievement to a CASE item. `hashIdentifier` writes the `sha256$` hash of a recipient's
 identity and `matchesIdentifier` matches an `IdentityObject` of 3.0 or of a 2.0 assertion with a known identity, in `sha256$`
-and `md5$`. `sameCredential` and `newerCredential` compare credentials of either data model as Open Badges 10 asks, by `validFrom` or `issuanceDate`, and `credentialSummary` gives what
+and `md5$`. `isSameCredential` and `selectNewerCredential` compare credentials of either data model as Open Badges 10 asks, by `validFrom` or `issuanceDate`, and `summarizeCredential` gives what
 a wallet shows of a badge, a CLR or an endorsement under either data model, with the date it was awarded.
 
 `@interopkit/achievement-credentials/baking` writes a credential into a PNG or an SVG image and reads it out. `bakePng` and
@@ -78,7 +78,7 @@ or in a list of contexts as the validator of 1EdTech reads it, that embeds its B
 `BadgeAssertionV2` beside `AnyVerifiableCredential`, and `readCredential` with a `kind` returns an `AnyVerifiableCredential`.
 `readPng` and `readSvg` find a 2.0 assertion as Open Badges 2.0 Baking writes it, kind `badge-v2`: JSON or a compact JWS in an
 `iTXt` chunk `openbadges`, the address of a hosted assertion in a legacy `tEXt` chunk, or an `assertion` element of
-`http://openbadges.org`; the bakers refuse a 2.0 assertion. `credentialSummary` shows a 2.0 assertion as `badge-v2`, and `matchesIdentifier` matches its recipient of `IDENTITY_TYPES_V2`
+`http://openbadges.org`; the bakers refuse a 2.0 assertion. `summarizeCredential` shows a 2.0 assertion as `badge-v2`, and `matchesIdentifier` matches its recipient of `IDENTITY_TYPES_V2`
 in `sha256$` and `md5$`. A 2.0 badge is read and verified, and never written.
 
 `@interopkit/achievement-credentials/verify` is `verifyCredential`: it verifies a credential, an endorsement or a CLR (as an object, a

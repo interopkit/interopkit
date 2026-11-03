@@ -3,7 +3,7 @@
 import { DataError, type Fetch, ServiceError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { type ControlRequest, type LtiMessage, SCOPES, type StartProctoringMessage } from "../src/index.js";
-import { createServiceClient, createStartAssessmentPage, ltiLaunch } from "../src/tool/index.js";
+import { buildStartAssessmentPage, createServiceClient, handleLaunch } from "../src/tool/index.js";
 import { CLIENT_ID, DEPLOYMENT_ID, ISSUER } from "./fake-platform.js";
 import { readPost, readToken, verifyToken } from "./fixture.js";
 import { textOf } from "./text-of.js";
@@ -34,20 +34,20 @@ async function startProctoring(
       ...claims,
     },
   });
-  const launch = launchOf(await ltiLaunch(request, ctx.options));
+  const launch = launchOf(await handleLaunch(request, ctx.options));
   if (launch.messageType !== "LtiStartProctoring") throw new Error("The launch is not a Start Proctoring message.");
   return launch;
 }
 
 /** Sends the candidate back with `input`, and reads the page: where it posts, and the token it posts. */
 async function startAssessment(ctx: Setup, launch: StartProctoringMessage, input = {}, options = ctx.options) {
-  const page = await createStartAssessmentPage(launch, input, options);
+  const page = await buildStartAssessmentPage(launch, input, options);
   const post = readPost(page);
   const jwt = post.fields.get("JWT") ?? "";
   return { page, post, jwt, ...readToken(jwt) };
 }
 
-describe("createStartAssessmentPage", () => {
+describe("buildStartAssessmentPage", () => {
   it("answers with the page that posts the signed message to the start assessment URL, and nothing else", async () => {
     const ctx = setup();
     const { page, post } = await startAssessment(ctx, await startProctoring(ctx));
@@ -111,9 +111,7 @@ describe("createStartAssessmentPage", () => {
       { subject: "a6d5c443-1f51-4783-ba1a-7686ffe3b54a" },
       { givenName: 5 },
     ]) {
-      await expect(createStartAssessmentPage(launch, { verifiedUser } as never, ctx.options)).rejects.toThrow(
-        DataError,
-      );
+      await expect(buildStartAssessmentPage(launch, { verifiedUser } as never, ctx.options)).rejects.toThrow(DataError);
     }
   });
 
@@ -121,19 +119,19 @@ describe("createStartAssessmentPage", () => {
     const ctx = setup();
     const launch = await startProctoring(ctx);
     const { request } = await cookieLogin(ctx);
-    const other = launchOf(await ltiLaunch(request, ctx.options));
-    await expect(createStartAssessmentPage(other as never, {}, ctx.options)).rejects.toThrow("LtiStartProctoring");
+    const other = launchOf(await handleLaunch(request, ctx.options));
+    await expect(buildStartAssessmentPage(other as never, {}, ctx.options)).rejects.toThrow("LtiStartProctoring");
     for (const text of ["null", "5", '"launch"', "[]"]) {
-      await expect(createStartAssessmentPage(JSON.parse(text), {}, ctx.options)).rejects.toThrow(DataError);
-      await expect(createStartAssessmentPage(launch, JSON.parse(text), ctx.options)).rejects.toThrow(DataError);
-      await expect(createStartAssessmentPage(launch, {}, JSON.parse(text))).rejects.toThrow(DataError);
+      await expect(buildStartAssessmentPage(JSON.parse(text), {}, ctx.options)).rejects.toThrow(DataError);
+      await expect(buildStartAssessmentPage(launch, JSON.parse(text), ctx.options)).rejects.toThrow(DataError);
+      await expect(buildStartAssessmentPage(launch, {}, JSON.parse(text))).rejects.toThrow(DataError);
     }
     await expect(
-      createStartAssessmentPage(launch, JSON.parse('{"endAssessmentReturn":"yes"}'), ctx.options),
+      buildStartAssessmentPage(launch, JSON.parse('{"endAssessmentReturn":"yes"}'), ctx.options),
     ).rejects.toThrow(DataError);
     const changed = { ...launch, startAssessmentUrl: "http://lms.example.edu/start", attemptNumber: 2 };
-    await expect(createStartAssessmentPage(changed, {}, ctx.options)).rejects.toThrow(DataError);
-    await expect(createStartAssessmentPage({ ...launch, attemptNumber: -1 }, {}, ctx.options)).rejects.toThrow(
+    await expect(buildStartAssessmentPage(changed, {}, ctx.options)).rejects.toThrow(DataError);
+    await expect(buildStartAssessmentPage({ ...launch, attemptNumber: -1 }, {}, ctx.options)).rejects.toThrow(
       DataError,
     );
   });
@@ -142,7 +140,7 @@ describe("createStartAssessmentPage", () => {
     const ctx = setup();
     const launch = await startProctoring(ctx);
     const options = { ...ctx.options, registration: async () => ({ ...ctx.registration, deploymentIds: ["d-2"] }) };
-    await expect(createStartAssessmentPage(launch, {}, options)).rejects.toMatchObject({
+    await expect(buildStartAssessmentPage(launch, {}, options)).rejects.toMatchObject({
       reason: "deployment-unknown",
     });
   });

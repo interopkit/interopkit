@@ -6,10 +6,10 @@ import {
   buildClrCredential,
   CONTEXTS,
   type IssuableCredential,
-  newerCredential,
+  isSameCredential,
   readCredential,
   readEntity,
-  sameCredential,
+  selectNewerCredential,
   validateCredential,
   validateEntity,
 } from "../src/index.js";
@@ -104,17 +104,17 @@ describe("the equality and comparison examples of Open Badges 3.0", () => {
   });
 
   it("calls A and B equal, since they have the same id and the same issuer id, and C and D equal for the same reason", () => {
-    expect(sameCredential(credential(a), credential(b))).toBe(true);
-    expect(sameCredential(credential(c), credential(d))).toBe(true);
-    expect(sameCredential(credential(a), credential(c))).toBe(true);
+    expect(isSameCredential(credential(a), credential(b))).toBe(true);
+    expect(isSameCredential(credential(c), credential(d))).toBe(true);
+    expect(isSameCredential(credential(a), credential(c))).toBe(true);
   });
 
   it("calls both up-to-date when the validFrom is the same, and C the up-to-date one of C and D, which has the more recent validFrom", () => {
     const [first, second, third, fourth] = [credential(a), credential(b), credential(c), credential(d)];
-    expect(newerCredential(first, second)).toBe(first);
-    expect(newerCredential(second, first)).toBe(second);
-    expect(newerCredential(third, fourth)).toBe(third);
-    expect(newerCredential(fourth, third)).toBe(third);
+    expect(selectNewerCredential(first, second)).toBe(first);
+    expect(selectNewerCredential(second, first)).toBe(second);
+    expect(selectNewerCredential(third, fourth)).toBe(third);
+    expect(selectNewerCredential(fourth, third)).toBe(third);
   });
 });
 

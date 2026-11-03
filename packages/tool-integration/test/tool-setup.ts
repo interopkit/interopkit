@@ -3,7 +3,7 @@
 import type { Fetch } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import { createJwksCache, type DeepLinkingRequestMessage, type LtiMessage } from "../src/index.js";
-import { type LtiLaunchOptions, ltiLogin, type PlatformRegistration } from "../src/tool/index.js";
+import { handleLogin, type LtiLaunchOptions, type PlatformRegistration } from "../src/tool/index.js";
 import {
   type Authenticated,
   CLIENT_ID,
@@ -77,7 +77,7 @@ export async function cookieLogin(
   issue: Issue = {},
   initiation: Parameters<FakePlatform["initiation"]>[0] = {},
 ): Promise<{ auth: Authenticated; cookie: string; request: HttpRequest; response: HttpResponse }> {
-  const response = await ltiLogin(ctx.platform.initiation(initiation), ctx.options);
+  const response = await handleLogin(ctx.platform.initiation(initiation), ctx.options);
   const auth = await ctx.platform.authenticate(response.headers.location ?? "", issue);
   const cookie = cookieOf(response.headers["set-cookie"]);
   return { auth, cookie, request: auth.post({ cookie }), response };
@@ -101,7 +101,7 @@ export async function storageLogin(
   ctx: Setup,
   issue: Issue = {},
 ): Promise<{ auth: Authenticated; config: Record<string, string>; storage: PlatformStorage; response: HttpResponse }> {
-  const response = await ltiLogin(ctx.platform.initiation({ storageTarget: "lti-storage" }), ctx.options);
+  const response = await handleLogin(ctx.platform.initiation({ storageTarget: "lti-storage" }), ctx.options);
   const { config } = readPage(response);
   const storage = new PlatformStorage();
   storage.put(TOOL_ORIGIN, `state_${config.state}`, config.state ?? "");

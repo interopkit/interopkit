@@ -6,5 +6,5 @@
  */
 export { type CaseClient, createCaseClient, type SelectedDocument } from "./client.js";
 export type { CaseClientConfig } from "./config.js";
-export { caseFilter } from "./query.js";
+export { writeCaseFilter } from "./query.js";
 export { readStatusInfo, type StatusDetail } from "./status.js";

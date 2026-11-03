@@ -9,8 +9,8 @@ validates the launch of every message type, with the versions, the message types
 host accepts, binds it to the deployment and the target of its login, refuses the platform's authentication error and a form
 above `maxFormBytes`, and verifies the LTI 1.1 migration claim with the host's secret. It signs with the `Signer` of each
 registration, serves its key set with every key of a rotation (`serveToolJwks`), answers a Deep Linking request with the page that posts
-the signed response (`createDeepLinkResponse`, which holds the items of the five types and of others to what the request accepts),
-sends a proctored candidate back with the page that posts the signed Start Assessment message (`createStartAssessmentPage`, which
+the signed response (`buildDeepLinkingResponse`, which holds the items of the five types and of others to what the request accepts),
+sends a proctored candidate back with the page that posts the signed Start Assessment message (`buildStartAssessmentPage`, which
 returns the session data and holds the verified claims to the values that the platform sent), and calls the Assignment and
 Grade Services with `createServiceClient`: the line items of a context in pages, created, read, replaced and deleted, their
 results, and scores, with `advanceScoreTimestamp` for strictly later timestamps. It asks for the narrowest scope that a call
@@ -25,7 +25,7 @@ Control Service of a proctored attempt, whose request it reads back against Proc
 tool's registration at its client configuration endpoint. A tool registers itself with a platform through Dynamic Registration in
 steps: `readRegistrationInitiation`, `discoverPlatform`, which fetches no address of a private host and accepts the configuration only
 below its issuer, `registerTool`, which sends the registration token only to the issuer's origin or the host's `registrationOrigins`,
-`toPlatformRegistration`, which makes the tool's record of the platform, and `createRegistrationClosePage`. The platform role launches tools: `ltiPlatformLogin` keeps a message of five types (a resource link
+`buildPlatformRegistration`, which makes the tool's record of the platform, and `buildRegistrationClosePage`. The platform role launches tools: `prepareToolLaunch` keeps a message of five types (a resource link
 launch, a submission review request, a Deep Linking request whose data seals its settings and the host's data, a Start Proctoring message whose session data
 seals the attempt, and an End Assessment message) in the host's `LaunchStore` for 300 seconds and starts the tool's login, and
 `handlePlatformRequest` answers every request to the platform's origin: the tool's authentication request, with the `id_token`
@@ -47,11 +47,11 @@ the host's own data, holds the items, each read by its type, to those settings a
 the host compares with its session.
 `readStartAssessment` reads the Start Assessment message that a proctoring tool posts in the same way, opens the session data that
 the Start Proctoring message sealed, holds the resource link and the attempt to it, and returns the subject that the host compares
-with its session. With a `RegistrationStore`, the platform serves Dynamic Registration: `createRegistrationInitiation` gives a tool's
+with its session. With a `RegistrationStore`, the platform serves Dynamic Registration: `buildRegistrationInitiation` gives a tool's
 initiation URL a registration token for one registration, the OpenID configuration lies below the issuer with the scopes of the
 services that the platform offers, `/registration` spends the token before it reads the body, refuses an address of the tool that
 names no public host or lies on an origin of the platform, and narrows the scopes before the store registers the tool, and
-`/registration/{client}` reads and updates the calling tool's registration with a token of `lti-reg` when the store has `get` and `update`, which are optional; `toToolRegistration` makes the
+`/registration/{client}` reads and updates the calling tool's registration with a token of `lti-reg` when the store has `get` and `update`, which are optional; `buildToolRegistration` makes the
 record of a reviewed tool. It substitutes the variables of LTI
 Core Appendix B that the message answers and those that the host resolves, signs the LTI 1.1 migration claim with a secret that
 it does not keep, opens what an earlier hint key sealed, and refuses an algorithm that the tool's registration does not list.
@@ -59,7 +59,7 @@ it does not keep, opens what an earlier hint key sealed, and refuses an algorith
 an `HttpResponse` of `@interopkit/core/http`, with request bodies as bytes; stores, registrations, `fetch` and the clock are
 ports, and each takes a `signal` that ends the caller's wait. It is not certified by 1EdTech.
 
-The messages of both roles have one model. `LtiMessage` is what a platform sends and `ltiLaunch` returns: a resource link
+The messages of both roles have one model. `LtiMessage` is what a platform sends and `handleLaunch` returns: a resource link
 launch, a Deep Linking request with its ten settings, a submission review request, and the Start Proctoring and End Assessment
 messages, with the user and the `actual_user` of an impersonation, the context, the organization, the platform instance, the
 launch presentation, the LIS identifiers, the custom properties, the claims of the grade, roster, groups and preferences

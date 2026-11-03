@@ -1,6 +1,6 @@
 import { callPort, DataError, readClock, ServiceError } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
-import { type HttpRequest, type HttpResponse, jsonResponse, readForm } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpRequest, type HttpResponse, readForm } from "@interopkit/core/http";
 import { LtiError } from "../errors.js";
 import {
   CLAIM,
@@ -190,7 +190,7 @@ export async function answerToken(request: HttpRequest, settings: PlatformSettin
       ["expires_in", ACCESS_TOKEN_TTL_SECONDS],
       ["scope", granted.join(" ")],
     ]);
-    return jsonResponse(200, body, NO_STORE);
+    return buildJsonResponse(200, body, NO_STORE);
   } catch (error) {
     if (error instanceof LtiError)
       return refusal(400, OAUTH_ERRORS.get(error.reason) ?? "invalid_client", error.message);

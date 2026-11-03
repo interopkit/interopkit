@@ -2,7 +2,7 @@ import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { expect } from "vitest";
 import { BAD_STRINGS, mutate, mutations } from "../../../scripts/json-mutation.js";
-import { type CaseVersion, readPackage, toCaseVersion, validatePackage } from "../src/index.js";
+import { type CaseVersion, convertCaseVersion, readPackage, validatePackage } from "../src/index.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
 export const RUNS = { seed: 20_241_102, numRuns: 300 };
@@ -92,7 +92,7 @@ export function readsAgainAsItself(version: CaseVersion, packages: fc.Arbitrary<
 export function convertsOrRefuses(values: fc.Arbitrary<Record<string, unknown>>): void {
   fc.assert(
     fc.property(values, mutations, (value, mutation) => {
-      returnsOrRefuses(() => toCaseVersion(mutate(value, mutation, BAD_STRINGS) as never, "1.0"));
+      returnsOrRefuses(() => convertCaseVersion(mutate(value, mutation, BAD_STRINGS) as never, "1.0"));
     }),
     { ...RUNS, numRuns: 100 },
   );

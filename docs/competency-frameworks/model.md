@@ -4,7 +4,7 @@
 exchanges, in the form of CASE 1.1. Its readers take JSON that was parsed from anywhere, check every property against the JSON
 schemas of 1EdTech and the rules of a package, and return a copy that shares nothing with the input. Its validators judge the
 same value and return every finding as data. CASE 1.0 is the same model without what 1.1 adds, so a package of either version is
-read into one model, and `toCaseVersion` takes a package or an entity back to the form of 1.0.
+read into one model, and `convertCaseVersion` takes a package or an entity back to the form of 1.0.
 
 ```mermaid
 flowchart TD
@@ -17,7 +17,7 @@ flowchart TD
   accepted --> readCopy["readPackage, readEntity<br/>return the copy"]
   errors --> validate["validatePackage, validateEntity<br/>return every finding"]
   accepted --> validate
-  readCopy --> convert["toCaseVersion"]
+  readCopy --> convert["convertCaseVersion"]
   convert --> form10["The 1.0 form<br/>dropped: what 1.0 cannot hold"]
 ```
 
@@ -25,7 +25,7 @@ flowchart TD
 | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `model`   | The types of the classes and sets, `CaseIssue`, `ASSOCIATION_TYPES`, `ENTITY_KINDS`, `CaseVersion`, `CASE_VERSIONS`, the query types `CaseQuery`, `CaseFilter` and `CaseCondition`, `OpenApiDocument` |
 | `read`    | `readPackage`, `readEntity`, `validatePackage`, `validateEntity`, `ReadOptions`                                                                                                                       |
-| `version` | `toCaseVersion`, `VersionedValue`, `Converted`                                                                                                                                                        |
+| `version` | `convertCaseVersion`, `VersionedValue`, `Converted`                                                                                                                                                        |
 
 All of them come from `@interopkit/competency-frameworks`. The package depends on `@interopkit/core` for the errors, the
 formats, the copy of JSON and the findings, and on `valibot` for the schemas. Its test suite reads the schemas of 1EdTech with
@@ -133,7 +133,7 @@ members of a set and among the parts of a rubric, and their form.
 
 ## Versions
 
-CASE 1.0 is read by the model of 1.1 with these differences, which `version: "1.0"` enforces and `toCaseVersion` removes.
+CASE 1.0 is read by the model of 1.1 with these differences, which `version: "1.0"` enforces and `convertCaseVersion` removes.
 
 | Class or property                            | In 1.1                                          | In 1.0                                     |
 | -------------------------------------------- | ----------------------------------------------- | ------------------------------------------ |
@@ -157,7 +157,7 @@ be JSON: a function, `undefined`, a number that JSON cannot write or an object t
 
 ### Converting to 1.0
 
-`toCaseVersion(value, "1.0")` takes a package or an entity of 1.1 and returns `{ value, dropped }`: the value in the form of
+`convertCaseVersion(value, "1.0")` takes a package or an entity of 1.1 and returns `{ value, dropped }`: the value in the form of
 1.0, which shares nothing with the input, and a warning for each thing that 1.0 cannot hold and was left out.
 
 | What 1.0 cannot hold                              | What the conversion does                                                      | `rule` of the report          |
@@ -173,7 +173,7 @@ The value is `undefined` for an association that has no form in 1.0 and for the 
 them has one: a provider answers that it has no such object. The type `Converted` says so.
 
 ```ts
-import { toCaseVersion } from "@interopkit/competency-frameworks";
+import { convertCaseVersion } from "@interopkit/competency-frameworks";
 
 const association = {
   identifier: "6a1f0c2e-9d84-4b37-8e5a-3c7b1d9f0a42",
@@ -183,7 +183,7 @@ const association = {
   destinationNodeURI: { title: "Fractions in Spanish", identifier: "b7d2f6a0-3c4e-4f1a-9e8d-0a1b2c3d4e5f", uri: "https://estandares.example.org/items/1" },
   lastChangeDateTime: "2024-06-13T18:46:03+00:00",
 };
-const converted = toCaseVersion(association, "1.0");
+const converted = convertCaseVersion(association, "1.0");
 converted.value; // => undefined
 converted.dropped.map((finding) => finding.rule); // => ["association-type-not-in-1.0"]
 ```
@@ -200,7 +200,7 @@ The conversion reads the structure of the value as far as it converts it: the li
 | Limit                                       | Value | Refused with                        |
 | ------------------------------------------- | ----- | ----------------------------------- |
 | Levels that the value of an extension nests | 64    | `invalid-value` at the `extensions` |
-| Levels that `toCaseVersion` reads           | 64    | `DataError`                         |
+| Levels that `convertCaseVersion` reads           | 64    | `DataError`                         |
 
 The size of what is read is the caller's: the readers take a value that was already parsed, so the caller limits the bytes
 and the depth of the text that it parses. The walk over `isChildOf` keeps its own stack, so a chain of any length does not
@@ -215,8 +215,8 @@ exhaust the stack of the host.
 | `options` is not an object, has a property other than `version` and `maxFindings`, or `version` is not `"1.0"` or `"1.1"`, or `maxFindings` is not a positive integer                                                             | `DataError`: `The read options is invalid at version: expected "1.0" or "1.1", found "2.0".`                                                                                                                      |
 | The kind of `readEntity` or `validateEntity` is not one of `ENTITY_KINDS`                                                                                           | `DataError` that lists the kinds                                                                                                                                                                                  |
 | `validatePackage` or `validateEntity` is given a value that is not a package or an entity                                                                           | The findings. It does not throw                                                                                                                                                                                   |
-| `toCaseVersion` is given a version other than `"1.0"`, a value that is not an object, a list or object of the wrong type, or a value that nests more than 64 levels | `DataError` that names the path and what was expected: `CFItems must be an array, found an object.`                                                                                                               |
-| `toCaseVersion` meets a property that JSON cannot hold                                                                                                              | `DataError` that names the property                                                                                                                                                                               |
+| `convertCaseVersion` is given a version other than `"1.0"`, a value that is not an object, a list or object of the wrong type, or a value that nests more than 64 levels | `DataError` that names the path and what was expected: `CFItems must be an array, found an object.`                                                                                                               |
+| `convertCaseVersion` meets a property that JSON cannot hold                                                                                                              | `DataError` that names the property                                                                                                                                                                               |
 
 ## Not included
 

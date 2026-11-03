@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages are snake_case.
 
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
 import { afterEach, describe, expect, inject, it } from "vitest";
 import { createJwksCache } from "../src/index.js";
@@ -9,11 +9,11 @@ import {
   buildPlatformEndpoints,
   handlePlatformRequest,
   type LaunchStore,
-  ltiPlatformLogin,
   type MessageInput,
   type PlatformConfig,
   type PlatformLoginOptions,
   type PlatformRequestOptions,
+  prepareToolLaunch,
   type ToolRegistration,
 } from "../src/platform/index.js";
 import { hostileOrigin as hostile, requestsTo, seenBy } from "./hostile.js";
@@ -46,7 +46,7 @@ const config: PlatformConfig = {
   frameOrigin: "https://app.platform.example",
   reservedOrigins: ["https://assets.platform.example"],
   keys: {
-    signer: signerFromCryptoKey(pair.privateKey, { algorithm: "ES256", keyId: "platform-1" }),
+    signer: createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "platform-1" }),
     publicKeys: [{ ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid: "platform-1" } as JsonWebKey],
   },
   hintKey: await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]),
@@ -93,7 +93,7 @@ function platform(path: string): { login: PlatformLoginOptions; requests: Platfo
 /** Makes the platform answer the authentication request of a launch with the given `state`. */
 async function answer(path: string, state: string): Promise<HttpResponse> {
   const { login, requests } = platform(path);
-  const initiation = new URL(await ltiPlatformLogin(message, login));
+  const initiation = new URL(await prepareToolLaunch(message, login));
   const parameters = new URLSearchParams([
     ["scope", "openid"],
     ["response_type", "id_token"],

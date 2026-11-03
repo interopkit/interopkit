@@ -13,6 +13,6 @@ const CLOSE_SCRIPT = `(window.opener || window.parent).postMessage({ subject: "o
  * @see {@link https://www.imsglobal.org/spec/lti-dr/v1p0 | LTI Dynamic Registration 1.0}
  * @returns The page, under a policy that allows its script by hash and no form.
  */
-export function createRegistrationClosePage(): Promise<HttpResponse> {
+export function buildRegistrationClosePage(): Promise<HttpResponse> {
   return renderPage({ body: "", script: CLOSE_SCRIPT, formAction: "'none'" });
 }

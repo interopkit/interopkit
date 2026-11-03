@@ -17,7 +17,7 @@
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { loadList, schemaDirectory } from "../../../scripts/schemas.js";
 import { readSpecPage } from "../../../scripts/spec-examples.js";
@@ -122,7 +122,7 @@ describe("the vectors of eddsa-rdfc-2022", () => {
       true,
       ["sign"],
     );
-    return { key, signer: signerFromCryptoKey(key, { algorithm: "EdDSA", keyId }) };
+    return { key, signer: createCryptoKeySigner(key, { algorithm: "EdDSA", keyId }) };
   }
 
   it("holds the vectors that the tests sign: the alumni credential and the credential of an employment authorization", () => {

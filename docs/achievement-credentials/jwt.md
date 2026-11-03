@@ -37,7 +37,7 @@ The functions come from `@interopkit/achievement-credentials/jwt`, and `ProofRes
 import { buildAchievementCredential } from "@interopkit/achievement-credentials";
 import { readCredentialJwt, signCredentialJwt } from "@interopkit/achievement-credentials/jwt";
 import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
-import { signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner } from "@interopkit/core";
 
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
 const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
@@ -67,7 +67,7 @@ const credential = buildAchievementCredential({
     criteria: { narrative: "Pass the final assessment." },
   },
 });
-const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "ES256" });
+const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256" });
 const jws = await signCredentialJwt(credential, signer, { kid: `${issuer}#key-1` });
 jws.split(".").length; // => 3
 

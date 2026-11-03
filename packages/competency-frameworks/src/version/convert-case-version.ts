@@ -21,7 +21,7 @@ export interface VersionedValue<TValue> {
 }
 
 /**
- * The type of what `toCaseVersion` returns for an entity: an association, and a set of the associations of an item, may
+ * The type of what `convertCaseVersion` returns for an entity: an association, and a set of the associations of an item, may
  * have no form in 1.0.
  */
 export type Converted<TValue> = TValue extends CFAssociation | CFAssociationSet ? TValue | undefined : TValue;
@@ -282,16 +282,16 @@ function convertAssociations(
  * has the wrong type or nests more than `MAX_JSON_DEPTH` levels, or a property that it copies is not JSON.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1, section 1.3}
  */
-export function toCaseVersion(value: CasePackage, version: "1.0"): VersionedValue<CasePackage>;
-export function toCaseVersion<TEntity extends CaseEntity>(
+export function convertCaseVersion(value: CasePackage, version: "1.0"): VersionedValue<CasePackage>;
+export function convertCaseVersion<TEntity extends CaseEntity>(
   value: TEntity,
   version: "1.0",
 ): VersionedValue<Converted<TEntity>>;
-export function toCaseVersion(
+export function convertCaseVersion(
   value: CasePackage | CaseEntity,
   version: "1.0",
 ): VersionedValue<CasePackage | CaseEntity | undefined>;
-export function toCaseVersion(value: unknown, version: unknown): VersionedValue<unknown> {
+export function convertCaseVersion(value: unknown, version: unknown): VersionedValue<unknown> {
   parseWith(versionSchema, version, "The version");
   checkRecord(value, "The value must be an object");
   const dropped: CaseIssue[] = [];

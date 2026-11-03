@@ -9,7 +9,7 @@ import { addProof } from "@interopkit/achievement-credentials/data-integrity";
 import { signCredentialJwt } from "@interopkit/achievement-credentials/jwt";
 import { handleRefreshRequest } from "@interopkit/achievement-credentials/refresh";
 import type { Clock, Random } from "@interopkit/core";
-import { type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 import type { SigningKey } from "./keys.ts";
 import { createStatusLists, dateTimeOf, type StatusEntry } from "./status-lists.ts";
 
@@ -108,7 +108,7 @@ export function createUniversity(config: UniversityConfig): University {
     issuer,
     async handle(request) {
       const { pathname } = new URL(request.url);
-      if (pathname === "/issuers/1") return jsonResponse(200, controller);
+      if (pathname === "/issuers/1") return buildJsonResponse(200, controller);
       if (pathname.startsWith("/refresh/")) {
         return await handleRefreshRequest(request, {
           refresh: async (id) => {

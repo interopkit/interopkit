@@ -17,7 +17,7 @@ flowchart LR
     api["createWallet<br/>handleCredentialsRequest,<br/>verify before it stores"]
   end
   subgraph employer["Employer"]
-    review["createEmployer<br/>createCredentialsClient,<br/>verifyCredential, credentialSummary"]
+    review["createEmployer<br/>createCredentialsClient,<br/>verifyCredential, summarizeCredential"]
   end
   subgraph guild["Guild"]
     hosted["Open Badges 2.0 badge:<br/>assertion, BadgeClass, issuer"]

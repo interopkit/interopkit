@@ -3,8 +3,8 @@
 `@interopkit/achievement-credentials` writes the credentials that an issuer awards and looks at the credentials that a host
 holds. Three builders write an AchievementCredential, an EndorsementCredential and a ClrCredential around the parts that the
 issuer gives, and check what they wrote as `readCredential` does. `hashIdentifier` and `matchesIdentifier` hash and match the
-recipient of a credential. `caseAlignment` aligns an achievement to an item of a CASE framework. `sameCredential` and
-`newerCredential` compare two credentials as Open Badges 10 asks, and `credentialSummary` gives what a wallet shows.
+recipient of a credential. `buildCaseAlignment` aligns an achievement to an item of a CASE framework. `isSameCredential` and
+`selectNewerCredential` compare two credentials as Open Badges 10 asks, and `summarizeCredential` gives what a wallet shows.
 
 ```mermaid
 flowchart LR
@@ -15,13 +15,13 @@ flowchart LR
   check -->|"a fault"| refused
   check -->|"sound"| credential["A credential: a copy,<br/>without a proof"]
   credential --> signer["A signer adds the proof"]
-  credential --> compare["sameCredential, newerCredential,<br/>credentialSummary"]
+  credential --> compare["isSameCredential, selectNewerCredential,<br/>summarizeCredential"]
 ```
 
 | Module    | Holds                                                                                                                       |
 | --------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `issue`   | `buildAchievementCredential`, `buildEndorsementCredential`, `buildClrCredential`, `caseAlignment`, `hashIdentifier`, `matchesIdentifier`, the inputs |
-| `compare` | `sameCredential`, `newerCredential`, `credentialSummary`, `CredentialSummary`                                               |
+| `issue`   | `buildAchievementCredential`, `buildEndorsementCredential`, `buildClrCredential`, `buildCaseAlignment`, `hashIdentifier`, `matchesIdentifier`, the inputs |
+| `compare` | `isSameCredential`, `selectNewerCredential`, `summarizeCredential`, `CredentialSummary`                                               |
 
 All of them come from `@interopkit/achievement-credentials`. Nothing here reads a clock, draws a random number or makes a
 request: the dates are the issuer's, and the hash is a function of its arguments.
@@ -31,12 +31,12 @@ request: the dates are the issuer's, and the hash is a function of its arguments
 ```ts
 import {
   buildAchievementCredential,
-  caseAlignment,
-  credentialSummary,
+  buildCaseAlignment,
   hashIdentifier,
+  isSameCredential,
   matchesIdentifier,
-  newerCredential,
-  sameCredential,
+  selectNewerCredential,
+  summarizeCredential,
 } from "@interopkit/achievement-credentials";
 
 const hash = hashIdentifier("learner@example.edu", "Kosher");
@@ -56,7 +56,7 @@ const credential = buildAchievementCredential({
     name: "Fractions",
     description: "Understands fractions as numbers.",
     criteria: { narrative: "Pass the final assessment." },
-    alignment: [caseAlignment({ uri: "https://standards.example.org/ims/case/v1p1/CFItems/2b6d1c9e", name: "Understand fractions", code: "3.NF.A.1" })],
+    alignment: [buildCaseAlignment({ uri: "https://standards.example.org/ims/case/v1p1/CFItems/2b6d1c9e", name: "Understand fractions", code: "3.NF.A.1" })],
   },
 });
 credential.type; // => ["VerifiableCredential", "OpenBadgeCredential"]
@@ -65,11 +65,11 @@ const recipients = credential.credentialSubject.identifier ?? [];
 recipients.some((recipient) => matchesIdentifier(recipient, { type: "emailAddress", value: "learner@example.edu" })); // => true
 recipients.some((recipient) => matchesIdentifier(recipient, { type: "emailAddress", value: "other@example.edu" })); // => false
 
-credentialSummary(credential).name; // => "Fractions badge"
+summarizeCredential(credential).name; // => "Fractions badge"
 
 const reissued = { ...credential, validFrom: "2024-07-01T00:00:00Z" };
-sameCredential(credential, reissued); // => true
-newerCredential(credential, reissued) === reissued; // => true
+isSameCredential(credential, reissued); // => true
+selectNewerCredential(credential, reissued) === reissued; // => true
 ```
 
 ## The builders
@@ -103,7 +103,7 @@ With compact JWS strings, `buildClrCredential` returns the payload of that JWT (
 The `id` must be an absolute URI. The specification leaves the `id` open, but a credential whose address is relative cannot
 be compared with another or fetched, and the builders refuse it.
 
-`caseAlignment({ uri, name, code?, framework? })` writes an `Alignment` with `targetType: "CFItem"`, `targetUrl` the address of
+`buildCaseAlignment({ uri, name, code?, framework? })` writes an `Alignment` with `targetType: "CFItem"`, `targetUrl` the address of
 the item, `targetName`, and `targetCode` and `targetFramework` when given. The item is plain strings, so that no CASE package
 is needed.
 
@@ -120,14 +120,14 @@ holds it.
 
 ## Comparing
 
-`sameCredential(a, b)` is true when the two credentials have the same `id` and the same issuer, compared after the
+`isSameCredential(a, b)` is true when the two credentials have the same `id` and the same issuer, compared after the
 percent-encoded characters are unescaped and the white space around them is trimmed (Open Badges 10). A credential with no `id`
-is the same as none. `newerCredential(a, b)` returns the one of two equal credentials with the later `validFrom`, compared as
+is the same as none. `selectNewerCredential(a, b)` returns the one of two equal credentials with the later `validFrom`, compared as
 instants, so that an offset does not matter; when they are the same instant it returns the first. It returns the argument
 itself. Under the Verifiable Credentials Data Model 1.1 the later `issuanceDate` counts, so a store that keeps what a provider
 received compares the credentials of both models alike.
 
-`credentialSummary(credential)` returns what a wallet shows: the `kind` (`badge`, `clr` or `endorsement`), the `name`,
+`summarizeCredential(credential)` returns what a wallet shows: the `kind` (`badge`, `clr` or `endorsement`), the `name`,
 `description` and `image` of the credential or, for an achievement credential that has none, of its achievement, the `issuer`
 and its name, and the dates: `validFrom`, `validUntil` and, when the credential names one, the `awardedDate`, which a displayer
 shows as the date of issue since a reissue moves `validFrom` (OB B.1.2). It reads a credential under either Verifiable
@@ -141,9 +141,9 @@ Credentials data model; `validFrom` is `issuanceDate` under 1.1.
 | The credential that a builder wrote has a fault, such as a subject with neither an `id` nor an `identifier` | `DataError`: `The credential is invalid: credentialSubject: has neither an id nor an identifier ...`                                                      |
 | An input nests more than 64 levels or holds what JSON cannot                                           | `DataError` that says where                                                                                                                               |
 | `hashIdentifier` or `matchesIdentifier` is given an argument of the wrong type                         | `DataError` that names it: `The identifier is invalid: expected a string, found 5.`                                                                       |
-| `sameCredential` or `newerCredential` is given a value that is not an object with an `issuer`          | `DataError`: `The first credential is invalid: expected an object, found null.`                                                                           |
-| `newerCredential` is given credentials that are not the same, or one with no `validFrom` that is a date and time | `DataError`: `The credentials are not the same credential: they differ in id or in the id of the issuer.`                                              |
-| `credentialSummary` is given a value that is not a credential, or a `VerifiableCredential` of no class of Open Badges or CLR | `DataError`, from the reader or: `The credential is a VerifiableCredential of no class that Open Badges or CLR defines, so there is nothing to show.` |
+| `isSameCredential` or `selectNewerCredential` is given a value that is not an object with an `issuer`          | `DataError`: `The first credential is invalid: expected an object, found null.`                                                                           |
+| `selectNewerCredential` is given credentials that are not the same, or one with no `validFrom` that is a date and time | `DataError`: `The credentials are not the same credential: they differ in id or in the id of the issuer.`                                              |
+| `summarizeCredential` is given a value that is not a credential, or a `VerifiableCredential` of no class of Open Badges or CLR | `DataError`, from the reader or: `The credential is a VerifiableCredential of no class that Open Badges or CLR defines, so there is nothing to show.` |
 
 ## Limits
 
@@ -163,8 +163,8 @@ Credentials data model; `validFrom` is `issuanceDate` under 1.1.
 ## Differences from the references
 
 The reference is the text of Open Badges 3.0 and its examples, which the tests read at pinned hashes: the credentials that the
-page prints are rebuilt from their parts, and the examples of section 10.1 give the verdicts of `sameCredential` and
-`newerCredential`. The hash is checked against the example of the specification and against another implementation.
+page prints are rebuilt from their parts, and the examples of section 10.1 give the verdicts of `isSameCredential` and
+`selectNewerCredential`. The hash is checked against the example of the specification and against another implementation.
 
 | Case                                                       | The references                                                                                                          | This package                                                                                               |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |

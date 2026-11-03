@@ -11,42 +11,42 @@ sequenceDiagram
   participant B as Browser
   participant T as Tool
   participant P as Platform handlers
-  H->>P: ltiPlatformFrame(message)
+  H->>P: prepareToolFrame(message)
   P-->>H: login URL, storage URL; the message kept
-  B->>T: login URL (ltiLogin)
+  B->>T: login URL (handleLogin)
   T-->>B: page: keep state and nonce in the platform's storage
   B->>P: authentication request (handlePlatformRequest)
   P-->>B: page: post the id_token
-  B->>T: id_token and state (ltiLaunch)
+  B->>T: id_token and state (handleLaunch)
   T-->>B: page: fetch the stored values
   B->>T: id_token, state and the stored values
   T->>P: the key set, a token, the line item, the score, the results (handlePlatformRequest)
   P->>H: GradebookStore: lineItem, keepScore, results
   T->>P: the members, the groups, the record of needs (handlePlatformRequest)
   P->>H: RosterStore, GroupStore, PreferencesStore
-  H->>P: ltiPlatformFrame(LtiDeepLinkingRequest)
+  H->>P: prepareToolFrame(LtiDeepLinkingRequest)
   B->>T: the same login and launch
-  T-->>B: createDeepLinkResponse: page that posts the signed JWT to the return URL
+  T-->>B: buildDeepLinkingResponse: page that posts the signed JWT to the return URL
   B->>H: POST JWT to the host's route
   H->>P: readDeepLinkingResponse: the items and the data of the host
-  H->>P: ltiPlatformFrame(LtiStartProctoring), with the Assessment Control Service
+  H->>P: prepareToolFrame(LtiStartProctoring), with the Assessment Control Service
   B->>T: the same login and launch
-  T-->>B: createStartAssessmentPage: page that posts the signed JWT to the start assessment URL
+  T-->>B: buildStartAssessmentPage: page that posts the signed JWT to the start assessment URL
   B->>H: POST JWT to the host's route
   H->>P: readStartAssessment: the attempt starts
   T->>P: control: pause (handlePlatformRequest)
   P->>H: AssessmentControl.control
-  H->>P: ltiPlatformFrame(LtiSubmissionReviewRequest)
+  H->>P: prepareToolFrame(LtiSubmissionReviewRequest)
   B->>T: the same login and launch
   T->>P: the line item and the result of the user (handlePlatformRequest)
-  H->>P: ltiPlatformFrame(LtiEndAssessment)
+  H->>P: prepareToolFrame(LtiEndAssessment)
   B->>T: the same login and launch
-  H->>P: createRegistrationInitiation(the second tool's initiation URL)
+  H->>P: buildRegistrationInitiation(the second tool's initiation URL)
   B->>T: initiation URL with openid_configuration and registration_token
   T->>P: discoverPlatform, registerTool (handlePlatformRequest)
   P->>H: RegistrationStore.register
-  T-->>B: createRegistrationClosePage
-  H->>H: toToolRegistration: the administrator activates the tool
+  T-->>B: buildRegistrationClosePage
+  H->>H: buildToolRegistration: the administrator activates the tool
   T->>P: getToolRegistration, with a token of registration.readonly
 ```
 
@@ -59,7 +59,7 @@ sequenceDiagram
 | `src/gradebook.ts` | A `GradebookStore` in memory, which keeps a score unless a later one is kept                                                            |
 | `src/roster.ts`   | A `RosterStore`, a `GroupStore` and a `PreferencesStore` in memory, over one course                                                       |
 | `src/proctoring.ts` | An `AssessmentControl` in memory over the attempts of proctored assessments                                                             |
-| `src/registration.ts` | A `RegistrationStore` in memory, and the activation of a registered tool with `toToolRegistration`                                    |
+| `src/registration.ts` | A `RegistrationStore` in memory, and the activation of a registered tool with `buildToolRegistration`                                    |
 | `src/registering-tool.ts` | A second tool that registers itself: its initiation route, its key set, its record of the platform and the read of its registration |
 | `src/tool-setup.ts` | The tool's registration of the platform, its store of logins and its key set cache                                                      |
 | `src/keys.ts`     | The keys that each side generates for itself: ES256 for the tools, RS256 and HMAC for the platform, since Dynamic Registration needs RS256 |

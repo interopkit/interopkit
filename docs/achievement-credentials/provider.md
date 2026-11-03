@@ -141,8 +141,8 @@ JSON.parse(String(answers.at(-1)?.body)).credential.length; // => 1
 
 Mount the handler on one route for everything below `basePath`, build an `HttpRequest` from the request of your framework with
 the public address of the request, and send the `HttpResponse` that it returns. The store of the sample keys a credential by its
-`id`; a store finds the same credential with `sameCredential`, which compares the `id` and the issuer (OB 10), keeps the newer of
-two with `newerCredential`, and answers `"unchanged"` when it keeps the one it holds.
+`id`; a store finds the same credential with `isSameCredential`, which compares the `id` and the issuer (OB 10), keeps the newer of
+two with `selectNewerCredential`, and answers `"unchanged"` when it keeps the one it holds.
 
 ## The endpoints
 
@@ -243,8 +243,8 @@ a `ClrCredential`; a credential of another kind, such as an endorsement, is 422.
 compact JWS (CLR 7.2.4.1).
 
 The store receives a `ReceivedCredential`: `received` is the compact JWS or the parsed JSON object as the request carried it,
-which the store keeps and lists, so that a proof still verifies; `credential` is the model of it, which `sameCredential` and
-`newerCredential` compare (OB 10). Without `verify`, the provider checks the form and the kind and not the proof: a host that
+which the store keeps and lists, so that a proof still verifies; `credential` is the model of it, which `isSameCredential` and
+`selectNewerCredential` compare (OB 10). Without `verify`, the provider checks the form and the kind and not the proof: a host that
 stores what a user uploads for that user alone may want only that, and a host that shows a credential to others verifies it
 when it shows it or here.
 

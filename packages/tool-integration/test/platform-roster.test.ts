@@ -4,10 +4,10 @@ import { DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { SCOPES } from "../src/index.js";
 import {
-  ltiPlatformLogin,
   type MessageInput,
   type PlatformRequestOptions,
   type PlatformServices,
+  prepareToolLaunch,
 } from "../src/platform/index.js";
 import { readMessage } from "../src/protocol/internal.js";
 import { clientAssertion, TOOL_CLIENT_ID, TOOL_DEPLOYMENT_ID, tokenRequest, toolRegistration } from "./fake-tool.js";
@@ -141,14 +141,14 @@ describe("the claims of the roster services", () => {
   it("needs the context for the roster and the groups, and not for the connector", async () => {
     const ctx = served();
     const noContext = { ...baseMessage, context: undefined };
-    await expect(ltiPlatformLogin({ ...noContext, services: { roster: true } }, ctx.login)).rejects.toThrow(
+    await expect(prepareToolLaunch({ ...noContext, services: { roster: true } }, ctx.login)).rejects.toThrow(
       "offers the roster services, which need its context",
     );
     await expect(
-      ltiPlatformLogin({ ...noContext, services: { roster: true, groups: { sets: false } } }, ctx.login),
+      prepareToolLaunch({ ...noContext, services: { roster: true, groups: { sets: false } } }, ctx.login),
     ).rejects.toThrow("offers the roster and group services, which need its context");
     const connector = { ...noContext, services: { preferences: { activityIds: ["activity-1"] } } };
-    await expect(ltiPlatformLogin(connector, ctx.login)).resolves.toEqual(expect.any(String));
+    await expect(prepareToolLaunch(connector, ctx.login)).resolves.toEqual(expect.any(String));
   });
 
   it("refuses a message whose services are of other types or lack what they need", async () => {
@@ -165,7 +165,7 @@ describe("the claims of the roster services", () => {
     ];
     for (const services of bad) {
       const message = JSON.parse(JSON.stringify({ ...baseMessage, services }));
-      await expect(ltiPlatformLogin(message, ctx.login), JSON.stringify(services)).rejects.toThrow(DataError);
+      await expect(prepareToolLaunch(message, ctx.login), JSON.stringify(services)).rejects.toThrow(DataError);
     }
   });
 

@@ -11,7 +11,7 @@ export { handleFetchRequest } from "./handle-fetch-request.js";
 export { type ImportInput, importCourse } from "./import-course.js";
 export type { LmsOptions } from "./options.js";
 export { type Launch, type LaunchInput, prepareLaunch } from "./prepare-launch.js";
-export { type CourseProgress, progressOf } from "./progress.js";
+export { type CourseProgress, deriveCourseProgress } from "./progress.js";
 export {
   type AuOutcome,
   type Cmi5Store,

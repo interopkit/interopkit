@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { refusalOf } from "@interopkit/core/checks";
+import { describeRefusal } from "@interopkit/core/checks";
 import type { CredentialIssue, Entity, EntityByKind, EntityKind } from "../model/index.js";
 import { inspectEntity, issueSink } from "./inspect.js";
 import { type EntityReadOptions, readEntityKind, readEntityLimit } from "./options.js";
@@ -33,7 +33,7 @@ export function readEntity(kind: EntityKind, value: unknown, options?: EntityRea
   const entity = inspectEntity(checkedKind, value, sink);
   const errors = sink.list();
   if (entity === undefined || errors.length > 0) {
-    throw new DataError(refusalOf(`The ${checkedKind}`, errors, "validateEntity"));
+    throw new DataError(describeRefusal(`The ${checkedKind}`, errors, "validateEntity"));
   }
   return entity;
 }

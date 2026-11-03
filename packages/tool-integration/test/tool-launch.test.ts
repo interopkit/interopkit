@@ -3,14 +3,14 @@
 import { type CallOptions, DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { signConsumerKey } from "../src/protocol/internal.js";
-import { ltiLaunch, ltiLogin } from "../src/tool/index.js";
+import { handleLaunch, handleLogin } from "../src/tool/index.js";
 import { CLIENT_ID, DEPLOYMENT_ID, formPost, ISSUER, JWKS_URL, TARGET_LINK_URI } from "./fake-platform.js";
 import { request } from "./fixture.js";
 import { cookieLogin, launchOf, type Options, setup } from "./tool-setup.js";
 
 /**
  * The rules that bind a launch to its login, the platform's authentication error, the size of the form, and what the
- * registration and the options of `ltiLaunch` accept: versions, other message types, audiences, algorithms and the LTI 1.1
+ * registration and the options of `handleLaunch` accept: versions, other message types, audiences, algorithms and the LTI 1.1
  * migration claim. The expectations come from LTI 1.3 Core sections 4.1.2 and 5.3.4, the Security Framework 1.1 sections
  * 5.1.1.5 and 5.1.3, and the worked example of the Migration Guide.
  */
@@ -22,7 +22,7 @@ describe("the login that a launch answers", () => {
   it("keeps the deployment and the target of the initiation, and refuses a launch of another deployment", async () => {
     const ctx = setup({ deploymentIds: [DEPLOYMENT_ID, OTHER_DEPLOYMENT] });
     const { request: post } = await cookieLogin(ctx, { claims: { [`${CLAIM}deployment_id`]: OTHER_DEPLOYMENT } });
-    await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({
+    await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({
       name: "LtiError",
       reason: "deployment-mismatch",
       status: 403,
@@ -35,14 +35,14 @@ describe("the login that a launch answers", () => {
     const ctx = setup({ deploymentIds: [DEPLOYMENT_ID, OTHER_DEPLOYMENT] });
     const issue = { claims: { [`${CLAIM}deployment_id`]: OTHER_DEPLOYMENT } };
     const { request: post } = await cookieLogin(ctx, issue, { deploymentId: null });
-    expect(launchOf(await ltiLaunch(post, ctx.options)).deploymentId).toBe(OTHER_DEPLOYMENT);
+    expect(launchOf(await handleLaunch(post, ctx.options)).deploymentId).toBe(OTHER_DEPLOYMENT);
   });
 
   it("refuses a launch whose target_link_uri is not the target of its login", async () => {
     const ctx = setup();
     const other = "https://tool.example.com/lti/elsewhere";
     const { request: post } = await cookieLogin(ctx, { claims: { [`${CLAIM}target_link_uri`]: other } });
-    await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({
+    await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({
       name: "LtiError",
       reason: "target-mismatch",
       status: 400,
@@ -53,7 +53,7 @@ describe("the login that a launch answers", () => {
   it("refuses a login for a deployment that the registration does not list, and keeps nothing", async () => {
     const ctx = setup();
     await expect(
-      ltiLogin(ctx.platform.initiation({ deploymentId: OTHER_DEPLOYMENT }), ctx.options),
+      handleLogin(ctx.platform.initiation({ deploymentId: OTHER_DEPLOYMENT }), ctx.options),
     ).rejects.toMatchObject({ name: "LtiError", reason: "deployment-unknown" });
     expect(ctx.store.records.size).toBe(0);
   });
@@ -61,7 +61,7 @@ describe("the login that a launch answers", () => {
   it("refuses a login whose target_link_uri is not an https URL, and keeps nothing", async () => {
     const ctx = setup();
     const initiation = ctx.platform.initiation({ targetLinkUri: "http://tool.example.com/lti" });
-    await expect(ltiLogin(initiation, ctx.options)).rejects.toStrictEqual(
+    await expect(handleLogin(initiation, ctx.options)).rejects.toStrictEqual(
       new DataError(
         'The target_link_uri of the login initiation must be an absolute https URL, found "http://tool.example.com/lti".',
       ),
@@ -72,7 +72,7 @@ describe("the login that a launch answers", () => {
   it("refuses an initiation form of more than 65,536 bytes before it is decoded", async () => {
     const ctx = setup();
     const post = ctx.platform.initiation({ method: "POST", messageHint: "h".repeat(65_536) });
-    await expect(ltiLogin(post, ctx.options)).rejects.toThrow(/above the limit of 65536 bytes/u);
+    await expect(handleLogin(post, ctx.options)).rejects.toThrow(/above the limit of 65536 bytes/u);
     expect(ctx.store.records.size).toBe(0);
   });
 });
@@ -80,17 +80,17 @@ describe("the login that a launch answers", () => {
 describe("the authentication error response of a platform", () => {
   it("is refused with its error and description, and leaves the login to expire", async () => {
     const ctx = setup();
-    const response = await ltiLogin(ctx.platform.initiation(), ctx.options);
+    const response = await handleLogin(ctx.platform.initiation(), ctx.options);
     const state = new URL(response.headers.location ?? "").searchParams.get("state") ?? "";
     const post = formPost({ error: "login_required", error_description: "The user is not logged in.", state });
-    await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({
+    await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({
       name: "LtiError",
       reason: "platform-error",
       status: 400,
       message:
         'The platform answered the authentication request with the error "login_required" ("The user is not logged in.").',
     });
-    await expect(ltiLaunch(formPost({ error: "invalid_request" }), ctx.options)).rejects.toMatchObject({
+    await expect(handleLaunch(formPost({ error: "invalid_request" }), ctx.options)).rejects.toMatchObject({
       reason: "platform-error",
       message: 'The platform answered the authentication request with the error "invalid_request".',
     });
@@ -107,10 +107,10 @@ describe("the size of the form of a launch", () => {
     const filler = (bytes: number) => "f".repeat(bytes - new URLSearchParams({ ...fields, pad: "" }).toString().length);
     const full = formPost({ ...fields, pad: filler(65_536) }, { cookie });
     expect(full.body.byteLength).toBe(65_536);
-    expect(launchOf(await ltiLaunch(full, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
+    expect(launchOf(await handleLaunch(full, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
     const over = formPost({ ...fields, pad: filler(65_537) }, { cookie });
     const gets = ctx.store.gets;
-    await expect(ltiLaunch(over, ctx.options)).rejects.toMatchObject({
+    await expect(handleLaunch(over, ctx.options)).rejects.toMatchObject({
       name: "LtiError",
       reason: "form-too-large",
       status: 400,
@@ -122,10 +122,12 @@ describe("the size of the form of a launch", () => {
   it("is what the option maxFormBytes says", async () => {
     const ctx = setup();
     const { request: post } = await cookieLogin(ctx);
-    await expect(ltiLaunch(post, { ...ctx.options, maxFormBytes: 100 })).rejects.toMatchObject({
+    await expect(handleLaunch(post, { ...ctx.options, maxFormBytes: 100 })).rejects.toMatchObject({
       reason: "form-too-large",
     });
-    expect(launchOf(await ltiLaunch(post, { ...ctx.options, maxFormBytes: post.body.byteLength })).issuer).toBe(ISSUER);
+    expect(launchOf(await handleLaunch(post, { ...ctx.options, maxFormBytes: post.body.byteLength })).issuer).toBe(
+      ISSUER,
+    );
   });
 });
 
@@ -133,10 +135,10 @@ describe("the versions and the message types that a launch accepts", () => {
   it("accepts the version of LTI 1.3 by default, and another version only when the option names it", async () => {
     const ctx = setup();
     const { request: post } = await cookieLogin(ctx, { claims: { [`${CLAIM}version`]: "1.3.1" } });
-    await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "version-unsupported" });
+    await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "version-unsupported" });
     const again = setup();
     const { request: second } = await cookieLogin(again, { claims: { [`${CLAIM}version`]: "1.3.1" } });
-    const launch = launchOf(await ltiLaunch(second, { ...again.options, versions: ["1.3.0", "1.3.1"] }));
+    const launch = launchOf(await handleLaunch(second, { ...again.options, versions: ["1.3.0", "1.3.1"] }));
     expect(launch.version).toBe("1.3.1");
   });
 
@@ -144,10 +146,10 @@ describe("the versions and the message types that a launch accepts", () => {
     const issue = { claims: { [`${CLAIM}message_type`]: "LtiEulaRequest", "https://vendor.example/eula": "v2" } };
     const ctx = setup();
     const { request: post } = await cookieLogin(ctx, issue);
-    await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "message-type-unsupported" });
+    await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "message-type-unsupported" });
     const again = setup();
     const { request: second } = await cookieLogin(again, issue);
-    const result = await ltiLaunch(second, { ...again.options, otherMessageTypes: ["LtiEulaRequest"] });
+    const result = await handleLaunch(second, { ...again.options, otherMessageTypes: ["LtiEulaRequest"] });
     if ("status" in result) throw new Error("The launch answered with a page.");
     expect(result.messageType).toBe("LtiEulaRequest");
     expect(result.claims["https://vendor.example/eula"]).toBe("v2");
@@ -160,19 +162,19 @@ describe("the audiences and the algorithms that a registration accepts", () => {
   it("accepts a second audience that the registration trusts, with the tool as the authorized party", async () => {
     const ctx = setup({ trustedAudiences: [TRUSTED] });
     const { request: post } = await cookieLogin(ctx, { claims: { aud: [CLIENT_ID, TRUSTED], azp: CLIENT_ID } });
-    expect(launchOf(await ltiLaunch(post, ctx.options)).clientId).toBe(CLIENT_ID);
+    expect(launchOf(await handleLaunch(post, ctx.options)).clientId).toBe(CLIENT_ID);
   });
 
   it("refuses an audience that the registration does not trust, and several audiences without azp", async () => {
     const untrusted = setup();
     const { request: first } = await cookieLogin(untrusted, { claims: { aud: [CLIENT_ID, TRUSTED], azp: CLIENT_ID } });
-    await expect(ltiLaunch(first, untrusted.options)).rejects.toMatchObject({
+    await expect(handleLaunch(first, untrusted.options)).rejects.toMatchObject({
       reason: "audience-untrusted",
       status: 401,
     });
     const trusted = setup({ trustedAudiences: [TRUSTED] });
     const { request: second } = await cookieLogin(trusted, { claims: { aud: [CLIENT_ID, TRUSTED], azp: undefined } });
-    await expect(ltiLaunch(second, trusted.options)).rejects.toMatchObject({
+    await expect(handleLaunch(second, trusted.options)).rejects.toMatchObject({
       reason: "authorized-party-missing",
       status: 401,
     });
@@ -181,7 +183,7 @@ describe("the audiences and the algorithms that a registration accepts", () => {
   it("refuses a token signed with an algorithm that the registration does not accept, before fetching a key", async () => {
     const ctx = setup({ algorithms: ["ES256", "ES384"] });
     const { request: post } = await cookieLogin(ctx);
-    await expect(ltiLaunch(post, ctx.options)).rejects.toMatchObject({
+    await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({
       reason: "algorithm-unsupported",
       message: "The token must be signed with one of ES256, ES384 (Security Framework sections 5.1.3 and 7.2).",
     });
@@ -233,7 +235,7 @@ describe("the LTI 1.1 migration claim", () => {
   it("is verified when the host's secret for the consumer key signs it, and the lookup gets the key and the signal", async () => {
     const { ctx, options, seen, signal } = migrating(async () => SECRET);
     const { request: post } = await cookieLogin(ctx, { amend: signed(SECRET) });
-    const launch = launchOf(await ltiLaunch(post, options));
+    const launch = launchOf(await handleLaunch(post, options));
     expect(launch.migration).toMatchObject({ userId: "34212", oauthConsumerKey: KEY, verified: true });
     expect(seen).toStrictEqual([{ key: KEY, signal }]);
   });
@@ -245,17 +247,17 @@ describe("the LTI 1.1 migration claim", () => {
     ] as const) {
       const { ctx, options } = migrating(lookup);
       const { request: post } = await cookieLogin(ctx, { amend: signed(secret) });
-      expect(launchOf(await ltiLaunch(post, options)).migration?.verified).toBe(false);
+      expect(launchOf(await handleLaunch(post, options)).migration?.verified).toBe(false);
     }
     const ctx = setup();
     const { request: post } = await cookieLogin(ctx, { amend: signed(SECRET) });
-    expect(launchOf(await ltiLaunch(post, ctx.options)).migration?.verified).toBe(false);
+    expect(launchOf(await handleLaunch(post, ctx.options)).migration?.verified).toBe(false);
   });
 
   it("asks for no secret when the launch has no migration claim", async () => {
     const { ctx, options, seen } = migrating(async () => SECRET);
     const { request: post } = await cookieLogin(ctx);
-    expect(launchOf(await ltiLaunch(post, options)).migration).toBeUndefined();
+    expect(launchOf(await handleLaunch(post, options)).migration).toBeUndefined();
     expect(seen).toStrictEqual([]);
   });
 
@@ -263,17 +265,17 @@ describe("the LTI 1.1 migration claim", () => {
     const down = new Error("The secret store is down.");
     const failing = migrating(() => Promise.reject(down));
     const { request: post, auth } = await cookieLogin(failing.ctx, { amend: signed(SECRET) });
-    await expect(ltiLaunch(post, failing.options)).rejects.toBe(down);
+    await expect(handleLaunch(post, failing.options)).rejects.toBe(down);
     expect(failing.ctx.store.records.has(auth.state)).toBe(true);
     const odd = migrating(async () => 5);
     const { request: second } = await cookieLogin(odd.ctx, { amend: signed(SECRET) });
-    await expect(ltiLaunch(second, odd.options)).rejects.toStrictEqual(
+    await expect(handleLaunch(second, odd.options)).rejects.toStrictEqual(
       new DataError("The option legacySecret must resolve with a string or undefined, found 5."),
     );
   });
 });
 
-describe("the options of ltiLaunch that this unit adds", () => {
+describe("the options of handleLaunch that this unit adds", () => {
   it("are refused when they have other types", async () => {
     const ctx = setup();
     const post = request({ method: "POST", url: "https://tool.example.com/lti/launch" });
@@ -287,7 +289,7 @@ describe("the options of ltiLaunch that this unit adds", () => {
     ];
     for (const [message, more] of cases) {
       const options = JSON.parse(JSON.stringify(more));
-      await expect(ltiLaunch(post, { ...ctx.options, ...options }), message).rejects.toStrictEqual(
+      await expect(handleLaunch(post, { ...ctx.options, ...options }), message).rejects.toStrictEqual(
         new DataError(message),
       );
     }

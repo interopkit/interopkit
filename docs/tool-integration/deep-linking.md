@@ -2,7 +2,7 @@
 
 LTI Deep Linking 2.0 in both roles. A platform asks a tool for content with an `LtiDeepLinkingRequest`; the user chooses in the
 tool, and the tool answers with a signed `LtiDeepLinkingResponse` that lists content items. In the tool role,
-`createDeepLinkResponse` checks the items against what the request accepts and returns the page that posts the signed response.
+`buildDeepLinkingResponse` checks the items against what the request accepts and returns the page that posts the signed response.
 In the platform role, `readDeepLinkingResponse` reads that post, verifies it against the tool's registration and against the
 settings that the platform sealed into the request, and returns the items. The five item types, their extensions and the types
 that others define are the [service models](services.md) that both roles share.
@@ -13,11 +13,11 @@ sequenceDiagram
   participant P as Platform role
   participant B as Browser
   participant T as Tool role
-  H->>P: ltiPlatformFrame(LtiDeepLinkingRequest with settings and data)
+  H->>P: prepareToolFrame(LtiDeepLinkingRequest with settings and data)
   P-->>B: login, then the id_token with data sealed (settings, data, expiry)
-  B->>T: the request: ltiLaunch
+  B->>T: the request: handleLaunch
   T->>T: the user chooses
-  T->>T: createDeepLinkResponse: items against the settings, signed JWT
+  T->>T: buildDeepLinkingResponse: items against the settings, signed JWT
   T-->>B: page that posts JWT to deep_link_return_url
   B->>H: POST JWT (the host's route)
   H->>P: readDeepLinkingResponse(request, options)
@@ -27,17 +27,17 @@ sequenceDiagram
 
 | Role     | Function                                           | Does                                                                                                    |
 | -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Tool     | `createDeepLinkResponse(launch, response, options)` | Checks the items, signs the response and returns the page that posts it to the platform's return URL    |
+| Tool     | `buildDeepLinkingResponse(launch, response, options)` | Checks the items, signs the response and returns the page that posts it to the platform's return URL    |
 | Platform | `readDeepLinkingResponse(request, options)`        | Reads the form the tool posted, verifies it and returns the response with its items and the host's data |
 
 ## Quick start
 
-A tool answers a request with one item. The sample builds the request by hand where a tool gets it from `ltiLaunch`, and signs
+A tool answers a request with one item. The sample builds the request by hand where a tool gets it from `handleLaunch`, and signs
 with a key that it generates where a tool uses the key that the platform's administrator registered.
 
 ```ts
-import { signerFromCryptoKey } from "@interopkit/core";
-import { createDeepLinkResponse } from "@interopkit/tool-integration/tool";
+import { createCryptoKeySigner } from "@interopkit/core";
+import { buildDeepLinkingResponse } from "@interopkit/tool-integration/tool";
 
 const keys = await crypto.subtle.generateKey(
   { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
@@ -52,7 +52,7 @@ const registration = {
   jwksUrl: "https://lms.example.edu/jwks",
   accessTokenUrl: "https://lms.example.edu/token",
   redirectUri: "https://tool.example.com/lti/launch",
-  signer: signerFromCryptoKey(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
+  signer: createCryptoKeySigner(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
 };
 const launch = {
   messageType: "LtiDeepLinkingRequest",
@@ -66,7 +66,7 @@ const launch = {
     data: "opaque-data-of-the-platform",
   },
 };
-const page = await createDeepLinkResponse(
+const page = await buildDeepLinkingResponse(
   launch,
   { items: [{ type: "ltiResourceLink", title: "Tryout 1", url: "https://tool.example.com/lti/tests/1" }] },
   { registration: async () => registration, clock: { now: () => 1_700_000_000_000 } },
@@ -78,12 +78,12 @@ page.headers["content-security-policy"].endsWith("form-action https://lms.exampl
 ```
 
 A whole flow, a platform that asks and a tool that answers, runs in the [example](../../examples/tool-integration/README.md):
-`src/tool.ts` answers a request with `createDeepLinkResponse`, and `src/platform.ts` has the route at the return URL that calls
+`src/tool.ts` answers a request with `buildDeepLinkingResponse`, and `src/platform.ts` has the route at the return URL that calls
 `readDeepLinkingResponse`.
 
 ## The tool role
 
-`createDeepLinkResponse(launch, response, options)` takes the `DeepLinkingRequestMessage` that `ltiLaunch` returned, what the tool
+`buildDeepLinkingResponse(launch, response, options)` takes the `DeepLinkingRequestMessage` that `handleLaunch` returned, what the tool
 answers with, and the options of the tool role (`registration`, `clock`, `signal`). It answers also when the user chose nothing:
 the platform closes its frame on the response (Deep Linking 2.0 section 2.3).
 
@@ -179,14 +179,14 @@ markup that the package renders.
 | `client`              | `readDeepLinkingResponse` rejects with its error; `undefined` is `client-unknown` | `signal`      | On every response; a host may cache                     |
 | `once`                | Rejects with its error; the nonce is not spent. Not a boolean: `DataError` | `signal`            | `false` is `nonce-replayed`: the tool sends a new response |
 | The tool's key set    | `ServiceError`; a failed fetch is not kept. A set that is not a JWK Set is `key-unknown` | The cache's deadline  | Shared by concurrent callers                            |
-| The tool's `registration` | `createDeepLinkResponse` rejects; `undefined` is `platform-unknown`   | `signal`              | Pure; a host may cache                                  |
+| The tool's `registration` | `buildDeepLinkingResponse` rejects; `undefined` is `platform-unknown`   | `signal`              | Pure; a host may cache                                  |
 | The `signer`          | The call rejects with its error; nothing half-signed is posted           | `signal`              | Each response has a new nonce                           |
 
 ## Errors
 
 | Error                                                              | When                                                                                       | What to do                                                       |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| `DataError` from `createDeepLinkResponse`                          | An argument has the wrong type, an item is not a content item, or the platform does not accept the items | Fix the caller; choose items the request accepts                 |
+| `DataError` from `buildDeepLinkingResponse`                          | An argument has the wrong type, an item is not a content item, or the platform does not accept the items | Fix the caller; choose items the request accepts                 |
 | `LtiError` `platform-unknown`, `deployment-unknown`                | The tool's registration is gone, or no longer lists the deployment                         | Register the platform or the deployment again                    |
 | `LtiError` of `readDeepLinkingResponse`, 400                       | The sender broke the protocol: the form, the items, their number                          | Answer 400; the tool fixes its response                          |
 | `LtiError` of `readDeepLinkingResponse`, 401                       | The token fails validation                                                                 | Answer 401                                                       |

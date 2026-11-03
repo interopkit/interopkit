@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { type HttpRequest, type HttpResponse, jsonResponse, readJson } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
 import { errorBody } from "../../protocol/internal.js";
 import { refusal, tooLarge } from "../answers.js";
 
@@ -25,7 +25,7 @@ export function readBody<T>(
   invalid = "invalid_request",
 ): { readonly value: T } | HttpResponse {
   if (mediaTypeOf(request) !== mediaType) {
-    return jsonResponse(415, errorBody("unsupported_media_type", `The body must be ${mediaType}.`), {
+    return buildJsonResponse(415, errorBody("unsupported_media_type", `The body must be ${mediaType}.`), {
       accept: mediaType,
     });
   }

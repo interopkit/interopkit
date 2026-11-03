@@ -14,14 +14,14 @@ flowchart LR
     v2 --> store[("The same stores")]
     v1 --> store
     store -->|"Statement as it is"| v2
-    store -->|"toStatementVersion"| v1
+    store -->|"convertStatementVersion"| v1
   end
 ```
 
 ## Quick start
 
 ```ts
-import { buildStatement, readStatement, toStatementVersion } from "@interopkit/learning-records";
+import { buildStatement, convertStatementVersion, readStatement } from "@interopkit/learning-records";
 
 const event = {
   id: "6690e6c9-3ef0-4ed3-8b37-7f3964730bee",
@@ -41,7 +41,7 @@ const current = buildStatement({
     language: "en",
   },
 });
-const form = toStatementVersion(current, "1.0.3");
+const form = convertStatementVersion(current, "1.0.3");
 form.context; // => { language: "en" }
 form.version; // => "1.0.0"
 
@@ -75,18 +75,18 @@ One LRS holds the Statements of both routes. `StoredStatement.version` says whic
 
 | Statement stored through | Read on the route of 2.0                  | Read on the route of 1.0.3                                                        |
 | ------------------------ | ----------------------------------------- | --------------------------------------------------------------------------------- |
-| 2.0                      | As it is                                  | `toStatementVersion`: no `contextAgents` or `contextGroups`, `version` 1.0.0      |
+| 2.0                      | As it is                                  | `convertStatementVersion`: no `contextAgents` or `contextGroups`, `version` 1.0.0      |
 | 1.0.3                    | As it is, with the `version` it came with | As it is                                                                          |
 
-A resend compares by the route: on 1.0.3 with `toStatementVersion` of the Statement held, and on 2.0 with the whole Statement.
+A resend compares by the route: on 1.0.3 with `convertStatementVersion` of the Statement held, and on 2.0 with the whole Statement.
 Equal is 204 and changes nothing, and different is 409. A client of 1.0.3 that read a Statement of 2.0 and sends it again is a
 resend, not a conflict.
 
 A signature keeps its whole payload, so `verifyStatementSignature` with `version: "1.0.3"` compares the Statement it is given
-with `toStatementVersion` of the payload. The default, 2.0.0, compares the whole Statement, so a Statement of 2.0 that lost its
+with `convertStatementVersion` of the payload. The default, 2.0.0, compares the whole Statement, so a Statement of 2.0 that lost its
 `contextAgents` does not verify.
 
-`toStatementVersion` removes `contextAgents` and `contextGroups`, a SubStatement's too, leaves out a context that held nothing
+`convertStatementVersion` removes `contextAgents` and `contextGroups`, a SubStatement's too, leaves out a context that held nothing
 else, writes a `version` that is not 1.0.x as 1.0.0, and writes a time that ISO 8601 does not take in UTC. A Statement in the
 form comes back unchanged.
 
@@ -127,7 +127,7 @@ The JSON of `content` and of a parameter such as `agent` is read as any request 
 | Option     | Of                                                                            | Default              | Meaning                                                        |
 | ---------- | ----------------------------------------------------------------------------- | -------------------- | -------------------------------------------------------------- |
 | `version`  | `readStatement`, `validateStatement`, `validateStatements`                    | `"2.0.0"`            | The rules that apply                                           |
-| `version`  | `buildStatement`, `voidingStatement`                                          | `"2.0.0"`            | The provider rules, and the `version` that the Statement carries |
+| `version`  | `buildStatement`, `buildVoidingStatement`                                          | `"2.0.0"`            | The provider rules, and the `version` that the Statement carries |
 | `version`  | `signStatement`                                                               | `"2.0.0"`            | The provider rules that the Statement is read with             |
 | `version`  | `verifyStatementSignature`                                                    | `"2.0.0"`            | The route the Statement came from; 1.0.3 compares in its form  |
 | `version`  | `createLrsClient`                                                             | `"2.0.0"`            | The header, the rules of Statements and of preconditions       |
@@ -148,7 +148,7 @@ does not break it.
 | 400: `A request in the alternate syntax has no query parameter but method, ...`                        | A parameter is in the query                                          | Put it in the form                             |
 | 400: `The parameter method must be one of GET, HEAD, PUT, POST, DELETE, ...`                           | The method is another, or in lower case                              | Name one of these                              |
 | 400: `A PUT of a profile needs a precondition on xAPI 1.0.3: ...`                                      | A PUT of a profile has neither header, and no document exists        | Send `If-None-Match: *`                        |
-| `DataError`: `The version must be "1.0.3", the version whose form is returned, found ...`              | `toStatementVersion` is asked for another version                    | Pass `"1.0.3"`                                 |
+| `DataError`: `The version must be "1.0.3", the version whose form is returned, found ...`              | `convertStatementVersion` is asked for another version                    | Pass `"1.0.3"`                                 |
 | `DataError`: `The answer of DocumentStore.write must be "written" for an unconditional write, ...`     | A store judged an `unconditional` condition                          | Fix the store: it always writes                |
 
 ## Not included
@@ -158,7 +158,7 @@ does not break it.
 | 0.9 and 0.95                                 | 1.0.3 asks an LRS to refuse a version before 1.0.0, and only a conformant LRS of that version may serve it |
 | Converting a Statement of 1.0.3 to 2.0       | A Statement of 1.0.x is a Statement of 2.0 but for its `version` and the forms of a time, and is kept as it was |
 | OAuth 1.0 and Common Access Cards            | The host's, through `access`; `readBasicAuthorization` reads the Basic of 1.0.3 Communication 4.0        |
-| `toStatementVersion` to a version other than 1.0.3 | The package speaks two versions                                                                  |
+| `convertStatementVersion` to a version other than 1.0.3 | The package speaks two versions                                                                  |
 
 ## Differences from the references
 

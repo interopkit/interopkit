@@ -1,4 +1,4 @@
-import { signCompactJws, signerFromCryptoKey } from "@interopkit/core";
+import { createCryptoKeySigner, signCompactJws } from "@interopkit/core";
 import { expect, test } from "vitest";
 import { alternate, expectRatioWithin } from "./budgets.js";
 
@@ -6,7 +6,7 @@ const encoder = new TextEncoder();
 
 test("signs a compact JWS near Web Crypto alone", async ({ annotate, bench }) => {
   const pair = (await crypto.subtle.generateKey({ name: "Ed25519" }, false, ["sign", "verify"])) as CryptoKeyPair;
-  const signer = signerFromCryptoKey(pair.privateKey, { algorithm: "EdDSA", keyId: "https://issuer.example/keys/1" });
+  const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "EdDSA", keyId: "https://issuer.example/keys/1" });
   const payload = encoder.encode(
     JSON.stringify({ iss: "https://issuer.example", sub: "learner", claims: "x".repeat(2000) }),
   );

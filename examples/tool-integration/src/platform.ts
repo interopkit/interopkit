@@ -1,11 +1,11 @@
 import { LtiError } from "@interopkit/tool-integration";
 import {
-  createRegistrationInitiation,
+  buildRegistrationInitiation,
   handlePlatformRequest,
-  ltiPlatformFrame,
   type MessageInput,
   type PlatformEndpoints,
   type PlatformFrame,
+  prepareToolFrame,
   type ReceivedDeepLinkingResponse,
   type ReceivedStartAssessment,
   readDeepLinkingResponse,
@@ -82,13 +82,13 @@ export function createPlatform(setup: PlatformSetup): Platform {
     endpoints,
     handle: (request) =>
       (routes[new URL(request.url).pathname] ?? ((sent) => handlePlatformRequest(sent, requests)))(request),
-    frame: (message) => ltiPlatformFrame(message, login),
+    frame: (message) => prepareToolFrame(message, login),
     gradebook,
     deepLinked,
     attempts,
     started,
     registrations,
     initiateRegistration: (initiationUrl) =>
-      createRegistrationInitiation(initiationUrl, { config: requests.config, clock: requests.clock }),
+      buildRegistrationInitiation(initiationUrl, { config: requests.config, clock: requests.clock }),
   };
 }

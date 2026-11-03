@@ -38,9 +38,9 @@ export const RATIOS = {
   mboxSha1sumAgainstNative: 10,
   /** `deriveStatementId` of 1,000 names, as a multiple of the SHA-1 of node:crypto on 1,000 mailto IRIs. */
   deriveIdAgainstNative: 40,
-  /** `sameStatement` of each Statement of the batch and its copy, as a multiple of the validator of Learning Locker on them. */
+  /** `isSameStatement` of each Statement of the batch and its copy, as a multiple of the validator of Learning Locker on them. */
   sameStatementAgainstLearningLocker: 20,
-  /** `toStatementVersion` of each Statement of the batch, as a multiple of the validator of Learning Locker on them. */
+  /** `convertStatementVersion` of each Statement of the batch, as a multiple of the validator of Learning Locker on them. */
   toVersionAgainstLearningLocker: 3,
   /** `formatStatement` of each Statement of the batch, in `ids` and in `canonical`, as a multiple of the same. */
   formatAgainstLearningLocker: 3,
@@ -48,7 +48,7 @@ export const RATIOS = {
   readMultipartAgainstNative: 60,
   /** `writeMultipart` of the same, as a multiple of their JSON, the SHA-256 of node:crypto and a copy of the bytes. */
   writeMultipartAgainstNative: 80,
-  /** `attachmentHash` of 1 MiB, as a multiple of the SHA-256 of node:crypto. */
+  /** `hashAttachment` of 1 MiB, as a multiple of the SHA-256 of node:crypto. */
   attachmentHashAgainstNative: 100,
   /** `signStatement` with an RSA key of 2,048 bits, as a multiple of the `CompactSign` of jose of the same payload. */
   signAgainstJose: 6,
