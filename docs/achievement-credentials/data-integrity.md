@@ -230,7 +230,7 @@ a Profile or an address.
 | Limit                                                   | Value                | Refused with                            |
 | ------------------------------------------------------- | -------------------- | --------------------------------------- |
 | Characters of the credential as JSON                    | `maxInputBytes`, 1,048,576 | `valid: false`, before it is read |
-| Levels that the credential nests                        | `maxDepth`, 64       | `valid: false`, before it is read       |
+| Levels that the credential nests                        | `maxDepth`, 64       | `valid: false`, before it is read; signing, deriving and validating: `DataError`, at 64, before anything copies it |
 | Tokens of JSON in the credential                        | `maxTokens`, 1,000,000 | `valid: false`, before it is read     |
 | Tokens of JSON in a credential that a JSON-LD processor reads | `maxJsonLdTokens`, 20,000 | `valid: false` with the limit; signing, deriving and validating: `DataError` |
 | Runs of Hash N-Degree Quads in one canonicalization     | 1,000, fixed         | `valid: false` with the limit; signing: `DataError` |

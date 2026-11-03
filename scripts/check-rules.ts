@@ -6399,8 +6399,22 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A credential of more tokens than a JSON-LD processor may read is refused before any processor reads it.",
     file: "packages/achievement-credentials/src/data-integrity/processing-limits.ts",
-    find: "hasMoreTokensThan(text, maxTokens)",
-    replace: "false",
+    find: 'if (excess === "tokens" || (excess === "depth" && hasMoreTokensThan(text, maxTokens))) {',
+    replace: "if (false) {",
+    test: "packages/achievement-credentials/test/data-integrity-limits.test.ts",
+  },
+  {
+    rule: "A credential that nests deeper than a JSON-LD processor may recurse is refused before anything copies it.",
+    file: "packages/achievement-credentials/src/data-integrity/processing-limits.ts",
+    find: 'return excess === "depth" ? `The credential nests more than ${MAX_JSON_DEPTH} levels of JSON.` : undefined;',
+    replace: "return undefined;",
+    test: "packages/achievement-credentials/test/data-integrity-limits.test.ts",
+  },
+  {
+    rule: "A credential over both limits of a JSON-LD processor is refused for its tokens, whichever it passes first.",
+    file: "packages/achievement-credentials/src/data-integrity/processing-limits.ts",
+    find: 'if (excess === "tokens" || (excess === "depth" && hasMoreTokensThan(text, maxTokens))) {',
+    replace: 'if (excess === "tokens") {',
     test: "packages/achievement-credentials/test/data-integrity-limits.test.ts",
   },
   {

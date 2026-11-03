@@ -117,6 +117,24 @@ describe("the tokens that a processor of JSON-LD reads", () => {
     void clock;
   });
 
+  it("are read with the levels of the credential, so that deriving and validating refuse a deep one before they copy it", async () => {
+    const { contexts } = world();
+    let deep: Record<string, unknown> = { name: "x" };
+    for (let level = 0; level < 4_000; level += 1) deep = { nested: deep };
+    const credential = credentialOf(sd.did, { extra: deep });
+    await expect(validateJsonLd(credential, { contexts: contexts.load })).rejects.toThrow(
+      new DataError("The credential nests more than 64 levels of JSON."),
+    );
+    await expect(deriveDisclosure(credential, { selectivePointers: [], contexts: contexts.load })).rejects.toThrow(
+      new DataError("The credential nests more than 64 levels of JSON."),
+    );
+    // Over both limits, the credential is refused for its tokens, which name the option that a host can raise, though its
+    // brackets pass the levels at the 200th token and its tokens pass 5,000 later.
+    await expect(validateJsonLd(credential, { contexts: contexts.load, maxJsonLdTokens: 5_000 })).rejects.toThrow(
+      /maxJsonLdTokens/u,
+    );
+  });
+
   it("are not counted in a value that is not JSON, which validateJsonLd is refused as such", async () => {
     const { contexts } = world();
     const cyclic: Record<string, unknown> = { ...achievementCredential() };
