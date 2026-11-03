@@ -342,7 +342,7 @@ on to its own timeout.
 | Option           | Meaning                                                                  |
 | ---------------- | ------------------------------------------------------------------------ |
 | `fetch`          | The `fetch` that gets the key sets                                       |
-| `clock`          | The time that the lifetimes are counted by                               |
+| `clock`          | The time that the lifetimes are counted by; `SYSTEM_CLOCK` when left out |
 | `ttlSeconds`     | How long a set stays cached. Default: `3600`.                            |
 | `refreshSeconds` | The least time between two fetches of a set that answers. Default: `60`. |
 | `timeoutMs`      | The most time one fetch may take. Default: `10000`.                      |
@@ -393,7 +393,7 @@ read no other clock.
 | Option         | Default                                             | Meaning                                                     |
 | -------------- | --------------------------------------------------- | ----------------------------------------------------------- |
 | `registration` | required                                            | Looks up the registration of a platform (see Registrations) |
-| `clock`        | required                                            | The source of the time                                      |
+| `clock`        | `SYSTEM_CLOCK`                                      | The source of the time                                      |
 | `store`        | required for `handleLogin` and `handleLaunch`             | The store of logins                                         |
 | `jwks`         | required for `handleLaunch`                            | The cache of key sets                                       |
 | `fetch`        | required for `createServiceClient`                  | The `fetch` that calls the platform ([grade services](grades.md) has the other options of the client) |

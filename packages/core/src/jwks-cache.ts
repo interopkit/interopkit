@@ -21,8 +21,12 @@ const MAX_KEYS = 100;
 export interface JwksCacheOptions {
   /** The `fetch` that gets the key sets. */
   readonly fetch: Fetch;
-  /** Gives the time that the lifetimes of the key sets are counted by. */
-  readonly clock: Clock;
+  /**
+   * Gives the time that the lifetimes of the key sets are counted by.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /**
    * How long a key set stays in the cache, in seconds.
    *

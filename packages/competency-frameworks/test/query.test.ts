@@ -21,7 +21,7 @@ const titlesOf = (found: readonly CFDocument[]): string[] => found.map(({ title 
 /** Runs a filter given as the text of the parameter over the documents of the tests. */
 function filtered(text: string, options?: { collation?: string }): string[] {
   const query = filterOf(text);
-  if ("refused" in query) throw new Error(`The filter was refused: ${query.detail}`);
+  if ("reason" in query) throw new Error(`The filter was refused: ${query.message}`);
   return titlesOf(queryEntities(docs, query, options));
 }
 
@@ -108,43 +108,43 @@ describe("the filter of a request", () => {
   ])("refuses a filter that %s, with invalid_filter_field and a sentence that says what to write", (_, text) => {
     const result = filterOf(text);
     expect(result).toMatchObject({
-      refused: "invalid_filter_field",
-      detail: expect.stringMatching(/^The (filter|value).*[.:]/u),
+      reason: "invalid_filter_field",
+      message: expect.stringMatching(/^The (filter|value).*[.:]/u),
     });
   });
 
   it("refuses more than one logical operator", () => {
     expect(filterOf("title='a' AND title='b' AND title='c'")).toStrictEqual({
-      refused: "invalid_filter_field",
-      detail: "The filter has more than one logical operator: use at most one AND or OR.",
+      reason: "invalid_filter_field",
+      message: "The filter has more than one logical operator: use at most one AND or OR.",
     });
-    expect(filterOf("title='a' AND title='b' OR title='c'")).toHaveProperty("refused", "invalid_filter_field");
+    expect(filterOf("title='a' AND title='b' OR title='c'")).toHaveProperty("reason", "invalid_filter_field");
   });
 
   it("refuses a field that a CFDocument does not have, and names it", () => {
     expect(filterOf("nonsense='a'")).toStrictEqual({
-      refused: "invalid_filter_field",
-      detail: 'The filter names the field "nonsense", which a CFDocument of CASE 1.1 does not have.',
+      reason: "invalid_filter_field",
+      message: 'The filter names the field "nonsense", which a CFDocument of CASE 1.1 does not have.',
     });
-    expect(filterOf("title='a' AND CFItems='x'")).toHaveProperty("refused", "invalid_filter_field");
+    expect(filterOf("title='a' AND CFItems='x'")).toHaveProperty("reason", "invalid_filter_field");
   });
 
   it("refuses a name that only the prototype of an object has", () => {
-    expect(filterOf("constructor='a'")).toHaveProperty("refused", "invalid_filter_field");
-    expect(filterOf("__proto__.x='a'")).toHaveProperty("refused", "invalid_filter_field");
+    expect(filterOf("constructor='a'")).toHaveProperty("reason", "invalid_filter_field");
+    expect(filterOf("__proto__.x='a'")).toHaveProperty("reason", "invalid_filter_field");
   });
 
   it("reads every property of a CFDocument of 1.1, and refuses a field of an item", () => {
     for (const name of Object.keys(docs[0] ?? {})) expect(filterOf(`${name}='x'`)).toHaveProperty("filter.field", name);
-    expect(filterOf("fullStatement='x'")).toHaveProperty("refused", "invalid_filter_field");
+    expect(filterOf("fullStatement='x'")).toHaveProperty("reason", "invalid_filter_field");
   });
 
   it("takes a fields list of 2,048 characters and refuses one of 2,049", () => {
     const at = (length: number) => `title,${" ".repeat(length - "title,identifier".length)}identifier`;
     expect(parse(["fields", at(2048)])).toStrictEqual({ fields: ["title", "identifier"] });
     expect(parse(["fields", at(2049)])).toStrictEqual({
-      refused: "invalid_selection_field",
-      detail: "The fields list has 2049 characters; the most is 2048.",
+      reason: "invalid_selection_field",
+      message: "The fields list has 2049 characters; the most is 2048.",
     });
   });
 
@@ -152,19 +152,19 @@ describe("the filter of a request", () => {
     const at = (length: number) => `title='${"x".repeat(length - "title=''".length)}'`;
     expect(filterOf(at(2048))).toHaveProperty("filter.predicate", "=");
     expect(filterOf(at(2049))).toStrictEqual({
-      refused: "invalid_filter_field",
-      detail: "The filter has 2049 characters; the most is 2048.",
+      reason: "invalid_filter_field",
+      message: "The filter has 2049 characters; the most is 2048.",
     });
   });
 
   it("refuses a long filter of quotes that close nothing, and one of operators with no field between them", () => {
     expect(filterOf(`title='${"''".repeat(1000)}`)).toStrictEqual({
-      refused: "invalid_filter_field",
-      detail: 'The value of the field "title" has no closing single quote at the end or before AND or OR.',
+      reason: "invalid_filter_field",
+      message: 'The value of the field "title" has no closing single quote at the end or before AND or OR.',
     });
     expect(filterOf(`title='${"' AND ".repeat(300)}`)).toStrictEqual({
-      refused: "invalid_filter_field",
-      detail: "The filter needs a field name at character 14.",
+      reason: "invalid_filter_field",
+      message: "The filter needs a field name at character 14.",
     });
   });
 });
@@ -192,8 +192,8 @@ describe("the fields of a request", () => {
     ["starts with a comma", ",title"],
   ])("refuses a list that %s, with invalid_selection_field", (_, text) => {
     expect(parse(["fields", text])).toStrictEqual({
-      refused: "invalid_selection_field",
-      detail: "The fields list has a blank name: write the names with a comma between them, such as identifier,title.",
+      reason: "invalid_selection_field",
+      message: "The fields list has a blank name: write the names with a comma between them, such as identifier,title.",
     });
   });
 });
@@ -226,7 +226,7 @@ describe("the sort of a request", () => {
   });
 
   it("refuses the filter before the fields", () => {
-    expect(parse(["fields", ""], ["filter", "x"])).toHaveProperty("refused", "invalid_filter_field");
+    expect(parse(["fields", ""], ["filter", "x"])).toHaveProperty("reason", "invalid_filter_field");
   });
 });
 

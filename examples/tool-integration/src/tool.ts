@@ -1,3 +1,4 @@
+import { readClock } from "@interopkit/core";
 import type { HttpRequest, HttpResponse } from "@interopkit/core/http";
 import {
   type ControlStatus,
@@ -162,7 +163,7 @@ export function createTool({ options }: ToolSetup): Tool {
       activityProgress: "Completed",
       gradingProgress: "FullyGraded",
       // Each score of a line item and a user needs a strictly later timestamp; this is the first.
-      timestamp: advanceScoreTimestamp(undefined, options.clock.now()),
+      timestamp: advanceScoreTimestamp(undefined, readClock(options.clock)),
     });
     const { items } = await client.results(grades.lineitem);
     return { label: lineItem.label, results: items };

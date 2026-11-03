@@ -648,6 +648,13 @@ describe("handleLaunch", () => {
         await expect(handleLaunch(post, ctx.options), message).rejects.toThrow(new DataError(message));
     });
 
+    it("takes the clock of the system when the options name none", async () => {
+      const ctx = setup();
+      const { clock: _none, ...withoutClock } = ctx.options;
+      const redirect = await handleLogin(ctx.platform.initiation(), withoutClock);
+      expect(redirect.status).toBe(302);
+    });
+
     it("throws DataError for a request and options of other types", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx);

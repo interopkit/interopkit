@@ -261,7 +261,6 @@ Where the code departs from `STANDARDS.md`, with the reason.
 | The randomness of `state`, `nonce`, `jti` and hints, and of the fetch codes and tokens of `course-launch`, is not injected | A source that a host or a test could replace could make secrets predictable; tests observe the values in the store instead                           |
 | `custom` is a `Map` in the tool role and a record in the platform role                     | The tool role reads claim names from a token, `__proto__` among them, and the platform role writes what its host gave it                             |
 | The platform role of `tool-integration` seals its hints and tokens with an HMAC `CryptoKey` through `jose`, not a `Signer` | A sealed token is the platform's own, which only the platform opens; a `Signer` cannot verify, and the `id_token`s are signed by the `Signer` of `config.keys` |
-| Some functions are named for what they serve, such as `handleLaunch` and `prepareToolLaunch`  | They are the handlers of an endpoint, and the specifications name the endpoint; a verb would not say which one                                       |
 | `handleLaunch` throws an `LtiError` for a refused launch, and returns a page or a launch      | A refusal needs a reason and an HTTP status for the route; tell the results apart with `"status" in result`                                          |
 | `convertCaseVersion` reads the structure that it converts and not every property that it copies | `readPackage` and `readEntity` check the properties; the conversion reports the forms that 1.0 refuses, and it cannot tell the kind of a lone entity |
 | The strings of the three small pages are in English and not in a catalog                   | A person sees them only when the login fails; a host that needs another language builds its own page from the same script                            |
@@ -277,8 +276,14 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - No package, folder or brand name holds a specification name: the packages are `tool-integration`, `learning-analytics`,
   `competency-frameworks`, `selective-disclosure`, `achievement-credentials`, `learning-records` and `course-launch`, and
   `pnpm check:standards` fails on `lti`, `caliper` or `cmi5` in one. Modules and functions use the names descriptively (`handleLaunch`, `CaliperEvent`).
-- Function options are `<Name>Options`. Labels are string unions in kebab-case (`"key-unknown"`).
-- An error has a kebab-case `reason` where a caller must branch on it, and a `status` where it maps to HTTP.
+- A function that acts opens with its verb, one verb for one meaning (`STANDARDS.md` section 4): `read` and `write` for a form that
+  a standard defines, `parse` and `format` for the text of one datatype, `build`, `create`, `derive`, `handle`, `prepare`, `find`,
+  `list` and `is`. A `parse` function throws `DataError`, and an `is` predicate beside it tells beforehand.
+- Function options are `<Name>Options`, and optional parameters come in that one object. Labels are string unions in kebab-case
+  (`"key-unknown"`).
+- An error has a `reason` where a caller must branch on it, a kebab-case union that the package exports (`LtiErrorReason`), and a
+  `status` where it maps to HTTP. A refusal that is a value is `{ reason, message }`, with the code of its binding where a
+  specification names it (`invalid_filter_field`).
 - The names of the properties of a specification (`CFItems`, `imsx_codeMajor`) are kept as it writes them: the folders and
   files that define them are listed in the `useNamingConvention` override of `biome.json`.
 - A vocabulary is a `const` tuple, its type is derived from it and its schema is `v.picklist` of it.
@@ -322,7 +327,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
   `signal` when it aborts.
 - Signing takes a `Signer` of `@interopkit/core`, never a key, so that a key in a KMS or an HSM works. A pick at random takes a
   `Random`.
-- Never use `Math.random`, read a clock, or reach for `fetch`. Take a `Clock`, a random source or a `Fetch` from the caller.
+- Never use `Math.random`, read a clock, or reach for `fetch`. Take a `Clock`, a random source or a `Fetch` from the caller. An option
+  `clock` is optional and is `SYSTEM_CLOCK` when it is left out; a random source is an object with `uniform()`.
   `pnpm lint` fails on `Math.random` and clock reads in `packages/*/src`; only `core/src/clock.ts` reads the system time.
 - A number with a meaning is a named constant with its unit and source.
 - No speculative options, abstractions or modules. Add a method only when a real use needs it, with its validation.

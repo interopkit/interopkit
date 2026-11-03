@@ -1,10 +1,74 @@
 import { InteropkitError } from "@interopkit/core";
 
 /**
+ * The kebab-case code that names the check an LTI message failed: the reason of a `LtiError`, and the key of the status and of
+ * the OAuth 2.0 error that a host answers with.
+ */
+export type LtiErrorReason =
+  | "algorithm-unsupported"
+  | "assertion-lifetime"
+  | "assertion-replayed"
+  | "audience-mismatch"
+  | "audience-untrusted"
+  | "authorized-party-mismatch"
+  | "authorized-party-missing"
+  | "claim-invalid"
+  | "claim-missing"
+  | "client-mismatch"
+  | "client-unknown"
+  | "content-item-refused"
+  | "content-items-limit"
+  | "deep-linking-data-invalid"
+  | "deployment-mismatch"
+  | "deployment-unknown"
+  | "form-too-large"
+  | "hint-expired"
+  | "hint-invalid"
+  | "hint-missing"
+  | "hint-used"
+  | "issued-in-future"
+  | "issuer-mismatch"
+  | "key-unknown"
+  | "launch-refused"
+  | "legacy-launch"
+  | "login-hint-mismatch"
+  | "message-type-unsupported"
+  | "nonce-mismatch"
+  | "nonce-missing"
+  | "nonce-replayed"
+  | "origin-mismatch"
+  | "origin-refused"
+  | "platform-error"
+  | "platform-unknown"
+  | "prompt-invalid"
+  | "request-invalid"
+  | "response-mode-invalid"
+  | "response-type-invalid"
+  | "scope-denied"
+  | "scope-invalid"
+  | "scope-unavailable"
+  | "service-origin-refused"
+  | "session-data-invalid"
+  | "signature-invalid"
+  | "state-cookie"
+  | "state-expired"
+  | "state-missing"
+  | "state-reused"
+  | "state-unknown"
+  | "storage-mismatch"
+  | "subject-mismatch"
+  | "target-mismatch"
+  | "token-expired"
+  | "token-malformed"
+  | "tool-unknown"
+  | "unsupported-grant-type"
+  | "version-unsupported";
+
+/**
  * The HTTP status of the reasons whose status is not 400. An `id_token` that fails validation is 401 (Security Framework
  * 1.1 section 5.1.3); a request that is not bound to a login or a launch of this system is 403, which includes a hint that this platform did not issue or has already seen.
  */
-const STATUS_OF_REASON: ReadonlyMap<string, number> = new Map([
+const STATUS_OF_REASON: ReadonlyMap<LtiErrorReason, number> = new Map([
   ["token-malformed", 401],
   ["algorithm-unsupported", 401],
   ["key-unknown", 401],
@@ -44,8 +108,8 @@ const STATUS_OF_REASON: ReadonlyMap<string, number> = new Map([
 export class LtiError extends InteropkitError {
   /** Error class name. */
   override name = "LtiError";
-  /** A kebab-case code that names the failed check, such as `nonce-reused`. */
-  readonly reason: string;
+  /** A kebab-case code that names the failed check, such as `nonce-replayed`. */
+  readonly reason: LtiErrorReason;
   /**
    * The HTTP status that a host answers with: 401 when a token fails validation, 403 when the request is not bound to a
    * login or a launch of this system, and 400 when the sender broke the protocol in another way.
@@ -56,7 +120,7 @@ export class LtiError extends InteropkitError {
    * @param message - Says what failed and what is expected.
    * @param reason - A kebab-case code that names the failed check.
    */
-  constructor(message: string, reason: string) {
+  constructor(message: string, reason: LtiErrorReason) {
     super(message);
     this.reason = reason;
     this.status = STATUS_OF_REASON.get(reason) ?? 400;

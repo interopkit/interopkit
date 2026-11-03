@@ -148,7 +148,7 @@ credential chose.
 | --------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
 | `fetch`         | The `Fetch` that gets the list credential                                                                             | Required                         |
 | `keys`          | The `KeyResolver` for the list credential's proof                                                                     | Required                         |
-| `clock`         | The `Clock` that the list credential's validity is compared with, within `clockSkewSeconds`                            | Required                         |
+| `clock`         | The `Clock` that the list credential's validity is compared with, within `clockSkewSeconds`                            | `SYSTEM_CLOCK`                         |
 | `contexts`      | The `ContextLoader`, for a list credential with a Data Integrity proof                                                | None: such a list is `unavailable` |
 | `cache`         | A `StatusListCache`                                                                                                    | None: fetched for each verification |
 | `statusIssuers` | Issuers other than the credential's that may publish its list                                                         | None                             |
@@ -176,7 +176,7 @@ caller's wait ends when its own `signal` aborts, whatever a cache of the host do
 
 | Option       | Meaning                              | Default |
 | ------------ | ------------------------------------ | ------- |
-| `clock`      | The `Clock` that entries expire by   | Required |
+| `clock`      | The `Clock` that entries expire by   | `SYSTEM_CLOCK` |
 | `maxEntries` | The most list credentials kept       | `1000`  |
 
 ## Issuing

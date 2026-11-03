@@ -2,13 +2,21 @@ import type { Activity } from "./activity.js";
 import type { Actor, Agent, Group } from "./actor.js";
 import type { Extensions } from "./json.js";
 import type { StatementRef } from "./statement.js";
-import type { ContextActivityType } from "./terms.js";
 
 /**
  * The Activities that relate to a Statement (4.2.2.5), by the kind of relation. Each list is an array, whether the Statement
  * had one Activity or a list.
  */
-export type ContextActivities = { readonly [type in ContextActivityType]?: readonly Activity[] };
+export interface ContextActivities {
+  /** Activities with a direct relation to the Object, such as the quiz of which the Object is a question. */
+  readonly parent?: readonly Activity[];
+  /** Activities with an indirect relation to the Object, such as the course that holds the quiz. */
+  readonly grouping?: readonly Activity[];
+  /** Activities that categorize the Statement, as tags do; they show the profile of xAPI in use, if any. */
+  readonly category?: readonly Activity[];
+  /** Activities that relate to the Statement and fit none of the other three. */
+  readonly other?: readonly Activity[];
+}
 
 /** The relation of one Agent to a Statement (4.2.2.5). */
 export interface ContextAgent {

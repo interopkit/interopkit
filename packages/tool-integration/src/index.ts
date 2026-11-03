@@ -6,7 +6,7 @@
  *
  * @module @interopkit/tool-integration
  */
-export { LtiError } from "./errors.js";
+export { LtiError, type LtiErrorReason } from "./errors.js";
 export type {
   ActivityProgress,
   ActualUser,

@@ -12,8 +12,12 @@ interface Entry<TValue> {
 
 /** What `createKeyedCache` needs. */
 export interface KeyedCacheOptions<TValue> {
-  /** Gives the time that entries expire by. */
-  readonly clock: Clock;
+  /**
+   * Gives the time that entries expire by.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /** Tells how long a loaded value stays good, in milliseconds from now. A value for zero or less is not kept. */
   readonly lifetime: (value: TValue) => number;
   /** The most entries kept: the one loaded first goes first. */

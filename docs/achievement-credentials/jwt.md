@@ -129,7 +129,7 @@ credentials are not compact JWS is not valid.
 | Option             | Meaning                                                                                                              | Default                                              |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `keys`             | The `KeyResolver` that resolves the `kid` and reads what the issuer publishes                                          | Required                                             |
-| `clock`            | The `Clock` that `exp` and `nbf` are compared with                                                                     | Required                                             |
+| `clock`            | The `Clock` that `exp` and `nbf` are compared with                                                                     | `SYSTEM_CLOCK`                                             |
 | `algorithms`       | The algorithms a header may name: RS, PS and ES algorithms and `EdDSA`. `none` and HMAC are never accepted             | `["RS256", "RS384", "RS512", "ES256", "ES384", "EdDSA"]` |
 | `clockSkewSeconds` | The seconds by which `exp` and `nbf` may differ from the clock                                                         | `60`                                                 |
 | `allowUnboundKeys` | Accept a key that the issuer does not publish. The binding is not looked up, and the result has `bound: false`         | `false`                                              |

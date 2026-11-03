@@ -516,9 +516,13 @@ describe("the tokens of a document", () => {
 describe("the arguments", () => {
   const clock = clockAt(0);
 
-  it("are refused for options that are null or have no clock", () => {
+  it("are refused for options that are null or have a clock that is none", () => {
     expect(() => createKeyResolver(JSON.parse("null"))).toThrow(DataError);
-    expect(() => createKeyResolver(JSON.parse("{}"))).toThrow(DataError);
+    expect(() => createKeyResolver(JSON.parse('{"clock":5}'))).toThrow(DataError);
+  });
+
+  it("take the clock of the system when the options name none", () => {
+    expect(createKeyResolver(JSON.parse("{}")).resolve).toBeTypeOf("function");
   });
 
   it.each([

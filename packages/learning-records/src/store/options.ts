@@ -1,4 +1,4 @@
-import type { CallOptions, Clock } from "@interopkit/core";
+import { type CallOptions, type Clock, SYSTEM_CLOCK } from "@interopkit/core";
 import {
   abortSignalSchema,
   DEFAULT_MAX_FINDINGS,
@@ -109,8 +109,12 @@ export interface LrsOptions extends CallOptions {
    * read by `readBasicAuthorization`. It is asked for every request, and may refuse with 401, 403 or 429.
    */
   readonly access: (request: HttpRequest, options?: CallOptions) => Promise<Access>;
-  /** The time of the LRS: the `stored` of a Statement is its `now`. */
-  readonly clock: Clock;
+  /**
+   * The time of the LRS: the `stored` of a Statement is its `now`.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /**
    * The path the LRS is mounted at: `/xapi`, so that the Statements are at `/xapi/statements`. It is `""` or a path that
    * starts with `/` and does not end with one. It is compared with the path of a request as `URL` writes that, percent-encoded,
@@ -240,7 +244,7 @@ const optionsSchema = strictRecord({
   activities: methodsSchema<ActivityStore>("get", "observe"),
   agents: v.optional(methodsSchema<AgentStore>("person")),
   access: guardSchema(isFunction<LrsOptions["access"]>, "a function"),
-  clock: methodsSchema<Clock>("now"),
+  clock: v.optional(methodsSchema<Clock>("now")),
   basePath: v.optional(basePathSchema),
   versions: v.optional(guardSchema(isVersionList, 'a list of "2.0.0" and "1.0.3", with each once and at least one')),
   newId: v.optional(guardSchema(isFunction<() => string>, "a function")),
@@ -281,7 +285,7 @@ export function readLrsOptions(options: unknown): LrsSettings {
     activities: read.activities,
     agents: read.agents,
     access: read.access,
-    clock: read.clock,
+    clock: read.clock ?? SYSTEM_CLOCK,
     basePath: read.basePath ?? "/xapi",
     versions: read.versions ?? XAPI_VERSIONS,
     newId: read.newId ?? (() => crypto.randomUUID()),

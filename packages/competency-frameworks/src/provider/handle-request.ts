@@ -57,7 +57,7 @@ async function answerDocuments(
     return failure(400, messageOf(error));
   }
   const query = parseQuery(parameters, version);
-  if ("refused" in query) return failure(400, query.detail, query.refused);
+  if ("reason" in query) return failure(400, query.message, query.reason);
   let page: OffsetPage;
   try {
     page = readOffsetPage(parameters, settings);

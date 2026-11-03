@@ -1,4 +1,4 @@
-import { type CallOptions, type Clock, checkClock, DataError } from "@interopkit/core";
+import { type CallOptions, type Clock, checkClock, DataError, SYSTEM_CLOCK } from "@interopkit/core";
 import {
   checkAbortSignal,
   checkArray,
@@ -39,8 +39,12 @@ export interface ProofOptions extends CallOptions {
   readonly mandatoryPointers?: readonly string[];
   /** Returns the contexts of the credential and of the proof. */
   readonly contexts: ContextLoader;
-  /** Gives the time that the proof's `created` is written from. */
-  readonly clock: Clock;
+  /**
+   * Gives the time that the proof's `created` is written from.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /**
    * The most tokens of JSON in the credential that a JSON-LD processor reads. The work of a processor grows with the square of
    * the values of one property, which `maxTokens` does not bound: 20,000 values of one property take about four seconds. A
@@ -71,8 +75,12 @@ export interface DisclosureOptions extends CallOptions {
 export interface DataIntegrityVerifyOptions extends CallOptions {
   /** Resolves the key that the proof names and reads what the issuer publishes. */
   readonly keys: KeyResolver;
-  /** Gives the time that the `expires` of a proof is compared with. */
-  readonly clock: Clock;
+  /**
+   * Gives the time that the `expires` of a proof is compared with.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /** Returns the contexts of the credential and of the proof. */
   readonly contexts: ContextLoader;
   /**
@@ -162,7 +170,7 @@ export function proofSettings(options: unknown): ProofSettings {
     cryptosuite: cryptosuite as SigningCryptosuite,
     mandatoryPointers: mandatoryPointers as readonly string[] | undefined,
     contexts: contexts as ContextLoader,
-    clock,
+    clock: clock ?? SYSTEM_CLOCK,
     maxJsonLdTokens,
     signal,
   };
@@ -236,7 +244,7 @@ export function verifySettings(options: unknown): VerifySettings {
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   return {
     keys,
-    clock,
+    clock: clock ?? SYSTEM_CLOCK,
     contexts: contexts as ContextLoader,
     clockSkewSeconds,
     allowUnboundKeys,

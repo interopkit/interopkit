@@ -20,8 +20,12 @@ export interface AssertionOptions {
   readonly lifetimeSeconds: number;
   /** The claims besides the registered ones, which the client has checked. */
   readonly claims: Readonly<Record<string, JsonValue>>;
-  /** Gives `iat` and `exp`. */
-  readonly clock: Clock;
+  /**
+   * Gives `iat` and `exp`.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /** Ends the wait for the signer. */
   readonly options: CallOptions;
 }

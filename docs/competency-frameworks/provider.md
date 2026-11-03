@@ -30,7 +30,7 @@ flowchart TD
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `handleCaseRequest`, `CaseProviderOptions`          | The router and the twelve endpoints of the binding, over a store                         |
 | `FrameworkStore`, `DocumentPage`                    | What the provider needs from the host: one object by identifier, and a page of documents |
-| `parseCaseQuery`, `ParsedCaseQuery`, `QueryRefusal` | The query grammar of the list of documents, for a host that writes its own handler       |
+| `parseCaseQuery`, `ParsedCaseQuery`, `QueryRefusal`, `QueryRefusalReason` | The query grammar of the list of documents, for a host that writes its own handler       |
 | `queryEntities`, `QueryEntitiesOptions`             | The filter and the sort in memory, for a store that holds its documents in a list        |
 | `localizeOpenApi`, `LocalizeOpenApiOptions`         | The OpenAPI file of 1EdTech made into the localized file that the provider serves        |
 
@@ -191,14 +191,14 @@ sides. A path with dots reaches into nested objects (`licenseURI.title`, `extens
 against the properties of a CFDocument. The filter is URL encoded, and holds at most 2,048 characters after decoding.
 
 `parseCaseQuery` reads these parameters for the names of a CFDocument of CASE 1.1 and returns the `ParsedCaseQuery` or a
-`QueryRefusal` with its code and a sentence. On the path of 1.0 the handler holds the names to those of 1.0, which lack
+`QueryRefusal` with its `reason`, the code of the binding, and a `message`. On the path of 1.0 the handler holds the names to those of 1.0, which lack
 `frameworkType`, `caseVersion` and `extensions`.
 
 ```ts
 import { parseCaseQuery } from "@interopkit/competency-frameworks/provider";
 
 parseCaseQuery(new Map([["filter", "title~'math' AND creator='Ministry'"], ["sort", "title"], ["orderBy", "desc"]])); // => { filter: { and: [{ field: "title", predicate: "~", value: "math" }, { field: "creator", predicate: "=", value: "Ministry" }] }, sort: "title", orderBy: "desc" }
-parseCaseQuery(new Map([["filter", "nonsense='x'"]])); // => { refused: "invalid_filter_field", detail: "The filter names the field \"nonsense\", which a CFDocument of CASE 1.1 does not have." }
+parseCaseQuery(new Map([["filter", "nonsense='x'"]])); // => { reason: "invalid_filter_field", message: "The filter names the field \"nonsense\", which a CFDocument of CASE 1.1 does not have." }
 ```
 
 ## The store

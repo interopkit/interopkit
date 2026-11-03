@@ -64,7 +64,11 @@ ROLES.includes("Instructor#TeachingAssistant"); // => true
 
 A property takes a class of entity as an object or as its IRI, and every class below it: a property that takes an `Agent`
 takes a `Person`, an `Organization`, a `CourseSection` and the other subtypes. `AGENT_TYPES`, `ORGANIZATION_TYPES`,
-`COURSE_OFFERING_TYPES`, `DIGITAL_RESOURCE_TYPES`, `QUESTION_TYPES` and `SCALE_TYPES` list the classes of those ranges.
+`COURSE_OFFERING_TYPES`, `DIGITAL_RESOURCE_TYPES`, `QUESTION_TYPES` and `SCALE_TYPES` list the classes of those ranges, as do
+`ASSIGNABLE_TYPES` (the assignable digital resources), `MEDIA_OBJECT_TYPES`, `SESSION_TYPES` (`Session`, `LtiSession`),
+`RESPONSE_TYPES` and `ANNOTATION_TYPES`. Two vocabularies belong to the Library Use Profile: `SYNCHRONICITIES`
+(`synchronous`, `asynchronous`, `both`) says how a library activity was meant to be consumed, and `ACCESS_FORMS` (`physical`,
+`digital`) says how a library resource is reached.
 
 ## The events
 

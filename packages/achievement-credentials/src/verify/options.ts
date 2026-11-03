@@ -27,8 +27,12 @@ export interface KnownRecipient {
 export interface VerifyOptions extends CallOptions {
   /** Resolves the keys that verify proofs and reads what issuers publish. */
   readonly keys: KeyResolver;
-  /** Gives the time that validity is judged at. */
-  readonly clock: Clock;
+  /**
+   * Gives the time that validity is judged at.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /**
    * Returns the JSON-LD contexts. A Data Integrity proof is checked through it and only it.
    *

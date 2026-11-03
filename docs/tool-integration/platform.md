@@ -319,7 +319,8 @@ the origin that asked.
 
 | Option                                | Default                | Meaning                                                                                  |
 | ------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------- |
-| `config`, `clock`                     | required               | The platform and the time                                                                |
+| `config`                              | required               | The platform                                                                             |
+| `clock`                               | `SYSTEM_CLOCK`         | The time                                                                                 |
 | `registration(clientId, options)`     | required for the login | Looks up a tool                                                                          |
 | `check(message, options)`             | required for the login | Confirms that the message is the caller's, and throws otherwise                          |
 | `launches`                            | required               | The `LaunchStore`: `put` and `take`, atomic across processes                             |

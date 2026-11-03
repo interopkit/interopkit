@@ -15,12 +15,13 @@ classDiagram
     +headers headers
   }
   class LtiError {
-    +string reason
+    +LtiErrorReason reason
     +number status
   }
 ```
 
-`LtiError` is thrown by `@interopkit/tool-integration`; the others are in `@interopkit/core`.
+`LtiError` is thrown by `@interopkit/tool-integration`; the others are in `@interopkit/core`. The `reason` of an `LtiError` is a
+term of `LtiErrorReason`, the kebab-case union that the package exports, so that a host can switch on it exhaustively.
 
 ## Quick start
 

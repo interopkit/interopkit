@@ -1,5 +1,11 @@
-/** A source of uniform draws in [0, 1), which a host passes where a library must pick at random. */
-export type Random = () => number;
+/**
+ * A source of uniform draws, which a host passes where a library must pick at random. Any object with a `uniform` method is
+ * one, as in `@assesskit/runtime` and `@measurekit/core`, so a host passes one source to every library.
+ */
+export interface Random {
+  /** Returns a uniform draw from [0, 1). */
+  uniform(): number;
+}
 
 /** The bits that a draw holds: those of the mantissa of a double, so that every draw is exact. */
 const MANTISSA_BITS = 53;
@@ -12,7 +18,9 @@ const WORD_BITS = 32;
  * The random source of the system: a uniform draw in [0, 1) from `crypto.getRandomValues`, so that a pick that must be
  * unpredictable, such as a free status list index, is.
  */
-export const SYSTEM_RANDOM: Random = () => {
-  const [high = 0, low = 0] = crypto.getRandomValues(new Uint32Array(2));
-  return ((high >>> (WORD_BITS - HIGH_BITS)) * 2 ** LOW_BITS + (low >>> (WORD_BITS - LOW_BITS))) / 2 ** MANTISSA_BITS;
+export const SYSTEM_RANDOM: Random = {
+  uniform() {
+    const [high = 0, low = 0] = crypto.getRandomValues(new Uint32Array(2));
+    return ((high >>> (WORD_BITS - HIGH_BITS)) * 2 ** LOW_BITS + (low >>> (WORD_BITS - LOW_BITS))) / 2 ** MANTISSA_BITS;
+  },
 };

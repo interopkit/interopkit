@@ -53,7 +53,10 @@ function mapContext(context: Context, mappers: Mappers): Context {
       ? {}
       : {
           contextActivities: Object.fromEntries(
-            Object.entries(contextActivities).map(([type, list]) => [type, list.map((a) => mappers.activity(a))]),
+            Object.entries(contextActivities as Readonly<Record<string, readonly Activity[]>>).map(([type, list]) => [
+              type,
+              list.map((a) => mappers.activity(a)),
+            ]),
           ),
         }),
     ...(contextAgents === undefined

@@ -97,6 +97,16 @@ describe("sendCaliper: data and sender", () => {
     expect(Object.keys(envelope)).toStrictEqual(["sensor", "sendTime", "dataVersion", "data"]);
   });
 
+  it("refuses data with a hole, which forEach would skip unseen", async () => {
+    const endpoint = fakeEndpoint({ status: 200 });
+    const sparse: unknown[] = [person];
+    sparse.length = 2;
+    await expect(sendCaliper(sparse as never, { ...SENDER, fetch: endpoint.fetch })).rejects.toThrow(
+      "The Caliper data must be an array, found an array with a hole at index 1.",
+    );
+    expect(endpoint.requests).toHaveLength(0);
+  });
+
   it("sends no Authorization header when the sender has no token, and nothing else changes", async () => {
     const endpoint = fakeEndpoint({ status: 200 });
     const { token: _token, ...anonymous } = SENDER;

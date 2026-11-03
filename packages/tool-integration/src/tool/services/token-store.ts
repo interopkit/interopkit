@@ -64,7 +64,7 @@ export async function keptToken(
   store: TokenStore,
   key: string,
   scope: string,
-  timing: { readonly clock: Clock; readonly skewMs: number; readonly timeoutMs: number },
+  timing: { readonly clock?: Clock; readonly skewMs: number; readonly timeoutMs: number },
 ): Promise<AccessToken | undefined> {
   const kept: unknown = await store.get(key, { signal: AbortSignal.timeout(timing.timeoutMs) });
   if (kept === undefined) return undefined;

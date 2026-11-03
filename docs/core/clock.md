@@ -1,7 +1,7 @@
 # Clock
 
-A library never reads the time: a `Clock` is passed in, so that a host and a test control it. Tokens, logins and events carry
-the times it gives.
+A library reads the time only through a `Clock`, so that a host and a test control it: an option `clock` that is left out is
+`SYSTEM_CLOCK`, and a test passes a clock of its own. Tokens, logins and events carry the times it gives.
 
 ```mermaid
 flowchart LR
@@ -28,8 +28,8 @@ Number.isInteger(readClock(SYSTEM_CLOCK)); // => true
 | ------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `Clock`             | The interface: `now()` answers whole milliseconds since 1970-01-01T00:00:00Z, as `Date.now()` does                |
 | `SYSTEM_CLOCK`      | A `Clock` over `Date.now()`. The only place in the packages that reads the system time                            |
-| `checkClock(value)` | Throws `DataError` unless the value is an object with a function `now`; for options a host passes from JavaScript |
-| `readClock(clock)`  | Returns the time, or throws `DataError` unless the clock answers a non-negative safe integer                      |
+| `checkClock(value)` | Throws `DataError` unless the value is `undefined` or an object with a function `now`; for options a host passes from JavaScript |
+| `readClock(clock?)` | Returns the time, of `SYSTEM_CLOCK` when none is given, or throws `DataError` unless the clock answers a non-negative safe integer |
 
 ## Errors
 

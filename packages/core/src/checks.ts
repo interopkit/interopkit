@@ -94,13 +94,25 @@ export function checkRecord(value: unknown, message: string): asserts value is R
 }
 
 /**
- * Checks that a value is an array, such as a list of roles.
+ * Checks that a value is an array without holes, such as a list of roles.
+ *
+ * @remarks
+ * A hole, an index below the length that holds no element, as `new Array(3)` and `[1, , 2]` have, is no value of the
+ * array that JSON gives, and `forEach`, `map` and `every` skip it unseen: it is refused.
  *
  * @param message - Says what the value should be, such as `The roles must be an array`.
- * @throws `DataError` when it is not.
+ * @throws `DataError` when it is not an array, or has a hole.
  */
 export function checkArray(value: unknown, message: string): asserts value is readonly unknown[] {
   if (!Array.isArray(value)) throw new DataError(`${message}, found ${describe(value)}.`);
+  const hole = firstHole(value);
+  if (hole >= 0) throw new DataError(`${message}, found an array with a hole at index ${hole}.`);
+}
+
+/** Returns the first index below an array's length that holds no element, or -1 when every index holds one. */
+function firstHole(values: readonly unknown[]): number {
+  for (let index = 0; index < values.length; index++) if (!(index in values)) return index;
+  return -1;
 }
 
 /**

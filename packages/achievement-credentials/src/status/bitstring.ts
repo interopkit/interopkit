@@ -1,5 +1,11 @@
 import { DataError, type Random } from "@interopkit/core";
-import { checkNonNegativeInteger, checkPositiveInteger, checkRecord, describe } from "@interopkit/core/checks";
+import {
+  checkNonNegativeInteger,
+  checkPositiveInteger,
+  checkRecord,
+  describe,
+  isRecord,
+} from "@interopkit/core/checks";
 
 /** The fewest entries that a status list has (Bitstring Status List 2.1, privacy): a smaller list narrows who a bit may be. */
 export const MIN_LIST_LENGTH = 131_072;
@@ -90,7 +96,7 @@ export function setCredentialStatus(list: StatusList, index: number, set: boolea
 export interface AllocateOptions {
   /** The number of entries of the list. */
   readonly length: number;
-  /** Draws a number in [0, 1): `SYSTEM_RANDOM` in production, a seeded source in a test. */
+  /** Draws numbers in [0, 1) with `uniform`: `SYSTEM_RANDOM` in production, a seeded source in a test. */
   readonly random: Random;
 }
 
@@ -104,13 +110,15 @@ export interface AllocateOptions {
  * @param used - The indexes that are taken.
  * @param options - The length of the list and the source of random numbers.
  * @returns A free index.
- * @throws `DataError` when the list is full, an argument is not valid, or `random` does not return a number in [0, 1).
+ * @throws `DataError` when the list is full, an argument is not valid, or `random.uniform` does not return a number in [0, 1).
  */
 export function allocateStatusIndex(used: ReadonlySet<number>, options: AllocateOptions): number {
   checkRecord(options, "The options of allocateStatusIndex must be an object");
   checkPositiveInteger(options.length, "The option length");
   if (!(used instanceof Set)) throw new DataError(`The used indexes must be a Set, found ${describe(used)}.`);
-  if (typeof options.random !== "function") throw new DataError("The option random must be a function.");
+  if (!isRecord(options.random) || typeof options.random.uniform !== "function") {
+    throw new DataError("The option random must be an object with a uniform method.");
+  }
   for (const index of used) {
     if (!Number.isInteger(index) || index < 0 || index >= options.length) {
       throw new DataError(
@@ -120,9 +128,9 @@ export function allocateStatusIndex(used: ReadonlySet<number>, options: Allocate
   }
   const free = options.length - used.size;
   if (free <= 0) throw new DataError(`The list of ${options.length} entries has no free index.`);
-  const draw = options.random();
+  const draw = options.random.uniform();
   if (typeof draw !== "number" || !(draw >= 0 && draw < 1)) {
-    throw new DataError(`The option random must return a number from 0 up to 1, found ${describe(draw)}.`);
+    throw new DataError(`The option random must draw a number from 0 up to 1, found ${describe(draw)}.`);
   }
   let index = Math.floor(draw * free);
   for (const taken of [...used].toSorted((first, second) => first - second)) {

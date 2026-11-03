@@ -83,7 +83,7 @@ export async function answerRegistration(
   const { signal } = settings;
   const asked = await callPort(() => store.register(admitted.value, { signal }), { signal });
   if (asked === undefined) return serverError();
-  const reason = storedRefusal(LABEL, asked.value);
-  if (reason !== undefined) return refusal(400, "invalid_client_metadata", reason);
+  const rejected = storedRefusal(LABEL, asked.value);
+  if (rejected !== undefined) return refusal(400, rejected.reason, rejected.message);
   return registrationAnswer(201, storedRegistration(LABEL, asked.value), settings);
 }

@@ -81,6 +81,12 @@ interface RegistrationCall {
  * Dynamic Registration 1.0 section 4 allows and the answer shows it, and a tool named "Refused tool" is refused. It records every
  * call.
  */
+const REFUSAL = { reason: "invalid_client_metadata", message: "The platform registers no tool of that name." } as const;
+const ADDRESS_REFUSAL = {
+  reason: "invalid_redirect_uri",
+  message: "The platform registers no redirect URI of that tool.",
+} as const;
+
 class MemoryRegistrations implements RegistrationStore {
   readonly calls: RegistrationCall[] = [];
   readonly tools = new Map<string, RegisteredTool>();
@@ -89,7 +95,8 @@ class MemoryRegistrations implements RegistrationStore {
 
   async register(configuration: ToolConfiguration, options?: CallOptions) {
     this.calls.push({ method: "register", args: [configuration], signal: options?.signal });
-    if (configuration.clientName === "Refused tool") return { refusal: "The platform registers no tool of that name." };
+    if (configuration.clientName === "Refused tool") return REFUSAL;
+    if (configuration.clientName === "Refused address") return ADDRESS_REFUSAL;
     const tool = { clientId: this.ids.shift() ?? "tool-client-x", configuration };
     this.tools.set(tool.clientId, tool);
     return tool;
@@ -103,7 +110,8 @@ class MemoryRegistrations implements RegistrationStore {
   async update(clientId: string, configuration: ToolConfiguration, options?: CallOptions) {
     this.calls.push({ method: "update", args: [clientId, configuration], signal: options?.signal });
     if (!this.tools.has(clientId)) return undefined;
-    if (configuration.clientName === "Refused tool") return { refusal: "The platform registers no tool of that name." };
+    if (configuration.clientName === "Refused tool") return REFUSAL;
+    if (configuration.clientName === "Refused address") return ADDRESS_REFUSAL;
     this.pending.set(clientId, configuration);
     return { clientId, configuration };
   }
@@ -441,6 +449,12 @@ describe("the registration endpoint", () => {
       error: "invalid_client_metadata",
       error_description: "The platform registers no tool of that name.",
     });
+    const redirect = await register(ctx, toolRequest({ client_name: "Refused address" }), null);
+    expect(redirect.status).toBe(400);
+    expect(json(redirect)).toEqual({
+      error: "invalid_redirect_uri",
+      error_description: "The platform registers no redirect URI of that tool.",
+    });
     const failing = storeWith(ctx.registrations, {
       register: () => Promise.reject(new Error("The database is down.")),
     });
@@ -449,7 +463,9 @@ describe("the registration endpoint", () => {
     expect(textOf(failed.body)).not.toContain("database");
     for (const answer of [
       { clientId: "", configuration: {} },
-      { refusal: 5 },
+      { reason: "no_such_code", message: "No." },
+      { reason: "invalid_client_metadata", message: 5 },
+      { reason: "invalid_client_metadata", message: "" },
       { clientId: "c", configuration: { clientName: 5 } },
     ]) {
       const broken = storeWith(ctx.registrations, { register: async () => answer as never });

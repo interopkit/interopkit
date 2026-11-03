@@ -14,12 +14,15 @@ export interface ParsedCaseQuery extends CaseQuery {
   readonly collation?: string;
 }
 
+/** The code of the answer to a query that could not be used, as the REST binding writes it (3.4). */
+export type QueryRefusalReason = "invalid_filter_field" | "invalid_selection_field";
+
 /** Why a query could not be used, and the code that the REST binding gives the answer. */
 export interface QueryRefusal {
   /** The code of the answer: a filter that cannot be read or names an unknown field, or a blank name in `fields`. */
-  readonly refused: "invalid_filter_field" | "invalid_selection_field";
+  readonly reason: QueryRefusalReason;
   /** A sentence that says what is wrong and what to write. */
-  readonly detail: string;
+  readonly message: string;
 }
 
 const FIELD_SEPARATOR = ",";
@@ -40,13 +43,13 @@ function conditionsOf(filter: CaseFilter): readonly CaseCondition[] {
 /** Reads a filter, and checks that it names data of a CFDocument. */
 function readFilter(text: string, version: CaseVersion): CaseFilter | QueryRefusal {
   const filter = parseFilterText(text);
-  if ("detail" in filter) return { refused: "invalid_filter_field", detail: filter.detail };
+  if ("detail" in filter) return { reason: "invalid_filter_field", message: filter.detail };
   const unknown = conditionsOf(filter).find((condition) => !isDocumentPath(version, condition.field));
   return unknown === undefined
     ? filter
     : {
-        refused: "invalid_filter_field",
-        detail: `The filter names the field "${unknown.field}", which a CFDocument of CASE ${version} does not have.`,
+        reason: "invalid_filter_field",
+        message: `The filter names the field "${unknown.field}", which a CFDocument of CASE ${version} does not have.`,
       };
 }
 
@@ -57,15 +60,15 @@ function readFilter(text: string, version: CaseVersion): CaseFilter | QueryRefus
 function readSelection(text: string, version: CaseVersion): readonly string[] | QueryRefusal {
   if (text.length > MAX_FIELDS_LENGTH) {
     return {
-      refused: "invalid_selection_field",
-      detail: `The fields list has ${text.length} characters; the most is ${MAX_FIELDS_LENGTH}.`,
+      reason: "invalid_selection_field",
+      message: `The fields list has ${text.length} characters; the most is ${MAX_FIELDS_LENGTH}.`,
     };
   }
   const names = text.split(FIELD_SEPARATOR).map((name) => name.trim());
   if (names.includes("")) {
     return {
-      refused: "invalid_selection_field",
-      detail: "The fields list has a blank name: write the names with a comma between them, such as identifier,title.",
+      reason: "invalid_selection_field",
+      message: "The fields list has a blank name: write the names with a comma between them, such as identifier,title.",
     };
   }
   return [...new Set(names.filter((name) => isDocumentField(version, name)))];
@@ -80,13 +83,13 @@ export function parseQuery(
   const filterText = parameters.get("filter");
   if (filterText !== undefined) {
     const filter = readFilter(filterText, version);
-    if ("refused" in filter) return filter;
+    if ("reason" in filter) return filter;
     query.filter = filter;
   }
   const fieldsText = parameters.get("fields");
   if (fieldsText !== undefined) {
     const fields = readSelection(fieldsText, version);
-    if ("refused" in fields) return fields;
+    if ("reason" in fields) return fields;
     if (fields.length > 0) query.fields = fields;
   }
   const sort = parameters.get("sort");

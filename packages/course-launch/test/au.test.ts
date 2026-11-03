@@ -164,7 +164,7 @@ describe("the start of a session", () => {
     await startUnit(launch);
     expect(await startAuSession(launch.url, { fetch: launch.fetch })).toStrictEqual({
       refusal: "used-or-expired",
-      text: "The authorization token has already been returned, or the launch expired.",
+      message: "The authorization token has already been returned, or the launch expired.",
     });
     const forged = new URL(launch.url);
     const fetchUrl = new URL(readLaunchUrl(launch.url).fetch);

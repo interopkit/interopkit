@@ -30,8 +30,12 @@ export interface StatusListCache {
 
 /** The options of `createStatusListCache`. */
 export interface StatusListCacheOptions {
-  /** Gives the time that entries expire by. */
-  readonly clock: Clock;
+  /**
+   * Gives the time that entries expire by.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /**
    * The most credentials kept: the oldest goes first.
    *

@@ -6,16 +6,16 @@ import { readToolConfiguration, writeToolConfiguration, writeToolRegistrationRes
 import { NO_STORE, refusal } from "../answers.js";
 import { PATHS } from "../config.js";
 import type { PlatformSettings } from "../options.js";
-import type { RegisteredTool } from "../ports.js";
+import type { RegisteredTool, RegistrationRefusal, RegistrationRefusalReason } from "../ports.js";
 import { readBody } from "../services/body.js";
 import { fromStore } from "../services/service.js";
 
 /** The media type of a registration request and of its answer (Dynamic Registration 1.0 section 3.5.2). */
 const REGISTRATION_MEDIA_TYPE = "application/json";
 /** The error of OpenID Connect Dynamic Client Registration 1.0 section 3.3 for a configuration that the platform refuses. */
-const INVALID_METADATA = "invalid_client_metadata";
+const INVALID_METADATA = "invalid_client_metadata" satisfies RegistrationRefusalReason;
 /** The error of the same section for a redirect URI that the platform refuses. */
-const INVALID_REDIRECT_URI = "invalid_redirect_uri";
+const INVALID_REDIRECT_URI = "invalid_redirect_uri" satisfies RegistrationRefusalReason;
 /** The members whose translations are addresses (Dynamic Registration 1.0 section 2.2.1). */
 const LOCALIZED_ADDRESSES = ["logo_uri", "client_uri", "tos_uri", "policy_uri"];
 
@@ -122,15 +122,20 @@ export function storedRegistration(label: string, value: unknown): RegisteredToo
 }
 
 /** Returns the refusal that a store answered instead of a registration, or `undefined` when it answered one. */
-export function storedRefusal(label: string, value: unknown): string | undefined {
-  if (!isRecord(value) || !("refusal" in value)) return undefined;
-  const { refusal: reason } = value;
-  if (typeof reason !== "string" || reason === "") {
+export function storedRefusal(label: string, value: unknown): RegistrationRefusal | undefined {
+  if (!isRecord(value) || !("reason" in value)) return undefined;
+  const { reason, message } = value;
+  if (reason !== INVALID_METADATA && reason !== INVALID_REDIRECT_URI) {
     throw new DataError(
-      `The answer of ${label} breaks its contract: a refusal must be a sentence, found ${describe(reason)}.`,
+      `The answer of ${label} breaks its contract: the reason of a refusal must be ${INVALID_METADATA} or ${INVALID_REDIRECT_URI}, found ${describe(reason)}.`,
     );
   }
-  return reason;
+  if (typeof message !== "string" || message === "") {
+    throw new DataError(
+      `The answer of ${label} breaks its contract: the message of a refusal must be a sentence, found ${describe(message)}.`,
+    );
+  }
+  return { reason, message };
 }
 
 /**

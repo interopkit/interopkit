@@ -1,4 +1,4 @@
-import { type CallOptions, type Clock, checkClock, DataError } from "@interopkit/core";
+import { type CallOptions, type Clock, checkClock, DataError, SYSTEM_CLOCK } from "@interopkit/core";
 import {
   checkAbortSignal,
   checkArray,
@@ -43,8 +43,12 @@ const DEFAULT_MAX_INPUT_BYTES = 1_048_576;
 export interface JwtReadOptions extends CallOptions {
   /** Resolves the key that a `kid` names and reads what the issuer publishes. */
   readonly keys: KeyResolver;
-  /** Gives the time that `exp` and `nbf` are compared with. */
-  readonly clock: Clock;
+  /**
+   * Gives the time that `exp` and `nbf` are compared with.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /**
    * The algorithms that a JWS may name in its header. `none` and the HMAC algorithms are never accepted.
    *
@@ -154,7 +158,7 @@ export function readSettings(options: unknown): ReadSettings {
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   return {
     keys,
-    clock,
+    clock: clock ?? SYSTEM_CLOCK,
     algorithms: accepted,
     clockSkewSeconds,
     allowUnboundKeys,

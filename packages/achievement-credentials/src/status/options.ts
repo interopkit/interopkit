@@ -1,4 +1,4 @@
-import { type CallOptions, type Clock, checkClock, DataError, type Fetch } from "@interopkit/core";
+import { type CallOptions, type Clock, checkClock, DataError, type Fetch, SYSTEM_CLOCK } from "@interopkit/core";
 import {
   checkAbortSignal,
   checkArray,
@@ -57,8 +57,12 @@ export interface StatusIssueOptions extends CallOptions {
    * @defaultValue none: required for a Data Integrity proof
    */
   readonly contexts?: ContextLoader;
-  /** Gives the time of a Data Integrity proof. */
-  readonly clock: Clock;
+  /**
+   * Gives the time of a Data Integrity proof.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
 }
 
 /** The options of `verifyCredentialStatus`. */
@@ -67,8 +71,12 @@ export interface StatusCheckOptions extends CallOptions {
   readonly fetch: Fetch;
   /** Resolves the keys that verify the list credential, and reads what its issuer publishes. */
   readonly keys: KeyResolver;
-  /** Gives the time that the list credential's validity is compared with. */
-  readonly clock: Clock;
+  /**
+   * Gives the time that the list credential's validity is compared with.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /**
    * Returns the contexts. Without it, a list credential with a Data Integrity proof cannot be checked and the status is
    * `unavailable`.
@@ -189,7 +197,7 @@ export function checkSettings(options: unknown): CheckSettings {
   return {
     fetch: fetch as Fetch,
     keys,
-    clock,
+    clock: clock ?? SYSTEM_CLOCK,
     contexts: contexts as ContextLoader | undefined,
     cache: cache as StatusListCache | undefined,
     statusIssuers: statusIssuers as readonly string[],
@@ -220,14 +228,15 @@ export function issueSettings(options: unknown): IssueSettings {
   }
   checkClock(clock);
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
-  if (proof === "jwt") return { proof, clock, signal };
+  const given = clock ?? SYSTEM_CLOCK;
+  if (proof === "jwt") return { proof, clock: given, signal };
   if (contexts === undefined) {
     throw new DataError(
       "The option contexts is required for a Data Integrity proof: it loads the contexts of the credential.",
     );
   }
   checkFunction(contexts, "The option contexts must be a function");
-  return { proof, contexts: contexts as ContextLoader, clock, signal };
+  return { proof, contexts: contexts as ContextLoader, clock: given, signal };
 }
 
 /** Checks the input of `issueStatusListCredential`. */

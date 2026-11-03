@@ -30,8 +30,12 @@ const DID_METHODS: readonly DidMethod[] = ["key", "web"];
 
 /** What `createKeyResolver` needs. */
 export interface KeyResolverOptions {
-  /** Gives the time that cached documents expire by. */
-  readonly clock: Clock;
+  /**
+   * Gives the time that cached documents expire by.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /**
    * The `fetch` that gets documents. Without it, nothing is fetched: an HTTPS address and a `did:web` do not resolve.
    *

@@ -375,10 +375,15 @@ export interface RegisteredTool {
   readonly configuration: ToolConfiguration;
 }
 
+/** The code of the refusal of a registration, as OpenID Connect Dynamic Client Registration 1.0 section 3.3 and RFC 7591 section 3.2.2 write it. */
+export type RegistrationRefusalReason = "invalid_client_metadata" | "invalid_redirect_uri";
+
 /** What a `RegistrationStore` answers when it refuses a configuration. */
 export interface RegistrationRefusal {
-  /** Why, in words, which the platform answers as the `error_description` of 400 `invalid_client_metadata`. */
-  readonly refusal: string;
+  /** The code that the platform answers as the `error` of the 400: the redirect URIs, or any other metadata, are not accepted. */
+  readonly reason: RegistrationRefusalReason;
+  /** Why, in words, which the platform answers as the `error_description`. */
+  readonly message: string;
 }
 
 /**
@@ -398,8 +403,8 @@ export interface RegistrationStore {
    * wait for review, since anyone may then ask for one.
    *
    * @param configuration - The configuration, valid, with its scopes narrowed to those that the platform offers.
-   * @returns The tool with its new client identifier, or a refusal in words, which the route answers with 400
-   * `invalid_client_metadata`.
+   * @returns The tool with its new client identifier, or a refusal with its code and its words, which the route answers with
+   * 400.
    */
   register(configuration: ToolConfiguration, options?: CallOptions): Promise<RegisteredTool | RegistrationRefusal>;
   /**
@@ -413,7 +418,7 @@ export interface RegistrationStore {
    * Registration 1.0 section 4), and the answer then shows the pending configuration.
    *
    * @param configuration - The configuration, valid, with its scopes narrowed to those that the platform offers.
-   * @returns The registration with the same client identifier, a refusal in words, or `undefined` when there is none.
+   * @returns The registration with the same client identifier, a refusal, or `undefined` when there is none.
    * @defaultValue none: a tool cannot change its registration
    */
   update?(

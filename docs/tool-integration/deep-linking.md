@@ -151,7 +151,8 @@ markup that the package renders.
 
 | Option            | Default     | Meaning                                                                                        |
 | ----------------- | ----------- | ---------------------------------------------------------------------------------------------- |
-| `config`, `clock` | required    | The platform and the time                                                                      |
+| `config`          | required    | The platform                                                                                   |
+| `clock`           | `SYSTEM_CLOCK` | The time                                                                                    |
 | `client`          | required    | Looks up a tool by its client identifier; `undefined` is `client-unknown`                      |
 | `jwks`            | required    | The cache of the tools' key sets, from `createJwksCache`                                       |
 | `once`            | required    | Records an identifier until a time; `false` when it was used. Atomic across processes          |

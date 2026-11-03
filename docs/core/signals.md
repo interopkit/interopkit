@@ -54,8 +54,8 @@ await wait.catch((error) => error.message);
 | -------------------------- | --------------------------------------------- | -------------------------------------------------------------------- |
 | The `reason` of the signal | The signal aborted, before or during the wait | Nothing: the caller ended the wait                                   |
 | `DataError`                | `signal` is not an `AbortSignal`              | Pass `AbortSignal.timeout(ms)` or the signal of an `AbortController` |
-| `DataError`                | An option of `createKeyedCache` is not valid  | Pass a `Clock`, a `lifetime` function and a positive `maxEntries`   |
-| `DataError`                | An option of `createJwksCache` is not valid, or a key set is not a JWK Set | Pass a `fetch` and a `Clock`; the party serves `{ "keys": [...] }` at the URL |
+| `DataError`                | An option of `createKeyedCache` is not valid  | Pass a `lifetime` function and a positive `maxEntries`; a `clock` is optional |
+| `DataError`                | An option of `createJwksCache` is not valid, or a key set is not a JWK Set | Pass a `fetch`; the party serves `{ "keys": [...] }` at the URL |
 
 ## Speed
 

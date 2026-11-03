@@ -441,6 +441,11 @@ describe("handleLrsRequest: the options", () => {
   const valid = optionsOf(lrs);
   const run = (options: unknown) => handleLrsRequest(requestOf("GET", "/statements"), options as LrsOptions);
 
+  it("takes the clock of the system when the options name none", async () => {
+    const { clock: _none, ...withoutClock } = valid;
+    expect((await run(withoutClock)).status).toBe(200);
+  });
+
   it("throws a DataError that names the option for options that are not valid", async () => {
     const cases: [unknown, string][] = [
       [null, "The configuration of the LRS is invalid: expected an object, found null."],

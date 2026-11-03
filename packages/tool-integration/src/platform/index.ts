@@ -48,6 +48,7 @@ export type {
   ReceivedScore,
   RegisteredTool,
   RegistrationRefusal,
+  RegistrationRefusalReason,
   RegistrationStore,
   RosterStore,
   ServiceCaller,

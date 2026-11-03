@@ -111,7 +111,10 @@ function resultKey(result: Result | undefined): Canonical {
 function contextActivitiesKey(activities: ContextActivities | undefined): Canonical {
   if (activities === undefined) return null;
   return Object.fromEntries(
-    Object.entries(activities).map(([type, list]) => [type, list.map((activity) => activityKey(activity))]),
+    Object.entries(activities as Readonly<Record<string, readonly Activity[]>>).map(([type, list]) => [
+      type,
+      list.map((activity) => activityKey(activity)),
+    ]),
   );
 }
 

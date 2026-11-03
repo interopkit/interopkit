@@ -185,6 +185,11 @@ describe("createTokenCache", () => {
     await new Promise<void>((resolve) => setImmediate(resolve));
   });
 
+  it("takes the clock of the system when the options name none", async () => {
+    const current = createTokenCache(async () => token("t", 60), JSON.parse("{}"));
+    expect(await current()).toBe("t");
+  });
+
   it("refuses arguments of other types", () => {
     const { clock } = movingClock();
     const obtain = async () => token("t", 60);
@@ -194,7 +199,7 @@ describe("createTokenCache", () => {
         "The options of createTokenCache must be an object, found null.",
         () => createTokenCache(obtain, JSON.parse("null")),
       ],
-      ["The option clock must be an object, found undefined.", () => createTokenCache(obtain, JSON.parse("{}"))],
+      ["The option clock must be an object, found 5.", () => createTokenCache(obtain, JSON.parse('{"clock":5}'))],
       [
         "The option refreshSkewSeconds must be a positive integer, found 0.",
         () => createTokenCache(obtain, { clock, refreshSkewSeconds: 0 }),

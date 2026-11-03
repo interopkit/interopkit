@@ -8,8 +8,12 @@ import { checkServiceCall, requestService, type ServiceCall, type ServiceRespons
 
 /** What a call to an authorization server needs: the `fetch`, the deadline, the signal and the clock. */
 export interface OAuthCallOptions extends ServiceCall {
-  /** Gives the time of an assertion and of the expiry of a token. */
-  readonly clock: Clock;
+  /**
+   * Gives the time of an assertion and of the expiry of a token.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
 }
 
 /** The statuses that oauth4webapi reads: success, and the two that carry an error (RFC 6749 section 5.2, RFC 7235). */

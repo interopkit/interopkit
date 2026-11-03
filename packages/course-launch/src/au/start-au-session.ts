@@ -38,7 +38,7 @@ const decoder = new TextDecoder();
 async function fetchToken(
   settings: AuSettings,
   url: string,
-): Promise<{ readonly token: string } | { readonly refusal: AuRefusal; readonly text?: string }> {
+): Promise<{ readonly token: string } | { readonly refusal: AuRefusal; readonly message?: string }> {
   const service = { fetch: settings.fetch, timeoutMs: settings.timeoutMs, ...signalOf(settings, undefined) };
   const answer = await requestService(
     service,
@@ -69,7 +69,7 @@ async function fetchToken(
     );
   }
   const errorText = body["error-text"];
-  return { refusal, ...(typeof errorText === "string" ? { text: errorText } : {}) };
+  return { refusal, ...(typeof errorText === "string" ? { message: errorText } : {}) };
 }
 
 /** Reads a document of JSON within a size, or `undefined` when there is none. */
@@ -152,7 +152,7 @@ export async function startAuSession(
        *
        * @defaultValue none
        */
-      readonly text?: string;
+      readonly message?: string;
     }
 > {
   const settings = readAuOptions(options);

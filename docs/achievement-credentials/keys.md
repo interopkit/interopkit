@@ -118,7 +118,7 @@ hosts several issuers writes the `iss` of each key.
 
 | Option       | Meaning                                                                                                              | Default                                  |
 | ------------ | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `clock`      | The `Clock` that cached documents expire by                                                                           | Required                                 |
+| `clock`      | The `Clock` that cached documents expire by                                                                           | `SYSTEM_CLOCK`                                 |
 | `fetch`      | The `Fetch` that gets documents; without it an HTTPS address and a `did:web` do not resolve                           | None                                     |
 | `methods`    | The DID methods read by the resolver                                                                                  | `["key", "web"]`                         |
 | `resolve`    | Resolves a verification method of a DID method that is not in `methods`                                                | None                                     |

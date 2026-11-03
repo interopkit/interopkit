@@ -36,7 +36,7 @@ const query = new URLSearchParams({
 });
 const launchUrl = `https://content.example.org/rocks/index.html?${query}`;
 await startAuSession(launchUrl, { fetch });
-// => { refusal: "used-or-expired", text: "Already used." }
+// => { refusal: "used-or-expired", message: "Already used." }
 ```
 
 A unit that starts plays its session and gives the page the return URL:

@@ -76,6 +76,17 @@ describe("checkArray", () => {
       "The roles must be an array, found an object.",
     );
   });
+
+  it("refuses an array with a hole, which forEach, map and every would skip unseen", () => {
+    const sparse: unknown[] = [1];
+    sparse.length = 3;
+    expect(() => checkArray(sparse, "The roles must be an array")).toThrow(
+      "The roles must be an array, found an array with a hole at index 1.",
+    );
+    // biome-ignore lint/suspicious/noSparseArray: the hole is what the check refuses.
+    expect(() => checkArray([1, , 3], "The roles must be an array")).toThrow("found an array with a hole at index 1.");
+    expect(() => checkArray([undefined, null], "The roles must be an array")).not.toThrow();
+  });
 });
 
 describe("checkFunction", () => {

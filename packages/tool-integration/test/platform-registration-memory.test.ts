@@ -30,7 +30,7 @@ describe("the peak memory of the bodies of the registration endpoint", () => {
       openRegistration: true,
       services: {
         registrations: {
-          register: async () => ({ refusal: "No." }),
+          register: async () => ({ reason: "invalid_client_metadata" as const, message: "No." }),
           get: async () => undefined,
           update: async () => undefined,
         },

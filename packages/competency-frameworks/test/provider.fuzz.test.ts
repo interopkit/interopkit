@@ -81,9 +81,9 @@ describe("the parser of a query on any text", () => {
           [other, other],
         ]);
         const result = parseCaseQuery(parameters);
-        if ("refused" in result) {
-          expect(["invalid_filter_field", "invalid_selection_field"]).toContain(result.refused);
-          expect(result.detail.length).toBeGreaterThan(0);
+        if ("reason" in result) {
+          expect(["invalid_filter_field", "invalid_selection_field"]).toContain(result.reason);
+          expect(result.message.length).toBeGreaterThan(0);
         } else {
           expect(Object.keys(result).every((key) => ["filter", "fields", "sort", "orderBy"].includes(key))).toBe(true);
         }

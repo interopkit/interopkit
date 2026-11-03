@@ -4,7 +4,7 @@ import { DataError } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { createJwksCache, LtiError } from "../src/index.js";
+import { createJwksCache, LtiError, type LtiErrorReason } from "../src/index.js";
 import {
   buildCapabilitiesScript,
   buildPlatformEndpoints,
@@ -750,7 +750,7 @@ describe("the authentication request", () => {
       { id: "x", client: TOOL_CLIENT_ID, deployment: TOOL_DEPLOYMENT_ID, exp: SECONDS + 300 },
       await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]),
     );
-    const cases: [(search: URLSearchParams) => void, string][] = [
+    const cases: [(search: URLSearchParams) => void, LtiErrorReason][] = [
       [(search) => search.set("lti_message_hint", forged), "hint-invalid"],
       [(search) => search.set("lti_message_hint", initiation.loginHint), "hint-invalid"],
       [

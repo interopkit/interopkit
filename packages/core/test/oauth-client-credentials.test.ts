@@ -84,6 +84,15 @@ describe("requestClientCredentialsToken", () => {
     expect(token.expiresAt).toBe(5_000 + 90_500);
   });
 
+  it("takes the time of the system when the options name no clock", async () => {
+    const server = fakeServer(() => json({ ...TOKEN, expires_in: 90 }));
+    const { clock: _none, ...withoutClock } = callOptions(server.fetch);
+    const before = Date.now();
+    const token = await requestClientCredentialsToken(SERVER, SECRET_CLIENT, [], withoutClock);
+    expect(token.expiresAt).toBeGreaterThanOrEqual(before + 90_000);
+    expect(token.expiresAt).toBeLessThanOrEqual(Date.now() + 90_000);
+  });
+
   describe("a server that refuses or fails", () => {
     const call = (response: () => Response | Promise<Response>) =>
       requestClientCredentialsToken(SERVER, SECRET_CLIENT, ["x"], callOptions(fakeServer(response).fetch));
@@ -291,13 +300,13 @@ describe("requestClientCredentialsToken", () => {
         () => requestClientCredentialsToken(SERVER, SECRET_CLIENT, [], JSON.parse("null")),
       ],
       [
-        "The option clock must be an object, found undefined.",
+        "The option clock must be an object, found 5.",
         () =>
           requestClientCredentialsToken(
             SERVER,
             SECRET_CLIENT,
             [],
-            Object.assign(JSON.parse('{"timeoutMs":10}'), { fetch: options.fetch }),
+            Object.assign(JSON.parse('{"timeoutMs":10,"clock":5}'), { fetch: options.fetch }),
           ),
       ],
       [

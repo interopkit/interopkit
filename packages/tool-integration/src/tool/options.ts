@@ -25,8 +25,12 @@ export interface ToolOptions extends CallOptions {
     clientId: string | undefined,
     options?: CallOptions,
   ) => Promise<PlatformRegistration | undefined>;
-  /** The source of the current time. */
-  readonly clock: Clock;
+  /**
+   * The source of the current time.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
 }
 
 /** The options of `handleLogin`. */

@@ -106,7 +106,7 @@ describe("a status list", () => {
 });
 
 describe("the index that a credential gets", () => {
-  const fixed = (draw: number) => () => draw;
+  const fixed = (draw: number) => ({ uniform: () => draw });
 
   it("is the n-th free index for a draw, so that every free index has the same chance", () => {
     const used = new Set([0, 1, 2, 5]);
@@ -136,6 +136,9 @@ describe("the index that a credential gets", () => {
     expect(() => allocateStatusIndex(new Set([0.5]), { length: 4, random: fixed(0.5) })).toThrow(DataError);
     expect(() => allocateStatusIndex(JSON.parse("[]"), { length: 4, random: fixed(0.5) })).toThrow(DataError);
     expect(() => allocateStatusIndex(new Set(), { length: 4, random: JSON.parse("null") })).toThrow(DataError);
+    expect(() => allocateStatusIndex(new Set(), { length: 4, random: (() => 0.5) as never })).toThrow(
+      "an object with a uniform method",
+    );
     expect(() => allocateStatusIndex(new Set(), { length: 4, random: fixed(1) })).toThrow("from 0 up to 1");
     expect(() => allocateStatusIndex(new Set(), { length: 4, random: fixed(Number.NaN) })).toThrow(DataError);
     expect(() => allocateStatusIndex(new Set(), JSON.parse("null"))).toThrow(DataError);
@@ -767,7 +770,7 @@ describe("the cache of status list credentials", () => {
     const clock = clockAt(NOW);
     expect(() => createStatusListCache({ clock, maxEntries: 0 })).toThrow(DataError);
     expect(() => createStatusListCache(JSON.parse("null"))).toThrow(DataError);
-    expect(() => createStatusListCache(JSON.parse("{}"))).toThrow(DataError);
+    expect(() => createStatusListCache(JSON.parse('{"clock":5}'))).toThrow(DataError);
     expect(createStatusListCache({ clock }).get).toBeTypeOf("function");
   });
 });

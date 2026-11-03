@@ -1,4 +1,4 @@
-import { type CallOptions, type Clock, DataError } from "@interopkit/core";
+import { type CallOptions, type Clock, DataError, SYSTEM_CLOCK } from "@interopkit/core";
 import {
   abortSignalSchema,
   guardSchema,
@@ -33,8 +33,12 @@ import type { ToolRegistration } from "./registration.js";
 export interface PlatformOptions {
   /** The identity, the origins and the keys of the platform. */
   readonly config: PlatformConfig;
-  /** The source of the current time. */
-  readonly clock: Clock;
+  /**
+   * The source of the current time.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
 }
 
 /** The options of `prepareToolLaunch` and `prepareToolFrame`. */
@@ -302,7 +306,7 @@ const launchStoreSchema = methodsSchema<LaunchStore>("put", "take");
 
 const loginOptionsSchema = strictRecord({
   config: configSchema,
-  clock: methodsSchema<Clock>("now"),
+  clock: v.optional(methodsSchema<Clock>("now")),
   registration: functionSchema<PlatformLoginOptions["registration"]>(),
   check: functionSchema<PlatformLoginOptions["check"]>(),
   launches: launchStoreSchema,
@@ -312,7 +316,7 @@ const loginOptionsSchema = strictRecord({
 
 const requestOptionsSchema = strictRecord({
   config: configSchema,
-  clock: methodsSchema<Clock>("now"),
+  clock: v.optional(methodsSchema<Clock>("now")),
   client: functionSchema<PlatformRequestOptions["client"]>(),
   launches: launchStoreSchema,
   once: functionSchema<PlatformRequestOptions["once"]>(),
@@ -402,7 +406,7 @@ export interface RegistrationInitiationOptions extends PlatformOptions {
 
 const initiationOptionsSchema = strictRecord({
   config: configSchema,
-  clock: methodsSchema<Clock>("now"),
+  clock: v.optional(methodsSchema<Clock>("now")),
   ttlSeconds: v.optional(positiveIntegerSchema),
 });
 
@@ -436,6 +440,7 @@ export function readRequestOptions(options: unknown): PlatformSettings {
   if (read.services?.registrations !== undefined) checkRegistrationConfig(read.config);
   return {
     ...read,
+    clock: read.clock ?? SYSTEM_CLOCK,
     toolFrame: read.toolFrame ?? DEFAULT_TOOL_FRAME,
     pageSize: read.pageSize ?? DEFAULT_PAGE_SIZE,
     maxPageSize: read.maxPageSize ?? DEFAULT_MAX_PAGE_SIZE,
@@ -449,7 +454,7 @@ export function readRequestOptions(options: unknown): PlatformSettings {
 
 const toolMessageOptionsSchema = strictRecord({
   config: configSchema,
-  clock: methodsSchema<Clock>("now"),
+  clock: v.optional(methodsSchema<Clock>("now")),
   client: functionSchema<ToolMessageOptions["client"]>(),
   jwks: methodsSchema<JwksCache>("keySet"),
   once: functionSchema<ToolMessageOptions["once"]>(),
@@ -469,6 +474,7 @@ export function readToolMessageOptions(options: unknown, defaultMaxFormBytes: nu
   const read = parseWith(toolMessageOptionsSchema, options, "The options");
   return {
     ...read,
+    clock: read.clock ?? SYSTEM_CLOCK,
     maxFormBytes: read.maxFormBytes ?? defaultMaxFormBytes,
     maxTokens: read.maxTokens ?? MAX_JSON_TOKENS,
     maxContentItems: read.maxContentItems ?? DEFAULT_MAX_CONTENT_ITEMS,

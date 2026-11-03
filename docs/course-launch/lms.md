@@ -132,6 +132,9 @@ request that lacks its `agent`, or whose query names a parameter twice, as xAPI 
 | `Registration` | The learner and the course; per unit its `moveOn`, its completed and passed statements with whether the LRS stored them, its waiver, whether it is satisfied and its active session; the blocks and the course whose satisfied statement is written | `createRegistration`, `accept`, the wrapped insert, `prepareLaunch`, `waiveAu`, `abandonSession` |
 | `Session` | The unit, its activity id and learner, its state, its launch data, the hashes of the fetch code and of the token, the times of the launch, the fetch, the last statement and the end, the statements that cmi5 defines which the LMS took, and whether the unit read the preferences | `prepareLaunch`, `handleFetchRequest`, the access, `accept`, the wrapped insert, `abandonSession` |
 
+`SESSION_STATES` lists the states of a session in the order it passes through them: `preparing`, `launched`, `active` once the unit
+fetched its token, `terminated` by the unit's statement, and `abandoned` by the LMS.
+
 `accept` reserves a verb by writing the statement's id into the session and the registration before the store holds it, so two
 requests at once cannot both take what a session or a registration takes once. A batch is judged against what the records held
 before it, without its own reservations, so a batch sent again after a failure is judged as the first time. A completed or

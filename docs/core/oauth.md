@@ -194,7 +194,7 @@ the client's public keys, which `ClientMetadata` does not carry.
 | `fetch`                           | Required                      | The `Fetch` of [service calls](service.md)                          |
 | `timeoutMs`                       | Required; 10,000 is the habit | From the request to the last byte of the answer                     |
 | `signal`                          | none                          | Ends the caller's wait and reaches the signer of an assertion       |
-| `clock`                           | Required                      | `iat` and `exp` of an assertion, and `expiresAt` of a token         |
+| `clock`                           | `SYSTEM_CLOCK`                | `iat` and `exp` of an assertion, and `expiresAt` of a token         |
 | `assertionLifetimeSeconds`        | 300                           | `exp` after `iat` of an assertion                                   |
 | `refreshSkewSeconds` of the cache | 60                            | How long before its expiry a cached token counts as expired         |
 | Most bytes of an answer           | 65,536                        | The size limit of [service calls](service.md); not replaceable here |

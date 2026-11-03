@@ -109,7 +109,7 @@ credential with the proof. `eddsa-rdfc-2022` adds it to the proofs the credentia
 | `cryptosuite`       | `eddsa-rdfc-2022` signs with an Ed25519 signer (`EdDSA`). `ecdsa-sd-2023` writes a base proof with an ES256 signer                               | `"eddsa-rdfc-2022"`                        |
 | `mandatoryPointers` | For `ecdsa-sd-2023`: the JSON Pointers to what a holder can never hide                                                                          | The required properties that the credential holds, so that a disclosure stays a valid credential |
 | `contexts`          | The `ContextLoader` that returns the contexts of the credential and of the proof                                                                | Required                                   |
-| `clock`             | The `Clock` that `created` is written from                                                                                                       | Required                                   |
+| `clock`             | The `Clock` that `created` is written from                                                                                                       | `SYSTEM_CLOCK`                                   |
 | `maxJsonLdTokens`   | The most tokens of JSON in the credential, counted before a JSON-LD processor reads it (see Limits)                                              | `20000`                                    |
 | `signal`            | Ends the caller's wait, and reaches the signer: the wait for the signer and for a context ends when it aborts, whether they stop or not           | None                                       |
 
@@ -152,7 +152,7 @@ canonicalized once for all the proofs of a set.
 | Option             | Meaning                                                                                                              | Default       |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------- |
 | `keys`             | The `KeyResolver` (see the [keys guide](keys.md))                                                                    | Required      |
-| `clock`            | The `Clock` that `expires` is compared with                                                                          | Required      |
+| `clock`            | The `Clock` that `expires` is compared with                                                                          | `SYSTEM_CLOCK`      |
 | `contexts`         | The `ContextLoader`                                                                                                   | Required      |
 | `clockSkewSeconds` | The seconds by which `expires` may differ from the clock                                                              | `60`          |
 | `allowUnboundKeys` | Accept a key that the issuer does not publish; the binding is not looked up and the result has `bound: false`         | `false`       |

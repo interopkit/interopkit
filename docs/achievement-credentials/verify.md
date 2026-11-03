@@ -254,7 +254,7 @@ revocation list the `status` `unavailable`, which `unavailable: "warn"` accepts.
 | Option                 | Meaning                                                                                                   | Default                                              |
 | ---------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `keys`                 | The `KeyResolver` from `createKeyResolver`                                                                | Required                                             |
-| `clock`                | The `Clock` that validity is judged at                                                                    | Required                                             |
+| `clock`                | The `Clock` that validity is judged at                                                                    | `SYSTEM_CLOCK`                                             |
 | `contexts`             | The loader of JSON-LD contexts, for a Data Integrity proof                                                | None: such a proof is `unavailable`                  |
 | `fetch`                | The `Fetch` for status lists, refresh services, schemas and the documents of a 2.0 badge                 | None: those checks are `unavailable`, and a 2.0 badge is not verified |
 | `statusLists`          | A `StatusListCache` that keeps list credentials across calls                                              | None: a list is fetched once for each call           |

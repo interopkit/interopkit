@@ -9,8 +9,12 @@ export interface TokenCall extends CallOptions {
   readonly fetch: Fetch;
   /** The most time that the call may take, in milliseconds. */
   readonly timeoutMs: number;
-  /** Gives the `iat` and `exp` of the assertion and the expiry of the token. */
-  readonly clock: Clock;
+  /**
+   * Gives the `iat` and `exp` of the assertion and the expiry of the token.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
 }
 
 /**

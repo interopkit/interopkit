@@ -1,7 +1,7 @@
 import { callPort, DataError, readClock, signCompactJws } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import { type HttpRequest, type HttpResponse, readForm, readQuery } from "@interopkit/core/http";
-import { LtiError } from "../errors.js";
+import { LtiError, type LtiErrorReason } from "../errors.js";
 import type { MigrationClaim } from "../protocol/index.js";
 import { renderPostPage, signConsumerKey, toSeconds, writeMessage } from "../protocol/internal.js";
 import { methodNotAllowed, refusal, serverError, tooLarge } from "./answers.js";
@@ -35,7 +35,7 @@ const FAILED = Symbol("failed");
 
 /** Checks the parameters that have one value (Security Framework section 5.1.1.2). */
 function checkFixed(parameters: ReadonlyMap<string, string>): void {
-  const fixed: readonly (readonly [string, string, string])[] = [
+  const fixed: readonly (readonly [string, string, LtiErrorReason])[] = [
     ["scope", "openid", "scope-invalid"],
     ["response_type", "id_token", "response-type-invalid"],
     ["response_mode", "form_post", "response-mode-invalid"],
@@ -52,7 +52,7 @@ function checkFixed(parameters: ReadonlyMap<string, string>): void {
 }
 
 /** Reads a parameter that the tool must send and that carries no meaning of its own, such as `state` and `nonce`. */
-function requiredValue(parameters: ReadonlyMap<string, string>, name: string, reason: string): string {
+function requiredValue(parameters: ReadonlyMap<string, string>, name: string, reason: LtiErrorReason): string {
   const value = parameters.get(name);
   if (value === undefined || value === "") {
     throw new LtiError(`The authentication request must have the parameter ${describe(name)}.`, reason);

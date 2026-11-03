@@ -118,7 +118,8 @@ among them) and its body.
 
 | Option               | Default   | Meaning                                                                                   |
 | -------------------- | --------- | ----------------------------------------------------------------------------------------- |
-| `registration`, `clock` | required | As every function of the tool role                                                     |
+| `registration` | required | As every function of the tool role                                                     |
+| `clock` | `SYSTEM_CLOCK` | As every function of the tool role                                                     |
 | `fetch`              | required  | The `fetch` that calls the token endpoint and the services                               |
 | `scopes`             | required  | The scopes that the platform offered                                                     |
 | `timeoutMs`          | 10,000    | The most time of one call, in milliseconds                                               |

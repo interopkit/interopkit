@@ -7,6 +7,6 @@
 export { type LocalizeOpenApiOptions, localizeOpenApi } from "./discovery.js";
 export { handleCaseRequest } from "./handle-request.js";
 export type { CaseProviderOptions } from "./options.js";
-export { type ParsedCaseQuery, parseCaseQuery, type QueryRefusal } from "./parse-query.js";
+export { type ParsedCaseQuery, parseCaseQuery, type QueryRefusal, type QueryRefusalReason } from "./parse-query.js";
 export { type QueryEntitiesOptions, queryEntities } from "./query-entities.js";
 export type { DocumentPage, FrameworkStore } from "./store.js";

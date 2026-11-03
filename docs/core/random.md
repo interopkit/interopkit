@@ -1,11 +1,12 @@
 # Random
 
-A library that must pick at random, such as a free index of a status list, takes a `Random` from its caller: a function that
-answers a uniform draw in [0, 1). A host passes `SYSTEM_RANDOM` in production, and a test passes a seeded source.
+A library that must pick at random, such as a free index of a status list, takes a `Random` from its caller: an object whose
+`uniform()` answers a uniform draw in [0, 1), the shape that `@assesskit/runtime` and `@measurekit/core` take too, so that a host
+passes one source to every library. A host passes `SYSTEM_RANDOM` in production, and a test passes a seeded source.
 
 ```mermaid
 flowchart LR
-  host["Host"] -->|"passes"| random["Random<br/>() => number"]
+  host["Host"] -->|"passes"| random["Random<br/>{ uniform(): number }"]
   random --> lib["Library function"]
   lib -->|"a draw in [0, 1)"| pick["a pick: an index, a choice"]
   system["SYSTEM_RANDOM"] -.->|"in production"| random
@@ -17,17 +18,17 @@ flowchart LR
 ```ts
 import { SYSTEM_RANDOM } from "@interopkit/core";
 
-const draw = SYSTEM_RANDOM();
+const draw = SYSTEM_RANDOM.uniform();
 draw >= 0 && draw < 1; // => true
-const seeded = () => 0.25;
-Math.floor(seeded() * 8); // => 2
+const seeded = { uniform: () => 0.25 };
+Math.floor(seeded.uniform() * 8); // => 2
 ```
 
 ## API
 
 | Export          | Does                                                                                                                                     |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `Random`        | The type: a function without arguments that answers a number from 0 up to, and not including, 1, with the same chance for every value    |
+| `Random`        | The type: an object with `uniform()`, which answers a number from 0 up to, and not including, 1, with the same chance for every value   |
 | `SYSTEM_RANDOM` | A `Random` over `crypto.getRandomValues`. Each draw holds 53 random bits, so every draw is exact and none is predictable from the others |
 
 ## Rules
@@ -50,5 +51,5 @@ Math.floor(seeded() * 8); // => 2
 
 | What                   | Reason                                                                                                |
 | ---------------------- | ----------------------------------------------------------------------------------------------------- |
-| A seeded generator     | A test brings its own, as a function of one line, and the library need not choose an algorithm for it |
+| A seeded generator     | A test brings its own, as an object of one line, and the library need not choose an algorithm for it |
 | Randomness for secrets | Tokens and identifiers that guard a protocol come from `crypto` inside the package, never from a port |

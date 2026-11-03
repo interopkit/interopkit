@@ -23,7 +23,7 @@ flowchart BT
 
 | Layer       | Holds                                                                                                                                                  | Imports                                      |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| `errors.ts` | `LtiError`, with a kebab-case `reason` and an HTTP `status`                                                                                            | `@interopkit/core`                           |
+| `errors.ts` | `LtiError`, with a `reason` of the union `LtiErrorReason` and an HTTP `status`                                                                                            | `@interopkit/core`                           |
 | `protocol/` | What the roles share: the names and vocabularies of the claims, the model of the messages and of the bodies of the services with their readers and writers, the JWT check, the keys of a party, the key set cache of `@interopkit/core` exported again, the pages of the client-side login | `errors.ts`, `@interopkit/core`              |
 | `tool/`     | The tool role                                                                                                                                          | `errors.ts`, `protocol/`, `@interopkit/core` |
 | `platform/` | The platform role                                                                                                                                      | `errors.ts`, `protocol/`, `@interopkit/core` |

@@ -139,7 +139,10 @@ test("sends a control request of proctoring within a multiple of the bare call o
 test("registers a tool within a multiple of the bare call of the same request", async ({ annotate, bench }) => {
   const pair = await createPair("RS256", {
     registrations: {
-      register: async () => ({ refusal: "The benchmark registers no tool with the platform." }),
+      register: async () => ({
+        reason: "invalid_client_metadata" as const,
+        message: "The benchmark registers no tool with the platform.",
+      }),
       get: async () => undefined,
       update: async () => undefined,
     },

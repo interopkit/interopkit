@@ -128,7 +128,10 @@ function claimError(error: errors.JWTClaimValidationFailed | errors.JWTExpired, 
     );
   }
   if (reason === "missing" || reason === "invalid") {
-    return new LtiError(`The token has no valid ${JSON.stringify(claim)} claim: ${error.message}.`, `claim-${reason}`);
+    return new LtiError(
+      `The token has no valid ${JSON.stringify(claim)} claim: ${error.message}.`,
+      reason === "missing" ? "claim-missing" : "claim-invalid",
+    );
   }
   switch (claim) {
     case "iss":

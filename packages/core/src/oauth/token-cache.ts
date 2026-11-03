@@ -7,8 +7,12 @@ import { MILLISECONDS_PER_SECOND } from "./time.js";
 
 /** What a token cache needs. */
 export interface TokenCacheOptions {
-  /** Gives the time that a token's expiry is compared with. */
-  readonly clock: Clock;
+  /**
+   * Gives the time that a token's expiry is compared with.
+   *
+   * @defaultValue `SYSTEM_CLOCK`
+   */
+  readonly clock?: Clock;
   /**
    * The seconds before its expiry at which a token counts as expired, so that a token is not used in the last moments of its
    * life.

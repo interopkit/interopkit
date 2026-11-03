@@ -1,5 +1,6 @@
 import { isDateTime, parseDateTime } from "@interopkit/core/checks";
 import {
+  type Activity,
   type Actor,
   type Context,
   type Statement,
@@ -138,10 +139,15 @@ function judgeContext(statement: Statement, facts: SessionFacts, found: Findings
   judgeTemplate(facts.launchData.contextTemplate, context, found);
 }
 
+/** The lists of Activities of a context by the key of `contextActivities`, in the order the context gives them. */
+function activityLists(context: Context | undefined): ReadonlyMap<string, readonly Activity[]> {
+  return new Map(Object.entries((context?.contextActivities ?? {}) as Readonly<Record<string, readonly Activity[]>>));
+}
+
 /** Judges that a context keeps every activity of the lists of the template (10.2.1). */
 function judgeTemplateActivities(template: Context, context: Context | undefined, found: Findings): void {
-  const lists = new Map(Object.entries(context?.contextActivities ?? {}));
-  for (const [type, activities] of Object.entries(template.contextActivities ?? {})) {
+  const lists = activityLists(context);
+  for (const [type, activities] of activityLists(template)) {
     const held = new Set((lists.get(type) ?? []).map(({ id }) => id));
     for (const { id } of activities.filter((activity) => !held.has(activity.id))) {
       found.error(

@@ -164,7 +164,7 @@ The registration endpoint checks, in order:
 | The configuration of section 2.2                                                        | 400 `invalid_client_metadata`           |
 | Every redirect URI names a public host on none of the platform's origins               | 400 `invalid_redirect_uri`              |
 | Every other address (login, key set, logo, terms, policy, target links, icons, their translations) does too | 400 `invalid_client_metadata` |
-| The store registers it, with the scopes narrowed to those the platform offers           | 201, or 400 `invalid_client_metadata` with the store's refusal |
+| The store registers it, with the scopes narrowed to those the platform offers           | 201, or 400 with the `reason` and the `message` of the store's `RegistrationRefusal` (`invalid_client_metadata` or `invalid_redirect_uri`) |
 
 The answer carries the recorded configuration, the `client_id` and the `registration_client_uri`, and no
 `registration_access_token`: the tool reads and changes its registration with an access token of the token endpoint. A token is spent

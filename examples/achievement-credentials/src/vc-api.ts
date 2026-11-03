@@ -7,7 +7,7 @@ import {
 } from "@interopkit/achievement-credentials/data-integrity";
 import { verifyCredentialStatus } from "@interopkit/achievement-credentials/status";
 import type { VerifyOptions } from "@interopkit/achievement-credentials/verify";
-import { DataError, type Random, type Signer } from "@interopkit/core";
+import { DataError, type Random, readClock, type Signer, SYSTEM_CLOCK } from "@interopkit/core";
 import { isRecord } from "@interopkit/core/checks";
 import { buildJsonResponse, type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
 import type { SigningAlgorithm } from "./keys.ts";
@@ -98,7 +98,7 @@ async function issue(service: Service, request: HttpRequest, name: string): Prom
   const named = isRecord(credential.issuer) ? credential.issuer.id : credential.issuer;
   if (named !== issuer.id) return failure(400, `The credential must name the issuer ${issuer.id}.`);
   // Open Badges asks every credential for the time it becomes valid, which the API leaves to the issuer to fill in.
-  credential.validFrom ??= dateTimeOf(service.config.verify.clock.now());
+  credential.validFrom ??= dateTimeOf(readClock(service.config.verify.clock));
   if (issuer.status !== undefined && credential.credentialStatus === undefined) {
     credential.credentialStatus = service.listsOf(name, issuer).allocate(issuer.status);
   }
@@ -237,7 +237,7 @@ export function createVcApi(config: VcApiConfig): VcApi {
         createStatusLists({
           issuer: issuer.id,
           base: `${config.origin}/issuers/${name}/status`,
-          clock: config.verify.clock,
+          clock: config.verify.clock ?? SYSTEM_CLOCK,
           random: config.random,
         });
       lists.set(name, held);

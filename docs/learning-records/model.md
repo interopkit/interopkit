@@ -128,6 +128,13 @@ The warning `missing-property` for a provider names `id`: a provider should send
 | `contentType`  | An Internet media type with its parameters                                                                                                                                      |
 | Extensions     | A JSON object whose keys are IRIs; the values are any JSON and are copied, to at most 64 levels. A `null` is allowed here and nowhere else                                      |
 
+## Vocabularies
+
+| Export | Terms | Where it matters |
+| --- | --- | --- |
+| `XAPI_VERSIONS` | `"2.0.0"`, `"1.0.3"`: the versions of xAPI that the package speaks, the latest first, as the `X-Experience-API-Version` header writes them | The `version` option of `buildStatement` and of the client |
+| `STATEMENT_FORMATS` | `ids`, `exact`, `canonical`: the formats of the Statements that an LRS returns (4.1.6.1) | The `format` of a query of the client and the `format` of `formatStatement` |
+
 ## Interaction patterns
 
 The form of `correctResponsesPattern` follows the interaction type. The delimiters are written as the standard writes them:

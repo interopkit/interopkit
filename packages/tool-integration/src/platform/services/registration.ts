@@ -54,8 +54,8 @@ async function putRegistration(call: Call): Promise<HttpResponse> {
   const label = "RegistrationStore.update";
   const updated = await askStore(call, (options) => call.store.update?.(client, admitted.value, options));
   if (updated === undefined) return notFound();
-  const reason = storedRefusal(label, updated);
-  if (reason !== undefined) return refusal(400, "invalid_client_metadata", reason);
+  const refused = storedRefusal(label, updated);
+  if (refused !== undefined) return refusal(400, refused.reason, refused.message);
   const tool = storedRegistration(label, updated);
   // A platform must never change the client identifier of a registration (Dynamic Registration 1.0 section 4.1).
   if (tool.clientId !== client) {
