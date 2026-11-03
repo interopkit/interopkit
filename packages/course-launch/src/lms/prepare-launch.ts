@@ -210,7 +210,7 @@ async function markLaunched(settings: LmsSettings, session: Session): Promise<vo
 /**
  * Points the unit of a registration at its new session, with the `moveOn` of the launch.
  *
- * @returns The session that the unit pointed at before, when another launch made it after this one abandoned the open session.
+ * @returns The session that the unit pointed at before: none, one that ended, or one that another launch made at once.
  */
 async function pointAt(settings: LmsSettings, session: Session): Promise<string | undefined> {
   return withRetries(settings, "launched a session", async () => {
@@ -222,8 +222,7 @@ async function pointAt(settings: LmsSettings, session: Session): Promise<string 
       registration.revision,
       signalOf(settings),
     );
-    if (put === "conflict") return "conflict";
-    return before.session === session.id ? undefined : before.session;
+    return put === "written" ? before.session : "conflict";
   });
 }
 
@@ -302,7 +301,8 @@ export async function prepareLaunch(input: LaunchInput, options: LmsOptions): Pr
     throw new InteropkitError(`The LRS did not write the launch data of the session ${id}: ${written}.`);
   await writeOnce(settings, launchedStatement(course, au, session, launchData, au.url));
   await markLaunched(settings, session);
-  // Two launches of a unit at once both find no open session; the later to point the unit at its own abandons the other (9.3.6).
+  // Two launches of a unit at once both find no open session; the later to point the unit at its own abandons the other (9.3.6),
+  // and a session that ended is abandoned no more.
   const replaced = await pointAt(settings, session);
   if (replaced !== undefined) await abandon(settings, replaced);
   return {

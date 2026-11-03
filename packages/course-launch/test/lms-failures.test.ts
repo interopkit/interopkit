@@ -25,6 +25,10 @@ describe("a store that fails", () => {
     const launched = await launchUnit(host, { registration: registration.id, au: AU1 });
     host.store.conflicts.session = 2;
     expect((await sendStatement(host, launched, unitStatement(launched, "initialized"))).status).toBe(204);
+    // A unit with no open session, so that the conflicts meet the write that points the registration at the new session.
+    host.store.conflicts.registration = 2;
+    const other = await launchUnit(host, { registration: registration.id, au: AU3 });
+    expect((await host.store.registration(registration.id))?.aus[AU3]?.session).toBe(other.launch.session);
     host.store.conflicts.registration = 3;
     await expect(waiveAu({ registration: registration.id, au: AU3, reason: "r" }, host.options)).rejects.toThrow(
       InteropkitError,
