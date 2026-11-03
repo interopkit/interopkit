@@ -1,4 +1,6 @@
+import { DataError } from "@interopkit/core";
 import { absoluteUriSchema, parseWith } from "@interopkit/core/checks";
+import { iriKey } from "../compare/internal.js";
 import type { About, Activity, Agent, Person } from "../model/index.js";
 import { aboutSchema, activitySchema, identifiedAgentSchema, personSchema } from "../read/internal.js";
 import type { Settings } from "./config.js";
@@ -22,9 +24,14 @@ async function fetchJson<TValue>(
 /** Fetches the Activity with an id, as the LRS describes it. */
 export async function getActivity(settings: Settings, activityId: string, options: unknown): Promise<Activity> {
   const id = parseWith(absoluteUriSchema, activityId, "The activity id");
-  return await fetchJson(settings, "activities", new URLSearchParams({ activityId: id }), options, (json) =>
-    parseWith(activitySchema, json, "The Activity"),
-  );
+  return await fetchJson(settings, "activities", new URLSearchParams({ activityId: id }), options, (json) => {
+    const activity = parseWith(activitySchema, json, "The Activity");
+    // The scheme and the host of an IRI have no case, as when Statements are compared.
+    if (iriKey(activity.id) !== iriKey(id)) {
+      throw new DataError(`The Activity has the id ${activity.id}, and the request asked for ${id}.`);
+    }
+    return activity;
+  });
 }
 
 /** Fetches what the LRS knows of an Agent from outside services. */

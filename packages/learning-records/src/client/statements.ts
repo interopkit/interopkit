@@ -2,6 +2,7 @@ import { type CallOptions, DataError, type ServiceResponse } from "@interopkit/c
 import {
   checkString,
   DEFAULT_MAX_FINDINGS,
+  describe,
   parseWith,
   refusalOf,
   strictRecord,
@@ -279,6 +280,10 @@ export async function getStatement(
   return readAnswer(url, () => {
     const body = readBody(response, settings);
     const statement = readAnswered(body.json, settings.version);
+    // The case of a UUID does not make it another UUID.
+    if (statement.id?.toLowerCase() !== id.toLowerCase()) {
+      throw new DataError(`The Statement has the id ${describe(statement.id)}, and the request asked for ${id}.`);
+    }
     return attachments === true ? { statement, attachments: body.attachments } : statement;
   });
 }

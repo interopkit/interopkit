@@ -4786,6 +4786,20 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-records/test/v1-client.test.ts",
   },
   {
+    rule: "A Statement that an LRS answers for an id is the Statement with that id.",
+    file: "packages/learning-records/src/client/statements.ts",
+    find: "if (statement.id?.toLowerCase() !== id.toLowerCase()) {",
+    replace: "if (false) {",
+    test: "packages/learning-records/test/client-statements.test.ts",
+  },
+  {
+    rule: "An Activity that an LRS answers for an id is the Activity with that id.",
+    file: "packages/learning-records/src/client/resources.ts",
+    find: "if (iriKey(activity.id) !== iriKey(id)) {",
+    replace: "if (false) {",
+    test: "packages/learning-records/test/client-resources.test.ts",
+  },
+  {
     rule: "An answer names the version of the route of its request.",
     file: "packages/learning-records/src/store/router.ts",
     find: 'routed?.version ?? routeOf(request.headers["x-experience-api-version"], settings.versions) ?? settings.versions[0];',

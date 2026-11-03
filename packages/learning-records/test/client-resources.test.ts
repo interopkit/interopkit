@@ -24,6 +24,17 @@ describe("getActivity", () => {
     expect(await clientOf(lrs).getActivity(ACTIVITY)).toStrictEqual({ id: ACTIVITY });
   });
 
+  it("refuses an Activity of another id, and takes one whose scheme and host have another case", async () => {
+    const other = fakeLrs(() => ({ body: { id: "https://example.org/activities/course-2" } }));
+    await expect(clientOf(other).getActivity(ACTIVITY)).rejects.toThrow(
+      `answered with data that is not valid xAPI: The Activity has the id https://example.org/activities/course-2, and the request asked for ${ACTIVITY}.`,
+    );
+    const folded = fakeLrs(() => ({ body: { id: "HTTPS://EXAMPLE.ORG/activities/course-1" } }));
+    expect(await clientOf(folded).getActivity(ACTIVITY)).toStrictEqual({
+      id: "HTTPS://EXAMPLE.ORG/activities/course-1",
+    });
+  });
+
   it("rejects with a ServiceError for 404, since an LRS always answers with an Activity", async () => {
     expect(await failureOf(clientOf(fakeLrs(() => ({ status: 404 }))).getActivity(ACTIVITY))).toBeInstanceOf(
       ServiceError,

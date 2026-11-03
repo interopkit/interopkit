@@ -199,6 +199,22 @@ describe("getStatement", () => {
     expect(await clientOf(lrs).getStatement(uuid(1))).toBeUndefined();
   });
 
+  it("refuses a Statement of another id, or of none, and takes the id in another case", async () => {
+    const other = fakeLrs(() => ({ body: statementOf(2) }));
+    await expect(clientOf(other).getStatement(uuid(1))).rejects.toThrow(
+      `answered with data that is not valid xAPI: The Statement has the id "${uuid(2)}", and the request asked for ${uuid(1)}.`,
+    );
+    await expect(clientOf(other).getStatement(uuid(1), { voided: true, attachments: true })).rejects.toThrow(
+      "and the request asked for",
+    );
+    const { id: _id, ...anonymous } = statementOf(1);
+    await expect(clientOf(fakeLrs(() => ({ body: anonymous }))).getStatement(uuid(1))).rejects.toThrow(
+      `The Statement has the id undefined, and the request asked for ${uuid(1)}.`,
+    );
+    const upper = { ...statementOf(1), id: uuid(1).toUpperCase() };
+    expect(await clientOf(fakeLrs(() => ({ body: upper }))).getStatement(uuid(1))).toStrictEqual(upper);
+  });
+
   it("asks for a voided Statement by voidedStatementId, and for a format", async () => {
     const lrs = fakeLrs(() => ({ body: statementOf(1) }));
     const client = clientOf(lrs);
