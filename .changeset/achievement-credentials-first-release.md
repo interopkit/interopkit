@@ -118,3 +118,12 @@ host's `authorize` for its scope and the owner of the token (`CredentialsAccess`
 `insufficient_scope` or 429 with `Retry-After`. With `verify`, a credential is verified before it is stored, without following its
 refresh service, and refused with 422 when it does not verify. A body has at most `maxBodyBytes` (1,048,576) and `maxTokens`
 (1,000,000), and every failure is an `imsx_StatusInfo` with the code of Open Badges B.3.6.
+
+`createStatusListCache` keeps a list by its address and by the trust of the call that verified it (its `keys`, `contexts` and
+`suites`, and `allowUnboundKeys`, `legacyProofs`, `algorithms` and `clockSkewSeconds`), so verifiers of different policies may share
+one cache, and a load that calls share runs with no caller's signal; a list credential under the Data Model 1.1 is valid, and
+kept, until its `expirationDate`. A hosted 2.0 assertion is held to the `startsWith` of its issuer at the address that `URL`
+resolves. The `basePath` of the provider is compared percent-encoded, as `URL` writes the path of a request. The client, the
+refresh handler and `addProof` stop waiting for a function of the host when the signal aborts, and the list of the client keeps a
+digest of each credential that it has given. `validateJsonLd` and `deriveDisclosure` refuse a credential that nests more than 64
+levels with a `DataError`.
