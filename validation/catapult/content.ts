@@ -254,7 +254,8 @@ async function main(): Promise<number> {
     const played = await execute("node", [import.meta.filename, "--sessions", `https://127.0.0.1:${port}`, suite], {
       cwd: ROOT,
       env: { NODE_EXTRA_CA_CERTS: cert },
-      log: LOG,
+      // The sessions write their own lines to the log of the run, so their output is kept apart.
+      log: join(CACHE, "content-sessions.log"),
     });
     return played.code;
   } finally {
