@@ -27,6 +27,15 @@ import { inspectStatement, issueSink } from "../read/internal.js";
 /** The properties that a Statement is built from. */
 const INPUT_PROPERTIES = ["id", "actor", "verb", "object", "timestamp", "result", "context", "attachments"] as const;
 
+/**
+ * The properties that a built Statement needs although a Statement may lack them, and why: a resend repeats the id, and the time
+ * is that of the event, where an LRS would set the time it stored the Statement.
+ */
+const REQUIRED = [
+  ["id", "so that a resend repeats it"],
+  ["timestamp", "so that it holds the time of the event and not the time that an LRS stored it"],
+] as const;
+
 /** What a Learning Record Provider gives to make a Statement. */
 export interface StatementInput {
   /** The id, a UUID. A provider gives one so that a resend repeats it; `deriveStatementId` makes one from what the event is. */
@@ -93,7 +102,8 @@ function inUtc(timestamp: unknown): unknown {
  * against the rules of a Learning Record Provider of the version.
  *
  * @remarks
- * A resend repeats the `id`, so it is required. The result shares nothing with the input. A warning of the provider rules does
+ * A resend repeats the `id`, so it is required, and so is the `timestamp`, the time of the event: an LRS would write the time
+ * it stored the Statement. The result shares nothing with the input. A warning of the provider rules does
  * not keep a Statement from being built: `validateStatement` with `role: "provider"` lists them. The `version` is written
  * although a provider should not send one: 2.0.0, so that a system of xAPI 1.0.x does not read the Statement as 1.0.0, or
  * 1.0.0 for 1.0.3, which is the only value a provider of 1.0.x may write.
@@ -102,7 +112,7 @@ function inUtc(timestamp: unknown): unknown {
  * @param options - The version.
  * @returns The Statement.
  * @throws `DataError` that names every error with its path, when the input has a property that a Statement is not built from,
- * or the Statement breaks a rule of a provider of the version, or has no `id`, or when the options are not an object with a
+ * or the Statement breaks a rule of a provider of the version, or has no `id` or no `timestamp`, or when the options are not an object with a
  * `version` of `"2.0.0"` or `"1.0.3"`.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  * @see {@link https://github.com/adlnet/xAPI-Spec/blob/1.0.3/xAPI-Data.md | xAPI 1.0.3, Data}
@@ -118,13 +128,15 @@ export function buildStatement(input: StatementInput, options?: BuildOptions): S
     sink,
   );
   const errors = sink.list();
-  if (input.id === undefined) {
-    errors.push({
-      path: "id",
-      rule: "missing-property",
-      message: 'missing the property "id", which a built Statement needs so that a resend repeats it.',
-      severity: "error",
-    });
+  for (const [name, why] of REQUIRED) {
+    if (input[name] === undefined) {
+      errors.push({
+        path: name,
+        rule: "missing-property",
+        message: `missing the property ${JSON.stringify(name)}, which a built Statement needs ${why}.`,
+        severity: "error",
+      });
+    }
   }
   if (value === undefined || errors.length > 0) throw new DataError(sentenceOf(errors));
   return value;

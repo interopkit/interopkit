@@ -83,6 +83,15 @@ describe("buildStatement", () => {
     );
   });
 
+  it("refuses an input with no timestamp, since the time is that of the event and not that of the LRS", () => {
+    const { timestamp: _timestamp, ...withoutTime } = input();
+    expect(() => buildStatement(withoutTime as StatementInput)).toThrow(
+      'The statement is invalid. At timestamp: missing the property "timestamp", which a built Statement needs so that it holds the time of the event and not the time that an LRS stored it.',
+    );
+    const { id: _id, ...withNeither } = withoutTime;
+    expect(() => buildStatement(withNeither as StatementInput)).toThrow(/At id: missing .* At timestamp: missing/su);
+  });
+
   it.each([
     ["a time that is not a time", { timestamp: "yesterday" }, "At timestamp: expected a date and time as RFC 3339"],
     [

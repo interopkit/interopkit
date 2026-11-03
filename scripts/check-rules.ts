@@ -4288,7 +4288,21 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A Statement is built with an id, which a resend repeats.",
     file: "packages/learning-records/src/build/build-statement.ts",
-    find: "if (input.id === undefined) {",
+    find: '["id", "so that a resend repeats it"],',
+    replace: "",
+    test: "packages/learning-records/test/build.test.ts",
+  },
+  {
+    rule: "A Statement is built with the time of the event, which an LRS would set to the time it stored the Statement.",
+    file: "packages/learning-records/src/build/build-statement.ts",
+    find: '["timestamp", "so that it holds the time of the event and not the time that an LRS stored it"],',
+    replace: "",
+    test: "packages/learning-records/test/build.test.ts",
+  },
+  {
+    rule: "A Statement that lacks a property that a built Statement needs is not built.",
+    file: "packages/learning-records/src/build/build-statement.ts",
+    find: "if (input[name] === undefined) {",
     replace: "if (false) {",
     test: "packages/learning-records/test/build.test.ts",
   },
