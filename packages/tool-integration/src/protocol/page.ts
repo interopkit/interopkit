@@ -15,15 +15,23 @@ export interface PageOptions {
    * @defaultValue none
    */
   readonly frameAncestors?: string;
+  /**
+   * The referrer policy of the page. A page whose form posts to its own origin, which the receiver checks, takes
+   * `same-origin`: under `no-referrer` a browser sends the `Origin` of a form post as `null` (Fetch, "append a request
+   * `Origin` header").
+   *
+   * @defaultValue `"no-referrer"`
+   */
+  readonly referrerPolicy?: "no-referrer" | "same-origin";
 }
 
 /**
  * Builds the answer for a page with one script, which the login and the launch send to a browser: it is not cached, sends no
- * referrer, is not sniffed, and its policy allows nothing but its script, by hash, and the forms that go to
- * `formAction`. The caller has encoded every value in `body` with `escapeHtml`.
+ * referrer, or one to its own origin alone, is not sniffed, and its policy allows nothing but its script, by hash, and the forms
+ * that go to `formAction`. The caller has encoded every value in `body` with `escapeHtml`.
  */
 export async function renderPage(page: PageOptions): Promise<HttpResponse> {
-  const { body, script, formAction, frameAncestors } = page;
+  const { body, script, formAction, frameAncestors, referrerPolicy = "no-referrer" } = page;
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -40,7 +48,7 @@ ${body}<script>${script}</script>
     headers: {
       "content-type": "text/html; charset=utf-8",
       "cache-control": "no-store",
-      "referrer-policy": "no-referrer",
+      "referrer-policy": referrerPolicy,
       "x-content-type-options": "nosniff",
       "content-security-policy": await pagePolicy(script, formAction, frameAncestors),
     },

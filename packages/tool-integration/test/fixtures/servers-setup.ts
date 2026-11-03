@@ -1,4 +1,4 @@
-import { createServer, type Server } from "node:http";
+import { createServer, type IncomingMessage, type Server } from "node:http";
 import type { TestProject } from "vitest/node";
 
 /**
@@ -18,10 +18,29 @@ JSON.parse(query.get("send") || "[]").forEach(function (message) {
 fetch("/ready?id=" + id);
 </script>`;
 
-/** A server that records the paths it is asked for, answers every request with 204, and shows the paths at `/__hits`. */
+/** A page that a test gives a server to serve, with the headers of the answer of the handler that made it. */
+interface GivenPage {
+  readonly headers: Readonly<Record<string, string>>;
+  readonly body: string;
+}
+
+/** Reads the body of a request as text. */
+async function textOf(request: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of request) chunks.push(Buffer.from(chunk));
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+/**
+ * A server that records the paths it is asked for, answers every request with 204, and shows the paths at `/__hits`. For a POST it
+ * also records `POST <path> origin=<the Origin header>`. A POST to `/page?id=<id>` gives it a page, a JSON `GivenPage`, which a GET
+ * of the same address then serves with its headers, so that a browser runs it as the handler's answer and not as a document of the
+ * test.
+ */
 async function listen(): Promise<{ server: Server; origin: string }> {
   const hits: string[] = [];
-  const server = createServer((request, response) => {
+  const pages = new Map<string, GivenPage>();
+  const server = createServer(async (request, response) => {
     response.setHeader("access-control-allow-origin", "*");
     if (request.url === "/__hits") {
       response.setHeader("content-type", "application/json");
@@ -29,8 +48,24 @@ async function listen(): Promise<{ server: Server; origin: string }> {
       response.end(JSON.stringify(hits));
       return;
     }
-    hits.push(request.url ?? "");
-    if (request.url?.startsWith("/probe")) {
+    const url = request.url ?? "";
+    hits.push(url);
+    if (request.method === "POST") hits.push(`POST ${url} origin=${request.headers.origin ?? ""}`);
+    if (url.startsWith("/page?")) {
+      if (request.method === "POST") {
+        pages.set(url, JSON.parse(await textOf(request)));
+        response.statusCode = 204;
+        response.end();
+        return;
+      }
+      const page = pages.get(url);
+      if (page !== undefined) {
+        for (const [name, value] of Object.entries(page.headers)) response.setHeader(name, value);
+        response.end(page.body);
+        return;
+      }
+    }
+    if (url.startsWith("/probe")) {
       response.setHeader("content-type", "text/html");
       response.end(PROBE);
       return;

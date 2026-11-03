@@ -1172,6 +1172,14 @@ export const RULES: readonly Rule[] = [
     browser: true,
   },
   {
+    rule: "The verification page posts with the Origin of the tool, which a browser sends as null under no-referrer.",
+    file: "packages/tool-integration/src/tool/pages.ts",
+    find: 'return respond(GET_SCRIPT, config, form, "same-origin");',
+    replace: 'return respond(GET_SCRIPT, config, form, "no-referrer");',
+    test: "packages/tool-integration/test/tool.browser.test.ts",
+    browser: true,
+  },
+  {
     rule: "The storage pages take only the answer to their own capabilities request.",
     file: "packages/tool-integration/src/tool/pages.ts",
     find: 'if (data.subject !== "lti.capabilities.response" || data.message_id !== id) return;',

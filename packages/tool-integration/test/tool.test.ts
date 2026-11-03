@@ -746,7 +746,7 @@ describe("ltiLaunch", () => {
       expect(response.headers["set-cookie"]).toBeUndefined();
     });
 
-    it("sends the verification page with a CSP that names its script and nothing else", async () => {
+    it("sends the verification page with a CSP that names its script and nothing else, and a referrer to its own origin alone", async () => {
       const ctx = setup();
       const { auth } = await storageLogin(ctx);
       const page = (await ltiLaunch(auth.post(), ctx.options)) as HttpResponse;
@@ -755,7 +755,8 @@ describe("ltiLaunch", () => {
       expect(page.headers["content-type"]).toBe("text/html; charset=utf-8");
       expect(page.headers["cache-control"]).toBe("no-store");
       expect(page.headers["x-content-type-options"]).toBe("nosniff");
-      expect(page.headers["referrer-policy"]).toBe("no-referrer");
+      // Under no-referrer a browser posts the form with `Origin: null`, and the launch refuses the post as origin-mismatch.
+      expect(page.headers["referrer-policy"]).toBe("same-origin");
       expect(page.headers["content-security-policy"]).toBe(
         `default-src 'none'; script-src 'sha256-${view.hash}'; base-uri 'none'; form-action 'self'`,
       );

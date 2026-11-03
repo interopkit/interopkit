@@ -145,13 +145,23 @@ const GET_SCRIPT = `(function () {
 const FAILURE =
   "The launch could not continue: the platform did not store or return the launch state. Close this window and start the launch again.";
 
-/** Builds a page with one script, for the browser to run in the frame of the platform. */
-function respond(script: string, config: object, body: string): Promise<HttpResponse> {
+/**
+ * Builds a page with one script, for the browser to run in the frame of the platform.
+ *
+ * @param referrerPolicy - `same-origin` for the verification page, whose post `ltiLaunch` accepts only with the `Origin` of the
+ * tool, which a browser sends as `null` under `no-referrer`.
+ */
+function respond(
+  script: string,
+  config: object,
+  body: string,
+  referrerPolicy: "no-referrer" | "same-origin",
+): Promise<HttpResponse> {
   const timeouts = { timeoutMs: STORAGE_TIMEOUT_MS, capabilitiesTimeoutMs: CAPABILITIES_TIMEOUT_MS };
   const page = `<div id="lti" data-config="${escapeHtml(JSON.stringify({ ...config, ...timeouts }))}"></div>
 ${body}<p id="failure" role="alert" hidden>${FAILURE}</p>
 `;
-  return renderPage({ body: page, script, formAction: "'self'" });
+  return renderPage({ body: page, script, formAction: "'self'", referrerPolicy });
 }
 
 /** The values of a login that the page stores in the platform. */
@@ -177,7 +187,12 @@ export interface StoragePut {
 export function putDataPage(put: StoragePut): Promise<HttpResponse> {
   const { frame, state, nonce, authenticationRequest } = put;
   const origin = new URL(authenticationRequest).origin;
-  return respond(PUT_SCRIPT, { subject: "lti.put_data", frame, state, nonce, origin, authenticationRequest }, "");
+  return respond(
+    PUT_SCRIPT,
+    { subject: "lti.put_data", frame, state, nonce, origin, authenticationRequest },
+    "",
+    "no-referrer",
+  );
 }
 
 /** What the verification page needs to fetch the values and return them with the token. */
@@ -199,7 +214,8 @@ export interface StorageGet {
 /**
  * Builds the verification page: it asks the platform for its capabilities, fetches `state` and `nonce` from the platform's
  * storage with `lti.get_data` and submits them with the token to the launch URL (LTI Client Side OIDC 0.1 section 2.7,
- * Client Side postMessages 0.1 section 4.1).
+ * Client Side postMessages 0.1 section 4.1). Its referrer policy is `same-origin`, so that the post carries the `Origin` of the
+ * tool, which `ltiLaunch` checks.
  */
 export function getDataPage(get: StorageGet): Promise<HttpResponse> {
   const { frame, state, nonce, authenticationUrl, redirectUri, idToken } = get;
@@ -217,5 +233,5 @@ ${field("id_token", idToken)}${field("state", state)}${field(STORED_STATE, "")}$
     stateField: STORED_STATE,
     nonceField: STORED_NONCE,
   };
-  return respond(GET_SCRIPT, config, form);
+  return respond(GET_SCRIPT, config, form, "same-origin");
 }

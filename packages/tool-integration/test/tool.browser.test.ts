@@ -2,7 +2,7 @@
 
 import { signerFromCryptoKey } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, inject, it } from "vitest";
 import { createJwksCache } from "../src/index.js";
 import {
   type LoginRecord,
@@ -22,6 +22,7 @@ import { waitFor } from "./wait.js";
  */
 
 const origin = location.origin;
+const { other } = inject("fixtures");
 const PLATFORM = "https://lms.example.edu";
 const pair = await crypto.subtle.generateKey(
   { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
@@ -505,6 +506,26 @@ describe("the verification page", () => {
     storage.release();
     await waitFor(() => expect(frame.contentDocument?.getElementById("failure")?.hidden).toBe(false));
     expect(submitted()).toBeUndefined();
+  });
+
+  it("posts from the origin of the tool, which ltiLaunch checks, when the browser runs it with the headers of its answer", async () => {
+    // The page is served by a server of its own, with the headers that ltiLaunch gave it, so that the browser applies its
+    // referrer policy to the post as it would in a launch; the frames of the other tests load it from text, without them.
+    const storage = new PlatformStorage(window);
+    const { page, state, nonce } = await verification("_parent");
+    storage.put(`state_${state}`, state);
+    storage.put(`nonce_${nonce}`, nonce);
+    storage.release();
+    const address = `${other}/page?id=${crypto.randomUUID()}`;
+    const body = textOf(page.body)
+      .replaceAll(registration.redirectUri, `${other}/lti/launch`)
+      .replaceAll(PLATFORM, origin);
+    await fetch(address, { method: "POST", body: JSON.stringify({ headers: page.headers, body }) });
+    const frame = document.createElement("iframe");
+    frame.src = address;
+    frames.push(frame);
+    document.body.append(frame);
+    await waitFor(async () => expect(await requestsTo(other)).toContain(`POST /lti/launch origin=${other}`));
   });
 
   it("asks no frame of another origin for the values, though it has the name of the storage", async () => {

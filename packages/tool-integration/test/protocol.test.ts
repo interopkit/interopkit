@@ -273,6 +273,16 @@ describe("a writer of a body", () => {
 });
 
 describe("renderPage", () => {
+  it("sends a referrer to the page's own origin alone when the page asks for it", async () => {
+    const page = await renderPage({
+      body: "",
+      script: "alert(1)",
+      formAction: "'self'",
+      referrerPolicy: "same-origin",
+    });
+    expect(page.headers["referrer-policy"]).toBe("same-origin");
+  });
+
   it("answers a page with one script that no browser caches, shares a referrer or sniffs, and a policy that names the script", async () => {
     const page = await renderPage({
       body: "<p>Body</p>\n",

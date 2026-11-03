@@ -201,7 +201,8 @@ cookies, nothing else stops a cross-site form from posting a token of the attack
 
 The scripts of the two pages use only features that Chromium 111, Firefox 115 and Safari 16.4 have, and later versions. Both pages carry a CSP that allows their one script by hash (`default-src 'none'; script-src 'sha256-...'; base-uri 'none';
 form-action 'self'`), `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`, and every value in them is
-HTML-encoded. `ltiLaunch` echoes the `id_token` of the platform's post into the verification page before it verifies it, and
+HTML-encoded. The storage page sends no referrer; the verification page sends one to its own origin alone
+(`Referrer-Policy: same-origin`), since under `no-referrer` a browser posts its form with `Origin: null`, which `ltiLaunch` refuses. `ltiLaunch` echoes the `id_token` of the platform's post into the verification page before it verifies it, and
 only for a `state` that the tool issued.
 
 ### What `ltiLaunch` checks
