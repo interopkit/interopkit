@@ -5457,6 +5457,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
+    rule: "A hosted 2.0 assertion is held to the startsWith of its issuer at the address that URL resolves.",
+    file: "packages/achievement-credentials/src/verify/policy-v2.ts",
+    find: "!startsWith.some((prefix) => resolved(assertion.id).startsWith(resolved(prefix)))",
+    replace: "!startsWith.some((prefix) => assertion.id.startsWith(prefix))",
+    test: "packages/achievement-credentials/test/v2-verify.test.ts",
+  },
+  {
     rule: "A status that is not a revocation or a suspension is never read as a bit.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
     find: 'if (typeof statusPurpose !== "string" || MEANING[statusPurpose] === undefined) {',

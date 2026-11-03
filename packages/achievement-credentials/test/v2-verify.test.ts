@@ -232,6 +232,26 @@ describe("the failures of a 2.0 verification", () => {
     });
   });
 
+  it("judges a hosted assertion against the startsWith of its issuer at the address that URL resolves, so that dots or escapes leave no path", async () => {
+    // Another tenant of the platform hosts a document that claims the guild's badge at an address that names the guild's path.
+    const claimed = FIXTURE.documents["https://platform.example.com/assertions/acme/9"]?.body as Json;
+    for (const address of [
+      "https://platform.example.com/assertions/acme/../other/11",
+      "https://platform.example.com/assertions/acme/%2e%2e/other/11",
+      "https://platform.example.com/assertions/acme\\..\\other/11",
+    ]) {
+      const documents = {
+        ...FIXTURE.documents,
+        [new URL(address).href]: { status: 200, body: { ...claimed, id: address } },
+      };
+      const { options, requests } = optionsOf(documents);
+      const served = async (input: RequestInfo | URL) => await options.fetch(new URL(String(input)).href);
+      const result = await verifyCredential(address, { ...options, fetch: served });
+      expect(requests[0], address).toBe("https://platform.example.com/assertions/other/11");
+      expect(failing(result), address).toMatchObject({ check: "issuer", outcome: "failed" });
+    }
+  });
+
   it("fails a hosted assertion whose issuer is not at an HTTPS address, whose policy nothing ties to it", async () => {
     const badgeClass = FIXTURE.documents[`${HOST}/badges/printmaster`]?.body as Json;
     const issuer = FIXTURE.documents[`${HOST}/issuer`]?.body as Json;

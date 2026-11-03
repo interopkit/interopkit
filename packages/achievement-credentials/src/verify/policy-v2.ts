@@ -22,11 +22,20 @@ export function hostedIssuerCheck({ issuer }: BadgeAssertionV2): VerificationChe
       );
 }
 
+/** Writes an address as `URL` resolves it, which is the address that a fetch requests: without its dot segments, written or escaped. */
+function resolved(address: string): string {
+  return new URL(address).href;
+}
+
 /**
  * Checks that a hosted assertion is within the verification policy of its issuer (Open Badges 2.0, HostedBadge Verification,
  * as `verification.py` of the validator of 1EdTech applies it): its `id` starts with one of `startsWith` when the policy names
  * any, and its authority is one of `allowedOrigins`, which is the authority of the issuer's `id` when the policy names none. The
  * property of the policy is `id`, the only one that Open Badges 2.0 supports.
+ *
+ * @remarks
+ * The `id` and each `startsWith` are compared as `URL` resolves them, which is the address that the assertion was fetched at:
+ * written as it is, `/acme/../other/1` starts with `/acme/` and is served from `/other/1`, the path that a policy keeps out.
  */
 export function checkHostedPolicy(badge: BadgeAssertionV2): VerificationCheck {
   const issuerOutside = hostedIssuerCheck(badge);
@@ -40,7 +49,7 @@ export function checkHostedPolicy(badge: BadgeAssertionV2): VerificationCheck {
     );
   }
   const { startsWith } = policy;
-  if (startsWith !== undefined && !startsWith.some((prefix) => assertion.id.startsWith(prefix))) {
+  if (startsWith !== undefined && !startsWith.some((prefix) => resolved(assertion.id).startsWith(resolved(prefix)))) {
     return failed(
       `The assertion ${assertion.id} does not start with any address that the policy of its issuer allows.`,
     );
