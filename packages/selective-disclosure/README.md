@@ -1,8 +1,8 @@
 # @interopkit/selective-disclosure
 
 The `ecdsa-sd-2023` Data Integrity cryptosuite of the W3C Recommendation
-[Data Integrity ECDSA Cryptosuites v1.0](https://www.w3.org/TR/vc-di-ecdsa/): an issuer signs a credential so that its holder can
-reveal part of it, and a verifier checks what is revealed. It implements this one suite, in its three roles, and no other
+[Data Integrity ECDSA Cryptosuites v1.0](https://www.w3.org/TR/vc-di-ecdsa/), for any verifiable credential, a learning one or
+not: an issuer signs a credential so that its holder can reveal part of it, and a verifier checks what is revealed. It implements this one suite, in its three roles, and no other
 selective disclosure: not SD-JWT, not BBS.
 
 ```mermaid

@@ -4,7 +4,8 @@ Conventions for people and coding agents working in this repository. Read this b
 enforced by `pnpm lint` (Biome and cspell), `pnpm check:standards`, `pnpm check:rules`, `pnpm typecheck`, `pnpm knip` and
 `pnpm docs:api`; the rest are checked in review.
 
-interopkit is a toolkit for learning-platform interoperability in JavaScript and TypeScript, in one repository:
+interopkit is a toolkit for learning standards, and the W3C credential standards beneath them that no trusted library
+implements, in JavaScript and TypeScript, in one repository:
 `@interopkit/core` is the shared foundation, `@interopkit/tool-integration` implements LTI 1.3 in both roles, and
 `@interopkit/learning-analytics` implements Caliper Analytics 1.2 and reads 1.1, `@interopkit/competency-frameworks` implements the
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,

@@ -1,6 +1,7 @@
 # interopkit
 
-TypeScript packages for learning-platform interoperability: the launches, grades and other messages that pass between a
+TypeScript packages for learning standards, and the W3C credential standards beneath them that no trusted library implements:
+the launches, grades and other messages that pass between a
 learning platform and a tool (LTI 1.3), the learning analytics events that a system reports (Caliper Analytics 1.2), the
 competency frameworks that a provider publishes (CASE 1.1), the learning records that a system keeps (xAPI 2.0 and 1.0.3), the achievement credentials that an issuer awards (Open Badges
 3.0 and CLR 2.0), the credentials that a holder shows in part (the `ecdsa-sd-2023` cryptosuite), and the courses that a

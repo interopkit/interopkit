@@ -1,7 +1,7 @@
 {
   "name": "@interopkit/selective-disclosure",
   "version": "0.0.0",
-  "description": "The ecdsa-sd-2023 Data Integrity cryptosuite: a base proof for the issuer, a derived proof for the holder and its verification.",
+  "description": "The ecdsa-sd-2023 Data Integrity cryptosuite for any verifiable credential: a base proof for the issuer, a derived proof for the holder and its verification.",
   "keywords": [
     "interopkit",
     "selective-disclosure",
