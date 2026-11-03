@@ -6376,7 +6376,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The check of the launch runs before the message is taken.",
     file: "packages/tool-integration/src/platform/authorize.ts",
-    find: "  if ((await checkLaunch(hint, settings)) === FAILED) return FAILED;\n",
+    find: "  if ((await checkLaunch(hint, request, settings)) === FAILED) return FAILED;\n",
     replace: "",
     test: "packages/tool-integration/test/platform.test.ts",
   },

@@ -87,14 +87,19 @@ async function bindHint(
   return hint;
 }
 
-/** Asks the host's `checkLaunch` about the launch of a hint, when the host gave one. */
-async function checkLaunch(hint: Hint, settings: PlatformSettings): Promise<typeof FAILED | undefined> {
+/** Asks the host's `checkLaunch` about the launch of a hint and the request that carries it, when the host gave one. */
+async function checkLaunch(
+  hint: Hint,
+  request: HttpRequest,
+  settings: PlatformSettings,
+): Promise<typeof FAILED | undefined> {
   const { checkLaunch: ask, signal } = settings;
   if (ask === undefined) return undefined;
   const launch = {
     clientId: hint.client,
     deploymentId: hint.deployment,
     ...(hint.principal === undefined ? {} : { principal: hint.principal }),
+    request,
   };
   const asked = await callPort(() => ask(launch, { signal }), signal);
   if (asked === undefined) return FAILED;
@@ -232,8 +237,8 @@ async function issueIdToken(
  * `LtiError`, which goes back to the tool as an authentication error response.
  */
 async function authorize(
-  parameters: ReadonlyMap<string, string>,
-  registration: ToolRegistration,
+  request: HttpRequest,
+  { parameters, registration }: Pick<Addressed, "parameters" | "registration">,
   settings: PlatformSettings,
 ): Promise<readonly [string, string][] | typeof FAILED> {
   checkFixed(parameters);
@@ -241,7 +246,7 @@ async function authorize(
   const state = requiredValue(parameters, "state", "state-missing");
   const hint = await bindHint(parameters, registration.clientId, settings);
   // The host's own check runs before `take`, so that a refused check does not spend the launch.
-  if ((await checkLaunch(hint, settings)) === FAILED) return FAILED;
+  if ((await checkLaunch(hint, request, settings)) === FAILED) return FAILED;
   // An abort before `take` leaves the launch unspent, since `callPort` checks the signal first. Once it is taken, a later abort
   // fails closed: the tool starts again.
   const message = await takeMessage(hint, settings);
@@ -324,7 +329,7 @@ export async function answerAuthorization(request: HttpRequest, settings: Platfo
   const { parameters, registration, redirectUri } = addressed;
   const frameOrigin = settings.config.frameOrigin;
   try {
-    const fields = await authorize(parameters, registration, settings);
+    const fields = await authorize(request, { parameters, registration }, settings);
     if (fields === FAILED) return serverError();
     return await renderPostPage({ action: redirectUri, fields, frameAncestors: frameOrigin });
   } catch (error) {

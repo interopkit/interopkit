@@ -325,7 +325,7 @@ the origin that asked.
 | `client(clientId, options)`           | required for requests  | Looks up a tool                                                                          |
 | `once(id, expiresAt, options)`        | required for requests  | Records an identifier until a time; `false` when it was used. Atomic across processes    |
 | `jwks`                                | required for requests  | The cache of the tools' key sets, from `createJwksCache`                                 |
-| `checkLaunch(launch, options)`        | none                   | A last check of `{ clientId, deploymentId, principal }` before the message is taken      |
+| `checkLaunch(launch, options)`        | none                   | A last check of `{ clientId, deploymentId, principal, request }` before the message is taken: the cookies of `request` tell whose browser it is, so one set of options serves every request |
 | `substitution`                        | none                   | `names` and `resolve` of the variables the host resolves                                 |
 | `migrationSecret(consumerKey, options)` | none                 | The LTI 1.1 secret that signs the migration claim                                        |
 | `services`                            | none                   | The stores of the services: `gradebook` ([grade services](grades.md)), `roster`, `groups` and `preferences` ([roster services](roster.md)), `control` ([proctoring](proctoring.md)), `registrations` ([registration](registration.md)) |

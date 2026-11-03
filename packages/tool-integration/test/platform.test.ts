@@ -9,6 +9,7 @@ import {
   buildCapabilitiesScript,
   buildPlatformEndpoints,
   handlePlatformRequest,
+  type LaunchToCheck,
   ltiPlatformFrame,
   ltiPlatformLogin,
   type MessageInput,
@@ -849,14 +850,36 @@ describe("the authentication request", () => {
       },
     });
     expect(errorOf(page)).toEqual({ status: 403, error: "access_denied" });
-    expect(seen).toEqual([{ clientId: TOOL_CLIENT_ID, deploymentId: TOOL_DEPLOYMENT_ID, principal: "candidate-7" }]);
+    const request = expect.objectContaining({
+      url: expect.stringMatching(/^https:\/\/lti\.platform\.example\/authorize\?/u),
+    });
+    expect(seen).toEqual([
+      { clientId: TOOL_CLIENT_ID, deploymentId: TOOL_DEPLOYMENT_ID, principal: "candidate-7", request },
+    ]);
     expect(ctx.kept.size).toBe(1);
     const anonymous = setup();
     await authorize(anonymous, undefined, {
       message: { ...baseMessage, user: {} },
       requests: { checkLaunch: async (asked) => seen.push(asked) > 0 },
     });
-    expect(seen.at(-1)).toEqual({ clientId: TOOL_CLIENT_ID, deploymentId: TOOL_DEPLOYMENT_ID });
+    expect(seen.at(-1)).toEqual({ clientId: TOOL_CLIENT_ID, deploymentId: TOOL_DEPLOYMENT_ID, request });
+  });
+
+  it("gives checkLaunch the request, so that one set of options checks the session of each browser", async () => {
+    const ctx = setup();
+    const sessions = new Map([["session=ana", "candidate-7"]]);
+    const checkLaunch = async ({ principal, request }: LaunchToCheck) =>
+      sessions.get(request.headers.cookie ?? "") === principal;
+    const { parameters } = await begin(ctx);
+    const asked = authenticationRequest(endpoints.authorization, parameters);
+    const other = await handle(
+      ctx,
+      { ...asked, headers: { ...asked.headers, cookie: "session=eve" } },
+      { checkLaunch },
+    );
+    expect(errorOf(other)).toEqual({ status: 403, error: "access_denied" });
+    const own = await handle(ctx, { ...asked, headers: { ...asked.headers, cookie: "session=ana" } }, { checkLaunch });
+    expect(readPost(own).fields.has("id_token")).toBe(true);
   });
 
   it("refuses a deployment that the tool lost between the login and the authentication request", async () => {

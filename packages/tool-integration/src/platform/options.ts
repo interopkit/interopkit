@@ -11,6 +11,7 @@ import {
   type Schema,
   strictRecord,
 } from "@interopkit/core/checks";
+import type { HttpRequest } from "@interopkit/core/http";
 import * as v from "valibot";
 import type { JwksCache, MessageSupported } from "../protocol/index.js";
 import { checkPlatformConfig, type PlatformConfig } from "./config.js";
@@ -60,6 +61,11 @@ export interface LaunchToCheck {
   readonly deploymentId: string;
   /** The `sub` of the launch; absent in an anonymous launch. */
   readonly principal?: string;
+  /**
+   * The tool's authentication request as the browser sent it, whose cookies tell the host whose session it is, so that one set
+   * of options serves every request.
+   */
+  readonly request: HttpRequest;
 }
 
 /**
@@ -106,8 +112,9 @@ export interface PlatformRequestOptions extends PlatformOptions, CallOptions {
   /** The cache of the key sets of tools, from `createJwksCache`. */
   readonly jwks: JwksCache;
   /**
-   * A last check of the launch before its message is taken from the `LaunchStore`, such as that the user's session is still
-   * the one that started it; `false` refuses it with `launch-refused`, and the message stays.
+   * A last check of the launch before its message is taken from the `LaunchStore`, such as that the session of the browser
+   * whose `request` it is belongs to the `principal` that started it; `false` refuses it with `launch-refused`, and the message
+   * stays.
    *
    * @defaultValue none
    */
