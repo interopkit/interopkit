@@ -6662,10 +6662,17 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A key set that a tool serves and that is not a JWK Set refuses the tool's token, and the handler does not throw.",
-    file: "packages/tool-integration/src/platform/registration.ts",
-    find: "if (error instanceof DataError) {\n          throw new LtiError(",
-    replace: "if (false) {\n          throw new LtiError(",
+    file: "packages/tool-integration/src/protocol/jwt.ts",
+    find: "if (error instanceof DataError) {\n    throw new LtiError(",
+    replace: "if (false) {\n    throw new LtiError(",
     test: "packages/tool-integration/test/platform.test.ts",
+  },
+  {
+    rule: "A key set that a platform serves and that is not a JWK Set refuses the launch with key-unknown.",
+    file: "packages/tool-integration/src/protocol/jwt.ts",
+    find: "if (error instanceof DataError) {\n    throw new LtiError(",
+    replace: "if (false) {\n    throw new LtiError(",
+    test: "packages/tool-integration/test/tool.test.ts",
   },
   {
     rule: "The name of the storage frame cannot close the script that answers the capabilities.",

@@ -147,10 +147,15 @@ function claimError(error: errors.JWTClaimValidationFailed | errors.JWTExpired, 
 }
 
 /**
- * Turns what jose throws into what the module throws: an `LtiError` with the reason of the failed check, and a `DataError`
- * for a key set that is not one. The errors of the key function that are `InteropkitError`s, such as a failed fetch, pass.
+ * Turns what jose throws into what the module throws: an `LtiError` with the reason of the failed check, `key-unknown` for a
+ * key set that is not one. The other errors of the key function that are `InteropkitError`s, such as a failed fetch, pass.
  */
 function refuse(error: unknown, expected: JwtExpectation): never {
+  // The key set is what the other party serves, so a set that the cache cannot read refuses the token as one without a key
+  // would, and is never the `DataError` of a host that passed something of the wrong shape.
+  if (error instanceof DataError) {
+    throw new LtiError(`The key set has no usable key for the token: ${error.message}`, "key-unknown");
+  }
   if (error instanceof InteropkitError) throw error;
   if (error instanceof errors.JWTClaimValidationFailed || error instanceof errors.JWTExpired) {
     throw claimError(error, expected);
@@ -184,7 +189,7 @@ function refuse(error: unknown, expected: JwtExpectation): never {
     );
   }
   if (error instanceof errors.JOSEError) {
-    throw new DataError(`The key set must be a JWK Set (RFC 7517 section 5): ${error.message}.`);
+    throw new LtiError(`The key set must be a JWK Set (RFC 7517 section 5): ${error.message}.`, "key-unknown");
   }
   throw error;
 }
@@ -201,7 +206,8 @@ function refuse(error: unknown, expected: JwtExpectation): never {
  * @throws `LtiError` with the reason of the failed check: `token-malformed`, `algorithm-unsupported`, `key-unknown`,
  * `signature-invalid`, `issuer-mismatch`, `audience-mismatch`, `audience-untrusted`, `authorized-party-missing`,
  * `authorized-party-mismatch`, `subject-mismatch`, `token-expired`, `issued-in-future`, `claim-missing` or `claim-invalid`.
- * @throws `ServiceError` when the key set cannot be fetched, and `DataError` when what the platform serves is not a JWK Set.
+ * `key-unknown` also when what the other party serves as its key set is not a JWK Set.
+ * @throws `ServiceError` when the key set cannot be fetched.
  */
 export async function verifyJwt(
   token: string,

@@ -229,7 +229,7 @@ A request that is not a POST of a form with `id_token` and `state` is a `DataErr
 | Without the cookie, on the storage path: the second post comes from the redirect URI's origin, with `stored_state` and `stored_nonce` equal to the login's | `origin-mismatch`, `storage-mismatch` |
 | The token has three canonical base64url parts, a JSON header and a JSON payload; no `crit` header                               | `token-malformed`                                 |
 | `alg` is one of the registration's `algorithms`, by default RS256, RS384, RS512, ES256, ES384 and ES512; `none`, the HMAC algorithms and every other are refused before a key is fetched | `algorithm-unsupported` |
-| The header has a `kid` that one key of the key set has, a key for the algorithm: RSA of 2,048 bits or more, or EC on P-256, P-384 or P-521 | `key-unknown` |
+| The header has a `kid` that one key of the key set has, a key for the algorithm: RSA of 2,048 bits or more, or EC on P-256, P-384 or P-521; the key set is a JWK Set | `key-unknown` |
 | The signature verifies with that key                                                                                            | `signature-invalid`                               |
 | `iss` equals the registration's issuer                                                                                          | `issuer-mismatch`                                 |
 | `aud` holds the client identifier and names no other party than the registration's `trustedAudiences`; a token with several audiences has `azp`; `azp`, when present, is the client identifier | `audience-mismatch`, `audience-untrusted`, `authorized-party-missing`, `authorized-party-mismatch` |
@@ -351,8 +351,8 @@ A set that is older than `ttlSeconds` is fetched again. A `kid` that the cached 
 `refreshSeconds` (Security Framework section 6.4: the platform adds a rotated key under a new `kid`), so a token with an invented
 `kid` cannot make the tool fetch on every request while the platform's key set answers. A key set that fails is not held back: each request that needs it fetches it again, so limit the rate of requests to the launch URL. Requests that wait for one fetch share it. The set resolves the key that
 has the `kid` and is meant for signing with the algorithm of the token (`use` is `sig` or absent, `alg` is that algorithm or absent, `key_ops` has
-`verify` when present); a `kid` that two keys share is refused, and a set that is not a JWK Set (RFC 7517 section 5) is a
-`DataError` and is not kept. A key of fewer than 2,048 bits does not verify (RFC 7518 section 3.3). The cache keeps 1,000 key
+`verify` when present); a `kid` that two keys share is refused, and a set that is not a JWK Set (RFC 7517 section 5) is not kept
+and refuses the launch with `key-unknown`, as a set without the `kid` does. A key of fewer than 2,048 bits does not verify (RFC 7518 section 3.3). The cache keeps 1,000 key
 sets at most: the one fetched first goes first.
 
 ## Calls to the platform

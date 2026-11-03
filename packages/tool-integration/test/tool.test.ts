@@ -401,12 +401,16 @@ describe("ltiLaunch", () => {
       }
     });
 
-    it("throws DataError when what the platform serves as its key set is not a key set", async () => {
+    it("refuses the launch with key-unknown when what the platform serves as its key set is not a key set", async () => {
       const ctx = setup();
       const { request: post } = await cookieLogin(ctx);
-      for (const body of ["<html>", "[]", '{"keys":{}}', '{"key":[]}']) {
+      for (const body of ["<html>", "[]", '{"keys":{}}', '{"key":[]}', JSON.stringify({ keys: Array(101).fill({}) })]) {
         ctx.platform.keySetResponse = () => new Response(body);
-        await expect(ltiLaunch(post, ctx.options), body).rejects.toMatchObject({ name: "DataError" });
+        await expect(ltiLaunch(post, ctx.options), body).rejects.toMatchObject({
+          name: "LtiError",
+          reason: "key-unknown",
+          status: 401,
+        });
         ctx.clock.advance(60);
       }
     });

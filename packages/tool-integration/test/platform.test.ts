@@ -1099,7 +1099,7 @@ describe("the token endpoint", () => {
       expect(refused.status, body).toBe(400);
       expect(JSON.parse(textOf(refused.body)), body).toMatchObject({
         error: "invalid_client",
-        error_description: expect.stringContaining("The key set of the tool is not usable"),
+        error_description: expect.stringContaining("The key set has no usable key for the token"),
       });
       expect(ctx.used.size).toBe(0);
     }
