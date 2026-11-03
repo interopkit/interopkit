@@ -36,4 +36,5 @@ export type { ServiceClientOptions } from "./services/options.js";
 export { createServiceClient, type ServiceClient } from "./services/parts.js";
 export type { PreferencesClient } from "./services/preferences.js";
 export type { RegistrationClient } from "./services/registration.js";
+export type { TokenStore } from "./services/token-store.js";
 export type { LoginRecord, LtiStore } from "./store.js";

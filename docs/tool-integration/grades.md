@@ -45,7 +45,8 @@ a launch.
 
 `createServiceClient(launch, options)` takes the deployment of a launch (its `issuer`, `clientId` and `deploymentId`) and the
 scopes that the platform offered in the claim, `launch.services.grades.scopes`. A host keeps one client for each deployment, so
-that its tokens are reused.
+that its tokens are reused; a host of several processes, or one that makes a client for each job, gives the clients a
+`TokenStore` that they share.
 
 | Method                                     | AGS   | Scope asked for, the narrowest that was offered | Answers                                       |
 | ------------------------------------------ | ----- | ----------------------------------------------- | --------------------------------------------- |
@@ -72,6 +73,26 @@ with `clientCredentialsToken` of [`@interopkit/core/oauth`](../core/oauth.md), `
 token of a scope is kept by `createTokenCache` until `refreshSkewSeconds` before its expiry: callers that arrive together share
 one token request, which runs to its own deadline and takes no caller's signal. A 401 drops the token of the scope, and the next
 call asks for a new one. Nothing retries.
+
+With `tokens`, a `TokenStore` of the host, the clients of several processes share their tokens. The key of a token is JSON text
+of the issuer, the client, the deployment and the scopes, so no two deployments or scopes share one. A client asks the store when
+it has no good token of a scope in its own memory, and takes the store's token only while its `expiresAt`, less
+`refreshSkewSeconds`, is later than the time of its clock; otherwise it asks the platform and puts the new token in the store. A
+token that the platform gave without `expires_in` is never put, since no one knows how long it is good. A 401 deletes the token of
+the scope from the store too. The store keeps a token until its `expiresAt` and not after, as a time to live does.
+
+```mermaid
+sequenceDiagram
+  participant C as ServiceClient
+  participant S as TokenStore
+  participant P as Token endpoint
+  C->>C: a good token of the scope in memory?
+  C->>S: get(key)
+  S-->>C: a token whose expiresAt, less the skew, is later, or none
+  C->>P: client assertion, when the store had none
+  P-->>C: a token with expires_in
+  C->>S: put(key, token), kept until expiresAt
+```
 
 ### URLs
 
@@ -105,6 +126,7 @@ among them) and its body.
 | `maxTokens`          | 1,000,000 | The most JSON tokens of an answer                                                        |
 | `pageLimit`          | 100       | The `limit` of a request for a container when neither its query nor its URL names one; a request for results has none unless the caller names it |
 | `refreshSkewSeconds` | 60        | The seconds before its expiry at which a token is replaced                               |
+| `tokens`             | none      | A `TokenStore` that the clients of several processes share; without it each client keeps its tokens in its own memory |
 | `signal`             | none      | Ends this caller's wait in the registration lookup                                       |
 
 ## The platform role
@@ -174,6 +196,7 @@ millisecond; the store keeps it unless a strictly later one is kept, and an equa
 | `client`, on a service call     | 500; `undefined`: 401                                                     | `signal`                       | On every call; a host may cache                                                                 |
 | The client's `fetch`            | `ServiceError`; a 404 of a line item is `undefined` or `false`; a 401 drops the token | `timeoutMs`        | GETs are safe; a score needs a later timestamp                                                  |
 | The token cache                 | A failed token request is not kept                                       | Its own deadline               | Shared by concurrent callers of a scope                                                         |
+| `TokenStore`                    | The call rejects with its error; a token that it fails to put is not kept, and the next call asks again; a value that is not a token with an expiry is a `DataError` | A signal that aborts after `timeoutMs` | `get` and `put` once for each token a client obtains; `delete` after a 401, which may drop a newer token of another process at the cost of one token request |
 
 A store that answers with something other than its contract (a line item that is not one, a page larger than its limit, a
 `keepScore` that is not `"kept"`, `"older"` or `undefined`) is a `DataError` that the handler throws.
@@ -193,7 +216,7 @@ A store that answers with something other than its contract (a line item that is
 
 | Data                          | Comes from                      | Goes to                                                     | Kept by the package |
 | ----------------------------- | ------------------------------- | ----------------------------------------------------------- | ------------------- |
-| An access token               | The platform's token endpoint   | The services of the platform, in `Authorization`; the client's cache until near its expiry | Only in memory, in the client |
+| An access token               | The platform's token endpoint   | The services of the platform, in `Authorization`; the client's cache until near its expiry; the host's `TokenStore` when given, until its expiry | Only in memory, in the client |
 | A score, a result             | The tool's host                 | The platform's `GradebookStore`, through the score service  | No                  |
 | Line items                    | Either side                     | The other side                                              | No                  |
 

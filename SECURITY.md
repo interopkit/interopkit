@@ -493,6 +493,10 @@ platform's key, to the tool's client and deployment, and to one use.
   the narrowest scope that a call needs, and sends the token only to a URL on the registration's `serviceOrigins`, or, without
   them, an `https` URL that names a public host; a `next` or `differences` link of another origin ends the pages. A 401 drops the
   token. The record of the AfA PNP Connector is asked of the `hostUrl` of the launch's claim and of no other host.
+- **A shared token store.** With `tokens`, the clients put bearer tokens in the host's `TokenStore`, each until its `expiresAt`,
+  and never one without an expiry. Keep the store as a store of secrets: only the tool's processes read it, and it drops a token
+  at its expiry. A client uses a stored token only while its expiry, less `refreshSkewSeconds`, is later than its clock, and only
+  under the key of its own platform, client, deployment and scope.
 - A score is not idempotent: AGS requires a strictly later `timestamp` for each update of a line item and user, and a platform
   may drop an equal or earlier one. After a timeout the first attempt is in doubt, and the resend takes a later time.
 - Launch claims (the `sub`, roles and custom properties) pass through the package to the host; it stores nothing.

@@ -1,10 +1,17 @@
 // biome-ignore-all lint/style/useNamingConvention: the names of LTI messages and of AGS bodies are camelCase or snake_case by the specifications.
 
 import { DataError, ServiceError } from "@interopkit/core";
+import type { AccessToken } from "@interopkit/core/oauth";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { type LtiMessage, type ResourceLinkMessage, SCOPES, type Score } from "../src/index.js";
-import { advanceScoreTimestamp, createServiceClient, ltiLaunch, type ServiceClientOptions } from "../src/tool/index.js";
+import {
+  advanceScoreTimestamp,
+  createServiceClient,
+  ltiLaunch,
+  type ServiceClientOptions,
+  type TokenStore,
+} from "../src/tool/index.js";
 import { CONTAINER_URL, FakeLms, LINE_ITEM_URL, SUBJECT } from "./fake-lms.js";
 import { ISSUER } from "./fake-platform.js";
 import { cookieLogin, type Setup, setup } from "./tool-setup.js";
@@ -341,6 +348,136 @@ describe("advanceScoreTimestamp", () => {
   });
 });
 
+/** A store of tokens that the clients of several processes share, as a database would be, which records its calls. */
+function sharedStore(): {
+  readonly store: TokenStore;
+  readonly kept: Map<string, AccessToken>;
+  readonly calls: string[];
+  readonly signals: (AbortSignal | undefined)[];
+} {
+  const kept = new Map<string, AccessToken>();
+  const calls: string[] = [];
+  const signals: (AbortSignal | undefined)[] = [];
+  const store: TokenStore = {
+    get: async (key, options) => {
+      calls.push(`get ${key}`);
+      signals.push(options?.signal);
+      return kept.get(key);
+    },
+    put: async (key, token, options) => {
+      calls.push(`put ${key}`);
+      signals.push(options?.signal);
+      kept.set(key, token);
+    },
+    delete: async (key, options) => {
+      calls.push(`delete ${key}`);
+      signals.push(options?.signal);
+      kept.delete(key);
+    },
+  };
+  return { store, kept, calls, signals };
+}
+
+describe("the token store", () => {
+  /** The key of the token of the launch's deployment for one scope: the issuer, the client, the deployment and the scopes. */
+  const keyOf = (launch: ResourceLinkMessage, scope: string): string =>
+    JSON.stringify([launch.issuer, launch.clientId, launch.deploymentId, [scope]]);
+
+  it("lets the clients of several processes share the token of a scope, kept by the platform, client, deployment and scope", async () => {
+    const { ctx, launch, options } = await launched();
+    const shared = sharedStore();
+    const key = keyOf(launch, SCOPES.lineitem);
+    const obtainedAt = ctx.clock.now();
+    await createServiceClient(launch, { ...options, tokens: shared.store }).lineItem(LINE_ITEM_URL);
+    await createServiceClient(launch, { ...options, tokens: shared.store }).lineItem(LINE_ITEM_URL);
+    expect(asked(ctx)).toEqual([SCOPES.lineitem]);
+    expect(shared.calls).toEqual([`get ${key}`, `put ${key}`, `get ${key}`]);
+    expect(shared.kept.get(key)).toEqual({
+      accessToken: "access-token-1",
+      expiresAt: obtainedAt + 3_600_000,
+      scopes: [SCOPES.lineitem],
+    });
+    const other = createServiceClient(
+      { ...launch, deploymentId: "another-deployment" },
+      {
+        ...options,
+        tokens: shared.store,
+        registration: async () => ({ ...ctx.registration, deploymentIds: ["another-deployment"] }),
+      },
+    );
+    await expect(other.lineItem(LINE_ITEM_URL)).rejects.toThrow();
+    expect(shared.calls.at(-1)).toBe(
+      `get ${JSON.stringify([launch.issuer, launch.clientId, "another-deployment", [SCOPES.lineitem]])}`,
+    );
+  });
+
+  it("asks the platform again for a kept token at its expiry less the skew, by the clock of the client, and keeps the new one", async () => {
+    const { ctx, launch, options } = await launched();
+    const shared = sharedStore();
+    const key = keyOf(launch, SCOPES.lineitem);
+    await createServiceClient(launch, { ...options, tokens: shared.store }).lineItem(LINE_ITEM_URL);
+    ctx.clock.advance(3600 - 61);
+    await createServiceClient(launch, { ...options, tokens: shared.store }).lineItem(LINE_ITEM_URL);
+    expect(asked(ctx)).toEqual([SCOPES.lineitem]);
+    ctx.clock.advance(1);
+    await createServiceClient(launch, { ...options, tokens: shared.store }).lineItem(LINE_ITEM_URL);
+    expect(asked(ctx)).toEqual([SCOPES.lineitem, SCOPES.lineitem]);
+    expect(shared.calls.filter((call) => call === `put ${key}`)).toHaveLength(2);
+    expect(shared.kept.get(key)?.expiresAt).toBe(ctx.clock.now() + 3_600_000);
+  });
+
+  it("keeps no token that the platform gave without an expiry, and takes none that is not of the scope", async () => {
+    const { ctx, launch, options } = await launched();
+    const shared = sharedStore();
+    const key = keyOf(launch, SCOPES.lineitem);
+    ctx.platform.tokenResponse = () =>
+      Response.json({ access_token: "access-token-1", token_type: "Bearer", scope: SCOPES.lineitem });
+    await createServiceClient(launch, { ...options, tokens: shared.store }).lineItem(LINE_ITEM_URL);
+    expect(shared.calls).toEqual([`get ${key}`]);
+    expect(shared.kept.size).toBe(0);
+    ctx.platform.tokenResponse = undefined;
+    shared.kept.set(key, { accessToken: "elsewhere", expiresAt: ctx.clock.now() + 3_600_000, scopes: [SCOPES.score] });
+    await createServiceClient(launch, { ...options, tokens: shared.store }).lineItem(LINE_ITEM_URL);
+    expect(asked(ctx)).toEqual([SCOPES.lineitem]);
+    expect(shared.kept.get(key)?.accessToken).toBe("access-token-1");
+  });
+
+  it("drops a token that the service refuses with 401 from the store, so that another process asks for a new one", async () => {
+    const { ctx, lms, launch, options } = await launched();
+    const shared = sharedStore();
+    const key = keyOf(launch, SCOPES.lineitem);
+    const client = createServiceClient(launch, { ...options, tokens: shared.store });
+    await client.lineItem(LINE_ITEM_URL);
+    lms.validToken = "another";
+    await expect(client.lineItem(LINE_ITEM_URL)).rejects.toMatchObject({ status: 401 });
+    expect(shared.calls.at(-1)).toBe(`delete ${key}`);
+    expect(shared.kept.has(key)).toBe(false);
+    lms.validToken = "access-token-1";
+    await createServiceClient(launch, { ...options, tokens: shared.store }).lineItem(LINE_ITEM_URL);
+    expect(ctx.platform.grants).toHaveLength(2);
+  });
+
+  it("rejects with the error of the store, and with DataError for what is not a kept token, and bounds each call of it", async () => {
+    const { ctx, launch, options } = await launched();
+    const shared = sharedStore();
+    const key = keyOf(launch, SCOPES.lineitem);
+    const failure = new Error("The store is down.");
+    const call = (store: TokenStore) =>
+      createServiceClient(launch, { ...options, tokens: store }).lineItem(LINE_ITEM_URL);
+    await expect(call({ ...shared.store, get: () => Promise.reject(failure) })).rejects.toBe(failure);
+    expect(asked(ctx)).toEqual([]);
+    await expect(call({ ...shared.store, put: () => Promise.reject(failure) })).rejects.toBe(failure);
+    for (const kept of [{ accessToken: 5 }, { accessToken: "a", scopes: [SCOPES.lineitem] }, "token"]) {
+      await expect(call({ ...shared.store, get: async () => JSON.parse(JSON.stringify(kept)) })).rejects.toThrow(
+        DataError,
+      );
+    }
+    await call(shared.store);
+    expect(shared.kept.has(key)).toBe(true);
+    expect(shared.signals.every((signal) => signal instanceof AbortSignal && !signal.aborted)).toBe(true);
+  });
+});
+
 describe("createServiceClient with input of other types", () => {
   it("throws DataError for a deployment and options that are not what it takes", async () => {
     const { launch, options } = await launched();
@@ -353,6 +490,8 @@ describe("createServiceClient with input of other types", () => {
       [launch, { ...options, fetch: undefined }],
       [launch, { ...options, maxBytes: JSON.parse('"5"') }],
       [launch, { ...options, pageLimit: 0 }],
+      [launch, { ...options, tokens: JSON.parse("null") }],
+      [launch, { ...options, tokens: { get: async () => undefined } }],
     ];
     for (const [deployment, change] of cases) {
       expect(() => createServiceClient(deployment as never, change as never)).toThrow(DataError);

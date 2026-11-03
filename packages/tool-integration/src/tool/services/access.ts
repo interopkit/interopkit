@@ -11,10 +11,12 @@ import { checkHttpsUrl, describe, hasMoreTokensThan } from "@interopkit/core/che
 import { createTokenCache } from "@interopkit/core/oauth";
 import { LtiError } from "../../errors.js";
 import type { LtiDeployment } from "../../protocol/index.js";
+import { MILLISECONDS } from "../../protocol/internal.js";
 import { findDeployment } from "../options.js";
 import { checkServiceUrl } from "../registration.js";
 import { requestServiceToken } from "../token.js";
 import type { ServiceClientSettings } from "./options.js";
+import { keptToken, tokenKey } from "./token-store.js";
 
 /** A page of what a service of the platform holds: the items, and the link to the next page. */
 export interface Page<T> {
@@ -179,13 +181,26 @@ export function createServiceAccess(deployment: LtiDeployment, settings: Service
   const { options, offered } = settings;
   const caches = new Map<string, (call?: CallOptions) => Promise<string>>();
 
-  /** The token cache of a scope: the work of a token is shared by the callers of the scope, and no caller's signal ends it. */
+  const { tokens } = options;
+  const timing = {
+    clock: options.clock,
+    skewMilliseconds: settings.refreshSkewSeconds * MILLISECONDS,
+    timeoutMs: settings.timeoutMs,
+  };
+
+  /**
+   * The token cache of a scope: the work of a token is shared by the callers of the scope, and no caller's signal ends it. With a
+   * store of tokens, the work asks the store first and gives it the token it obtains.
+   */
   const cacheOf = (scope: string): ((call?: CallOptions) => Promise<string>) => {
     const known = caches.get(scope);
     if (known !== undefined) return known;
+    const key = tokenKey(deployment, [scope]);
     const cache = createTokenCache(
       async () => {
         const registration = await findDeployment({ ...options, signal: undefined }, deployment);
+        const kept = tokens === undefined ? undefined : await keptToken(tokens, key, scope, timing);
+        if (kept !== undefined) return kept;
         const call = { fetch: options.fetch, timeoutMs: settings.timeoutMs, clock: options.clock };
         const token = await requestServiceToken(registration, deployment.deploymentId, [scope], call);
         // The platform may grant fewer scopes than were asked (Security Framework section 4.1), and a token without the scope
@@ -193,12 +208,26 @@ export function createServiceAccess(deployment: LtiDeployment, settings: Service
         if (!token.scopes.includes(scope)) {
           throw new LtiError(`The platform did not grant the scope ${describe(scope)}.`, "scope-denied");
         }
+        // A token without an expiry is good for no known time, so no other process may take it.
+        if (tokens !== undefined && token.expiresAt !== undefined) {
+          await tokens.put(key, token, { signal: AbortSignal.timeout(settings.timeoutMs) });
+        }
         return token;
       },
       { clock: options.clock, refreshSkewSeconds: settings.refreshSkewSeconds },
     );
     caches.set(scope, cache);
     return cache;
+  };
+
+  /** Drops the token of a scope that the platform no longer takes: the next call, in this process or another, asks for a new one. */
+  const forget = async (
+    scope: string,
+    cache: (call?: CallOptions) => Promise<string>,
+    signal: AbortSignal | undefined,
+  ): Promise<void> => {
+    if (caches.get(scope) === cache) caches.delete(scope);
+    await tokens?.delete(tokenKey(deployment, [scope]), signal === undefined ? {} : { signal });
   };
 
   return {
@@ -225,8 +254,7 @@ export function createServiceAccess(deployment: LtiDeployment, settings: Service
       try {
         return await requestService(service, nameOf(url), url, requestOf(init, token), limits);
       } catch (error) {
-        // The platform no longer takes the token: the next call of the scope asks for a new one.
-        if (error instanceof ServiceError && error.status === 401 && caches.get(scope) === cache) caches.delete(scope);
+        if (error instanceof ServiceError && error.status === 401) await forget(scope, cache, signal);
         throw error;
       }
     },

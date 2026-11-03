@@ -1209,6 +1209,34 @@ export const RULES: readonly Rule[] = [
     test: "packages/tool-integration/test/tool-services.test.ts",
   },
   {
+    rule: "A client takes a token of the store only before its expiry, less the skew, by its clock, and of the scope.",
+    file: "packages/tool-integration/src/tool/services/token-store.ts",
+    find: "const good = token.expiresAt - timing.skewMilliseconds > readClock(timing.clock) && token.scopes.includes(scope);",
+    replace: "const good = true;",
+    test: "packages/tool-integration/test/tool-services.test.ts",
+  },
+  {
+    rule: "The key of a stored token names the deployment, so that no other deployment takes it.",
+    file: "packages/tool-integration/src/tool/services/token-store.ts",
+    find: "return JSON.stringify([deployment.issuer, deployment.clientId, deployment.deploymentId, [...scopes].sort()]);",
+    replace: "return JSON.stringify([deployment.issuer, deployment.clientId, [...scopes].sort()]);",
+    test: "packages/tool-integration/test/tool-services.test.ts",
+  },
+  {
+    rule: "A client puts no token without an expiry in the store.",
+    file: "packages/tool-integration/src/tool/services/access.ts",
+    find: "if (tokens !== undefined && token.expiresAt !== undefined) {",
+    replace: "if (tokens !== undefined) {",
+    test: "packages/tool-integration/test/tool-services.test.ts",
+  },
+  {
+    rule: "A token that a service refuses with 401 leaves the store.",
+    file: "packages/tool-integration/src/tool/services/access.ts",
+    find: "await tokens?.delete(tokenKey(deployment, [scope]), signal === undefined ? {} : { signal });",
+    replace: "",
+    test: "packages/tool-integration/test/tool-services.test.ts",
+  },
+  {
     rule: "The storage pages take only the answer to their own capabilities request.",
     file: "packages/tool-integration/src/tool/pages.ts",
     find: 'if (data.subject !== "lti.capabilities.response" || data.message_id !== id) return;',
@@ -6587,7 +6615,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A 401 drops the cached token of the scope.",
     file: "packages/tool-integration/src/tool/services/access.ts",
-    find: "if (error instanceof ServiceError && error.status === 401 && caches.get(scope) === cache) caches.delete(scope);",
+    find: "if (caches.get(scope) === cache) caches.delete(scope);",
     replace: "",
     test: "packages/tool-integration/test/tool-services.test.ts",
   },

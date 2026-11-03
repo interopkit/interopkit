@@ -8,6 +8,7 @@ import {
   MAX_JSON_TOKENS,
 } from "@interopkit/core/checks";
 import { checkToolOptions, type ToolOptions } from "../options.js";
+import { checkTokenStore, type TokenStore } from "./token-store.js";
 
 /** The most bytes of an answer of a service by default: a page of a hundred line items, results or members is far less. */
 const DEFAULT_MAX_BYTES = 1_048_576;
@@ -56,6 +57,13 @@ export interface ServiceClientOptions extends ToolOptions {
    * @defaultValue `60`
    */
   readonly refreshSkewSeconds?: number;
+  /**
+   * The store of the access tokens that the clients of several processes share. A client asks it for a token of a scope when it
+   * has none in its own memory, and gives it each token that it obtains with an expiry; a token without one is not stored.
+   *
+   * @defaultValue none: each client keeps its tokens in its own memory
+   */
+  readonly tokens?: TokenStore;
 }
 
 /** The options of a service client with their defaults filled in. */
@@ -86,6 +94,7 @@ function checkServiceClientOptions(options: unknown): asserts options is Service
   for (const name of ["timeoutMs", "maxBytes", "maxTokens", "pageLimit", "refreshSkewSeconds"]) {
     if (options[name] !== undefined) checkPositiveInteger(options[name], `The option ${name}`);
   }
+  if (options.tokens !== undefined) checkTokenStore(options.tokens);
 }
 
 /**

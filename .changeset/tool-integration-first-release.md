@@ -14,7 +14,9 @@ sends a proctored candidate back with the page that posts the signed Start Asses
 returns the session data and holds the verified claims to the values that the platform sent), and calls the Assignment and
 Grade Services with `createServiceClient`: the line items of a context in pages, created, read, replaced and deleted, their
 results, and scores, with `advanceScoreTimestamp` for strictly later timestamps. It asks for the narrowest scope that a call
-needs, keeps one access token of `@interopkit/core/oauth` for each scope until it is about to expire, sends it only to the
+needs, keeps one access token of `@interopkit/core/oauth` for each scope until it is about to expire, shares it with the clients
+of other processes through the host's `TokenStore` when one is given, by issuer, client, deployment and scope and never past its
+expiry, sends it only to the
 registration's service origins or to a public host, follows only `next` links of the same origin, and reads every answer within
 `maxBytes` and `maxTokens` into its model; the same client reads the members of a context or a resource link in pages, with
 their group enrollments, the message of the link and the link to the differences (Names and Role Provisioning 2.0), the groups

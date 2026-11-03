@@ -460,7 +460,7 @@ read no other clock.
 | `state` and `nonce` of a login                              | `ltiLogin`                         | The host's `LtiStore`, and the browser (the cookie or the storage) | Only in the store, until used or 600 s |
 | The client assertion                                        | Signed by the tool's `signer`      | The platform's token endpoint                                      | No                                     |
 | The LTI 1.1 secret of a consumer key                        | `legacySecret`                     | One HMAC of the migration claim                                    | No                                     |
-| The access token                                            | The platform's token endpoint      | The services of the platform, in the `Authorization` header        | In the memory of the client, until near its expiry |
+| The access token                                            | The platform's token endpoint      | The services of the platform, in the `Authorization` header, and the host's `TokenStore` when given | In the memory of the client, until near its expiry |
 | A score                                                     | The host                           | The platform's score service                                       | No                                     |
 | The answer of a service that failed                         | The platform                       | `ServiceError.body`, to the host: treat it as untrusted text       | No                                     |
 
