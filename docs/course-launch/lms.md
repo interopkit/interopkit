@@ -134,7 +134,9 @@ request that lacks its `agent`, as xAPI asks.
 
 `accept` reserves a verb by writing the statement's id into the session and the registration before the store holds it, so two
 requests at once cannot both take what a session or a registration takes once. A batch is judged against what the records held
-before it, without its own reservations, so a batch sent again after a failure is judged as the first time. The statements of
+before it, without its own reservations, so a batch sent again after a failure is judged as the first time. A completed or
+passed statement that another session reserved counts once the LRS holds it, so one whose store failed, and that its unit never
+sent again, blocks no later session of the registration. The statements of
 the LMS have ids derived from what they are, under the course's `idNamespace`: a call made again writes the same statement once.
 
 ## Satisfaction

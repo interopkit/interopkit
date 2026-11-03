@@ -7700,6 +7700,20 @@ export const RULES: readonly Rule[] = [
     test: "packages/course-launch/test/lms-flow.test.ts",
   },
   {
+    rule: "A completed or passed statement that another session reserved and the LRS never stored blocks no later session.",
+    file: "packages/course-launch/src/lms/accept-statements.ts",
+    find: "return (await held.get(outcome.statement, { voided: false, ...signalOf(settings) })) !== undefined;",
+    replace: "return true;",
+    test: "packages/course-launch/test/lms-failures.test.ts",
+  },
+  {
+    rule: "A completed or passed statement that the LRS holds counts, though the LMS failed to mark it stored.",
+    file: "packages/course-launch/src/lms/accept-statements.ts",
+    find: "return (await held.get(outcome.statement, { voided: false, ...signalOf(settings) })) !== undefined;",
+    replace: "return false;",
+    test: "packages/course-launch/test/lms-failures.test.ts",
+  },
+  {
     rule: "The LRS refuses a statement that cmi5 refuses with 403.",
     file: "packages/course-launch/src/lms/extend-lrs-options.ts",
     find: "acceptStatus: 403,",

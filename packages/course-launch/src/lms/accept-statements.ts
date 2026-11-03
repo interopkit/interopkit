@@ -1,11 +1,12 @@
 import { readClock } from "@interopkit/core";
 import type { Statement, StatementIssue } from "@interopkit/learning-records";
+import type { StatementStore } from "@interopkit/learning-records/store";
 import { classifyStatement } from "../rules/index.js";
 import { cmi5VerbOf, judgeStatement, type SessionProgress, sessionOrder, timeOf } from "../rules/internal.js";
 import { registrationOf } from "./create-registration.js";
 import { type LmsSettings, signalOf, withRetries } from "./options.js";
 import { auOf } from "./progress.js";
-import type { Registration, Reservation, Session } from "./records.js";
+import type { AuOutcome, Registration, Reservation, Session } from "./records.js";
 
 /** The verbs of cmi5 that an assignable unit sends, which the LMS reserves in its session. */
 const RESERVED_VERBS: ReadonlySet<string> = new Set(["initialized", "completed", "passed", "failed", "terminated"]);
@@ -18,12 +19,29 @@ const isReserved = (verb: string | undefined): verb is Reservation["verb"] =>
 const idOf = (statement: Statement): string | undefined => statement.id?.toLowerCase();
 
 /**
+ * Tells whether a completed or passed statement of the registration counts before a batch: one that the LRS stored, or that
+ * this session reserved and the store is to hold. One that another session reserved and that is not marked stored counts when
+ * the LRS holds it: its store failed and its unit never sent it again, or the LRS stored it and the LMS failed to mark it.
+ */
+async function counts(
+  outcome: AuOutcome | undefined,
+  session: Session,
+  batch: ReadonlySet<string>,
+  held: StatementStore,
+  settings: LmsSettings,
+): Promise<boolean> {
+  if (outcome === undefined || batch.has(outcome.statement)) return false;
+  if (outcome.stored || session.reserved.some(({ statement }) => statement === outcome.statement)) return true;
+  return (await held.get(outcome.statement, { voided: false, ...signalOf(settings) })) !== undefined;
+}
+
+/**
  * What a session and its registration held before a batch: their reservations without those of the batch itself, so that a
  * batch sent again after a failure of the store is judged as it was the first time.
  */
 function progressBefore(
   session: Session,
-  au: Registration["aus"][string],
+  outcomes: { readonly completed: boolean; readonly passed: boolean },
   batch: ReadonlySet<string>,
 ): SessionProgress {
   const held = session.reserved.filter(({ statement }) => !batch.has(statement));
@@ -32,8 +50,7 @@ function progressBefore(
     initializedAt: initialized?.time,
     terminated: held.some(({ verb }) => verb === "terminated"),
     verbs: held.map(({ verb }) => verb),
-    completed: au.completed !== undefined && !batch.has(au.completed.statement),
-    passed: au.passed !== undefined && !batch.has(au.passed.statement),
+    ...outcomes,
   };
 }
 
@@ -80,6 +97,7 @@ async function judgeAndReserve(
   settings: LmsSettings,
   statements: readonly Statement[],
   sessionId: string,
+  held: StatementStore,
 ): Promise<readonly StatementIssue[] | "conflict"> {
   const { store } = settings;
   const session = await store.session(sessionId, signalOf(settings));
@@ -97,7 +115,12 @@ async function judgeAndReserve(
     launchData: session.launchData,
     preferencesRead: session.preferencesRead,
   };
-  let progress = progressBefore(session, auOf(registration, session.au), batch);
+  const au = auOf(registration, session.au);
+  const before = {
+    completed: await counts(au.completed, session, batch, held, settings),
+    passed: await counts(au.passed, session, batch, held, settings),
+  };
+  let progress = progressBefore(session, before, batch);
   const order = inOrder(statements);
   const findings: StatementIssue[] = [];
   for (const { statement, index } of order) {
@@ -134,14 +157,17 @@ async function judgeAndReserve(
  * registration held before the batch. A batch that keeps every rule reserves its statements that cmi5 defines in the session,
  * and its completed and passed statements in the registration, with conditional writes: two requests at once cannot both take
  * a verb that a session or a registration takes once. A batch sent again is judged as the first time, so a failure of the
- * store never blocks the unit's retry.
+ * store never blocks the unit's retry, and a completed or passed statement that another session reserved counts once the LRS
+ * holds it, so one that it never stored blocks no later session.
  *
+ * @param held - The host's store of Statements, which says whether the LRS holds a statement that another session reserved.
  * @returns The findings; an error among them refuses the request with 403.
  */
 export async function acceptStatements(
   settings: LmsSettings,
   statements: readonly Statement[],
   session: string,
+  held: StatementStore,
 ): Promise<readonly StatementIssue[]> {
-  return withRetries(settings, "judged statements", () => judgeAndReserve(settings, statements, session));
+  return withRetries(settings, "judged statements", () => judgeAndReserve(settings, statements, session, held));
 }

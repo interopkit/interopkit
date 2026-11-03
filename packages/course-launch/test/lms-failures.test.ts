@@ -117,6 +117,59 @@ describe("an LRS that fails", () => {
     expect((await host.store.session(launched.launch.session))?.state).toBe("terminated");
   });
 
+  it("takes a completed in a later session when the LRS never stored the one that an ended session reserved", async () => {
+    const host = testHost();
+    const registration = await register(host);
+    const first = await launchUnit(host, { registration: registration.id, au: AU3 });
+    await sendStatement(host, first, unitStatement(first, "initialized"));
+    host.lrs.failInsert = 1;
+    const lost = unitStatement(first, "completed", { completion: true, duration: "PT1M" });
+    expect((await sendStatement(host, first, lost)).status).toBe(500);
+    const second = await launchUnit(host, { registration: registration.id, au: AU3 });
+    await sendStatement(host, second, unitStatement(second, "initialized"));
+    const completed = unitStatement(second, "completed", { completion: true, duration: "PT1M" });
+    expect((await sendStatement(host, second, completed)).status).toBe(204);
+    expect((await host.store.registration(registration.id))?.aus[AU3]?.completed).toStrictEqual({
+      statement: completed.id,
+      stored: true,
+    });
+    expect(verbsOf(await statementsOf(host, registration.id))).toStrictEqual([
+      "launched",
+      "initialized",
+      "abandoned",
+      "launched",
+      "initialized",
+      "completed",
+    ]);
+  });
+
+  it("refuses a second completed when the LRS holds one that the LMS failed to mark as stored", async () => {
+    const host = testHost({ conflictRetries: 1 });
+    const registration = await register(host);
+    const first = await launchUnit(host, { registration: registration.id, au: AU3 });
+    await sendStatement(host, first, unitStatement(first, "initialized"));
+    const completed = unitStatement(first, "completed", { completion: true, duration: "PT1M" });
+    // accept writes the registration once; the wrapped insert then meets a conflict at every try.
+    const put = host.store.putRegistration.bind(host.store);
+    let puts = 0;
+    host.store.putRegistration = async (record, revision) => {
+      puts += 1;
+      return puts === 1 ? put(record, revision) : "conflict";
+    };
+    expect((await sendStatement(host, first, completed)).status).toBe(500);
+    host.store.putRegistration = put;
+    expect((await host.store.registration(registration.id))?.aus[AU3]?.completed?.stored).toBe(false);
+    const second = await launchUnit(host, { registration: registration.id, au: AU3 });
+    await sendStatement(host, second, unitStatement(second, "initialized"));
+    const again = await sendStatement(
+      host,
+      second,
+      unitStatement(second, "completed", { completion: true, duration: "PT1M" }),
+    );
+    expect(again.status).toBe(403);
+    expect(String(again.body)).toContain("a second completed in the registration");
+  });
+
   it("writes an abandoned statement once when a call is made again after the LRS failed", async () => {
     const host = testHost();
     const registration = await register(host);

@@ -67,7 +67,7 @@ export function extendLrsOptions(lrs: LrsOptions, options: LmsOptions): LrsOptio
       // A principal that names a session is the token of a unit; any other is the host's own.
       const { principal } = access;
       const session = principal === undefined ? undefined : await settings.store.session(principal, signalOf(settings));
-      if (session !== undefined) return acceptStatements(settings, statements, session.id);
+      if (session !== undefined) return acceptStatements(settings, statements, session.id, host.statements);
       return host.accept === undefined ? [] : host.accept(statements, access, call);
     },
     acceptStatus: 403,
