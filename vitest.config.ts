@@ -510,6 +510,15 @@ export default defineConfig({
         },
       },
       {
+        // The path of a sensor, which a web application runs in the engines of the browsers.
+        resolve: { alias: SOURCES },
+        test: {
+          name: "learning-analytics-browser",
+          include: ["packages/learning-analytics/test/**/*.browser.test.ts"],
+          browser: browser(),
+        },
+      },
+      {
         // The examples of the CASE implementation guide: `pnpm spec-examples` downloads them.
         resolve: { alias: SOURCES },
         test: {

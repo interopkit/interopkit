@@ -2,7 +2,7 @@
 
 What shows that the package does what it says: the tables of the specifications, the published contexts, schemas and fixtures of
 `caliper-spec`, the rules of the profiles, a sensor and an endpoint that run against each other, the speed of every hot path, the
-size of each entry point, the peak memory of every reader, and four runtimes. Each layer answers a question that the one before cannot. Caliper has no public
+size of each entry point, the peak memory of every reader, three engines of browsers and four runtimes. Each layer answers a question that the one before cannot. Caliper has no public
 conformance suite for an endpoint and no open sensor or endpoint of 1.2 to run against, so the oracles are the 1EdTech documents.
 
 ```mermaid
@@ -14,6 +14,7 @@ flowchart LR
   model --> roundtrip["Sensor to endpoint in process<br/>pnpm test, pnpm test:corpus"]
   roundtrip --> example["Example: a sensor, an endpoint,<br/>an older sensor<br/>pnpm test"]
   example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
+  roundtrip --> browsers["The sensor in Chromium,<br/>Firefox and WebKit<br/>pnpm test:browser"]
   model --> speed["1,000 events and entities<br/>against the schemas<br/>pnpm bench"]
   model --> size["Each entry point alone<br/>pnpm test"]
   model --> memory["Peak memory of each reader<br/>pnpm test"]
@@ -35,6 +36,7 @@ flowchart LR
 | Speed         | How long do reading, judging, building, sending and receiving take, against the schemas and the JSON? | `read.bench.ts`, `build.bench.ts`, `endpoint.bench.ts` in `packages/learning-analytics/test/`                        | `pnpm bench`          |
 | Size          | Does each entry point hold only what it uses, within its budget?                                    | `packages/learning-analytics/test/size.test.ts`                                                                        | `pnpm test`           |
 | Runtimes      | Does the example give the same results everywhere?                                                   | `compat/`                                                                                                              | `pnpm compat`         |
+| Browsers      | Does the path of a sensor run in the engines of the browsers, with the `uuid` built for them?        | `sensor.browser.test.ts`                                                                                               | `pnpm test:browser`   |
 
 The model that the tables, the contexts and the fixtures are compared with has these counts, and a test fails when a table prints a
 class, an action or a role that it lacks:
@@ -160,6 +162,12 @@ without that copy.
 `pnpm compat` bundles the scenario with the packages as they ship and runs it on Node.js, Deno, Bun and workerd. The example uses web
 standards alone, and its results are the same on each: the sends and their identifiers, what the endpoint holds and read of each
 envelope, the versions it announces and its two refusals.
+
+`pnpm test:browser` runs the path of a sensor in Chromium, Firefox and WebKit (`sensor.browser.test.ts`), where the `uuid` that
+the package loads is its build for browsers: the identifiers equal those of Python's `uuid5`, `buildEvent` and `buildEntity` build
+what the readers read back, `sendCaliper` posts to an endpoint that the page holds, which answers with the engine's own
+`Response`, a redirect is refused and a call that is never answered ends at its time limit, and a value of 100,000 levels is
+refused without exhausting the stack of the engine.
 
 ## What is not shown
 

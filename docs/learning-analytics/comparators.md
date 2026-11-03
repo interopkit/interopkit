@@ -19,11 +19,11 @@ flowchart LR
 
 | Comparator | Kind | Version, last change | License | Rows | Has | Partly | Excluded | Missing |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| `ims-caliper` | Library of Caliper 1.1, JavaScript | 1.1.0, 2019-06-25 | MIT | 10 | 5 | 1 | 4 | 0 |
+| `ims-caliper` | Library of Caliper 1.1, JavaScript | 1.1.0, 2019-06-25 | MIT | 10 | 6 | 0 | 4 | 0 |
 | `@timeback/caliper` | Client of one vendor's API, TypeScript | 0.3.3, 2026-09-25 | None | 12 | 6 | 0 | 6 | 0 |
 | `1EdTech/CaliperBootcamp` | Proof of concept: a library, a collector and a generator | `0a2d118`, 2025-06-04 | MIT | 10 | 5 | 0 | 5 | 0 |
 | Certification guide of Caliper 1.2 | Requirements of a certified sensor | 1.2 Final | 1EdTech | 4 | 1 | 0 | 3 | 0 |
-| **All** | | | | **36** | **17** | **1** | **18** | **0** |
+| **All** | | | | **36** | **18** | **0** | **18** | **0** |
 
 The Caliper Analytics Connector is a specification for members and is not read; the certification service needs membership
 ([evidence](evidence.md)).
@@ -37,7 +37,7 @@ The Caliper Analytics Connector is a specification for members and is not read; 
 | `ims-caliper` | An identifier for an event that has none, a random UUID | Has | `mintUrn` makes it from what identifies the event, so that a resend keeps it |
 | `ims-caliper` | An envelope of events and entities, mixed | Has | `sendCaliper` ([sending events](send.md)) |
 | `ims-caliper` | An `Authorization` header and a time limit for the request | Has | `token` and `timeoutMs` |
-| `ims-caliper` | A build for browsers | Partly | ESM on web standards alone, run on workerd, Deno and Bun by `pnpm compat`; no test runs it in a browser |
+| `ims-caliper` | A build for browsers | Has | ESM on web standards alone: `pnpm test:browser` runs the path of a sensor in Chromium, Firefox and WebKit, and `pnpm compat` the example on workerd, Deno and Bun |
 | `ims-caliper` | The time of sending from the clock | Excluded | The library reads no clock; the host passes `sendTime` |
 | `ims-caliper` | Several endpoints registered with a sensor, sent to in turn | Excluded | The library keeps nothing between calls; a host calls `sendCaliper` once for each endpoint |
 | `ims-caliper` | Writing the context of 1.1 | Excluded | 1.2 supersedes it; 1.1 is read and never written |
