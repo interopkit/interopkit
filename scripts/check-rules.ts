@@ -1536,8 +1536,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The items of a Deep Linking response are read back against their types before they are signed.",
     file: "packages/tool-integration/src/tool/deep-linking.ts",
-    find: "return { written, read: readContentItem(written) };",
-    replace: "return { written, read: item as never };",
+    find: "return writeAndRead(item, `The item ${index + 1} is not a content item`, writeContentItem, readContentItem);",
+    replace: "return { written: writeContentItem(item as never), read: item as never };",
     test: "packages/tool-integration/test/tool-deep-linking.test.ts",
   },
   {
@@ -1643,7 +1643,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The pages of the tool and of the platform send no referrer.",
     file: "packages/tool-integration/src/protocol/page.ts",
-    find: '      "referrer-policy": "no-referrer",\n',
+    find: '      "referrer-policy": referrerPolicy,\n',
     replace: "",
     test: "packages/tool-integration/test/tool.test.ts",
   },
@@ -6789,8 +6789,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A control request is read back against Proctoring Services section 5.1 before it is sent with a token.",
     file: "packages/tool-integration/src/tool/services/control.ts",
-    find: "readControlRequest(written);",
-    replace: "void written;",
+    find: 'return writeAndRead(request, "The control request is not one", writeControlRequest, readControlRequest).written;',
+    replace: "return writeControlRequest(request as never);",
     test: "packages/tool-integration/test/tool-proctoring.test.ts",
   },
   {
