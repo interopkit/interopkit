@@ -4604,6 +4604,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/client.test.ts",
   },
   {
+    rule: "The list of credentials keeps a digest of each credential it has given, not the credential.",
+    file: "packages/achievement-credentials/src/client/client.ts",
+    find: 'return String.fromCharCode(...new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(named))));',
+    replace: "return named;",
+    test: "packages/achievement-credentials/test/client.test.ts",
+  },
+  {
     rule: "A page of more credentials than the request asked for is refused before the readers see any.",
     file: "packages/achievement-credentials/src/client/client.ts",
     find: "if (credentials.length + signed.length > settings.pageSize) {",

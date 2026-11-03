@@ -158,8 +158,9 @@ in this order: `X-Total-Count` when it is a count (the iteration goes on while t
 (it goes on while a value has the relation `next`), else the size of the page (it goes on while the page is as long as the
 request). It stops too at an empty page and at a page that holds only credentials already seen, so a server that ignores
 `offset` cannot hold it in a loop. A collection that changes between pages may repeat or skip a credential; a credential seen
-twice is given once, by its `id` (a compact JWS by its text). The client builds each request from `baseUrl` and never fetches
-an address of a `Link` header, which could lead anywhere.
+twice is given once, by its `id` (a compact JWS by its text). The iteration keeps the SHA-256 of each `id` and compact JWS that it
+has given, so what it holds grows with the number of credentials and not with their size. The client builds each request from
+`baseUrl` and never fetches an address of a `Link` header, which could lead anywhere.
 
 A credential comes as the model has it (`readCredential` of the kind the API exchanges), and a credential signed as a VC-JWT as
 its compact JWS, in the order of the page: the credentials first, then the compact JWS. Nothing has verified them.

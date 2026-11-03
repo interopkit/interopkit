@@ -8,7 +8,8 @@ import {
   discoverService,
   readStatusInfo,
 } from "../src/client/index.js";
-import { readAnswer } from "../src/client/internal.js";
+import { readAnswer, seenKeyOf } from "../src/client/internal.js";
+import { readCredential } from "../src/index.js";
 import { BASE, fakeServer, JWS, json, text } from "./fake-server.js";
 import { achievementCredential, clrCredential, PROFILE } from "./fixtures.js";
 
@@ -356,6 +357,16 @@ describe("listCredentials", () => {
       "https://example.edu/credentials/2",
       "https://example.edu/credentials/3",
     ]);
+  });
+
+  it("keeps a key of the same size for each credential that it has given, whatever the size of the credential", async () => {
+    const long = `${JWS.slice(0, JWS.lastIndexOf("."))}.${"A".repeat(100_000)}`;
+    const read = (index: number, more: object = {}) =>
+      readCredential({ ...credential(index), ...more }, { kind: "AchievementCredential" });
+    const keys = await Promise.all([JWS, long, read(1), read(2)].map(seenKeyOf));
+    expect(keys.map((key) => key.length)).toStrictEqual([32, 32, 32, 32]);
+    expect(new Set(keys).size).toBe(4);
+    expect(await seenKeyOf(read(1))).toBe(await seenKeyOf(read(1, { name: "Another name" })));
   });
 
   it("refuses a page of more credentials than the request asked for, before it reads any of them", async () => {

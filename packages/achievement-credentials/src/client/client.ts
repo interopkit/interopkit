@@ -139,6 +139,18 @@ function hasMore(headers: Readonly<Record<string, string>>, offset: number, rece
   return hasNextLink(headers) ?? received >= limit;
 }
 
+const encoder = new TextEncoder();
+
+/**
+ * The key that tells a credential of the list from the ones given before: the SHA-256 of its compact JWS, or of its `id`, as a
+ * string of its 32 bytes. The iteration keeps one for each credential that it gives, so what it keeps grows with their number
+ * and not with their size.
+ */
+export async function seenKeyOf(item: string | AnyVerifiableCredential): Promise<string> {
+  const named = typeof item === "string" ? `jws:${item}` : `id:${String(item.id)}`;
+  return String.fromCharCode(...new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(named))));
+}
+
 /** The iteration of `listCredentials`: one request per page, until the server has no more. */
 async function* pagesOfCredentials(
   settings: Settings,
@@ -153,10 +165,8 @@ async function* pagesOfCredentials(
     const what = `The ${STANDARDS[settings.api]} API at ${url}`;
     const items = readPage(settings, jsonOf(textOf(response, what), what, settings.maxTokens), what);
     if (items.length === 0) return;
-    const fresh = items.filter((item) => {
-      const key = typeof item === "string" ? `jws:${item}` : `id:${String(item.id)}`;
-      return !seen.has(key) && seen.add(key);
-    });
+    const keyed = await Promise.all(items.map(async (item) => ({ item, key: await seenKeyOf(item) })));
+    const fresh = keyed.filter(({ key }) => !seen.has(key) && seen.add(key)).map(({ item }) => item);
     yield* fresh;
     offset += items.length;
     if (fresh.length === 0 || !hasMore(response.headers, offset, items.length, settings.pageSize)) return;
