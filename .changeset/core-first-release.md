@@ -34,3 +34,8 @@ the issues of a parse into findings with a path, a rule and a sentence, and writ
 bounds the findings of a reader: `safeParseBounded` stops a parse at the first issue beyond a limit, and `createFindingSink`
 holds at most `DEFAULT_MAX_FINDINGS`, 1,000, and ends a list that stopped with a finding that says so. `readJson` of
 `@interopkit/core/http` also refuses a body above `maxTokens`.
+
+`basePathSchema` of `@interopkit/core/http` reads the path that a handler is mounted at: `""` or a path that starts with `/` and
+does not end with one, written as `URL` writes the path of a request, so that `/café` and `/caf%C3%A9` are one path and a path
+whose dot segments leave `/` is refused. The provider of `competency-frameworks`, the LRS of `learning-records` and the provider
+of `achievement-credentials` read their `basePath` with it.

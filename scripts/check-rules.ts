@@ -1462,11 +1462,11 @@ export const RULES: readonly Rule[] = [
     test: "packages/competency-frameworks/test/client.test.ts",
   },
   {
-    rule: "The base path of a CASE provider is compared in the percent-encoded form of the path of a request.",
-    file: "packages/competency-frameworks/src/provider/options.ts",
+    rule: "The base path of a handler is compared in the percent-encoded form of the path of a request.",
+    file: "packages/core/src/http/base-path.ts",
     find: 'v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),',
     replace: "",
-    test: "packages/competency-frameworks/test/provider.test.ts",
+    test: "packages/core/test/http.test.ts",
   },
   {
     rule: "The audience of a registration is the audience of the client assertion.",
@@ -2089,13 +2089,6 @@ export const RULES: readonly Rule[] = [
     file: "packages/achievement-credentials/src/provider/status.ts",
     find: '"www-authenticate": `Bearer error="insufficient_scope", scope="${scope}"`',
     replace: '"www-authenticate": "Bearer"',
-    test: "packages/achievement-credentials/test/provider.test.ts",
-  },
-  {
-    rule: "The base path of a provider of Open Badges and CLR is compared in the percent-encoded form of the path of a request.",
-    file: "packages/achievement-credentials/src/provider/options.ts",
-    find: 'v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),',
-    replace: "",
     test: "packages/achievement-credentials/test/provider.test.ts",
   },
   {
@@ -4136,13 +4129,6 @@ export const RULES: readonly Rule[] = [
     find: "maxFindings: DEFAULT_MAX_FINDINGS,",
     replace: "maxFindings: Number.MAX_SAFE_INTEGER,",
     test: "packages/learning-records/test/store-statements.test.ts",
-  },
-  {
-    rule: "The base path of an LRS is compared in the percent-encoded form of the path of a request.",
-    file: "packages/learning-records/src/store/options.ts",
-    find: 'v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),',
-    replace: "",
-    test: "packages/learning-records/test/store.test.ts",
   },
   {
     rule: "The JSON of a document is counted in tokens before it is parsed.",

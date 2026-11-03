@@ -10,7 +10,7 @@ import {
   positiveIntegerSchema,
   strictRecord,
 } from "@interopkit/core/checks";
-import type { HttpRequest } from "@interopkit/core/http";
+import { basePathSchema, type HttpRequest } from "@interopkit/core/http";
 import * as v from "valibot";
 import { type About, type Statement, type StatementIssue, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 import type { Access, ActivityStore, AgentStore, DocumentStore, StatementStore } from "./ports.js";
@@ -220,26 +220,6 @@ const DEFAULT_LIMITS: LrsSettingsLimits = {
 };
 
 const isFunction = <T>(value: unknown): value is T => typeof value === "function";
-
-/** A path whose segments each start with `/` and are not empty, so that it is not `/` and does not end with one. */
-const BASE_PATH = /^(?:\/[^/?#\s]+)*$/u;
-
-/** The base against which a path alone is parsed as `URL` parses the path of a request. */
-const PATH_BASE = "https://lrs.invalid";
-
-const basePathMessage = (issue: v.BaseIssue<unknown>): string =>
-  `expected "" or a path that starts with / and does not end with /, found ${issue.received}`;
-
-/**
- * The schema of the base path: the path as it is given, then as the URL of a request writes it, percent-encoded and without
- * segments of dots, which is the form that the router compares with the path of a request.
- */
-const basePathSchema = v.pipe(
-  v.string(),
-  v.regex(BASE_PATH, basePathMessage),
-  v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),
-  v.regex(BASE_PATH, basePathMessage),
-);
 
 /** A list of versions with at least one. */
 type Versions = readonly [XapiVersion, ...XapiVersion[]];

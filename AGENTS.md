@@ -304,7 +304,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - A URL that a message or a document gives, which a server fetches or sends a token to, passes `checkRemoteUrl` of `core/checks`
   in `tool-integration`, or an origin that the host lists; a URL that the host configures passes `checkHttpsUrl`.
 - A handler takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, checks the request with
-  `checkHttpRequest` at its entry, and reads the body with `readText`, `readJson` or `readForm`. No package defines its own
+  `checkHttpRequest` at its entry, reads the body with `readText`, `readJson` or `readForm`, and the path it is mounted at with
+  `basePathSchema`. No package defines its own
   request or answer type. It answers with the status codes and bodies of its specification, answers 500 with nothing of the
   cause when a port rejects, throws `DataError` only for a port that breaks its contract, and rejects with the reason of the
   `signal` when it aborts.

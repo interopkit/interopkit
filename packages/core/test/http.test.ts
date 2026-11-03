@@ -1,7 +1,9 @@
 import fc from "fast-check";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
+import { parseWith } from "../src/checks.js";
 import {
+  basePathSchema,
   bearerTokenOf,
   checkHttpRequest,
   type HttpRequest,
@@ -42,6 +44,29 @@ function expectOutcome(run: () => unknown): void {
     expect(error instanceof DataError, String(error instanceof Error ? error.stack : error)).toBe(true);
   }
 }
+
+describe("basePathSchema", () => {
+  const read = (path: unknown) => parseWith(basePathSchema, path, "The option basePath");
+
+  it("writes a path as the URL of a request writes its path, so that one spelled outside ASCII and one percent-encoded are one", () => {
+    expect(read("")).toBe("");
+    expect(read("/xapi")).toBe("/xapi");
+    expect(read("/tenant/a")).toBe("/tenant/a");
+    expect(read("/café")).toBe("/caf%C3%A9");
+    expect(read("/caf%C3%A9")).toBe("/caf%C3%A9");
+    expect(read("/a/../b")).toBe("/b");
+  });
+
+  it("refuses a path that does not start with / or ends with one, and one whose dots leave /", () => {
+    for (const path of ["xapi", "/", "/xapi/", "/a//b", "/a b", "/a?b", "/a#b", 5, null]) {
+      expect(() => read(path), String(path)).toThrow(DataError);
+    }
+    expect(() => read("/xapi/..")).toThrow(
+      'The option basePath is invalid: expected "" or a path that starts with / and does not end with /, found "/".',
+    );
+    expect(() => read("/xapi/.")).toThrow('found "/xapi/"');
+  });
+});
 
 describe("checkHttpRequest", () => {
   it("accepts a request with a method, an absolute URL, a body of bytes and lower-case headers", () => {

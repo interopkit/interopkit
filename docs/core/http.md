@@ -64,6 +64,7 @@ that has no body, such as 204, takes `null`.
 | Function                                    | Does                                                                                   |
 | ------------------------------------------- | -------------------------------------------------------------------------------------- |
 | `checkHttpRequest(value)`                   | Checks the shape of a request that a host passes from JavaScript, and narrows its type |
+| `basePathSchema`                            | The schema of the option that names the path a handler is mounted at: `""` or a path that starts with `/` and does not end with one, written as `URL` writes the path of a request |
 | `readText(request)`                         | Reads the body as UTF-8 text                                                           |
 | `readJson(request, options)`                | Reads the body as JSON within limits on its size, its depth and its tokens             |
 | `readQuery(request)`                        | Reads the parameters of the query into a map                                           |
@@ -116,6 +117,7 @@ form is measured before it is decoded.
 | JSON keys                     | `__proto__` becomes an own property of the result and changes no prototype                                                     |
 | A parameter that occurs twice | Refused in a query and in a form (RFC 6749 section 3.1)                                                                        |
 | Form media type               | `application/x-www-form-urlencoded`, in any case and with parameters such as `charset`; any other type is refused              |
+| The path a handler is mounted at | `basePathSchema` writes it as `URL` writes the `pathname` of a request, percent-encoded and without dot segments, so `/café` and `/caf%C3%A9` are one path; a path whose dot segments leave `/`, such as `/xapi/..`, is refused |
 
 ## Paging, failures and decisions
 

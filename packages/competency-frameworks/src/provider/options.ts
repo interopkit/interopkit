@@ -1,6 +1,6 @@
 import type { CallOptions } from "@interopkit/core";
 import { guardSchema, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
-import type { AccessDecision, HttpRequest } from "@interopkit/core/http";
+import { type AccessDecision, basePathSchema, type HttpRequest } from "@interopkit/core/http";
 import * as v from "valibot";
 import { CASE_VERSIONS, type CaseVersion, type OpenApiDocument } from "../model/index.js";
 import { openApiSchema } from "../read/internal.js";
@@ -71,26 +71,6 @@ export interface ProviderSettings {
 
 const DEFAULT_PAGE_SIZE = 100;
 const DEFAULT_MAX_PAGE_SIZE = 1000;
-
-/** A path whose segments each start with `/` and are not empty, so that it is not `/` and does not end with one. */
-const BASE_PATH = /^(?:\/[^/?#\s]+)*$/u;
-
-/** The base against which a path alone is parsed as `URL` parses the path of a request. */
-const PATH_BASE = "https://provider.invalid";
-
-const basePathMessage = (issue: v.BaseIssue<unknown>): string =>
-  `expected "" or a path that starts with / and does not end with /, found ${issue.received}`;
-
-/**
- * The schema of the base path: the path as it is given, then as the URL of a request writes it, percent-encoded and without
- * segments of dots, which is the form that the router compares with the path of a request.
- */
-const basePathSchema = v.pipe(
-  v.string(),
-  v.regex(BASE_PATH, basePathMessage),
-  v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),
-  v.regex(BASE_PATH, basePathMessage),
-);
 
 const optionsSchema = strictRecord({
   store: storeSchema,
