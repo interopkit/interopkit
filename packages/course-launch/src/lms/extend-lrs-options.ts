@@ -1,8 +1,9 @@
-import { checkFunction, checkRecord } from "@interopkit/core/checks";
+import { checkFunction, checkRecord, parseWith } from "@interopkit/core/checks";
+import { basePathSchema } from "@interopkit/core/http";
 import type { LrsOptions, StatementStore } from "@interopkit/learning-records/store";
 import { acceptStatements } from "./accept-statements.js";
 import { afterStore } from "./after-store.js";
-import { decideAccess, requestBasePath } from "./au-access.js";
+import { decideAccess } from "./au-access.js";
 import { type LmsOptions, type LmsSettings, readLmsOptions, signalOf } from "./options.js";
 
 /** Wraps the store of Statements of the host: what it stores goes through `afterStore` before the LRS answers. */
@@ -58,7 +59,9 @@ export function extendLrsOptions(lrs: LrsOptions, options: LmsOptions): LrsOptio
   checkRecord(lrs.statements, "The option statements of the LRS must be an object");
   checkFunction(lrs.access, "The option access of the LRS must be a function");
   const host = lrs;
-  const scope = { access: host.access, basePath: requestBasePath(host.basePath) };
+  // The router of the LRS compares the base path in the form of the path of a request, and so does the access of a unit.
+  const basePath = parseWith(basePathSchema, host.basePath ?? "/xapi", "The option basePath of the LRS");
+  const scope = { access: host.access, basePath };
   return {
     ...host,
     statements: wrapStatements(host.statements, settings),

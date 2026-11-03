@@ -7673,9 +7673,9 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "The access of a unit finds its resource below the base path of the LRS as the path of a request writes it.",
-    file: "packages/course-launch/src/lms/au-access.ts",
-    find: 'return path === "" ? "" : new URL(path, PATH_BASE).pathname;',
-    replace: "return path;",
+    file: "packages/course-launch/src/lms/extend-lrs-options.ts",
+    find: 'const basePath = parseWith(basePathSchema, host.basePath ?? "/xapi", "The option basePath of the LRS");',
+    replace: 'const basePath = host.basePath ?? "/xapi";',
     test: "packages/course-launch/test/lms-access.test.ts",
   },
   {

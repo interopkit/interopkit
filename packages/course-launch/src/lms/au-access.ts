@@ -195,18 +195,6 @@ function actionsOf(
   }
 }
 
-/** The base against which a path alone is parsed as `URL` parses the path of a request. */
-const PATH_BASE = "https://lrs.invalid";
-
-/**
- * Returns the base path of the host's LRS as `URL` writes the path of a request, percent-encoded and without segments of dots,
- * which is the form that the router of the LRS compares: `/café` and `/caf%C3%A9` are one path.
- */
-export function requestBasePath(basePath: string | undefined): string {
-  const path = basePath ?? "/xapi";
-  return path === "" ? "" : new URL(path, PATH_BASE).pathname;
-}
-
 /**
  * Decides a request to the LRS: a request with the token of a session is the assignable unit's, judged here; any other goes to
  * the host's `access`.
@@ -217,7 +205,7 @@ export function requestBasePath(basePath: string | undefined): string {
  * `maxSessionSeconds` is refused with 401 (8.1.2, 8.2.1). An active token is granted what cmi5 lets a unit do, with the session
  * as its principal, and refused with 403 beyond it.
  *
- * @param lrs - The host's `access`, and the base path of its LRS as `requestBasePath` writes it.
+ * @param lrs - The host's `access`, and the base path of its LRS as `basePathSchema` of `@interopkit/core/http` writes it.
  */
 export async function decideAccess(
   request: HttpRequest,
