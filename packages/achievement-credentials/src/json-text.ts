@@ -1,4 +1,4 @@
-import { hasMoreTokensThan, nestsDeeperThan } from "@interopkit/core/checks";
+import { exceededJsonLimit, hasMoreTokensThan } from "@interopkit/core/checks";
 
 /** What a text of JSON may be before it is parsed. */
 export interface JsonLimits {
@@ -13,13 +13,13 @@ export interface JsonLimits {
  * of the tree, then the levels, which bound the stack of a parser that recurses.
  */
 function overLimit(text: string, limits: JsonLimits, what: string): string | undefined {
-  if (hasMoreTokensThan(text, limits.maxTokens)) {
+  // One reading finds the first limit that the text passes. The tokens are refused before the levels, so a text that passes
+  // the levels first is read on for its tokens.
+  const excess = exceededJsonLimit(text, limits.maxDepth, limits.maxTokens);
+  if (excess === "tokens" || (excess === "depth" && hasMoreTokensThan(text, limits.maxTokens))) {
     return `${what} has more than the ${limits.maxTokens} tokens of JSON that it may have.`;
   }
-  if (nestsDeeperThan(text, limits.maxDepth)) {
-    return `${what} nests more than ${limits.maxDepth} levels.`;
-  }
-  return undefined;
+  return excess === "depth" ? `${what} nests more than ${limits.maxDepth} levels.` : undefined;
 }
 
 /**

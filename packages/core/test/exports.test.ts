@@ -54,6 +54,7 @@ describe("the public API", () => {
         "DEFAULT_MAX_FINDINGS",
         "dateTimeSchema",
         "describe",
+        "exceededJsonLimit",
         "finiteSchema",
         "abortSignalSchema",
         "findingsOf",

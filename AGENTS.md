@@ -274,7 +274,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
   `safeParseBounded`, never `v.safeParse`, and fill a `createFindingSink` of `core/checks`, whose last finding says that the list
   stopped; a reader counts errors alone. The checks that follow the schema yield their findings one at a time, so that a full
   list stops them, and a finding names a bounded part of the value. A text of JSON is counted with `hasMoreTokensThan` before
-  `JSON.parse`, and a client has a `maxTokens` option beside `maxBytes`.
+  `JSON.parse`, or with `exceededJsonLimit` where its levels are bounded too, which reads it once for both, and a client has a
+  `maxTokens` option beside `maxBytes`.
 
 ## Code
 

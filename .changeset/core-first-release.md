@@ -29,7 +29,7 @@ that shares one token among callers.
 `@interopkit/core/checks` refuses, with `checkRemoteUrl` and `remoteUrlSchema`, a URL from a message or a document that names
 its host by an IP address, a single label or a name of a private network, or that carries user information. It also reads the
 formats that the standards share (a date, a date and time of RFC 3339, a UUID, a URI, a
-language tag of RFC 5646, of at most 1,024 characters), copies JSON within a depth limit, tells whether the text of JSON nests deeper or has more tokens than a limit, turns
+language tag of RFC 5646, of at most 1,024 characters), copies JSON within a depth limit, tells whether the text of JSON nests deeper or has more tokens than a limit, or which of the two limits it passes first in one reading (`exceededJsonLimit`), turns
 the issues of a parse into findings with a path, a rule and a sentence, and writes the sentence of the refusal of a reader. It
 bounds the findings of a reader: `safeParseBounded` stops a parse at the first issue beyond a limit, and `createFindingSink`
 holds at most `DEFAULT_MAX_FINDINGS`, 1,000, and ends a list that stopped with a finding that says so. `readJson` of

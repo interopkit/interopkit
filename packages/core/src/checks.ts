@@ -32,6 +32,7 @@ export {
 } from "./formats.js";
 export {
   copyJson,
+  exceededJsonLimit,
   hasMoreTokensThan,
   type JsonObject,
   type JsonObjectCopy,
