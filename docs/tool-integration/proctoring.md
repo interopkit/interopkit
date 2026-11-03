@@ -187,7 +187,7 @@ after the end. The host maps the actions to its delivery, such as the pause of a
 | --------------------- | ------------------------------------------------------------------ | -------------------- | ------------------------------------------------------------------- |
 | `AssessmentControl`   | 500 with nothing of the cause; `undefined` is 404. An answer that is not a status is a `DataError` | `signal` | `update` polls; a repeated action answers the current status |
 | `client`, `once`      | `readStartAssessment` rejects with the error; `once` that is not a boolean is a `DataError` | `signal` | `false` is `nonce-replayed`: the tool sends a new message |
-| The tool's key set    | `ServiceError`; a failed fetch is not kept                         | The cache's deadline | Shared by concurrent callers                                        |
+| The tool's key set    | `ServiceError`; a failed fetch is not kept. A set that is not a JWK Set is `key-unknown` | The cache's deadline | Shared by concurrent callers                                        |
 | The service `Fetch`   | `ServiceError` with the status, the headers and the body; nothing retries | `timeoutMs`   | An action in doubt is sent again, and the platform answers the status |
 | The `signer`          | The call rejects with its error; nothing half-signed is posted      | `signal`             | Each message has a new nonce                                        |
 

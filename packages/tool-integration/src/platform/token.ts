@@ -53,7 +53,8 @@ function readRequest(request: HttpRequest): { readonly assertion: string; readon
   if (assertion === undefined || assertion === "") {
     throw new LtiError("The token request must have a client_assertion.", "request-invalid");
   }
-  const scopes = (form.get("scope") ?? "").split(" ").filter((scope) => scope !== "");
+  // A scope named twice is one scope (RFC 6749 section 3.3), and the token names it once.
+  const scopes = [...new Set((form.get("scope") ?? "").split(" ").filter((scope) => scope !== ""))];
   if (scopes.length === 0) throw new LtiError("The token request must have a scope.", "scope-invalid");
   return { assertion, scopes };
 }

@@ -175,7 +175,7 @@ markup that the package renders.
 | --------------------- | ------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------- |
 | `client`              | `readDeepLinkingResponse` rejects with its error; `undefined` is `client-unknown` | `signal`      | On every response; a host may cache                     |
 | `once`                | Rejects with its error; the nonce is not spent. Not a boolean: `DataError` | `signal`            | `false` is `nonce-replayed`: the tool sends a new response |
-| The tool's key set    | `ServiceError`; a failed fetch is not kept                               | The cache's deadline  | Shared by concurrent callers                            |
+| The tool's key set    | `ServiceError`; a failed fetch is not kept. A set that is not a JWK Set is `key-unknown` | The cache's deadline  | Shared by concurrent callers                            |
 | The tool's `registration` | `createDeepLinkResponse` rejects; `undefined` is `platform-unknown`   | `signal`              | Pure; a host may cache                                  |
 | The `signer`          | The call rejects with its error; nothing half-signed is posted           | `signal`              | Each response has a new nonce                           |
 

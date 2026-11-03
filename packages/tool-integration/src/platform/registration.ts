@@ -3,6 +3,7 @@ import { DataError } from "@interopkit/core";
 import { describe, httpsUrlSchema, isRecord, nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
 import { errors, type JWTVerifyGetKey } from "jose";
 import * as v from "valibot";
+import { LtiError } from "../errors.js";
 import { APPROVED_ALGORITHMS, type JwsAlgorithm } from "../protocol/index.js";
 import { checkAllowList, IDENTIFIER, isVerifyKey, type JwksCache } from "../protocol/internal.js";
 
@@ -87,10 +88,25 @@ export function checkToolRegistration(value: unknown): asserts value is ToolRegi
 
 /**
  * Returns the function that resolves the tool's public key from the header of an assertion: the key set at its `jwksUrl`,
- * or the key of `keys` that has the `kid`.
+ * or the key of `keys` that has the `kid`. A key set that the tool serves and that is not a JWK Set leaves no key to verify
+ * with: `key-unknown`, as for a set without the `kid`.
  */
 export function toolKeySet(registration: ToolRegistration, jwks: JwksCache, options?: CallOptions): JWTVerifyGetKey {
-  if (registration.jwksUrl !== undefined) return jwks.keySet(registration.jwksUrl, options);
+  if (registration.jwksUrl !== undefined) {
+    const keySet = jwks.keySet(registration.jwksUrl, options);
+    return async (header, token) => {
+      try {
+        return await keySet(header, token);
+      } catch (error) {
+        // The key set comes from the tool and not from a port of the host, so what it holds is a refusal of the tool's token
+        // and never the `DataError` of a host that broke its contract.
+        if (error instanceof DataError) {
+          throw new LtiError(`The key set of the tool is not usable: ${error.message}`, "key-unknown");
+        }
+        throw error;
+      }
+    };
+  }
   const keys = registration.keys ?? new Map<string, CryptoKey>();
   return (header) => {
     const key = typeof header.kid === "string" ? keys.get(header.kid) : undefined;

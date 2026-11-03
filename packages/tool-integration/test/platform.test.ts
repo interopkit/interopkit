@@ -1065,6 +1065,31 @@ describe("the token endpoint", () => {
     expect(textOf(response.body)).not.toContain("503");
     expect(ctx.used.size).toBe(0);
   });
+
+  it("refuses with invalid_client the assertion of a tool whose key set is not a JWK Set, and spends no jti", async () => {
+    for (const body of ['{"keys":"x"}', "<html>", JSON.stringify({ keys: Array.from({ length: 101 }, () => ({})) })]) {
+      const ctx = setup();
+      const jwks = createJwksCache({ fetch: async () => new Response(body), clock: ctx.clock });
+      const assertion = await clientAssertion(toolKeys, endpoints.token, ctx.clock);
+      const refused = await handle(ctx, tokenRequest(endpoints.token, assertion, "s"), { jwks });
+      expect(refused.status, body).toBe(400);
+      expect(JSON.parse(textOf(refused.body)), body).toMatchObject({
+        error: "invalid_client",
+        error_description: expect.stringContaining("The key set of the tool is not usable"),
+      });
+      expect(ctx.used.size).toBe(0);
+    }
+  });
+
+  it("grants a scope that the request names twice once", async () => {
+    const SCORE = "https://purl.imsglobal.org/spec/lti-ags/scope/score";
+    const ctx = setup({ tools: [toolRegistration({ scopes: [SCORE] })] });
+    Object.assign(ctx.requests, { services: { gradebook: new MemoryGradebook(TOOL_CLIENT_ID) } });
+    const response = await token(ctx, {}, {}, `${SCORE} ${SCORE}`);
+    const body = JSON.parse(textOf(response.body));
+    expect(body.scope).toBe(SCORE);
+    expect((await openToken(body.access_token, "access", [hintKey]))?.scopes).toEqual([SCORE]);
+  });
 });
 
 describe("the storage page and the routes", () => {

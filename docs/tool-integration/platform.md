@@ -283,8 +283,8 @@ of the tool never passes as an assertion; the deployment claim of Core 6.2.1, wh
 The token grants the scopes that the request asks for, the registration grants and a service of the platform offers (a service
 offers its scopes when the host gives its store), and `invalid_scope` answers only when none remains. It is sealed with the hint key, holds the client, the deployment of the
 assertion, the scopes and the expiry, and lasts 3,600 seconds. A refusal is an OAuth error with status 400 (`invalid_request`,
-`unsupported_grant_type`, `invalid_scope`, `invalid_client`), and 500 when `client` or `once` rejects or the tool's key set
-cannot be fetched.
+`unsupported_grant_type`, `invalid_scope`, `invalid_client`, also for a tool whose key set is not a JWK Set), and 500 when
+`client` or `once` rejects or the tool's key set cannot be fetched.
 
 ## The messages of tools
 
