@@ -632,6 +632,17 @@ describe("every call", () => {
     expect(await exact.getProfile()).toStrictEqual(PROFILE);
   });
 
+  it("refuses an answer over both limits for its depth, whichever it passes first", async () => {
+    // The fifth token passes a limit of four tokens before the brackets pass the depth of 64.
+    const deep = `[1,2,${"[".repeat(65)}${"]".repeat(65)}]`;
+    const tokensFirst = clientOf(fakeServer(() => text(deep)).fetch, { maxTokens: 4 });
+    expect(((await rejection(tokensFirst.getProfile())) as DataError).message).toContain("nests more than 64 levels");
+    const depthFirst = clientOf(fakeServer(() => text(`${"[".repeat(65)}1,2,3,4,5${"]".repeat(65)}`)).fetch, {
+      maxTokens: 4,
+    });
+    expect(((await rejection(depthFirst.getProfile())) as DataError).message).toContain("nests more than 64 levels");
+  });
+
   it("does not parse the body of a refusal that has more tokens than a status can have", () => {
     const body = `[${"[],".repeat(400_000)}[]]`;
     const parse = vi.spyOn(JSON, "parse");

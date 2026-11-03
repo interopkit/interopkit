@@ -2,7 +2,7 @@ import { DataError, requestService, type ServiceResponse, untilAborted } from "@
 import {
   checkAbortSignal,
   checkRecord,
-  hasMoreTokensThan,
+  exceededJsonLimit,
   MAX_JSON_DEPTH,
   MAX_JSON_TOKENS,
   nestsDeeperThan,
@@ -91,10 +91,13 @@ export function textOf(response: ServiceResponse, what: string): string {
  * no parser builds a deeper or a larger tree.
  */
 export function jsonOf(text: string, what: string, maxTokens: number = MAX_JSON_TOKENS): unknown {
-  if (nestsDeeperThan(text, MAX_JSON_DEPTH)) {
+  // One reading finds the first limit that the text passes. The depth is refused before the tokens, so a text that passes the
+  // tokens first is read on for its depth.
+  const excess = exceededJsonLimit(text, MAX_JSON_DEPTH, maxTokens);
+  if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, MAX_JSON_DEPTH))) {
     throw new DataError(`${what} answered with JSON that nests more than ${MAX_JSON_DEPTH} levels.`);
   }
-  if (hasMoreTokensThan(text, maxTokens)) {
+  if (excess === "tokens") {
     throw new DataError(
       `${what} answered with a body of more than ${maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
     );

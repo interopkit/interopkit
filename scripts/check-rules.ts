@@ -4589,8 +4589,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "An answer that nests more levels of JSON than the readers take is refused before it is parsed.",
     file: "packages/achievement-credentials/src/client/request.ts",
-    find: "if (nestsDeeperThan(text, MAX_JSON_DEPTH)) {",
+    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, MAX_JSON_DEPTH))) {',
     replace: "if (false) {",
+    test: "packages/achievement-credentials/test/client.test.ts",
+  },
+  {
+    rule: "An answer that nests deeper than the limit is refused for its depth, whichever limit it passes first.",
+    file: "packages/achievement-credentials/src/client/request.ts",
+    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, MAX_JSON_DEPTH))) {',
+    replace: 'if (excess === "depth") {',
     test: "packages/achievement-credentials/test/client.test.ts",
   },
   {
@@ -4634,7 +4641,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The client of the Open Badges and CLR APIs refuses an answer with more tokens than the limit before it parses the answer.",
     file: "packages/achievement-credentials/src/client/request.ts",
-    find: "if (hasMoreTokensThan(text, maxTokens)) {",
+    find: 'if (excess === "tokens") {',
     replace: "if (false) {",
     test: "packages/achievement-credentials/test/client.test.ts",
   },

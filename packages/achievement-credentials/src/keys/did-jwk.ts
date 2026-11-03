@@ -1,5 +1,5 @@
-import { nestsDeeperThan } from "@interopkit/core/checks";
 import { base64url } from "jose";
+import { parseJsonText } from "../json-text.js";
 import { publicJwk } from "./jwk.js";
 
 const PREFIX = "did:jwk:";
@@ -24,11 +24,13 @@ export function isDidJwk(value: string): boolean {
 export function decodeDidJwk(did: string): JsonWebKey | undefined {
   const [encoded = "", ...rest] = did.slice(PREFIX.length).split("#");
   if (rest.length > 1 || encoded === "" || did.length > MAX_DID_JWK_CHARS) return undefined;
+  let text: string;
   try {
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(base64url.decode(encoded));
-    if (nestsDeeperThan(text, MAX_JWK_DEPTH)) return undefined;
-    return publicJwk(JSON.parse(text));
+    text = new TextDecoder("utf-8", { fatal: true }).decode(base64url.decode(encoded));
   } catch {
     return undefined;
   }
+  // The levels are counted before the parser builds anything; the length of the DID bounds the tokens.
+  const parsed = parseJsonText(text, { maxDepth: MAX_JWK_DEPTH, maxTokens: MAX_DID_JWK_CHARS }, "The JWK of the DID");
+  return "value" in parsed ? publicJwk(parsed.value) : undefined;
 }
