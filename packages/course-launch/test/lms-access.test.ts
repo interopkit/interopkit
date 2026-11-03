@@ -187,6 +187,29 @@ describe("what a unit may do with its token", () => {
     expect((await host.xapi("GET", "nothing", { authorization })).status).toBe(404);
   });
 
+  it("is answered 400 for a query that names a parameter twice, as xAPI asks, and changes nothing", async () => {
+    const { host, launched } = await started();
+    const { authorization, registration } = launched;
+    const launchData = documentQuery(launched, {
+      activityId: launched.activityId,
+      registration,
+      stateId: "LMS.LaunchData",
+    });
+    const before = await host.xapi("GET", `activities/state?${launchData}`, { authorization });
+    for (const [method, path] of [
+      ["GET", `statements?registration=${registration}&registration=${registration}`],
+      ["PUT", `activities/state?${launchData}&stateId=bookmark`],
+      ["DELETE", `activities/state?${launchData}&stateId=LMS.LaunchData`],
+      ["GET", `agents?${documentQuery(launched, {})}&${documentQuery(launched, {}, OTHER)}`],
+    ] as const) {
+      const answer = await host.xapi(method, path, { authorization, body: method === "PUT" ? {} : undefined });
+      expect(answer.status, `${method} ${path}`).toBe(400);
+    }
+    expect((await host.xapi("GET", `activities/state?${launchData}`, { authorization })).body).toStrictEqual(
+      before.body,
+    );
+  });
+
   it("may not void, and has every statement judged by the rules of cmi5 with 403", async () => {
     const { host, launched } = await started();
     const allowed = unitStatement(launched, "experienced");

@@ -20,6 +20,21 @@ const MAX_AGENT_TOKENS = 1000;
 /** The methods that read. */
 const READS: ReadonlySet<string> = new Set(["GET", "HEAD"]);
 
+/**
+ * Every action that a token of a unit is ever granted, which a request whose query names a parameter twice is given: every
+ * resource of the LRS reads its query by `readQuery`, which refuses such a query with 400, as xAPI asks, before the resource acts.
+ */
+const UNIT_ACTIONS: readonly LrsAction[] = [
+  "statements.read",
+  "statements.write",
+  "state.read",
+  "state.write",
+  "profiles.read",
+  "profiles.write",
+  "agents.read",
+  "activities.read",
+];
+
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
 /**
@@ -224,7 +239,13 @@ export async function decideAccess(
   const { basePath } = lrs;
   const pathname = new URL(request.url).pathname;
   const resource = pathname.startsWith(`${basePath}/`) ? pathname.slice(basePath.length + 1) : "";
-  const asked = { request, query: readQuery(request), reads: READS.has(request.method), settings, session };
+  let query: ReadonlyMap<string, string>;
+  try {
+    query = readQuery(request);
+  } catch {
+    return { allowed: true, authority: settings.authority, actions: UNIT_ACTIONS, principal: session.id };
+  }
+  const asked = { request, query, reads: READS.has(request.method), settings, session };
   const actions = await actionsOf(resource, asked);
   if (typeof actions === "string") return refused(403, actions);
   return { allowed: true, authority: settings.authority, actions, principal: session.id };
