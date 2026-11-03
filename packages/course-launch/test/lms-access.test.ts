@@ -207,6 +207,36 @@ describe("what a unit may do with its token", () => {
   });
 });
 
+describe("the base path of the host's LRS", () => {
+  it("finds the resource of a unit's request below a base path that URL writes percent-encoded or without its dots", async () => {
+    const { handleLrsRequest } = await import("@interopkit/learning-records/store");
+    for (const [basePath, written] of [
+      ["/café", "/caf%C3%A9"],
+      ["/lrs/./xapi", "/lrs/xapi"],
+    ] as const) {
+      const host = testHost();
+      const registration = await register(host);
+      const launched = await launchUnit(host, { registration: registration.id, au: AU1 });
+      const options = extendLrsOptions({ ...host.lrsBase, basePath }, host.options);
+      const statement = unitStatement(launched, "initialized");
+      const answer = await handleLrsRequest(
+        {
+          method: "PUT",
+          url: `${ORIGIN}${written}/statements?statementId=${statement.id}`,
+          headers: {
+            authorization: launched.authorization,
+            "x-experience-api-version": "1.0.3",
+            "content-type": "application/json",
+          },
+          body: new TextEncoder().encode(JSON.stringify(statement)),
+        },
+        options,
+      );
+      expect(answer.status, basePath).toBe(204);
+    }
+  });
+});
+
 describe("the requests of the host's credentials", () => {
   it("are judged by the host's accept, which keeps the status of 403", async () => {
     const host = testHost();

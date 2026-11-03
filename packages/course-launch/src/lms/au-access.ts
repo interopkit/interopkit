@@ -175,6 +175,18 @@ function actionsOf(
   }
 }
 
+/** The base against which a path alone is parsed as `URL` parses the path of a request. */
+const PATH_BASE = "https://lrs.invalid";
+
+/**
+ * Returns the base path of the host's LRS as `URL` writes the path of a request, percent-encoded and without segments of dots,
+ * which is the form that the router of the LRS compares: `/café` and `/caf%C3%A9` are one path.
+ */
+export function requestBasePath(basePath: string | undefined): string {
+  const path = basePath ?? "/xapi";
+  return path === "" ? "" : new URL(path, PATH_BASE).pathname;
+}
+
 /**
  * Decides a request to the LRS: a request with the token of a session is the assignable unit's, judged here; any other goes to
  * the host's `access`.
@@ -184,11 +196,13 @@ function actionsOf(
  * and the host's `access` answers it. A token whose secret does not match, of a session that is not active, or after
  * `maxSessionSeconds` is refused with 401 (8.1.2, 8.2.1). An active token is granted what cmi5 lets a unit do, with the session
  * as its principal, and refused with 403 beyond it.
+ *
+ * @param lrs - The host's `access`, and the base path of its LRS as `requestBasePath` writes it.
  */
 export async function decideAccess(
   request: HttpRequest,
   settings: LmsSettings,
-  lrs: Pick<LrsOptions, "access" | "basePath">,
+  lrs: { readonly access: LrsOptions["access"]; readonly basePath: string },
   options?: CallOptions,
 ): Promise<Access> {
   const credentials = readBasicAuthorization(request);
@@ -202,7 +216,7 @@ export async function decideAccess(
   if (session.state !== "active" || readClock(settings.clock) > session.launchedAt + settings.maxSessionMs) {
     return refused(401, "The session of the authorization token ended (8.2.1).");
   }
-  const basePath = lrs.basePath ?? "/xapi";
+  const { basePath } = lrs;
   const pathname = new URL(request.url).pathname;
   const resource = pathname.startsWith(`${basePath}/`) ? pathname.slice(basePath.length + 1) : "";
   const asked = { request, query: readQuery(request), reads: READS.has(request.method), settings, session };

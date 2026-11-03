@@ -2,7 +2,7 @@ import { checkFunction, checkRecord } from "@interopkit/core/checks";
 import type { LrsOptions, StatementStore } from "@interopkit/learning-records/store";
 import { acceptStatements } from "./accept-statements.js";
 import { afterStore } from "./after-store.js";
-import { decideAccess } from "./au-access.js";
+import { decideAccess, requestBasePath } from "./au-access.js";
 import { type LmsOptions, type LmsSettings, readLmsOptions, signalOf } from "./options.js";
 
 /** Wraps the store of Statements of the host: what it stores goes through `afterStore` before the LRS answers. */
@@ -58,10 +58,11 @@ export function extendLrsOptions(lrs: LrsOptions, options: LmsOptions): LrsOptio
   checkRecord(lrs.statements, "The option statements of the LRS must be an object");
   checkFunction(lrs.access, "The option access of the LRS must be a function");
   const host = lrs;
+  const scope = { access: host.access, basePath: requestBasePath(host.basePath) };
   return {
     ...host,
     statements: wrapStatements(host.statements, settings),
-    access: (request, call) => decideAccess(request, settings, host, call),
+    access: (request, call) => decideAccess(request, settings, scope, call),
     accept: async (statements, access, call) => {
       // A principal that names a session is the token of a unit; any other is the host's own.
       const { principal } = access;

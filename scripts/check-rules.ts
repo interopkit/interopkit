@@ -7658,6 +7658,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/course-launch/test/lms-access.test.ts",
   },
   {
+    rule: "The access of a unit finds its resource below the base path of the LRS as the path of a request writes it.",
+    file: "packages/course-launch/src/lms/au-access.ts",
+    find: 'return path === "" ? "" : new URL(path, PATH_BASE).pathname;',
+    replace: "return path;",
+    test: "packages/course-launch/test/lms-access.test.ts",
+  },
+  {
     rule: "A fetch code is answered once, and not after its lifetime.",
     file: "packages/course-launch/src/lms/handle-fetch-request.ts",
     find: 'if (session.state !== "launched" || now > session.launchedAt + settings.fetchLifetimeMs) return answer(ERRORS.used);',
