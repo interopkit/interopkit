@@ -38,3 +38,6 @@ xAPI 1.0.3 runs beside 2.0. The readers take `version`, with the rules of 1.0.3 
 speaks the version it is given, and `handleLrsRequest` routes each request by its `X-Experience-API-Version` header among the
 option `versions`, with the alternate request syntax, the preconditions of 1.0.3 through an unconditional write of
 `DocumentStore`, and reads and resends across routes. It passes the 1,365 tests of the ADL suite for 1.0.3.
+`buildStatement` requires the `timestamp` of the event as it requires the id. The handler verifies a signature once for each
+Statement that names it, reads its payload within the limits of the request, and refuses with 413 a request whose signatures,
+counted for each Statement, pass `maxBodyBytes`; the client checks that a fetched Statement or Activity has the id it asked for.
