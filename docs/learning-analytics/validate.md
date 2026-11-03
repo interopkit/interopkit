@@ -85,7 +85,7 @@ flowchart TD
   C -->|no| X["Error at the first place that does not fit:<br/>event, action, actor, object"]
 ```
 
-A class that a row names allows the class and its subtypes: a `DigitalResource` is any of the 27 classes below it. The tables
+A class that a row names allows the class and its subtypes: a `DigitalResource` is that class or any of the 26 classes below it. The tables
 differ in a few cells, and the package reads both:
 
 | Cell                                                    | Section 3                                  | Certification guide                |

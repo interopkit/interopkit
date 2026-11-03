@@ -106,7 +106,6 @@ const APPLICATION = ["SoftwareApplication"] as const;
 const RESOURCE_OR_APPLICATION = [...DIGITAL_RESOURCE_TYPES, "SoftwareApplication"] as const;
 const NONE = {} as const;
 
-/** The schemas of the events that Caliper 1.2 and the Library Use Profile define. */
 /**
  * Makes the schemas of the events that Caliper 1.2 and the Library Use Profile define, as a version of Caliper reads them.
  *

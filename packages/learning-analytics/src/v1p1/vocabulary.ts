@@ -33,7 +33,7 @@ interface AddedTerms {
 }
 
 /**
- * The actions of the Library Use Profile, which extends 1.2, and the role `Manager#Manager`, which Appendix E of 1.2 lists and
+ * The actions of the Library Use Profile, which extends 1.2, and the role `Manager#Manager`, which Appendix F of 1.2 lists and
  * the roles of 1.1 and the context of 1.2 lack.
  */
 export const TERMS_NOT_IN_1_1: readonly AddedTerms[] = [
