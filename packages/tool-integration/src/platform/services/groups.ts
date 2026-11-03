@@ -10,9 +10,9 @@ import {
   writeGroupContainer,
   writeGroupSetContainer,
 } from "../../protocol/internal.js";
-import { notFound, refusal } from "../answers.js";
+import { notFound } from "../answers.js";
 import type { GroupStore } from "../ports.js";
-import { pageHeaders, readPageRequest } from "./paging.js";
+import { pageHeaders, readPagedQuery } from "./paging.js";
 import { askStore, type ClaimRequest, fromStore, readStorePage, type Service, type ServiceRequest } from "./service.js";
 
 const GROUPS_PATH = "/contexts/{context}/groups";
@@ -33,28 +33,19 @@ function groupSetsUrl(origin: string, contextId: string): string {
   return `${origin}/contexts/${encodeURIComponent(contextId)}/group-sets`;
 }
 
-/** Reads the filters and the page of a request; the answer is a refusal when the request is not one. */
-function readRequest(
-  call: Call,
-):
-  | { readonly query: ReturnType<typeof readGroupQuery>; readonly page: ReturnType<typeof readPageRequest> }
-  | HttpResponse {
-  try {
-    const query = readGroupQuery(call.url.searchParams);
-    // The answer names the user whose groups it lists (section 2.1.2.1), and the identifier of a user is never empty.
-    if (query.userId === "") throw new DataError("The parameter user_id of the group query must not be empty.");
-    return { query, page: readPageRequest(call.url, query.limit, call.settings) };
-  } catch (error) {
-    if (error instanceof DataError) return refusal(400, "invalid_request", error.message);
-    throw error;
-  }
+/** Reads the filters of a request for groups or sets. */
+function readQuery(search: URLSearchParams): ReturnType<typeof readGroupQuery> {
+  const query = readGroupQuery(search);
+  // The answer names the user whose groups it lists (section 2.1.2.1), and the identifier of a user is never empty.
+  if (query.userId === "") throw new DataError("The parameter user_id of the group query must not be empty.");
+  return query;
 }
 
 /** GET of the groups of a context, or of the groups a user is enrolled in (Context Groups 1.0 sections 2.1 and 2.1.2), in pages. */
 async function getGroups(call: Call): Promise<HttpResponse> {
   const { url, store, caller, settings } = call;
   const context = call.params.context ?? "";
-  const request = readRequest(call);
+  const request = readPagedQuery(call, readQuery);
   if ("status" in request) return request;
   const { userId } = request.query;
   const label = "GroupStore.groups";
@@ -82,7 +73,7 @@ async function getGroups(call: Call): Promise<HttpResponse> {
 async function getGroupSets(call: Call): Promise<HttpResponse> {
   const { url, store, caller, settings } = call;
   const context = call.params.context ?? "";
-  const request = readRequest(call);
+  const request = readPagedQuery(call, readQuery);
   if ("status" in request) return request;
   const label = "GroupStore.groupSets";
   const found = await askStore(call, (options) => store.groupSets?.(caller, context, request.page, options));

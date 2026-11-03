@@ -19,10 +19,10 @@ import {
   writeLineItems,
   writeResults,
 } from "../../protocol/internal.js";
-import { notFound, refusal } from "../answers.js";
+import { notFound } from "../answers.js";
 import type { GradebookStore, ReceivedScore, StorePage } from "../ports.js";
 import { readBody } from "./body.js";
-import { pageHeaders, readPageRequest } from "./paging.js";
+import { pageHeaders, readPagedQuery } from "./paging.js";
 import { askStore, type ClaimRequest, fromStore, readStorePage, type Service, type ServiceRequest } from "./service.js";
 
 /** The scopes that read the line items: the narrower first. */
@@ -80,15 +80,9 @@ function lineItemAnswer(status: number, item: LineItem): HttpResponse {
 async function getLineItems(call: Call): Promise<HttpResponse> {
   const { url, store, caller, settings } = call;
   const { context } = pathOf(call);
-  let query: ReturnType<typeof readLineItemQuery>;
-  let page: ReturnType<typeof readPageRequest>;
-  try {
-    query = readLineItemQuery(url.searchParams);
-    page = readPageRequest(url, query.limit, settings);
-  } catch (error) {
-    if (error instanceof DataError) return refusal(400, "invalid_request", error.message);
-    throw error;
-  }
+  const request = readPagedQuery(call, readLineItemQuery);
+  if ("status" in request) return request;
+  const { query, page } = request;
   const { limit: _, ...filters } = query;
   const asked = { ...filters, ...page };
   const found = await askStore(call, (options) => store.lineItems?.(caller, context, asked, options));
@@ -146,15 +140,9 @@ async function deleteLineItem(call: Call): Promise<HttpResponse> {
 async function getResults(call: Call): Promise<HttpResponse> {
   const { url, store, caller, settings } = call;
   const { context, lineItem } = pathOf(call);
-  let query: ReturnType<typeof readResultQuery>;
-  let page: ReturnType<typeof readPageRequest>;
-  try {
-    query = readResultQuery(url.searchParams);
-    page = readPageRequest(url, query.limit, settings);
-  } catch (error) {
-    if (error instanceof DataError) return refusal(400, "invalid_request", error.message);
-    throw error;
-  }
+  const request = readPagedQuery(call, readResultQuery);
+  if ("status" in request) return request;
+  const { query, page } = request;
   const asked = { ...(query.userId === undefined ? {} : { userId: query.userId }), ...page };
   const found = await askStore(call, (options) => store.results?.(caller, context, lineItem, asked, options));
   if (found === undefined) return notFound();

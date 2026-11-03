@@ -10,9 +10,9 @@ import {
   writeMember,
   writeMembership,
 } from "../../protocol/internal.js";
-import { notFound, refusal } from "../answers.js";
+import { notFound } from "../answers.js";
 import type { RosterStore } from "../ports.js";
-import { pageHeaders, readPageRequest } from "./paging.js";
+import { pageHeaders, readPagedQuery } from "./paging.js";
 import { askStore, type ClaimRequest, fromStore, PAGE_ENTRIES, type Service, type ServiceRequest } from "./service.js";
 
 const MEMBERSHIPS_PATH = "/contexts/{context}/memberships";
@@ -46,15 +46,9 @@ function storedMember(value: unknown): Member {
 async function getMembers(call: Call): Promise<HttpResponse> {
   const { url, store, caller, settings } = call;
   const context = call.params.context ?? "";
-  let query: ReturnType<typeof readMemberQuery>;
-  let page: ReturnType<typeof readPageRequest>;
-  try {
-    query = readMemberQuery(url.searchParams);
-    page = readPageRequest(url, query.limit, settings);
-  } catch (error) {
-    if (error instanceof DataError) return refusal(400, "invalid_request", error.message);
-    throw error;
-  }
+  const request = readPagedQuery(call, readMemberQuery);
+  if ("status" in request) return request;
+  const { query, page } = request;
   const { role, resourceLinkId, groups, since } = query;
   const asked = {
     ...(role === undefined ? {} : { role: canonicalizeRole(role) }),
