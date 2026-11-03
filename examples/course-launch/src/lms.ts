@@ -135,7 +135,8 @@ export function createLms(config: LmsConfig): Lms {
   ];
 
   // The host's own credentials: About for anyone, the LMS and the administrator for everything, and no one else. A refusal
-  // carries no challenge, since the pages of units call the LRS from a browser, which would ask the learner for a password.
+  // carries the challenge of the tokens of units and not one of Basic, since the pages of units call the LRS from a browser,
+  // which asks the learner for a password at a challenge of Basic.
   const access = async (request: HttpRequest): Promise<Access> => {
     if (new URL(request.url).pathname === "/xapi/about")
       return { allowed: true, authority: credentials[0]?.authority ?? {}, actions: [] };
@@ -145,7 +146,7 @@ export function createLms(config: LmsConfig): Lms {
         given !== undefined && sameSecret(given.user, user) && sameSecret(given.password, password),
     );
     if (known === undefined) {
-      return { allowed: false, status: 401, reason: "Send a credential of the LMS." };
+      return { allowed: false, status: 401, reason: "Send a credential of the LMS.", challenge: 'cmi5 realm="xAPI"' };
     }
     return { allowed: true, authority: known.authority, actions: known.actions };
   };

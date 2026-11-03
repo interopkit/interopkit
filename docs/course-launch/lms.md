@@ -98,7 +98,10 @@ stateDiagram-v2
 The launch URL carries a fetch code, never the token: the session id and a secret of 32 random bytes, which the session keeps
 as its SHA-256. The token is a Basic credential whose user is the session id and whose password is another secret, kept as
 its hash. A token is valid while its session is active and for `maxSessionSeconds` after the launch. The request that stores
-terminated is its last, and every request after it is refused with 401, as CATAPULT's player does.
+terminated is its last, and every request after it is refused with 401, as CATAPULT's player does. Every 401 to a token
+carries the challenge `cmi5 realm="xAPI"`, which RFC 7235 asks a 401 to have and which no browser answers with a prompt for a
+password, as it does at a challenge of Basic. A request of a page without a token reaches the host's `access`, whose 401 should
+carry such a challenge too, as the example's does.
 
 | The fetch URL answers | When |
 | --- | --- |
@@ -216,3 +219,4 @@ registration and to waivers.
 | Order of statements | Judged in the order of arrival | The same, and a statement timestamped before initialized is refused |
 | A removal of every State document of an activity | Taken | Refused, since it would remove `LMS.LaunchData` |
 | Satisfied statements | Written after the unit's statement | The same, before the LRS answers the unit |
+| The challenge of a 401 | Basic, at which a browser asks the learner for a password | `cmi5 realm="xAPI"`, at which no browser does |

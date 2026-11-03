@@ -23,11 +23,15 @@ const READS: ReadonlySet<string> = new Set(["GET", "HEAD"]);
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
 /**
- * A refusal of a request of an assignable unit, with the sentence of the answer. A 401 carries no challenge: a browser that
- * gets a challenge of Basic asks the learner for a password, and the token of a unit comes from the fetch URL, never from them.
+ * The challenge of a 401 to an assignable unit, which RFC 7235 asks every 401 to carry: a scheme of cmi5's own and not Basic,
+ * since a browser asks the learner for a password at a challenge of Basic, and the token of a unit comes from the fetch URL
+ * (8.2), never from them.
  */
+const AU_CHALLENGE = 'cmi5 realm="xAPI"';
+
+/** A refusal of a request of an assignable unit, with the sentence of the answer and, for a 401, its challenge. */
 function refused(status: 401 | 403, reason: string): Access {
-  return { allowed: false, status, reason };
+  return { allowed: false, status, reason, ...(status === 401 ? { challenge: AU_CHALLENGE } : {}) };
 }
 
 /**

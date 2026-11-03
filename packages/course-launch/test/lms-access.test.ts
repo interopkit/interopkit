@@ -31,7 +31,8 @@ describe("the token of a session", () => {
     const early = `Basic ${btoa(`${launch.session}:${new URL(readLaunchUrl(launch.url).fetch).searchParams.get("code")}`)}`;
     const answer = await host.xapi("GET", `statements?registration=${registration.id}`, { authorization: early });
     expect(answer.status).toBe(401);
-    expect(answer.headers["www-authenticate"]).toBeUndefined();
+    // RFC 7235 asks a 401 for a challenge, and a browser prompts the learner for a password at one of Basic.
+    expect(answer.headers["www-authenticate"]).toBe('cmi5 realm="xAPI"');
   });
 
   it("leaves a credential that is no token, or names no session, to the host's access", async () => {
