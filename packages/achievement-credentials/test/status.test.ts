@@ -27,6 +27,29 @@ import {
   world,
 } from "./status-fixtures.js";
 
+/**
+ * A list credential under the Data Model 1.1, in the vc claim form of VC-JWT 1.1 with no time claim: the dates of the credential
+ * are its only period.
+ */
+async function listV1p1Jws(expirationDate: string, ttl?: number): Promise<string> {
+  const { signCompactJws } = await import("@interopkit/core");
+  const vc = {
+    "@context": ["https://www.w3.org/2018/credentials/v1"],
+    type: ["VerifiableCredential", "BitstringStatusListCredential"],
+    issuer: { id: ISSUER, type: ["Profile"] },
+    issuanceDate: "2024-06-01T00:00:00Z",
+    expirationDate,
+    credentialSubject: {
+      id: `${LIST_URL}#list`,
+      type: "BitstringStatusList",
+      statusPurpose: "revocation",
+      encodedList: await encodeList(listWith()),
+      ...(ttl === undefined ? {} : { ttl }),
+    },
+  };
+  return await signCompactJws({ typ: "JWT" }, new TextEncoder().encode(JSON.stringify({ iss: ISSUER, vc })), signer);
+}
+
 const status = (entry: Record<string, unknown> = {}, routes: Record<string, unknown> = {}, issuer = ISSUER) => {
   const w = world(routes);
   return {
@@ -335,25 +358,7 @@ describe("checking the status of a credential", () => {
   });
 
   it("judges the validity of a list credential under the Data Model 1.1 by its issuanceDate and expirationDate", async () => {
-    const { signCompactJws } = await import("@interopkit/core");
-    const listOf = async (expirationDate: string) => {
-      const vc = {
-        "@context": ["https://www.w3.org/2018/credentials/v1"],
-        type: ["VerifiableCredential", "BitstringStatusListCredential"],
-        issuer: { id: ISSUER, type: ["Profile"] },
-        issuanceDate: "2024-06-01T00:00:00Z",
-        expirationDate,
-        credentialSubject: {
-          id: `${LIST_URL}#list`,
-          type: "BitstringStatusList",
-          statusPurpose: "revocation",
-          encodedList: await encodeList(listWith()),
-        },
-      };
-      // The vc claim form of VC-JWT 1.1, with no time claim: the dates of the credential are its only period.
-      const payload = new TextEncoder().encode(JSON.stringify({ iss: ISSUER, vc }));
-      return await signCompactJws({ typ: "JWT" }, payload, signer);
-    };
+    const listOf = (expirationDate: string) => listV1p1Jws(expirationDate);
     expect(await status({}, { [LIST_URL]: await listOf("2024-06-14T11:00:00Z") }).run()).toMatchObject({
       outcome: "failed",
       detail: expect.stringContaining("not valid at this time"),
@@ -674,6 +679,20 @@ describe("the cache of status list credentials", () => {
     expect(await check()).toMatchObject({ outcome: "unavailable" });
     expect(await check()).toMatchObject({ outcome: "unavailable" });
     expect(w.requests.filter((url) => url === LIST_URL)).toHaveLength(2);
+  });
+
+  it("keeps a list under the Data Model 1.1 until its expirationDate", async () => {
+    const w = world({ [LIST_URL]: await listV1p1Jws("2024-06-14T12:01:00Z", 600_000) });
+    const cache = createStatusListCache({ clock: w.clock });
+    const run = () => verifyCredentialStatus(credentialWithStatus(), { ...w.options, cache });
+    const listRequests = () => w.requests.filter((url) => url === LIST_URL).length;
+    expect(await run()).toMatchObject({ outcome: "passed" });
+    w.clock.advance(59_000);
+    await run();
+    expect(listRequests()).toBe(1);
+    w.clock.advance(1_000);
+    await run();
+    expect(listRequests()).toBe(2);
   });
 
   it("never serves a list to a call that trusts less than the call that verified it", async () => {

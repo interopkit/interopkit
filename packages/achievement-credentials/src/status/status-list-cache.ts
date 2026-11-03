@@ -17,8 +17,8 @@ export interface StatusListCache {
    *
    * @remarks
    * A load is shared work: callers that ask while it runs share one, which runs to its own timeout and receives no caller's
-   * `signal`. An entry expires at its `ttl` (300,000 ms when it gives none) or at its `validUntil`, whichever comes first, and
-   * a failed load is not kept.
+   * `signal`. An entry expires at its `ttl` (300,000 ms when it gives none) or at its `validUntil` (its `expirationDate` under
+   * the Data Model 1.1), whichever comes first, and a failed load is not kept.
    *
    * @param key - What the document is kept by: the address of the status list credential or of the revocation list, with the
    * trust of the call that verifies it.
@@ -70,8 +70,9 @@ export function createStatusListCache(options: StatusListCacheOptions): StatusLi
     clock,
     maxEntries,
     lifetime(document) {
-      const validUntil: unknown = Reflect.get(document, "validUntil");
-      const untilExpiry = typeof validUntil === "string" ? Date.parse(validUntil) - readClock(clock) : Infinity;
+      // The end of a list credential: its validUntil, or its expirationDate under the Data Model 1.1.
+      const end: unknown = Reflect.get(document, "validUntil") ?? Reflect.get(document, "expirationDate");
+      const untilExpiry = typeof end === "string" ? Date.parse(end) - readClock(clock) : Infinity;
       return Math.min(ttlOf(document), untilExpiry);
     },
   });

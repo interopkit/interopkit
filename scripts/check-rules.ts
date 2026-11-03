@@ -5513,6 +5513,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
+    rule: "A list credential under the Data Model 1.1 is kept no longer than its expirationDate.",
+    file: "packages/achievement-credentials/src/status/status-list-cache.ts",
+    find: '?? Reflect.get(document, "expirationDate")',
+    replace: "",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
     rule: "Setting an entry returns a new list and never changes the one passed.",
     file: "packages/achievement-credentials/src/status/bitstring.ts",
     find: "const bits = Uint8Array.from(list.bits);",

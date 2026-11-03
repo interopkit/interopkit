@@ -166,7 +166,7 @@ credential chose.
 
 `createStatusListCache({ clock, maxEntries })` keeps the list credentials that were fetched and verified, and the revocation lists
 of 1EdTech, by address. An entry expires at its `ttl` (the `ttl` of the subject in milliseconds; 300,000 when it gives none) or at
-its `validUntil`, whichever comes first. Verifications that run together share one fetch, which runs to its own timeout, and a
+its `validUntil` (its `expirationDate` under the Data Model 1.1), whichever comes first. Verifications that run together share one fetch, which runs to its own timeout, and a
 failure is not kept. The credential that the cache holds is the list credential and not its answer: its issuer is compared with
 each credential's issuer on every verification. A list is kept as the call that loaded it verified it, so it is kept by its address
 and by what decides whether its proof counts: the `keys`, `contexts` and `suites` of the call, told apart by identity, and its
