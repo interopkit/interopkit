@@ -3,8 +3,11 @@ import { verifyStatementSignature } from "../src/signing/index.js";
 import { minimalStatement } from "./full-statement.js";
 
 const MIB = 1024 * 1024;
-/** The bytes that the verification may raise the peak of the process by: the JWS, its payload, the parse and the copy that the reader makes. */
-const BUDGET = 192 * MIB;
+/**
+ * The bytes that the verification may raise the peak of the process by: the JWS, its payload, the parse and the copy that the
+ * reader makes. It rises by 100 to 140 MiB on a quiet machine and up to 194 MiB when other test runs starve the collector.
+ */
+const BUDGET = 256 * MIB;
 
 /** The names of the extension of the payload: with the rest of the Statement, near the million tokens that the reader takes. */
 const NAMES = 249_900;
