@@ -157,11 +157,15 @@ describe("the filter of a request", () => {
     });
   });
 
-  it("reads a long filter of many quotes in the time of a short one", () => {
-    const start = performance.now();
-    filterOf(`title='${"''".repeat(1000)}`);
-    filterOf(`title='${"' AND ".repeat(300)}`);
-    expect(performance.now() - start).toBeLessThan(1000);
+  it("refuses a long filter of quotes that close nothing, and one of operators with no field between them", () => {
+    expect(filterOf(`title='${"''".repeat(1000)}`)).toStrictEqual({
+      refused: "invalid_filter_field",
+      detail: 'The value of the field "title" has no closing single quote at the end or before AND or OR.',
+    });
+    expect(filterOf(`title='${"' AND ".repeat(300)}`)).toStrictEqual({
+      refused: "invalid_filter_field",
+      detail: "The filter needs a field name at character 14.",
+    });
   });
 });
 

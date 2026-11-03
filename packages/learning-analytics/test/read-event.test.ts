@@ -8,6 +8,7 @@ import {
   CALIPER_CONTEXT,
   type EventInput,
   LIBRARY_PROFILE_CONTEXT,
+  readEntity,
   readEvent,
 } from "../src/index.js";
 import { ACTOR, ASSESSMENT, fromJson, STARTED_DOCUMENT, startedInput } from "./fixture.js";
@@ -252,7 +253,7 @@ describe("buildEvent and buildEntity", () => {
   it("builds what readEvent and readEntity read, and nothing else", () => {
     expect(readEvent(buildEvent(input))).toStrictEqual(buildEvent(input));
     const entity = buildEntity({ id: ACTOR, type: "Person", name: "Ada" });
-    expect(readEvent).toBeTypeOf("function");
+    expect(readEntity(entity)).toStrictEqual(entity);
     expect(entity).toStrictEqual({ "@context": CALIPER_CONTEXT, id: ACTOR, type: "Person", name: "Ada" });
     expect(() => buildEntity(fromJson('{"id":"x","type":"Person"}'))).toThrow(DataError);
     expect(() => buildEntity(fromJson("7"))).toThrow(DataError);
