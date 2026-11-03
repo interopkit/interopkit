@@ -45,6 +45,28 @@ describe("handleLrsRequest: the routes", () => {
     expect(await at("https://lrs.example.org/xapi/statements", "/a/b")).toBe(404);
   });
 
+  it("serves a base path outside ASCII as the URL of a request writes it, whether it is given encoded or not", async () => {
+    const lrs = memory();
+    const at = async (url: string, basePath: string) =>
+      (await handleLrsRequest({ ...requestOf("GET", "/statements"), url }, optionsOf(lrs, { basePath }))).status;
+    for (const basePath of ["/café", "/caf%C3%A9"]) {
+      expect(await at("https://lrs.example.org/café/statements", basePath)).toBe(200);
+      expect(await at("https://lrs.example.org/caf%C3%A9/statements", basePath)).toBe(200);
+    }
+    await handleLrsRequest(
+      requestOf("POST", "/statements", {
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify([statementOf(1), statementOf(2)]),
+      }),
+      optionsOf(lrs),
+    );
+    const page = await handleLrsRequest(
+      { ...requestOf("GET", "/statements"), url: "https://lrs.example.org/café/statements?limit=1" },
+      optionsOf(lrs, { basePath: "/café" }),
+    );
+    expect((jsonOf(page) as { more: string }).more).toMatch(/^\/caf%C3%A9\/statements\?limit=1&cursor=/u);
+  });
+
   it("answers 405 with the methods of the resource in Allow for another method", async () => {
     for (const method of ["DELETE", "PATCH", "OPTIONS", "get"]) {
       const { response } = await ask(method, "/statements");
@@ -438,6 +460,11 @@ describe("handleLrsRequest: the options", () => {
         'The configuration of the LRS is invalid at basePath: expected "" or a path that starts with / and does not end with /, found "xapi".',
       ],
       [{ ...valid, basePath: "/xapi/" }, "The configuration of the LRS is invalid at basePath"],
+      [
+        { ...valid, basePath: "/xapi/.." },
+        'The configuration of the LRS is invalid at basePath: expected "" or a path that starts with / and does not end with /, found "/".',
+      ],
+      [{ ...valid, basePath: "/xapi/." }, "The configuration of the LRS is invalid at basePath"],
       [{ ...valid, newId: 5 }, "The configuration of the LRS is invalid at newId: expected a function, found 5."],
       [{ ...valid, accept: "x" }, "The configuration of the LRS is invalid at accept"],
       [{ ...valid, acceptStatus: 401 }, "The configuration of the LRS is invalid at acceptStatus"],

@@ -4089,6 +4089,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-records/test/store-statements.test.ts",
   },
   {
+    rule: "The base path of an LRS is compared in the percent-encoded form of the path of a request.",
+    file: "packages/learning-records/src/store/options.ts",
+    find: 'v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),',
+    replace: "",
+    test: "packages/learning-records/test/store.test.ts",
+  },
+  {
     rule: "The JSON of a document is counted in tokens before it is parsed.",
     file: "packages/learning-records/src/store/documents/merge.ts",
     find: 'if (excess === "tokens") {',

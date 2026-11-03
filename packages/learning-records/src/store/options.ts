@@ -113,7 +113,8 @@ export interface LrsOptions extends CallOptions {
   readonly clock: Clock;
   /**
    * The path the LRS is mounted at: `/xapi`, so that the Statements are at `/xapi/statements`. It is `""` or a path that
-   * starts with `/` and does not end with one.
+   * starts with `/` and does not end with one. It is compared with the path of a request as `URL` writes that, percent-encoded,
+   * so `/café` and `/caf%C3%A9` are one path.
    *
    * @defaultValue `"/xapi"`
    */
@@ -220,6 +221,26 @@ const DEFAULT_LIMITS: LrsSettingsLimits = {
 
 const isFunction = <T>(value: unknown): value is T => typeof value === "function";
 
+/** A path whose segments each start with `/` and are not empty, so that it is not `/` and does not end with one. */
+const BASE_PATH = /^(?:\/[^/?#\s]+)*$/u;
+
+/** The base against which a path alone is parsed as `URL` parses the path of a request. */
+const PATH_BASE = "https://lrs.invalid";
+
+const basePathMessage = (issue: v.BaseIssue<unknown>): string =>
+  `expected "" or a path that starts with / and does not end with /, found ${issue.received}`;
+
+/**
+ * The schema of the base path: the path as it is given, then as the URL of a request writes it, percent-encoded and without
+ * segments of dots, which is the form that the router compares with the path of a request.
+ */
+const basePathSchema = v.pipe(
+  v.string(),
+  v.regex(BASE_PATH, basePathMessage),
+  v.transform((path) => (path === "" ? "" : new URL(path, PATH_BASE).pathname)),
+  v.regex(BASE_PATH, basePathMessage),
+);
+
 /** A list of versions with at least one. */
 type Versions = readonly [XapiVersion, ...XapiVersion[]];
 
@@ -240,15 +261,7 @@ const optionsSchema = strictRecord({
   agents: v.optional(methodsSchema<AgentStore>("person")),
   access: guardSchema(isFunction<LrsOptions["access"]>, "a function"),
   clock: methodsSchema<Clock>("now"),
-  basePath: v.optional(
-    v.pipe(
-      v.string(),
-      v.regex(
-        /^(?:\/[^/?#\s]+)*$/u,
-        (issue) => `expected "" or a path that starts with / and does not end with /, found ${issue.received}`,
-      ),
-    ),
-  ),
+  basePath: v.optional(basePathSchema),
   versions: v.optional(guardSchema(isVersionList, 'a list of "2.0.0" and "1.0.3", with each once and at least one')),
   newId: v.optional(guardSchema(isFunction<() => string>, "a function")),
   accept: v.optional(guardSchema(isFunction<NonNullable<LrsOptions["accept"]>>, "a function")),
