@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
 import {
   checkString,
-  hasMoreTokensThan,
+  exceededJsonLimit,
   MAX_JSON_TOKENS,
   nestsDeeperThan,
   parseWith,
@@ -98,10 +98,13 @@ export function readStatementJson(text: string, options?: ReadStatementJsonOptio
   if (bytes > maxBytes) {
     throw new JsonLimitError(`The text has ${bytes} bytes or more, above the limit of ${maxBytes} bytes.`, "bytes");
   }
-  if (nestsDeeperThan(text, maxDepth)) {
+  // One reading finds the first limit that the text passes. The depth is refused before the tokens, so a text that passes the
+  // tokens first is read on for its depth.
+  const excess = exceededJsonLimit(text, maxDepth, maxTokens);
+  if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
     throw new DataError(`The text nests arrays and objects deeper than the limit of ${maxDepth} levels.`);
   }
-  if (hasMoreTokensThan(text, maxTokens)) {
+  if (excess === "tokens") {
     throw new JsonLimitError(
       `The text has more than ${maxTokens} tokens, above the limit of the option maxTokens.`,
       "tokens",

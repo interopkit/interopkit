@@ -306,6 +306,16 @@ describe("readStatementJson", () => {
       }
     });
 
+    it("refuses a text over both limits for its depth, whichever it passes first", () => {
+      // The fifth token passes a limit of four tokens before the brackets pass the depth of three.
+      expect(() => readStatementJson("[1,2,[[[[]]]]]", { maxDepth: 3, maxTokens: 4 })).toThrow(
+        "The text nests arrays and objects deeper than the limit of 3 levels.",
+      );
+      expect(() => readStatementJson("[[[[1,2,3]]]]", { maxDepth: 3, maxTokens: 4 })).toThrow(
+        "The text nests arrays and objects deeper than the limit of 3 levels.",
+      );
+    });
+
     it("refuses a hundred thousand opening brackets before it parses anything", () => {
       expect(() => readStatementJson("[".repeat(100_000))).toThrow("deeper than the limit of 64");
       expect(() => readStatementJson('{"a":'.repeat(50_000))).toThrow("deeper than the limit of 64");

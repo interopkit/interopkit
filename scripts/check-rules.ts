@@ -3397,14 +3397,21 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The text of a request that nests deeper than the limit is refused before it is parsed.",
     file: "packages/learning-records/src/read/read-statement-json.ts",
-    find: "if (nestsDeeperThan(text, maxDepth)) {",
+    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {',
     replace: "if (false) {",
     test: "packages/learning-records/test/json.test.ts",
   },
   {
-    rule: "The text of a request with more tokens than the limit is refused before it is parsed, so that its syntax tree has a bound.",
+    rule: "The text of a request that nests deeper than the limit is refused for its depth, whichever limit it passes first.",
     file: "packages/learning-records/src/read/read-statement-json.ts",
-    find: "if (hasMoreTokensThan(text, maxTokens)) {",
+    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {',
+    replace: 'if (excess === "depth") {',
+    test: "packages/learning-records/test/json.test.ts",
+  },
+  {
+    rule: "The text of a request with more tokens than the limit is refused before it is parsed, so that its parse has a bound.",
+    file: "packages/learning-records/src/read/read-statement-json.ts",
+    find: 'if (excess === "tokens") {',
     replace: "if (false) {",
     test: "packages/learning-records/test/json.test.ts",
   },
@@ -4077,8 +4084,15 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The JSON of a document is counted in tokens before it is parsed.",
     file: "packages/learning-records/src/store/documents/merge.ts",
-    find: "if (hasMoreTokensThan(text, maxTokens)) {",
+    find: 'if (excess === "tokens") {',
     replace: "if (false) {",
+    test: "packages/learning-records/test/store-documents.test.ts",
+  },
+  {
+    rule: "The JSON of a document that nests deeper than the limit is refused for its depth, whichever limit it passes first.",
+    file: "packages/learning-records/src/store/documents/merge.ts",
+    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {',
+    replace: 'if (excess === "depth") {',
     test: "packages/learning-records/test/store-documents.test.ts",
   },
   {

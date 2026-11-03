@@ -641,6 +641,22 @@ describe("handleLrsRequest: POST of a document", () => {
     expect(reasonOf(absent)).toContain("has more than 1000000 tokens");
   });
 
+  it("refuses a body over both limits of its JSON for its depth, whichever it passes first", async () => {
+    const store = memory();
+    await putState(store, '{"a":1}');
+    // The sixth token passes a limit of five tokens before the objects pass the depth of two; the document has five.
+    const response = await post(
+      store,
+      '{"b":1,"c":{"d":{}}}',
+      { "if-match": "*" },
+      { limits: { maxDepth: 2, maxTokens: 5 } },
+    );
+    expect(response.status).toBe(400);
+    expect(reasonOf(response)).toBe(
+      "The body of the POST must be a JSON object, and it nests deeper than the limit of 2 levels.",
+    );
+  });
+
   it("refuses with 413 a merge whose result is over the limit of a document", async () => {
     const store = memory();
     const changes = { limits: { maxDocumentBytes: 20 } };
