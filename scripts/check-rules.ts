@@ -907,8 +907,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A ping follows no redirect: a redirect is no status that it returns as a value.",
     file: "packages/learning-analytics/src/send/ping-endpoint.ts",
-    find: "(status) => status < 300 || status >= 400,",
-    replace: "() => true,",
+    find: ".filter((status) => status < FIRST_REDIRECT || status >= FIRST_CLIENT_ERROR);",
+    replace: ";",
     test: "packages/learning-analytics/test/ping.test.ts",
   },
   {
