@@ -55,6 +55,19 @@ describe("importCourse", () => {
     expect(() => importCourse(JSON.parse("null"), IMPORT)).toThrow(DataError);
   });
 
+  it("imports and launches a unit of a scheme that the host names, as it read the structure", async () => {
+    const xml = COURSE_XML.replace("https://content.example.org/glossary.html", "myapp://glossary");
+    const read = readCourseStructure(xml, { packaged: true, launchSchemes: ["https", "myapp"] });
+    expect(() => importCourse(read, IMPORT)).toThrow("does not start with a scheme that the LMS launches");
+    const course = importCourse(read, { ...IMPORT, launchSchemes: ["https", "myapp"] });
+    expect(course.aus[1]?.url).toBe("myapp://glossary");
+    const host = testHost();
+    host.store.courses.set("c", course);
+    const registration = await createRegistration({ courseId: "c", actor: LEARNER }, host.options);
+    const launch = await prepareLaunch({ registration: registration.id, au: AU2 }, host.options);
+    expect(launch.url.startsWith("myapp://glossary?endpoint=")).toBe(true);
+  });
+
   it("refuses an id of the LMS that is a publisher id of the structure", () => {
     const course = importCourse(STRUCTURE, IMPORT);
     const clash = { ...STRUCTURE, course: { ...STRUCTURE.course, id: course.aus[0]?.lmsId ?? "" } };

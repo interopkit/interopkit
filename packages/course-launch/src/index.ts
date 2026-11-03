@@ -45,6 +45,7 @@ export {
 } from "./rules/index.js";
 export {
   type CourseReadOptions,
+  type CourseWriteOptions,
   readCourseStructure,
   validateCourseStructure,
   writeCourseStructure,

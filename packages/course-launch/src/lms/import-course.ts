@@ -11,6 +11,7 @@ import { v5 } from "uuid";
 import * as v from "valibot";
 import type { AssignableUnit, Block, CourseStructure } from "../model/index.js";
 import { readCourseStructure, writeCourseStructure } from "../structure/index.js";
+import { courseWriteEntries } from "../structure/internal.js";
 import type { ImportedAu, ImportedBlock, ImportedCourse } from "./records.js";
 
 /** What the host gives for an import: its id of the course, and where the ids of the LMS and the relative URLs start. */
@@ -28,6 +29,13 @@ export interface ImportInput {
    * @defaultValue none: every URL must be fully qualified
    */
   readonly contentBase?: string;
+  /**
+   * The schemes, in lower case, that the fully qualified URL of an assignable unit may have, as the host read the structure
+   * with them.
+   *
+   * @defaultValue `["https", "http"]`
+   */
+  readonly launchSchemes?: readonly string[];
 }
 
 const inputSchema = strictRecord({
@@ -46,6 +54,7 @@ const inputSchema = strictRecord({
       ),
     ),
   ),
+  launchSchemes: courseWriteEntries.launchSchemes,
 });
 
 /** The kinds of what the LMS makes an id for, which the name of each id holds. */
@@ -151,13 +160,15 @@ function publisherIdsOf(structure: CourseStructure): ReadonlySet<string> {
  * assignable units, the same at every import of the course.
  *
  * @remarks
- * The structure is checked as `writeCourseStructure` checks it, by every rule of `readCourseStructure`, and copied. The id of
+ * The structure is checked as `writeCourseStructure` checks it, by every rule of `readCourseStructure` with the
+ * `launchSchemes` of the input, and copied. The id of
  * the LMS for a member is `idBase` followed by a UUID of version 5, under `idNamespace`, of the course id of the host, the kind
  * of the member and its publisher id: the same in every registration, and never the publisher id (8.1.5, 9.3.9). A relative URL
  * of a ZIP package is resolved against `contentBase`. The host keeps what this returns in its `Cmi5Store`, by `courseId`.
  *
  * @param structure - The course structure, such as `readCourseStructure` or `readCoursePackage` returns.
- * @param input - The course id of the host, the base and the namespace of the ids, and the base of relative URLs.
+ * @param input - The course id of the host, the base and the namespace of the ids, the base of relative URLs, and the schemes of
+ * a launch.
  * @returns The imported course, a copy that shares nothing with the input.
  * @throws `DataError` that names the fault: a structure that a rule of cmi5 refuses, a relative URL without `contentBase`, or
  * an input that is not valid.
@@ -165,7 +176,8 @@ function publisherIdsOf(structure: CourseStructure): ReadonlySet<string> {
  */
 export function importCourse(structure: CourseStructure, input: ImportInput): ImportedCourse {
   const read = parseWith(inputSchema, input, "The input of the import");
-  const checked = readCourseStructure(writeCourseStructure(structure), { packaged: true });
+  const schemes = read.launchSchemes === undefined ? {} : { launchSchemes: read.launchSchemes };
+  const checked = readCourseStructure(writeCourseStructure(structure, schemes), { packaged: true, ...schemes });
   const importer = new Importer(
     { courseId: read.courseId, idBase: read.idBase, idNamespace: read.idNamespace, contentBase: read.contentBase },
     publisherIdsOf(checked),

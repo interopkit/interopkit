@@ -93,6 +93,20 @@ export const courseReadEntries = {
 
 const optionsSchema = strictRecord(courseReadEntries);
 
+/** The options of `writeCourseStructure`, which a writer of a package and an import of the LMS pass on. */
+export interface CourseWriteOptions {
+  /**
+   * The schemes, in lower case, that the fully qualified URL of an assignable unit may have, as `readCourseStructure` takes
+   * them, so that what the writer writes the reader takes with the same option.
+   *
+   * @defaultValue `["https", "http"]`
+   */
+  readonly launchSchemes?: readonly string[];
+}
+
+/** The entries of the options of writing a course structure, which the options of writing a package extend. */
+export const courseWriteEntries = { launchSchemes: courseReadEntries.launchSchemes };
+
 /** Fills in the defaults of options that a schema of `courseReadEntries` read. */
 export function courseReadSettings(read: v.InferOutput<typeof optionsSchema>): CourseReadSettings {
   return {

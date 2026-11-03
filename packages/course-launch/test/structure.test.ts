@@ -590,6 +590,16 @@ describe("the URL of an assignable unit", () => {
       '"javascript://x" does not start with a scheme that the LMS launches followed by ://: use one of myapp.',
     );
   });
+
+  it("writes a URL of a scheme that the host names, which the reader takes back with the same schemes", () => {
+    const read = readCourseStructure(withUrl("myapp://course/1"), { launchSchemes: ["myapp"] });
+    expect(() => writeCourseStructure(read)).toThrow("does not start with a scheme that the LMS launches");
+    const xml = writeCourseStructure(read, { launchSchemes: ["myapp"] });
+    expect(readCourseStructure(xml, { launchSchemes: ["myapp"] })).toStrictEqual(read);
+    expect(() => writeCourseStructure(read, JSON.parse('{"launchSchemes":["javascript"]}'))).toThrow(
+      "The options object is invalid at launchSchemes[0]",
+    );
+  });
 });
 
 describe("what ends the reading", () => {

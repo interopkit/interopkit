@@ -12,7 +12,12 @@ import {
   MOVE_ON_VALUES,
 } from "../model/index.js";
 import { checkExtensionElement } from "./extension.js";
-import { DEFAULT_MAX_STRUCTURE_DEPTH, readCourseReadOptions } from "./options.js";
+import {
+  type CourseWriteOptions,
+  courseWriteEntries,
+  DEFAULT_MAX_STRUCTURE_DEPTH,
+  readCourseReadOptions,
+} from "./options.js";
 import { readStructureWith } from "./read-course-structure.js";
 
 /** The characters that XML 1.0 holds: no control character but tab, line feed and carriage return, and no lone surrogate. */
@@ -69,6 +74,8 @@ const structureSchema = strictRecord({
   children: v.array(memberSchema),
   extensions: extensionsSchema,
 });
+
+const writeOptionsSchema = strictRecord(courseWriteEntries);
 
 /** The levels of blocks in blocks that the writer checks before the schema reads them, which it does by recursion. */
 const MAX_BLOCK_LEVELS = DEFAULT_MAX_STRUCTURE_DEPTH;
@@ -213,16 +220,22 @@ function checkExtensions(structure: CourseStructure): void {
  * `moveOn` and `launchMethod` are always written, and the extensions of the structure come after its members.
  *
  * @param structure - The structure, such as `readCourseStructure` returns.
+ * @param options - The schemes that the URL of an assignable unit may have, as the reader takes them.
  * @returns The XML.
  * @throws `DataError` that names the path of the first fault: a value of the wrong type, a text that XML cannot hold, an
- * extension that is not one element of its namespace, or a rule of cmi5 that the structure breaks.
+ * extension that is not one element of its namespace, or a rule of cmi5 that the structure breaks; and that names the option,
+ * when an option is not valid.
  * @see {@link https://github.com/AICC/CMI-5_Spec_Current/blob/quartz/cmi5_spec.md#course_package | cmi5, 14.0 Course Package}
  */
-export function writeCourseStructure(structure: CourseStructure): string {
+export function writeCourseStructure(structure: CourseStructure, options?: CourseWriteOptions): string {
+  const { launchSchemes } = parseWith(writeOptionsSchema, options === undefined ? {} : options, "The options object");
   checkNesting(structure);
   const checked = parseWith(structureSchema, structure, "The course structure");
   checkExtensions(checked);
   const xml = new StructureWriter().structure(checked);
-  readStructureWith(xml, readCourseReadOptions({ packaged: true }));
+  readStructureWith(
+    xml,
+    readCourseReadOptions({ packaged: true, ...(launchSchemes === undefined ? {} : { launchSchemes }) }),
+  );
   return xml;
 }

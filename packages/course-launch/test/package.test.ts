@@ -294,6 +294,13 @@ describe("writing a course package", () => {
     await expect(writeCoursePackage(PACKAGED, new Map([...files, [path, encode("x")]]))).rejects.toThrow(sentence);
   });
 
+  it("writes a package whose unit has a URL of a scheme that the host names, and reads it back with the same schemes", async () => {
+    const read = readCourseStructure(withUrl("myapp://course/1"), { launchSchemes: ["myapp"] });
+    await expect(writeCoursePackage(read, new Map())).rejects.toThrow("does not start with a scheme");
+    const written = await writeCoursePackage(read, new Map(), { launchSchemes: ["myapp"] });
+    expect((await readCoursePackage(written, { launchSchemes: ["myapp"] })).structure).toStrictEqual(read);
+  });
+
   it("refuses two files that fold to one name, a file of another type, and files that are not a Map", async () => {
     await expect(writeCoursePackage(PACKAGED, new Map([...files, ["INDEX.html", encode("x")]]))).rejects.toThrow(
       'The files "index.html" and "INDEX.html" of the package are two names that an extractor writes as one file.',

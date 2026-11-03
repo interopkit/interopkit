@@ -81,7 +81,7 @@ package sets, and these:
 | `maxBytes`          | 16,777,216 | The most bytes of `cmi5.xml` once inflated, and of an XML package                            |
 | `signal`            | none       | Ends the wait of the reader, which rejects with its reason                                   |
 
-`writeCoursePackage` takes `signal` alone.
+`writeCoursePackage` takes `launchSchemes`, which it writes and reads its structure with, and `signal`.
 
 ## Limits
 

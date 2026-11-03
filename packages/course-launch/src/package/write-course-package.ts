@@ -3,12 +3,12 @@ import { abortSignalSchema, describe, parseWith, strictRecord } from "@interopki
 import { BlobReader, BlobWriter, Uint8ArrayReader, ZipWriter } from "@zip.js/zip.js/lib/zip-core-native.js";
 import * as v from "valibot";
 import type { AssignableUnit, Block, CourseStructure } from "../model/index.js";
-import { writeCourseStructure } from "../structure/index.js";
-import { packageFileOf } from "../structure/internal.js";
+import { type CourseWriteOptions, writeCourseStructure } from "../structure/index.js";
+import { courseWriteEntries, packageFileOf } from "../structure/internal.js";
 import { foldedName, STRUCTURE_FILE } from "./archive.js";
 import { DEFAULT_MAX_ENTRIES, readCoursePackage } from "./read-course-package.js";
 
-const optionsSchema = strictRecord({ signal: v.optional(abortSignalSchema) });
+const optionsSchema = strictRecord({ ...courseWriteEntries, signal: v.optional(abortSignalSchema) });
 
 /**
  * The time of every entry: midnight of 1980-01-01, the first that a ZIP archive writes, in the local time that it holds, so
@@ -88,7 +88,7 @@ function* urlsOf(members: readonly (AssignableUnit | Block)[], path: string): Ge
  *
  * @param structure - The course structure.
  * @param files - The files of the course by their path below the root of the package, such as `media/intro.mp4`.
- * @param options - The signal.
+ * @param options - The schemes that the URL of an assignable unit may have, as the reader takes them, and the signal.
  * @returns The archive.
  * @throws `DataError` as `writeCourseStructure` does, and when a path is not a name below the root or is one file with another
  * to an extractor, a file is not a `Blob` or bytes, or a relative URL names no file.
@@ -98,9 +98,15 @@ function* urlsOf(members: readonly (AssignableUnit | Block)[], path: string): Ge
 export async function writeCoursePackage(
   structure: CourseStructure,
   files: ReadonlyMap<string, Blob | Uint8Array>,
-  options?: CallOptions,
+  options?: CallOptions & CourseWriteOptions,
 ): Promise<Blob> {
-  const xml = writeCourseStructure(structure);
+  const { signal, launchSchemes } = parseWith(
+    optionsSchema,
+    options === undefined ? {} : options,
+    "The options object",
+  );
+  const schemes = launchSchemes === undefined ? {} : { launchSchemes };
+  const xml = writeCourseStructure(structure, schemes);
   const checked = readFiles(files);
   // The reader takes this many entries by default, and the files and cmi5.xml are the entries of the archive.
   if (checked.size + 1 > DEFAULT_MAX_ENTRIES) {
@@ -108,7 +114,6 @@ export async function writeCoursePackage(
       `The package has ${checked.size} files and cmi5.xml, more than the ${DEFAULT_MAX_ENTRIES} entries that readCoursePackage takes by default.`,
     );
   }
-  const { signal } = parseWith(optionsSchema, options === undefined ? {} : options, "The options object");
   for (const [url, path] of urlsOf(structure.children, "children")) {
     const file = packageFileOf(url);
     if (file !== undefined && !checked.has(file)) {
@@ -129,6 +134,6 @@ export async function writeCoursePackage(
     await writer.add(path, data instanceof Uint8Array ? new Uint8ArrayReader(data) : new BlobReader(data));
   }
   const archive = await writer.close();
-  await readCoursePackage(archive, signal === undefined ? {} : { signal });
+  await readCoursePackage(archive, { ...schemes, ...(signal === undefined ? {} : { signal }) });
   return archive;
 }

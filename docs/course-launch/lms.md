@@ -72,7 +72,7 @@ handlers, and `scenario.ts` plays sessions against it.
 
 | Function | Does |
 | --- | --- |
-| `importCourse(structure, input)` | Checks the structure by every rule of the reader, resolves relative URLs against `contentBase`, and makes the ids of the LMS: `idBase` and a UUID of version 5 of the course id, the kind and the publisher id, the same in every registration (8.1.5) |
+| `importCourse(structure, input)` | Checks the structure by every rule of the reader, with the `launchSchemes` of the input, resolves relative URLs against `contentBase`, and makes the ids of the LMS: `idBase` and a UUID of version 5 of the course id, the kind and the publisher id, the same in every registration (8.1.5) |
 | `createRegistration(input, options)` | Makes the registration, satisfies at once every unit whose `moveOn` is `NotApplicable` and the blocks and course they fill (9.6.1.1), and returns an existing one of the same learner and course as it is |
 | `prepareLaunch(input, options)` | Abandons the unit's open session, writes the launch data and the launched statement, and returns the URL, the window (`own` for `OwnWindow`) and the session id; of two launches of a unit at once, one abandons the other |
 | `handleFetchRequest(request, options)` | Answers the first POST of a fetch code with the token, and every other request with an error code of cmi5 |

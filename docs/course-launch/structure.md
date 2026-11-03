@@ -109,6 +109,9 @@ extension as one element of its `namespace` and `name`, and refuses one that hol
 | `packaged`      | false                | Whether the structure is in a ZIP package, where the url of an assignable unit may be relative to its root         |
 | `launchSchemes` | `["https", "http"]`  | The schemes, in lower case, that a fully qualified url may have; `javascript`, `data`, `vbscript`, `file`, `blob` and `about` are never allowed |
 
+`writeCourseStructure` takes `launchSchemes` alone (`CourseWriteOptions`), and reads what it writes with them: a host that reads
+structures with a scheme of its own writes them, and imports them into its LMS, with the same schemes.
+
 ## Limits
 
 | Limit                         | Default    | Refused with                                                                                |

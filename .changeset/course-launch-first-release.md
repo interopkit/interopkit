@@ -13,7 +13,7 @@ a mastery score of at most 4 decimal places, and the URL of an assignable unit i
 `launchSchemes` followed by `//`, relative only in a ZIP package and below its root, and without the parameters of the launch in
 its query. They read UTF-8, or UTF-16 with a byte order mark, refuse a DOCTYPE, and stop at `maxBytes` (16 MiB), `maxDepth` (64)
 and `maxElements` (1,000,000). Extensions of the structure, the course, blocks and assignable units are kept as written;
-`writeCourseStructure` writes the model as XML that the reader takes back. `@interopkit/course-launch/package` reads a course
+`writeCourseStructure` writes the model as XML that the reader takes back, with the same `launchSchemes`. `@interopkit/course-launch/package` reads a course
 package, a ZIP archive of 32 or 64 bits or the XML alone, told apart by their first bytes: a ZIP archive is read in place within
 `maxEntries` (100,000) and `maxDirectoryBytes` (16 MiB), only `cmi5.xml` is inflated, and an archive is refused for a link, an
 encrypted entry, names that an extractor writes as one file, a header that lies, every warning of zip.js but a wrapped count of entries, no
