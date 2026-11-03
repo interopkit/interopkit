@@ -341,7 +341,7 @@ const requestOptionsSchema = strictRecord({
       groups: v.optional(storeSchema<GroupStore>(["groups"], ["groupSets"])),
       preferences: v.optional(methodsSchema<PreferencesStore>("record")),
       control: v.optional(methodsSchema<AssessmentControl>("control")),
-      registrations: v.optional(methodsSchema<RegistrationStore>("register", "get", "update")),
+      registrations: v.optional(storeSchema<RegistrationStore>(["register"], ["get", "update"])),
     }),
   ),
   pageSize: v.optional(positiveIntegerSchema),

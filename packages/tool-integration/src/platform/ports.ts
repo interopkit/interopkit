@@ -385,6 +385,11 @@ export interface RegistrationRefusal {
  * The registrations of tools behind Dynamic Registration: a registration that a tool asks for, which the platform grants or
  * denies at once and an administrator then reviews and activates (Dynamic Registration 1.0 section 3), and the reads and updates
  * of it (section 4). The library has validated each configuration before the store receives it.
+ *
+ * @remarks
+ * The client configuration endpoint of section 4 is optional, and so are `get` and `update`. Without both, the answer to a
+ * registration carries no `registration_client_uri`, `/registration/{client}` names nothing, and the scopes of `lti-reg` are
+ * neither listed nor granted; with one, the other method of the endpoint answers 405 and only the scope that it needs is offered.
  */
 export interface RegistrationStore {
   /**
@@ -397,16 +402,21 @@ export interface RegistrationStore {
    * `invalid_client_metadata`.
    */
   register(configuration: ToolConfiguration, options?: CallOptions): Promise<RegisteredTool | RegistrationRefusal>;
-  /** Returns the registration of a tool, or `undefined` when there is none. */
-  get(clientId: string, options?: CallOptions): Promise<RegisteredTool | undefined>;
+  /**
+   * Returns the registration of a tool, or `undefined` when there is none.
+   *
+   * @defaultValue none: a tool cannot read its registration
+   */
+  get?(clientId: string, options?: CallOptions): Promise<RegisteredTool | undefined>;
   /**
    * Records a change that a tool asks for. The change may stay provisional until an administrator accepts it (Dynamic
    * Registration 1.0 section 4), and the answer then shows the pending configuration.
    *
    * @param configuration - The configuration, valid, with its scopes narrowed to those that the platform offers.
    * @returns The registration with the same client identifier, a refusal in words, or `undefined` when there is none.
+   * @defaultValue none: a tool cannot change its registration
    */
-  update(
+  update?(
     clientId: string,
     configuration: ToolConfiguration,
     options?: CallOptions,

@@ -51,7 +51,7 @@ with its session. With a `RegistrationStore`, the platform serves Dynamic Regist
 initiation URL a registration token for one registration, the OpenID configuration lies below the issuer with the scopes of the
 services that the platform offers, `/registration` spends the token before it reads the body, refuses an address of the tool that
 names no public host or lies on an origin of the platform, and narrows the scopes before the store registers the tool, and
-`/registration/{client}` reads and updates the calling tool's registration with a token of `lti-reg`; `toToolRegistration` makes the
+`/registration/{client}` reads and updates the calling tool's registration with a token of `lti-reg` when the store has `get` and `update`, which are optional; `toToolRegistration` makes the
 record of a reviewed tool. It substitutes the variables of LTI
 Core Appendix B that the message answers and those that the host resolves, signs the LTI 1.1 migration claim with a secret that
 it does not keep, opens what an earlier hint key sealed, and refuses an algorithm that the tool's registration does not list.

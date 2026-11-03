@@ -502,6 +502,46 @@ async function activated(scope: string): Promise<Setup & { registrations: Memory
 const CLIENT_URL = `${REGISTRATION_URL}/${TOOL_CLIENT_ID}`;
 
 describe("the client configuration endpoint", () => {
+  it("is not offered by a store without get and update: no address in the answer, no route and no scope of lti-reg", async () => {
+    const ctx = registering({ openRegistration: true });
+    const { registrations } = ctx;
+    const change = { services: { registrations: { register: registrations.register.bind(registrations) } } };
+    const answer = await register(ctx, toolRequest(), null, { change });
+    expect(answer.status, textOf(answer.body)).toBe(201);
+    expect(json(answer)).not.toHaveProperty("registration_client_uri");
+    const configuration = json(await handle(ctx, call(CONFIGURATION_URL, undefined), change));
+    expect(configuration.scopes_supported).toEqual(["openid"]);
+    expect((await handle(ctx, call(CLIENT_URL, undefined), change)).status).toBe(404);
+  });
+
+  it("serves only the method that the store has, and offers only the scope that it needs", async () => {
+    const ctx = await activated(SCOPES.registrationReadonly);
+    const { registrations } = ctx;
+    const change = {
+      services: {
+        registrations: {
+          register: registrations.register.bind(registrations),
+          get: registrations.get.bind(registrations),
+        },
+      },
+    };
+    expect((await handle(ctx, call(CLIENT_URL, ctx.token), change)).status).toBe(200);
+    const body = { client_id: TOOL_CLIENT_ID, ...toolRequest() };
+    const put = await handle(
+      ctx,
+      call(CLIENT_URL, ctx.token, { method: "PUT", type: "application/json", body }),
+      change,
+    );
+    expect([put.status, put.headers.allow]).toEqual([405, "GET"]);
+    const configuration = json(await handle(ctx, call(CONFIGURATION_URL, undefined), change));
+    expect(configuration.scopes_supported).toEqual(["openid", SCOPES.registrationReadonly]);
+    for (const broken of [{ get: registrations.get }, { register: registrations.register, update: "update" }]) {
+      await expect(
+        handle(ctx, call(CLIENT_URL, ctx.token), { services: { registrations: broken as never } }),
+      ).rejects.toThrow(DataError);
+    }
+  });
+
   it("answers the calling tool's registration to a token of registration.readonly", async () => {
     const ctx = await activated(SCOPES.registrationReadonly);
     const answer = await handle(ctx, call(CLIENT_URL, ctx.token));

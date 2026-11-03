@@ -171,6 +171,11 @@ The answer carries the recorded configuration, the `client_id` and the `registra
 also when the configuration is refused, so the tool starts again from the initiation. `/registration/{client}` answers 404 to a tool
 whose token is of another client, takes an update as it takes a registration, and refuses one whose `client_id` is another's.
 
+The client configuration endpoint is optional (section 4), and so are `get` and `update` of the store; `register` is required. A
+store without both answers no `registration_client_uri`, `/registration/{client}` names nothing, and the scopes of `lti-reg` are
+neither listed in the configuration nor granted. A store with one serves its method, answers 405 to the other, and offers only the
+scope that it needs: `registration.readonly` for `get`, `registration` for `update`.
+
 When the administrator activates a tool, the host gives `toToolRegistration(registered, { scopes, deploymentIds })` to its lookup of
 tools: the login initiation URL, the redirect URIs, the key set URL and the custom properties of the configuration, with the scopes
 and the deployments that the administrator grants.

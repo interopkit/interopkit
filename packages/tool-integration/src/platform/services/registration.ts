@@ -14,6 +14,8 @@ import { askStore, type Service, type ServiceRequest } from "./service.js";
 
 const CLIENT_PATH = "/registration/{client}";
 
+// `get` and `update` are optional, and a method of the route is served only when the store has it, so their optional calls
+// always reach the store.
 type Call = ServiceRequest<RegistrationStore>;
 
 /** The client of the path, when it is the caller's: a tool reads and changes its own registration and no other. */
@@ -26,7 +28,7 @@ function ownClient(call: Call): string | undefined {
 async function getRegistration(call: Call): Promise<HttpResponse> {
   const client = ownClient(call);
   if (client === undefined) return notFound();
-  const found = await askStore(call, (options) => call.store.get(client, options));
+  const found = await askStore(call, (options) => call.store.get?.(client, options));
   if (found === undefined) return notFound();
   const tool = storedRegistration("RegistrationStore.get", found);
   if (tool.clientId !== client) {
@@ -50,7 +52,7 @@ async function putRegistration(call: Call): Promise<HttpResponse> {
   const admitted = admitConfiguration(body.value, call.settings, call.offered);
   if ("status" in admitted) return admitted;
   const label = "RegistrationStore.update";
-  const updated = await askStore(call, (options) => call.store.update(client, admitted.value, options));
+  const updated = await askStore(call, (options) => call.store.update?.(client, admitted.value, options));
   if (updated === undefined) return notFound();
   const reason = storedRefusal(label, updated);
   if (reason !== undefined) return refusal(400, "invalid_client_metadata", reason);

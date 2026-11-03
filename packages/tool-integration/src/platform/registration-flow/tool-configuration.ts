@@ -135,14 +135,16 @@ export function storedRefusal(label: string, value: unknown): string | undefined
 
 /**
  * Answers with a registration as the platform recorded it (Dynamic Registration 1.0 sections 2.3 and 3.6.1): its configuration,
- * the client identifier and the client configuration endpoint, which an access token with a scope of `lti-reg` reaches. It carries
- * no `registration_access_token`, and is not cached.
+ * the client identifier and, when the store reads or updates registrations, the client configuration endpoint, which an access
+ * token with a scope of `lti-reg` reaches. It carries no `registration_access_token`, and is not cached.
  */
 export function registrationAnswer(status: number, tool: RegisteredTool, settings: PlatformSettings): HttpResponse {
+  const store = settings.services?.registrations;
+  const configurable = store?.get !== undefined || store?.update !== undefined;
   const result = {
     ...tool.configuration,
     clientId: tool.clientId,
-    registrationClientUri: registrationClientUrl(settings.config.origin, tool.clientId),
+    ...(configurable ? { registrationClientUri: registrationClientUrl(settings.config.origin, tool.clientId) } : {}),
   };
   return jsonResponse(status, writeToolRegistrationResult(result), NO_STORE, REGISTRATION_MEDIA_TYPE);
 }

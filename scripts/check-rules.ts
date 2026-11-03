@@ -6619,6 +6619,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/tool-integration/test/platform-failures.test.ts",
   },
   {
+    rule: "The answer to a registration names the client configuration endpoint only when the store serves it.",
+    file: "packages/tool-integration/src/platform/registration-flow/tool-configuration.ts",
+    find: "const configurable = store?.get !== undefined || store?.update !== undefined;",
+    replace: "const configurable = store !== undefined;",
+    test: "packages/tool-integration/test/platform-registration.test.ts",
+  },
+  {
     rule: "A client_id of a token request names the issuer of its assertion (RFC 7521 section 4.2).",
     file: "packages/tool-integration/src/platform/token.ts",
     find: "if (named !== undefined && named !== clientId) {",
