@@ -111,7 +111,7 @@ credential with the proof. `eddsa-rdfc-2022` adds it to the proofs the credentia
 | `contexts`          | The `ContextLoader` that returns the contexts of the credential and of the proof                                                                | Required                                   |
 | `clock`             | The `Clock` that `created` is written from                                                                                                       | Required                                   |
 | `maxJsonLdTokens`   | The most tokens of JSON in the credential, counted before a JSON-LD processor reads it (see Limits)                                              | `20000`                                    |
-| `signal`            | Ends the caller's wait, and reaches the signer                                                                                                   | None                                       |
+| `signal`            | Ends the caller's wait, and reaches the signer: the wait for the signer and for a context ends when it aborts, whether they stop or not           | None                                       |
 
 The default mandatory pointers are `/@context`, `/id`, `/type`, `/issuer/id`, `/issuer/type`, `/validFrom`, `/name`,
 `/credentialSubject/type`, the `id` and `identifier` of the subject, and for an achievement credential the `id`, `type`, `criteria`,

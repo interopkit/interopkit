@@ -170,6 +170,16 @@ describe("answering a request to refresh", () => {
     ).rejects.toBeInstanceOf(DataError);
   });
 
+  it("ends the wait when the signal aborts, though the port never answers and ignores the signal", async () => {
+    const controller = new AbortController();
+    const pending = handleRefreshRequest(request("https://issuer.example/refresh/1"), {
+      signal: controller.signal,
+      refresh: () => new Promise(() => undefined),
+    });
+    controller.abort(new Error("the host stopped"));
+    await expect(pending).rejects.toThrow("the host stopped");
+  });
+
   it("refuses a request and options of the wrong type", async () => {
     await expect(handleRefreshRequest(JSON.parse("null"), answering(JWS))).rejects.toBeInstanceOf(DataError);
     await expect(

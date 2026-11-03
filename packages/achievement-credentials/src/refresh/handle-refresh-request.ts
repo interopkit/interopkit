@@ -1,4 +1,4 @@
-import { type CallOptions, DataError } from "@interopkit/core";
+import { type CallOptions, callPort, DataError } from "@interopkit/core";
 import { checkAbortSignal, checkFunction, checkRecord } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse, jsonResponse } from "@interopkit/core/http";
 
@@ -53,13 +53,11 @@ export async function handleRefreshRequest(
   if (request.method !== "GET") return { status: 405, headers: { allow: "GET" }, body: "" };
   const id = idOf(request);
   if (id === undefined) return { status: 400, headers: {}, body: "" };
-  let refreshed: string | Readonly<Record<string, unknown>> | undefined;
-  try {
-    refreshed = await options.refresh(id, options.signal === undefined ? undefined : { signal: options.signal });
-  } catch {
-    if (options.signal?.aborted) throw options.signal.reason;
-    return { status: 500, headers: {}, body: "" };
-  }
+  const { refresh, signal } = options;
+  // The port gets the signal and should stop, but the wait ends when the signal aborts whether the port does or not.
+  const asked = await callPort(() => refresh(id, signal === undefined ? undefined : { signal }), signal);
+  if (asked === undefined) return { status: 500, headers: {}, body: "" };
+  const refreshed = asked.value;
   if (refreshed === undefined) return { status: 404, headers: {}, body: "" };
   if (typeof refreshed === "string")
     return { status: 200, headers: { "content-type": "application/jwt" }, body: refreshed };

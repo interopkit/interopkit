@@ -5289,6 +5289,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/jsonld-loader.test.ts",
   },
   {
+    rule: "The wait of addProof for the signer of the host ends when the signal aborts, whatever the signer does.",
+    file: "packages/achievement-credentials/src/data-integrity/add-proof.ts",
+    find: "sign: ({ data }: { data: Uint8Array }) => untilAborted(Promise.resolve(signer.sign(data, withSignal)), signal),",
+    replace: "sign: ({ data }: { data: Uint8Array }) => signer.sign(data, withSignal),",
+    test: "packages/achievement-credentials/test/data-integrity.test.ts",
+  },
+  {
     rule: "A signer signs only with the algorithm of the cryptosuite.",
     file: "packages/achievement-credentials/src/data-integrity/add-proof.ts",
     find: "if (signer.algorithm !== algorithm) {",
@@ -5503,6 +5510,13 @@ export const RULES: readonly Rule[] = [
     file: "packages/achievement-credentials/src/refresh/refresh-credential.ts",
     find: 'typeof service.id !== "string" || !service.id.startsWith("https://") || !URL.canParse(service.id)',
     replace: 'typeof service.id !== "string"',
+    test: "packages/achievement-credentials/test/refresh.test.ts",
+  },
+  {
+    rule: "The wait of the refresh handler for its port ends when the signal aborts, whatever the port does.",
+    file: "packages/achievement-credentials/src/refresh/handle-refresh-request.ts",
+    find: "const asked = await callPort(() => refresh(id, signal === undefined ? undefined : { signal }), signal);",
+    replace: "const asked = await callPort(() => refresh(id, signal === undefined ? undefined : { signal }));",
     test: "packages/achievement-credentials/test/refresh.test.ts",
   },
   {

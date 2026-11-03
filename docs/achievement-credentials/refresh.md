@@ -84,6 +84,7 @@ host routes the requests that reach it.
 | A `GET`, and `refresh` gives a string  | 200 with the compact JWS, `application/jwt`                                              |
 | A `GET`, and `refresh` gives `undefined` | 404                                                                                    |
 | `refresh` rejects                    | 500 with an empty body: nothing of the cause is said                                        |
+| The `signal` aborts while `refresh` runs | The `reason` of the signal, whether the port stops or not                                |
 | Another method                       | 405 with `Allow: GET`                                                                        |
 | A path with no identifier            | 400                                                                                          |
 

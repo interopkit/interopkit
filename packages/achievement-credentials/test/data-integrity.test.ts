@@ -627,6 +627,16 @@ describe("a port of the host that never answers", () => {
     );
   });
 
+  it("ends the wait of addProof for a signer of the host when the signal aborts", async () => {
+    const { read } = await signedBy();
+    const { hang, seen } = hangingPort();
+    const signer = { ...issuer.signer, sign: hang as never };
+    await abortsWhileWaiting(
+      (signal) => addProof(credentialOf(issuer.did), signer, { clock: read.clock, contexts: read.contexts, signal }),
+      seen,
+    );
+  });
+
   it("ends the wait of verifyProof for a suite of the host when the signal aborts", async () => {
     const { signed, read } = await signedBy();
     const { hang, seen } = hangingPort();

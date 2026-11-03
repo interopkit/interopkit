@@ -1,6 +1,6 @@
 import { DataIntegrityProof } from "@interop/data-integrity-proof";
 import jsigs from "@interop/jsonld-signatures";
-import { DataError, readClock, type Signer } from "@interopkit/core";
+import { DataError, readClock, type Signer, untilAborted } from "@interopkit/core";
 import { checkRecord, describe } from "@interopkit/core/checks";
 import { addBaseProof } from "@interopkit/selective-disclosure";
 import type { IssuableCredential } from "../model/index.js";
@@ -93,7 +93,8 @@ export async function addProof(
       signer: {
         id: keyId,
         algorithm: ED25519.library,
-        sign: ({ data }: { data: Uint8Array }) => signer.sign(data, withSignal),
+        // The signer is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
+        sign: ({ data }: { data: Uint8Array }) => untilAborted(Promise.resolve(signer.sign(data, withSignal)), signal),
       },
     });
     const signed: unknown = await jsigs.sign(document, {
