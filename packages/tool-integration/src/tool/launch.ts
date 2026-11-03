@@ -94,14 +94,9 @@ async function loadLogin(state: string, options: LtiLaunchOptions<string>): Prom
   return record;
 }
 
-/** Checks that the browser of the launch is the browser of the login, as the cookie recorded it (Security Framework 1.1 sections 5.1.1.4 and 7.4.1). */
-function checkStateCookie(request: HttpRequest, state: string): void {
-  if (readCookie(request, stateCookieName(state)) !== state) {
-    throw new LtiError(
-      "The state cookie of the login is missing or differs from the state of the launch.",
-      "state-cookie",
-    );
-  }
+/** Returns whether the browser of the launch is the browser of the login, as the cookie recorded it (Security Framework 1.1 sections 5.1.1.4 and 7.4.1). */
+function hasStateCookie(request: HttpRequest, state: string): boolean {
+  return readCookie(request, stateCookieName(state)) === state;
 }
 
 /** Returns whether a post is the verification page's: it returns values fetched from the platform's storage. */
@@ -152,8 +147,9 @@ function checkVerification(
  * `target_link_uri` of the login. With `legacySecret` the migration claim is then verified. The login is deleted last, so a
  * launch completes once.
  *
- * On the client-side storage path the platform's post is answered with a verification page and no launch; the page posts
- * again to the same URL, and that second request completes the launch. The host routes both to this function.
+ * The state cookie binds the launch whenever the browser kept it. When it did not and the login had `lti_storage_target`, as
+ * in a frame whose browser blocks third-party cookies, the platform's post is answered with a verification page and no launch;
+ * the page posts again to the same URL, and that second request completes the launch. The host routes both to this function.
  *
  * LTI 1.0 to 1.2 launches are not supported.
  *
@@ -193,20 +189,27 @@ export async function ltiLaunch<TOther extends string = never>(
   const state = requiredField(form, "state");
   const record = await loadLogin(state, options);
   const registration = await findRegistration(options, record.issuer, record.clientId);
-  if (record.storageTarget === undefined) {
-    checkStateCookie(request, state);
-  } else if (isVerification(form)) {
+  // The cookie binds the launch wherever the browser kept it; a login with a storage target falls back to the platform's
+  // storage when it did not.
+  if (!hasStateCookie(request, state)) {
+    if (record.storageTarget === undefined) {
+      throw new LtiError(
+        "The state cookie of the login is missing or differs from the state of the launch.",
+        "state-cookie",
+      );
+    }
+    if (!isVerification(form)) {
+      const { authenticationUrl, redirectUri } = registration;
+      return getDataPage({
+        frame: record.storageTarget,
+        state,
+        nonce: record.nonce,
+        authenticationUrl,
+        redirectUri,
+        idToken,
+      });
+    }
     checkVerification(request, form, state, record, registration);
-  } else {
-    const { authenticationUrl, redirectUri } = registration;
-    return getDataPage({
-      frame: record.storageTarget,
-      state,
-      nonce: record.nonce,
-      authenticationUrl,
-      redirectUri,
-      idToken,
-    });
   }
   const claims = await verifyIdToken(idToken, registration, options.jwks, readClock(options.clock), options.signal);
   if (claims.nonce !== record.nonce) {

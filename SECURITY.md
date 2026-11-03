@@ -434,8 +434,10 @@ platform's key, to the tool's client and deployment, and to one use.
 - `LtiStore.delete` must be atomic, and expired logins deleted. A login completes once because only one caller's `delete`
   returns `true`.
 - **Login CSRF** (Security Framework 1.1 section 7.4.1). A launch is tied to the browser that logged in: by the
-  `__Host-lti_state_<state>` cookie, or, without third-party cookies, by the platform's storage, and the tool accepts the second
-  post of that path only from the origin of its own launch URL. Pass the `origin` header of the request to `ltiLaunch`.
+  `__Host-lti_state_<state>` cookie, which every login sets, or, when the browser did not keep it and the platform named a
+  storage frame, by the platform's storage, and the tool accepts the second post of that path only from the origin of its own
+  launch URL, which its verification page sends under `Referrer-Policy: same-origin`. Pass the `cookie` and `origin` headers of
+  the request to `ltiLaunch`.
 - The two pages of the storage path carry a content security policy that allows their one script by hash, and encode every
   value. A host that adds headers must not weaken them. Before the storage messages they ask the window that framed them for
   its capabilities, to the wildcard origin as Client Side postMessages 0.1 section 4.1.2 asks: the request carries only a random

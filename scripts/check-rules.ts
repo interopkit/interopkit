@@ -1019,9 +1019,31 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The browser of a launch on the cookie path is the browser that logged in.",
     file: "packages/tool-integration/src/tool/launch.ts",
-    find: "checkStateCookie(request, state);",
-    replace: "",
+    find: "return readCookie(request, stateCookieName(state)) === state;",
+    replace: "return true;",
     test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A launch whose browser did not keep the state cookie is bound by the platform's storage, or refused.",
+    file: "packages/tool-integration/src/tool/launch.ts",
+    find: "if (!hasStateCookie(request, state)) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "A login with a storage target sets the state cookie too, which binds a launch in a tab of its own.",
+    file: "packages/tool-integration/src/tool/login.ts",
+    find: 'return { ...page, headers: { ...page.headers, "set-cookie": cookie } };',
+    replace: "return page;",
+    test: "packages/tool-integration/test/tool.test.ts",
+  },
+  {
+    rule: "The storage page of a window with neither a parent nor an opener goes to the authentication request, bound by the cookie.",
+    file: "packages/tool-integration/src/tool/pages.ts",
+    find: "if (!framed) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/tool.browser.test.ts",
+    browser: true,
   },
   {
     rule: "The verification of the storage path is posted from the origin of the tool.",

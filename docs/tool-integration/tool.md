@@ -172,15 +172,19 @@ one, which must be a deployment of the registration (`deployment-unknown`): the 
 4.1.2 and 5.3.4).
 
 The tool must tie the launch to the browser that logged in, or an attacker could make a victim's browser launch with the
-attacker's token (login CSRF, Security Framework 1.1 section 7.4.1). There are two ways.
+attacker's token (login CSRF, Security Framework 1.1 section 7.4.1). Every answer of `ltiLogin` sets the state cookie,
+`__Host-lti_state_<state>=<state>; Max-Age=600; Path=/; Secure; HttpOnly; SameSite=None`, and a launch whose post carries it is
+bound by it. When the platform names a storage frame, the tool also stores the values in the platform, for a browser that does
+not keep the cookie.
 
-| Path    | When                                       | The answer of `ltiLogin`                                                                                                           | What binds the browser                                                                      |
-| ------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Cookie  | The initiation has no `lti_storage_target` | A 302 to the authentication request, with `__Host-lti_state_<state>=<state>; Max-Age=600; Path=/; Secure; HttpOnly; SameSite=None` | The cookie, which the launch compares with `state`                                          |
-| Storage | The initiation has `lti_storage_target`    | A page that stores `state` and `nonce` in the platform with `lti.put_data`, then redirects                                         | The platform's storage, which the verification page reads with `lti.get_data` at the launch |
+| Path    | When                                       | The answer of `ltiLogin`                                                                   | What binds the browser                                                                                                     |
+| ------- | ------------------------------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Cookie  | The initiation has no `lti_storage_target` | A 302 to the authentication request, with the cookie                                       | The cookie, which the launch compares with `state`                                                                         |
+| Storage | The initiation has `lti_storage_target`    | A page that stores `state` and `nonce` in the platform with `lti.put_data`, then redirects; with the cookie | The cookie when the browser kept it; else the platform's storage, which the verification page reads with `lti.get_data` at the launch |
 
-The storage path works in an iframe whose browser blocks third-party cookies. The `__Host-` prefix keeps a sibling subdomain
-from setting the cookie, and the name holds the `state`, so that several launches in one browser do not collide.
+The storage path works in an iframe whose browser blocks third-party cookies, and in a tab of its own, which keeps the
+first-party cookie. The `__Host-` prefix keeps a sibling subdomain from setting the cookie, and the name holds the `state`, so
+that several launches in one browser do not collide.
 
 ### The storage path
 
@@ -191,10 +195,12 @@ opened it for its capabilities (`lti.capabilities`, Client Side postMessages 0.1
 `lti_storage_target` does (`_parent` for the parent). The page stores `state_<state>` and `nonce_<nonce>` there, waits for
 `lti.put_data.response`, and navigates to the authentication request. A message counts only when it comes from the origin of `authenticationUrl`, has the subject
 `<subject>.response` and answers the page's `message_id`. If the platform answers with an error, names no such frame or is
-silent for 10 seconds, the page shows a message and stops. So does a page in a window that has neither a parent nor an opener,
-such as a tab that the platform opened with `noopener`: no cookie was set, and there is no frame of the platform to store in.
+silent for 10 seconds, the page shows a message and stops. A page in a window that has neither a parent nor an opener, such as a
+tab that the platform opened with `noopener`, has no frame of the platform to store in: it navigates to the authentication
+request at once, and the cookie binds its launch.
 
-At the launch, the platform posts the `id_token` to the redirect URI. `ltiLaunch` answers with the verification page: it asks
+At the launch, the platform posts the `id_token` to the redirect URI. When the post carries the state cookie, `ltiLaunch` completes
+the launch. When the browser did not keep it, as a frame of another site does not, `ltiLaunch` answers with the verification page: it asks
 for the capabilities in the same way, fetches `state_<state>` and `nonce_<nonce>` with `lti.get_data` and submits the form with `id_token`, `state`, `stored_state`
 and `stored_nonce` to the same URL. That second request completes the launch, so the host routes both to `ltiLaunch`. It must
 pass the `origin` header, because `ltiLaunch` accepts the second request only from the origin of the redirect URI: without
@@ -219,8 +225,8 @@ A request that is not a POST of a form with `id_token` and `state` is a `DataErr
 | `state` names a login in the store, made of base64url characters                                                                | `state-unknown`                                   |
 | The login has not expired                                                                                                       | `state-expired`                                   |
 | The platform is still registered                                                                                                | `platform-unknown`                                |
-| Cookie path: the state cookie equals `state`                                                                                    | `state-cookie`                                    |
-| Storage path: the second post comes from the redirect URI's origin, with `stored_state` and `stored_nonce` equal to the login's | `origin-mismatch`, `storage-mismatch`             |
+| The state cookie equals `state`; without it, a login without `lti_storage_target` is refused                                   | `state-cookie`                                    |
+| Without the cookie, on the storage path: the second post comes from the redirect URI's origin, with `stored_state` and `stored_nonce` equal to the login's | `origin-mismatch`, `storage-mismatch` |
 | The token has three canonical base64url parts, a JSON header and a JSON payload; no `crit` header                               | `token-malformed`                                 |
 | `alg` is one of the registration's `algorithms`, by default RS256, RS384, RS512, ES256, ES384 and ES512; `none`, the HMAC algorithms and every other are refused before a key is fetched | `algorithm-unsupported` |
 | The header has a `kid` that one key of the key set has, a key for the algorithm: RSA of 2,048 bits or more, or EC on P-256, P-384 or P-521 | `key-unknown` |
@@ -374,7 +380,7 @@ read no other clock.
 
 - Serve every route over HTTPS, and limit the size of a request body: the handlers read what the host gives them.
 - Route the login URL to `ltiLogin`, and the redirect URI to `ltiLaunch` for both requests of the storage path.
-- Pass the `origin` header, and the `cookie` header for the cookie path, in lower case.
+- Pass the `cookie` and `origin` headers of every launch, in lower case.
 - Check `launch.targetLinkUri` against your own routes before you redirect to it.
 - Make `LtiStore.delete` atomic, and delete expired records.
 - Start the host's own session after `ltiLaunch` returns a launch; the state cookie serves the login only.

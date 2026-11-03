@@ -20,7 +20,8 @@ export const STORED_NONCE = "stored_nonce";
 // Before them a page asks the window that framed or opened it for its capabilities (Client Side postMessages 0.1 section
 // 4.1), with the wildcard origin that section 4.1.2 asks for, since the request holds nothing but its id. A frame that the
 // answer names for the subject receives the storage messages; without an answer, or without a frame for the subject, the
-// `lti_storage_target` of the login does. Whichever frame it is, a storage message goes only to the platform's origin.
+// `lti_storage_target` of the login does. Whichever frame it is, a storage message goes only to the platform's origin. A page
+// with neither a parent nor an opener has no window to ask, and `done` learns it from its second argument.
 const FIND_TARGET = `function findTarget(config, done) {
     var base = null;
     try {
@@ -29,7 +30,7 @@ const FIND_TARGET = `function findTarget(config, done) {
       base = null;
     }
     if (!base) {
-      done(null);
+      done(null, false);
       return;
     }
     var id = window.crypto.randomUUID();
@@ -46,7 +47,7 @@ const FIND_TARGET = `function findTarget(config, done) {
       } catch (error) {
         target = null;
       }
-      done(target || null);
+      done(target || null, true);
     }
     function listen(event) {
       var data = event.data;
@@ -75,7 +76,13 @@ const PUT_SCRIPT = `(function () {
     failure.hidden = false;
   }
   ${FIND_TARGET}
-  findTarget(config, function (target) {
+  findTarget(config, function (target, framed) {
+    // A window of its own, such as a tab opened with noopener, keeps the first-party cookie of the login, which binds the launch.
+    if (!framed) {
+      window.clearTimeout(timer);
+      window.location.replace(config.authenticationRequest);
+      return;
+    }
     if (!target) {
       fail();
       return;

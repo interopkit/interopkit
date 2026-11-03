@@ -3,7 +3,8 @@
 ---
 
 LTI 1.3 for learning platforms and tools. The tool role is a tool that a platform launches: it answers the platform's login
-with a cookie or with the platform's browser storage, whose pages ask the platform's capabilities for the frame to use; it
+with a cookie, and, when the platform names a storage frame, with the platform's browser storage as well, for a browser that does
+not keep the cookie, whose pages ask the platform's capabilities for the frame to use; it
 validates the launch of every message type, with the versions, the message types, the audiences and the algorithms that the
 host accepts, binds it to the deployment and the target of its login, refuses the platform's authentication error and a form
 above `maxFormBytes`, and verifies the LTI 1.1 migration claim with the host's secret. It signs with the `Signer` of each

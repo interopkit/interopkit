@@ -743,7 +743,8 @@ describe("ltiLaunch", () => {
       });
       expect(view.action).toBe(REDIRECT_URI);
       expect(ctx.store.records.has(auth.state)).toBe(true);
-      expect(response.headers["set-cookie"]).toBeUndefined();
+      expect(response.headers["set-cookie"]).toContain(`__Host-lti_state_${auth.state}=${auth.state};`);
+      expect(page).not.toHaveProperty(["headers", "set-cookie"]);
     });
 
     it("sends the verification page with a CSP that names its script and nothing else, and a referrer to its own origin alone", async () => {
@@ -782,6 +783,28 @@ describe("ltiLaunch", () => {
         user: { subject: "a6d5c443-1f51-4783-ba1a-7686ffe3b54a" },
       });
       expect(ctx.store.records.size).toBe(0);
+    });
+
+    it("completes the launch by the state cookie when the browser kept it, with no verification page", async () => {
+      const ctx = setup();
+      const { auth, response } = await storageLogin(ctx);
+      const post = auth.post({ cookie: cookieOf(response.headers["set-cookie"]) });
+      expect(launchOf(await ltiLaunch(post, ctx.options)).messageType).toBe("LtiResourceLinkRequest");
+      expect(ctx.store.records.size).toBe(0);
+    });
+
+    it("falls back to the platform's storage when the cookie is another login's", async () => {
+      const ctx = setup();
+      const first = await storageLogin(ctx);
+      const second = await storageLogin(ctx);
+      const page = await ltiLaunch(
+        second.auth.post({ cookie: cookieOf(first.response.headers["set-cookie"]) }),
+        ctx.options,
+      );
+      expect(readPage(page as HttpResponse).config.state).toBe(second.auth.state);
+      expect(launchOf(await ltiLaunch(verificationPost(second.auth, second.storage), ctx.options)).messageType).toBe(
+        "LtiResourceLinkRequest",
+      );
     });
 
     it("completes the launch without any cookie", async () => {
@@ -957,13 +980,16 @@ describe("ltiLogin", () => {
     expect(location.searchParams.get("scope")).toBe("openid");
   });
 
-  it("answers an initiation with lti_storage_target with a page that stores state and nonce in the platform", async () => {
+  it("answers an initiation with lti_storage_target with a page that stores state and nonce in the platform, and the state cookie", async () => {
     const ctx = setup();
     const response = await ltiLogin(ctx.platform.initiation({ storageTarget: "_parent" }), ctx.options);
     expect(response.status).toBe(200);
-    expect(response.headers["set-cookie"]).toBeUndefined();
     const view = readPage(response);
     const request = new URL(view.config.authenticationRequest ?? "");
+    const state = request.searchParams.get("state");
+    expect(response.headers["set-cookie"]).toBe(
+      `__Host-lti_state_${state}=${state}; Max-Age=600; Path=/; Secure; HttpOnly; SameSite=None`,
+    );
     expect(view.config).toEqual({
       subject: "lti.put_data",
       frame: "_parent",

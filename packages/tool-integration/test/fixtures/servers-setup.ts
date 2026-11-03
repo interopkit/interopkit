@@ -18,6 +18,9 @@ JSON.parse(query.get("send") || "[]").forEach(function (message) {
 fetch("/ready?id=" + id);
 </script>`;
 
+/** The page at `/close`, which closes the window that a test opened, once the server has recorded that it was reached. */
+const CLOSE = "<!doctype html><title>close</title><script>window.close();</script>";
+
 /** A page that a test gives a server to serve, with the headers of the answer of the handler that made it. */
 interface GivenPage {
   readonly headers: Readonly<Record<string, string>>;
@@ -35,7 +38,7 @@ async function textOf(request: IncomingMessage): Promise<string> {
  * A server that records the paths it is asked for, answers every request with 204, and shows the paths at `/__hits`. For a POST it
  * also records `POST <path> origin=<the Origin header>`. A POST to `/page?id=<id>` gives it a page, a JSON `GivenPage`, which a GET
  * of the same address then serves with its headers, so that a browser runs it as the handler's answer and not as a document of the
- * test.
+ * test. A GET of `/close` answers a page that closes its window.
  */
 async function listen(): Promise<{ server: Server; origin: string }> {
   const hits: string[] = [];
@@ -68,6 +71,11 @@ async function listen(): Promise<{ server: Server; origin: string }> {
     if (url.startsWith("/probe")) {
       response.setHeader("content-type", "text/html");
       response.end(PROBE);
+      return;
+    }
+    if (url.startsWith("/close")) {
+      response.setHeader("content-type", "text/html");
+      response.end(CLOSE);
       return;
     }
     response.statusCode = 204;

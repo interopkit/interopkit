@@ -100,11 +100,12 @@ function authenticationRequest(
  * It creates a `state` and a single-use `nonce` and saves them in `options.store` with the `target_link_uri` and the
  * `lti_deployment_id` of the initiation, which the launch must carry (LTI 1.3 Core sections 4.1.2 and 5.3.4). Where the
  * `state` also lives depends on the initiation:
- * - With `lti_storage_target`, the answer is a page that stores `state` and `nonce` in the platform's browser storage
- *   (`lti.put_data` of LTI Client Side OIDC 0.1) and then redirects to the authentication request. This works when the
- *   browser blocks third-party cookies, as it does in an iframe.
- * - Without it, the answer is a redirect to the authentication request that sets a `__Host-lti_state_<state>` cookie
- *   with `SameSite=None; Secure; HttpOnly`.
+ * - Both answers set a `__Host-lti_state_<state>` cookie with `SameSite=None; Secure; HttpOnly`.
+ * - Without `lti_storage_target`, the answer is a redirect to the authentication request.
+ * - With it, the answer is a page that stores `state` and `nonce` in the platform's browser storage (`lti.put_data` of LTI
+ *   Client Side OIDC 0.1) and then redirects to the authentication request, so that a launch completes when the browser
+ *   blocks third-party cookies, as it does in an iframe. A page in a window with neither a parent nor an opener redirects at
+ *   once, and the cookie binds its launch.
  *
  * @param request - The initiation: a GET with the parameters in the query, or a POST with them in a form.
  * @param options - The registrations and the store of the tool.
@@ -144,16 +145,12 @@ export async function ltiLogin(request: HttpRequest, options: LtiLoginOptions): 
   options.signal?.throwIfAborted();
   await options.store.put(state, record, callOptionsOf(options));
   const location = authenticationRequest(registration, initiation, state, nonce);
+  // The cookie goes with both answers: a browser that keeps it, as a tab of its own does, binds the launch by it, and one that
+  // blocks it in a third-party frame binds the launch by the platform's storage.
+  const cookie = `${stateCookieName(state)}=${state}; Max-Age=${LOGIN_TTL_SECONDS}; Path=/; Secure; HttpOnly; SameSite=None`;
   if (initiation.storageTarget !== undefined) {
-    return putDataPage({ frame: initiation.storageTarget, state, nonce, authenticationRequest: location });
+    const page = await putDataPage({ frame: initiation.storageTarget, state, nonce, authenticationRequest: location });
+    return { ...page, headers: { ...page.headers, "set-cookie": cookie } };
   }
-  return {
-    status: 302,
-    headers: {
-      location,
-      "set-cookie": `${stateCookieName(state)}=${state}; Max-Age=${LOGIN_TTL_SECONDS}; Path=/; Secure; HttpOnly; SameSite=None`,
-      "cache-control": "no-store",
-    },
-    body: "",
-  };
+  return { status: 302, headers: { location, "set-cookie": cookie, "cache-control": "no-store" }, body: "" };
 }

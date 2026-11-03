@@ -263,6 +263,21 @@ async function login(
 }
 
 describe("the page that stores state and nonce", () => {
+  it("goes to the authentication request at once in a tab with neither a parent nor an opener, whose cookie binds the launch", async () => {
+    // The tab is opened with noopener, as a platform may open a tool; the page runs with the headers of its answer, from a server.
+    const { page, state } = await login("_parent");
+    expect(page.headers["set-cookie"]).toContain(`=${state};`);
+    const address = `${other}/page?id=${crypto.randomUUID()}`;
+    const body = textOf(page.body).replaceAll(`${PLATFORM}/auth?`, `${other}/close?`).replaceAll(PLATFORM, origin);
+    await fetch(address, { method: "POST", body: JSON.stringify({ headers: page.headers, body }) });
+    expect(window.open(address, "_blank", "noopener")).toBeNull();
+    await waitFor(async () =>
+      expect(
+        (await requestsTo(other)).some((path) => path.startsWith("/close?") && path.includes(`state=${state}`)),
+      ).toBe(true),
+    );
+  });
+
   it("stores both in the platform's parent frame and then redirects to the authentication request", async () => {
     const storage = new PlatformStorage(window);
     const { page, state, nonce } = await login("_parent");
