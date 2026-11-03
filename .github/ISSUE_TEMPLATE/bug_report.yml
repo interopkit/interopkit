@@ -17,6 +17,7 @@ body:
         - "@interopkit/learning-analytics"
         - "@interopkit/competency-frameworks"
         - "@interopkit/learning-records"
+        - "@interopkit/achievement-credentials"
         - "@interopkit/selective-disclosure"
         - "@interopkit/course-launch"
     validations:
@@ -25,8 +26,8 @@ body:
     id: version
     attributes:
       label: Version
-      description: The version from `npm ls @interopkit/core`, or the commit if you build from source.
-      placeholder: 0.1.0
+      description: The version from `npm ls <the package>`, or the commit if you build from source.
+      placeholder: 1.0.0
     validations:
       required: true
   - type: dropdown

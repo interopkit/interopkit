@@ -2,5 +2,6 @@
 Copyright Fariz Wakan
 
 LTI, Learning Tools Interoperability, LTI Advantage and 1EdTech are trademarks of 1EdTech Consortium, Inc. This package
-implements the LTI 1.3 specifications of 1EdTech: Core, the Security Framework, Deep Linking and Assignment and Grade
-Services. It is not certified by 1EdTech and includes no 1EdTech files.
+implements the LTI 1.3 specifications of 1EdTech: Core, the Security Framework, Deep Linking, Assignment and Grade Services,
+Names and Role Provisioning Services, Context Groups, the AfA PNP Connector, Proctoring Services and Dynamic Registration. It
+is not certified by 1EdTech and includes no 1EdTech files.

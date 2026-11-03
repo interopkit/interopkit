@@ -14,12 +14,16 @@ flowchart LR
   run -->|"exit 1 on a test that fails and is not listed,<br/>a listed test that passes, or another number of tests"| result["Result"]
 ```
 
-| Suite                              | Tests | Passes | Skipped by the suite | Listed as failing | What it checks of the service                                                              |
-| ---------------------------------- | ----: | -----: | -------------------: | ----------------: | ------------------------------------------------------------------------------------------ |
-| `vc-di-eddsa-test-suite`           |    44 |     43 |                    0 |                 1 | Issuing and verifying with `eddsa-rdfc-2022`: the proof, its data model, its algorithms    |
-| `vc-di-ecdsa-test-suite`           |    59 |     55 |                    1 |                 3 | `ecdsa-rdfc-2019` and `ecdsa-sd-2023` on P-256: issuing, deriving, verifying               |
-| `vc-bitstring-status-list-test-suite` |  56 |     40 |                   16 |                 0 | The status list credentials that the service issues, and a credential verified against them |
-| `vc-data-model-2.0-test-suite`     |    59 |     40 |                    0 |                19 | Issuing and verifying credentials of the Data Model 2.0, and refusing those that are not   |
+| Suite                                 | Commit    | Counted    | Tests | Passes | Skipped by the suite | Listed as failing | What it checks of the service                                                               |
+| ------------------------------------- | --------- | ---------- | ----: | -----: | -------------------: | ----------------: | ------------------------------------------------------------------------------------------- |
+| `vc-di-eddsa-test-suite`              | `1e86cc4` | 2026-11-04 |    44 |     44 |                    0 |                 0 | Issuing and verifying with `eddsa-rdfc-2022`: the proof, its data model, its algorithms     |
+| `vc-di-ecdsa-test-suite`              | `94dca21` | 2026-11-04 |    59 |     55 |                    1 |                 3 | `ecdsa-rdfc-2019` and `ecdsa-sd-2023` on P-256: issuing, deriving, verifying                |
+| `vc-bitstring-status-list-test-suite` | `960ab9a` | 2026-11-04 |    56 |     40 |                   16 |                 0 | The status list credentials that the service issues, and a credential verified against them |
+| `vc-data-model-2.0-test-suite`        | `6283645` | 2026-11-04 |    59 |     44 |                    0 |                15 | Issuing and verifying credentials of the Data Model 2.0, and refusing those that are not    |
+
+Each count is that of a run on the date given, at the commit given, and not a statement that the package conforms to the
+specifications that a suite tests. The lock pins the commit and the size of each suite, and a test of `scripts/` fails when this
+table differs from the lock.
 
 `vc-jose-cose-test-suite` is not run. Its implementations are Docker images with a command line that issues and verifies
 credentials and presentations with JOSE, COSE and SD-JWT, and not services over HTTP. The package writes the JWS form of Open
@@ -92,4 +96,4 @@ serves, with a reference to test it by. None is a rule that the package breaks f
 |     1 | `model`  | It asks the issuer to compare the digest of a related resource with the resource. The package fetches no resource that a credential names, and a context comes only from its pin, which hashes the parsed document and not the bytes that a digest covers; the form of each related resource is checked |
 |     3 | `ecdsa`  | They verify a derived proof of the vector of the specification, whose credential has no `validFrom` and names an issuer at `https://vc.example`; a signature of the authors cannot take the property that Open Badges requires. What they check of a proof value, its header and the count of its signatures is tested in `selective-disclosure` (`proof-value.test.ts`, `verify.test.ts`) |
 
-The 16 tests that the status suite skips are pending in the suite itself, and no test of it fails.
+The tests that the status suite skips are pending in the suite itself, and no test of it fails.

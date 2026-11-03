@@ -47,8 +47,8 @@ flowchart LR
 | Package                                                                             | What it is                                                                                                                                                                |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`@interopkit/core`](packages/core/README.md)                                       | The errors, the checks of arguments, the clock and the service call that the other packages share                                                                         |
-| [`@interopkit/tool-integration`](packages/tool-integration/README.md)               | LTI 1.3: a tool that a platform launches, and a platform that launches tools. Version 0.1; its README says what it contains                                               |
-| [`@interopkit/learning-analytics`](packages/learning-analytics/README.md)           | Caliper Analytics 1.2 events, a sensor that sends them to an endpoint, and the endpoint that receives them. Version 0.1; its README says what it contains                |
+| [`@interopkit/tool-integration`](packages/tool-integration/README.md)               | LTI 1.3: a tool that a platform launches, and a platform that launches tools; its README says what it contains                                               |
+| [`@interopkit/learning-analytics`](packages/learning-analytics/README.md)           | Caliper Analytics 1.2 events, a sensor that sends them to an endpoint, and the endpoint that receives them; its README says what it contains                |
 | [`@interopkit/competency-frameworks`](packages/competency-frameworks/README.md)     | CASE 1.1 and 1.0: the model of a framework package, its readers, its tree and changes, and the conversion to 1.0                                                          |
 | [`@interopkit/learning-records`](packages/learning-records/README.md)               | xAPI 2.0 and 1.0.3: the model of a Statement, readers that check it against the rules of an LRS and of a provider, the message and signature of Attachments, a client of an LRS, and the handler of its requests |
 | [`@interopkit/achievement-credentials`](packages/achievement-credentials/README.md) | Open Badges 3.0 and CLR 2.0: the model of an achievement credential and of the APIs, and readers that check them, builders, identity hashes, comparison, baking in images, a client of the Open Badges and CLR APIs, keys, proofs, status lists, refresh and verification |
@@ -58,9 +58,8 @@ flowchart LR
 To launch tools from your platform, or to be launched by one, use `tool-integration`. To report learning events, use
 `learning-analytics`. Neither needs the other.
 
-The scope of 0.1 is the LTI 1.3 launch, access tokens and score service in both roles, Deep Linking in the tool role, and Caliper 1.2 events that a sensor builds and sends. [Supported](docs/tool-integration/supported.md) lists what
-`tool-integration` includes and what it does not, and the README of `learning-analytics` does the same for events. interopkit
-implements these specifications and is not certified by 1EdTech.
+[Supported](docs/tool-integration/supported.md) lists what `tool-integration` includes and what it does not, and the README
+of `learning-analytics` does the same for events. interopkit implements these specifications and is not certified by 1EdTech.
 
 A host that delivers QTI tests with assesskit connects the two in its own code, through the ports that the player defines.
 interopkit imports nothing from assesskit or measurekit, and they import nothing from it.
