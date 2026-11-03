@@ -57,7 +57,7 @@ const jsonText: fc.Arbitrary<string> = fc.letrec<{ value: string }>((tie) => ({
     fc
       .array(
         fc.tuple(
-          fc.constantFrom('"a"', '"b"', String.raw`"a"`, String.raw`"a\\"`, String.raw`"\""`, '"x y"'),
+          fc.constantFrom('"a"', '"b"', String.raw`"\u0061"`, String.raw`"a\\"`, String.raw`"\""`, '"x y"'),
           tie("value"),
         ),
         { maxLength: 4 },
