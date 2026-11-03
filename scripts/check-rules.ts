@@ -1642,16 +1642,16 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The lists inside a JSON value are copied, so that a result shares nothing with its input.",
     file: "packages/core/src/json.ts",
-    find: "return { value: items };",
-    replace: "return { value };",
+    find: "return items;",
+    replace: "return value;",
     test: "packages/core/test/json.test.ts",
   },
   {
     rule: "A member named __proto__ stays a member of a copy of JSON and never changes its prototype.",
     file: "packages/core/src/json.ts",
-    find: "return { value: Object.fromEntries(members) };",
+    find: "return Object.fromEntries(members);",
     replace:
-      "return { value: members.reduce<Record<string, JsonValue>>((object, [name, item]) => { object[name] = item; return object; }, {}) };",
+      "return members.reduce<Record<string, JsonValue>>((object, [name, item]) => { object[name] = item; return object; }, {});",
     test: "packages/core/test/json.test.ts",
   },
   {

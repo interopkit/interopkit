@@ -69,39 +69,67 @@ function isPlainObject(value: object): boolean {
   return prototype === Object.prototype || prototype === null;
 }
 
-/** Copies the members of a plain object at the given depth, and reports where a value is not JSON. */
-function copyObject(value: object, depth: number, path: string): JsonObjectCopy {
-  if (!isPlainObject(value)) return { problem: `${placeOf(path)} is ${describeNonJson(value)}` };
-  const members: [string, JsonValue][] = [];
-  for (const [name, member] of Object.entries(value)) {
-    const result = copy(member, depth + 1, memberPath(path, name));
-    if ("problem" in result) return result;
-    members.push([name, result.value]);
+/**
+ * What makes a value not JSON, and where: the names of the members and the indexes of the items from the fault outward, which
+ * the copy gathers only once a fault is found, so that a value that is JSON costs no path.
+ */
+class Fault {
+  /** What is wrong, as the end of a sentence whose subject is the place, such as `is undefined, which JSON cannot hold`. */
+  readonly what: string;
+  /** The steps from the fault to the value as a whole, the innermost first. */
+  readonly steps: (string | number)[] = [];
+
+  constructor(what: string) {
+    this.what = what;
   }
-  // `Object.fromEntries` defines each member, so that a member named `__proto__` stays a member and not a prototype.
-  return { value: Object.fromEntries(members) };
 }
 
-/** Copies a JSON value that nests at most `MAX_JSON_DEPTH` levels, and reports where it is not JSON. */
-function copy(value: unknown, depth: number, path: string): JsonValueCopy {
-  if (value === null || typeof value === "boolean" || typeof value === "string") return { value };
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? { value } : { problem: `${placeOf(path)} is ${describeNonJson(value)}` };
+/** Copies the members of a plain object at the given depth, or finds what in it is not JSON. */
+function copyObject(value: object, depth: number): JsonObject | Fault {
+  if (!isPlainObject(value)) return new Fault(`is ${describeNonJson(value)}`);
+  const members: [string, JsonValue][] = [];
+  for (const [name, member] of Object.entries(value)) {
+    const copied = copy(member, depth + 1);
+    if (copied instanceof Fault) {
+      copied.steps.push(name);
+      return copied;
+    }
+    members.push([name, copied]);
   }
-  if (typeof value !== "object") return { problem: `${placeOf(path)} is ${describeNonJson(value)}` };
+  // `Object.fromEntries` defines each member, so that a member named `__proto__` stays a member and not a prototype.
+  return Object.fromEntries(members);
+}
+
+/** Copies a JSON value that nests at most `MAX_JSON_DEPTH` levels, or finds what in it is not JSON. */
+function copy(value: unknown, depth: number): JsonValue | Fault {
+  if (value === null || typeof value === "boolean" || typeof value === "string") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : new Fault(`is ${describeNonJson(value)}`);
+  if (typeof value !== "object") return new Fault(`is ${describeNonJson(value)}`);
   if (depth >= MAX_JSON_DEPTH) {
-    return {
-      problem: `${placeOf(path)} nests more than ${MAX_JSON_DEPTH} levels, the most that a JSON value may here`,
-    };
+    return new Fault(`nests more than ${MAX_JSON_DEPTH} levels, the most that a JSON value may here`);
   }
-  if (!Array.isArray(value)) return copyObject(value, depth, path);
+  if (!Array.isArray(value)) return copyObject(value, depth);
   const items: JsonValue[] = [];
-  for (const [index, item] of value.entries()) {
-    const result = copy(item, depth + 1, `${path}[${index}]`);
-    if ("problem" in result) return result;
-    items.push(result.value);
+  // An index, and not `entries()`, which makes a pair for each item: a list of a million items took about 30 MiB more.
+  for (let index = 0; index < value.length; index += 1) {
+    const copied = copy(value[index], depth + 1);
+    if (copied instanceof Fault) {
+      copied.steps.push(index);
+      return copied;
+    }
+    items.push(copied);
   }
-  return { value: items };
+  return items;
+}
+
+/** Names the place of a fault from the path of the value as a whole, a member by its name and an item by its index. */
+function placeOfFault(path: string, fault: Fault): string {
+  let place = path;
+  for (let step = fault.steps.length - 1; step >= 0; step -= 1) {
+    const at = fault.steps[step];
+    place = typeof at === "number" ? `${place}[${at}]` : memberPath(place, String(at));
+  }
+  return placeOf(place);
 }
 
 /**
@@ -121,7 +149,8 @@ function copy(value: unknown, depth: number, path: string): JsonValueCopy {
 export function copyJson(value: Readonly<Record<string, unknown>>, path: string): JsonObjectCopy;
 export function copyJson(value: unknown, path: string): JsonValueCopy;
 export function copyJson(value: unknown, path: string): JsonValueCopy {
-  return copy(value, 0, path);
+  const copied = copy(value, 0);
+  return copied instanceof Fault ? { problem: `${placeOfFault(path, copied)} ${copied.what}` } : { value: copied };
 }
 
 const QUOTE = 0x22;

@@ -145,13 +145,14 @@ value would pass by far.
 
 | Reader                                     | Worst input                                                | Peak rose by |
 | ------------------------------------------ | ---------------------------------------------------------- | -----------: |
-| `readEvent`, `readEntity`, `validateEvent` | An object that holds a list of a million wrong values      | 87–88 MiB    |
-| The same, as Caliper 1.1                   | The same list                                              | 89 MiB       |
-| `readEnvelope`                             | An envelope whose event holds the same list                | 90 MiB       |
+| `readEvent`, `readEntity`, `validateEvent` | An object that holds a list of a million wrong values      | 18–27 MiB    |
+| The same, as Caliper 1.1                   | The same list                                              | 21–27 MiB    |
+| `readEnvelope`                             | An envelope whose event holds the same list                | 22–25 MiB    |
 | `handleCaliperRequest`                     | An envelope of 1 MiB of events, of 1.2 and of 1.1          | 1 and 17 MiB |
 
-The copy of a host's value is what the million values cost: `copyJson` of `@interopkit/core` writes the path of each value it
-copies. The endpoint reads what it parsed without that copy.
+The rises are those of Node.js 22 and 24. The copy of a host's value is most of what the million values cost: `copyJson` of
+`@interopkit/core` copies the list and names the place of a value only when it is not JSON. The endpoint reads what it parsed
+without that copy.
 
 ## Runtimes
 
