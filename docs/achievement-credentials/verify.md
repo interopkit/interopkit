@@ -321,6 +321,7 @@ A service that fails is never an error of the call: it makes its check `unavaila
 | Verifiable presentations                                        | Open Badges 9 and CLR 8 verify credentials; a presentation is the envelope of a protocol of delivery (OpenID for Verifiable Presentations, the VC API, the Credential Handler API) that the host speaks, and it passes each credential to `verifyCredential` |
 | JSON text as input                                              | Parse it into an object first; a string is a compact JWS                                                        |
 | A deadline for the whole call                                   | The host's `signal`                                                                                             |
+| Refusing a 3.0 address by its host name                          | Only the address that a name resolves to says whether it is private, and issuers and conformance suites serve keys and lists from hosts of their own network: the host's `fetch` refuses loopback, private and link-local addresses ([SECURITY.md](../../SECURITY.md)). A 2.0 badge given as an address is refused by name as well |
 
 ## Differences from the references
 

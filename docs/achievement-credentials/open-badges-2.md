@@ -88,8 +88,10 @@ The documents are the compacted form of JSON-LD under the context of Open Badges
 it knows the terms, prefixes and aliases of that context from a fixed table, which a test compares with the context at its pinned
 hash. A document embedded in another may name the same contexts. A list of contexts is read as the validator of 1EdTech reads
 it, as 2.0: a name that the context of 2.0 does not define is kept with the warning `unknown-term`, and an inline context after
-that of 2.0 that redefines one of its terms is the error `redefined-term`. An extension, an object that names contexts of its own, is kept
-as it is.
+that of 2.0 that redefines one of its terms is the error `redefined-term`. A context that the list names by its address is not
+fetched, so a term that it redefines is still read as 2.0 defines it; the issuer writes the document and its contexts, and signs
+or hosts the JSON, so such a context changes how a JSON-LD processor reads the issuer's own words and never who vouches for them.
+An extension, an object that names contexts of its own, is kept as it is.
 
 | Alias of the context | Read as                       |
 | -------------------- | ----------------------------- |
