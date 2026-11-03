@@ -4947,6 +4947,16 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-records/test/client.test.ts",
   },
   {
+    rule: "The wait of a call for the credential of the host ends when the call or the client aborts.",
+    file: "packages/learning-records/src/client/request.ts",
+    find: `: await untilAborted(
+          Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
+          either,
+        );`,
+    replace: ": await settings.authorization(either === undefined ? undefined : { signal: either });",
+    test: "packages/learning-records/test/client.test.ts",
+  },
+  {
     rule: "A key is bound to an issuer only when the issuer publishes a key with the same thumbprint.",
     file: "packages/achievement-credentials/src/keys/verify-issuer-key.ts",
     find: "if ((await thumbprintOf(candidate.publicKeyJwk)) === thumbprint) return candidate;",

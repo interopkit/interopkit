@@ -1,4 +1,4 @@
-import { DataError, type HttpMethod, requestService, type ServiceResponse } from "@interopkit/core";
+import { DataError, type HttpMethod, requestService, type ServiceResponse, untilAborted } from "@interopkit/core";
 import { readStatementJson } from "../read/index.js";
 import type { Settings } from "./config.js";
 
@@ -40,9 +40,15 @@ export async function send(
   expect: readonly number[],
 ): Promise<ServiceResponse> {
   const waiting = [settings.signal, signal].filter((each) => each !== undefined);
-  const authorization = await settings.authorization?.(
-    waiting.length === 0 ? undefined : { signal: AbortSignal.any(waiting) },
-  );
+  const either = waiting.length === 0 ? undefined : AbortSignal.any(waiting);
+  // The host's function gets the signal and should stop, but the wait of the caller ends when it aborts whether the function does or not.
+  const authorization =
+    settings.authorization === undefined
+      ? undefined
+      : await untilAborted(
+          Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
+          either,
+        );
   if (authorization !== undefined && (typeof authorization !== "string" || !isHeaderValue(authorization))) {
     throw new DataError(
       "The option authorization must return a non-empty header value without line breaks, or undefined.",

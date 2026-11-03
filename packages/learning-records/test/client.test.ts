@@ -127,6 +127,25 @@ describe("the requests of the client", () => {
     expect(received[1]?.aborted).toBe(true);
   });
 
+  it("ends the wait of the call when it aborts, though the function never answers and ignores the signal", async () => {
+    const answering = fakeLrs(() => ({ body: about }));
+    const call = new AbortController();
+    const client = clientOf(answering, { authorization: () => new Promise<undefined>(() => undefined) });
+    const pending = failureOf(client.about({ signal: call.signal }));
+    call.abort(new Error("the caller stopped"));
+    expect(await pending).toStrictEqual(new Error("the caller stopped"));
+    const configured = new AbortController();
+    const stopped = failureOf(
+      clientOf(answering, {
+        signal: configured.signal,
+        authorization: () => new Promise<undefined>(() => undefined),
+      }).about(),
+    );
+    configured.abort(new Error("the host stopped"));
+    expect(await stopped).toStrictEqual(new Error("the host stopped"));
+    expect(answering.requests).toHaveLength(0);
+  });
+
   it.each(["", "Bearer x\r\nX-Injected: 1", "a\nb", "a\0b"])(
     "refuses the credential %j before any request",
     async (value) => {
