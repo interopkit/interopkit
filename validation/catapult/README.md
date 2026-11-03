@@ -2,8 +2,8 @@
 
 ADL's CATAPULT at `806c0ba` (v1.0.8), whose archive `suite.lock.json` pins by its SHA-256, run against the cmi5 example:
 `pnpm catapult-lms` runs its LMS suite against the example LMS, and `pnpm catapult-content` runs its content suite and its
-player against units played by the runtime of `@interopkit/course-launch/au`. Neither runs in `pnpm test`; both need
-`pnpm build` first, write their logs to `.cache/catapult/` as they go, and fail on a suite of another size.
+player against units played by the runtime of `@interopkit/course-launch/au`. Neither runs in `pnpm test`; both build the
+packages first, write their logs to `.cache/catapult/` as they go, and fail on a suite of another size.
 
 ```mermaid
 flowchart LR

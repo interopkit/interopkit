@@ -23,13 +23,11 @@ flowchart LR
 
 | Need                                     | Why                                                                                     |
 | ---------------------------------------- | --------------------------------------------------------------------------------------- |
-| `pnpm build` first                       | The example LRS imports the packages as a host does, from their `dist/`                 |
 | Network access to GitHub and npm, once   | The suite and its 500 packages are downloaded into `.cache/adl-lrs/`, which git ignores |
 | Node.js 22 or later, and `tar` and `npm` | The suite is a Node project of 2015 to 2023, run by its own `bin/console_runner.js`     |
 
 ```sh
-pnpm build
-pnpm adl-lrs
+pnpm adl-lrs      # builds the packages first: the example LRS imports them as a host does, from their `dist/`
 ```
 
 Each suite takes about 30 seconds after the first run. The port is free and on the loopback address, and the user and the password are

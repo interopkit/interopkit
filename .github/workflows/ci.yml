@@ -222,7 +222,9 @@ jobs:
 
   # The tests of the Vitest projects that the change reaches, on each supported Node.js. TypeScript reads the same sources
   # whichever Node.js runs it, so one run of it is enough. The coverage floors of the packages among the projects are checked
-  # once, on the oldest supported Node.js, by the same run that tests them.
+  # once, on the oldest supported Node.js, by the same run that tests them. achievement-credentials asks for Node.js 24 in its
+  # engines and runs on both legs: its tests pass on 22, where a dependency that began to need 24 would fail before the engines
+  # said so, and its floor is measured there with the others (the deviations in AGENTS.md).
   test:
     needs: changes
     if: needs.changes.outputs.test == 'true'
@@ -365,7 +367,6 @@ jobs:
         with:
           bun-version: 1.4.3
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
       - run: pnpm compat
 
   # The hot paths of competency-frameworks on a framework of 10,000 items against the official schemas of CASE and the JSON, of
@@ -447,7 +448,6 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
       - run: pnpm adl-lrs
 
   # SQL LRS in a container as the oracle of the rules and a counterparty of the client (validation/sql-lrs/README.md).
@@ -479,7 +479,6 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
       # The service serves the contexts that pnpm schemas downloads at their pinned hashes, and no other.
       - uses: actions/cache@v5
         with:
@@ -524,7 +523,6 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       # The archive of CATAPULT at its pinned commit, kept between runs by the hash of the lock that pins it.
       - uses: actions/cache@v5
@@ -547,7 +545,6 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
       - uses: actions/cache@v5
         with:
           path: .cache/catapult/suite

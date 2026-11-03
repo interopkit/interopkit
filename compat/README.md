@@ -55,8 +55,7 @@ Node.js 22.18 or later runs `check.ts`. Deno and Bun are programs of their own, 
 argument it runs all four and fails when one is missing.
 
 ```sh
-pnpm build
-pnpm compat                # node, deno, bun and workerd
+pnpm compat                # builds, then runs node, deno, bun and workerd
 pnpm compat node workerd   # only these (node always runs, as the reference)
 ```
 

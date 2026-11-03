@@ -35,14 +35,13 @@ checks the JWS form that Open Badges names (see [1edtech-validator](../1edtech-v
 
 | Need                                              | Why                                                                                                |
 | ------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `pnpm build` and `pnpm schemas` first             | The service imports the packages from their `dist/`, and serves the contexts that `pnpm schemas` pins |
+| `pnpm schemas` first                              | The service serves the contexts that `pnpm schemas` pins, and no other                             |
 | Network access to GitHub and npm, once            | Each suite and its 300 packages are downloaded into `.cache/w3c-suites/`, which git ignores         |
 | Node.js 24, `tar`, `npm`, `patch` and `openssl`   | The suites are Node projects; the data model suite needs Node.js 24; `openssl` makes the certificate |
 
 ```sh
-pnpm build
 pnpm schemas
-pnpm w3c-suites            # every suite
+pnpm w3c-suites            # builds the packages, which the service imports from their `dist/`, then runs every suite
 pnpm w3c-suites ecdsa      # the suite that is named
 ```
 
