@@ -17,6 +17,9 @@ import type { ReceivedEnvelope } from "./received-envelope.js";
 /** The most bytes of an envelope that an endpoint takes unless it is told another: 1 MiB, which it announces as 1,024 kilobytes. */
 const DEFAULT_MAX_PAYLOAD_BYTES = 1_048_576;
 
+/** The bytes in a kilobyte of `caliperMaximumPayloadSize`, which the specification does not define. */
+export const BYTES_PER_KILOBYTE = 1024;
+
 /** The options of `handleCaliperRequest`. */
 export interface CaliperEndpointOptions extends CallOptions {
   /**
@@ -45,8 +48,9 @@ export interface CaliperEndpointOptions extends CallOptions {
    */
   readonly versions?: readonly CaliperVersion[];
   /**
-   * The most bytes of the body. A larger one is answered 413 before it is read. It is announced as `caliperMaximumPayloadSize`,
-   * in kilobytes of 1,024 bytes and rounded down.
+   * The most bytes of the body, at least 1,024. A larger one is answered 413 before it is read. It is announced as
+   * `caliperMaximumPayloadSize`, in kilobytes of 1,024 bytes and rounded down, so a limit below one kilobyte would announce 0,
+   * which a sensor cannot use.
    *
    * @defaultValue 1,048,576
    */
@@ -96,6 +100,16 @@ export interface EndpointSettings {
 
 const isFunction = <TFunction>(value: unknown): value is TFunction => typeof value === "function";
 
+/** The schema of the most bytes of a body: a whole kilobyte or more, since the configuration announces it in whole kilobytes. */
+const payloadBytesSchema = v.pipe(
+  positiveIntegerSchema,
+  v.minValue(
+    BYTES_PER_KILOBYTE,
+    (issue) =>
+      `expected at least ${BYTES_PER_KILOBYTE} bytes, since the configuration announces the limit in kilobytes, found ${issue.received}`,
+  ),
+);
+
 /** The schema of the versions that an endpoint reads: at least one, each once. */
 export const versionsSchema = v.pipe(
   v.array(versionSchema),
@@ -107,7 +121,7 @@ const optionsSchema = strictRecord({
   authorize: guardSchema(isFunction<CaliperEndpointOptions["authorize"]>, "a function"),
   accept: guardSchema(isFunction<CaliperEndpointOptions["accept"]>, "a function"),
   versions: v.optional(versionsSchema),
-  maxPayloadBytes: v.optional(positiveIntegerSchema),
+  maxPayloadBytes: v.optional(payloadBytesSchema),
   maxTokens: v.optional(positiveIntegerSchema),
   maxFindings: v.optional(positiveIntegerSchema),
   strict: v.optional(v.boolean()),

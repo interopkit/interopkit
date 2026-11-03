@@ -143,7 +143,7 @@ down), `caliperSupportedVersions` (the contexts of `versions`, in that order) an
 | `authorize`       | Names the principal behind a token, or refuses it                                                             | required    |
 | `accept`          | Receives an envelope that read                                                                                | required    |
 | `versions`        | The versions of Caliper that the endpoint reads, `"1.2"` and `"1.1"`, in the order it announces them          | `["1.2", "1.1"]` |
-| `maxPayloadBytes` | The most bytes of the body, and what the configuration announces                                              | 1,048,576   |
+| `maxPayloadBytes` | The most bytes of the body, and what the configuration announces: at least 1,024, a kilobyte, since a smaller limit would be announced as 0 | 1,048,576   |
 | `maxTokens`       | The most tokens of JSON in the body, counted before it is parsed                                              | 1,000,000   |
 | `maxFindings`     | The most findings of an envelope                                                                              | 1,000       |
 | `strict`          | Refuse with 400 an envelope that has an item with an error                                                    | `false`     |

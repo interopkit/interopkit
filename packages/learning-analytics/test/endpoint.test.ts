@@ -572,6 +572,7 @@ describe("handleCaliperRequest: input of other types", () => {
     ["authorize as text", { authorize: "yes" }, "authorize"],
     ["accept missing", { accept: undefined }, "accept"],
     ["a size of 0", { maxPayloadBytes: 0 }, "maxPayloadBytes"],
+    ["a size below a kilobyte", { maxPayloadBytes: 1_023 }, "maxPayloadBytes"],
     ["a size as text", { maxPayloadBytes: "1000" }, "maxPayloadBytes"],
     ["tokens as a fraction", { maxTokens: 1.5 }, "maxTokens"],
     ["findings of 0", { maxFindings: 0 }, "maxFindings"],
@@ -749,6 +750,17 @@ describe("a sensor and an endpoint, in process", () => {
     ).rejects.toThrow(DataError);
     const refused = await handleCaliperRequest(post(envelopeOf(many)), endpoint.options);
     expect(refused.status).toBe(413);
+  });
+
+  it("announces even its smallest limit as a configuration that the sensor reads", async () => {
+    const endpoint = recorder({ maxPayloadBytes: 1_024 });
+    expect(await pingEndpoint({ ...SENDER, fetch: wire(endpoint.options) })).toStrictEqual({
+      status: "available",
+      configuration: { caliperMaximumPayloadSize: 1, caliperSupportedVersions: [CALIPER_CONTEXT, CALIPER_1_1_CONTEXT] },
+    });
+    await expect(handleCaliperRequest(post(), recorder({ maxPayloadBytes: 1_023 }).options)).rejects.toThrow(
+      "The endpoint options is invalid at maxPayloadBytes: expected at least 1024 bytes, since the configuration announces the limit in kilobytes, found 1023.",
+    );
   });
 
   it("reads a 401 and a 405 of the endpoint as the sensor does", async () => {
