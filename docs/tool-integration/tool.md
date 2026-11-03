@@ -191,7 +191,8 @@ opened it for its capabilities (`lti.capabilities`, Client Side postMessages 0.1
 `lti_storage_target` does (`_parent` for the parent). The page stores `state_<state>` and `nonce_<nonce>` there, waits for
 `lti.put_data.response`, and navigates to the authentication request. A message counts only when it comes from the origin of `authenticationUrl`, has the subject
 `<subject>.response` and answers the page's `message_id`. If the platform answers with an error, names no such frame or is
-silent for 10 seconds, the page shows a message and stops.
+silent for 10 seconds, the page shows a message and stops. So does a page in a window that has neither a parent nor an opener,
+such as a tab that the platform opened with `noopener`: no cookie was set, and there is no frame of the platform to store in.
 
 At the launch, the platform posts the `id_token` to the redirect URI. `ltiLaunch` answers with the verification page: it asks
 for the capabilities in the same way, fetches `state_<state>` and `nonce_<nonce>` with `lti.get_data` and submits the form with `id_token`, `state`, `stored_state`

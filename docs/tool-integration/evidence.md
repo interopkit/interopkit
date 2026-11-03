@@ -118,6 +118,17 @@ each run, with the date, the commit that was tested, the tester and the result.
 | ---- | ------ | ------ | ------ |
 |      |        |        | No run has been made yet |
 
+What a run checks, beyond the flows that the counterparties above already pass:
+
+| Role under test | Check | Why no automated run covers it |
+| --- | --- | --- |
+| Tool | A launch in a frame whose browser blocks third-party cookies, with `lti_storage_target`: the storage page, then the verification page's post accepted by its `Origin` | Moodle sends no `lti_storage_target`; the browser tests play the platform's storage in one origin |
+| Tool | A launch with `lti_storage_target` in a new window or tab, which has an opener or none | The same |
+| Tool | The token request, which carries `client_id` and `application/x-www-form-urlencoded;charset=UTF-8` as `oauth4webapi` writes it: legal under RFC 7521 section 4.2, absent from the example of Security Framework 4.1.1 | Only Moodle's token endpoint has taken it |
+| Tool | A Deep Linking response and a Start Assessment message posted to a return URL that redirects: `form-action` allows the origin of the address alone | Moodle answers at the address |
+| Tool | The line items, results with and without `limit`, scores, members and groups against a platform other than Moodle | The same |
+| Platform | The launch, Deep Linking, the grade services and the roster as each tester's tool calls them | `@lti-tool/core`, `lti-core` and PyLTI1p3 are libraries, not the testers' tools |
+
 ## Speed
 
 `pnpm bench` builds the package and times the hot paths of the build that ships against a reference in the same run, the two in
