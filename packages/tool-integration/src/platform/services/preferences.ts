@@ -60,7 +60,7 @@ export const PREFERENCES: Service<"preferences"> = {
   routes: [
     {
       path: RECORD_PATH,
-      methods: { GET: { scopes: [SCOPES.preferencesRecordReadonly], handle: getRecord } },
+      methods: { GET: { scopes: [SCOPES.preferencesRecordReadonly], uses: "record", handle: getRecord } },
     },
   ],
 };

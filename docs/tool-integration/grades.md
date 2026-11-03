@@ -135,6 +135,18 @@ With `services: { gradebook }` in its options, `handlePlatformRequest` offers th
 scopes when the registration does, a message that asks for them carries their claim, and the routes below are served. Without the
 store, none of the three exists.
 
+A store has the methods of what its gradebook supports, at least one: a platform that only takes the scores of the line item of
+each launch gives `keepScore` alone, as in the example of AGS 3.1.1.3, where the tool can only post scores. What a store lacks
+is not offered: the route of a missing method answers 404, or 405 with the methods of the path that remain; a scope is listed in
+the OpenID configuration and granted only with a method that needs it; and the claim names the container only with `lineItems`.
+
+| Scope               | Offered with any of                                     |
+| ------------------- | ------------------------------------------------------- |
+| `lineitem.readonly` | `lineItems`, `lineItem`                                 |
+| `lineitem`          | `createLineItem`, `updateLineItem`, `deleteLineItem`    |
+| `result.readonly`   | `results`                                               |
+| `score`             | `keepScore`                                             |
+
 | Path under `origin`                                 | Methods          | Scopes, one of                     | Store                                     |
 | --------------------------------------------------- | ---------------- | ---------------------------------- | ----------------------------------------- |
 | `/contexts/{context}/line-items`                    | GET              | `lineitem.readonly`, `lineitem`    | `lineItems(caller, context, query)`       |
@@ -147,8 +159,8 @@ store, none of the three exists.
 ### The claim
 
 A message offers the grade services with `services: { grades: { lineItemId, container } }`, which needs its `context`. The claim
-carries the scopes of the services that the registration grants, `lineitems` when `container` is true, and `lineitem` when the
-message names a line item; the platform builds the URLs from `config.origin` and the identifiers, encoded. The variables
+carries the scopes of the services that the registration grants and the store offers, `lineitems` when `container` is true and
+the store has `lineItems`, and `lineitem` when the message names a line item; the platform builds the URLs from `config.origin` and the identifiers, encoded. The variables
 `$LineItems.url` and `$LineItem.url` answer them, and `""` when the claim has none. A `LtiSubmissionReviewRequest` names its
 line item this way, as Submission Review 1.0 section 2.5 asks.
 

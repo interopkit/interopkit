@@ -29,23 +29,35 @@ interface BoundService {
   readonly routes: readonly BoundRoute[];
 }
 
-/** Binds a service to its store, or returns `undefined` when the host gave none. */
+/**
+ * Binds a service to its store, or returns `undefined` when the host gave none. A method of a route exists only when the store
+ * has the method that it needs, and a route only with one of its methods, so that a path of a capability that the store lacks
+ * names nothing; the service offers the narrowest scope of each method that exists.
+ */
 function bind<TName extends keyof PlatformServices>(
   service: Service<TName>,
   services: PlatformServices,
 ): BoundService | undefined {
   const store = services[service.store];
   if (store === undefined) return undefined;
-  const routes = service.routes.map((route) => ({
-    path: route.path,
-    methods: Object.fromEntries(
-      Object.entries(route.methods).map(([method, { scopes, handle }]) => [
-        method,
-        { scopes, handle: (call: RouteCall) => handle({ ...call, store }) },
-      ]),
-    ),
-  }));
-  return { scopes: service.scopes, claim: service.claim, routes };
+  const routes = service.routes.flatMap((route): BoundRoute[] => {
+    // A class instance has its methods on its prototype, which `Reflect.get` reads as a property access does.
+    const served = Object.entries(route.methods).filter(
+      ([, { uses }]) => typeof Reflect.get(store, uses) === "function",
+    );
+    if (served.length === 0) return [];
+    const methods = served.map(([method, { scopes, handle }]) => [
+      method,
+      { scopes, handle: (call: RouteCall) => handle({ ...call, store }) },
+    ]);
+    return [{ path: route.path, methods: Object.fromEntries(methods) }];
+  });
+  const needed = new Set(routes.flatMap((route) => Object.values(route.methods).map(({ scopes }) => scopes[0])));
+  return {
+    scopes: service.scopes.filter((scope) => needed.has(scope)),
+    claim: (request) => service.claim(request, store),
+    routes,
+  };
 }
 
 /** A service of the platform with the type of its store erased: what the router needs of it. */
@@ -56,7 +68,7 @@ interface ListedService {
 
 /** Lists a service, so that services with stores of different types are one list. */
 function listed<TName extends keyof PlatformServices>(service: Service<TName>): ListedService {
-  return { claim: service.claim, bind: (services) => bind(service, services) };
+  return { claim: (request) => service.claim(request), bind: (services) => bind(service, services) };
 }
 
 /** The services of the platform, one line each. */

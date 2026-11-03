@@ -77,8 +77,8 @@ export const REGISTRATIONS: Service<"registrations"> = {
     {
       path: CLIENT_PATH,
       methods: {
-        GET: { scopes: [SCOPES.registrationReadonly, SCOPES.registration], handle: getRegistration },
-        PUT: { scopes: [SCOPES.registration], handle: putRegistration },
+        GET: { scopes: [SCOPES.registrationReadonly, SCOPES.registration], uses: "get", handle: getRegistration },
+        PUT: { scopes: [SCOPES.registration], uses: "update", handle: putRegistration },
       },
     },
   ],

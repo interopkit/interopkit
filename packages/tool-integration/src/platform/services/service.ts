@@ -28,10 +28,15 @@ export interface ServiceRequest<TStore> {
 /** A request to a route before the store of its service is bound to it. */
 export type RouteCall = Omit<ServiceRequest<unknown>, "store">;
 
-/** One method of a route: the scopes of which the token needs one, and what answers it. */
+/** One method of a route: the scopes of which the token needs one, the method of the store that answers it, and the answer. */
 interface ServiceMethod<TStore> {
-  /** The scopes, any one of which allows the method. */
+  /**
+   * The scopes, any one of which allows the method, the narrowest first: a service offers the first scope of each method that
+   * its store has.
+   */
   readonly scopes: readonly string[];
+  /** The method of the store that the request needs. A store without it does not serve the method of the route. */
+  readonly uses: keyof TStore & string;
   /** Answers the request. */
   readonly handle: (call: ServiceRequest<TStore>) => Promise<HttpResponse>;
 }
@@ -58,10 +63,17 @@ export interface ClaimRequest {
 export interface Service<TName extends keyof PlatformServices> {
   /** The name of the store in `PlatformServices`; without it the service is neither offered nor routed. */
   readonly store: TName;
-  /** Every scope of the service, which the token endpoint grants when the registration does. */
+  /**
+   * Every scope of the service, in the order that a claim and the OpenID configuration list them. The service offers those
+   * that a method of its store needs, and the token endpoint grants them when the registration does.
+   */
   readonly scopes: readonly string[];
-  /** Writes the claim of the service into the claims of a message, or nothing when the message does not ask for it. */
-  readonly claim: (request: ClaimRequest) => ServiceClaims;
+  /**
+   * Writes the claim of the service into the claims of a message, or nothing when the message does not ask for it. Without a
+   * store, as for the rules of the sender before a message is kept, it writes everything that the message asks for; with one,
+   * only what the store serves.
+   */
+  readonly claim: (request: ClaimRequest, store?: NonNullable<PlatformServices[TName]>) => ServiceClaims;
   /** The routes. */
   readonly routes: readonly ServiceRoute<NonNullable<PlatformServices[TName]>>[];
 }
@@ -70,12 +82,16 @@ export interface Service<TName extends keyof PlatformServices> {
 export class StoreFailed extends Error {}
 
 /**
- * Calls the store of a route with the signal of the request.
+ * Calls the store of a route with the signal of the request. The call of an optional method of a store may give no promise;
+ * the route is served only when the store has the method, so it always does.
  *
  * @throws `StoreFailed` when the store rejects, which the route answers with 500.
  * @throws The `reason` of the signal when it aborts.
  */
-export async function askStore<T>(call: RouteCall, port: (options: CallOptions) => Promise<T>): Promise<T> {
+export async function askStore<T>(
+  call: RouteCall,
+  port: (options: CallOptions) => Promise<T> | undefined,
+): Promise<T | undefined> {
   const { signal } = call.settings;
   const outcome = await callPort(() => port({ signal }), signal);
   if (outcome === undefined) throw new StoreFailed();

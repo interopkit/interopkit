@@ -6515,6 +6515,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/tool-integration/test/platform-failures.test.ts",
   },
   {
+    rule: "A store that lacks a method of a service serves neither its route nor the scope that only that method needs.",
+    file: "packages/tool-integration/src/platform/services/routes.ts",
+    find: 'typeof Reflect.get(store, uses) === "function"',
+    replace: "true",
+    test: "packages/tool-integration/test/platform-grades.test.ts",
+  },
+  {
     rule: "A key set that a tool serves and that is not a JWK Set refuses the tool's token, and the handler does not throw.",
     file: "packages/tool-integration/src/platform/registration.ts",
     find: "if (error instanceof DataError) {\n          throw new LtiError(",

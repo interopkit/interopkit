@@ -111,7 +111,7 @@ export const ROSTER: Service<"roster"> = {
   routes: [
     {
       path: MEMBERSHIPS_PATH,
-      methods: { GET: { scopes: [SCOPES.contextMembershipReadonly], handle: getMembers } },
+      methods: { GET: { scopes: [SCOPES.contextMembershipReadonly], uses: "members", handle: getMembers } },
     },
   ],
 };

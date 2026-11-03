@@ -57,7 +57,7 @@ export class MemoryGradebook implements GradebookStore {
   async lineItems(
     caller: ServiceCaller,
     contextId: string,
-    query: Parameters<GradebookStore["lineItems"]>[2],
+    query: Parameters<NonNullable<GradebookStore["lineItems"]>>[2],
     options?: CallOptions,
   ): Promise<StorePage<StoredLineItem> | undefined> {
     this.record("lineItems", caller, options, [contextId, query]);
@@ -82,7 +82,7 @@ export class MemoryGradebook implements GradebookStore {
   async createLineItem(
     caller: ServiceCaller,
     contextId: string,
-    input: Parameters<GradebookStore["createLineItem"]>[2],
+    input: Parameters<NonNullable<GradebookStore["createLineItem"]>>[2],
     options?: CallOptions,
   ) {
     this.record("createLineItem", caller, options, [contextId, input]);
@@ -98,7 +98,7 @@ export class MemoryGradebook implements GradebookStore {
     caller: ServiceCaller,
     contextId: string,
     lineItemId: string,
-    input: Parameters<GradebookStore["updateLineItem"]>[3],
+    input: Parameters<NonNullable<GradebookStore["updateLineItem"]>>[3],
     options?: CallOptions,
   ) {
     this.record("updateLineItem", caller, options, [contextId, lineItemId, input]);
@@ -118,7 +118,7 @@ export class MemoryGradebook implements GradebookStore {
     caller: ServiceCaller,
     contextId: string,
     lineItemId: string,
-    query: Parameters<GradebookStore["results"]>[3],
+    query: Parameters<NonNullable<GradebookStore["results"]>>[3],
     options?: CallOptions,
   ): Promise<StorePage<StoredResult> | undefined> {
     this.record("results", caller, options, [contextId, lineItemId, query]);

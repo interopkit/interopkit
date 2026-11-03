@@ -30,6 +30,8 @@ const READ_LINE_ITEMS = [SCOPES.lineitemReadonly, SCOPES.lineitem];
 const CONTAINER_PATH = "/contexts/{context}/line-items";
 const LINE_ITEM_PATH = `${CONTAINER_PATH}/{lineItem}`;
 
+// A store gives the methods of the capabilities it has, and a route method is served only when its store has the method that it
+// calls, so the optional call of a handler always reaches the store.
 type Call = ServiceRequest<GradebookStore>;
 
 /** Returns the URL of the line items of a context. */
@@ -89,7 +91,7 @@ async function getLineItems(call: Call): Promise<HttpResponse> {
   }
   const { limit: _, ...filters } = query;
   const asked = { ...filters, ...page };
-  const found = await askStore(call, (options) => store.lineItems(caller, context, asked, options));
+  const found = await askStore(call, (options) => store.lineItems?.(caller, context, asked, options));
   if (found === undefined) return notFound();
   const label = "GradebookStore.lineItems";
   const items = storePage(label, found, (item) => storedLineItem(label, item, settings.config.origin, context));
@@ -103,7 +105,7 @@ async function createLineItem(call: Call): Promise<HttpResponse> {
   const { context } = pathOf(call);
   const input = readBody(request, LINE_ITEM_MEDIA_TYPE, settings.maxBodyBytes, readLineItemInput);
   if ("status" in input) return input;
-  const created = await askStore(call, (options) => store.createLineItem(caller, context, input.value, options));
+  const created = await askStore(call, (options) => store.createLineItem?.(caller, context, input.value, options));
   if (created === undefined) return notFound();
   return lineItemAnswer(201, storedLineItem("GradebookStore.createLineItem", created, settings.config.origin, context));
 }
@@ -112,7 +114,7 @@ async function createLineItem(call: Call): Promise<HttpResponse> {
 async function getLineItem(call: Call): Promise<HttpResponse> {
   const { store, caller, settings } = call;
   const { context, lineItem } = pathOf(call);
-  const found = await askStore(call, (options) => store.lineItem(caller, context, lineItem, options));
+  const found = await askStore(call, (options) => store.lineItem?.(caller, context, lineItem, options));
   if (found === undefined) return notFound();
   return lineItemAnswer(200, storedLineItem("GradebookStore.lineItem", found, settings.config.origin, context));
 }
@@ -124,7 +126,7 @@ async function updateLineItem(call: Call): Promise<HttpResponse> {
   const input = readBody(request, LINE_ITEM_MEDIA_TYPE, settings.maxBodyBytes, readLineItemInput);
   if ("status" in input) return input;
   const updated = await askStore(call, (options) =>
-    store.updateLineItem(caller, context, lineItem, input.value, options),
+    store.updateLineItem?.(caller, context, lineItem, input.value, options),
   );
   if (updated === undefined) return notFound();
   return lineItemAnswer(200, storedLineItem("GradebookStore.updateLineItem", updated, settings.config.origin, context));
@@ -134,7 +136,7 @@ async function updateLineItem(call: Call): Promise<HttpResponse> {
 async function deleteLineItem(call: Call): Promise<HttpResponse> {
   const { store, caller } = call;
   const { context, lineItem } = pathOf(call);
-  const deleted = await askStore(call, (options) => store.deleteLineItem(caller, context, lineItem, options));
+  const deleted = await askStore(call, (options) => store.deleteLineItem?.(caller, context, lineItem, options));
   if (typeof deleted !== "boolean")
     throw new DataError("The answer of GradebookStore.deleteLineItem must be a boolean.");
   return deleted ? { status: 204, headers: {}, body: "" } : notFound();
@@ -154,7 +156,7 @@ async function getResults(call: Call): Promise<HttpResponse> {
     throw error;
   }
   const asked = { ...(query.userId === undefined ? {} : { userId: query.userId }), ...page };
-  const found = await askStore(call, (options) => store.results(caller, context, lineItem, asked, options));
+  const found = await askStore(call, (options) => store.results?.(caller, context, lineItem, asked, options));
   if (found === undefined) return notFound();
   const scoreOf = lineItemUrl(settings.config.origin, context, lineItem);
   // The address of the results has no query and no fragment, since the platform's origin has none and the path is encoded, so
@@ -181,15 +183,15 @@ function readReceivedScore(value: unknown): ReceivedScore {
 }
 
 /**
- * POST of a score (AGS 3.4): the store keeps it unless a strictly later one is kept (AGS 3.4.9), and the answer is 204 either
- * way, since a tool cannot act on an older score.
+ * POST of a score (AGS 3.4): the store keeps it unless a strictly later one is kept, and the answer is 204 either way, since AGS
+ * 3.4.9 lets the platform just ignore an older score and a tool cannot act on one.
  */
 async function postScore(call: Call): Promise<HttpResponse> {
   const { request, store, caller, settings } = call;
   const { context, lineItem } = pathOf(call);
   const score = readBody(request, SCORE_MEDIA_TYPE, settings.maxBodyBytes, readReceivedScore);
   if ("status" in score) return score;
-  const kept = await askStore(call, (options) => store.keepScore(caller, context, lineItem, score.value, options));
+  const kept = await askStore(call, (options) => store.keepScore?.(caller, context, lineItem, score.value, options));
   if (kept === undefined) return notFound();
   if (kept !== "kept" && kept !== "older") {
     throw new DataError('The answer of GradebookStore.keepScore must be "kept", "older" or undefined.');
@@ -199,17 +201,19 @@ async function postScore(call: Call): Promise<HttpResponse> {
 
 /**
  * Writes the claim of the Assignment and Grade Services (AGS 3.1) into the services of a message that asks for it: the
- * scopes that the registration grants, the container of the line items of the context and the line item of the message.
+ * scopes that the registration grants, the container of the line items of the context when the store lists line items, and
+ * the line item of the message.
  */
-function gradesClaim({ message, granted, origin }: ClaimRequest): MessageServices {
+function gradesClaim({ message, granted, origin }: ClaimRequest, store?: GradebookStore): MessageServices {
   const asked = message.services?.grades;
   const contextId = message.context?.id;
   if (asked === undefined || contextId === undefined) return {};
   const { lineItemId, container } = asked;
+  const listed = container && (store === undefined || store.lineItems !== undefined);
   return {
     grades: {
       scopes: granted,
-      ...(container ? { lineitems: containerUrl(origin, contextId) } : {}),
+      ...(listed ? { lineitems: containerUrl(origin, contextId) } : {}),
       ...(lineItemId === undefined ? {} : { lineitem: lineItemUrl(origin, contextId, lineItemId) }),
     },
   };
@@ -224,22 +228,25 @@ export const GRADES: Service<"gradebook"> = {
     {
       path: CONTAINER_PATH,
       methods: {
-        GET: { scopes: READ_LINE_ITEMS, handle: getLineItems },
-        POST: { scopes: [SCOPES.lineitem], handle: createLineItem },
+        GET: { scopes: READ_LINE_ITEMS, uses: "lineItems", handle: getLineItems },
+        POST: { scopes: [SCOPES.lineitem], uses: "createLineItem", handle: createLineItem },
       },
     },
     {
       path: LINE_ITEM_PATH,
       methods: {
-        GET: { scopes: READ_LINE_ITEMS, handle: getLineItem },
-        PUT: { scopes: [SCOPES.lineitem], handle: updateLineItem },
-        DELETE: { scopes: [SCOPES.lineitem], handle: deleteLineItem },
+        GET: { scopes: READ_LINE_ITEMS, uses: "lineItem", handle: getLineItem },
+        PUT: { scopes: [SCOPES.lineitem], uses: "updateLineItem", handle: updateLineItem },
+        DELETE: { scopes: [SCOPES.lineitem], uses: "deleteLineItem", handle: deleteLineItem },
       },
     },
     {
       path: `${LINE_ITEM_PATH}${RESULTS_SUFFIX}`,
-      methods: { GET: { scopes: [SCOPES.resultReadonly], handle: getResults } },
+      methods: { GET: { scopes: [SCOPES.resultReadonly], uses: "results", handle: getResults } },
     },
-    { path: `${LINE_ITEM_PATH}${SCORES_SUFFIX}`, methods: { POST: { scopes: [SCOPES.score], handle: postScore } } },
+    {
+      path: `${LINE_ITEM_PATH}${SCORES_SUFFIX}`,
+      methods: { POST: { scopes: [SCOPES.score], uses: "keepScore", handle: postScore } },
+    },
   ],
 };

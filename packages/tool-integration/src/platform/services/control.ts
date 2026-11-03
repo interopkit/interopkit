@@ -48,5 +48,10 @@ export const CONTROL: Service<"control"> = {
   store: "control",
   scopes: [SCOPES.assessmentControl],
   claim: controlClaim,
-  routes: [{ path: CONTROL_PATH, methods: { POST: { scopes: [SCOPES.assessmentControl], handle: postControl } } }],
+  routes: [
+    {
+      path: CONTROL_PATH,
+      methods: { POST: { scopes: [SCOPES.assessmentControl], uses: "control", handle: postControl } },
+    },
+  ],
 };

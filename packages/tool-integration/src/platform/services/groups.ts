@@ -20,6 +20,7 @@ const GROUP_SETS_PATH = "/contexts/{context}/group-sets";
 /** The version of the service that the claim says (Context Groups 1.0 section 2.7.1.1). */
 const SERVICE_VERSION = "1.0";
 
+// `groupSets` is optional, and its route is served only when the store has it, so its optional call always reaches the store.
 type Call = ServiceRequest<GroupStore>;
 
 /** Returns the URL of the groups of a context, which is the `context_groups_url` of the claim. */
@@ -82,7 +83,7 @@ async function getGroupSets(call: Call): Promise<HttpResponse> {
   const request = readRequest(call);
   if ("status" in request) return request;
   const label = "GroupStore.groupSets";
-  const found = await askStore(call, (options) => store.groupSets(caller, context, request.page, options));
+  const found = await askStore(call, (options) => store.groupSets?.(caller, context, request.page, options));
   if (found === undefined) return notFound();
   const stored = readStorePage(label, found);
   const headers = pageHeaders(url, stored, request.page, label);
@@ -99,16 +100,18 @@ async function getGroupSets(call: Call): Promise<HttpResponse> {
 
 /**
  * Writes the claim of Context Groups (Context Groups 1.0 section 2.7.1.1) into the services of a message that asks for it: the
- * groups of the context, its group sets when the message says so, and the scopes that the registration grants.
+ * groups of the context, its group sets when the message says so and the store has them, and the scopes that the registration
+ * grants.
  */
-function groupsClaim({ message, granted, origin }: ClaimRequest): MessageServices {
+function groupsClaim({ message, granted, origin }: ClaimRequest, store?: GroupStore): MessageServices {
   const asked = message.services?.groups;
   const contextId = message.context?.id;
   if (asked === undefined || contextId === undefined) return {};
+  const sets = asked.sets && (store === undefined || store.groupSets !== undefined);
   return {
     groups: {
       contextGroupsUrl: groupsUrl(origin, contextId),
-      ...(asked.sets ? { contextGroupSetsUrl: groupSetsUrl(origin, contextId) } : {}),
+      ...(sets ? { contextGroupSetsUrl: groupSetsUrl(origin, contextId) } : {}),
       scopes: granted,
       serviceVersions: [SERVICE_VERSION],
     },
@@ -121,7 +124,13 @@ export const GROUPS: Service<"groups"> = {
   scopes: [SCOPES.contextGroupReadonly],
   claim: groupsClaim,
   routes: [
-    { path: GROUPS_PATH, methods: { GET: { scopes: [SCOPES.contextGroupReadonly], handle: getGroups } } },
-    { path: GROUP_SETS_PATH, methods: { GET: { scopes: [SCOPES.contextGroupReadonly], handle: getGroupSets } } },
+    {
+      path: GROUPS_PATH,
+      methods: { GET: { scopes: [SCOPES.contextGroupReadonly], uses: "groups", handle: getGroups } },
+    },
+    {
+      path: GROUP_SETS_PATH,
+      methods: { GET: { scopes: [SCOPES.contextGroupReadonly], uses: "groupSets", handle: getGroupSets } },
+    },
   ],
 };

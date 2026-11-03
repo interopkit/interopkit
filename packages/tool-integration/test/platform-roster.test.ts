@@ -112,6 +112,21 @@ describe("the claims of the roster services", () => {
     expect(noScope.claims[NRPS_CLAIM]).toBeDefined();
   });
 
+  it("names no group sets, and routes none, for a store of groups without them", async () => {
+    const ctx = served();
+    const { groups } = ctx;
+    Object.assign(ctx.requests, { services: { groups: { groups: groups.groups.bind(groups) } } });
+    const { claims } = await launch(ctx, withServices);
+    expect(claims[GROUPS_CLAIM]).toEqual({
+      context_groups_url: GROUPS,
+      scope: [SCOPES.contextGroupReadonly],
+      service_versions: ["1.0"],
+    });
+    const token = await tokenFor(ctx, SCOPES.contextGroupReadonly);
+    expect((await handle(ctx, call(GROUPS, token))).status).toBe(200);
+    expect((await handle(ctx, call(SETS, token))).status).toBe(404);
+  });
+
   it("encodes the identifier of the context in the URLs", async () => {
     const message = { ...withServices, context: { id: "course 1/a" } };
     const { claims } = await launch(served(), message);
@@ -500,7 +515,8 @@ describe("the options of the roster services", () => {
     const ctx = served();
     const cases: Partial<PlatformRequestOptions>[] = [
       { services: { roster: {} as never } },
-      { services: { groups: { groups: () => undefined } as never } },
+      { services: { groups: { groupSets: () => undefined } as never } },
+      { services: { groups: { groups: () => undefined, groupSets: "sets" } as never } },
       { services: { preferences: {} as never } },
       { services: JSON.parse('{"roster":5}') as PlatformServices },
     ];

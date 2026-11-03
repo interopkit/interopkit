@@ -3,7 +3,12 @@
 import { DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { SCOPES } from "../src/index.js";
-import { ltiPlatformLogin, type MessageInput, type PlatformRequestOptions } from "../src/platform/index.js";
+import {
+  type GradebookStore,
+  ltiPlatformLogin,
+  type MessageInput,
+  type PlatformRequestOptions,
+} from "../src/platform/index.js";
 import { readMessage } from "../src/protocol/internal.js";
 import { clientAssertion, TOOL_CLIENT_ID, TOOL_DEPLOYMENT_ID, tokenRequest, toolRegistration } from "./fake-tool.js";
 import { NOW } from "./fixture.js";
@@ -400,6 +405,8 @@ describe("the options of the services", () => {
     const ctx = graded();
     const cases: Partial<PlatformRequestOptions>[] = [
       { services: { gradebook: {} as never } },
+      { services: { gradebook: { keepScore: 5 } as never } },
+      { services: { gradebook: { keepScore: async () => "kept", results: "results" } as never } },
       { services: JSON.parse('{"other":{}}') },
       { pageSize: 0 },
       { maxPageSize: JSON.parse('"5"') },
@@ -407,5 +414,57 @@ describe("the options of the services", () => {
     for (const change of cases) {
       await expect(handle(ctx, call(LINE_ITEM, undefined), change), JSON.stringify(change)).rejects.toThrow(DataError);
     }
+  });
+});
+
+describe("a gradebook with some of the methods", () => {
+  /** A platform whose gradebook has only the methods that `keep` names, from those of `MemoryGradebook`. */
+  function partly(keep: readonly (keyof GradebookStore)[]): Setup {
+    const ctx = graded();
+    const full = ctx.gradebook;
+    const store = Object.fromEntries(keep.map((name) => [name, full[name].bind(full)]));
+    Object.assign(ctx.requests, { services: { gradebook: store } });
+    return ctx;
+  }
+
+  it("offers only the scope of scores to a platform that takes scores alone, and the line item of the launch without a container", async () => {
+    const ctx = partly(["keepScore"]);
+    const { claims } = await launch(ctx, withGrades);
+    expect(claims[AGS_CLAIM]).toEqual({ scope: [SCOPES.score], lineitem: LINE_ITEM });
+    const assertion = await clientAssertion(toolKeys, endpoints.token, ctx.clock);
+    const granted = await handle(ctx, tokenRequest(endpoints.token, assertion, ALL.join(" ")));
+    expect(json(granted).scope).toBe(SCOPES.score);
+    const token = await tokenFor(ctx, SCOPES.score);
+    const posted = await handle(
+      ctx,
+      call(`${LINE_ITEM}/scores`, token, { method: "POST", type: SCORE_TYPE, body: score() }),
+    );
+    expect(posted.status).toBe(204);
+    for (const [url, method] of [
+      [CONTAINER, "GET"],
+      [CONTAINER, "POST"],
+      [LINE_ITEM, "GET"],
+      [LINE_ITEM, "PUT"],
+      [`${LINE_ITEM}/results`, "GET"],
+    ] as const) {
+      expect((await handle(ctx, call(url, token, { method }))).status, `${method} ${url}`).toBe(404);
+    }
+  });
+
+  it("answers 405 with the methods that remain of a path, and offers the narrowest scope of each method it serves", async () => {
+    const ctx = partly(["lineItem", "keepScore"]);
+    const { claims } = await launch(ctx, withGrades);
+    expect(claims[AGS_CLAIM]).toMatchObject({ scope: [SCOPES.lineitemReadonly, SCOPES.score] });
+    const token = await tokenFor(ctx, SCOPES.lineitemReadonly);
+    expect((await handle(ctx, call(LINE_ITEM, token))).status).toBe(200);
+    const put = await handle(ctx, call(LINE_ITEM, token, { method: "PUT", type: LINE_ITEM_TYPE, body: {} }));
+    expect(put.status).toBe(405);
+    expect(put.headers.allow).toBe("GET");
+    const writing = partly(["lineItems", "createLineItem"]);
+    expect((await launch(writing, withGrades)).claims[AGS_CLAIM]).toEqual({
+      scope: [SCOPES.lineitem, SCOPES.lineitemReadonly],
+      lineitems: CONTAINER,
+      lineitem: LINE_ITEM,
+    });
   });
 });

@@ -129,17 +129,33 @@ export interface StoreResultQuery {
  * The gradebook of the platform behind the Assignment and Grade Services: the line items of each context, the results of each
  * line item, and the scores that tools post. Every method receives the caller, and answers `undefined` (or `false`) for a context
  * or a line item that is not the caller's, so that the route answers 404 and existence does not leak.
+ *
+ * @remarks
+ * A store has the methods of what the gradebook supports, at least one, such as `keepScore` alone for a platform that takes the
+ * scores of the line item of each launch (AGS 3.1.1.3). What a store lacks is not offered: its route answers 404, or 405 with the
+ * methods of the path that remain; its scope is neither listed in the OpenID configuration nor granted, and without `lineItems`
+ * the claim names no container. Each scope is offered with a method that needs it: `lineitem.readonly` with `lineItems` or
+ * `lineItem`, `lineitem` with `createLineItem`, `updateLineItem` or `deleteLineItem`, `result.readonly` with `results`, and `score`
+ * with `keepScore`.
  */
 export interface GradebookStore {
-  /** Returns a page of the line items of a context that match the query, or `undefined` for a context that is not the caller's. */
-  lineItems(
+  /**
+   * Returns a page of the line items of a context that match the query, or `undefined` for a context that is not the caller's.
+   *
+   * @defaultValue none: the claim names no container, and the line items cannot be listed
+   */
+  lineItems?(
     caller: ServiceCaller,
     contextId: string,
     query: StoreLineItemQuery,
     options?: CallOptions,
   ): Promise<StorePage<StoredLineItem> | undefined>;
-  /** Returns a line item, or `undefined` when the context or the line item is not the caller's. */
-  lineItem(
+  /**
+   * Returns a line item, or `undefined` when the context or the line item is not the caller's.
+   *
+   * @defaultValue none: a line item cannot be read
+   */
+  lineItem?(
     caller: ServiceCaller,
     contextId: string,
     lineItemId: string,
@@ -150,25 +166,43 @@ export interface GradebookStore {
    * `tag` first (AGS 3.2).
    *
    * @returns The line item, or `undefined` for a context that is not the caller's or an `activityId` that it does not have.
+   * @defaultValue none: a tool cannot create line items
    */
-  createLineItem(
+  createLineItem?(
     caller: ServiceCaller,
     contextId: string,
     input: LineItemInput,
     options?: CallOptions,
   ): Promise<StoredLineItem | undefined>;
-  /** Replaces a line item, or returns `undefined` when the context or the line item is not the caller's. */
-  updateLineItem(
+  /**
+   * Replaces a line item, or returns `undefined` when the context or the line item is not the caller's.
+   *
+   * @defaultValue none: a tool cannot change line items
+   */
+  updateLineItem?(
     caller: ServiceCaller,
     contextId: string,
     lineItemId: string,
     input: LineItemInput,
     options?: CallOptions,
   ): Promise<StoredLineItem | undefined>;
-  /** Deletes a line item, or returns `false` when the context or the line item is not the caller's. */
-  deleteLineItem(caller: ServiceCaller, contextId: string, lineItemId: string, options?: CallOptions): Promise<boolean>;
-  /** Returns a page of the results of a line item, or `undefined` when the context or the line item is not the caller's. */
-  results(
+  /**
+   * Deletes a line item, or returns `false` when the context or the line item is not the caller's.
+   *
+   * @defaultValue none: a tool cannot delete line items
+   */
+  deleteLineItem?(
+    caller: ServiceCaller,
+    contextId: string,
+    lineItemId: string,
+    options?: CallOptions,
+  ): Promise<boolean>;
+  /**
+   * Returns a page of the results of a line item, or `undefined` when the context or the line item is not the caller's.
+   *
+   * @defaultValue none: the results cannot be read
+   */
+  results?(
     caller: ServiceCaller,
     contextId: string,
     lineItemId: string,
@@ -179,10 +213,15 @@ export interface GradebookStore {
    * Keeps a score, atomically, unless a score of the same line item and user with a strictly later `timestampMs` is kept (AGS
    * 3.4.9): an equal time replaces, so that a retry completes.
    *
+   * @remarks
+   * The route answers 204 for `"kept"` and for `"older"` alike: AGS 3.4.9 lets the platform just ignore an older score, or log it,
+   * and the tool can do nothing with it.
+   *
    * @returns `"kept"`, `"older"` when a later score is kept, or `undefined` when the context or the line item is not the
    * caller's, or the user is not one whose scores the store keeps.
+   * @defaultValue none: a tool cannot post scores
    */
-  keepScore(
+  keepScore?(
     caller: ServiceCaller,
     contextId: string,
     lineItemId: string,
@@ -271,8 +310,12 @@ export interface GroupStore {
     query: StoreGroupQuery,
     options?: CallOptions,
   ): Promise<StorePage<Group> | undefined>;
-  /** Returns a page of the group sets of a context, or `undefined` for a context that is not the caller's. */
-  groupSets(
+  /**
+   * Returns a page of the group sets of a context, or `undefined` for a context that is not the caller's.
+   *
+   * @defaultValue none: the claim names no group sets, and their route names nothing
+   */
+  groupSets?(
     caller: ServiceCaller,
     contextId: string,
     query: { readonly limit: number; readonly cursor?: string },

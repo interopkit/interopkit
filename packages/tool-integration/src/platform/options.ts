@@ -2,11 +2,13 @@ import { type CallOptions, type Clock, DataError } from "@interopkit/core";
 import {
   abortSignalSchema,
   guardSchema,
+  isRecord,
   MAX_JSON_TOKENS,
   methodsSchema,
   nonEmptyStringSchema,
   parseWith,
   positiveIntegerSchema,
+  type Schema,
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
@@ -255,6 +257,34 @@ const DEFAULT_SESSION_DATA_LIFETIME_SECONDS = 3600;
 const DEFAULT_DEEP_LINKING_LIFETIME_SECONDS = 86_400;
 
 const isFunction = <T>(value: unknown): value is T => typeof value === "function";
+
+/**
+ * The schema of a store whose methods are the capabilities that it has: every required method, each optional one that it gives,
+ * and at least one method in all.
+ *
+ * @param required - The methods that the store must have.
+ * @param optional - The methods that the store may have, each a function when it is given.
+ */
+function storeSchema<TStore extends object>(
+  required: readonly (keyof TStore & string)[],
+  optional: readonly (keyof TStore & string)[],
+): Schema<TStore> {
+  const names = [...required, ...optional];
+  const listed = (list: readonly string[]) =>
+    `${list.slice(0, -1).join(", ")}${list.length > 1 ? " or " : ""}${list.at(-1)}`;
+  const expected =
+    required.length === 0
+      ? `an object with at least one of the functions ${listed(optional)}, and only functions by those names`
+      : `an object with the function${required.length > 1 ? "s" : ""} ${required.join(", ")}, and ${listed(optional)} only as a function`;
+  return guardSchema(
+    (value): value is TStore =>
+      isRecord(value) &&
+      required.every((name) => typeof value[name] === "function") &&
+      optional.every((name) => value[name] === undefined || typeof value[name] === "function") &&
+      names.some((name) => typeof value[name] === "function"),
+    expected,
+  );
+}
 const functionSchema = <T>() => guardSchema(isFunction<T>, "a function");
 // `checkPlatformConfig` throws a `DataError` that names what is wrong with the configuration.
 const configSchema = v.custom<PlatformConfig>((config) => {
@@ -295,18 +325,13 @@ const requestOptionsSchema = strictRecord({
   services: v.optional(
     strictRecord({
       gradebook: v.optional(
-        methodsSchema<GradebookStore>(
-          "lineItems",
-          "lineItem",
-          "createLineItem",
-          "updateLineItem",
-          "deleteLineItem",
-          "results",
-          "keepScore",
+        storeSchema<GradebookStore>(
+          [],
+          ["lineItems", "lineItem", "createLineItem", "updateLineItem", "deleteLineItem", "results", "keepScore"],
         ),
       ),
       roster: v.optional(methodsSchema<RosterStore>("members")),
-      groups: v.optional(methodsSchema<GroupStore>("groups", "groupSets")),
+      groups: v.optional(storeSchema<GroupStore>(["groups"], ["groupSets"])),
       preferences: v.optional(methodsSchema<PreferencesStore>("record")),
       control: v.optional(methodsSchema<AssessmentControl>("control")),
       registrations: v.optional(methodsSchema<RegistrationStore>("register", "get", "update")),

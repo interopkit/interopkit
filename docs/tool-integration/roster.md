@@ -145,7 +145,7 @@ the caller and the `signal`, and answers `undefined` for what is not the caller'
 | ---------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | `/contexts/{context}/memberships`                                      | `contextmembership.readonly` | `roster.members(caller, context, query)`          |
 | `/contexts/{context}/groups`                                           | `contextgroup.readonly`      | `groups.groups(caller, context, query)`           |
-| `/contexts/{context}/group-sets`                                       | `contextgroup.readonly`      | `groups.groupSets(caller, context, query)`        |
+| `/contexts/{context}/group-sets`                                       | `contextgroup.readonly`      | `groups.groupSets(caller, context, query)`, when the store has group sets; without it the path names nothing |
 | `/ims/afapnp/v1p0/users/{user}/activities/{activity}/afapnprecords`    | `afapnprecord.lti.readonly`  | `preferences.record(caller, user, activity, fields)` |
 
 ### The claims
@@ -157,7 +157,7 @@ host. The claims:
 | Service          | Claim                                                                    | Holds                                                                                          |
 | ---------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
 | NRPS             | `.../lti-nrps/claim/namesroleservice`                                    | `context_memberships_url`, `service_versions: ["2.0"]`                                          |
-| Context Groups   | `.../lti-gs/claim/groupsservice`                                         | `context_groups_url`, `context_group_sets_url` when `sets` is true, the granted `scope`, `service_versions: ["1.0"]` |
+| Context Groups   | `.../lti-gs/claim/groupsservice`                                         | `context_groups_url`, `context_group_sets_url` when `sets` is true and the store has `groupSets`, the granted `scope`, `service_versions: ["1.0"]` |
 | The connector    | `.../lti-afapnp/claim/afapnp-endpoint-service`                           | `afapnp_endpoint_hosturl` (the platform's origin), `afapnp_activity_ids`, the granted `scopes`  |
 
 The platform builds the URLs from `config.origin` and the identifiers, encoded. The connector's claim needs at least one scope, so

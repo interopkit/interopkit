@@ -426,7 +426,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
 
 - A construct of a specification: its test, and a line of the `supported.md` of the package when what is supported changes.
 - A service of LTI in `tool-integration`: a file in `tool/services/` and one in `platform/services/`, a line in `tool/services/parts.ts`
-  (its client in `ServiceClient`) and in `platform/services/routes.ts` (its `Service`: store, scopes, claim, routes), its port in
+  (its client in `ServiceClient`) and in `platform/services/routes.ts` (its `Service`: store, scopes, claim, routes, each method of a route with the method of the store that it `uses`), its port in
   `platform/ports.ts` and `PlatformServices`, the schema of the port in `platform/options.ts`, and its part of `MessageServicesInput`.
 - A module of a package: a folder in `src/` with `index.ts`, `internal.ts` where other modules or the tests need more, a
   subpath in `package.json` `exports` with its budget in `test/size.test.ts`, `typedoc.json` and `knip.json` when the host imports it, the same subpath in the
