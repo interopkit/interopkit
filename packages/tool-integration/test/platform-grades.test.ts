@@ -150,6 +150,12 @@ describe("the access to the grade services", () => {
     expect([forged.status, forged.headers["www-authenticate"]]).toEqual([401, 'Bearer error="invalid_token"']);
     const token = await tokenFor(ctx, SCOPES.lineitemReadonly);
     expect((await handle(ctx, call(LINE_ITEM, token))).status).toBe(200);
+    // RFC 6750 section 2.1: the scheme, in any case, and one or more spaces before the token.
+    for (const header of [`bearer ${token}`, `Bearer   ${token}`]) {
+      const asked = call(LINE_ITEM, undefined);
+      const response = await handle(ctx, { ...asked, headers: { ...asked.headers, authorization: header } });
+      expect(response.status, header).toBe(200);
+    }
     ctx.clock.advance(3600);
     expect((await handle(ctx, call(LINE_ITEM, token))).status).toBe(401);
   });

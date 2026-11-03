@@ -8,8 +8,8 @@ import type { ServiceCaller } from "../ports.js";
 import { readToolRegistration } from "../registration.js";
 import { openAccess } from "../tokens.js";
 
-/** The credentials of `Authorization: Bearer` (RFC 6750 section 2.1), the scheme in any case. */
-const BEARER = /^Bearer ([A-Za-z0-9._~+/-]+=*)$/iu;
+/** The credentials of `Authorization: Bearer` (RFC 6750 section 2.1): the scheme in any case, one or more spaces, the token. */
+const BEARER = /^Bearer +([A-Za-z0-9._~+/-]+=*)$/iu;
 
 /** Returns the token of an `Authorization` header of the bearer scheme, or `undefined` when the header is not one. */
 export function bearerToken(header: string): string | undefined {
