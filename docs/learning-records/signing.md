@@ -85,6 +85,16 @@ that verifies against a chain nobody judged says that the Statement was not chan
 know the signer, pass `key` or check that `certified` is true. The JWS JSON serialization is `malformed`: the
 standard asks for the compact one.
 
+## Limits
+
+| Limit       | Value                                                                    | Applies to                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| The payload | 10,485,760 bytes, 64 levels and 1,000,000 tokens, those of `readStatementJson` | A payload over them is `malformed`. The handler of an LRS reads it within its own `maxBodyBytes`, `maxDepth` and `maxTokens` instead |
+
+The worst payload within them, a JWS of 10 MiB near a million tokens of distinct names, raises the peak of a process by 123 to
+153 MiB, measured in `signature-memory.test.ts`. A host that verifies the signatures of many senders checks the size of the
+bytes first, or verifies them through the handler with lower limits.
+
 ## Errors
 
 | Error                                                                                                      | When                                                          | What to do                                    |

@@ -153,6 +153,7 @@ process only grows; the test reports the rise.
 | `validateStatements` | A Statement whose context holds a million wrong Activities | 2 MiB | 64 MiB |
 | `readMultipart` | The most parts and bytes that the limits take, 10 MiB | 6–10 MiB | 64 MiB |
 | `handleLrsRequest`, a POST | 1,000 Statements of 1.9 MB near a million tokens | 34–37 MiB | 128 MiB |
+| `verifyStatementSignature` | A JWS of 10 MiB whose payload is near a million tokens of distinct names | 123–153 MiB | 192 MiB |
 | `readBasicAuthorization` | A header of 10 MiB | 35 MiB | 64 MiB |
 | The alternate request syntax | A form of a million and a half names, and a form of 10 MiB of `+` | 0.2 and 46–50 MiB | 32 and 128 MiB |
 
