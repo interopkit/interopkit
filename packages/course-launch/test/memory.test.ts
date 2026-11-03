@@ -61,10 +61,10 @@ const READINGS: readonly {
     input: () => archive("entries-limit.zip.gz"),
   },
   {
-    title: "reads a package whose central directory is almost its limit of 64 MiB",
+    title: "reads a package whose central directory is almost its limit of 16 MiB",
     name: "packageDirectory",
-    heapMiB: 48,
-    outcome: "1023 files",
+    heapMiB: 32,
+    outcome: "255 files",
     input: () => archive("directory-limit.zip.gz"),
   },
   {

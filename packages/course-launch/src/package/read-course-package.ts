@@ -15,8 +15,11 @@ import { readArchive } from "./archive.js";
 /** The most entries of a ZIP package, directories included. */
 export const DEFAULT_MAX_ENTRIES = 100_000;
 
-/** The most bytes of the central directory of a ZIP package: room for the names of the most entries, and much more. */
-const DEFAULT_MAX_DIRECTORY_BYTES = 67_108_864;
+/**
+ * The most bytes of the central directory of a ZIP package, as the family's other readers of untrusted input take at most
+ * 16 MiB: the most entries with names of about 120 bytes, where a package of real courses has a directory of a few kilobytes.
+ */
+const DEFAULT_MAX_DIRECTORY_BYTES = 16_777_216;
 
 /** A course package: its course structure, the form it came in, and the files of its archive. */
 export interface CoursePackage {
@@ -39,7 +42,7 @@ export interface CoursePackageReadOptions extends Omit<CourseReadOptions, "packa
   /**
    * The most bytes of the central directory of a ZIP package, which is read in one piece.
    *
-   * @defaultValue 67,108,864
+   * @defaultValue 16,777,216
    */
   readonly maxDirectoryBytes?: number;
 }

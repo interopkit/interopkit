@@ -97,12 +97,12 @@ export const READINGS = {
       return `${findings.length} findings, the last ${findings.at(-1)?.rule}`;
     },
   },
-  /** A package of 100,000 entries, the limit, which the test writes. */
+  /** A package of 100,000 entries, the limit, which the test gives. */
   packageEntries: {
     input: bytesOf,
     read: async (archive: Uint8Array) => `${(await readCoursePackage(archive)).paths.length} files`,
   },
-  /** A package whose central directory is at its limit of 64 MiB, which the test writes. */
+  /** A package whose central directory is at its limit of 16 MiB, which the test gives. */
   packageDirectory: {
     input: bytesOf,
     read: async (archive: Uint8Array) => `${(await readCoursePackage(archive)).paths.length} files`,

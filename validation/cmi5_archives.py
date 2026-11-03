@@ -153,9 +153,9 @@ def main():
     write_gzipped("zip64-many.zip.gz", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE)] + [(info(f"f/{i}", zipfile.ZIP_STORED), b"") for i in range(65999)]))
     write_gzipped("wrapped.zip.gz", wrapped(70002))
     # The worst packages within the default limits of the reader, for the tests of its peak memory: 100,000 entries, and a
-    # central directory of almost 64 MiB, of entries whose comments are as long as a comment may be.
+    # central directory of almost 16 MiB, of entries whose comments are as long as a comment may be.
     write_gzipped("entries-limit.zip.gz", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE)] + [(info(f"media/{i}.bin", zipfile.ZIP_STORED), b"") for i in range(99998)]))
-    write_gzipped("directory-limit.zip.gz", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE)] + [(commented(f"m/{i}"), b"") for i in range(1021)]))
+    write_gzipped("directory-limit.zip.gz", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE)] + [(commented(f"m/{i}"), b"") for i in range(253)]))
     print(f"Wrote the archives to {OUTPUT}.")
 
 

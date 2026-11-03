@@ -77,7 +77,7 @@ package sets, and these:
 | Option              | Default    | Meaning                                                                                      |
 | ------------------- | ---------- | -------------------------------------------------------------------------------------------- |
 | `maxEntries`        | 100,000    | The most entries of a ZIP package, directories included                                      |
-| `maxDirectoryBytes` | 67,108,864 | The most bytes of its central directory, which zip.js reads in one piece                      |
+| `maxDirectoryBytes` | 16,777,216 | The most bytes of its central directory, which zip.js reads in one piece                      |
 | `maxBytes`          | 16,777,216 | The most bytes of `cmi5.xml` once inflated, and of an XML package                            |
 | `signal`            | none       | Ends the wait of the reader, which rejects with its reason                                   |
 
@@ -88,12 +88,16 @@ package sets, and these:
 | Limit                        | Default    | Refused with                                                                                         |
 | ---------------------------- | ---------- | ---------------------------------------------------------------------------------------------------- |
 | Entries                      | 100,000    | `DataError` at the entry past it, as zip.js lists them                                               |
-| Central directory            | 67,108,864 | `DataError` before it is read: zip.js reads it in one read, the only read that may ask for so much    |
+| Central directory            | 16,777,216 | `DataError` before it is read: zip.js reads it in one read, the only read that may ask for so much    |
 | `cmi5.xml`                   | 16,777,216 | `DataError` for a size above it in its header; zip.js refuses data that inflates past its header     |
 | Archive                      | none       | A `Blob` is read for its central directory and `cmi5.xml` alone; the host bounds an upload            |
 
+The central directory of a package of real courses has a few kilobytes: about 1 KB in each of the six course examples of
+CATAPULT. 16 MiB, as the family's other readers of untrusted input take at most, holds the 100,000 entries with names of about
+120 bytes.
+
 The memory of the worst packages, each read by the tests of the package in a process whose heap is bounded, at most on Node.js
-22, 24 and 26: 100,000 entries end within a heap of 29 MiB, a central directory at its limit within 19 MiB besides the bytes of
+22, 24 and 26: 100,000 entries end within a heap of 29 MiB, a central directory at its limit within 15 MiB besides the bytes of
 the directory, which V8 keeps outside its heap, and a `cmi5.xml` that inflates to 64 MiB and says it has 64 bytes within
 11 MiB. In a process with the default heap of V8 the resident memory grows further before V8 collects, by about 100 MiB for
 each of the first two.
