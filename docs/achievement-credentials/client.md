@@ -209,7 +209,7 @@ replaces the whole profile.
 | What                 | Fails                                                     | Hangs                              | Called again                                                                                                          | May call back |
 | -------------------- | --------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------- |
 | `fetch`              | `ServiceError`; 404 of the profile gives `undefined`      | `timeoutMs`, then status 0         | Safe. A collection that changes between pages may repeat or skip a credential; repeats are dropped                    | Nothing       |
-| `token`              | Its error reaches the caller; no request is made          | The caller's `signal` is passed on | Called before every request, so it may return a fresh token                                                           | Nothing       |
+| `token`              | Its error reaches the caller; no request is made          | The caller's `signal` is passed on, and the wait ends when it aborts, whether the function stops or not | Called before every request, so it may return a fresh token                                                           | Nothing       |
 | The answer too large | `ServiceError` naming the limit                           | As `fetch`                         | The same answer until `maxBytes` grows                                                                                | Nothing       |
 
 ## Limits

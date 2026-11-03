@@ -252,6 +252,20 @@ describe("createCredentialsClient", () => {
     expect((await rejection(failing.getProfile())) as Error).toHaveProperty("message", "no token");
     expect(requests).toHaveLength(2);
   });
+
+  it("ends the wait of the call when it aborts, though the token function never answers and ignores the signal", async () => {
+    const { fetch, requests } = fakeServer(() => json(PROFILE));
+    const never = () => new Promise<string>(() => undefined);
+    const call = new AbortController();
+    const pending = rejection(clientOf(fetch, { token: never }).getProfile({ signal: call.signal }));
+    call.abort(new Error("the caller stopped"));
+    expect(await pending).toStrictEqual(new Error("the caller stopped"));
+    const configured = new AbortController();
+    const stopped = rejection(clientOf(fetch, { signal: configured.signal, token: never }).getProfile());
+    configured.abort(new Error("the host stopped"));
+    expect(await stopped).toStrictEqual(new Error("the host stopped"));
+    expect(requests).toHaveLength(0);
+  });
 });
 
 describe("listCredentials", () => {

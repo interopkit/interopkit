@@ -4594,6 +4594,16 @@ export const RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/client.test.ts",
   },
   {
+    rule: "The wait of a call of the Open Badges client for the token of the host ends when the call or the client aborts.",
+    file: "packages/achievement-credentials/src/client/request.ts",
+    find: `const token = await untilAborted(
+    Promise.resolve(settings.token(either === undefined ? undefined : { signal: either })),
+    either,
+  );`,
+    replace: "const token = await settings.token(either === undefined ? undefined : { signal: either });",
+    test: "packages/achievement-credentials/test/client.test.ts",
+  },
+  {
     rule: "A page of more credentials than the request asked for is refused before the readers see any.",
     file: "packages/achievement-credentials/src/client/client.ts",
     find: "if (credentials.length + signed.length > settings.pageSize) {",

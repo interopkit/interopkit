@@ -1,4 +1,4 @@
-import { DataError, requestService, type ServiceResponse } from "@interopkit/core";
+import { DataError, requestService, type ServiceResponse, untilAborted } from "@interopkit/core";
 import {
   checkAbortSignal,
   checkRecord,
@@ -42,7 +42,12 @@ export function signalOf(options: unknown): AbortSignal | undefined {
 
 /** Asks the host for the access token of a request, and checks that it can be a header. */
 async function bearer(settings: Settings, signals: AbortSignal[]): Promise<string> {
-  const token = await settings.token(signals.length === 0 ? undefined : { signal: AbortSignal.any(signals) });
+  const either = signals.length === 0 ? undefined : AbortSignal.any(signals);
+  // The host's function gets the signal and should stop, but the wait of the caller ends when it aborts whether the function does or not.
+  const token = await untilAborted(
+    Promise.resolve(settings.token(either === undefined ? undefined : { signal: either })),
+    either,
+  );
   if (typeof token !== "string" || !TOKEN.test(token)) {
     throw new DataError(
       "The option token must return an access token of printable characters without a space, such as the one the authorization server issued.",
