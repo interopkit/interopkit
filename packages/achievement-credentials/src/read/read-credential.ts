@@ -80,7 +80,8 @@ export function readCredential(value: unknown, options?: ReadOptions): AnyCreden
  * @param options - Which kind of credential the value must be.
  * @returns Every finding: an error such as a missing property or a subject that nothing identifies, or a warning such as an
  * identity hash in no form that the specification names. An empty list means that the credential is sound.
- * @throws `DataError` when the options are not an object with a `kind` of `CREDENTIAL_KINDS`.
+ * @throws `DataError` when the options are not an object with a `kind` of `CREDENTIAL_KINDS` and a `maxFindings` that is a
+ * positive integer.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/ | Open Badges 3.0}
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/ | CLR 2.0}
  * @see {@link https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html | Open Badges 2.0}
