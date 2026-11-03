@@ -1,4 +1,4 @@
-import { parseDateTime } from "@interopkit/core/checks";
+import { checkFunction, checkRecord, parseDateTime } from "@interopkit/core/checks";
 import { identityKey, iriKey, sameActor } from "../compare/internal.js";
 import type {
   Activity,
@@ -179,6 +179,8 @@ export interface MatchOptions {
  * @param options - The authority whose Statements alone a credential may read, which `page.authority` of
  * `StatementStore.query` gives.
  * @returns Whether the Statement is one of those that the query asks for.
+ * @throws `DataError` when the Statement, the query or the options are not objects, or `target` is not a function. The values are
+ * not read deeply, since a store calls it for each Statement that it holds, as the handler gave them.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
 export function matchesStatementQuery(
@@ -187,7 +189,12 @@ export function matchesStatementQuery(
   target: (id: string) => Statement | undefined,
   options?: MatchOptions,
 ): boolean {
+  checkRecord(statement, "The Statement must be an object");
+  checkRecord(query, "The query must be an object");
+  checkFunction(target, "The target must be a function");
   const authority = options?.authority;
+  // Read as unknown, so that the check does not narrow the type of the options that are read above.
+  if (options !== undefined) checkRecord(options as unknown, "The options must be an object");
   return (
     (authority === undefined || (statement.authority !== undefined && sameActor(statement.authority, authority))) &&
     isInTime(statement, query) &&

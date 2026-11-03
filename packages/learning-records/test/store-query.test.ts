@@ -1,7 +1,8 @@
+import { DataError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import type { Actor, Statement, StatementQuery } from "../src/index.js";
 import { matchesStatementQuery, readBasicAuthorization } from "../src/store/index.js";
-import { uuid } from "./full-statement.js";
+import { minimalStatement, uuid } from "./full-statement.js";
 
 const LEARNER = { mbox: "mailto:learner@example.org" } as const;
 const TEACHER = { mbox: "mailto:teacher@example.org" } as const;
@@ -303,7 +304,34 @@ describe("matchesStatementQuery: a long chain of references", () => {
   });
 });
 
+describe("matchesStatementQuery: arguments of other types", () => {
+  it("refuses them, as JavaScript or JSON pass them, with a DataError", () => {
+    const none = () => undefined;
+    const subject = JSON.parse(JSON.stringify(minimalStatement()));
+    for (const value of [JSON.parse("null"), JSON.parse("5"), JSON.parse("[]")]) {
+      expect(() => matchesStatementQuery(value, {}, none)).toThrow(DataError);
+      expect(() => matchesStatementQuery(subject, value, none)).toThrow(DataError);
+      expect(() => matchesStatementQuery(subject, {}, value)).toThrow(DataError);
+      expect(() => matchesStatementQuery(subject, {}, none, value)).toThrow(DataError);
+    }
+    expect(() => matchesStatementQuery(JSON.parse("null"), {}, none)).toThrow(
+      "The Statement must be an object, found null.",
+    );
+    expect(matchesStatementQuery(subject, {}, none, undefined)).toBe(true);
+  });
+});
+
 describe("readBasicAuthorization", () => {
+  it("refuses a request, headers or a header of other types, as JavaScript or JSON pass them, with a DataError", () => {
+    for (const value of [JSON.parse("null"), JSON.parse("5"), JSON.parse("[]")]) {
+      expect(() => readBasicAuthorization(value)).toThrow(DataError);
+      expect(() => readBasicAuthorization({ headers: value })).toThrow(DataError);
+    }
+    expect(() => readBasicAuthorization({ headers: JSON.parse('{"authorization":5}') })).toThrow(
+      "The header authorization must be a string, found 5.",
+    );
+  });
+
   it("reads a header of many megabytes without a copy for each byte", () => {
     const value = btoa(`user:${"p".repeat(3_000_000)}`);
     expect(readBasicAuthorization({ headers: { authorization: `Basic ${value}` } })?.password).toHaveLength(3_000_000);

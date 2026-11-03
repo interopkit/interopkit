@@ -1,3 +1,4 @@
+import { checkRecord, checkString } from "@interopkit/core/checks";
 import type { HttpRequest } from "@interopkit/core/http";
 
 const SCHEME = /^basic\s+(\S+)$/iu;
@@ -23,10 +24,15 @@ export interface BasicCredentials {
  * @param request - The request.
  * @returns The user and the password, or `undefined` when the request has no Basic header or the header is malformed: the
  * scheme is another, the value is not base64, it is not UTF-8 or it has no colon.
+ * @throws `DataError` when the request is not an object whose `headers` are an object, or its `authorization` is not a string.
  * @see {@link https://www.rfc-editor.org/rfc/rfc7617 | RFC 7617, the Basic scheme}
  */
 export function readBasicAuthorization(request: Pick<HttpRequest, "headers">): BasicCredentials | undefined {
-  const credentials = SCHEME.exec(request.headers.authorization ?? "")?.[1];
+  checkRecord(request, "The request must be an object");
+  checkRecord(request.headers, "The headers of the request must be an object");
+  const { authorization = "" } = request.headers;
+  checkString(authorization, "The header authorization");
+  const credentials = SCHEME.exec(authorization)?.[1];
   if (credentials === undefined) return undefined;
   let text: string;
   try {
