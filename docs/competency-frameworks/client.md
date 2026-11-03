@@ -213,7 +213,7 @@ not. `retryAfterSeconds` is `Retry-After` when it is a number of seconds. The fo
 | What                 | Fails                                                | Hangs                              | Called again                                                                                               | May call back |
 | -------------------- | ---------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------- |
 | `fetch`              | `ServiceError`; 404 for one entity gives `undefined` | `timeoutMs`, then status 0         | Safe: GET only. A collection that changes between pages may repeat or skip a document; repeats are dropped | Nothing       |
-| `authorization`      | Its error reaches the caller; no request is made     | The caller's `signal` is passed on | Called before every request, so it may return a fresh token                                                | Nothing       |
+| `authorization`      | Its error reaches the caller; no request is made     | The caller's `signal` is passed on, and the wait ends when it aborts, whether the function stops or not | Called before every request, so it may return a fresh token                                                | Nothing       |
 | The answer too large | `ServiceError` naming the limit                      | As `fetch`                         | The same answer until `maxBytes` grows                                                                     | Nothing       |
 
 ## Limits

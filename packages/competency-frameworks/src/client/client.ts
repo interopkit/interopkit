@@ -5,6 +5,7 @@ import {
   requestService,
   type ServiceResponse,
   totalCountOf,
+  untilAborted,
 } from "@interopkit/core";
 import {
   checkAbortSignal,
@@ -162,9 +163,15 @@ async function get(
   signal: AbortSignal | undefined,
 ): Promise<ServiceResponse> {
   const waiting = [settings.signal, signal].filter((each) => each !== undefined);
-  const authorization = await settings.authorization?.(
-    waiting.length === 0 ? undefined : { signal: AbortSignal.any(waiting) },
-  );
+  const either = waiting.length === 0 ? undefined : AbortSignal.any(waiting);
+  // The host's function gets the signal and should stop, but the wait of the caller ends when it aborts whether the function does or not.
+  const authorization =
+    settings.authorization === undefined
+      ? undefined
+      : await untilAborted(
+          Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
+          either,
+        );
   if (
     authorization !== undefined &&
     (typeof authorization !== "string" || authorization === "" || HEADER_BREAK.test(authorization))

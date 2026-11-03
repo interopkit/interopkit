@@ -307,6 +307,20 @@ describe("the credential", () => {
     expect(seen[1]?.aborted).toBe(true);
   });
 
+  it("ends the wait of the call when it aborts, though the function never answers and ignores the signal", async () => {
+    const provider = fakeProvider(() => ({ body: entities.CFItem }));
+    const never = () => new Promise<undefined>(() => undefined);
+    const call = new AbortController();
+    const pending = failureOf(clientOf(provider, { authorization: never }).item(id(7), { signal: call.signal }));
+    call.abort(new Error("the caller stopped"));
+    expect(await pending).toStrictEqual(new Error("the caller stopped"));
+    const configured = new AbortController();
+    const stopped = failureOf(clientOf(provider, { signal: configured.signal, authorization: never }).item(id(7)));
+    configured.abort(new Error("the host stopped"));
+    expect(await stopped).toStrictEqual(new Error("the host stopped"));
+    expect(provider.requests).toHaveLength(0);
+  });
+
   it("refuses a value that could split the header, an empty value and a value that is not text, before any request", async () => {
     for (const value of ["Bearer a\r\nX-Evil: 1", "Bearer a\nb", "", 5]) {
       const provider = fakeProvider(() => ({ body: entities.CFItem }));

@@ -4594,6 +4594,16 @@ export const RULES: readonly Rule[] = [
     test: "packages/competency-frameworks/test/read.test.ts",
   },
   {
+    rule: "The wait of a call of the CASE client for the credential of the host ends when the call or the client aborts.",
+    file: "packages/competency-frameworks/src/client/client.ts",
+    find: `: await untilAborted(
+          Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
+          either,
+        );`,
+    replace: ": await settings.authorization(either === undefined ? undefined : { signal: either });",
+    test: "packages/competency-frameworks/test/client.test.ts",
+  },
+  {
     rule: "The CASE client refuses an answer with more tokens than the limit before it parses the answer.",
     file: "packages/competency-frameworks/src/client/client.ts",
     find: "if (hasMoreTokensThan(text, settings.maxTokens)) {",
