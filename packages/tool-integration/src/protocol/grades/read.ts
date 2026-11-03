@@ -11,6 +11,7 @@ import {
   NULLABLE_STRING,
   OPTIONAL_DATE_TIME,
   OPTIONAL_TEXT,
+  parseZonedDateTime,
   searchLimit,
   searchValue,
   submissionReviewSchema,
@@ -87,8 +88,11 @@ const scoreSchema = v.pipe(
       v.pipe(
         looseRecord({ startedAt: v.optional(DATE_TIME), submittedAt: v.optional(DATE_TIME) }),
         v.check(
+          // The schema took both as zoned dates, so neither parse is undefined; `Date.parse` reads no `+hh` offset.
           ({ startedAt, submittedAt }) =>
-            startedAt === undefined || submittedAt === undefined || Date.parse(submittedAt) >= Date.parse(startedAt),
+            startedAt === undefined ||
+            submittedAt === undefined ||
+            Number(parseZonedDateTime(submittedAt)) >= Number(parseZonedDateTime(startedAt)),
           "expected submittedAt not before startedAt",
         ),
         v.transform(({ startedAt, submittedAt }) => ({ startedAt, submittedAt })),

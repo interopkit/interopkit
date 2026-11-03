@@ -162,6 +162,21 @@ describe("the score", () => {
     expect(writeScore(readScore(body))).toEqual(body);
   });
 
+  it("orders the times of a submission by their instants, whatever offsets of AGS 3.4.8 they are written with", () => {
+    const submission = (startedAt: string, submittedAt: string) =>
+      readScore({ ...score, submission: { startedAt, submittedAt } });
+    expect(submission("2017-04-16T18:54:36.736+00", "2017-04-16T19:00:00+00").submission).toEqual({
+      startedAt: "2017-04-16T18:54:36.736+00",
+      submittedAt: "2017-04-16T19:00:00+00",
+    });
+    expect(submission("2017-04-17T01:00:00+0700", "2017-04-16T18:30:00Z").submission?.startedAt).toBe(
+      "2017-04-17T01:00:00+0700",
+    );
+    expect(() => submission("2017-04-16T19:00:00+00", "2017-04-17T01:59:00+07")).toThrow(
+      /submittedAt not before startedAt/u,
+    );
+  });
+
   it("reads every activityProgress and gradingProgress that AGS names, and no other", () => {
     for (const activityProgress of ACTIVITY_PROGRESS)
       expect(readScore({ ...score, activityProgress }).activityProgress).toBe(activityProgress);

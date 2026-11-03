@@ -5483,7 +5483,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A score is submitted at or after the time it is started.",
     file: "packages/tool-integration/src/protocol/grades/read.ts",
-    find: "startedAt === undefined || submittedAt === undefined || Date.parse(submittedAt) >= Date.parse(startedAt),",
+    find: "Number(parseZonedDateTime(submittedAt)) >= Number(parseZonedDateTime(startedAt)),",
     replace: "true,",
     test: "packages/tool-integration/test/grades.test.ts",
   },
