@@ -162,7 +162,7 @@ describe("the score", () => {
     expect(writeScore(readScore(body))).toEqual(body);
   });
 
-  it("orders the times of a submission by their instants, whatever offsets of AGS 3.4.8 they are written with", () => {
+  it("orders the times of a submission by their instants, whatever offset of the grade services they are written with", () => {
     const submission = (startedAt: string, submittedAt: string) =>
       readScore({ ...score, submission: { startedAt, submittedAt } });
     expect(submission("2017-04-16T18:54:36.736+00", "2017-04-16T19:00:00+00").submission).toEqual({
