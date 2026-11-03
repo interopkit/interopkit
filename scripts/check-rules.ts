@@ -5487,8 +5487,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A status list is kept by its address and by the trust of the call that verified it, so no call is served a list that it would refuse.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "cache.get(cacheKeyOf(url, settings),",
-    replace: "cache.get(url,",
+    find: "cacheKeyOf(url, settings),",
+    replace: "url,",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
@@ -6265,7 +6265,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A hosted assertion starts with an address that the policy of its issuer allows.",
     file: "packages/achievement-credentials/src/verify/policy-v2.ts",
-    find: "if (startsWith !== undefined && !startsWith.some((prefix) => assertion.id.startsWith(prefix))) {",
+    find: "if (startsWith !== undefined && !startsWith.some((prefix) => resolved(assertion.id).startsWith(resolved(prefix)))) {",
     replace: "if (false) {",
     test: "packages/achievement-credentials/test/v2-verify.test.ts",
   },
