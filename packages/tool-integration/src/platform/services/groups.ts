@@ -41,6 +41,8 @@ function readRequest(
   | HttpResponse {
   try {
     const query = readGroupQuery(call.url.searchParams);
+    // The answer names the user whose groups it lists (section 2.1.2.1), and the identifier of a user is never empty.
+    if (query.userId === "") throw new DataError("The parameter user_id of the group query must not be empty.");
     return { query, page: readPageRequest(call.url, query.limit, call.settings) };
   } catch (error) {
     if (error instanceof DataError) return refusal(400, "invalid_request", error.message);

@@ -416,6 +416,14 @@ describe("the groups of a context", () => {
     expect(nobody.groups).toEqual([]);
   });
 
+  it("refuses with 400 a filter by a user without an identifier, before it asks the store", async () => {
+    const ctx = served();
+    const response = await get(ctx, `${GROUPS}?user_id=`, SCOPES.contextGroupReadonly);
+    expect(response.status).toBe(400);
+    expect(json(response)).toMatchObject({ error: "invalid_request" });
+    expect(ctx.groups.calls).toEqual([]);
+  });
+
   it("pages the groups and the sets, with a next link that keeps the filter", async () => {
     const ctx = served();
     const first = await get(ctx, `${GROUPS}?limit=2&user_id=budi`, SCOPES.contextGroupReadonly);

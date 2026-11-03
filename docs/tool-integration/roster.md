@@ -181,7 +181,7 @@ which is 404.
 ### The groups and the record
 
 A request for groups with `user_id` reaches the store with `userId`, and the answer names the user and has the request's URL as its
-`id` (Context Groups 2.1.2). The routes of groups and sets page like the members, with a `next` link that keeps the filter. The
+`id` (Context Groups 2.1.2); an empty `user_id` names no user and is 400. The routes of groups and sets page like the members, with a `next` link that keeps the filter. The
 record route reads `fields` and drops every member of the store's record that it does not name (the connector: "MUST ONLY be
 returned"); the user and the activity of the path reach the store decoded, and the store decides whether the tool may read them.
 
