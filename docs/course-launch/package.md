@@ -61,7 +61,7 @@ A host extracts the files of a package to serve them. Each of these could make i
 | A header that lies about the size of its data, or a CRC-32 that fails for `cmi5.xml` | zip.js                                |
 | A symbolic link                                                            | The reader, from the mode of the entry          |
 | An encrypted entry                                                         | The reader                                      |
-| Two entries whose names are one when case is folded and characters composed | The reader                                     |
+| Two entries whose names are one file to an extractor: case folded, characters composed, segments `.` and empty ones dropped, and the dots and spaces that end a segment dropped, as Windows does | The reader                                     |
 | Data before or after the archive, two central directories, a duplicate name, and every other warning of zip.js but a count of entries that wrapped past 65,535 without ZIP64, which zip.js recovers | The reader, from the warnings of zip.js |
 | No `cmi5.xml` at its root                                                  | The reader (14.1)                               |
 | A relative URL that names no file of the archive, read without its query and fragment and with its escapes decoded | The reader (14.1) |
@@ -100,7 +100,8 @@ a central directory of 64 MiB by about 310 MiB, and a `cmi5.xml` that inflates t
 `writeCoursePackage` writes `cmi5.xml` with [`writeCourseStructure`](structure.md) and then the files in the order of the map,
 each compressed and dated midnight of 1980-01-01, the first date that ZIP holds, so that the same course writes the same bytes;
 the archive turns to ZIP64 where its size needs it. Each path is names below the root of the package, without `.`, `..`, `\`, `:`,
-control characters or empty segments; no path folds onto another or onto `cmi5.xml`; and each relative URL of the structure names
+control characters or empty segments; no path is one file with another or with `cmi5.xml` to an extractor, the reader's test of
+two names; and each relative URL of the structure names
 one of them. The archive is read again by `readCoursePackage` with its default limits before it is returned.
 
 ## Errors

@@ -60,11 +60,23 @@ describe("reading a ZIP package", () => {
     ["truncated.zip", "The ZIP package is not a valid ZIP archive: End of central directory not found."],
     [
       "duplicate.zip",
-      'The ZIP package holds "cmi5.xml" and "cmi5.xml", two names that an extractor writes as one file where case does not count.',
+      'The ZIP package holds "cmi5.xml" and "cmi5.xml", two names that an extractor writes as one file.',
     ],
     [
       "folded.zip",
-      'The ZIP package holds "index.html" and "INDEX.HTML", two names that an extractor writes as one file where case does not count.',
+      'The ZIP package holds "index.html" and "INDEX.HTML", two names that an extractor writes as one file.',
+    ],
+    [
+      "dot-segment.zip",
+      'The ZIP package holds "cmi5.xml" and "./cmi5.xml", two names that an extractor writes as one file.',
+    ],
+    [
+      "empty-segment.zip",
+      'The ZIP package holds "media/clip.bin" and "media//clip.bin", two names that an extractor writes as one file.',
+    ],
+    [
+      "trailing-dot.zip",
+      'The ZIP package holds "cmi5.xml" and "cmi5.xml. ", two names that an extractor writes as one file.',
     ],
     [
       "appended.zip",
@@ -284,7 +296,13 @@ describe("writing a course package", () => {
 
   it("refuses two files that fold to one name, a file of another type, and files that are not a Map", async () => {
     await expect(writeCoursePackage(PACKAGED, new Map([...files, ["INDEX.html", encode("x")]]))).rejects.toThrow(
-      'The files "index.html" and "INDEX.html" of the package are one file on a file system that folds case.',
+      'The files "index.html" and "INDEX.html" of the package are two names that an extractor writes as one file.',
+    );
+    await expect(writeCoursePackage(PACKAGED, new Map([...files, ["index.html. ", encode("x")]]))).rejects.toThrow(
+      'The files "index.html" and "index.html. " of the package are two names that an extractor writes as one file.',
+    );
+    await expect(writeCoursePackage(PACKAGED, new Map([...files, ["cmi5.xml.", encode("x")]]))).rejects.toThrow(
+      "may not hold",
     );
     await expect(writeCoursePackage(PACKAGED, new Map([["index.html", "text"]]) as never)).rejects.toThrow(
       'The file "index.html" of the package must be a Blob or a Uint8Array, found "text".',

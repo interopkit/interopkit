@@ -5,7 +5,7 @@ import * as v from "valibot";
 import type { AssignableUnit, Block, CourseStructure } from "../model/index.js";
 import { writeCourseStructure } from "../structure/index.js";
 import { packageFileOf } from "../structure/internal.js";
-import { STRUCTURE_FILE } from "./archive.js";
+import { foldedName, STRUCTURE_FILE } from "./archive.js";
 import { readCoursePackage } from "./read-course-package.js";
 
 const optionsSchema = strictRecord({ signal: v.optional(abortSignalSchema) });
@@ -35,7 +35,7 @@ function checkFilePath(path: string, folded: Map<string, string>): void {
       `The file ${JSON.stringify(path)} of the package must be a path of names below its root, without ., .., \\, :, control characters or empty segments.`,
     );
   }
-  const name = path.normalize("NFC").toLowerCase();
+  const name = foldedName(path);
   if (name === STRUCTURE_FILE) {
     throw new DataError(
       `The files of the package may not hold ${JSON.stringify(path)}: the writer writes ${STRUCTURE_FILE} from the structure.`,
@@ -44,7 +44,7 @@ function checkFilePath(path: string, folded: Map<string, string>): void {
   const other = folded.get(name);
   if (other !== undefined) {
     throw new DataError(
-      `The files ${JSON.stringify(other)} and ${JSON.stringify(path)} of the package are one file on a file system that folds case.`,
+      `The files ${JSON.stringify(other)} and ${JSON.stringify(path)} of the package are two names that an extractor writes as one file.`,
     );
   }
   folded.set(name, path);
@@ -89,8 +89,8 @@ function* urlsOf(members: readonly (AssignableUnit | Block)[], path: string): Ge
  * @param files - The files of the course by their path below the root of the package, such as `media/intro.mp4`.
  * @param options - The signal.
  * @returns The archive.
- * @throws `DataError` as `writeCourseStructure` does, and when a path is not a name below the root or folds onto another, a
- * file is not a `Blob` or bytes, or a relative URL names no file.
+ * @throws `DataError` as `writeCourseStructure` does, and when a path is not a name below the root or is one file with another
+ * to an extractor, a file is not a `Blob` or bytes, or a relative URL names no file.
  * @throws The reason of the signal, when it aborts.
  * @see {@link https://github.com/AICC/CMI-5_Spec_Current/blob/quartz/cmi5_spec.md#course_packages_in_zip_format | cmi5, 14.1 Course Packages in ZIP Format}
  */

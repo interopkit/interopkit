@@ -56,12 +56,26 @@ export interface ArchiveContents {
   readonly structure: Uint8Array;
 }
 
+/** Removes the dots and spaces that end a segment of a path, which Windows drops from a name; a loop and not a pattern. */
+function withoutTrailingDots(segment: string): string {
+  let end = segment.length;
+  while (end > 0 && (segment[end - 1] === "." || segment[end - 1] === " ")) end -= 1;
+  return segment.slice(0, end);
+}
+
 /**
- * The name of an entry as a file system that folds case and composes characters stores it, so that two entries that would
- * be one file there are found to be two names of one file.
+ * The name of an entry as an extractor writes it to a file system that folds case and composes characters: without the
+ * segments `.` and the empty ones that a path resolves away, and without the dots and spaces that end a segment, which Windows
+ * drops. Two entries with one folded name are two names of one file.
  */
-function foldedName(name: string): string {
-  return name.normalize("NFC").toLowerCase().replace(/\/+$/u, "");
+export function foldedName(name: string): string {
+  return name
+    .normalize("NFC")
+    .toLowerCase()
+    .split("/")
+    .map(withoutTrailingDots)
+    .filter((segment) => segment !== "")
+    .join("/");
 }
 
 /** Refuses an entry that an extractor could write outside what was judged: a link, an encrypted entry, or a name it shares. */
@@ -81,7 +95,7 @@ function checkEntry(entry: Entry, seen: Map<string, string>): void {
   const other = seen.get(folded);
   if (other !== undefined) {
     throw new DataError(
-      `The ZIP package holds ${JSON.stringify(other)} and ${JSON.stringify(entry.filename)}, two names that an extractor writes as one file where case does not count.`,
+      `The ZIP package holds ${JSON.stringify(other)} and ${JSON.stringify(entry.filename)}, two names that an extractor writes as one file.`,
     );
   }
   seen.set(folded, entry.filename);

@@ -7476,6 +7476,20 @@ export const RULES: readonly Rule[] = [
     test: "packages/course-launch/test/package.test.ts",
   },
   {
+    rule: "A ZIP package is refused when two names are one file to an extractor that drops segments of dots and empty ones.",
+    file: "packages/course-launch/src/package/archive.ts",
+    find: '.filter((segment) => segment !== "")',
+    replace: "",
+    test: "packages/course-launch/test/package.test.ts",
+  },
+  {
+    rule: "A ZIP package is refused when two names are one file to Windows, which drops the dots and spaces that end a segment.",
+    file: "packages/course-launch/src/package/archive.ts",
+    find: '  while (end > 0 && (segment[end - 1] === "." || segment[end - 1] === " ")) end -= 1;',
+    replace: "",
+    test: "packages/course-launch/test/package.test.ts",
+  },
+  {
     rule: "A ZIP package that zip.js warns of is refused, but for a count of entries that wrapped.",
     file: "packages/course-launch/src/package/archive.ts",
     find: "const warning = warnings?.find(({ reason }) => reason !== WARNING_WRAPPED_ENTRIES_COUNT);",

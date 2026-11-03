@@ -129,6 +129,12 @@ def main():
     warnings.filterwarnings("ignore", "Duplicate name")
     write("duplicate.zip", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE), ("cmi5.xml", structure("https://example.org/other"))]))
     write("folded.zip", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE), ("INDEX.HTML", PAGE)]))
+    # Names that an extractor writes to the file of another: a segment ".", an empty segment, and, on Windows, the dots and
+    # spaces that end a segment.
+    other = structure("https://example.org/other")
+    write("dot-segment.zip", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE), ("./cmi5.xml", other)]))
+    write("empty-segment.zip", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE), ("media/clip.bin", PAGE), ("media//clip.bin", PAGE)]))
+    write("trailing-dot.zip", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE), ("cmi5.xml. ", other)]))
     write("prepended.zip", b"MZ" + bytes(126) + archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE)]))
     write("appended.zip", archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE)]) + b"appended data")
     whole = archive([("cmi5.xml", STRUCTURE), ("index.html", PAGE)])
