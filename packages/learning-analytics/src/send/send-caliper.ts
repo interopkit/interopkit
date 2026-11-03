@@ -38,6 +38,16 @@ function checkData(data: unknown): asserts data is readonly (CaliperEvent | Enti
   });
 }
 
+/** Writes the JSON text of an envelope: data that JSON cannot write, such as a bigint or an item that holds itself, is invalid. */
+function envelopeText(envelope: Readonly<Record<string, unknown>>): string {
+  try {
+    return JSON.stringify(envelope);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new DataError(`The Caliper data must be JSON: ${reason}`);
+  }
+}
+
 /**
  * Sends events and entity describes to a Caliper endpoint in one envelope.
  *
@@ -47,7 +57,7 @@ function checkData(data: unknown): asserts data is readonly (CaliperEvent | Enti
  * has at most 65,536 bytes, and the call ends at `timeoutMs` even when `fetch` ignores its signal.
  *
  * Events and entity describes may be mixed in `data`, as Caliper 1.2 section 5.2 allows. They are sent as they are, so that a
- * describe of an entity that the events refer to reaches the endpoint with them.
+ * describe of an entity that the events refer to reaches the endpoint with them: the envelope is their JSON text.
  *
  * Nothing is retried and nothing is kept between calls. A call that fails after the request left may still have reached the
  * endpoint, so a host that retries sends the same data again with a new `sendTime`: the identifiers of the events are the same,
@@ -58,8 +68,8 @@ function checkData(data: unknown): asserts data is readonly (CaliperEvent | Enti
  * @param options - The endpoint, the token, `fetch`, the sensor, the time of sending, and the optional time limit, size limit
  * and signal.
  * @returns Nothing; the promise resolves when the endpoint answered with a status from 200 to 299.
- * @throws `DataError` when an argument has the wrong type or value, or when the envelope has more bytes than
- * `maxPayloadBytes`, before any request.
+ * @throws `DataError` when an argument has the wrong type or value, such as data that JSON cannot write, or when the envelope
+ * has more bytes than `maxPayloadBytes`, before any request.
  * @throws `ServiceError` with status `0` when the endpoint did not answer in time, and with its status and body when it
  * answered with another status than 2xx, with a redirect or with more than 65,536 bytes; Caliper names 400, 401, 415 and
  * 422.
@@ -76,7 +86,7 @@ export async function sendCaliper(
     checkPositiveInteger(options.maxPayloadBytes, "The option maxPayloadBytes");
   checkData(data);
   const { endpoint, token, sensor, sendTime, fetch, signal, timeoutMs = DEFAULT_CALIPER_TIMEOUT_MS } = options;
-  const body = JSON.stringify({
+  const body = envelopeText({
     sensor,
     sendTime: caliperTime(sendTime, "The option sendTime"),
     dataVersion: CALIPER_CONTEXT,

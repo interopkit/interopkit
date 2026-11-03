@@ -410,6 +410,22 @@ describe("sendCaliper: input of other types", () => {
     );
   });
 
+  it("refuses data that JSON cannot write with a DataError, before any request", async () => {
+    const endpoint = fakeEndpoint({ status: 200 });
+    const [event] = sample();
+    const cyclic: Record<string, unknown> = { ...event };
+    cyclic.extensions = { self: cyclic };
+    for (const [name, item] of [
+      ["a member that is a bigint", { ...event, extensions: { count: 10n } }],
+      ["an item that holds itself", cyclic],
+    ] as const) {
+      await expect(sendCaliper([item] as never, { ...SENDER, fetch: endpoint.fetch }), name).rejects.toThrow(
+        "The Caliper data must be JSON: ",
+      );
+    }
+    expect(endpoint.requests).toHaveLength(0);
+  });
+
   it("accepts every character that RFC 6750 allows in a bearer token", async () => {
     const endpoint = fakeEndpoint({ status: 200 });
     await sendCaliper(sample(), { ...SENDER, fetch: endpoint.fetch, token: "Az09-._~+/abc==" });

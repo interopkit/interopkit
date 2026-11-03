@@ -1441,6 +1441,13 @@ export const RULES: readonly Rule[] = [
     test: "packages/learning-analytics/test/build.test.ts",
   },
   {
+    rule: "Caliper data that JSON cannot write is a DataError of the call, before any request.",
+    file: "packages/learning-analytics/src/send/send-caliper.ts",
+    find: "throw new DataError(`The Caliper data must be JSON: ${reason}`);",
+    replace: "throw error;",
+    test: "packages/learning-analytics/test/send.test.ts",
+  },
+  {
     rule: "The audience of a registration is the audience of the client assertion.",
     file: "packages/tool-integration/src/tool/token.ts",
     find: "...(audience === undefined ? {} : { audience })",

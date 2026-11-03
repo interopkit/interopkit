@@ -65,11 +65,11 @@ The request is a `POST` with `Content-Type: application/json` and, when there is
 body has the properties `sensor`, `sendTime`, `dataVersion` (the Caliper context) and `data`, and no others. At least one event
 or entity describe is needed, as an envelope has at least one, and they may be mixed (section 5.2). Each must have the Caliper
 `@context`, or the context of the Library Use Profile, and an `id`; the sensor does not check the rest, so events from another
-builder go too. Check what is about to go with [`validateEvent`](./validate.md).
+builder go too, as their JSON text: data that JSON cannot write, a bigint or an item that holds itself, is a `DataError`. Check
+what is about to go with [`validateEvent`](./validate.md).
 
 The call goes through `callService` of `@interopkit/core` ([service calls](../core/service.md)). The token travels only in
 the `Authorization` header of the endpoint.
-
 
 ```mermaid
 sequenceDiagram
@@ -149,7 +149,7 @@ into several envelopes is the host's: `sendCaliper` refuses an envelope that is 
 
 | Error                              | When                                                                                                                                                                                                                                                                                                                                     | What to do                                                                                             |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `DataError`                        | An argument has the wrong type or value: an item without a Caliper `@context` or an `id`, a time not in the form, a token with a space, an `http` endpoint, an empty list, a size limit that is not a positive integer, or an envelope above `maxPayloadBytes` | Fix the input, or send fewer events and entities in each envelope. Nothing was sent                    |
+| `DataError`                        | An argument has the wrong type or value: an item without a Caliper `@context` or an `id`, data that JSON cannot write, a time not in the form, a token with a space, an `http` endpoint, an empty list, a size limit that is not a positive integer, or an envelope above `maxPayloadBytes` | Fix the input, or send fewer events and entities in each envelope. Nothing was sent                    |
 | `ServiceError`, status `0`         | The endpoint did not answer, or not within `timeoutMs`                                                                                                                                                                                                                                                                                   | Check the address and the network. Resend the same events with a new `sendTime`                        |
 | `ServiceError`, status 400 to 499  | The endpoint refused the envelope; `body` holds what it said                                                                                                                                                                                                                                                                             | 401 is a bad token. 415 and 422 are an envelope that the endpoint cannot read. Resending does not help |
 | `ServiceError`, status 500 or more | The endpoint failed                                                                                                                                                                                                                                                                                                                      | Resend the same events later with a new `sendTime`                                                     |
