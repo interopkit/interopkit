@@ -242,7 +242,13 @@ jobs:
           else
             pnpm test "${projects[@]}"
           fi
-      # The tests that read the files that pnpm schemas, pnpm corpus and pnpm caliper-tables download at their pinned hashes.
+      # The tests that read the files that pnpm schemas, pnpm corpus and pnpm caliper-tables download at their pinned hashes. Each
+      # download is kept between runs by the hash of the lock that pins it, and a file that holds its pinned hash is not fetched.
+      - if: needs.changes.outputs.projects != ''
+        uses: actions/cache@v5
+        with:
+          path: .cache/schemas
+          key: schemas-${{ hashFiles('scripts/schemas.lock.json') }}
       - if: needs.changes.outputs.projects != ''
         run: pnpm schemas
       # The repositories that pnpm corpus downloads, kept between runs by the hash of the lock that pins them.
@@ -253,6 +259,11 @@ jobs:
           key: corpus-${{ hashFiles('scripts/corpus.lock.json') }}
       - if: needs.changes.outputs.projects != ''
         run: pnpm corpus
+      - if: needs.changes.outputs.projects != ''
+        uses: actions/cache@v5
+        with:
+          path: .cache/caliper-tables
+          key: caliper-tables-${{ hashFiles('scripts/caliper-tables.lock.json') }}
       - if: needs.changes.outputs.projects != ''
         run: pnpm caliper-tables
       - if: needs.changes.outputs.projects != ''
@@ -278,10 +289,22 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v5
+        with:
+          path: .cache/spec-examples
+          key: spec-examples-${{ hashFiles('scripts/spec-examples.lock.json') }}
       - run: pnpm spec-examples
       # The tables of the Caliper pages, which the tests of learning-analytics compare the model with.
+      - uses: actions/cache@v5
+        with:
+          path: .cache/caliper-tables
+          key: caliper-tables-${{ hashFiles('scripts/caliper-tables.lock.json') }}
       - run: pnpm caliper-tables
       # The test vectors of the cryptosuite read the contexts that pnpm schemas downloads.
+      - uses: actions/cache@v5
+        with:
+          path: .cache/schemas
+          key: schemas-${{ hashFiles('scripts/schemas.lock.json') }}
       - run: pnpm schemas
       # The oracle of the tests of learning-analytics reads the JSON schemas of Caliper from the repository that pnpm corpus
       # downloads, kept between runs by the hash of the lock that pins it.
@@ -352,6 +375,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # The benchmarks of selective-disclosure and competency-frameworks read the contexts and the schemas that pnpm schemas
       # downloads at their pinned hashes.
+      - uses: actions/cache@v5
+        with:
+          path: .cache/schemas
+          key: schemas-${{ hashFiles('scripts/schemas.lock.json') }}
       - run: pnpm schemas
       # The benchmarks of learning-analytics read the fixtures and the schemas of caliper-spec that pnpm corpus downloads, and
       # those of course-launch the packages of CATAPULT.
@@ -439,6 +466,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       # The service serves the contexts that pnpm schemas downloads at their pinned hashes, and no other.
+      - uses: actions/cache@v5
+        with:
+          path: .cache/schemas
+          key: schemas-${{ hashFiles('scripts/schemas.lock.json') }}
       - run: pnpm schemas
       - run: pnpm w3c-suites
 
@@ -457,6 +488,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # The credentials of the test are signed under the contexts that pnpm schemas downloads at their pinned hashes.
+      - uses: actions/cache@v5
+        with:
+          path: .cache/schemas
+          key: schemas-${{ hashFiles('scripts/schemas.lock.json') }}
       - run: pnpm schemas
       - run: pnpm validator
 

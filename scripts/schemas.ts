@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { downloadBytes } from "./download.ts";
 
 /** A file that tests read, pinned to the SHA-256 of its bytes. */
 export interface SchemaFile {
@@ -22,13 +23,6 @@ const CONCURRENCY = 4;
 /** Returns the SHA-256 of some bytes as lowercase hexadecimal. */
 export function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
-}
-
-/** Downloads a file and returns its bytes. */
-async function download(url: string): Promise<Uint8Array> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Downloading ${url} failed: HTTP ${response.status}.`);
-  return new Uint8Array(await response.arrayBuffer());
 }
 
 /** Runs a function on every item, a few at a time, and returns the results in order. */
@@ -58,7 +52,7 @@ async function isCurrent(directory: string, schema: SchemaFile): Promise<boolean
 /** Downloads a file and writes it when its hash is the pinned one; returns why it did not. */
 async function fetchOne(directory: string, schema: SchemaFile): Promise<string | undefined> {
   try {
-    const bytes = await download(schema.url);
+    const bytes = await downloadBytes(schema.url);
     const hash = sha256(bytes);
     if (hash !== schema.sha256) return `${schema.url} has the SHA-256 ${hash}, not the pinned ${schema.sha256}.`;
     await writeFile(join(directory, schema.file), bytes);
@@ -115,7 +109,7 @@ export async function downloadSchemas(root: string): Promise<string[]> {
 /** Downloads every file and writes its SHA-256 into the list. */
 export async function pinSchemas(root: string): Promise<void> {
   const list = loadList(root);
-  const hashes = await mapConcurrently(list, async (schema) => sha256(await download(schema.url)));
+  const hashes = await mapConcurrently(list, async (schema) => sha256(await downloadBytes(schema.url)));
   const pinned = list.map((schema, index) => ({ ...schema, sha256: hashes[index] }));
   writeFileSync(join(root, LIST_PATH), `${JSON.stringify(pinned, null, 2)}\n`);
   console.log(`Pinned ${pinned.length} schemas.`);

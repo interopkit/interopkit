@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { type CorpusSource, download, fetchSource, loadLock, selectFiles, sha256, withRetries } from "../corpus.ts";
+import { type CorpusSource, fetchSource, loadLock, selectFiles, sha256 } from "../corpus.ts";
 
 let directory = "";
 
@@ -58,44 +58,5 @@ describe("the lock", () => {
       expect(source.sha256).toMatch(/^[0-9a-f]{64}$/);
       expect(source.include.length).toBeGreaterThan(0);
     }
-  });
-});
-
-describe("download", () => {
-  it("aborts a download that stalls, and tries a failed one again a bounded number of times", async () => {
-    const { createServer } = await import("node:http");
-    let requests = 0;
-    const server = createServer((_, response) => {
-      requests += 1;
-      response.writeHead(200);
-      response.write("a");
-      // The rest never comes: the connection stays open with no byte.
-    });
-    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
-    const address = server.address();
-    const url = `http://127.0.0.1:${typeof address === "object" && address !== null ? address.port : 0}/archive`;
-    try {
-      const file = join(directory, "stalled");
-      await expect(withRetries(() => download(url, file, 100), 2, 1)).rejects.toThrow("No byte");
-      expect(requests).toBe(2);
-    } finally {
-      server.closeAllConnections();
-      server.close();
-    }
-  });
-
-  it("returns what a download gives once it succeeds", async () => {
-    let tries = 0;
-    expect(
-      await withRetries(
-        async () => {
-          tries += 1;
-          if (tries < 2) throw new Error("Reset.");
-          return "done";
-        },
-        3,
-        1,
-      ),
-    ).toBe("done");
   });
 });

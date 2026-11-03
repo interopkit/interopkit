@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { downloadText } from "./download.ts";
 import { mapConcurrently, sha256 } from "./schemas.ts";
 
 /** A specification page of Caliper whose tables tests read, pinned to the SHA-256 of the tables that `parseCaliperPage` finds. */
@@ -547,11 +548,14 @@ export function tablesDirectory(root: string): string {
   return join(root, TABLES_PATH);
 }
 
+/** Tells whether a file holds the bytes of a pinned hash. */
+function isWritten(file: string, pinned: string): boolean {
+  return existsSync(file) && sha256(readFileSync(file)) === pinned;
+}
+
 /** Downloads a page and returns its tables. */
 async function readPage(page: CaliperPage): Promise<CaliperTables> {
-  const response = await fetch(page.url);
-  if (!response.ok) throw new Error(`Downloading ${page.url} failed: HTTP ${response.status}.`);
-  const html = await response.text();
+  const html = await downloadText(page.url);
   return page.layout === "v1p1" ? parseCaliper11Page(html) : parseCaliperPage(html);
 }
 
@@ -566,6 +570,8 @@ export async function fetchCaliperTables(root: string): Promise<void> {
   mkdirSync(directory, { recursive: true });
   const reasons = await mapConcurrently(loadLock(root), async (page) => {
     try {
+      // Tables written already with their pinned hash are not read again, so a cache of them saves the pages.
+      if (isWritten(join(directory, page.file), page.sha256)) return undefined;
       const tables = await readPage(page);
       const hash = tablesHash(tables);
       if (hash !== page.sha256)

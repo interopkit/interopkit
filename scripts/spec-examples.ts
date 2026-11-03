@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { downloadText } from "./download.ts";
 import { mapConcurrently, sha256 } from "./schemas.ts";
 
 /**
@@ -144,11 +145,14 @@ export function examplesDirectory(root: string): string {
   return join(root, EXAMPLES_PATH);
 }
 
+/** Tells whether a file holds the bytes of a pinned hash. */
+function isWritten(file: string, pinned: string): boolean {
+  return existsSync(file) && sha256(readFileSync(file)) === pinned;
+}
+
 /** Downloads a page and returns its examples. */
 async function readPage(page: SpecPage): Promise<unknown[]> {
-  const response = await fetch(page.url);
-  if (!response.ok) throw new Error(`Downloading ${page.url} failed: HTTP ${response.status}.`);
-  const text = await response.text();
+  const text = await downloadText(page.url);
   if (page.url.endsWith(".md")) return markdownJsonBlocks(text);
   return page.bodies === true ? httpBodyBlocks(text) : jsonBlocks(text);
 }
@@ -164,6 +168,8 @@ export async function fetchSpecExamples(root: string): Promise<void> {
   mkdirSync(directory, { recursive: true });
   const reasons = await mapConcurrently(loadLock(root), async (page) => {
     try {
+      // Examples written already with their pinned hash are not read again, so a cache of them saves the pages.
+      if (isWritten(join(directory, page.file), page.sha256)) return undefined;
       const blocks = await readPage(page);
       const hash = examplesHash(blocks);
       if (hash !== page.sha256)

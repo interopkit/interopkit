@@ -2,6 +2,7 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { downloadBytes } from "../../scripts/download.ts";
 
 const ROOT = resolve(import.meta.dirname, "../..");
 const CACHE = join(ROOT, ".cache/adl-lrs");
@@ -61,9 +62,7 @@ async function install(lock: SuiteLock): Promise<string> {
   if (existsSync(join(directory, "node_modules/.package-lock.json"))) return directory;
   rmSync(directory, { recursive: true, force: true });
   mkdirSync(directory, { recursive: true });
-  const response = await fetch(`https://codeload.github.com/${lock.repository}/tar.gz/${lock.commit}`);
-  if (!response.ok) throw new Error(`Downloading the suite failed: HTTP ${response.status}.`);
-  const archive = new Uint8Array(await response.arrayBuffer());
+  const archive = await downloadBytes(`https://codeload.github.com/${lock.repository}/tar.gz/${lock.commit}`);
   const hash = createHash("sha256").update(archive).digest("hex");
   if (hash !== lock.sha256)
     throw new Error(`The archive of the suite has the hash ${hash}, and the lock pins ${lock.sha256}.`);
