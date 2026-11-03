@@ -1,15 +1,9 @@
-import { DataError, retryAfterSeconds, ServiceError } from "@interopkit/core";
-import { hasMoreTokensThan, MAX_JSON_TOKENS } from "@interopkit/core/checks";
+import { type StatusDetail as DetailOf, readStatusDetail, type ServiceError } from "@interopkit/core";
 import type { ImsxStatusInfo } from "../model/index.js";
 import { readEntity } from "../read/index.js";
 
-/** What a server said when it refused a request. */
-export interface StatusDetail {
-  /** The `imsx_StatusInfo` in the body of the answer, when it has one that reads. */
-  readonly info?: ImsxStatusInfo;
-  /** The seconds that `Retry-After` asks the client to wait, when it gives a number of seconds. */
-  readonly retryAfterSeconds?: number;
-}
+/** What a server said when it refused a request: the `imsx_StatusInfo` in the body of its answer, and how long it asks to wait. */
+export type StatusDetail = DetailOf<ImsxStatusInfo>;
 
 /**
  * Reads what a server said in the answer that made a call fail: its status, if the body is one, and how long it asks the
@@ -27,17 +21,5 @@ export interface StatusDetail {
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#retry-behavior | Open Badges 3.0, Retry Behavior}
  */
 export function readStatusInfo(error: ServiceError): StatusDetail {
-  if (!(error instanceof ServiceError)) throw new DataError("The error must be a ServiceError.");
-  const detail: { info?: ImsxStatusInfo; retryAfterSeconds?: number } = {};
-  // A body of more tokens than a status can have is not one, and is not parsed.
-  if (!hasMoreTokensThan(error.body, MAX_JSON_TOKENS)) {
-    try {
-      detail.info = readEntity("imsx_StatusInfo", JSON.parse(error.body));
-    } catch {
-      // A body that is not JSON, or not a status, is an answer without detail and not a fault of the caller.
-    }
-  }
-  const seconds = retryAfterSeconds(error.headers);
-  if (seconds !== undefined) detail.retryAfterSeconds = seconds;
-  return detail;
+  return readStatusDetail(error, (json) => readEntity("imsx_StatusInfo", json));
 }

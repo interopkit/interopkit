@@ -97,6 +97,7 @@ which hold them by name in lower case; a fourth gives the address of a link:
 | `totalCountOf(headers)`   | `X-Total-Count`                | The count, or `undefined` when the header is absent or is not a whole number of at most 15 digits                  |
 | `hasNextLink(headers)`    | `Link` (RFC 8288)              | `undefined` without the header, else whether a value has the relation `next`, quoted or not, in any case, among several |
 | `retryAfterSeconds(headers)` | `Retry-After` (RFC 9110)    | The seconds, or `undefined` when it is absent, gives a date (that needs a clock) or is not a whole number           |
+| `hasNextPage(headers, offset, received, limit)` | `X-Total-Count`, then `Link` | Whether a list paged by `limit` and `offset` has more after a page: while `offset` is below the count, else when a `Link` value has the relation `next`, else when the page holds the `limit` that the request asked for |
 | `linkTarget(headers, relation, requestUrl)` | `Link` (RFC 8288) | The address of the first value with the relation, resolved against `requestUrl`, when it is `https` on the origin of `requestUrl` and has no user information; else `undefined` |
 
 ```ts
@@ -117,6 +118,35 @@ linkTarget(headers, "last", "https://x.example/items?limit=10"); // => undefined
 A client that followed any address in a header could be led anywhere, with its bearer token. `hasNextLink` answers only
 whether a next page exists, for a client that builds each request from its own base. `linkTarget` serves a binding whose next
 page is an opaque address, such as the paging of LTI Advantage: it gives the address only on the origin that answered.
+
+## The body of an answer
+
+A client reads what a server it does not control answers with three functions, which name the service in every sentence:
+
+| Function                                 | Gives                                                                                                     |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `readAnswerJson(response, what, options)` | The JSON of the body: UTF-8 text whose levels (`maxDepth`, 64) and tokens (`maxTokens`, 1,000,000) are counted in one reading before it is parsed; a text over both is refused for its depth |
+| `readAnswer(what, standard, read)`       | What `read` returns; whatever it throws becomes a `DataError`: `<what> answered with data that is not valid <standard>: <reason>` |
+| `readStatusDetail(error, readInfo)`      | What a server said when it refused: `info`, the body as `readInfo` reads it, left out when the body is not JSON, has more than 1,000,000 tokens or is refused by `readInfo`; and `retryAfterSeconds`, `Retry-After` in seconds |
+
+```ts
+import { readAnswer, readAnswerJson, readStatusDetail, ServiceError } from "@interopkit/core";
+
+const what = "The service at https://x.example/items";
+const answer = { status: 200, headers: {}, body: new TextEncoder().encode('{"items":[1,2]}') };
+const json = readAnswerJson(answer, what, { maxTokens: 100 });
+readAnswer(what, "CASE", () => json.items.length); // => 2
+const refusal = new ServiceError("refused", 429, '{"code":"busy"}', { headers: { "retry-after": "30" } });
+readStatusDetail(refusal, (body) => body.code); // => { info: "busy", retryAfterSeconds: 30 }
+```
+
+| Case                                             | `DataError` of `readAnswerJson`                                                              |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| The body is not UTF-8                            | `<what> answered with a body that is not UTF-8 text.`                                        |
+| It nests deeper than `maxDepth`                  | `<what> answered with JSON that nests more than <maxDepth> levels.`                          |
+| It has more tokens than `maxTokens`              | `<what> answered with a body of more than <maxTokens> tokens of JSON, above the limit of the option maxTokens.` |
+| It is not JSON                                   | `<what> answered with a body that is not JSON.`                                              |
+| An option is not a positive integer              | Names the option                                                                             |
 
 ## Failure paths
 

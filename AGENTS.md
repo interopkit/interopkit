@@ -87,7 +87,8 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                  |
 | `packages/core/src/call-options.ts`  | `CallOptions`, the `signal` of every call that waits on I/O                                         |
 | `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`                       |
-| `packages/core/src/answer-headers.ts` | `totalCountOf`, `hasNextLink`, `retryAfterSeconds`, `linkTarget`: the paging and retry headers of an answer |
+| `packages/core/src/answer-headers.ts` | `totalCountOf`, `hasNextLink`, `hasNextPage`, `retryAfterSeconds`, `linkTarget`: the paging and retry headers of an answer |
+| `packages/core/src/answer.ts`        | `readAnswerJson`, `readAnswer`, `readStatusDetail`: the JSON, the data and the status of the answer of a service, for a client |
 | `packages/core/src/http/`            | The request and answer types and their helpers, which `@interopkit/core/http` exports               |
 | `packages/core/src/signer/`          | `Signer`, `signerFromCryptoKey`, `signCompactJws`                                                   |
 | `packages/core/src/random.ts`        | `Random`, `SYSTEM_RANDOM`                                                                           |
@@ -300,7 +301,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   callers share, such as a key set fetch, runs to its own timeout and takes no caller's signal. Every port receives the
   signal.
 - Every call to a service goes through `requestService`, or `callService`, which decodes its text: `redirect` is `"manual"`,
-  any 3xx is an error, an answer has at most `maxBytes`, 65,536 by default, and every wait is raced against the deadline.
+  any 3xx is an error, an answer has at most `maxBytes`, 65,536 by default, and every wait is raced against the deadline. A
+  client reads the JSON of an answer with `readAnswerJson`, its data with `readAnswer`, a refusal with `readStatusDetail` and the
+  paging of a list with `hasNextPage`.
 - A URL that a message or a document gives, which a server fetches or sends a token to, passes `checkRemoteUrl` of `core/checks`
   in `tool-integration`, or an origin that the host lists; a URL that the host configures passes `checkHttpsUrl`.
 - A handler takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, checks the request with

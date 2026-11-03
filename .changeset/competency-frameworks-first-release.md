@@ -23,3 +23,6 @@ of at most 2,048 characters each) and the `imsx_StatusInfo` of a
 failure, refuses what `authorize` refuses with 401, 403 or 429 (an `AccessDecision` of `@interopkit/core/http`), passes the store the
 page as an `OffsetPage` of `@interopkit/core/http`, and serves the discovery file that `localizeOpenApi` makes. `parseCaseQuery` reads the query grammar, and
 `queryEntities` filters and sorts documents in memory.
+
+The client refuses an answer that nests more than 128 levels of JSON before it parses it (an extension, which the readers bound to
+64 levels, may sit below the levels of a package), and says that an answer whose bytes are not UTF-8 is not UTF-8 text.

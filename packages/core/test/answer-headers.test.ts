@@ -1,6 +1,14 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { DataError, hasNextLink, linkTarget, retryAfterSeconds, ServiceError, totalCountOf } from "../src/index.js";
+import {
+  DataError,
+  hasNextLink,
+  hasNextPage,
+  linkTarget,
+  retryAfterSeconds,
+  ServiceError,
+  totalCountOf,
+} from "../src/index.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
 const RUNS = { seed: 20_241_106, numRuns: 400 };
@@ -39,6 +47,19 @@ describe("the paging headers", () => {
       expect(totalCountOf({ "x-total-count": value })).toBeUndefined();
     }
     expect(totalCountOf({})).toBeUndefined();
+  });
+
+  it("say whether a page follows by the count first, then by the Link header, then by a page as long as the request", () => {
+    const next = { link: '<https://x.example/a?offset=20>; rel="next"' };
+    // The count decides, whatever the Link header and the size of the page say.
+    expect(hasNextPage({ "x-total-count": "25", link: '<https://x.example/a>; rel="last"' }, 20, 10, 10)).toBe(true);
+    expect(hasNextPage({ "x-total-count": "20", ...next }, 20, 10, 10)).toBe(false);
+    // Without a count, the Link header decides, whatever the size of the page says.
+    expect(hasNextPage(next, 20, 3, 10)).toBe(true);
+    expect(hasNextPage({ link: '<https://x.example/a>; rel="first"' }, 20, 10, 10)).toBe(false);
+    // Without either, a page as long as the request may be followed by another, and a shorter one ends the list.
+    expect(hasNextPage({}, 20, 10, 10)).toBe(true);
+    expect(hasNextPage({ "x-total-count": "many" }, 20, 9, 10)).toBe(false);
   });
 });
 

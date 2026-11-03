@@ -1,10 +1,9 @@
-import { type CallOptions, DEFAULT_TIMEOUT_MS, type Fetch, requestService } from "@interopkit/core";
+import { type CallOptions, DEFAULT_TIMEOUT_MS, type Fetch, readAnswerJson, requestService } from "@interopkit/core";
 import { guardSchema, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { CREDENTIAL_APIS, type CredentialApi } from "../model/index.js";
 import { usableDescriptionSchema } from "../read/internal.js";
 import { apiRoot } from "./config.js";
-import { jsonOf, textOf } from "./request.js";
 
 /**
  * The most bytes of a service description. The one that the specifications print is a profiled OpenAPI file with every
@@ -104,7 +103,7 @@ export async function discoverService(
     { method: "GET", headers: { accept: "application/json" } },
     { maxBytes: DISCOVERY_MAX_BYTES, expect: [200] },
   );
-  const json = jsonOf(textOf(response, what), what);
+  const json = readAnswerJson(response, what);
   const { info, components } = parseWith(usableDescriptionSchema, json, what);
   const scheme = components.securitySchemes.OAuth2ACG;
   const flow = scheme.flows.authorizationCode;

@@ -51,6 +51,32 @@ export function hasNextLink(headers: Readonly<Record<string, string>>): boolean 
 }
 
 /**
+ * Tells whether a server has more items of a collection after a page of a list that it pages by `limit` and `offset`, as the REST
+ * bindings of CASE and Open Badges do.
+ *
+ * @remarks
+ * `X-Total-Count` decides when it is a count: more follow while the offset is below it. Without it, the `Link` header decides
+ * by a value with the relation `next`. Without either, more may follow when the page is as long as the request asked for, so a
+ * short page ends the list.
+ *
+ * @param headers - The headers of the answer by name in lower case.
+ * @param offset - The offset after the page: the items of the pages so far.
+ * @param received - The items of the page.
+ * @param limit - The items that the request asked for.
+ * @returns Whether a next page may hold more items.
+ */
+export function hasNextPage(
+  headers: Readonly<Record<string, string>>,
+  offset: number,
+  received: number,
+  limit: number,
+): boolean {
+  const total = totalCountOf(headers);
+  if (total !== undefined) return offset < total;
+  return hasNextLink(headers) ?? received >= limit;
+}
+
+/**
  * Returns the address that a `Link` header gives for a relation, such as the `next` page of a collection, when it lies on the
  * origin of the request.
  *

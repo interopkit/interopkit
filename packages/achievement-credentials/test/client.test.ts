@@ -8,7 +8,7 @@ import {
   discoverService,
   readStatusInfo,
 } from "../src/client/index.js";
-import { readAnswer, seenKeyOf } from "../src/client/internal.js";
+import { seenKeyOf } from "../src/client/internal.js";
 import { readCredential } from "../src/index.js";
 import { BASE, fakeServer, JWS, json, text } from "./fake-server.js";
 import { achievementCredential, clrCredential, PROFILE } from "./fixtures.js";
@@ -698,22 +698,5 @@ describe("readStatusInfo", () => {
     for (const error of [null, new Error("x"), "x", {}]) {
       expect(() => readStatusInfo(error as never)).toThrow(DataError);
     }
-  });
-});
-
-describe("the wrapper of the readers of an answer", () => {
-  it("names the answer that was wrong, whatever a reader throws", () => {
-    const settings = { api: "clr" } as never;
-    expect(() =>
-      readAnswer(settings, "The CLR API at a", () => {
-        throw new DataError("bad");
-      }),
-    ).toThrow("The CLR API at a answered with data that is not valid CLR: bad");
-    expect(() =>
-      readAnswer(settings, "The CLR API at a", () => {
-        throw "plain text";
-      }),
-    ).toThrow("The CLR API at a answered with data that is not valid CLR: plain text");
-    expect(readAnswer(settings, "x", () => 5)).toBe(5);
   });
 });

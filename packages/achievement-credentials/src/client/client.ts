@@ -1,10 +1,11 @@
 import {
   type CallOptions,
   DataError,
-  hasNextLink,
+  hasNextPage,
+  readAnswer,
+  readAnswerJson,
   ServiceError,
   type ServiceResponse,
-  totalCountOf,
 } from "@interopkit/core";
 import {
   checkProperties,
@@ -20,7 +21,7 @@ import type { AnyVerifiableCredential, Profile } from "../model/index.js";
 import { readCredential, readEntity } from "../read/index.js";
 import { jws } from "../read/internal.js";
 import { type CredentialsClientConfig, type Settings, settingsOf } from "./config.js";
-import { type Body, type Call, jsonOf, send, signalOf, textOf } from "./request.js";
+import { type Body, type Call, send, signalOf } from "./request.js";
 
 /** The calls to an Open Badges or CLR resource server: the credentials and the profile of the user whose token the host holds. */
 export interface CredentialsClient {
@@ -111,7 +112,7 @@ function readPage(settings: Settings, json: unknown, what: string): (string | An
       `${what} answered with ${credentials.length + signed.length} credentials, more than the ${settings.pageSize} that the request asked for.`,
     );
   }
-  return readAnswer(settings, what, () => [
+  return readAnswer(what, STANDARDS[settings.api], () => [
     ...credentials.map((credential) => {
       return readCredential(credential, { kind: KINDS[settings.api] });
     }),
@@ -119,24 +120,6 @@ function readPage(settings: Settings, json: unknown, what: string): (string | An
       return parseWith(jws, compact, "A compact JWS of the page");
     }),
   ]);
-}
-
-/** Runs a reader on an answer, and says whose answer it was when the data is not valid. */
-export function readAnswer<TValue>(settings: Settings, what: string, read: () => TValue): TValue {
-  try {
-    return read();
-  } catch (error) {
-    // The readers throw a DataError; anything else they throw is still the fault of the answer that they were given.
-    const reason = error instanceof Error ? error.message : String(error);
-    throw new DataError(`${what} answered with data that is not valid ${STANDARDS[settings.api]}: ${reason}`);
-  }
-}
-
-/** Tells whether the server has more credentials after a page, from the headers, else from the size of the page. */
-function hasMore(headers: Readonly<Record<string, string>>, offset: number, received: number, limit: number): boolean {
-  const total = totalCountOf(headers);
-  if (total !== undefined) return offset < total;
-  return hasNextLink(headers) ?? received >= limit;
 }
 
 const encoder = new TextEncoder();
@@ -163,13 +146,13 @@ async function* pagesOfCredentials(
     const url = `${settings.root}/credentials?${query}`;
     const response = await send(settings, { method: "GET", url, accept: "application/json", expect: [200] }, signal);
     const what = `The ${STANDARDS[settings.api]} API at ${url}`;
-    const items = readPage(settings, jsonOf(textOf(response, what), what, settings.maxTokens), what);
+    const items = readPage(settings, readAnswerJson(response, what, { maxTokens: settings.maxTokens }), what);
     if (items.length === 0) return;
     const keyed = await Promise.all(items.map(async (item) => ({ item, key: await seenKeyOf(item) })));
     const fresh = keyed.filter(({ key }) => !seen.has(key) && seen.add(key)).map(({ item }) => item);
     yield* fresh;
     offset += items.length;
-    if (fresh.length === 0 || !hasMore(response.headers, offset, items.length, settings.pageSize)) return;
+    if (fresh.length === 0 || !hasNextPage(response.headers, offset, items.length, settings.pageSize)) return;
   }
 }
 
@@ -211,8 +194,8 @@ export function createCredentialsClient(config: CredentialsClientConfig): Creden
   /** Reads the profile in the answer of a call that expected one. */
   function profileOf(response: ServiceResponse, url: string): Profile {
     const name = what(url);
-    const json = jsonOf(textOf(response, name), name, settings.maxTokens);
-    return readAnswer(settings, name, () => readEntity("Profile", json));
+    const json = readAnswerJson(response, name, { maxTokens: settings.maxTokens });
+    return readAnswer(name, STANDARDS[settings.api], () => readEntity("Profile", json));
   }
 
   return {

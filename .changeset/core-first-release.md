@@ -39,3 +39,9 @@ holds at most `DEFAULT_MAX_FINDINGS`, 1,000, and ends a list that stopped with a
 does not end with one, written as `URL` writes the path of a request, so that `/café` and `/caf%C3%A9` are one path and a path
 whose dot segments leave `/` is refused. The provider of `competency-frameworks`, the LRS of `learning-records` and the provider
 of `achievement-credentials` read their `basePath` with it.
+
+`readAnswerJson` reads the JSON of the answer of a service within `maxDepth` (64) and `maxTokens` (1,000,000), counted in one
+reading before it is parsed; `readAnswer` runs a reader on the data of an answer and names the service and the standard when the
+data is not valid; `readStatusDetail` reads the status in the body of a refusal with the reader of a package, and its
+`Retry-After`; `hasNextPage` tells from `X-Total-Count`, `Link` and the size of a page whether a list paged by `limit` and
+`offset` goes on. The clients of `competency-frameworks` and `achievement-credentials` read their answers with them.

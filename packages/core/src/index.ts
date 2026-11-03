@@ -1,11 +1,19 @@
 /**
  * The foundation that the interopkit packages share: their errors, a clock, the options of a call that waits on I/O, a cache of
- * shared loads and one of JWK Sets, and the call to a service over HTTP with the paging and retry headers of its answer. The checks of their arguments are in `@interopkit/core/checks`, and requests and answers
+ * shared loads and one of JWK Sets, and the call to a service over HTTP with the reading of its answer: its JSON, its status
+ * and its paging and retry headers. The checks of their arguments are in `@interopkit/core/checks`, and requests and answers
  * as plain data are in `@interopkit/core/http`.
  *
  * @module @interopkit/core
  */
-export { hasNextLink, linkTarget, retryAfterSeconds, totalCountOf } from "./answer-headers.js";
+export {
+  type ReadAnswerJsonOptions,
+  readAnswer,
+  readAnswerJson,
+  readStatusDetail,
+  type StatusDetail,
+} from "./answer.js";
+export { hasNextLink, hasNextPage, linkTarget, retryAfterSeconds, totalCountOf } from "./answer-headers.js";
 export type { CallOptions } from "./call-options.js";
 export { callPort, type PortOutcome } from "./call-port.js";
 export { type Clock, checkClock, readClock, SYSTEM_CLOCK } from "./clock.js";

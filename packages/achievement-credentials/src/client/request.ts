@@ -1,18 +1,9 @@
 import { DataError, requestService, type ServiceResponse, untilAborted } from "@interopkit/core";
-import {
-  checkAbortSignal,
-  checkRecord,
-  exceededJsonLimit,
-  MAX_JSON_DEPTH,
-  MAX_JSON_TOKENS,
-  nestsDeeperThan,
-} from "@interopkit/core/checks";
+import { checkAbortSignal, checkRecord } from "@interopkit/core/checks";
 import type { Settings } from "./config.js";
 
 /** An access token as RFC 6750 and the servers write it: printable characters other than a space, so that it cannot end the header. */
 const TOKEN = /^[\x21-\x7e]+$/u;
-
-const DECODER = new TextDecoder("utf-8", { fatal: true });
 
 /** The body of a request and its `Content-Type`. */
 export interface Body {
@@ -75,36 +66,4 @@ export async function send(settings: Settings, call: Call, signal: AbortSignal |
     },
     { maxBytes, expect: call.expect, ...(signal === undefined ? {} : { signal }) },
   );
-}
-
-/** The text of an answer, which must be UTF-8. */
-export function textOf(response: ServiceResponse, what: string): string {
-  try {
-    return DECODER.decode(response.body);
-  } catch {
-    throw new DataError(`${what} answered with a body that is not UTF-8 text.`);
-  }
-}
-
-/**
- * Reads the text of an answer as JSON, which nests at most `MAX_JSON_DEPTH` levels and has at most `maxTokens` tokens, so that
- * no parser builds a deeper or a larger tree.
- */
-export function jsonOf(text: string, what: string, maxTokens: number = MAX_JSON_TOKENS): unknown {
-  // One reading finds the first limit that the text passes. The depth is refused before the tokens, so a text that passes the
-  // tokens first is read on for its depth.
-  const excess = exceededJsonLimit(text, MAX_JSON_DEPTH, maxTokens);
-  if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, MAX_JSON_DEPTH))) {
-    throw new DataError(`${what} answered with JSON that nests more than ${MAX_JSON_DEPTH} levels.`);
-  }
-  if (excess === "tokens") {
-    throw new DataError(
-      `${what} answered with a body of more than ${maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
-    );
-  }
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new DataError(`${what} answered with a body that is not JSON.`);
-  }
 }

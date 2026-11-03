@@ -1,20 +1,14 @@
 import {
   type CallOptions,
   DataError,
-  hasNextLink,
+  hasNextPage,
+  readAnswer,
+  readAnswerJson,
   requestService,
   type ServiceResponse,
-  totalCountOf,
   untilAborted,
 } from "@interopkit/core";
-import {
-  checkAbortSignal,
-  checkRecord,
-  describe,
-  hasMoreTokensThan,
-  isRecord,
-  parseWith,
-} from "@interopkit/core/checks";
+import { checkAbortSignal, checkRecord, describe, isRecord, MAX_JSON_DEPTH, parseWith } from "@interopkit/core/checks";
 import type {
   CasePackage,
   CaseQuery,
@@ -114,8 +108,6 @@ export interface CaseClient {
 /** The name of the file that a provider publishes for discovery, below the path of the version (REST binding 2.5). */
 const DISCOVERY_PATH = `discovery/${DISCOVERY_FILE}`;
 
-const DECODER = new TextDecoder("utf-8", { fatal: true });
-
 /** Characters that a header value must not hold: they would end the header and start another. */
 const HEADER_BREAK = /[\r\n\0]/u;
 
@@ -127,36 +119,14 @@ function signalOf(options: unknown): AbortSignal | undefined {
   return options.signal;
 }
 
-/** Reads the body of an answer as JSON, after counting its tokens: the memory of a parse grows with them. */
-function parseJson(response: ServiceResponse, settings: Settings, what: string): unknown {
-  let text: string;
-  try {
-    text = DECODER.decode(response.body);
-  } catch {
-    throw new DataError(`${what} answered with a body that is not JSON.`);
-  }
-  if (hasMoreTokensThan(text, settings.maxTokens)) {
-    throw new DataError(
-      `${what} answered with a body of more than ${settings.maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
-    );
-  }
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new DataError(`${what} answered with a body that is not JSON.`);
-  }
-}
+/**
+ * The most levels of an answer. The readers bound each extension to 64 levels below the object that holds it, so an answer that
+ * they accept may nest deeper than 64, and none nests deeper than twice that.
+ */
+const MAX_ANSWER_DEPTH = 2 * MAX_JSON_DEPTH;
 
-/** Runs a reader on an answer, and says whose answer it was when the data is not valid CASE. */
-function readAnswer<TValue>(what: string, read: () => TValue): TValue {
-  try {
-    return read();
-  } catch (error) {
-    // The readers throw a DataError; anything else they throw is still the fault of the answer that they were given.
-    const reason = error instanceof Error ? error.message : String(error);
-    throw new DataError(`${what} answered with data that is not valid CASE: ${reason}`);
-  }
-}
+/** The name of the standard in a sentence about an answer that does not follow it. */
+const STANDARD = "CASE";
 
 /** Makes one GET request with the credential of the host, and returns the answers that `expect` lists. */
 async function get(
@@ -206,16 +176,9 @@ function endpoint<TValue>(settings: Settings, collection: string, read: (json: u
     const response = await get(settings, url, [200, 404], signal);
     if (response.status === 404) return undefined;
     const what = `The CASE provider at ${url}`;
-    const json = parseJson(response, settings, what);
-    return readAnswer(what, () => read(json));
+    const json = readAnswerJson(response, what, { maxDepth: MAX_ANSWER_DEPTH, maxTokens: settings.maxTokens });
+    return readAnswer(what, STANDARD, () => read(json));
   };
-}
-
-/** Tells whether the provider has more documents after a page, from the headers, else from the size of the page. */
-function hasMore(headers: Readonly<Record<string, string>>, offset: number, received: number, limit: number): boolean {
-  const total = totalCountOf(headers);
-  if (total !== undefined) return offset < total;
-  return hasNextLink(headers) ?? received >= limit;
 }
 
 /**
@@ -272,9 +235,9 @@ async function* pagesOfDocuments(
     // A provider that has nothing more may answer 404 or an empty list for an offset past the end.
     if (response.status === 404) return;
     const what = `The CASE provider at ${url}`;
-    const json = parseJson(response, settings, what);
+    const json = readAnswerJson(response, what, { maxDepth: MAX_ANSWER_DEPTH, maxTokens: settings.maxTokens });
     if (isRecord(json) && Array.isArray(json.CFDocuments) && json.CFDocuments.length === 0) return;
-    const documents = readAnswer(what, () =>
+    const documents = readAnswer(what, STANDARD, () =>
       selecting
         ? readSelected(json, settings)
         : readEntity("CFDocumentSet", json, { version: settings.version }).CFDocuments,
@@ -285,7 +248,7 @@ async function* pagesOfDocuments(
     });
     yield* fresh;
     offset += documents.length;
-    if (fresh.length === 0 || !hasMore(response.headers, offset, documents.length, settings.pageSize)) return;
+    if (fresh.length === 0 || !hasNextPage(response.headers, offset, documents.length, settings.pageSize)) return;
   }
 }
 
@@ -347,8 +310,8 @@ export function createCaseClient(config: CaseClientConfig): CaseClient {
       const url = `${settings.root}/${DISCOVERY_PATH}`;
       const response = await get(settings, url, [200], signal);
       const what = `The CASE provider at ${url}`;
-      const json = parseJson(response, settings, what);
-      return readAnswer(what, () => parseWith(openApiSchema, json, "The OpenAPI document"));
+      const json = readAnswerJson(response, what, { maxDepth: MAX_ANSWER_DEPTH, maxTokens: settings.maxTokens });
+      return readAnswer(what, STANDARD, () => parseWith(openApiSchema, json, "The OpenAPI document"));
     },
   };
 }
