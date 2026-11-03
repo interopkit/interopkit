@@ -1,5 +1,5 @@
 ---
-"@interopkit/learning-records": minor
+"@interopkit/learning-records": major
 ---
 
 The model of xAPI 2.0: a Statement and everything it holds, the vocabularies, and `StatementIssue`. `readStatement` reads a

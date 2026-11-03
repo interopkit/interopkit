@@ -1,5 +1,5 @@
 ---
-"@interopkit/competency-frameworks": minor
+"@interopkit/competency-frameworks": major
 ---
 
 The model of CASE 1.1 and 1.0: a competency framework package, each entity and set that the service exchanges, and

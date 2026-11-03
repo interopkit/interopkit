@@ -1,5 +1,5 @@
 ---
-"@interopkit/achievement-credentials": minor
+"@interopkit/achievement-credentials": major
 ---
 
 The model of Open Badges 3.0 and CLR 2.0: the credentials (`AchievementCredential`, `EndorsementCredential`,

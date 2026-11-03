@@ -1,5 +1,5 @@
 ---
-"@interopkit/learning-analytics": minor
+"@interopkit/learning-analytics": major
 ---
 
 Caliper Analytics 1.2 events, entities, a sensor and an endpoint. The model has an interface for each of the 69 entities of

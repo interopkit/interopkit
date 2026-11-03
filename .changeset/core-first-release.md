@@ -1,5 +1,5 @@
 ---
-"@interopkit/core": minor
+"@interopkit/core": major
 ---
 
 The foundation of `@interopkit/tool-integration`, `@interopkit/learning-analytics`, `@interopkit/competency-frameworks`,

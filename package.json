@@ -30,6 +30,8 @@
     "check:rules": "node scripts/check-rules.ts",
     "check:licenses": "node scripts/check-licenses.ts",
     "check:audit": "pnpm audit --audit-level=high",
+    "check:release": "node scripts/check-release.ts",
+    "check:tarballs": "pnpm build && node scripts/check-tarballs.ts",
     "format": "biome check --write .",
     "knip": "knip",
     "docs:api": "pnpm build && typedoc",

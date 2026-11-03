@@ -82,6 +82,8 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `pnpm knip`            | Unused files, exports and dependencies                                                                                                                                |
 | `pnpm build`           | The built packages                                                                                                                                                    |
 | `pnpm check:packages`  | publint and Are the Types Wrong on the packed packages                                                                                                                |
+| `pnpm check:release`   | Every package of a changeset is published, and a package at 0.0.0 takes `major`, so that its first release is 1.0.0 |
+| `pnpm check:tarballs`  | Packs the packages, installs them into a scratch project, imports every subpath in Node.js and type-checks them with `bundler` and `node16` resolution |
 | `pnpm check:licenses`  | Every production dependency has an allowed license                                                                                                                    |
 | `pnpm check:audit`     | `pnpm audit` for vulnerabilities of high severity or above                                                                                                            |
 | `pnpm compat`          | Runs the scenarios of the five examples, built as the packages ship, on Node.js, Deno, Bun and workerd; it needs Deno and Bun installed ([compat](compat/README.md)) |

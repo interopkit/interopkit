@@ -1,5 +1,5 @@
 ---
-"@interopkit/selective-disclosure": minor
+"@interopkit/selective-disclosure": major
 ---
 
 The `ecdsa-sd-2023` cryptosuite in its three roles. `addBaseProof` gives an issuer's credential a base proof that signs every

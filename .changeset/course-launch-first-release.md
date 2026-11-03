@@ -1,5 +1,5 @@
 ---
-"@interopkit/course-launch": minor
+"@interopkit/course-launch": major
 ---
 
 cmi5 Quartz. The vocabularies of the specification: `MOVE_ON_VALUES`, `LAUNCH_METHODS`, `LAUNCH_MODES`, `CMI5_VERBS`,
