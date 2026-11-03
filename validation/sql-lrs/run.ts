@@ -13,6 +13,24 @@ const PROJECT = "example-learning-records-sqllrs";
 const READY_LIMIT_MS = 300_000;
 const READY_TRY_MS = 3000;
 
+/** The characters of a name that Docker gives a container. */
+const CONTAINER_NAME = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/u;
+
+/**
+ * The name of the container of this run: `SQLLRS_CONTAINER`, so that the unit that runs it on a shared machine names its own,
+ * or `ik-xapi-sqllrs-` and 8 random hexadecimal digits.
+ */
+function containerName(): string {
+  const named = process.env.SQLLRS_CONTAINER;
+  if (named === undefined || named === "") return `ik-xapi-sqllrs-${randomBytes(4).toString("hex")}`;
+  if (!CONTAINER_NAME.test(named)) {
+    throw new Error(
+      `SQLLRS_CONTAINER must be a name of a Docker container, such as ik-xapi-sqllrs-unit, found ${JSON.stringify(named)}.`,
+    );
+  }
+  return named;
+}
+
 /** Runs a program, passes its output on when asked, and resolves with its exit code and what it printed. */
 function execute(
   command: string,
@@ -73,7 +91,7 @@ async function untilReady(url: string): Promise<void> {
  * and the flows against it, and stops and removes that container, and no other, whatever happens.
  */
 async function main(): Promise<number> {
-  const name = `ik-xapi-sqllrs-${randomBytes(4).toString("hex")}`;
+  const name = containerName();
   const port = await freePort();
   const secret = () => randomBytes(24).toString("hex");
   const [user, password, admin] = [`key-${randomBytes(4).toString("hex")}`, secret(), secret()];

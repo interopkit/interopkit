@@ -37,7 +37,7 @@ A run takes about two minutes. Nothing is kept between runs.
 | Setting     | Value                                                                                                                                                  |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Image       | `yetanalytics/lrsql@sha256:bf5661ab216d07175f6e429951bf53c79f6070d54812285ea4c208f991cf0a04`, which the tag `v0.9.11` names                            |
-| Container   | `ik-xapi-sqllrs-<8 hex digits>`, chosen for the run; no other container is stopped, waited for or removed                                              |
+| Container   | `SQLLRS_CONTAINER` when it is set, so that the unit that runs it names its own (`SQLLRS_CONTAINER=my-unit pnpm sql-lrs`), and else `ik-xapi-sqllrs-<8 hex digits>`, chosen for the run; no other container is stopped, waited for or removed |
 | Port        | A free port on 127.0.0.1; the LRS is not reachable from other hosts                                                                                    |
 | Credentials | The user and the password of the default key, and the password of the admin, are random for the run and exist only in the environment of the processes |
 | Cleanup     | `docker stop`, `docker wait` and `docker rm` of that container run when the tests pass, when they fail and when the start fails                        |
