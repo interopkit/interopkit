@@ -94,7 +94,7 @@ export const CMI5_REQUIREMENTS: readonly Cmi5Requirement[] = [
     ids: ["6.1.0.0-2"],
     asks: "More than 1,000 AUs",
     roles: "LMS",
-    met: { state: "has", tests: ["structure.corpus.test.ts", "memory.test.ts"] },
+    met: { state: "has", tests: ["structure.corpus.test.ts", "lms-flow.test.ts"] },
   },
   {
     section: "6.1, 13.2",

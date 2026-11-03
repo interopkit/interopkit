@@ -125,6 +125,44 @@ describe("a session from launch to satisfaction", () => {
   });
 });
 
+describe("a course of more than 1,000 units", () => {
+  it("imports it, satisfies at registration the blocks its units fill, and launches its last unit", async () => {
+    const host = testHost();
+    const texts = "<title><langstring>T</langstring></title><description><langstring>D</langstring></description>";
+    const unit = (index: number) =>
+      `<au id="https://publisher.example.org/many/au/${index}" moveOn="${index === 1000 ? "Completed" : "NotApplicable"}">${texts}<url>https://content.example.org/${index}.html</url></au>`;
+    const blocks = Array.from(
+      { length: 77 },
+      (_, block) =>
+        `<block id="https://publisher.example.org/many/b/${block}">${texts}${Array.from({ length: 13 }, (_, at) => unit(block * 13 + at)).join("")}</block>`,
+    ).join("");
+    const xml = `<courseStructure xmlns="https://w3id.org/xapi/profiles/cmi5/v1/CourseStructure.xsd"><course id="https://publisher.example.org/many">${texts}</course>${blocks}</courseStructure>`;
+    const course = importCourse(readCourseStructure(xml), {
+      courseId: "many",
+      idBase: `${ORIGIN}/m/`,
+      idNamespace: NAMESPACE,
+    });
+    expect(course.aus).toHaveLength(1001);
+    host.store.courses.set("many", course);
+    const { createRegistration } = await import("../src/lms/index.js");
+    const registration = await createRegistration({ courseId: "many", actor: LEARNER }, host.options);
+    // Every block but the last, which holds the unit that needs completed, is satisfied at registration.
+    expect(registration.satisfiedBlocks).toHaveLength(76);
+    expect(registration.satisfied).toBe(false);
+    const launched = await launchUnit(host, {
+      registration: registration.id,
+      au: "https://publisher.example.org/many/au/1000",
+    });
+    await sendStatement(host, launched, unitStatement(launched, "initialized"));
+    await sendStatement(host, launched, unitStatement(launched, "completed", { completion: true, duration: "PT1M" }));
+    expect(verbsOf(await statementsOf(host, registration.id)).slice(-3)).toStrictEqual([
+      "completed",
+      "satisfied",
+      "satisfied",
+    ]);
+  });
+});
+
 describe("the launch", () => {
   it("writes the launch data and the launched statement with what the structure and the input give", async () => {
     const host = testHost();
