@@ -1,8 +1,23 @@
 import { expect, type TestContext } from "vitest";
 import { alternate, reportRatio } from "../../../scripts/bench-rounds.js";
 
-/** The run options of every benchmark: the time and the number of samples of tinybench, and its warm-up. */
-const BENCH_OPTIONS = { time: 500, iterations: 10, warmupTime: 100, warmupIterations: 3 } as const;
+/** The run options of a benchmark: the time and the number of samples of tinybench, and its warm-up. */
+export interface BenchOptions {
+  readonly time: number;
+  readonly iterations: number;
+  readonly warmupTime: number;
+  readonly warmupIterations: number;
+}
+
+/** The run options of every benchmark whose sample takes well under a second. */
+const BENCH_OPTIONS: BenchOptions = { time: 500, iterations: 10, warmupTime: 100, warmupIterations: 3 };
+
+/**
+ * The run options of a benchmark whose sample takes most of a second on a runner of CI, such as reading 66,001 entries: three
+ * samples a round and one to warm up, so that the six rounds of `alternate` end well within the limit of the test, and the
+ * fastest of the nine samples of each side still gives the ratio.
+ */
+export const HEAVY_BENCH_OPTIONS: BenchOptions = { time: 0, iterations: 3, warmupTime: 0, warmupIterations: 1 };
 
 /**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of a reference in the same run:
@@ -42,13 +57,14 @@ export async function expectRatioInTurns(
   name: keyof typeof RATIOS,
   reference: Timed,
   measured: Timed,
+  options: BenchOptions = BENCH_OPTIONS,
 ): Promise<void> {
   const sides = await alternate(
     context.bench,
     measured.name,
     measured.fn,
     { name: reference.name, run: reference.fn },
-    BENCH_OPTIONS,
+    options,
   );
   const ratio = await reportRatio(context.annotate, name, reference.name, sides, RATIOS[name]);
   expect(ratio, `The fastest sample of ${name} as a multiple of the fastest sample of ${reference.name}`).toBeLessThan(

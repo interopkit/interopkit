@@ -6,7 +6,7 @@ import { BlobReader, ZipReader } from "@zip.js/zip.js/lib/zip-core-native.js";
 import { SaxesParser } from "saxes";
 import { test } from "vitest";
 import { createXsdOracle } from "../../../scripts/xsd-oracle.js";
-import { expectRatioInTurns } from "./budgets.js";
+import { expectRatioInTurns, HEAVY_BENCH_OPTIONS } from "./budgets.js";
 import { catapult, courseStructureXsd } from "./cmi5-corpus.js";
 
 /** LMS suite 101 of CATAPULT: a course structure of 1,001 assignable units, the size the specification names (6.1). */
@@ -54,5 +54,6 @@ test("reads a ZIP64 package of 66,001 entries within a multiple of zip.js listin
     "packageAgainstEntries",
     { name: "zip.js getEntries", fn: async () => new ZipReader(new BlobReader(blob)).getEntries() },
     { name: "readCoursePackage", fn: () => readCoursePackage(blob) },
+    HEAVY_BENCH_OPTIONS,
   );
 });
