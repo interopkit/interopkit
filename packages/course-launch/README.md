@@ -86,26 +86,26 @@ are `@interopkit/core`, `@interopkit/learning-records` (the model and the rules 
 
 ## Supported
 
-[Supported](https://interopkit.dev/_interopkit/course-launch/supported/) lists what of cmi5 the package covers and what it leaves out. It passes CATAPULT's LMS and content suites at `806c0ba` ([evidence](https://interopkit.dev/_interopkit/course-launch/evidence/)).
+[Supported](https://interopkit.wakan.dev/_interopkit/course-launch/supported/) lists what of cmi5 the package covers and what it leaves out. It passes CATAPULT's LMS and content suites at `806c0ba` ([evidence](https://interopkit.wakan.dev/_interopkit/course-launch/evidence/)).
 
 ## Documentation
 
-[Choosing](https://interopkit.dev/_interopkit/course-launch/choosing/) says when the package fits, when another library fits better,
+[Choosing](https://interopkit.wakan.dev/_interopkit/course-launch/choosing/) says when the package fits, when another library fits better,
 and what each has that the package lacks.
 
 | Guide                                                    | For                                                                                     |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [Architecture](https://interopkit.dev/_interopkit/course-launch/architecture/) | The modules, their layers, and what the package owns                                    |
-| [Course structure](https://interopkit.dev/_interopkit/course-launch/structure/) | Reading, validating and writing `cmi5.xml`: the rules, options, limits and errors       |
-| [Course package](https://interopkit.dev/_interopkit/course-launch/package/)    | Reading and writing ZIP and XML packages within limits, and what a package may not hold |
-| [Rules of a session](https://interopkit.dev/_interopkit/course-launch/rules/)  | The launch URL, the launch data, the preferences, and the rules of the statements of a session |
-| [Assignable unit](https://interopkit.dev/_interopkit/course-launch/au/)        | The runtime of a unit: its start, its statements, a reload, and what it skips and what the LMS refuses |
-| [LMS](https://interopkit.dev/_interopkit/course-launch/lms/)                   | Registrations, launches, the fetch URL, the rules of cmi5 on the host's LRS, satisfaction, abandoned sessions and waivers |
-| [Evidence](https://interopkit.dev/_interopkit/course-launch/evidence/)         | The requirement map, CATAPULT's suites and the other counterparties and oracles         |
-| [Performance](https://interopkit.dev/_interopkit/course-launch/performance/)   | Speed against libxml2, saxes and zip.js, the size of each entry point and the peak memory |
-| [Comparators](https://interopkit.dev/_interopkit/course-launch/comparators/)   | The other implementations of cmi5 and how their capabilities map to the package         |
-| [Supported](https://interopkit.dev/_interopkit/course-launch/supported/)       | What of cmi5 the package covers, and what it leaves out                                 |
-| [Spec gaps](https://interopkit.dev/_interopkit/course-launch/spec-gaps/)       | Where the specification, its schema and CATAPULT differ, and the reading taken          |
+| [Architecture](https://interopkit.wakan.dev/_interopkit/course-launch/architecture/) | The modules, their layers, and what the package owns                                    |
+| [Course structure](https://interopkit.wakan.dev/_interopkit/course-launch/structure/) | Reading, validating and writing `cmi5.xml`: the rules, options, limits and errors       |
+| [Course package](https://interopkit.wakan.dev/_interopkit/course-launch/package/)    | Reading and writing ZIP and XML packages within limits, and what a package may not hold |
+| [Rules of a session](https://interopkit.wakan.dev/_interopkit/course-launch/rules/)  | The launch URL, the launch data, the preferences, and the rules of the statements of a session |
+| [Assignable unit](https://interopkit.wakan.dev/_interopkit/course-launch/au/)        | The runtime of a unit: its start, its statements, a reload, and what it skips and what the LMS refuses |
+| [LMS](https://interopkit.wakan.dev/_interopkit/course-launch/lms/)                   | Registrations, launches, the fetch URL, the rules of cmi5 on the host's LRS, satisfaction, abandoned sessions and waivers |
+| [Evidence](https://interopkit.wakan.dev/_interopkit/course-launch/evidence/)         | The requirement map, CATAPULT's suites and the other counterparties and oracles         |
+| [Performance](https://interopkit.wakan.dev/_interopkit/course-launch/performance/)   | Speed against libxml2, saxes and zip.js, the size of each entry point and the peak memory |
+| [Comparators](https://interopkit.wakan.dev/_interopkit/course-launch/comparators/)   | The other implementations of cmi5 and how their capabilities map to the package         |
+| [Supported](https://interopkit.wakan.dev/_interopkit/course-launch/supported/)       | What of cmi5 the package covers, and what it leaves out                                 |
+| [Spec gaps](https://interopkit.wakan.dev/_interopkit/course-launch/spec-gaps/)       | Where the specification, its schema and CATAPULT differ, and the reading taken          |
 
 ## License
 

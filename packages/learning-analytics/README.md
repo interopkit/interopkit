@@ -109,20 +109,20 @@ environment variable, writes no log, and calls the network only through the `fet
 | Endpoint                     | The role of section 6: 200, 400, 401, 415, 422 and the configuration, with `authorize` before any parsing |
 | Caliper 1.1                  | Read, never written: the events and entities of 1.1 and its six extension profiles, and envelopes of 1.1 at the endpoint |
 
-[Supported](https://interopkit.dev/_interopkit/learning-analytics/supported/) lists what the package includes and what it leaves out.
+[Supported](https://interopkit.wakan.dev/_interopkit/learning-analytics/supported/) lists what the package includes and what it leaves out.
 
 ## Documentation
 
-[Choosing](https://interopkit.dev/_interopkit/learning-analytics/choosing/) says when the package fits, when another library fits better,
+[Choosing](https://interopkit.wakan.dev/_interopkit/learning-analytics/choosing/) says when the package fits, when another library fits better,
 and what each has that the package lacks.
 
-The guides say what each part holds: the [architecture](https://interopkit.dev/_interopkit/learning-analytics/architecture/),
-the [model](https://interopkit.dev/_interopkit/learning-analytics/model/), reading
-[Caliper 1.1](https://interopkit.dev/_interopkit/learning-analytics/versions/), what is
-[supported](https://interopkit.dev/_interopkit/learning-analytics/supported/) and what is not,
-the places where the [specifications disagree](https://interopkit.dev/_interopkit/learning-analytics/spec-gaps/),
-the [evidence](https://interopkit.dev/_interopkit/learning-analytics/evidence/) that it does what it says, and its
-[performance](https://interopkit.dev/_interopkit/learning-analytics/performance/): speed, size and peak memory.
+The guides say what each part holds: the [architecture](https://interopkit.wakan.dev/_interopkit/learning-analytics/architecture/),
+the [model](https://interopkit.wakan.dev/_interopkit/learning-analytics/model/), reading
+[Caliper 1.1](https://interopkit.wakan.dev/_interopkit/learning-analytics/versions/), what is
+[supported](https://interopkit.wakan.dev/_interopkit/learning-analytics/supported/) and what is not,
+the places where the [specifications disagree](https://interopkit.wakan.dev/_interopkit/learning-analytics/spec-gaps/),
+the [evidence](https://interopkit.wakan.dev/_interopkit/learning-analytics/evidence/) that it does what it says, and its
+[performance](https://interopkit.wakan.dev/_interopkit/learning-analytics/performance/): speed, size and peak memory.
 A complete sensor, which sends again after a failure, and an endpoint that receives both versions are in the
 [example](https://github.com/interopkit/interopkit/tree/main/examples/learning-analytics#readme).
 

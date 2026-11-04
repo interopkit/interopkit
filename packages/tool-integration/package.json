@@ -25,7 +25,7 @@
     "url": "git+https://github.com/interopkit/interopkit.git",
     "directory": "packages/tool-integration"
   },
-  "homepage": "https://interopkit.dev/_interopkit/tool-integration/",
+  "homepage": "https://interopkit.wakan.dev/_interopkit/tool-integration/",
   "bugs": "https://github.com/interopkit/interopkit/issues",
   "type": "module",
   "sideEffects": false,

@@ -6,8 +6,8 @@ response types, a signing port and OAuth 2.0 clients.
 It has their errors, the checks of their arguments and the findings of their readers, a clock and a random source, the call to a
 service over HTTP with a deadline, a size limit and no redirects, requests and answers as plain data, the signing port, and
 OAuth 2.0 clients. Most users install the package of a standard, such as
-[`@interopkit/tool-integration`](https://interopkit.dev/_interopkit/tool-integration/) or
-[`@interopkit/competency-frameworks`](https://interopkit.dev/_interopkit/competency-frameworks/), which depends on it.
+[`@interopkit/tool-integration`](https://interopkit.wakan.dev/_interopkit/tool-integration/) or
+[`@interopkit/competency-frameworks`](https://interopkit.wakan.dev/_interopkit/competency-frameworks/), which depends on it.
 
 ```bash
 npm install @interopkit/core
@@ -63,21 +63,21 @@ environment variable, writes no log, and calls the network only through the `fet
 
 ## Documentation
 
-[Choosing](https://interopkit.dev/_interopkit/core/choosing/) says when the package fits, when another library fits better,
+[Choosing](https://interopkit.wakan.dev/_interopkit/core/choosing/) says when the package fits, when another library fits better,
 and what each has that the package lacks.
 
 Each entry point bundled alone, minified with its dependencies, takes after gzip: `@interopkit/core` 11.7 KB with valibot and jose,
 `/checks` 7.5 KB and `/http` 7.7 KB, each with valibot, and `/oauth` 15.3 KB with oauth4webapi; `test/size.test.ts` holds each to
-its budget and to the modules it lists. [Performance](https://interopkit.dev/_interopkit/core/performance/)
-gives the speed of the hot paths, the sizes and the peak memory of the readers. The guides say more: [service calls](https://interopkit.dev/_interopkit/core/service/),
-[requests and answers](https://interopkit.dev/_interopkit/core/http/),
-[signing](https://interopkit.dev/_interopkit/core/signer/),
-[OAuth clients](https://interopkit.dev/_interopkit/core/oauth/),
-[signals](https://interopkit.dev/_interopkit/core/signals/),
-[checks](https://interopkit.dev/_interopkit/core/checks/),
-[errors](https://interopkit.dev/_interopkit/core/errors/),
-[clock](https://interopkit.dev/_interopkit/core/clock/) and
-[random](https://interopkit.dev/_interopkit/core/random/).
+its budget and to the modules it lists. [Performance](https://interopkit.wakan.dev/_interopkit/core/performance/)
+gives the speed of the hot paths, the sizes and the peak memory of the readers. The guides say more: [service calls](https://interopkit.wakan.dev/_interopkit/core/service/),
+[requests and answers](https://interopkit.wakan.dev/_interopkit/core/http/),
+[signing](https://interopkit.wakan.dev/_interopkit/core/signer/),
+[OAuth clients](https://interopkit.wakan.dev/_interopkit/core/oauth/),
+[signals](https://interopkit.wakan.dev/_interopkit/core/signals/),
+[checks](https://interopkit.wakan.dev/_interopkit/core/checks/),
+[errors](https://interopkit.wakan.dev/_interopkit/core/errors/),
+[clock](https://interopkit.wakan.dev/_interopkit/core/clock/) and
+[random](https://interopkit.wakan.dev/_interopkit/core/random/).
 
 ## License
 

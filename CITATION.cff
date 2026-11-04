@@ -10,7 +10,7 @@ authors:
     family-names: Wakan
 license: Apache-2.0
 repository-code: https://github.com/interopkit/interopkit
-url: https://interopkit.dev/
+url: https://interopkit.wakan.dev/
 keywords:
   - lti
   - lti-advantage

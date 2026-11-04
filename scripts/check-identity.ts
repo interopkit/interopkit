@@ -24,8 +24,11 @@ const CLAIM_WORDS = /\b(compliant|conformant|certified|official|approved|endorse
 const MARK_SYMBOLS = /[®™]/;
 /** The manifest of a package, by its folder. */
 const MANIFEST = /^packages\/([^/]+)\/package\.json$/;
-/** The READMEs that are published: the root, which is the home page of the docs site and of the repository, and each package's. */
-const PUBLISHED_README = /^(README\.md|packages\/[^/]+\/README\.md)$/;
+/**
+ * The READMEs that are published: the root, which is the home page of the docs site and of the repository, each package's, and
+ * the profile of the organization, which the owner copies into its `.github` repository.
+ */
+const PUBLISHED_README = /^(README\.md|packages\/[^/]+\/README\.md|\.github\/profile\/README\.md)$/;
 /** The texts that state what the family is and does to a reader: every README, NOTICE and page of the docs. */
 const STATED = /(^|\/)(README\.md|NOTICE)$|^docs\/[^/]+\/[^/]+\.md$/;
 /** The links of a line of Markdown, with what each points to. */

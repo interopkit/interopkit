@@ -112,18 +112,18 @@ dependencies are `@interopkit/core`, [`@digitalbazaar/di-sd-primitives`](https:/
 | Selective disclosure functions (3.4) and `ecdsa-sd-2023` functions (3.5) | The primitives of Digital Bazaar for 3.4, and this package for 3.5: CBOR proof values, label maps, disclosure data |
 | Test vectors (appendix A.7 and A.8)                                      | Both reproduced byte for byte, base and derived proofs                                                             |
 
-[Supported](https://interopkit.dev/_interopkit/selective-disclosure/supported/) lists what the package includes and what it leaves out.
+[Supported](https://interopkit.wakan.dev/_interopkit/selective-disclosure/supported/) lists what the package includes and what it leaves out.
 
 ## Documentation
 
-[Choosing](https://interopkit.dev/_interopkit/selective-disclosure/choosing/) says when the package fits, when another library fits better,
+[Choosing](https://interopkit.wakan.dev/_interopkit/selective-disclosure/choosing/) says when the package fits, when another library fits better,
 and what each has that the package lacks.
 
-[The proofs guide](https://interopkit.dev/_interopkit/selective-disclosure/proofs/) has the options with
+[The proofs guide](https://interopkit.wakan.dev/_interopkit/selective-disclosure/proofs/) has the options with
 their defaults, the limits, the errors and what to do about them, what is not included and why, the privacy of disclosures, and
 the differences from the references.
 
-[Performance](https://interopkit.dev/_interopkit/selective-disclosure/performance/) gives the speed of the three roles against Digital Bazaar's suite and the size of the entry point.
+[Performance](https://interopkit.wakan.dev/_interopkit/selective-disclosure/performance/) gives the speed of the three roles against Digital Bazaar's suite and the size of the entry point.
 
 ## License
 

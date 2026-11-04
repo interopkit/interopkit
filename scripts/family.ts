@@ -6,10 +6,10 @@
 
 /**
  * The base of every URL of the docs site, with its trailing slash: the `hostedBaseUrl` of TypeDoc, the `homepage` of each
- * package, the links of the READMEs, the sitemap, `robots.txt` and the `CNAME` of the site. A labeled default until the
- * owner buys the domain; changing it is this one line, and `check:standards` then lists every file that names the old one.
+ * package, the links of the READMEs, the sitemap, `robots.txt` and the `CNAME` of the site; the owner's domain (2026-11-04).
+ * Changing it is this one line, and `check:standards` then lists each homepage, README link and citation that names the old one.
  */
-export const SITE = "https://interopkit.dev/";
+export const SITE = "https://interopkit.wakan.dev/";
 
 /** The repository, which a link to a file that the docs site does not publish points into, on its default branch. */
 export const REPOSITORY = "https://github.com/interopkit/interopkit";

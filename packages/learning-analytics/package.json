@@ -19,7 +19,7 @@
     "url": "git+https://github.com/interopkit/interopkit.git",
     "directory": "packages/learning-analytics"
   },
-  "homepage": "https://interopkit.dev/_interopkit/learning-analytics/",
+  "homepage": "https://interopkit.wakan.dev/_interopkit/learning-analytics/",
   "bugs": "https://github.com/interopkit/interopkit/issues",
   "type": "module",
   "sideEffects": false,

@@ -123,23 +123,23 @@ passes in. Its dependencies are `@interopkit/core` and [valibot](https://valibot
 | The REST binding, as a consumer               | The twelve endpoints with their set types, paging with `X-Total-Count` and `Link`, sort, filter and field selection, `imsx_StatusInfo`, discovery, TLS only, a credential through a function of the host |
 | The provider                                  | The twelve endpoints in both versions, paging, sorting, filtering, field selection, the status of a failure, service discovery                                                                           |
 
-[Supported](https://interopkit.dev/_interopkit/competency-frameworks/supported/) lists what the package includes and what it leaves out.
+[Supported](https://interopkit.wakan.dev/_interopkit/competency-frameworks/supported/) lists what the package includes and what it leaves out.
 
 ## Documentation
 
-[Choosing](https://interopkit.dev/_interopkit/competency-frameworks/choosing/) says when the package fits, when another library fits better,
+[Choosing](https://interopkit.wakan.dev/_interopkit/competency-frameworks/choosing/) says when the package fits, when another library fits better,
 and what each has that the package lacks.
 
-[The model guide](https://interopkit.dev/_interopkit/competency-frameworks/model/),
-[the graph guide](https://interopkit.dev/_interopkit/competency-frameworks/graph/),
-[the client guide](https://interopkit.dev/_interopkit/competency-frameworks/client/) and
-[the provider guide](https://interopkit.dev/_interopkit/competency-frameworks/provider/) have the options
+[The model guide](https://interopkit.wakan.dev/_interopkit/competency-frameworks/model/),
+[the graph guide](https://interopkit.wakan.dev/_interopkit/competency-frameworks/graph/),
+[the client guide](https://interopkit.wakan.dev/_interopkit/competency-frameworks/client/) and
+[the provider guide](https://interopkit.wakan.dev/_interopkit/competency-frameworks/provider/) have the options
 with their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
 why, and the differences from the references.
 
-[The evidence guide](https://interopkit.dev/_interopkit/competency-frameworks/evidence/) shows what the
+[The evidence guide](https://interopkit.wakan.dev/_interopkit/competency-frameworks/evidence/) shows what the
 package was checked against: the published schemas, real frameworks of public providers, an example provider and consumer,
-OpenSALT and four runtimes. [Performance](https://interopkit.dev/_interopkit/competency-frameworks/performance/) gives the speed of every hot
+OpenSALT and four runtimes. [Performance](https://interopkit.wakan.dev/_interopkit/competency-frameworks/performance/) gives the speed of every hot
 path, the size of each entry point and the peak memory of each reader.
 
 ## License

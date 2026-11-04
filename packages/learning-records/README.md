@@ -128,30 +128,30 @@ environment variable, writes no log and makes no request. Its dependencies are `
 | xAPI Profiles 1.0               | The model of a profile, the rules of its structure, and the Statement Template and Pattern algorithms, by registration and subregistration |
 | LRS handler                     | All seven resources over plain requests and the ports of your stores: versions, errors, limits, access, voiding, filters and pages, Attachments and signatures, documents under ETags with merge, Agents, Activities and About |
 
-[Supported](https://interopkit.dev/_interopkit/learning-records/supported/) lists what the package includes and what it leaves out.
+[Supported](https://interopkit.wakan.dev/_interopkit/learning-records/supported/) lists what the package includes and what it leaves out.
 
 ## Documentation
 
-[Choosing](https://interopkit.dev/_interopkit/learning-records/choosing/) says when the package fits, when another library fits better,
+[Choosing](https://interopkit.wakan.dev/_interopkit/learning-records/choosing/) says when the package fits, when another library fits better,
 and what each has that the package lacks.
 
-[The model guide](https://interopkit.dev/_interopkit/learning-records/model/) has the options with their
+[The model guide](https://interopkit.wakan.dev/_interopkit/learning-records/model/) has the options with their
 defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and why, and the
-differences from the references. The guides of [building](https://interopkit.dev/_interopkit/learning-records/build/),
-[comparing](https://interopkit.dev/_interopkit/learning-records/compare/),
-[formats](https://interopkit.dev/_interopkit/learning-records/format/),
-[attachments](https://interopkit.dev/_interopkit/learning-records/attachments/),
-[signing](https://interopkit.dev/_interopkit/learning-records/signing/),
-[the client](https://interopkit.dev/_interopkit/learning-records/client/),
-[the LRS handler](https://interopkit.dev/_interopkit/learning-records/store/),
-[the versions of xAPI](https://interopkit.dev/_interopkit/learning-records/versions/) and
-[xAPI Profiles](https://interopkit.dev/_interopkit/learning-records/profiles/) do the same.
+differences from the references. The guides of [building](https://interopkit.wakan.dev/_interopkit/learning-records/build/),
+[comparing](https://interopkit.wakan.dev/_interopkit/learning-records/compare/),
+[formats](https://interopkit.wakan.dev/_interopkit/learning-records/format/),
+[attachments](https://interopkit.wakan.dev/_interopkit/learning-records/attachments/),
+[signing](https://interopkit.wakan.dev/_interopkit/learning-records/signing/),
+[the client](https://interopkit.wakan.dev/_interopkit/learning-records/client/),
+[the LRS handler](https://interopkit.wakan.dev/_interopkit/learning-records/store/),
+[the versions of xAPI](https://interopkit.wakan.dev/_interopkit/learning-records/versions/) and
+[xAPI Profiles](https://interopkit.wakan.dev/_interopkit/learning-records/profiles/) do the same.
 
-[The comparators](https://interopkit.dev/_interopkit/learning-records/comparators/) map what other LRSs and
-clients do against the package. [The evidence guide](https://interopkit.dev/_interopkit/learning-records/evidence/) shows what the
+[The comparators](https://interopkit.wakan.dev/_interopkit/learning-records/comparators/) map what other LRSs and
+clients do against the package. [The evidence guide](https://interopkit.wakan.dev/_interopkit/learning-records/evidence/) shows what the
 package was checked against: the rules of both versions, both ADL conformance suites, SQL LRS and the validator of Learning
 Locker as oracles, an example LRS with a platform and a dashboard, four runtimes, and for profiles the rules of Part Two, ADL's
-matching of Patterns and the profiles that ADL publishes. [Performance](https://interopkit.dev/_interopkit/learning-records/performance/)
+matching of Patterns and the profiles that ADL publishes. [Performance](https://interopkit.wakan.dev/_interopkit/learning-records/performance/)
 gives the speed of every hot path, the size of each entry point and the peak memory of each reader.
 
 ## License

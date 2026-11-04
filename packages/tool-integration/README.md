@@ -12,7 +12,7 @@ request with the `id_token`, publishes the key set, issues access tokens, serves
 gradebook, the roster services over your roster, groups and records, the Assessment Control Service over your attempts and
 Dynamic Registration over your registrations; two functions read the tool's Deep Linking response and Start Assessment message.
 A handler takes an `HttpRequest` and returns an `HttpResponse` of
-[`@interopkit/core/http`](https://interopkit.dev/_interopkit/core/http/): plain objects that any web framework can build. You
+[`@interopkit/core/http`](https://interopkit.wakan.dev/_interopkit/core/http/): plain objects that any web framework can build. You
 pass in the stores, the registrations, a `fetch` and a clock.
 
 ```bash
@@ -94,8 +94,8 @@ flowchart LR
 
 It runs in Node.js, browsers, Deno, Bun and Cloudflare Workers: it uses web standards only, reads no environment variable,
 writes no log, and calls the network only through the `fetch` that you pass. Its dependencies are
-[`@interopkit/core`](https://interopkit.dev/_interopkit/core/), [jose](https://github.com/panva/jose) and
-[valibot](https://valibot.dev). [Supported](https://interopkit.dev/_interopkit/tool-integration/supported/) lists what it
+[`@interopkit/core`](https://interopkit.wakan.dev/_interopkit/core/), [jose](https://github.com/panva/jose) and
+[valibot](https://valibot.dev). [Supported](https://interopkit.wakan.dev/_interopkit/tool-integration/supported/) lists what it
 includes and what it does not.
 
 ## API
@@ -108,21 +108,21 @@ includes and what it does not.
 
 ## Supported
 
-Both roles have the launch of every message type, key sets, access tokens, the Assignment and Grade Services, Names and Role Provisioning, Context Groups, the AfA PNP Connector, Deep Linking, Proctoring Services and Dynamic Registration ([what is supported](https://interopkit.dev/_interopkit/tool-integration/supported/)).
+Both roles have the launch of every message type, key sets, access tokens, the Assignment and Grade Services, Names and Role Provisioning, Context Groups, the AfA PNP Connector, Deep Linking, Proctoring Services and Dynamic Registration ([what is supported](https://interopkit.wakan.dev/_interopkit/tool-integration/supported/)).
 
 ## Documentation
 
-[Choosing](https://interopkit.dev/_interopkit/tool-integration/choosing/) says when the package fits, when another library fits better,
+[Choosing](https://interopkit.wakan.dev/_interopkit/tool-integration/choosing/) says when the package fits, when another library fits better,
 and what each has that the package lacks.
 
-The [tool guide](https://interopkit.dev/_interopkit/tool-integration/tool/)
+The [tool guide](https://interopkit.wakan.dev/_interopkit/tool-integration/tool/)
 has the routes, the store, every check of a launch, the key set and its rotation, scores, the failure paths and the
-signals; the [roster guide](https://interopkit.dev/_interopkit/tool-integration/roster/) has the members, the groups and the preferences record; the [Deep Linking guide](https://interopkit.dev/_interopkit/tool-integration/deep-linking/) has the items and both roles; the [proctoring guide](https://interopkit.dev/_interopkit/tool-integration/proctoring/) has the Start Assessment message and the Assessment Control Service in both roles; the [registration guide](https://interopkit.dev/_interopkit/tool-integration/registration/) has Dynamic Registration in both roles; the [platform guide](https://interopkit.dev/_interopkit/tool-integration/platform/) has the same for the platform role.
+signals; the [roster guide](https://interopkit.wakan.dev/_interopkit/tool-integration/roster/) has the members, the groups and the preferences record; the [Deep Linking guide](https://interopkit.wakan.dev/_interopkit/tool-integration/deep-linking/) has the items and both roles; the [proctoring guide](https://interopkit.wakan.dev/_interopkit/tool-integration/proctoring/) has the Start Assessment message and the Assessment Control Service in both roles; the [registration guide](https://interopkit.wakan.dev/_interopkit/tool-integration/registration/) has Dynamic Registration in both roles; the [platform guide](https://interopkit.wakan.dev/_interopkit/tool-integration/platform/) has the same for the platform role.
 
-[The evidence guide](https://interopkit.dev/_interopkit/tool-integration/evidence/) shows what the package
+[The evidence guide](https://interopkit.wakan.dev/_interopkit/tool-integration/evidence/) shows what the package
 was checked against: the examples and vocabularies of the specifications, tokens that another library signs, tools of other authors
 (`@lti-tool/core`, `lti-core` and PyLTI1p3) that launch from the platform role and use its services, Moodle in both roles, and
-four runtimes. [Performance](https://interopkit.dev/_interopkit/tool-integration/performance/) gives the speed of the launch and of the pages of the
+four runtimes. [Performance](https://interopkit.wakan.dev/_interopkit/tool-integration/performance/) gives the speed of the launch and of the pages of the
 services, the size of each entry point and the peak memory of each reader.
 
 ## License

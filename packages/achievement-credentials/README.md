@@ -163,27 +163,27 @@ needs Node.js 24 or later.
 | API provider                          | The five operations of both APIs as the resource server: scopes, paging headers, JSON and compact JWS, created, replaced and unchanged, verification before storing |
 | Open Badges 2.0                       | An assertion with its BadgeClass and issuer, embedded or as a `BadgeAssertionV2`; the aliases of its context; its rules; `sha256$` and `md5$` recipients; summaries; baked images; hosted and signed verification with the issuer's policy, keys and revocation list |
 
-[Supported](https://interopkit.dev/_interopkit/achievement-credentials/supported/) lists what the package includes and what it leaves out.
+[Supported](https://interopkit.wakan.dev/_interopkit/achievement-credentials/supported/) lists what the package includes and what it leaves out.
 
 ## Documentation
 
-[Choosing](https://interopkit.dev/_interopkit/achievement-credentials/choosing/) says when the package fits, when another library fits better,
+[Choosing](https://interopkit.wakan.dev/_interopkit/achievement-credentials/choosing/) says when the package fits, when another library fits better,
 and what each has that the package lacks.
 
-[The model guide](https://interopkit.dev/_interopkit/achievement-credentials/model/) and
-[the builders guide](https://interopkit.dev/_interopkit/achievement-credentials/issue/) and
-[the baking guide](https://interopkit.dev/_interopkit/achievement-credentials/baking/) and
-[the client guide](https://interopkit.dev/_interopkit/achievement-credentials/client/) and
-[the provider guide](https://interopkit.dev/_interopkit/achievement-credentials/provider/) and
-[the guide of Open Badges 2.0](https://interopkit.dev/_interopkit/achievement-credentials/open-badges-2/) have the options with
+[The model guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/model/) and
+[the builders guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/issue/) and
+[the baking guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/baking/) and
+[the client guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/client/) and
+[the provider guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/provider/) and
+[the guide of Open Badges 2.0](https://interopkit.wakan.dev/_interopkit/achievement-credentials/open-badges-2/) have the options with
 their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
 why, and the differences from the references.
 
-[The comparators](https://interopkit.dev/_interopkit/achievement-credentials/comparators/) map what the
+[The comparators](https://interopkit.wakan.dev/_interopkit/achievement-credentials/comparators/) map what the
 validator of 1EdTech and other verifiers of verifiable credentials do against the package.
 
-[The evidence guide](https://interopkit.dev/_interopkit/achievement-credentials/evidence/) shows what the package was checked against.
-[Performance](https://interopkit.dev/_interopkit/achievement-credentials/performance/) gives the speed of every hot path, the size of each entry point and the peak
+[The evidence guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/evidence/) shows what the package was checked against.
+[Performance](https://interopkit.wakan.dev/_interopkit/achievement-credentials/performance/) gives the speed of every hot path, the size of each entry point and the peak
 memory of each reader.
 
 ## License
