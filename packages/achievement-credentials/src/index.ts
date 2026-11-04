@@ -5,13 +5,6 @@
  * @module @interopkit/achievement-credentials
  */
 
-export type { BakedCredential, BakedKind, FoundKind } from "./baking/index.js";
-export type {
-  CredentialsClient,
-  CredentialsClientOptions,
-  DiscoverOptions,
-  ServiceDescription,
-} from "./client/index.js";
 export {
   type CredentialSummary,
   isSameCredential,
@@ -160,16 +153,6 @@ export {
   type VerificationResult,
   type VerificationTypeV2,
 } from "./model/index.js";
-export type {
-  CredentialList,
-  CredentialStore,
-  CredentialsAccess,
-  CredentialsPage,
-  CredentialsProviderOptions,
-  ProfileStore,
-  ReceivedCredential,
-  UpsertOutcome,
-} from "./provider/index.js";
 export {
   type EntityReadOptions,
   type ReadOptions,

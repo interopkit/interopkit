@@ -38,7 +38,7 @@ flowchart TD
 | `ProfileStore`                                                  | Where the profile of each user is kept                                                        |
 | `CredentialsAccess`                                             | What `authorize` answers: the owner of the token, or a refusal with 401, 403 or 429           |
 
-The root of the package exports the same types. `@interopkit/core/http` holds what the providers of the 1EdTech services share:
+These types come from `@interopkit/achievement-credentials/provider` only. `@interopkit/core/http` holds what the providers of the 1EdTech services share:
 the request and the answer, `AccessDecision`, the paging by `limit` and `offset`, and the `imsx_StatusInfo` of a failure.
 
 ## Quick start

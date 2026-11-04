@@ -7,7 +7,7 @@
 export { bakePng } from "./bake-png.js";
 export { bakeSvg } from "./bake-svg.js";
 export type { BakedCredential } from "./baked-credential.js";
-export type { BakedKind, FoundKind } from "./formats.js";
+export type { FoundKind } from "./formats.js";
 export type { BakeImageOptions, ReadImageOptions } from "./options.js";
 export { readPng } from "./read-png.js";
 export { readSvg } from "./read-svg.js";
