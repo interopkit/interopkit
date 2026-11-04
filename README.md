@@ -72,6 +72,7 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm lint`            | Biome and cspell                                                                                                                                                      |
 | `pnpm check:standards` | The rules of the engineering standards that a tool can check                                                                                                          |
+| `pnpm check:duplication` | Fails on a piece of repeated code in `packages/*/src` that AGENTS.md does not list with its reason (jscpd) |
 | `pnpm check:rules`     | Removes each security rule from a copy of the code and fails when its test still passes (a rule of a browser page runs in Chromium)                                   |
 | `pnpm typecheck`       | Every package, and the tooling at the root                                                                                                                            |
 | `pnpm test`            | Vitest, offline                                                                                                                                                       |

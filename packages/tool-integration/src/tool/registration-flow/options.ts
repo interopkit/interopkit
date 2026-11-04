@@ -1,13 +1,11 @@
-import { type CallOptions, DEFAULT_MAX_BYTES, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
 import {
-  abortSignalSchema,
-  guardSchema,
-  httpsUrlSchema,
-  MAX_JSON_TOKENS,
-  parseWith,
-  positiveIntegerSchema,
-  strictRecord,
-} from "@interopkit/core/checks";
+  type CallOptions,
+  clientOptionsEntries,
+  DEFAULT_MAX_BYTES,
+  DEFAULT_TIMEOUT_MS,
+  type Fetch,
+} from "@interopkit/core";
+import { httpsUrlSchema, MAX_JSON_TOKENS, parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 
 /** The options of `discoverPlatform`: the `fetch` that calls the platform, and the limits of a call. */
@@ -64,12 +62,8 @@ const originSchema = v.pipe(
 );
 
 const optionsSchema = strictRecord({
-  fetch: guardSchema((value): value is Fetch => typeof value === "function", "a function"),
-  timeoutMs: v.optional(positiveIntegerSchema),
-  maxBytes: v.optional(positiveIntegerSchema),
-  maxTokens: v.optional(positiveIntegerSchema),
+  ...clientOptionsEntries,
   registrationOrigins: v.optional(v.array(originSchema)),
-  signal: v.optional(abortSignalSchema),
 });
 
 /**

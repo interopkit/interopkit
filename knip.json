@@ -50,7 +50,8 @@
       "entry": ["unit.ts"]
     },
     ".": {
-      "ignore": ["validation/catapult/*.js"]
+      "ignore": ["validation/catapult/*.js"],
+      "ignoreDependencies": ["jscpd"]
     }
   }
 }

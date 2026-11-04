@@ -44,7 +44,7 @@ random for the run and never printed.
 ## What it found
 
 Every failure of the suite is a rule that the handler did not follow, and the fix is in the handler. The first run of 2.0 failed
-116 of the 1,442 tests, from these causes; each has a test in `packages/learning-records` and a rule in `scripts/check-rules.ts`.
+116 of the 1,442 tests, from these causes; each has a test in `packages/learning-records` and a rule in `scripts/rules/learning-records.ts`.
 The first run of 1.0.3 failed 2 of the 1,365 tests, both from one cause: a PUT of a profile with no precondition where no document
 exists was written, and the route of 1.0.3 refuses it with 400.
 

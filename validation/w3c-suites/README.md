@@ -72,7 +72,7 @@ Open Badges requires and change nothing of what a suite tests.
 ## What it found
 
 Every failure of a suite that the package could cause is fixed in the package, with a test and, where a rule keeps a credential
-from being forged, an entry of `scripts/check-rules.ts`. The first runs found these:
+from being forged, an entry of `scripts/rules/<package>.ts`. The first runs found these:
 
 | Suite                   | What failed                                                                                                         | Cause in the package                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -11,7 +11,7 @@ flowchart LR
     examples["examples<br/>run by a test"]
     tooling["scripts, validation, compat"]
   end
-  change["Your change"] --> local["Local gates<br/>lint, check:standards, typecheck, test, knip"]
+  change["Your change"] --> local["Local gates<br/>lint, check:standards, check:duplication, typecheck, test, knip"]
   local --> hooks["Pre-commit: Biome formats<br/>Pre-push: typecheck, test, knip"]
   hooks --> pr["Pull request<br/>with a changeset"]
   pr --> ci["CI: check, test on Node 22 and 24,<br/>spec, browsers, runtimes"]
@@ -46,16 +46,16 @@ A change to a rule of a specification cites its section in the pull request and 
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Test titles                 | A plain sentence about behavior, with no identifier of a row, a unit or a clause                                                                                                                                                                                                                   |
 | Fixtures                    | They come from oracles, never typed by hand except for edge cases derivable exactly: tokens signed by another implementation, published examples, or output of a script in `validation/`. Specification files are never committed; `pnpm corpus` and `pnpm schemas` download them at pinned hashes |
-| Security rules              | A rule that keeps a request from being forged, replayed or redirected has an entry in `scripts/check-rules.ts`: the text that implements it, what stands in its place without it, and the test that must fail. `pnpm check:rules` proves that it does                                              |
+| Security rules              | A rule that keeps a request from being forged, replayed or redirected has an entry in `scripts/rules/<package>.ts`: the text that implements it, what stands in its place without it, and the test that must fail. `pnpm check:rules` proves that it does                                              |
 | A gap in the specifications | A place where they contradict themselves or are silent gets a resolution in the `spec-gaps.md` of the package and a test                                                                                                                                                                           |
 
 ## Before opening a pull request
 
 | Run                                                                             | When                                                                                                                           |
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm lint`, `pnpm check:standards`, `pnpm typecheck`, `pnpm test`, `pnpm knip` | Always                                                                                                                         |
+| `pnpm lint`, `pnpm check:standards`, `pnpm check:duplication`, `pnpm typecheck`, `pnpm test`, `pnpm knip` | Always                                                                                                      |
 | `pnpm build`, `pnpm check:packages`, `pnpm check:release`, `pnpm check:tarballs`, `pnpm docs:api` | Always                                                                                                                         |
-| `pnpm check:rules`                                                              | A change to code that an entry of `scripts/check-rules.ts` names, or to a security rule                                        |
+| `pnpm check:rules`                                                              | A change to code that an entry of `scripts/rules/` names, or to a security rule                                               |
 | `pnpm test:browser`                                                             | A change to the pages of the client-side login, or to code that must run in a browser; it needs `pnpm exec playwright install` |
 | `pnpm compat`                                                                   | A change that could differ between runtimes: a use of Web Crypto, `fetch`, `URL` or `AbortSignal`                                   |
 | `pnpm check:licenses`, `pnpm check:audit`                                       | A change to a dependency                                                                                                       |
