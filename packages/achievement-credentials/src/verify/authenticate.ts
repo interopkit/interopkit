@@ -1,7 +1,7 @@
 import { DataError, ServiceError } from "@interopkit/core";
 import { textWithinLimits } from "../json-text.js";
 import { inspectJwt } from "../jwt/internal.js";
-import { verifyIssuerKey } from "../keys/index.js";
+import { bindKey } from "../keys/internal.js";
 import type { AnyVerifiableCredential, VerificationCheck, VerificationKey } from "../model/index.js";
 import { credentialOrReason, type VerifiedKind, verifiedKindOf } from "../read/internal.js";
 import type { Context } from "./context.js";
@@ -42,20 +42,13 @@ function readObject(
 }
 
 /** Binds the key to the issuer of the credential, or says that the host chose not to. */
-async function issuerCheckOf(
+function issuerCheckOf(
   credential: AnyVerifiableCredential,
   key: VerificationKey,
   context: Context,
 ): Promise<VerificationCheck> {
-  const { jwt } = context.settings;
-  if (jwt.allowUnboundKeys) {
-    return checkOf("issuer", "skipped", "The option allowUnboundKeys is set: the key was not tied to the issuer.");
-  }
   const issuer = typeof credential.issuer === "string" ? credential.issuer : credential.issuer.id;
-  return await verifyIssuerKey(key, issuer, {
-    keys: jwt.keys,
-    ...(jwt.signal === undefined ? {} : { signal: jwt.signal }),
-  });
+  return bindKey(key, issuer, context.settings.jwt);
 }
 
 /** What a proof secures: the credential, as written and as read, and the key that verified the proof. */

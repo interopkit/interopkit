@@ -951,9 +951,9 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   },
   {
     rule: "A key that the issuer does not publish is not bound, and the proof of an unbound key is not valid unless the host allows it.",
-    file: "packages/achievement-credentials/src/keys/bind-key.ts",
-    find: 'return binding.outcome === "passed" ? { bound: true } : { reason: binding.detail };',
-    replace: "return { bound: true };",
+    file: "packages/achievement-credentials/src/jwt/read-credential-jwt.ts",
+    find: 'if (outcome === "failed") return invalid(detail);',
+    replace: "",
     test: "packages/achievement-credentials/test/jwt.test.ts",
   },
   {
@@ -1322,8 +1322,8 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   },
   {
     rule: "A key counts only when its issuer publishes it, unless the host allows unbound keys.",
-    file: "packages/achievement-credentials/src/verify/authenticate.ts",
-    find: "if (jwt.allowUnboundKeys) {",
+    file: "packages/achievement-credentials/src/keys/bind-key.ts",
+    find: "if (settings.allowUnboundKeys) {",
     replace: "if (true) {",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },

@@ -1,4 +1,4 @@
-import { DataError, raceAbort, readClock } from "@interopkit/core";
+import { DataError, raceAbort, readClock, ServiceError } from "@interopkit/core";
 import { describe, isRecord, parseJsonText } from "@interopkit/core/checks";
 import { compactVerify, importJWK } from "jose";
 import { decodeBase64url } from "../base64url.js";
@@ -227,6 +227,8 @@ export async function readCredentialJwt(jws: string, options: JwtReadOptions): P
   if (!inspected.valid) return invalid(inspected.reason);
   if (inspected.timeFault !== undefined) return invalid(inspected.timeFault);
   const { key, credential } = inspected;
-  const binding = await bindKey(key, valuesOf(credential).issuer, settings);
-  return "reason" in binding ? invalid(binding.reason) : { valid: true, credential, key, bound: binding.bound };
+  const { outcome, detail } = await bindKey(key, valuesOf(credential).issuer, settings);
+  if (outcome === "unavailable") throw new ServiceError(detail, 0, "");
+  if (outcome === "failed") return invalid(detail);
+  return { valid: true, credential, key, bound: outcome === "passed" };
 }

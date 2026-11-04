@@ -2,7 +2,7 @@ import { DataError, raceAbort, readClock, ServiceError } from "@interopkit/core"
 import { describe, isRecord } from "@interopkit/core/checks";
 import { isBaseProof } from "@interopkit/selective-disclosure";
 import { textWithinLimits } from "../json-text.js";
-import { verifyIssuerKey } from "../keys/index.js";
+import { bindKey } from "../keys/internal.js";
 import type {
   AnyVerifiableCredential,
   DataIntegritySuite,
@@ -356,14 +356,7 @@ export async function verifyProof(
   const read = readInput(credential, settings);
   if ("reason" in read) return { valid: false, reason: read.reason };
   const issuer = issuerIdOf(read.value);
-  const bind: IssuerBinding = async (key) =>
-    settings.allowUnboundKeys
-      ? { check: "issuer", outcome: "skipped", detail: "The option allowUnboundKeys is set." }
-      : await verifyIssuerKey(key, issuer, {
-          keys: settings.keys,
-          ...(settings.signal === undefined ? {} : { signal: settings.signal }),
-        });
-  const verdict = await proofsOf(credential, read.value, settings, bind);
+  const verdict = await proofsOf(credential, read.value, settings, (key) => bindKey(key, issuer, settings));
   if (!verdict.valid) return { valid: false, reason: verdict.reason };
   const { outcome, detail } = verdict.issuer;
   if (outcome === "unavailable") throw new ServiceError(detail, 0, "");
