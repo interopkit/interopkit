@@ -15,6 +15,8 @@ export {
   type LearnerPreferences,
 } from "./launch-data.js";
 export {
+  AU_VERBS,
+  type AuVerb,
   CMI5_ACTIVITY_TYPES,
   CMI5_CATEGORIES,
   CMI5_EXTENSIONS,

@@ -1,6 +1,6 @@
 import type { CallOptions } from "@interopkit/core";
 import type { Agent } from "@interopkit/learning-records";
-import type { CourseStructure, LaunchData, LaunchMethod, MoveOn } from "../model/index.js";
+import type { AuVerb, CourseStructure, LaunchData, LaunchMethod, MoveOn } from "../model/index.js";
 
 /** An assignable unit of a course that an LMS imported: its ids, its launch and where it sits. */
 export interface ImportedAu {
@@ -146,7 +146,7 @@ export type SessionState = (typeof SESSION_STATES)[number];
 /** A statement that cmi5 defines, which the LMS took from an assignable unit in a session. */
 export interface Reservation {
   /** The verb, by name: initialized, completed, passed, failed or terminated. */
-  readonly verb: "initialized" | "completed" | "passed" | "failed" | "terminated";
+  readonly verb: AuVerb;
   /** The id of the statement. */
   readonly statement: string;
   /** The `timestamp` of the statement, in milliseconds. */

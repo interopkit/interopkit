@@ -12,9 +12,7 @@ import {
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
-
-/** The verbs of cmi5 that an assignable unit sends. */
-export type AuVerb = "initialized" | "completed" | "passed" | "failed" | "terminated";
+import { AU_VERBS, type AuVerb } from "../model/index.js";
 
 /** What a unit keeps of its session for a reload of its page: its token and what it sent. */
 export interface AuResume {
@@ -77,8 +75,6 @@ export interface AuSettings {
   readonly timeoutMs: number;
   readonly signal: AbortSignal | undefined;
 }
-
-const AU_VERBS: readonly AuVerb[] = ["initialized", "completed", "passed", "failed", "terminated"];
 
 const resumeSchema = strictRecord({
   registration: v.pipe(

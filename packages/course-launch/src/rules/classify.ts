@@ -1,5 +1,5 @@
 import type { Statement } from "@interopkit/learning-records";
-import { CMI5_CATEGORIES, CMI5_EXTENSIONS, CMI5_VERBS, type Cmi5Verb } from "../model/index.js";
+import { AU_VERBS, type AuVerb, CMI5_CATEGORIES, CMI5_EXTENSIONS, CMI5_VERBS, type Cmi5Verb } from "../model/index.js";
 
 /** Tells whether a name is that of a verb of cmi5. */
 const isCmi5Verb = (name: string): name is Cmi5Verb => Object.hasOwn(CMI5_VERBS, name);
@@ -13,6 +13,12 @@ const VERBS_BY_ID: ReadonlyMap<string, Cmi5Verb> = new Map(
 export function cmi5VerbOf(id: string): Cmi5Verb | undefined {
   return VERBS_BY_ID.get(id);
 }
+
+/** The names of the verbs that an assignable unit sends, as a set of text. */
+const AU_VERB_NAMES: ReadonlySet<string> = new Set(AU_VERBS);
+
+/** Tells whether a verb of cmi5, by name, is one that an assignable unit sends. */
+export const isAuVerb = (name: string | undefined): name is AuVerb => name !== undefined && AU_VERB_NAMES.has(name);
 
 /** Lists the ids of the activities of the `category` of a statement. */
 export function categoryIdsOf(statement: Statement): readonly string[] {

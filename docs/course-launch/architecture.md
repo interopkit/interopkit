@@ -48,7 +48,7 @@ flowchart BT
 
 | Module      | Files                                                                    | Holds                                                                                                                       |
 | ----------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `model`     | `vocabularies.ts`                                                        | `moveOn`, `launchMethod` and the launch modes as tuples with their types; the IRIs of the verbs, categories, extensions and activity types; the ids of the State and of the preferences |
+| `model`     | `vocabularies.ts`                                                        | `moveOn`, `launchMethod` and the launch modes as tuples with their types; the IRIs of the verbs, with the five that an assignable unit sends as a tuple, and of the categories, extensions and activity types; the ids of the State and of the preferences |
 |             | `course-structure.ts`                                                    | `CourseStructure`, `Course`, `Objective`, `AssignableUnit`, `Block`, `LangString`, `ExtensionElement`                        |
 | `structure` | `schema.ts`                                                              | The elements of `CourseStructure.xsd`: what each holds, in which order, and its attributes                                  |
 |             | `inspect.ts`                                                             | The walk of the parser: the model and the findings of one structure, within its limits                                      |

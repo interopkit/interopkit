@@ -12,5 +12,5 @@ export type {
   PriorOutcome,
   Recorded,
 } from "./au-session.js";
-export type { AuOptions, AuResume, AuVerb } from "./options.js";
+export type { AuOptions, AuResume } from "./options.js";
 export { type AuRefusal, startAuSession } from "./start-au-session.js";

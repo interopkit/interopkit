@@ -71,6 +71,22 @@ export const CMI5_VERBS = {
 export type Cmi5Verb = keyof typeof CMI5_VERBS;
 
 /**
+ * The verbs that an assignable unit sends, by name; the others of cmi5 are the LMS's.
+ *
+ * @see {@link https://github.com/AICC/CMI-5_Spec_Current/blob/quartz/cmi5_spec.md#verbs | cmi5, 9.3 Verbs}
+ */
+export const AU_VERBS = [
+  "initialized",
+  "completed",
+  "passed",
+  "failed",
+  "terminated",
+] as const satisfies readonly Cmi5Verb[];
+
+/** The name of a verb that an assignable unit sends. */
+export type AuVerb = (typeof AU_VERBS)[number];
+
+/**
  * The activities of the `category` of a context: every statement that cmi5 defines carries the first, and every statement
  * that carries `success` or `completion` the second.
  *

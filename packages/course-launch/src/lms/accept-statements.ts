@@ -3,18 +3,11 @@ import type { Issue } from "@interopkit/core/checks";
 import { findStatementTime, type Statement } from "@interopkit/learning-records";
 import type { StatementStore } from "@interopkit/learning-records/store";
 import { classifyStatement } from "../rules/index.js";
-import { cmi5VerbOf, judgeStatement, type SessionProgress, sessionOrder } from "../rules/internal.js";
+import { cmi5VerbOf, isAuVerb, judgeStatement, type SessionProgress, sessionOrder } from "../rules/internal.js";
 import { registrationOf } from "./create-registration.js";
 import { type LmsSettings, signalOf, withRetries } from "./options.js";
 import { auOf } from "./progress.js";
 import type { AuOutcome, Registration, Reservation, Session } from "./records.js";
-
-/** The verbs of cmi5 that an assignable unit sends, which the LMS reserves in its session. */
-const RESERVED_VERBS: ReadonlySet<string> = new Set(["initialized", "completed", "passed", "failed", "terminated"]);
-
-/** Tells whether a verb of cmi5 is one that an assignable unit sends. */
-const isReserved = (verb: string | undefined): verb is Reservation["verb"] =>
-  verb !== undefined && RESERVED_VERBS.has(verb);
 
 /** The id of a statement as the LRS keeps it, in lower case, or `undefined` for one sent without. */
 const idOf = (statement: Statement): string | undefined => statement.id?.toLowerCase();
@@ -72,7 +65,7 @@ function reservationsOf(order: ReturnType<typeof inOrder>): readonly Reservation
     if (id === undefined || classifyStatement(statement) !== "defined") return [];
     const verb = cmi5VerbOf(statement.verb.id);
     // A statement without a time was refused, so every statement here has one.
-    return isReserved(verb) ? [{ verb, statement: id, time: findStatementTime(statement) ?? 0 }] : [];
+    return isAuVerb(verb) ? [{ verb, statement: id, time: findStatementTime(statement) ?? 0 }] : [];
   });
 }
 

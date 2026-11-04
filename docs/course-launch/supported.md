@@ -22,7 +22,7 @@ flowchart LR
 | 10.0 `LMS.LaunchData`                            | `readLaunchData`                                                                                                           |
 | 10.2.2 Launch modes                              | No completed, passed or failed in Browse and Review                                                                       |
 | 11.0 Learner preferences                         | `readLearnerPreferences`, `writeLearnerPreferences`; initialized after the preferences were read, when the facts say so    |
-| 9.3, 9.6, 10.0, 11.0 Vocabularies                | `CMI5_VERBS`, `CMI5_CATEGORIES`, `CMI5_EXTENSIONS`, `CMI5_ACTIVITY_TYPES`, `LAUNCH_MODES`, `LAUNCH_DATA_STATE_ID`, `LEARNER_PREFERENCES_PROFILE_ID` |
+| 9.3, 9.6, 10.0, 11.0 Vocabularies                | `CMI5_VERBS`, `AU_VERBS`, `CMI5_CATEGORIES`, `CMI5_EXTENSIONS`, `CMI5_ACTIVITY_TYPES`, `LAUNCH_MODES`, `LAUNCH_DATA_STATE_ID`, `LEARNER_PREFERENCES_PROFILE_ID` |
 | 13.1 Course structure data model                 | Every element and attribute of the course, the objectives, the blocks and the assignable units; values trimmed             |
 | 13.1.2 to 13.1.4 Ids                             | Unique among the blocks, the objectives and the assignable units, each kind apart; an `idref` names a declared objective   |
 | 13.1.4 url                                       | The characters of RFC 1738; the schemes that the host allows                                                               |

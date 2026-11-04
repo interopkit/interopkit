@@ -2,7 +2,7 @@
 "@interopkit/course-launch": major
 ---
 
-cmi5 Quartz. The vocabularies of the specification: `MOVE_ON_VALUES`, `LAUNCH_METHODS`, `LAUNCH_MODES`, `CMI5_VERBS`,
+cmi5 Quartz. The vocabularies of the specification: `MOVE_ON_VALUES`, `LAUNCH_METHODS`, `LAUNCH_MODES`, `CMI5_VERBS`, `AU_VERBS`,
 `CMI5_CATEGORIES`, `CMI5_EXTENSIONS`, `CMI5_ACTIVITY_TYPES`, `COURSE_STRUCTURE_NAMESPACE`, `LAUNCH_DATA_STATE_ID` and
 `LEARNER_PREFERENCES_PROFILE_ID`. `readCourseStructure` reads a course structure, `cmi5.xml`, into the model of the course, its
 objectives, its blocks and its assignable units, and throws a `DataError` that names the path of the first error;

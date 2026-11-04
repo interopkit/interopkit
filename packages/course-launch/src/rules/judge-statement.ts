@@ -8,7 +8,7 @@ import {
   VERB_VOIDED,
 } from "@interopkit/learning-records";
 import { CMI5_CATEGORIES, CMI5_EXTENSIONS, type Cmi5Verb } from "../model/index.js";
-import { categoryIdsOf, classifyStatement, cmi5VerbOf } from "./classify.js";
+import { categoryIdsOf, classifyStatement, cmi5VerbOf, isAuVerb } from "./classify.js";
 import type { SessionFacts, SessionProgress } from "./session.js";
 
 /** What judging one statement gives: its findings, with paths in the statement, and the session after it. */
@@ -16,9 +16,6 @@ export interface Judgement {
   readonly findings: readonly Issue[];
   readonly next: SessionProgress;
 }
-
-/** The verbs that an assignable unit sends; the others of cmi5 are the LMS's. */
-const AU_VERBS: ReadonlySet<Cmi5Verb> = new Set(["initialized", "completed", "passed", "failed", "terminated"]);
 
 /** The verbs that Browse and Review forbid, since they record satisfaction (10.2.2). */
 const JUDGED_VERBS: ReadonlySet<Cmi5Verb> = new Set(["completed", "passed", "failed"]);
@@ -334,7 +331,7 @@ export function judgeStatement(statement: Statement, facts: SessionFacts, progre
   const found = new Findings();
   const kind = classifyStatement(statement);
   const named = cmi5VerbOf(statement.verb.id);
-  const verb = kind === "defined" && named !== undefined && AU_VERBS.has(named) ? named : undefined;
+  const verb = kind === "defined" && isAuVerb(named) ? named : undefined;
   judgeIdentity(statement, facts, found);
   judgeContext(statement, facts, found);
   judgeOrder(statement, verb, progress, found);

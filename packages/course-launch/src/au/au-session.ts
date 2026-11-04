@@ -29,8 +29,8 @@ import {
   type LearnerPreferences,
 } from "../model/index.js";
 import { writeLearnerPreferences } from "../rules/index.js";
-import { judgeStatement, type SessionProgress } from "../rules/internal.js";
-import type { AuResume, AuSettings, AuVerb } from "./options.js";
+import { isAuVerb, judgeStatement, type SessionProgress } from "../rules/internal.js";
+import type { AuResume, AuSettings } from "./options.js";
 import { signalOf } from "./options.js";
 
 /** What a statement came to: sent and stored, skipped because the rules or the launch mode forbid it, or refused by the LMS. */
@@ -167,9 +167,6 @@ const PROGRESSED: Verb = { id: "http://adlnet.gov/expapi/verbs/progressed", disp
 
 /** The most that `progress` may say, a percentage (9.5.5.1). */
 const MAX_PROGRESS = 100;
-
-/** The verbs of cmi5 that a unit sends, which its resume lists. */
-const AU_VERBS: ReadonlySet<string> = new Set(["initialized", "completed", "passed", "failed", "terminated"]);
 
 /** The statuses with which an LMS refuses a request of a unit: an ended token, and a request that cmi5 refuses. */
 const REFUSED_STATUSES: ReadonlySet<number> = new Set([401, 403]);
@@ -321,7 +318,7 @@ export function createAuSession(parts: SessionParts): AuSession {
         activityId: launch.activityId,
         token,
         ...(progress.initializedAt === undefined ? {} : { initializedAt: progress.initializedAt }),
-        sent: progress.verbs.filter((verb): verb is AuVerb => AU_VERBS.has(verb)),
+        sent: progress.verbs.filter(isAuVerb),
         ended,
       };
     },

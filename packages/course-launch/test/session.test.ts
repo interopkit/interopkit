@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SOUND } from "../../../scripts/cmi5-rules.js";
-import { classifyStatement, validateSessionStatements } from "../src/index.js";
+import { AU_VERBS, CMI5_VERBS, classifyStatement, validateSessionStatements } from "../src/index.js";
 import { judgeStatement, sessionOrder, sessionStart } from "../src/rules/internal.js";
 
 /** A copy of the sound session of the rules table, as JSON passes it. */
@@ -17,6 +17,18 @@ describe("the kind of a statement", () => {
     const moveOnAlone = structuredClone(allowed);
     moveOnAlone.context.contextActivities.category = [{ id: "https://w3id.org/xapi/cmi5/context/categories/moveon" }];
     expect(classifyStatement(moveOnAlone)).toBe("not-allowed");
+  });
+});
+
+describe("the verbs of an assignable unit", () => {
+  it("are the five that cmi5 9.3 lists for an assignable unit, and the others are the LMS's", () => {
+    expect(AU_VERBS).toStrictEqual(["initialized", "completed", "passed", "failed", "terminated"]);
+    expect(Object.keys(CMI5_VERBS).filter((name) => !(AU_VERBS as readonly string[]).includes(name))).toStrictEqual([
+      "launched",
+      "abandoned",
+      "waived",
+      "satisfied",
+    ]);
   });
 });
 

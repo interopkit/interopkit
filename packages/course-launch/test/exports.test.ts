@@ -6,6 +6,7 @@ describe("the public API", () => {
   it("exports only what the package documents", () => {
     expect(Object.keys(root).sort()).toStrictEqual(
       [
+        "AU_VERBS",
         "AUDIO_PREFERENCES",
         "classifyStatement",
         "readLaunchData",

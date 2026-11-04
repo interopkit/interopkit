@@ -7,8 +7,10 @@
 
 export {
   type AssignableUnit,
+  AU_VERBS,
   AUDIO_PREFERENCES,
   type AudioPreference,
+  type AuVerb,
   type Block,
   CMI5_ACTIVITY_TYPES,
   CMI5_CATEGORIES,
