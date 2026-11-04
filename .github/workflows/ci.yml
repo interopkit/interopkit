@@ -359,7 +359,7 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
       - run: pnpm test:browser
 
-  # The scenarios of the two examples, built as the packages ship, on Node.js, Deno, Bun and workerd (compat/README.md).
+  # The scenarios of the six examples, built as the packages ship, on Node.js, Deno, Bun and workerd (compat/README.md).
   runtimes:
     needs: changes
     if: needs.changes.outputs.runtimes == 'true'
