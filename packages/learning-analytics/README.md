@@ -58,7 +58,7 @@ flowchart LR
     model["model: 76 entity and 25 event types,<br/>vocabularies, contexts"]
     read["readEntity, readEvent"]
     validate["validateEvent, validateEntity:<br/>the rules of the profiles"]
-    build["buildEvent, buildEntity, mintUrn,<br/>checkIri"]
+    build["buildEvent, buildEntity,<br/>mintUrn"]
     send["sendCaliper, pingEndpoint"]
     endpointNode["handleCaliperRequest,<br/>readEnvelope"]
   end
@@ -89,8 +89,8 @@ environment variable, writes no log, and calls the network only through the `fet
 | `@interopkit/learning-analytics` | `readEntity`, `readEvent`, `ReadOptions`: an entity describe or an event from outside, of Caliper 1.2 or, with `version: "1.1"`, of 1.1, checked against its class and returned as a copy |
 |                                  | `validateEvent`, `validateEntity`, `ValidateOptions`: what is wrong with a value, and where it departs from the rules of its profile, as findings |
 |                                  | `buildEvent`, `buildEntity`, `BuildOptions`: a checked event or entity with its `@context`; `buildEvent` also checks the rules of the event's profile |
-|                                  | `mintUrn`: the identifier of an event from the parts that identify it. `checkIri`. A time is written by `formatDateTime` of `@interopkit/core/checks` |
-|                                  | `sendCaliper`, `pingEndpoint`, `SendCaliperOptions`, `CaliperSender`, `PingResult`, `DEFAULT_CALIPER_TIMEOUT_MS`: the sensor, which sends events and entity describes and asks an endpoint for its configuration |
+|                                  | `mintUrn`: the identifier of an event from the parts that identify it. A time is written by `formatDateTime` of `@interopkit/core/checks` |
+|                                  | `sendCaliper`, `pingEndpoint`, `SendCaliperOptions`, `CaliperSender`, `PingResult`: the sensor, which sends events and entity describes and asks an endpoint for its configuration |
 |                                  | `EndpointConfiguration`: what an endpoint says of itself (section 6.2)                                                                        |
 | `@interopkit/learning-analytics/endpoint` | `handleCaliperRequest`, `CaliperEndpointOptions`: answers a POST of an envelope of 1.2 or 1.1 in a fixed order of checks (405, 401, 415, 413, 400, 422) and a GET with its configuration |
 |                                  | `readEnvelope`, `ReceivedEnvelope`: an envelope read into events and entities, with the principal that sent it and the findings                |

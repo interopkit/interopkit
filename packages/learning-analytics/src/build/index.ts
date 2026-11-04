@@ -6,4 +6,3 @@
  */
 export { type BuildOptions, buildEntity, buildEvent } from "./build-event.js";
 export { mintUrn } from "./identifier.js";
-export { checkIri } from "./iri.js";

@@ -6,4 +6,4 @@
  */
 export { type PingResult, pingEndpoint } from "./ping-endpoint.js";
 export { type SendCaliperOptions, sendCaliper } from "./send-caliper.js";
-export { type CaliperSender, DEFAULT_CALIPER_TIMEOUT_MS } from "./sender.js";
+export type { CaliperSender } from "./sender.js";

@@ -5,12 +5,11 @@
  *
  * @module @interopkit/learning-analytics
  */
-export { type BuildOptions, buildEntity, buildEvent, checkIri, mintUrn } from "./build/index.js";
+export { type BuildOptions, buildEntity, buildEvent, mintUrn } from "./build/index.js";
 export * from "./model/index.js";
 export { type ReadOptions, readEntity, readEvent } from "./read/index.js";
 export {
   type CaliperSender,
-  DEFAULT_CALIPER_TIMEOUT_MS,
   type PingResult,
   pingEndpoint,
   type SendCaliperOptions,

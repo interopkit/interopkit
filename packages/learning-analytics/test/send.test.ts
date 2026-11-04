@@ -1,9 +1,12 @@
 // biome-ignore-all lint/style/useNamingConvention: The names of HTTP headers are those of their specifications.
 
 import { DataError, type Fetch, ServiceError } from "@interopkit/core";
+import { parseWith } from "@interopkit/core/checks";
 import fc from "fast-check";
+import * as v from "valibot";
 import { describe, expect, it } from "vitest";
-import { CALIPER_CONTEXT, type CaliperEvent, DEFAULT_CALIPER_TIMEOUT_MS, sendCaliper } from "../src/index.js";
+import { CALIPER_CONTEXT, type CaliperEvent, readEntity, sendCaliper } from "../src/index.js";
+import { iriSchema } from "../src/send/sender.js";
 import { eventAt, fakeEndpoint, fromJson, SENDER } from "./fixture.js";
 
 const sample = (): readonly CaliperEvent[] => [eventAt(0), eventAt(1)];
@@ -61,7 +64,6 @@ describe("sendCaliper: the request", () => {
     const { init } = endpoint.requests[0] ?? {};
     expect(init?.redirect).toBe("manual");
     expect(init?.signal).toBeInstanceOf(AbortSignal);
-    expect(DEFAULT_CALIPER_TIMEOUT_MS).toBe(10_000);
   });
 
   it("accepts any 2xx answer, 200 and 202 included", async () => {
@@ -157,10 +159,10 @@ describe("sendCaliper: data and sender", () => {
       await expect(
         sendCaliper(sample(), { ...given, maxPayloadBytes: maxPayloadBytes as never }),
         String(maxPayloadBytes),
-      ).rejects.toThrow("The option maxPayloadBytes must be a positive integer");
+      ).rejects.toThrow("The options is invalid at maxPayloadBytes:");
     }
     await expect(sendCaliper(sample(), { ...given, token: fromJson<never>("null") })).rejects.toThrow(
-      "The option token must be a string, found null.",
+      "The options is invalid at token: expected a string, found null.",
     );
     await expect(sendCaliper([{ "@context": CALIPER_CONTEXT, type: "Person" } as never], given)).rejects.toThrow(
       "The id of the Caliper item 0 must be a non-empty string",
@@ -322,7 +324,7 @@ describe("sendCaliper: signals", () => {
     const endpoint = fakeEndpoint({ status: 200 });
     await expect(
       sendCaliper(sample(), { ...SENDER, fetch: endpoint.fetch, signal: fromJson('{"aborted":false}') }),
-    ).rejects.toThrow("The option signal must be an AbortSignal, found an object.");
+    ).rejects.toThrow("The options is invalid at signal: expected an AbortSignal, found an object.");
     expect(endpoint.requests).toHaveLength(0);
   });
 });
@@ -405,16 +407,19 @@ describe("sendCaliper: input of other types", () => {
 
   it("says what is wrong and what is expected", async () => {
     await expect(sendCaliper(sample(), { ...options(), endpoint: "http://lrs.example/caliper" })).rejects.toThrow(
-      'The option endpoint must be an absolute https URL, found "http://lrs.example/caliper".',
+      'The options is invalid at endpoint: expected an absolute https URL, found "http://lrs.example/caliper".',
     );
     await expect(sendCaliper([], options())).rejects.toThrow(
       "The Caliper data must have at least one event or entity describe, as an envelope does.",
     );
     await expect(sendCaliper(sample(), { ...options(), token: "two words" })).rejects.toThrow(
-      "The option token must be a bearer token of RFC 6750 section 2.1: letters, digits and -._~+/, then =.",
+      "The options is invalid at token: expected a bearer token of RFC 6750 section 2.1: letters, digits and -._~+/, then =.",
     );
     await expect(sendCaliper(sample(), { ...options(), timeoutMs: 0 })).rejects.toThrow(
-      "The option timeoutMs must be a positive integer, found 0.",
+      "The options is invalid at timeoutMs: expected a value of at least 1, found 0.",
+    );
+    await expect(sendCaliper(sample(), { ...options(), timeout: 5 } as never)).rejects.toThrow(
+      'The options is invalid: unexpected property "timeout".',
     );
     await expect(sendCaliper(sample(), { ...options(), sendTime: 1.5 })).rejects.toThrow(
       "The time must be whole epoch milliseconds in the years 0000 to 9999, found 1.5.",
@@ -473,6 +478,79 @@ describe("sendCaliper: properties", () => {
         },
       ),
       { numRuns: 40, seed: 20_261_101 },
+    );
+  });
+});
+
+describe("the IRI of a sensor", () => {
+  it("accepts an absolute IRI of any scheme", () => {
+    for (const iri of [
+      "https://exam.example/tests/42",
+      "urn:uuid:ff9ec22a-fc59-4ae1-ae8d-2c9463ee2f8f",
+      "mailto:a@b.example",
+      "https://exam.example/tests/42#part",
+    ]) {
+      expect(() => parseWith(iriSchema, iri, "The sensor")).not.toThrow();
+    }
+  });
+
+  it("rejects what is not an absolute IRI, and other types", () => {
+    for (const bad of ["item-1", "/tests/42", "", "://x", fromJson("null"), 5, fromJson("[]")]) {
+      expect(() => parseWith(iriSchema, bad, "The sensor"), String(bad)).toThrow(DataError);
+    }
+    expect(() => parseWith(iriSchema, "item-1", "The sensor")).toThrow(
+      'The sensor is invalid: expected an absolute IRI, found "item-1".',
+    );
+    expect(() => parseWith(iriSchema, 5, "The sensor")).toThrow("The sensor is invalid: expected a string, found 5.");
+  });
+
+  it("refuses white space that URL would remove or encode, as the readers refuse it in an entity", () => {
+    for (const bad of [
+      "https://exam.example/a b",
+      "https://exam.\nexample/x",
+      "https://exam.example/x\t",
+      " https://exam.example",
+    ]) {
+      expect(() => parseWith(iriSchema, bad, "The sensor"), JSON.stringify(bad)).toThrow(DataError);
+    }
+  });
+
+  it("only ever throws a DataError for any JSON value", () => {
+    fc.assert(
+      fc.property(fc.jsonValue(), (value) => {
+        try {
+          parseWith(iriSchema, value, "The sensor");
+        } catch (error) {
+          expect(error).toBeInstanceOf(DataError);
+        }
+      }),
+      { numRuns: 200, seed: 20_261_101 },
+    );
+  });
+
+  it("accepts what the readers take as the IRI of an entity, and nothing else", () => {
+    const iriLike = fc.oneof(
+      fc.webUrl({ withFragments: true, withQueryParameters: true }),
+      fc
+        .tuple(fc.webUrl(), fc.constantFrom(" ", "\t", "\n", "\r"), fc.string())
+        .map(([url, space, rest]) => `${url}${space}${rest}`),
+      fc.string(),
+    );
+    fc.assert(
+      fc.property(iriLike, (value) => {
+        fc.pre(!value.startsWith("_:"));
+        const checked = v.is(iriSchema, value);
+        const read = (() => {
+          try {
+            readEntity({ "@context": CALIPER_CONTEXT, id: value, type: "Person" });
+            return true;
+          } catch {
+            return false;
+          }
+        })();
+        expect(checked, JSON.stringify(value)).toBe(read);
+      }),
+      { numRuns: 300, seed: 20_261_103 },
     );
   });
 });

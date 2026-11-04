@@ -1,12 +1,8 @@
 // biome-ignore-all lint/style/useNamingConvention: The names of HTTP headers are those of their specifications.
 
-import type { Fetch } from "@interopkit/core";
-import { DataError } from "@interopkit/core";
-import { checkHttpsUrl, checkRecord, checkString } from "@interopkit/core/checks";
-import { checkIri } from "../build/index.js";
-
-/** The time that a call to the endpoint may take when the host sets none, in milliseconds. */
-export const DEFAULT_CALIPER_TIMEOUT_MS = 10_000;
+import { clientOptionsEntries, type Fetch } from "@interopkit/core";
+import { httpsUrlSchema, isAbsoluteUri, positiveIntegerSchema } from "@interopkit/core/checks";
+import * as v from "valibot";
 
 // The credential of the Bearer scheme is a b64token (RFC 6750 section 2.1). It goes into a header, so a character outside
 // this set, such as a line break, must never reach it.
@@ -30,28 +26,43 @@ export interface CaliperSender {
   /**
    * The most time in milliseconds that the call may take, from the request to the last byte of the answer.
    *
-   * @defaultValue {@link DEFAULT_CALIPER_TIMEOUT_MS}, `10000`
+   * @defaultValue `10000`
    */
   readonly timeoutMs?: number;
 }
 
 /**
- * Checks the options that a sensor reads itself, as a host passes them from JavaScript. `fetch`, `timeoutMs` and `signal` are
- * checked by the call to the service.
+ * The schema of an absolute IRI, which Caliper requires for every entity, in the form that `readEvent` and `readEntity` take as
+ * the `id` of an entity: a scheme, no white space, and a text that `URL` parses.
  */
-export function checkSender(value: unknown): asserts value is CaliperSender {
-  checkRecord(value, "The options must be an object");
-  checkHttpsUrl(value.endpoint, "The option endpoint");
-  if (value.token !== undefined) {
-    checkString(value.token, "The option token");
-    if (!BEARER_TOKEN.test(value.token)) {
-      throw new DataError(
-        "The option token must be a bearer token of RFC 6750 section 2.1: letters, digits and -._~+/, then =.",
-      );
-    }
-  }
-  checkIri(value.sensor, "The option sensor");
-}
+export const iriSchema = v.pipe(
+  v.string(),
+  v.check(isAbsoluteUri, (issue) => `expected an absolute IRI, found ${issue.received}`),
+);
+
+/**
+ * The options that the calls of a sensor read: a host keeps one object of them for `sendCaliper` and `pingEndpoint`, so that a
+ * property that neither takes is refused and a shared object is not. `sendCaliper` requires `sensor` and `sendTime`.
+ */
+export const senderEntries = {
+  endpoint: httpsUrlSchema,
+  token: v.optional(
+    v.pipe(
+      v.string(),
+      v.check(
+        (token) => BEARER_TOKEN.test(token),
+        "expected a bearer token of RFC 6750 section 2.1: letters, digits and -._~+/, then =",
+      ),
+    ),
+  ),
+  fetch: clientOptionsEntries.fetch,
+  sensor: v.optional(iriSchema),
+  // `formatDateTime` checks the time when it writes it.
+  sendTime: v.optional(v.unknown()),
+  timeoutMs: clientOptionsEntries.timeoutMs,
+  maxPayloadBytes: v.optional(positiveIntegerSchema),
+  signal: clientOptionsEntries.signal,
+};
 
 /** The header that carries the bearer token, and none when the sender has no token. */
 export function bearerHeaders(token: string | undefined): Readonly<Record<string, string>> {

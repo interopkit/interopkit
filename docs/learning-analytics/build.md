@@ -122,10 +122,6 @@ UTC, with milliseconds. The same function writes the Timestamps of xAPI, so one 
 | Whole milliseconds from `-62167219200000` to `253402300799999` | The time, from `0000-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z` |
 | Anything else, a fraction of a millisecond, `NaN` and a string included | `DataError`                                                      |
 
-`checkIri(value, label)` throws `DataError` unless the value is an absolute IRI, which Caliper requires of every entity
-(section 4.2), in the form that the readers take as the `id` of an entity: a scheme, no white space, and a text that `URL`
-parses. A host can use it on the parties it passes in, and `buildEvent` takes what it passes.
-
 ## Errors
 
 | Error       | When                                                                                                                                                                           | What to do                                                             |

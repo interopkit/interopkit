@@ -1,8 +1,8 @@
-import { type CallOptions, DataError, LimitError, requestService } from "@interopkit/core";
-import { checkRecord, MAX_JSON_DEPTH, nestsDeeperThan, parseWith } from "@interopkit/core/checks";
+import { type CallOptions, DEFAULT_TIMEOUT_MS, readAnswerJson, requestService } from "@interopkit/core";
+import { parseWith, readCallOptions, strictRecord } from "@interopkit/core/checks";
 import type { EndpointConfiguration } from "../model/index.js";
 import { endpointConfigurationSchema } from "./configuration.js";
-import { bearerHeaders, type CaliperSender, checkSender, DEFAULT_CALIPER_TIMEOUT_MS } from "./sender.js";
+import { bearerHeaders, type CaliperSender, senderEntries } from "./sender.js";
 
 /** What a ping found: the endpoint answered with its configuration, refused the token, or is not serving. */
 export type PingResult =
@@ -31,6 +31,8 @@ const HIGHEST_STATUS = 599;
 const FIRST_REDIRECT = 300;
 const FIRST_CLIENT_ERROR = 400;
 
+const optionsSchema = strictRecord(senderEntries);
+
 /** The statuses that a ping returns as values: every one a service answers with but a redirect, which no call follows. */
 const PING_STATUSES: readonly number[] = Array.from(
   { length: HIGHEST_STATUS - LOWEST_STATUS + 1 },
@@ -46,23 +48,24 @@ const PING_STATUSES: readonly number[] = Array.from(
  * every call of the package, since it would send the token elsewhere. The answer has at most 65,536 bytes, and its JSON at most
  * 64 levels.
  *
- * @param sender - The endpoint, the token, `fetch`, the sensor and the time limit, as for `sendCaliper`.
+ * @param sender - The endpoint, the token, `fetch` and the time limit, as for `sendCaliper`. A ping sends no sensor.
  * @param options - The signal that ends the caller's wait.
  * @returns What the endpoint said: available with its configuration, unauthorized, or unavailable with its status.
  * @throws `DataError` when an argument has the wrong type or value, before any request, and when the endpoint answers 200 with
- * a body that is not JSON, nests deeper than 64 levels, or is not the configuration of section 6.2.
+ * a body that is not JSON, or is not the configuration of section 6.2.
+ * @throws `LimitError` when the JSON of a 200 nests deeper than 64 levels.
  * @throws `ServiceError` with status `0` when the endpoint did not answer in time, and with its status when it answered with a
  * redirect or with more than 65,536 bytes.
  * @throws The `reason` of `options.signal` when it aborts, before or during the call.
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2#configuration-information | Caliper Analytics 1.2, Configuration Information}
  */
-export async function pingEndpoint(sender: CaliperSender, options?: CallOptions): Promise<PingResult> {
-  checkSender(sender);
-  checkRecord(options ?? {}, "The options must be an object");
-  const { endpoint, token, fetch, timeoutMs = DEFAULT_CALIPER_TIMEOUT_MS } = sender;
+export async function pingEndpoint(sender: Omit<CaliperSender, "sensor">, options?: CallOptions): Promise<PingResult> {
+  parseWith(optionsSchema, sender, "The options");
+  const { signal } = readCallOptions(options);
+  const { endpoint, token, fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = sender;
   const what = `The Caliper endpoint at ${endpoint}`;
   const answer = await requestService(
-    { fetch, timeoutMs, signal: options?.signal },
+    { fetch, timeoutMs, signal },
     what,
     endpoint,
     { method: "GET", headers: bearerHeaders(token) },
@@ -70,23 +73,12 @@ export async function pingEndpoint(sender: CaliperSender, options?: CallOptions)
   );
   if (answer.status === 401) return { status: "unauthorized" };
   if (answer.status !== 200) return { status: "unavailable", httpStatus: answer.status };
-  // The answer has at most 65,536 bytes, so it has far fewer tokens than the limit of a text of JSON: only its depth is counted.
-  const text = new TextDecoder().decode(answer.body);
-  if (nestsDeeperThan(text, MAX_JSON_DEPTH)) {
-    throw new LimitError(
-      `${what} answered with JSON that nests deeper than the limit of ${MAX_JSON_DEPTH} levels.`,
-      "maxDepth",
-      MAX_JSON_DEPTH,
-    );
-  }
-  let value: unknown;
-  try {
-    value = JSON.parse(text);
-  } catch (error) {
-    throw new DataError(`${what} answered with a body that is not JSON.`, { cause: error });
-  }
   return {
     status: "available",
-    configuration: parseWith(endpointConfigurationSchema, value, "The configuration of the endpoint"),
+    configuration: parseWith(
+      endpointConfigurationSchema,
+      readAnswerJson(answer, what),
+      "The configuration of the endpoint",
+    ),
   };
 }

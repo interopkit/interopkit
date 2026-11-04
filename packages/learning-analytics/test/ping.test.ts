@@ -94,7 +94,7 @@ describe("pingEndpoint: a configuration that is not the one of section 6.2", () 
   it("refuses JSON that nests deeper than 64 levels without parsing it", async () => {
     const message = await refusal(`${"[".repeat(65)}${"]".repeat(65)}`);
     expect(message).toBe(
-      `The Caliper endpoint at ${SENDER.endpoint} answered with JSON that nests deeper than the limit of 64 levels.`,
+      `The Caliper endpoint at ${SENDER.endpoint} answered with JSON that nests more than 64 levels.`,
     );
   });
 
@@ -200,26 +200,45 @@ describe("pingEndpoint: input of other types", () => {
   const given = (): typeof SENDER & { readonly fetch: Fetch } => ({ ...SENDER, fetch: answering(200).fetch });
 
   it.each([
-    ["null options", fromJson<never>("null"), "The options must be an object, found null."],
-    ["options as an array", fromJson<never>("[]"), "The options must be an object, found an array."],
+    ["null options", fromJson<never>("null"), "The options is invalid: expected an object, found null."],
+    ["options as an array", fromJson<never>("[]"), "The options is invalid: expected an object, found an array."],
     [
       "an http endpoint",
       { ...given(), endpoint: "http://lrs.example/caliper" },
-      "The option endpoint must be an absolute https URL",
+      "The options is invalid at endpoint: expected an absolute https URL",
     ],
-    ["a token with a line break", { ...given(), token: "abc\r\nX: 1" }, "The option token must be a bearer token"],
-    ["a token as a number", { ...given(), token: 5 }, "The option token must be a string, found 5."],
-    ["a sensor that is no IRI", { ...given(), sensor: "not an iri" }, "The option sensor must be an absolute IRI"],
-    ["no fetch", { ...given(), fetch: undefined }, "The option fetch must be a function"],
-    ["a time limit of 0", { ...given(), timeoutMs: 0 }, "The option timeoutMs must be a positive integer, found 0."],
+    [
+      "a token with a line break",
+      { ...given(), token: "abc\r\nX: 1" },
+      "The options is invalid at token: expected a bearer token",
+    ],
+    ["a token as a number", { ...given(), token: 5 }, "The options is invalid at token: expected a string, found 5."],
+    [
+      "a sensor that is no IRI",
+      { ...given(), sensor: "not an iri" },
+      "The options is invalid at sensor: expected an absolute IRI",
+    ],
+    ["no fetch", { ...given(), fetch: undefined }, "The options is invalid at fetch: expected a function"],
+    [
+      "a time limit of 0",
+      { ...given(), timeoutMs: 0 },
+      "The options is invalid at timeoutMs: expected a value of at least 1, found 0.",
+    ],
+    ["a misspelled option", { ...given(), timeout: 5 }, 'The options is invalid: unexpected property "timeout".'],
   ])("rejects %s with a DataError, before any request", async (_, sender, message) => {
     await expect(pingEndpoint(sender as never)).rejects.toThrow(message);
+  });
+
+  it("takes a sender without a sensor, which a ping never sends", async () => {
+    const endpoint = answering(200);
+    const { sensor: _sensor, sendTime: _sendTime, ...sender } = SENDER;
+    await expect(pingEndpoint({ ...sender, fetch: endpoint.fetch })).resolves.toMatchObject({ status: "available" });
   });
 
   it("rejects options of the call that are no object, and a signal that is no AbortSignal", async () => {
     const endpoint = answering(200);
     await expect(pingEndpoint({ ...SENDER, fetch: endpoint.fetch }, fromJson<never>("[]"))).rejects.toThrow(
-      "The options must be an object, found an array.",
+      "The options of a call must be an object, found an array.",
     );
     await expect(
       pingEndpoint({ ...SENDER, fetch: endpoint.fetch }, fromJson<never>('{"signal":{"aborted":false}}')),

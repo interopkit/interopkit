@@ -58,9 +58,12 @@ requests[0].body.data[0].id === event.id; // => true
 | `fetch`     | The `fetch` that makes the request: the global one, or a function with the signature of `Fetch` of `@interopkit/core`                                 | required                              |
 | `sensor`    | The absolute IRI that identifies the sensor (section 5.2), which is checked                                                                           | required                              |
 | `sendTime`  | The time of sending in epoch milliseconds. A resend has the time of the resend                                                                        | required                              |
-| `timeoutMs` | The most time in milliseconds from the request to the last byte of the answer                                                                         | `DEFAULT_CALIPER_TIMEOUT_MS`, `10000` |
+| `timeoutMs` | The most time in milliseconds from the request to the last byte of the answer                                                                         | `10000` |
 | `maxPayloadBytes` | The most bytes of the envelope that the endpoint takes, which its configuration gives in kilobytes of 1,024 bytes. A larger envelope is a `LimitError` before any request | none |
 | `signal`    | An `AbortSignal` that ends this caller's wait                                                                                                         | none                                  |
+
+One object may hold the options of `sendCaliper` and `pingEndpoint`; a property that neither takes, such as a misspelled option,
+is refused with a `DataError`.
 
 The request is a `POST` with `Content-Type: application/json` and, when there is a token, `Authorization: Bearer <token>`. The
 body has the properties `sensor`, `sendTime`, `dataVersion` (the Caliper context) and `data`, and no others. At least one event
@@ -116,7 +119,7 @@ sequenceDiagram
 ## Asking the endpoint
 
 `pingEndpoint(sender, options)` sends a `GET` to the endpoint, with the bearer token when there is one, and reads the answer as
-section 6.2 says. It takes the same `endpoint`, `token`, `fetch`, `sensor` and `timeoutMs` as `sendCaliper`, and a `signal` in its
+section 6.2 says. It takes the same `endpoint`, `token`, `fetch` and `timeoutMs` as `sendCaliper`, and a `signal` in its
 second argument.
 
 ```ts

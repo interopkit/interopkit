@@ -12,7 +12,7 @@ flowchart BT
   v11["v1p1<br/>what differs in Caliper 1.1"]
   read["read<br/>one schema for each class and version,<br/>readEntity, readEvent"]
   validate["validate<br/>validateEvent, validateEntity,<br/>the tables of the profiles"]
-  build["build<br/>buildEvent, mintUrn, checkIri"]
+  build["build<br/>buildEvent, mintUrn"]
   send["send<br/>sendCaliper, pingEndpoint"]
   endpointNode["endpoint<br/>handleCaliperRequest, readEnvelope"]
   v11 --> model
@@ -49,8 +49,8 @@ flowchart BT
 | `v1p1`  | What differs in Caliper 1.1: its extension contexts, the terms of 1.2 that it lacks and the classes it deprecated ([Caliper 1.1](./versions.md))        |
 | `read`  | A schema for each class and each version, `readEvent` and `readEntity`, which take a document from outside into the model                            |
 | `validate` | `validateEvent`, `validateEntity` and the tables of the profiles of section 3 and of the certification guide ([judging events](./validate.md))     |
-| `build` | `buildEvent`, `mintUrn`, `checkIri` ([building events](./build.md)); the times are written by `formatDateTime` of `@interopkit/core/checks` |
-| `send`  | `sendCaliper`, `pingEndpoint`, `CaliperSender`, `SendCaliperOptions`, `PingResult`, `DEFAULT_CALIPER_TIMEOUT_MS` ([sending events](./send.md))        |
+| `build` | `buildEvent`, `mintUrn` ([building events](./build.md)); the times are written by `formatDateTime` of `@interopkit/core/checks` |
+| `send`  | `sendCaliper`, `pingEndpoint`, `CaliperSender`, `SendCaliperOptions`, `PingResult` ([sending events](./send.md))        |
 | `endpoint` | `handleCaliperRequest`, `readEnvelope`, `ReceivedEnvelope`, `CaliperEndpointOptions`, from `@interopkit/learning-analytics/endpoint` ([receiving events](./endpoint.md)) |
 
 `model` imports no other module, `v1p1` builds on `model` alone, `read` on both, `validate` on those and `read`, `build` on `model`, `read` and `validate`, `send` on `model` and `build`, and `endpoint` on `model`, `v1p1`, `read` and `validate`; `send` and `endpoint` never import each other, and neither `build` nor `send` imports `v1p1`, since 1.1 is read and never written. Biome keeps the rules. The exports come from `@interopkit/learning-analytics`, and those of the endpoint from `@interopkit/learning-analytics/endpoint`. The package depends on `@interopkit/core` for errors, checks, findings

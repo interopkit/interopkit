@@ -1,16 +1,17 @@
 // biome-ignore-all lint/style/useNamingConvention: The names of HTTP headers are those of their specifications.
 
-import { type CallOptions, callService, DataError, LimitError } from "@interopkit/core";
+import { type CallOptions, callService, DataError, DEFAULT_TIMEOUT_MS, LimitError } from "@interopkit/core";
 import {
   checkArray,
   checkNonEmptyString,
-  checkPositiveInteger,
   checkRecord,
   describe,
   formatDateTime,
+  parseWith,
+  strictRecord,
 } from "@interopkit/core/checks";
 import { CALIPER_CONTEXT, type CaliperEvent, type EntityDocument, LIBRARY_PROFILE_CONTEXT } from "../model/index.js";
-import { bearerHeaders, type CaliperSender, checkSender, DEFAULT_CALIPER_TIMEOUT_MS } from "./sender.js";
+import { bearerHeaders, type CaliperSender, iriSchema, senderEntries } from "./sender.js";
 
 /** The options of {@link sendCaliper}: the sender, when it sends, how much it sends, and the signal that ends the caller's wait. */
 export interface SendCaliperOptions extends CaliperSender, CallOptions {
@@ -24,6 +25,8 @@ export interface SendCaliperOptions extends CaliperSender, CallOptions {
    */
   readonly maxPayloadBytes?: number;
 }
+
+const optionsSchema = strictRecord({ ...senderEntries, sensor: iriSchema });
 
 /** Checks the events and entity describes to send: at least one, each with the Caliper context and an identifier. */
 function checkData(data: unknown): asserts data is readonly (CaliperEvent | EntityDocument)[] {
@@ -87,11 +90,9 @@ export async function sendCaliper(
   data: readonly (CaliperEvent | EntityDocument)[],
   options: SendCaliperOptions,
 ): Promise<void> {
-  checkSender(options);
-  if (options.maxPayloadBytes !== undefined)
-    checkPositiveInteger(options.maxPayloadBytes, "The option maxPayloadBytes");
+  parseWith(optionsSchema, options, "The options");
   checkData(data);
-  const { endpoint, token, sensor, sendTime, fetch, signal, timeoutMs = DEFAULT_CALIPER_TIMEOUT_MS } = options;
+  const { endpoint, token, sensor, sendTime, fetch, signal, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
   const body = envelopeText({
     sensor,
     sendTime: formatDateTime(sendTime),
