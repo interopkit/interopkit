@@ -48,7 +48,7 @@ flowchart LR
 | nginx with the certificate of the run | The suite builds its addresses from `x-forwarded-proto`, and the runtime takes https alone |
 | The first test of a course is tried again | The suite writes the preferences of a learner into its LRS as it makes a test, and fails while the LRS starts |
 
-Locally, run each from a fresh clone in `/Users/nb-dk-0715/Documents/gates/<unit>/` with `COMPOSE_PROJECT_NAME` set to the unit:
+Locally, run each from a fresh clone in a folder Docker can mount, with `COMPOSE_PROJECT_NAME` set to the unit:
 the images are built for linux/amd64, which an arm64 host emulates.
 
 IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
