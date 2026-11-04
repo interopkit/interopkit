@@ -324,10 +324,9 @@ describe("readMessage of the claims every message has", () => {
     }
   });
 
-  it("accepts the versions the host names, and refuses any other", () => {
+  it("accepts the version 1.3.0 and refuses any other", () => {
     const claims = claimsOf("LtiResourceLinkRequest", { ...RESOURCE_LINK, [`${CORE}version`]: "1.3.1" });
     expect(() => readMessage(claims, options)).toThrow(expect.objectContaining({ reason: "version-unsupported" }));
-    expect(readMessage(claims, { ...options, versions: ["1.3.0", "1.3.1"] }).version).toBe("1.3.1");
   });
 
   it("refuses a deployment that the registration does not list, and claims that are missing or of the wrong shape", () => {
@@ -727,12 +726,6 @@ describe("readToolMessage", () => {
     expect(() =>
       readToolMessage(tool("LtiDeepLinkingResponse", { [`${CORE}deployment_id`]: "x" }), toolOptions),
     ).toThrow(expect.objectContaining({ reason: "deployment-unknown" }));
-    expect(
-      readToolMessage(tool("LtiDeepLinkingResponse", { [`${CORE}version`]: "1.3.1" }), {
-        ...toolOptions,
-        versions: ["1.3.1"],
-      }).version,
-    ).toBe("1.3.1");
     expect(() => readToolMessage(tool("LtiStartAssessment"), toolOptions)).toThrow(
       expect.objectContaining({ reason: "claim-missing" }),
     );

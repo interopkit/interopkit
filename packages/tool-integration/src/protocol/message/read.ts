@@ -65,12 +65,6 @@ export interface ReadMessageOptions<TOther extends string = never> {
   /** The deployments of the registration: the `deployment_id` must be one of them. */
   readonly deploymentIds: readonly string[];
   /**
-   * The values of the `version` claim that are accepted.
-   *
-   * @defaultValue `["1.3.0"]`
-   */
-  readonly versions?: readonly string[];
-  /**
    * The message types beyond the five modeled ones that are read as `OtherMessage`.
    *
    * @defaultValue none
@@ -79,11 +73,11 @@ export interface ReadMessageOptions<TOther extends string = never> {
 }
 
 /** Reads the version and the deployment of a message, which both directions check the same way. */
-function readVersion(claims: Claims, versions: readonly string[]): string {
+function readVersion(claims: Claims): string {
   const version = required(claims, CLAIM.version, OWNER, STRING);
-  if (!versions.includes(version)) {
+  if (version !== LTI_VERSION) {
     throw new LtiError(
-      `The LTI version of the message must be one of ${versions.map(describe).join(", ")}, found ${describe(version)}.`,
+      `The LTI version of the message must be ${describe(LTI_VERSION)}, found ${describe(version)}.`,
       "version-unsupported",
     );
   }
@@ -114,8 +108,8 @@ function readServices(claims: Claims): MessageServices {
 
 /** Reads the claims that every message of a platform has. */
 function readBase(claims: Claims, options: ReadMessageOptions<string>): MessageBase {
-  const { issuer, clientId, deploymentIds, versions = [LTI_VERSION] } = options;
-  const version = readVersion(claims, versions);
+  const { issuer, clientId, deploymentIds } = options;
+  const version = readVersion(claims);
   const migration = optional(claims, CLAIM.migration, OWNER, migrationSchema);
   return {
     issuer,
@@ -151,7 +145,7 @@ function readBase(claims: Claims, options: ReadMessageOptions<string>): MessageB
  * understand, and Canvas sends the context type `Account`. A `null` string is read as absent, as Canvas sends it.
  *
  * @param claims - The claims of a token whose signature, issuer, audience, times and nonce were verified.
- * @param options - The registration and the versions and message types to accept.
+ * @param options - The registration and the message types to accept.
  * @returns The message.
  * @throws `LtiError` with the reason of the failed check: `message-type-unsupported`, `version-unsupported`,
  * `deployment-unknown`, `claim-missing` or `claim-invalid`.
@@ -229,12 +223,6 @@ export interface ReadToolMessageOptions {
   readonly clientId: string;
   /** The deployments of the registration: the `deployment_id` must be one of them. */
   readonly deploymentIds: readonly string[];
-  /**
-   * The values of the `version` claim that are accepted.
-   *
-   * @defaultValue `["1.3.0"]`
-   */
-  readonly versions?: readonly string[];
 }
 
 /**
@@ -243,13 +231,13 @@ export interface ReadToolMessageOptions {
  * type.
  *
  * @param claims - The claims of a token whose signature, issuer, audience, times and nonce were verified.
- * @param options - The registration and the versions to accept.
+ * @param options - The registration.
  * @returns The message.
  * @throws `LtiError` with the reason of the failed check: `message-type-unsupported`, `version-unsupported`,
  * `deployment-unknown`, `claim-missing` or `claim-invalid`.
  */
 export function readToolMessage(claims: Claims, options: ReadToolMessageOptions): ToolMessage {
-  const { issuer, clientId, deploymentIds, versions = [LTI_VERSION] } = options;
+  const { issuer, clientId, deploymentIds } = options;
   const messageType = required(claims, CLAIM.messageType, OWNER, STRING);
   if (!TOOL_TYPES.includes(messageType)) {
     throw new LtiError(
@@ -257,7 +245,7 @@ export function readToolMessage(claims: Claims, options: ReadToolMessageOptions)
       "message-type-unsupported",
     );
   }
-  const version = readVersion(claims, versions);
+  const version = readVersion(claims);
   const base = {
     issuer,
     clientId,

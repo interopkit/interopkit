@@ -175,7 +175,7 @@ export interface MessageServices {
 
 /** What every message that a platform sends carries. */
 export interface MessageBase extends LtiDeployment {
-  /** The version of LTI the message says, one of the versions the launch accepted. */
+  /** The version of LTI the message says, `1.3.0`. */
   readonly version: string;
   /** The endpoint the message is for. A tool relies on this claim and not on the unsigned parameter of the login. */
   readonly targetLinkUri: string;

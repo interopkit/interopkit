@@ -236,7 +236,7 @@ expires.
 | `aud` holds the client identifier and names no other party than the registration's `trustedAudiences`; a token with several audiences has `azp`; `azp`, when present, is the client identifier | `audience-mismatch`, `audience-untrusted`, `authorized-party-missing`, `authorized-party-mismatch` |
 | `exp` is later than the time minus 60 seconds; `iat` is not later than the time plus 60 seconds                                 | `token-expired`, `issued-in-future`               |
 | `nonce` is present and equals the login's                                                                                       | `nonce-mismatch`                                  |
-| The message type is one of the five that a platform sends (see [messages](model.md)) or of `otherMessageTypes`; the version is one of `versions`, `1.3.0` by default | `message-type-unsupported`, `version-unsupported` |
+| The message type is one of the five that a platform sends (see [messages](model.md)) or of `otherMessageTypes`; the version is `1.3.0` | `message-type-unsupported`, `version-unsupported` |
 | `deployment_id` is one of the registration's                                                                                    | `deployment-unknown`                              |
 | The claims of the message type have the shape of the specifications                                                             | `claim-missing`, `claim-invalid`                  |
 | `deployment_id` is the login's `lti_deployment_id`, when the initiation named one                                               | `deployment-mismatch`                             |
@@ -396,7 +396,6 @@ read no other clock.
 | `store`        | required for `handleLogin` and `handleLaunch`             | The store of logins                                         |
 | `jwks`         | required for `handleLaunch`                            | The cache of key sets                                       |
 | `fetch`        | required for `createServiceClient`                  | The `fetch` that calls the platform ([grade services](grades.md) has the other options of the client) |
-| `versions`     | `["1.3.0"]`                                         | `handleLaunch`: the values of the `version` claim that it accepts |
 | `otherMessageTypes` | none                                           | `handleLaunch`: message types beyond the five modeled ones, returned as an `OtherMessage` with every claim, such as those of a specification that the package does not implement |
 | `maxFormBytes` | 65,536                                              | `handleLaunch`: the most bytes of the posted form              |
 | `migrationSecret` | none: the migration claim is never verified         | `handleLaunch`: returns the LTI 1.1 secret of a consumer key, or `undefined` |

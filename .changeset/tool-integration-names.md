@@ -13,3 +13,5 @@ The custom properties are one type in every model and input: `custom` of `LtiMes
 `prepareToolLaunch` is the one function that prepares a launch: it returns `{ url, storageUrl, storageTarget, toolFrame, allow? }`, and `prepareToolFrame` is gone. The names of the two frames are fixed, `lti-storage` and `lti-tool`, and returned there, so that the host's page names its frames from the result: the option `storageTarget` of `PlatformLoginOptions` and `toolFrame` of `PlatformRequestOptions` are gone, and are refused as unknown, and `buildCapabilitiesScript()` takes no options, so `CapabilitiesScriptOptions` is gone.
 
 One port has one name across the package: the lookup of a tool by its client identifier is `registration` in `PlatformLoginOptions`, `PlatformRequestOptions` and `ToolMessageOptions` (`client` was the name in the last two), and the LTI 1.1 secret of a consumer key is `migrationSecret` in both roles (`legacySecret` was the name in `LtiLaunchOptions`).
+
+The option `versions` of `handleLaunch` is gone: LTI 1.3 Core fixes the version claim at `1.3.0`, which `handleLaunch` checks, and any other value is `version-unsupported`.

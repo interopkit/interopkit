@@ -145,7 +145,7 @@ function checkVerification(
  * `state`; `state` names a login that the tool started and has not finished; the browser is the one that logged in (the
  * state cookie, or the platform's storage); an algorithm of the registration, the signature, the issuer, the audiences, the
  * authorized party and the times (Security Framework section 5.1.3); the `nonce` equals the login's; the LTI claims of the
- * message type, with a version of `versions` and a deployment of the registration (LTI 1.3 Core section 5, Deep Linking 2.0
+ * message type, with the version `1.3.0` and a deployment of the registration (LTI 1.3 Core section 5, Deep Linking 2.0
  * section 4.4, Submission Review 1.0 section 2, Proctoring Services 1.0 section 4); the deployment and the
  * `target_link_uri` of the login. With `migrationSecret` the migration claim is then verified. The login is deleted last, so a
  * launch completes once.
@@ -222,7 +222,6 @@ export async function handleLaunch<TOther extends string = never>(
     issuer: registration.issuer,
     clientId: registration.clientId,
     deploymentIds: registration.deploymentIds,
-    ...(options.versions === undefined ? {} : { versions: options.versions }),
     ...(options.otherMessageTypes === undefined ? {} : { otherMessageTypes: options.otherMessageTypes }),
   });
   checkLogin(message, record);

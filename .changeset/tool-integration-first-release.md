@@ -5,7 +5,7 @@
 LTI 1.3 for learning platforms and tools. The tool role is a tool that a platform launches: it answers the platform's login
 with a cookie, and, when the platform names a storage frame, with the platform's browser storage as well, for a browser that does
 not keep the cookie, whose pages ask the platform's capabilities for the frame to use; it
-validates the launch of every message type, with the versions, the message types, the audiences and the algorithms that the
+validates the launch of every message type, with the message types, the audiences and the algorithms that the
 host accepts, binds it to the deployment and the target of its login, refuses the platform's authentication error and a form
 above `maxFormBytes`, and verifies the LTI 1.1 migration claim with the host's secret. It signs with the `Signer` of each
 registration, keeps the JWK Sets of other parties by the `Clock` of the host for `jwtVerify` of jose (`createJwksCache`: a set of up to 100 keys is fetched again past its lifetime, and for a missing `kid` at most once a refresh time), serves its key set with every key of a rotation (`serveToolJwks`), answers a Deep Linking request with the page that posts

@@ -50,12 +50,6 @@ export interface LtiLaunchOptions<TOther extends string = never> extends ToolOpt
   /** The cache of the platforms' key sets, from `createJwksCache`. */
   readonly jwks: JwksCache;
   /**
-   * The values of the `version` claim that the tool accepts.
-   *
-   * @defaultValue `["1.3.0"]`
-   */
-  readonly versions?: readonly string[];
-  /**
    * The message types beyond the five that the package models, which the launch returns as an `OtherMessage`, such as a
    * message of a specification that the package does not implement.
    *
@@ -117,7 +111,6 @@ export function checkLaunchOptions(options: unknown): asserts options is LtiLaun
   checkToolOptions(options);
   checkLtiStore(options.store);
   checkJwksCache(options.jwks);
-  if (options.versions !== undefined) checkStrings(options.versions, "versions");
   if (options.otherMessageTypes !== undefined) checkStrings(options.otherMessageTypes, "otherMessageTypes");
   if (options.maxFormBytes !== undefined) checkPositiveInteger(options.maxFormBytes, "The option maxFormBytes");
   if (options.migrationSecret !== undefined) {

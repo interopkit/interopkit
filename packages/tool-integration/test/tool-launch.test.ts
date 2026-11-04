@@ -10,7 +10,7 @@ import { cookieLogin, launchOf, type Options, setup } from "./tool-setup.js";
 
 /**
  * The rules that bind a launch to its login, the platform's authentication error, the size of the form, and what the
- * registration and the options of `handleLaunch` accept: versions, other message types, audiences, algorithms and the LTI 1.1
+ * registration and the options of `handleLaunch` accept: the version, other message types, audiences, algorithms and the LTI 1.1
  * migration claim. The expectations come from LTI 1.3 Core sections 4.1.2 and 5.3.4, the Security Framework 1.1 sections
  * 5.1.1.5 and 5.1.3, and the worked example of the Migration Guide.
  */
@@ -132,15 +132,11 @@ describe("the size of the form of a launch", () => {
   });
 });
 
-describe("the versions and the message types that a launch accepts", () => {
-  it("accepts the version of LTI 1.3 by default, and another version only when the option names it", async () => {
+describe("the version and the message types that a launch accepts", () => {
+  it("accepts the version 1.3.0 of LTI and refuses any other", async () => {
     const ctx = setup();
     const { request: post } = await cookieLogin(ctx, { claims: { [`${CLAIM}version`]: "1.3.1" } });
     await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "version-unsupported" });
-    const again = setup();
-    const { request: second } = await cookieLogin(again, { claims: { [`${CLAIM}version`]: "1.3.1" } });
-    const launch = launchOf(await handleLaunch(second, { ...again.options, versions: ["1.3.0", "1.3.1"] }));
-    expect(launch.version).toBe("1.3.1");
   });
 
   it("returns a message type that the package does not model only when the option names it, with every claim", async () => {
@@ -281,8 +277,6 @@ describe("the options of handleLaunch that this unit adds", () => {
     const ctx = setup();
     const post = request({ method: "POST", url: "https://tool.example.com/lti/launch" });
     const cases: readonly [string, Partial<Record<keyof Options, unknown>>][] = [
-      ['The option versions must be an array, found "1.3.0".', { versions: "1.3.0" }],
-      ["An entry of the option versions must be a non-empty string, found 5.", { versions: [5] }],
       ['An entry of the option otherMessageTypes must be a non-empty string, found "".', { otherMessageTypes: [""] }],
       ["The option maxFormBytes must be a positive integer, found 0.", { maxFormBytes: 0 }],
       ['The option maxFormBytes must be a positive integer, found "65536".', { maxFormBytes: "65536" }],
