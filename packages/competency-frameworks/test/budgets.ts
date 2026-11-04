@@ -8,8 +8,8 @@ export const ITEMS = 10_000;
 
 /**
  * The budgets of the benchmarks. A time is the most that the fastest sample of a benchmark may take, in milliseconds: five
- * times the fastest sample of the runner of CI, rounded up to one significant digit, as docs/competency-frameworks/evidence.md
- * explains.
+ * times the fastest sample of the runner of CI, rounded up to one significant digit, as
+ * docs/competency-frameworks/evidence.md explains.
  */
 export const BUDGETS = {
   /** `readPackage` of a framework of 10,000 items that is already parsed. */
@@ -30,33 +30,32 @@ export const SLOW_REFERENCE_OPTIONS = { time: 0, iterations: 3, warmupTime: 0, w
 
 /**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of a reference in the same run.
- * Both samples come from one run, so a ratio holds on any machine. A ratio to `JSON.parse` or `JSON.stringify` is five times the
- * highest ratio measured, rounded up to one significant digit, and a ratio to an official schema is parity, as
- * docs/competency-frameworks/evidence.md explains.
+ * Both samples come from one run, so a ratio holds on any machine. A ratio to an official schema, which does the same work, is parity; another is 1.5 times the highest ratio measured on the runner of CI and on a laptop, rounded up to two significant digits,
+ * as docs/competency-frameworks/evidence.md explains.
  */
 export const RATIOS = {
   /** `readPackage` of the framework, as a multiple of `JSON.parse` of its text. */
-  readPackageAgainstParse: 20,
+  readPackageAgainstParse: 6.4,
   /** `readPackage` of the framework, as a multiple of the package schema of CASE 1.1: parity or better. */
   readPackageAgainstSchema: 1,
   /** `readEntity` of each item alone, as a multiple of the item schema of CASE 1.1: parity or better. */
   readEntityAgainstSchema: 1,
   /** `buildFrameworkTree` of the framework, as a multiple of `JSON.parse` of its text. */
-  frameworkTreeAgainstParse: 20,
+  frameworkTreeAgainstParse: 4.6,
   /** `convertCaseVersion` of the framework to 1.0, as a multiple of `JSON.parse` of its text. */
-  toCaseVersionAgainstParse: 10,
+  toCaseVersionAgainstParse: 4.4,
   /** `diffPackages` of the framework and an edition of it, as a multiple of `JSON.parse` of its text. */
-  diffPackagesAgainstParse: 20,
+  diffPackagesAgainstParse: 4,
   /** `crosswalk` of the framework and the one it matches, as a multiple of `JSON.parse` of its text. */
-  crosswalkAgainstParse: 7,
+  crosswalkAgainstParse: 1.5,
   /** `listAssociations` an item of the framework, as a multiple of `JSON.parse` of its text. */
-  associationsOfAgainstParse: 6,
+  associationsOfAgainstParse: 1.5,
   /** `handleCaseRequest` for the package of the framework in 1.1, as a multiple of `JSON.stringify` of it. */
-  serve11AgainstStringify: 6,
+  serve11AgainstStringify: 1.6,
   /** `handleCaseRequest` for the package of the framework in 1.0, which converts it, as a multiple of `JSON.stringify` of it. */
-  serve10AgainstStringify: 60,
+  serve10AgainstStringify: 8.7,
   /** `package` of a client over the answer of the provider, as a multiple of `JSON.parse` of its text. */
-  clientAgainstParse: 60,
+  clientAgainstParse: 9.9,
 } as const;
 
 /**

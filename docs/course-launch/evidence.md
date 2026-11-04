@@ -51,17 +51,18 @@ the steps.
 
 ## Speed
 
-Each benchmark is timed in turns with its reference by `scripts/bench-rounds.ts`, and its budget is five times the largest
-ratio measured, rounded up to one significant digit (`test/budgets.ts`). Measured on an Apple M-series laptop under load.
+Each benchmark is timed in turns with its reference by `scripts/bench-rounds.ts` (`test/budgets.ts`). The ratio of the fastest samples holds
+on any machine: its budget is 1.5 times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop,
+rounded up to two significant digits. The time is five times the fastest sample of the runner, rounded up to one significant digit.
 
-| Benchmark | Reference | Ratio | Budget |
-| --- | --- | --- | --- |
-| `readCourseStructure` of LMS suite 101 (1,001 units) | libxml2 validating it | 3.34 | 20 |
-| The same | saxes parsing it alone | 1.88 | 10 |
-| `readCoursePackage` of a ZIP64 archive of 66,001 entries | zip.js listing its entries | 0.77 | 4 |
-| The LMS judging the seven statements of a session | `validateStatements` of them | 0.81 | 5 |
-| The LMS judging 1,000 allowed statements of one request | `validateStatements` of them | 0.31 | 2 |
-| `prepareLaunch` over stores in memory and the LRS in the same process | none | 0.36 ms fastest | Pending a sample of CI |
+| Benchmark | Reference | Ratio | Budget | Fastest on the runner | Time budget |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `readCourseStructure` of LMS suite 101 (1,001 units) | libxml2 validating it | 3.35–4.85 | 7.3 | 54.1–97.2 ms | 300 ms |
+| The same | saxes parsing it alone | 1.76–1.92 | 2.9 | 64.3–96.8 ms | 400 ms |
+| `readCoursePackage` of a ZIP64 archive of 66,001 entries | zip.js listing its entries | 0.70–0.79 | 1.2 | 999.0–1410.6 ms | 5000 ms |
+| The LMS judging the seven statements of a session | `validateStatements` of them | 0.83–1.24 | 1.9 | 0.10–0.17 ms | 0.5 ms |
+| The LMS judging 1,000 allowed statements of one request | `validateStatements` of them | 0.32–0.47 | 0.72 | 7.1–14.6 ms | 40 ms |
+| `prepareLaunch` over stores in memory and the LRS in the same process | none | n/a | n/a | 1.6–2.4 ms | 9 ms |
 
 The reader does not reach parity with libxml2: saxes, a parser in JavaScript, takes 2.0 times libxml2 in WebAssembly to parse
 the text alone, and the reader also builds the model and checks the rules of cmi5 that the schema leaves out.

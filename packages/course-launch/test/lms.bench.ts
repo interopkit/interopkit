@@ -1,6 +1,6 @@
 import { validateStatements } from "@interopkit/learning-records";
 import { test } from "vitest";
-import { expectRatioInTurns } from "./budgets.js";
+import { expectRatioInTurns, expectWithin } from "./budgets.js";
 import { AU1, testHost } from "./lms-host.js";
 import { launchUnit, register, unitStatement } from "./lms-session.js";
 
@@ -79,8 +79,5 @@ test("prepares a launch over stores in memory and the LRS in the same process", 
     warmupTime: 100,
     warmupIterations: 3,
   });
-  const { min, p50 } = result.latency;
-  await annotate(
-    `prepareLaunch: fastest ${min.toFixed(3)} ms, median ${p50.toFixed(3)} ms; its budget in time waits for a sample of CI.`,
-  );
+  await expectWithin(annotate, "prepareLaunch", result);
 });

@@ -15,7 +15,7 @@
     "test:coverage": "vitest run --coverage --project '!*-corpus*' --project '!*-spec' --project '!*-browser*' --project '!*-bench' --project '!*-opensalt' --project '!*-sqllrs' --project '!*-validator' --project '!*-references' --project '!*-pylti1p3' --project '!*-moodle'",
     "test:browser": "vitest run --project '*-browser*'",
     "test:spec": "vitest run --project '*-spec'",
-    "bench": "pnpm -r bench",
+    "bench": "pnpm -r --workspace-concurrency=1 bench",
     "opensalt": "node validation/opensalt/run.ts",
     "adl-lrs": "pnpm build && node validation/adl-lrs/run.ts",
     "sql-lrs": "node validation/sql-lrs/run.ts",

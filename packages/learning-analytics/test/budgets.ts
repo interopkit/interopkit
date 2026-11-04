@@ -14,36 +14,37 @@ export const SLOW_REFERENCE_OPTIONS = { time: 0, iterations: 3, warmupTime: 0, w
 export const EVENTS = 1000;
 
 /**
- * The most that the fastest sample of a function may take as a multiple of the fastest sample of a reference in the same run.
- * Both samples come from one run, so a ratio holds on any machine. A ratio to `JSON.parse` or `JSON.stringify` is five times the highest ratio
- * measured, rounded up to one significant digit, and a ratio to a draft 4 validator is parity, as docs/learning-analytics/evidence.md
- * explains. The budgets in time are pending the first sample of the runners of CI, so none is stated here.
+ * The budgets of the benchmarks. The time is the most that the fastest sample of a function may take, in milliseconds: five
+ * times its fastest sample on the runner of CI, rounded up to one significant digit. The ratio is the most that it may take
+ * as a multiple of the fastest sample of a reference in the same run, so it holds on any machine: 1.5 times the highest ratio
+ * measured on the runner and on a laptop, rounded up to two significant digits, and parity for a draft 4 validator, which
+ * does the same work, as docs/learning-analytics/evidence.md explains.
  */
-export const RATIOS = {
+export const BUDGETS = {
   /** `readEnvelope` of an envelope of 1.2, as a multiple of `JSON.parse` of its text. */
-  readEnvelopeAgainstParse: 30,
+  readEnvelopeAgainstParse: { time: 300, ratio: 13 },
   /** `readEnvelope` of an envelope of 1.2, as a multiple of the draft 4 schemas of `caliper-spec` over its events: parity or better. */
-  readEnvelopeAgainstSchemas: 1,
+  readEnvelopeAgainstSchemas: { time: 300, ratio: 1 },
   /** `validateEvent` over the events of an envelope of 1.2, as a multiple of the same schemas: parity or better. */
-  validateEventAgainstSchemas: 1,
+  validateEventAgainstSchemas: { time: 300, ratio: 1 },
   /** `readEnvelope` of an envelope of 1.1, as a multiple of `JSON.parse` of its text. */
-  readEnvelope11AgainstParse: 30,
+  readEnvelope11AgainstParse: { time: 300, ratio: 13 },
   /** `readEnvelope` of an envelope of 1.1, as a multiple of `schema_1_1` over its events: parity or better. */
-  readEnvelope11AgainstSchemas: 1,
+  readEnvelope11AgainstSchemas: { time: 300, ratio: 1 },
   /** `readEntity` of 1,000 entity describes of 1.2, as a multiple of the draft 4 schemas over them: parity or better. */
-  readEntityAgainstSchemas: 1,
+  readEntityAgainstSchemas: { time: 70, ratio: 1 },
   /** `validateEntity` over the same, as a multiple of the same schemas: parity or better. */
-  validateEntityAgainstSchemas: 1,
+  validateEntityAgainstSchemas: { time: 80, ratio: 1 },
   /** `buildEvent` of 1,000 events, as a multiple of the draft 4 schemas over what it builds: parity or better. */
-  buildEventAgainstSchemas: 1,
+  buildEventAgainstSchemas: { time: 200, ratio: 1 },
   /** `buildEntity` of 1,000 entity describes, as a multiple of the same schemas over what it builds: parity or better. */
-  buildEntityAgainstSchemas: 1,
+  buildEntityAgainstSchemas: { time: 80, ratio: 1 },
   /** `sendCaliper` of an envelope of 1,000 events to an endpoint that answers at once, as a multiple of `JSON.stringify` of it. */
-  sendCaliperAgainstStringify: 7,
+  sendCaliperAgainstStringify: { time: 30, ratio: 2.9 },
   /** `handleCaliperRequest` of an envelope of 1,000 events of 1.2, as a multiple of `JSON.parse` of its text. */
-  handleRequestAgainstParse: 50,
+  handleRequestAgainstParse: { time: 300, ratio: 13 },
   /** `handleCaliperRequest` of the same envelope, as a multiple of the draft 4 schemas over its events: parity or better. */
-  handleRequestAgainstSchemas: 1,
+  handleRequestAgainstSchemas: { time: 300, ratio: 1 },
 } as const;
 
 /** The result of a benchmark that the budgets read. */
@@ -53,19 +54,22 @@ interface BenchResult {
 
 /**
  * Reports the fastest and the median sample of a function and of its reference, and fails the test when the fastest sample of the
- * function is above its ratio to the reference's. The fastest sample is the least affected by the other work of a shared machine.
+ * function is above its time or above its ratio to the reference's. The fastest sample is the least affected by the other work of
+ * a shared machine.
  */
 export async function expectRatio(
   annotate: TestContext["annotate"],
-  name: keyof typeof RATIOS,
+  name: keyof typeof BUDGETS,
   measured: BenchResult,
   reference: BenchResult & { readonly name: string },
 ): Promise<void> {
+  const { time, ratio: limit } = BUDGETS[name];
   const ratio = measured.latency.min / reference.latency.min;
   await annotate(
-    `${name}: fastest ${measured.latency.min.toFixed(2)} ms, median ${measured.latency.p50.toFixed(2)} ms; ${reference.name}: fastest ${reference.latency.min.toFixed(2)} ms, median ${reference.latency.p50.toFixed(2)} ms; ratio ${ratio.toFixed(3)}, budget ${RATIOS[name]}`,
+    `${name}: fastest ${measured.latency.min.toFixed(2)} ms, median ${measured.latency.p50.toFixed(2)} ms; ${reference.name}: fastest ${reference.latency.min.toFixed(2)} ms, median ${reference.latency.p50.toFixed(2)} ms; ratio ${ratio.toFixed(3)}, budget ${limit}; time budget ${time} ms`,
   );
+  expect(measured.latency.min, `The fastest sample of ${name} in milliseconds`).toBeLessThan(time);
   expect(ratio, `The fastest sample of ${name} as a multiple of the fastest sample of ${reference.name}`).toBeLessThan(
-    RATIOS[name],
+    limit,
   );
 }
