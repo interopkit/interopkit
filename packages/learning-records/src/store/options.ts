@@ -67,13 +67,6 @@ export interface LrsLimits {
    */
   readonly maxDocumentBytes?: number;
   /**
-   * The most tries of a write of a document that loses a race against another writer. The write is made again on the
-   * document that won, and the request is refused with 409 after the last try.
-   *
-   * @defaultValue 3
-   */
-  readonly mergeRetries?: number;
-  /**
    * The most tokens of JSON in a request: each bracket, brace, colon and comma, each string, each number, and each of `true`,
    * `false` and `null`. The memory of a parse grows with the tokens and not with the bytes, so a body over the limit is
    * refused with 413 before it is parsed.
@@ -219,7 +212,6 @@ const DEFAULT_LIMITS: LrsSettingsLimits = {
   maxPartBytes: 10_485_760,
   maxDepth: 64,
   maxDocumentBytes: 1_048_576,
-  mergeRetries: 3,
   maxTokens: MAX_JSON_TOKENS,
   maxFindings: DEFAULT_MAX_FINDINGS,
 };
@@ -264,7 +256,6 @@ const optionsSchema = strictRecord({
       maxPartBytes: v.optional(positiveIntegerSchema),
       maxDepth: v.optional(positiveIntegerSchema),
       maxDocumentBytes: v.optional(positiveIntegerSchema),
-      mergeRetries: v.optional(positiveIntegerSchema),
       maxTokens: v.optional(positiveIntegerSchema),
       maxFindings: v.optional(positiveIntegerSchema),
     }),

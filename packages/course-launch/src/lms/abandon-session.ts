@@ -19,7 +19,7 @@ async function endSession(
   settings: LmsSettings,
   id: string,
 ): Promise<{ readonly session: Session; readonly moved: boolean } | undefined> {
-  return withRetries(settings, "abandoned a session", async () => {
+  return withRetries("abandoned a session", async () => {
     const session = await sessionOf(settings, id);
     if (session.state === "abandoned") return { session, moved: false };
     if (session.state !== "launched" && session.state !== "active") return undefined;
@@ -36,7 +36,7 @@ async function endSession(
 
 /** Clears the session of an assignable unit in its registration when it is the one given. */
 async function release(settings: LmsSettings, session: Session): Promise<void> {
-  await withRetries(settings, "released an abandoned session", async () => {
+  await withRetries("released an abandoned session", async () => {
     const registration = await registrationOf(settings, session.registration);
     const { session: active, ...au } = auOf(registration, session.au);
     if (active !== session.id) return "done";

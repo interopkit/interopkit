@@ -225,7 +225,7 @@ flowchart TD
   judge -->|"met"| make["Make the document:<br/>PUT keeps the body, POST merges JSON"]
   make --> cas["DocumentStore.write<br/>compare-and-set"]
   cas -->|"written"| r204["204 with ETag"]
-  cas -->|"lost a race"| again{"Tries left,<br/>mergeRetries?"}
+  cas -->|"lost a race"| again{"Tries left,<br/>of 3?"}
   again -->|"yes"| read
   again -->|"no"| r409b["409"]
 ```
@@ -278,7 +278,7 @@ included, is refused with 413; the body of a PUT is checked before the store is 
 
 A write that loses a race to another writer, so that the store does not find the document as it was read, is made again on the
 document that won, judged against the same headers: it goes through where they still hold, is refused with 412 or 409 where
-they do not, and with 409 after `limits.mergeRetries` tries.
+they do not, and with 409 after three tries.
 
 ## Agents and Activities
 
@@ -355,7 +355,7 @@ The other scopes of 1.0.3 map to the actions as follows; OAuth itself, and `defi
 | `maxTokens`        | 1,000,000  | 413          | The tokens of the JSON of a request, a document and an `agent` parameter included; the payload of a signature over it is a malformed signature, 400 |
 | `maxFindings`      | 1,000      | 400          | The errors counted in the Statements of a request                                  |
 | 32 parameters      | fixed      | 400          | A form of the alternate request syntax, counted before it is read                  |
-| `mergeRetries`     | 3          | 409          | The tries of a write or removal of a document that loses a race                    |
+| 3 tries            | fixed      | 409          | A write or removal of a document that loses a race against another writer          |
 | `pageSize`         | 100        | Capped       | The Statements of a page when the request has no `limit`                           |
 | `maxPageSize`      | 1,000      | Capped       | The largest page: a `limit` of 0 or above it is lowered to it                      |
 
@@ -397,7 +397,7 @@ mirror against it. `target` finds any Statement by its id in lower case, a voide
 | A port rejects                                           | Answers 500 with a message that says nothing of the cause; what `insert` stored stays stored                                                                           |
 | `insert` returns an id that it held                      | Answers 204 when the Statement is the same by `isSameStatement`, 409 when it is another                                                                                  |
 | `observe` rejects                                        | Answers 500 while the Statements stay stored; a resend answers 204 and observes again                                                                                  |
-| `write` or `delete` does not do what the condition asked | Reads the document again, judges again, and tries again, up to `limits.mergeRetries` tries                                                                             |
+| `write` or `delete` does not do what the condition asked | Reads the document again, judges again, and tries again, up to three tries                                                                             |
 | A port does not answer                                   | Waits for the `signal` of the options and rejects with its reason                                                                                                      |
 | A port breaks its contract                               | Throws a `DataError`: more Statements than the limit, a voided Statement, a Statement of another authority for a credential that reads its own, a document without an ETag, an answer outside the set of outcomes, an Activity of another id |
 

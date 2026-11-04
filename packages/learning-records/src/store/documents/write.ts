@@ -5,7 +5,7 @@ import { isMediaType, mediaTypeOf } from "../../model/internal.js";
 import { attempt, type Context, isRefusal, refused, type Verdict } from "../verdict.js";
 import { etagOf } from "./etag.js";
 import { merge, readObject } from "./merge.js";
-import { fetchDocument, storeDocument } from "./port.js";
+import { fetchDocument, MAX_WRITE_TRIES, storeDocument } from "./port.js";
 import { type BarePut, judge, type Preconditions, readPreconditions } from "./preconditions.js";
 
 const JSON_TYPE = "application/json";
@@ -81,7 +81,7 @@ function barePutOf(context: Context, target: DocumentTarget): BarePut {
  * Changes a document under the preconditions of the request, and answers 204. The document the store holds is read, judged
  * against `If-Match` or `If-None-Match` (412 or 409), made into the new one, and written only if it is still the one that was
  * read. A write that loses a race to another writer is made again on the document that won, as the preconditions allow, and
- * is refused with 409 after `limits.mergeRetries` tries.
+ * is refused with 409 after `MAX_WRITE_TRIES` tries.
  */
 async function change(
   context: Context,
@@ -90,9 +90,9 @@ async function change(
   method: "PUT" | "POST",
   make: (current: LrsDocument | undefined) => Verdict<LrsDocumentInput>,
 ): Promise<HttpResponse> {
-  const { limits, clock } = context.settings;
+  const { clock } = context.settings;
   const barePut = barePutOf(context, target);
-  for (let attempts = 0; attempts < limits.mergeRetries; attempts += 1) {
+  for (let attempts = 0; attempts < MAX_WRITE_TRIES; attempts += 1) {
     const current = await fetchDocument(context, target);
     if (isRefusal(current)) return context.refuse(current.status, current.message);
     const condition = judge(preconditions, current.value, method, barePut);

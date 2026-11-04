@@ -29,7 +29,7 @@ function answer(body: Readonly<Record<string, string>>): HttpResponse {
 /** Gives the session of a fetch code its token, once: the conditional write of the session makes the code single use. */
 async function fetchToken(settings: LmsSettings, id: string, secret: string): Promise<HttpResponse> {
   const code = await hashOf(secret);
-  return withRetries(settings, "answered a fetch URL", async () => {
+  return withRetries("answered a fetch URL", async () => {
     const session = await settings.store.session(id, signalOf(settings));
     if (session === undefined || !sameHash(code, session.fetchCode)) return answer(ERRORS.security);
     const now = readClock(settings.clock);

@@ -56,7 +56,7 @@ export async function waiveAu(input: WaiverInput, options: LmsOptions): Promise<
   const session = derivedId(course, "waiver", id, au.publisherId);
   const statement = waivedStatement(course, au, registration, read.reason, session, readClock(settings.clock));
   await writeOnce(settings, statement);
-  return withRetries(settings, "waived an assignable unit", async () => {
+  return withRetries("waived an assignable unit", async () => {
     const current = await registrationOf(settings, id);
     const unit = auOf(current, au.publisherId);
     if (unit.waived !== undefined) return "already-waived";

@@ -98,7 +98,7 @@ function preferencesProblem(request: HttpRequest): string | undefined {
 
 /** Records that the unit of a session read the preferences of the learner, which its initialized statement needs (11.0). */
 async function notePreferencesRead(settings: LmsSettings, id: string): Promise<void> {
-  await withRetries(settings, "noted that the preferences were read", async () => {
+  await withRetries("noted that the preferences were read", async () => {
     const session = await settings.store.session(id, signalOf(settings));
     if (session === undefined || session.preferencesRead) return "done";
     const put = await settings.store.putSession(

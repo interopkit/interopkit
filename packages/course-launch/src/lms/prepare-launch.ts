@@ -197,7 +197,7 @@ function launchUrlOf(settings: LmsSettings, au: ImportedAu, registration: Regist
  * given, so its first revision is the one stored.
  */
 async function markLaunched(settings: LmsSettings, session: Session): Promise<void> {
-  await withRetries(settings, "launched a session", async () => {
+  await withRetries("launched a session", async () => {
     const put = await settings.store.putSession(
       { ...session, state: "launched", revision: session.revision + 1 },
       session.revision,
@@ -213,7 +213,7 @@ async function markLaunched(settings: LmsSettings, session: Session): Promise<vo
  * @returns The session that the unit pointed at before: none, one that ended, or one that another launch made at once.
  */
 async function pointAt(settings: LmsSettings, session: Session): Promise<string | undefined> {
-  return withRetries(settings, "launched a session", async () => {
+  return withRetries("launched a session", async () => {
     const registration = await registrationOf(settings, session.registration);
     const before = auOf(registration, session.au);
     const au = { ...before, session: session.id, moveOn: session.launchData.moveOn };

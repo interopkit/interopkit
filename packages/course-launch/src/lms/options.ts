@@ -61,12 +61,6 @@ export interface LmsOptions extends CallOptions {
    * @defaultValue `"writable"`
    */
   readonly learnerPreferences?: "writable" | "read-only";
-  /**
-   * The most tries of a write of a record that another write changed first.
-   *
-   * @defaultValue 3
-   */
-  readonly conflictRetries?: number;
 }
 
 /** The options of the LMS role with their defaults. */
@@ -82,7 +76,6 @@ export interface LmsSettings {
   readonly fetchLifetimeMs: number;
   readonly maxSessionMs: number;
   readonly learnerPreferences: "writable" | "read-only";
-  readonly conflictRetries: number;
   readonly signal: AbortSignal | undefined;
 }
 
@@ -92,8 +85,8 @@ const DEFAULT_FETCH_LIFETIME_SECONDS = 600;
 /** The lifetime of a session: one day, longer than a learner keeps a unit open. */
 const DEFAULT_MAX_SESSION_SECONDS = 86_400;
 
-/** The tries of a write that loses a race: as the LRS of `learning-records` retries the merge of a document. */
-const DEFAULT_CONFLICT_RETRIES = 3;
+/** The most times that a change of records is made again after a conflict with another write. */
+const MAX_CONFLICT_RETRIES = 3;
 
 /** Milliseconds in a second. */
 const MS_PER_SECOND = 1000;
@@ -123,7 +116,6 @@ const optionsSchema = strictRecord({
   fetchLifetimeSeconds: v.optional(positiveIntegerSchema),
   maxSessionSeconds: v.optional(positiveIntegerSchema),
   learnerPreferences: v.optional(v.picklist(["writable", "read-only"])),
-  conflictRetries: v.optional(positiveIntegerSchema),
   signal: v.optional(abortSignalSchema),
 });
 
@@ -147,7 +139,6 @@ export function readLmsOptions(options: unknown): LmsSettings {
     fetchLifetimeMs: (read.fetchLifetimeSeconds ?? DEFAULT_FETCH_LIFETIME_SECONDS) * MS_PER_SECOND,
     maxSessionMs: (read.maxSessionSeconds ?? DEFAULT_MAX_SESSION_SECONDS) * MS_PER_SECOND,
     learnerPreferences: read.learnerPreferences ?? "writable",
-    conflictRetries: read.conflictRetries ?? DEFAULT_CONFLICT_RETRIES,
     signal: read.signal,
   };
 }
@@ -171,22 +162,18 @@ export function newIdOf(settings: LmsSettings): string {
 }
 
 /**
- * Runs a change of records that may lose a race, again after each conflict, up to the retries of the options.
+ * Runs a change of records that may lose a race, again after each conflict, up to `MAX_CONFLICT_RETRIES` times.
  *
  * @param attempt - Reads the records, makes the change and writes it; returns the result, or `"conflict"` to run again.
  * @param what - Names the change in the message of the error.
  * @throws `InteropkitError` when every try met a conflict.
  */
-export async function withRetries<T>(
-  settings: LmsSettings,
-  what: string,
-  attempt: () => Promise<T | "conflict">,
-): Promise<T> {
-  for (let tries = 0; tries <= settings.conflictRetries; tries += 1) {
+export async function withRetries<T>(what: string, attempt: () => Promise<T | "conflict">): Promise<T> {
+  for (let tries = 0; tries <= MAX_CONFLICT_RETRIES; tries += 1) {
     const outcome = await attempt();
     if (outcome !== "conflict") return outcome;
   }
   throw new InteropkitError(
-    `The store kept changing while the LMS ${what}: ${settings.conflictRetries + 1} tries met a conflict.`,
+    `The store kept changing while the LMS ${what}: ${MAX_CONFLICT_RETRIES + 1} tries met a conflict.`,
   );
 }

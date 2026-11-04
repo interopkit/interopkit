@@ -17,6 +17,9 @@ const storedSchema = looseRecord({
   ),
 });
 
+/** The most tries of a write or removal of a document that loses a race against another writer, the first one included. */
+export const MAX_WRITE_TRIES = 3;
+
 const writeSchema = v.picklist(["written", "precondition-failed", "exists"]);
 const deleteSchema = v.picklist(["deleted", "precondition-failed", "absent"]);
 const idsSchema = v.array(v.string());

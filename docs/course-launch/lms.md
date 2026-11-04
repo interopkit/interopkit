@@ -173,7 +173,6 @@ registration and to waivers.
 | `fetchLifetimeSeconds` | 600 | How long a fetch code may be used |
 | `maxSessionSeconds` | 86,400 | How long a session and its token last after the launch |
 | `learnerPreferences` | `"writable"` | `"read-only"` refuses every write of the preferences by a unit |
-| `conflictRetries` | 3 | The tries of a write of a record after a conflict |
 | `signal` | none | Ends the wait of the call |
 
 ## Limits

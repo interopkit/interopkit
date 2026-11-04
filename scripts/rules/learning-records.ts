@@ -733,9 +733,9 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
     test: "packages/learning-records/test/store-documents.test.ts",
   },
   {
-    rule: "A write that loses a race is tried again, within the limit.",
+    rule: "A write that loses a race is tried again, within the tries.",
     file: "packages/learning-records/src/store/documents/write.ts",
-    find: "attempts < limits.mergeRetries",
+    find: "attempts < MAX_WRITE_TRIES",
     replace: "attempts < 1",
     test: "packages/learning-records/test/store-documents.test.ts",
   },
@@ -761,9 +761,9 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
     test: "packages/learning-records/test/store-documents.test.ts",
   },
   {
-    rule: "A removal that loses a race is tried again, within the limit.",
+    rule: "A removal that loses a race is tried again, within the tries.",
     file: "packages/learning-records/src/store/documents/remove.ts",
-    find: "attempts < context.settings.limits.mergeRetries",
+    find: "attempts < MAX_WRITE_TRIES",
     replace: "attempts < 1",
     test: "packages/learning-records/test/store-documents.test.ts",
   },

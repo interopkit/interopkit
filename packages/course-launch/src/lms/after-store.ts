@@ -34,7 +34,7 @@ function markStored(au: RegistrationAu, stored: readonly Reservation[]): Registr
 
 /** Records the stored outcomes of a session in its registration and writes the satisfied statements that they make due. */
 async function recordOutcomes(settings: LmsSettings, session: Session, stored: readonly Reservation[]): Promise<void> {
-  await withRetries(settings, "recorded the outcomes of a session", async () => {
+  await withRetries("recorded the outcomes of a session", async () => {
     const registration = await registrationOf(settings, session.registration);
     const unit = markStored(auOf(registration, session.au), stored);
     const marked: Registration = { ...registration, aus: { ...registration.aus, [session.au]: unit } };
@@ -51,7 +51,7 @@ async function recordOutcomes(settings: LmsSettings, session: Session, stored: r
 
 /** Ends a session whose terminated statement the LRS stored: its token is refused from then on (9.3.8). */
 async function terminate(settings: LmsSettings, id: string): Promise<void> {
-  await withRetries(settings, "terminated a session", async () => {
+  await withRetries("terminated a session", async () => {
     const session = await settings.store.session(id, signalOf(settings));
     if (session?.state !== "active") return "done";
     const put = await settings.store.putSession(

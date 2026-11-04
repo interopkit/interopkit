@@ -163,5 +163,5 @@ export async function acceptStatements(
   session: string,
   held: StatementStore,
 ): Promise<readonly Issue[]> {
-  return withRetries(settings, "judged statements", () => judgeAndReserve(settings, statements, session, held));
+  return withRetries("judged statements", () => judgeAndReserve(settings, statements, session, held));
 }

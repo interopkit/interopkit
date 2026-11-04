@@ -20,16 +20,16 @@ describe("a store that fails", () => {
   });
 
   it("retries a write that met a conflict, and gives up with InteropkitError after the retries", async () => {
-    const host = testHost({ conflictRetries: 2 });
+    const host = testHost();
     const registration = await register(host);
     const launched = await launchUnit(host, { registration: registration.id, au: AU1 });
-    host.store.conflicts.session = 2;
+    host.store.conflicts.session = 3;
     expect((await sendStatement(host, launched, unitStatement(launched, "initialized"))).status).toBe(204);
     // A unit with no open session, so that the conflicts meet the write that points the registration at the new session.
-    host.store.conflicts.registration = 2;
+    host.store.conflicts.registration = 3;
     const other = await launchUnit(host, { registration: registration.id, au: AU3 });
     expect((await host.store.registration(registration.id))?.aus[AU3]?.session).toBe(other.launch.session);
-    host.store.conflicts.registration = 3;
+    host.store.conflicts.registration = 4;
     await expect(waiveAu({ registration: registration.id, au: AU3, reason: "r" }, host.options)).rejects.toThrow(
       InteropkitError,
     );
@@ -148,7 +148,7 @@ describe("an LRS that fails", () => {
   });
 
   it("refuses a second completed when the LRS holds one that the LMS failed to mark as stored", async () => {
-    const host = testHost({ conflictRetries: 1 });
+    const host = testHost();
     const registration = await register(host);
     const first = await launchUnit(host, { registration: registration.id, au: AU3 });
     await sendStatement(host, first, unitStatement(first, "initialized"));

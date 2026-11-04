@@ -325,6 +325,13 @@ export const COURSE_LAUNCH_RULES: readonly Rule[] = [
     test: "packages/course-launch/test/lms-fetch.test.ts",
   },
   {
+    rule: "A change of records that met a conflict is made again, within the retries.",
+    file: "packages/course-launch/src/lms/options.ts",
+    find: "tries <= MAX_CONFLICT_RETRIES",
+    replace: "tries < 1",
+    test: "packages/course-launch/test/lms-failures.test.ts",
+  },
+  {
     rule: "Two POSTs of a fetch code at once get one token: the write of the session is conditional.",
     file: "packages/course-launch/src/lms/handle-fetch-request.ts",
     find: 'if (put === "conflict") return "conflict";',

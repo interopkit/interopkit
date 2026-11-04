@@ -731,16 +731,6 @@ describe("handleLrsRequest: writes that race", () => {
       "The document was changed by other requests while this one was written: read it again and retry.",
     );
     expect(count).toBe(3);
-    const fewer = memory();
-    await putState(fewer, '{"a":1}');
-    let times = 0;
-    fewer.interfere = () => {
-      times += 1;
-      rewrite(fewer, `{"a":${times + 1}}`, `"tag-${times}"`);
-    };
-    const one = await post(fewer, '{"b":2}', { "if-match": "*" }, { limits: { mergeRetries: 1 } });
-    expect(one.status).toBe(409);
-    expect(times).toBe(1);
   });
 
   it("answers 409 for a write with no precondition where another writer created the document", async () => {
@@ -1360,6 +1350,5 @@ describe("handleLrsRequest: the options of the documents", () => {
       handleLrsRequest(requestOf("GET", "/about"), optionsOf(store, changes as never));
     await expect(bad({ aboutExtensions: [] })).rejects.toThrow("aboutExtensions");
     await expect(bad({ limits: { maxDocumentBytes: 0 } })).rejects.toThrow("maxDocumentBytes");
-    await expect(bad({ limits: { mergeRetries: 1.5 } })).rejects.toThrow("mergeRetries");
   });
 });
