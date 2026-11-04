@@ -91,6 +91,40 @@ export function isDateTime(text: string): boolean {
 }
 
 /**
+ * A combined date and time of ISO 8601 in the extended format with a zone: the minutes and seconds may be left out, the seconds
+ * may have a fraction, and the zone is `Z`, `±hh` or `±hh:mm`.
+ */
+const ISO_EXTENDED = /^(\d{4})-(\d{2})-(\d{2})T(\d{2})(?::(\d{2})(?::(\d{2})(\.\d+)?)?)?(Z|[+-]\d{2}(?::\d{2})?)$/u;
+
+/** The same in the basic format of ISO 8601, without separators: `20240613T184603.250Z`, with a zone `Z`, `±hh` or `±hhmm`. */
+const ISO_BASIC = /^(\d{4})(\d{2})(\d{2})T(\d{2})(?:(\d{2})(?:(\d{2})(\.\d+)?)?)?(Z|[+-]\d{2}(?:\d{2})?)$/u;
+
+/**
+ * Reads a date and time of ISO 8601 with a time zone, in the extended or the basic format, into milliseconds since
+ * 1970-01-01T00:00:00Z, or returns `undefined` when the text is not one.
+ *
+ * @remarks
+ * The minutes and seconds may be left out, the seconds may have a fraction, and the zone is `Z`, `±hh`, `±hh:mm` in the
+ * extended format or `±hhmm` in the basic one; the two formats do not mix. The date and the time are judged as `findInstant`
+ * judges them. A zone of minus zero, such as `-00:00`, which RFC 3339 allows for an unknown offset and ISO 8601 does not, is
+ * refused, as are lower case `t` and `z`, which RFC 3339 allows and ISO 8601 does not.
+ *
+ * @param text - The text.
+ * @returns The instant in milliseconds, or `undefined` when the text is not a date and time of ISO 8601 with a zone.
+ */
+export function findIsoInstant(text: string): number | undefined {
+  const match = ISO_EXTENDED.exec(text) ?? ISO_BASIC.exec(text);
+  if (match === null) return undefined;
+  const [, year = "", month = "", day = "", hour = "", minute = "00", second = "00", fraction = "", zone = ""] = match;
+  if (zone === "Z") return findInstant(`${year}-${month}-${day}T${hour}:${minute}:${second}${fraction}Z`);
+  const digits = zone.slice(1).replace(":", "");
+  const [offsetHour, offsetMinute] = [digits.slice(0, 2), digits.slice(2) || "00"];
+  if (zone.startsWith("-") && offsetHour === "00" && offsetMinute === "00") return undefined;
+  const offset = `${zone.charAt(0)}${offsetHour}:${offsetMinute}`;
+  return findInstant(`${year}-${month}-${day}T${hour}:${minute}:${second}${fraction}${offset}`);
+}
+
+/**
  * Tells whether text is a URI with a scheme, which `URL` parses: `https://example.org/x`, `urn:uuid:...`, `mailto:a@b.example`.
  *
  * @param text - The text.

@@ -649,4 +649,11 @@ export const CORE_RULES: readonly Rule[] = [
     replace: "",
     test: "packages/core/test/findings.test.ts",
   },
+  {
+    rule: "A time of ISO 8601 has no offset of minus zero, which RFC 3339 allows for an unknown offset and ISO 8601 does not.",
+    file: "packages/core/src/formats.ts",
+    find: 'if (zone.startsWith("-") && offsetHour === "00" && offsetMinute === "00") return undefined;',
+    replace: "",
+    test: "packages/core/test/formats.test.ts",
+  },
 ];

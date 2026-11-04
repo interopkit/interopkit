@@ -8,9 +8,9 @@ import {
   positiveIntegerSchema,
   strictRecord,
 } from "@interopkit/core/checks";
-import { type Agent, type Statement, validateStatements } from "@interopkit/learning-records";
+import { type Agent, findStatementTime, type Statement, validateStatements } from "@interopkit/learning-records";
 import * as v from "valibot";
-import { judgeStatement, timeOf } from "./judge-statement.js";
+import { judgeStatement } from "./judge-statement.js";
 import { readLaunchDataAs } from "./launch-documents.js";
 import { type SessionFacts, sessionStart } from "./session.js";
 import { checkXapiPart } from "./xapi-parts.js";
@@ -54,7 +54,7 @@ function readFacts(value: unknown): SessionFacts {
 export function sessionOrder(statements: readonly Statement[]): readonly number[] {
   let previous = Number.NEGATIVE_INFINITY;
   const timed = statements.map((statement, index) => {
-    previous = timeOf(statement.timestamp) ?? previous;
+    previous = findStatementTime(statement) ?? previous;
     return { index, time: previous };
   });
   return timed.sort((left, right) => left.time - right.time).map(({ index }) => index);

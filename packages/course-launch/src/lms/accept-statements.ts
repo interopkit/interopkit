@@ -1,9 +1,9 @@
 import { readClock } from "@interopkit/core";
 import type { Issue } from "@interopkit/core/checks";
-import type { Statement } from "@interopkit/learning-records";
+import { findStatementTime, type Statement } from "@interopkit/learning-records";
 import type { StatementStore } from "@interopkit/learning-records/store";
 import { classifyStatement } from "../rules/index.js";
-import { cmi5VerbOf, judgeStatement, type SessionProgress, sessionOrder, timeOf } from "../rules/internal.js";
+import { cmi5VerbOf, judgeStatement, type SessionProgress, sessionOrder } from "../rules/internal.js";
 import { registrationOf } from "./create-registration.js";
 import { type LmsSettings, signalOf, withRetries } from "./options.js";
 import { auOf } from "./progress.js";
@@ -72,7 +72,7 @@ function reservationsOf(order: ReturnType<typeof inOrder>): readonly Reservation
     if (id === undefined || classifyStatement(statement) !== "defined") return [];
     const verb = cmi5VerbOf(statement.verb.id);
     // A statement without a time was refused, so every statement here has one.
-    return isReserved(verb) ? [{ verb, statement: id, time: timeOf(statement.timestamp) ?? 0 }] : [];
+    return isReserved(verb) ? [{ verb, statement: id, time: findStatementTime(statement) ?? 0 }] : [];
   });
 }
 

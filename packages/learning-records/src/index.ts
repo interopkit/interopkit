@@ -37,6 +37,7 @@ export {
   type DocumentTarget,
   type Duration,
   type Extensions,
+  findStatementTime,
   formatDuration,
   type Group,
   INTERACTION_TYPES,

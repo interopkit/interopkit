@@ -45,3 +45,4 @@ export {
   XAPI_VERSIONS,
   type XapiVersion,
 } from "./terms.js";
+export { findStatementTime } from "./timestamp.js";

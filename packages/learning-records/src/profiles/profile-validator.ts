@@ -4,6 +4,7 @@ import {
   createIssueSink,
   DEFAULT_MAX_FINDINGS,
   describe,
+  findIsoInstant,
   guardSchema,
   type Issue,
   type IssueSink,
@@ -13,7 +14,6 @@ import {
 } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type { Statement } from "../model/index.js";
-import { parseIsoTimestamp } from "../model/internal.js";
 import { error, item, readEitherVersion } from "../read/internal.js";
 import type { ExtensionConceptType } from "./concepts.js";
 import {
@@ -163,7 +163,7 @@ function latestVersion(profile: Profile): string {
   let latest = profile.id;
   let time = Number.NEGATIVE_INFINITY;
   for (const version of profile.versions) {
-    const at = parseIsoTimestamp(version.generatedAtTime) ?? time;
+    const at = findIsoInstant(version.generatedAtTime) ?? time;
     if (at > time) [latest, time] = [version.id, at];
   }
   return latest;

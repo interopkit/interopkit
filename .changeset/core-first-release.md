@@ -25,7 +25,7 @@ unless it says otherwise), authentication by secret, by a JWT that a `Signer` si
 that shares one token among callers.
 `@interopkit/core/checks` refuses, with `checkRemoteUrl`, a URL from a message or a document that names
 its host by an IP address, a single label or a name of a private network, or that carries user information. It also reads the
-formats that the standards share (a date, a date and time of RFC 3339, a UUID, a URI, a
+formats that the standards share (a date, a date and time of RFC 3339 with `findInstant` and one of ISO 8601, extended or basic, with `findIsoInstant`, a UUID, a URI, a
 language tag of RFC 5646, of at most 1,024 characters), copies JSON within a depth limit, tells whether two JSON values are the same whatever the order of the members of an object (`isSameJson`), tells whether the text of JSON nests deeper or has more tokens than a limit, or which of the two limits it passes first in one reading (`findExceededJsonLimit`), parses a text within both limits with the
 sentences of its caller (`parseJsonText`), turns
 the issues of a parse into errors with a path, a rule and a sentence (`buildIssues`), and writes the sentence of the refusal of a reader. It

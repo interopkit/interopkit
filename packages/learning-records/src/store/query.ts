@@ -1,4 +1,4 @@
-import { checkFunction, checkRecord } from "@interopkit/core/checks";
+import { checkFunction, checkRecord, findInstant } from "@interopkit/core/checks";
 import { identityKey, iriKey, sameActor } from "../compare/internal.js";
 import type {
   Activity,
@@ -9,7 +9,6 @@ import type {
   StatementQuery,
   SubStatement,
 } from "../model/index.js";
-import { findInstant } from "../model/internal.js";
 
 /** What a Statement and a SubStatement share, which the filters look at. */
 type Part = Statement | SubStatement;

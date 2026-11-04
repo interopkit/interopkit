@@ -11,8 +11,7 @@ import {
 import * as v from "valibot";
 import { convertStatementVersion } from "../compare/index.js";
 import { equivalenceKey } from "../compare/internal.js";
-import { type Statement, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
-import { findInstant, parseIsoTimestamp } from "../model/internal.js";
+import { findStatementTime, type Statement, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 import { type ParseStatementJsonOptions, parseStatementJson, readStatement } from "../read/index.js";
 import { readEitherVersion } from "../read/internal.js";
 import { isCertificate, SIGNATURE_ALGORITHMS } from "./constants.js";
@@ -196,11 +195,6 @@ function readPayload(
   }
 }
 
-/** Reads a time of a Statement of either version as epoch milliseconds. */
-function instantOf(time: string | undefined): number | undefined {
-  return time === undefined ? undefined : (findInstant(time) ?? parseIsoTimestamp(time));
-}
-
 /**
  * Tells whether the Statement received keeps what the signature says of the properties that immutability leaves out: an LRS
  * sets what a Statement lacks, and nothing else may change under a signature. The id and the time are those of the payload when
@@ -210,7 +204,7 @@ function keepsSigned(stated: Statement, signed: Statement): boolean {
   const attachments = new Set((stated.attachments ?? []).map(({ sha2 }) => sha2.toLowerCase()));
   return (
     (signed.id === undefined || signed.id.toLowerCase() === stated.id?.toLowerCase()) &&
-    (signed.timestamp === undefined || instantOf(signed.timestamp) === instantOf(stated.timestamp)) &&
+    (signed.timestamp === undefined || findStatementTime(signed) === findStatementTime(stated)) &&
     (signed.attachments ?? []).every(({ sha2 }) => attachments.has(sha2.toLowerCase()))
   );
 }

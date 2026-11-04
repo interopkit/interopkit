@@ -6,4 +6,4 @@
 export { durationKey, hasFinerThanCentiseconds, splitDuration } from "./duration.js";
 export { isMailtoIri, isMediaType, isSha1Hex, isSha2Hex, mediaTypeOf } from "./formats.js";
 export { COMPONENT_LISTS, type ComponentList, STATEMENT_VERSIONS, VERSION_PATTERNS } from "./terms.js";
-export { findInstant, hasMillisecondPrecision, isIsoTimestamp, isUtc, parseIsoTimestamp } from "./timestamp.js";
+export { hasMillisecondPrecision, isIsoTimestamp, isUtc } from "./timestamp.js";

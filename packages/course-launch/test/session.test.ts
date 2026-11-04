@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SOUND } from "../../../scripts/cmi5-rules.js";
 import { classifyStatement, validateSessionStatements } from "../src/index.js";
-import { judgeStatement, sessionStart } from "../src/rules/internal.js";
+import { judgeStatement, sessionOrder, sessionStart } from "../src/rules/internal.js";
 
 /** A copy of the sound session of the rules table, as JSON passes it. */
 const sound = () => JSON.parse(JSON.stringify(SOUND));
@@ -47,6 +47,18 @@ describe("judging the statements of a session", () => {
       "[1].timestamp timestamp",
     ]);
   });
+
+  it.each(["2026-01-15 10:01:00Z", "2026-01-15T10:01:00+0000"])(
+    "orders a statement whose time xAPI does not read, such as %j, as one without a time",
+    (timestamp) => {
+      const statements = sound().statements.slice(0, 2);
+      statements[0].timestamp = "2026-01-15T10:05:00Z";
+      statements[1].timestamp = timestamp;
+      expect(sessionOrder(statements)).toStrictEqual([0, 1]);
+      statements[1].timestamp = "2026-01-15T10:01:00Z";
+      expect(sessionOrder(statements)).toStrictEqual([1, 0]);
+    },
+  );
 
   it("refuses a statement that cmi5 defines from a Group, or whose object is not the activity of the launch", () => {
     const { statements, facts } = sound();

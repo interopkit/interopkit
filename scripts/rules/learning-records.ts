@@ -518,7 +518,7 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
   {
     rule: "The time of a signed payload is the time of the Statement.",
     file: "packages/learning-records/src/signing/verify-statement-signature.ts",
-    find: "(signed.timestamp === undefined || instantOf(signed.timestamp) === instantOf(stated.timestamp)) &&",
+    find: "(signed.timestamp === undefined || findStatementTime(signed) === findStatementTime(stated)) &&",
     replace: "",
     test: "packages/learning-records/test/signing.test.ts",
   },
@@ -1235,13 +1235,6 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
     file: "packages/learning-records/src/read/schemas.ts",
     find: '"1.0.3": { time: isoTimestamp, context: contextV1 },',
     replace: '"1.0.3": { time: isoTimestamp, context },',
-    test: "packages/learning-records/test/v1-rules.test.ts",
-  },
-  {
-    rule: "A time of xAPI 1.0.3 has no offset of minus zero, which ISO 8601 does not have.",
-    file: "packages/learning-records/src/model/timestamp.ts",
-    find: 'if (zone.startsWith("-") && offsetHour === "00" && offsetMinute === "00") return undefined;',
-    replace: "",
     test: "packages/learning-records/test/v1-rules.test.ts",
   },
   {

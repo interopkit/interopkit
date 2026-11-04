@@ -1,5 +1,4 @@
-import type { Issue } from "@interopkit/core/checks";
-import { parseIsoTimestamp } from "../model/internal.js";
+import { findIsoInstant, type Issue } from "@interopkit/core/checks";
 import { error, item, member, warning } from "../read/internal.js";
 import { PROFILE_CONTEXT, PROFILES_SPECIFICATION, type Profile } from "./profile.js";
 import type { ProfileReferences } from "./references.js";
@@ -66,7 +65,7 @@ function* versionIssues(profile: Profile): Generator<Issue> {
   let first = 0;
   let earliest = Number.POSITIVE_INFINITY;
   for (const [index, { generatedAtTime }] of profile.versions.entries()) {
-    const time = parseIsoTimestamp(generatedAtTime) ?? earliest;
+    const time = findIsoInstant(generatedAtTime) ?? earliest;
     if (time < earliest) [first, earliest] = [index, time];
   }
   for (const [index, version] of profile.versions.entries()) {

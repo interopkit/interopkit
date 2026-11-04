@@ -1,5 +1,12 @@
-import { type Issue, isDateTime, isSameJson, parseDateTime } from "@interopkit/core/checks";
-import { type Activity, type Actor, type Context, type Statement, VERB_VOIDED } from "@interopkit/learning-records";
+import { type Issue, isSameJson } from "@interopkit/core/checks";
+import {
+  type Activity,
+  type Actor,
+  type Context,
+  findStatementTime,
+  type Statement,
+  VERB_VOIDED,
+} from "@interopkit/learning-records";
 import { CMI5_CATEGORIES, CMI5_EXTENSIONS, type Cmi5Verb } from "../model/index.js";
 import { categoryIdsOf, classifyStatement, cmi5VerbOf } from "./classify.js";
 import type { SessionFacts, SessionProgress } from "./session.js";
@@ -30,25 +37,6 @@ const MAX_PROGRESS = 100;
 
 /** A time of xAPI in UTC: `Z`, or an offset of zero in a form that ISO 8601 writes. */
 const UTC = /(?:[Zz]|\+00(?::?00)?)$/u;
-
-/**
- * A time of a statement in the forms that the readers of xAPI take: the extended format of ISO 8601 with `T`, `t` or a space,
- * minutes and seconds that may be left out, and a zone of `Z`, `z`, `±hh`, `±hhmm` or `±hh:mm`; or the basic format.
- */
-const EXTENDED_TIME =
-  /^(\d{4})-(\d{2})-(\d{2})[Tt ](\d{2})(?::(\d{2})(?::(\d{2}))?)?(\.\d+)?([Zz]|[+-]\d{2}(?::?\d{2})?)$/u;
-const BASIC_TIME = /^(\d{4})(\d{2})(\d{2})[Tt](\d{2})(?:(\d{2})(\d{2})?)?(\.\d+)?([Zz]|[+-]\d{2}(?:\d{2})?)$/u;
-
-/** Reads a time of a statement in milliseconds, in any form that the readers of xAPI take; `undefined` for none. */
-export function timeOf(text: string | undefined): number | undefined {
-  const match = text === undefined ? null : (EXTENDED_TIME.exec(text) ?? BASIC_TIME.exec(text));
-  if (match === null) return undefined;
-  const [, year, month, day, hour, minute = "00", second = "00", fraction = "", zone = ""] = match;
-  const digits = zone.replace(":", "");
-  const offset = /^[Zz]$/u.test(zone) ? "Z" : `${digits.slice(0, 3)}:${digits.slice(3) || "00"}`;
-  const written = `${year}-${month}-${day}T${hour}:${minute}:${second}${fraction}${offset}`;
-  return isDateTime(written) ? parseDateTime(written) : undefined;
-}
 
 /** Tells whether two Actors are the same person by the identifier of xAPI that they carry. */
 export function sameActor(left: Actor, right: Actor): boolean {
@@ -170,7 +158,7 @@ function judgeOrder(
   progress: SessionProgress,
   found: Findings,
 ): void {
-  const time = timeOf(statement.timestamp);
+  const time = findStatementTime(statement);
   if (verb !== "initialized" && progress.initializedAt === undefined) {
     found.error(
       "verb.id",
@@ -353,7 +341,7 @@ export function judgeStatement(statement: Statement, facts: SessionFacts, progre
   judgeMoveOnCategory(statement, kind === "defined", found);
   if (categoryIdsOf(statement).includes(CMI5_CATEGORIES.cmi5)) judgeDefined(statement, verb, facts, progress, found);
   judgeProgress(statement, verb, found);
-  return { findings: found.list, next: advance(verb, timeOf(statement.timestamp), progress) };
+  return { findings: found.list, next: advance(verb, findStatementTime(statement), progress) };
 }
 
 /** Judges what a statement that cmi5 defines needs beyond any statement: its verb, actor, object and result (9.2 to 9.5). */

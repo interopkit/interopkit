@@ -54,6 +54,7 @@ validateStatement({ ...statement, result: { score: { scaled: 2 } } }).map((findi
 | `readStatement(value, options?)`      | Reads a value into a `Statement`: a copy that shares nothing with the input. A single Activity in `contextActivities` is returned as a list of one   | `DataError` when the value has an error          |
 | `validateStatement(value, options?)`  | Lists the findings of a value, errors and warnings, in the order of the properties, at most `maxFindings` of them                                    | `DataError` for the options only                 |
 | `validateStatements(value, options?)` | Judges each Statement of an array, and the batch: two Statements with one id are an error. The path of a finding starts with the index: `[1].actor`. `maxFindings` holds for the whole batch | `DataError` for the options only                 |
+| `findStatementTime(statement)`        | The `timestamp` of a Statement of either version as epoch milliseconds: a date and time of RFC 3339 (2.0) or of ISO 8601 with a zone, extended or basic (1.0.3). `undefined` for none, or for a text that is neither | Nothing                                          |
 
 A value that is not a Statement gives findings and does not throw. While the shape is wrong, the findings are about the shape
 alone; the rules between properties are judged once it is right. A warning never keeps `readStatement` from returning.

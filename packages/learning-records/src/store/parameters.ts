@@ -1,7 +1,6 @@
 import { DataError } from "@interopkit/core";
-import { describe, parseWith } from "@interopkit/core/checks";
+import { describe, findIsoInstant, parseWith } from "@interopkit/core/checks";
 import type { Agent } from "../model/index.js";
-import { parseIsoTimestamp } from "../model/internal.js";
 import { parseStatementJson } from "../read/index.js";
 import { identifiedAgentSchema } from "../read/internal.js";
 import type { LrsSettingsLimits } from "./options.js";
@@ -34,7 +33,7 @@ export function readRequestJson(text: string, limits: LrsSettingsLimits): unknow
  * ISO 8601 with a time zone, which the LRS compares in UTC.
  */
 export function readIsoParameter(name: string, text: string): string {
-  const milliseconds = parseIsoTimestamp(text);
+  const milliseconds = findIsoInstant(text);
   if (milliseconds === undefined) {
     throw new DataError(
       `The parameter ${name} must be an ISO 8601 date and time with a time zone, such as 2024-06-13T18:46:03.250Z, found ${describe(text)}.`,

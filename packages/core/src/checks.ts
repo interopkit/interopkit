@@ -31,6 +31,8 @@ export {
   absoluteUriSchema,
   dateSchema,
   dateTimeSchema,
+  findInstant,
+  findIsoInstant,
   isAbsoluteUri,
   isDate,
   isDateTime,

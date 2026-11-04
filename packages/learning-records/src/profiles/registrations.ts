@@ -1,6 +1,5 @@
 import { type Issue, isAbsoluteUri, isRecord, isUuid } from "@interopkit/core/checks";
-import type { Statement } from "../model/index.js";
-import { findInstant, parseIsoTimestamp } from "../model/internal.js";
+import { findStatementTime, type Statement } from "../model/index.js";
 import { error, item, member, warning } from "../read/internal.js";
 import { SUBREGISTRATION_EXTENSION } from "./profile.js";
 
@@ -66,12 +65,6 @@ export interface PlacedStatement {
   readonly statement: Statement;
 }
 
-/** Reads the time of a Statement in either version's form. */
-function timeOf(statement: Statement): number | undefined {
-  const { timestamp } = statement;
-  return timestamp === undefined ? undefined : (parseIsoTimestamp(timestamp) ?? findInstant(timestamp));
-}
-
 /**
  * Orders the Statements of a series by time, a Statement without one where it stands, and at one time by place, and lists those
  * whose own time another Statement of the series has.
@@ -79,7 +72,7 @@ function timeOf(statement: Statement): number | undefined {
 function ordered(entries: readonly PlacedStatement[]): { readonly indexes: number[]; readonly repeated: number[] } {
   let previous = Number.NEGATIVE_INFINITY;
   const timed = entries.map(({ index, statement }) => {
-    const own = timeOf(statement);
+    const own = findStatementTime(statement);
     previous = own ?? previous;
     return { index, time: previous, own };
   });

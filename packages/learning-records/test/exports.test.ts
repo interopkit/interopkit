@@ -14,6 +14,7 @@ describe("the public API", () => {
         "CONTEXT_ACTIVITY_TYPES",
         "convertStatementVersion",
         "deriveStatementId",
+        "findStatementTime",
         "formatDuration",
         "formatStatement",
         "INTERACTION_TYPES",

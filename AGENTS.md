@@ -82,7 +82,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/`                     | The shared foundation                                                                               |
 | `packages/core/src/errors.ts`        | `InteropkitError`, `DataError`, `LimitError`, `ServiceError`                                        |
 | `packages/core/src/checks.ts`        | Checks of one value and the valibot side, `buildIssues` and `parseJsonText`, which `@interopkit/core/checks` exports |
-| `packages/core/src/formats.ts`       | `isDate`, `isDateTime`, `findInstant`, `isUuid`, `isAbsoluteUri` and their schemas; `checks.ts` exports them, and `parseDateTime`, which throws where `findInstant` returns `undefined` |
+| `packages/core/src/formats.ts`       | `isDate`, `isDateTime`, `findInstant`, `findIsoInstant`, `isUuid`, `isAbsoluteUri` and their schemas; `checks.ts` exports them, and `parseDateTime`, which throws where `findInstant` returns `undefined` |
 | `packages/core/src/json.ts`          | `JsonValue`, `copyJson`, `isSameJson`, `MAX_JSON_DEPTH`, the counts of depth and tokens, `endOfJsonString`; `checks.ts` exports them |
 | `packages/core/src/findings.ts`      | `Finding`, `Issue`, `IssueSink`, `createIssueSink`, `safeParseBounded`, `DEFAULT_MAX_FINDINGS`; `checks.ts` exports them |
 | `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                  |

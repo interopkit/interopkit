@@ -4,6 +4,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   CONTEXT_ACTIVITY_TYPES,
+  findStatementTime,
   formatDuration,
   INTERACTION_TYPES,
   isDuration,
@@ -22,6 +23,7 @@ import {
   isUtc,
   splitDuration,
 } from "../src/model/internal.js";
+import { minimalStatement } from "./full-statement.js";
 
 describe("the vocabularies", () => {
   it("are those of the tables of the standard", () => {
@@ -156,6 +158,41 @@ describe("the form of a time", () => {
     ["2024-06-13T18:46:03.Z", false],
   ])("tells whether %j has milliseconds: %s", (text, precise) => {
     expect(hasMillisecondPrecision(text)).toBe(precise);
+  });
+
+  const statementAt = (timestamp: string | undefined) => ({
+    ...minimalStatement(),
+    ...(timestamp === undefined ? {} : { timestamp }),
+  });
+  const instant = Date.UTC(2024, 5, 13, 18, 46, 3, 250);
+
+  it.each([
+    ["a time of 2.0", "2024-06-13T18:46:03.250Z"],
+    ["a time of 2.0 with an offset", "2024-06-13T20:46:03.250+02:00"],
+    ["a time of 2.0 in lower case", "2024-06-13t18:46:03.250z"],
+    ["a time of 2.0 with an unknown offset, which RFC 3339 allows", "2024-06-13T18:46:03.250-00:00"],
+    ["a time of 1.0.3 in the basic format", "20240613T184603.250Z"],
+    ["a time of 1.0.3 in the basic format with an offset", "20240613T204603.250+0200"],
+    ["a time of 1.0.3 with an offset of hours", "2024-06-13T20:46:03.250+02"],
+  ])("reads the time of a Statement with %s", (_name, timestamp) => {
+    expect(findStatementTime(statementAt(timestamp))).toBe(instant);
+  });
+
+  it("reads a time of 1.0.3 whose minutes or seconds are left out", () => {
+    expect(findStatementTime(statementAt("2024-06-13T18:46Z"))).toBe(Date.UTC(2024, 5, 13, 18, 46));
+    expect(findStatementTime(statementAt("20240613T18Z"))).toBe(Date.UTC(2024, 5, 13, 18));
+  });
+
+  it.each([
+    undefined,
+    "2024-06-13 18:46:03Z",
+    "2024-06-13T18:46:03",
+    "2024-06-13T20:46:03+0200",
+    "20240613T204603-0000",
+    "2023-02-29T00:00:00Z",
+    "yesterday",
+  ])("finds no time in a Statement whose timestamp is %j", (timestamp) => {
+    expect(findStatementTime(statementAt(timestamp))).toBeUndefined();
   });
 });
 

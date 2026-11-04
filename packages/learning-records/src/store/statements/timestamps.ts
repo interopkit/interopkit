@@ -1,6 +1,5 @@
-import { isRecord } from "@interopkit/core/checks";
+import { findInstant, findIsoInstant, isRecord } from "@interopkit/core/checks";
 import type { Statement, XapiVersion } from "../../model/index.js";
-import { findInstant, parseIsoTimestamp } from "../../model/internal.js";
 import { isRefusal, type Refusal, refused, type Verdict } from "../verdict.js";
 
 /**
@@ -29,7 +28,7 @@ function utcOf(text: string): string | Refusal | undefined {
 
 /** What reading a timestamp of 1.0.3 gives: the time in UTC of an ISO 8601 date and time with a zone, or `undefined`. */
 function isoUtcOf(text: string): string | undefined {
-  const milliseconds = parseIsoTimestamp(text);
+  const milliseconds = findIsoInstant(text);
   return milliseconds === undefined ? undefined : new Date(milliseconds).toISOString();
 }
 

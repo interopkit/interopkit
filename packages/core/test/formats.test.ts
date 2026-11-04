@@ -5,6 +5,8 @@ import {
   absoluteUriSchema,
   dateSchema,
   dateTimeSchema,
+  findInstant,
+  findIsoInstant,
   formatDateTime,
   isAbsoluteUri,
   isDate,
@@ -162,6 +164,80 @@ describe("parseDateTime", () => {
 
   it("says that a date and time that is read is one", () => {
     expect(isDateTime("2024-06-13T18:46:03+00:00")).toBe(true);
+  });
+});
+
+describe("findInstant", () => {
+  it("reads a date and time of RFC 3339 and returns undefined for any other text, where parseDateTime throws", () => {
+    expect(findInstant("2017-04-16T13:54:36.736-05:00")).toBe(Date.UTC(2017, 3, 16, 18, 54, 36, 736));
+    expect(findInstant("2017-04-16T13:54:36")).toBeUndefined();
+    expect(findInstant("2023-02-29T00:00:00Z")).toBeUndefined();
+  });
+});
+
+describe("findIsoInstant", () => {
+  const instant = Date.UTC(2024, 5, 13, 18, 46, 3, 250);
+
+  it.each([
+    "2024-06-13T18:46:03.250Z",
+    "2024-06-13T20:46:03.250+02:00",
+    "2024-06-13T20:46:03.250+02",
+    "2024-06-13T14:46:03.250-04:00",
+    "20240613T184603.250Z",
+    "20240613T204603.250+0200",
+    "20240613T204603.250+02",
+  ])("reads %s to the instant that it names", (text) => {
+    expect(findIsoInstant(text)).toBe(instant);
+  });
+
+  it("reads a time with the minutes or the seconds left out, in both formats", () => {
+    const minute = Date.UTC(2024, 5, 13, 18, 46);
+    expect(findIsoInstant("2024-06-13T18:46Z")).toBe(minute);
+    expect(findIsoInstant("2024-06-13T20:46+02:00")).toBe(minute);
+    expect(findIsoInstant("20240613T1846Z")).toBe(minute);
+    expect(findIsoInstant("2024-06-13T18Z")).toBe(Date.UTC(2024, 5, 13, 18));
+    expect(findIsoInstant("20240613T18Z")).toBe(Date.UTC(2024, 5, 13, 18));
+  });
+
+  it.each(["2024-06-13T18:46:03-00:00", "2024-06-13T18:46:03-00", "20240613T184603-0000", "20240613T184603-00"])(
+    "refuses the zone of minus zero in %s, which ISO 8601 does not have",
+    (text) => {
+      expect(findIsoInstant(text)).toBeUndefined();
+    },
+  );
+
+  it("refuses the zone of minus zero that findInstant reads, since RFC 3339 allows it for an unknown offset", () => {
+    expect(findInstant("2024-06-13T18:46:03-00:00")).toBe(Date.UTC(2024, 5, 13, 18, 46, 3));
+    expect(findIsoInstant("2024-06-13T18:46:03-00:00")).toBeUndefined();
+  });
+
+  it.each([
+    "2024-06-13T18:46:03",
+    "2024-06-13",
+    "2024-06-13 18:46:03Z",
+    "2024-06-13t18:46:03Z",
+    "2024-06-13T18:46:03z",
+    "2024-06-13T20:46:03+0200",
+    "20240613T20:46:03+02:00",
+    "20240613T204603+02:00",
+    "2023-02-29T00:00:00Z",
+    "20230229T000000Z",
+    "2024-06-13T24:00:00Z",
+    "2024-06-13T18:46:03+24:00",
+    "2024-06-13T18:46:03.Z",
+    "",
+  ])("refuses %j", (text) => {
+    expect(findIsoInstant(text)).toBeUndefined();
+  });
+
+  it("reads a time that findInstant reads and ISO 8601 allows, to the same instant", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -62_167_219_200_000, max: 253_402_300_799_999 }), (at) => {
+        const text = formatDateTime(at);
+        expect(findIsoInstant(text)).toBe(findInstant(text));
+      }),
+      { numRuns: 300, seed: 20_261_105 },
+    );
   });
 });
 
