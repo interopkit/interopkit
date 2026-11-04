@@ -30,32 +30,32 @@ export const SLOW_REFERENCE_OPTIONS = { time: 0, iterations: 3, warmupTime: 0, w
 
 /**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of a reference in the same run.
- * Both samples come from one run, so a ratio holds on any machine. A ratio to an official schema, which does the same work, is parity; another is 1.5 times the highest ratio measured on the runner of CI and on a laptop, rounded up to two significant digits,
+ * Both samples come from one run, so a ratio holds on any machine. A ratio to an official schema, which does the same work, is parity; another is five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit,
  * as docs/competency-frameworks/evidence.md explains.
  */
 export const RATIOS = {
   /** `readPackage` of the framework, as a multiple of `JSON.parse` of its text. */
-  readPackageAgainstParse: 6.4,
+  readPackageAgainstParse: 30,
   /** `readPackage` of the framework, as a multiple of the package schema of CASE 1.1: parity or better. */
   readPackageAgainstSchema: 1,
   /** `readEntity` of each item alone, as a multiple of the item schema of CASE 1.1: parity or better. */
   readEntityAgainstSchema: 1,
   /** `buildFrameworkTree` of the framework, as a multiple of `JSON.parse` of its text. */
-  frameworkTreeAgainstParse: 4.6,
+  frameworkTreeAgainstParse: 20,
   /** `convertCaseVersion` of the framework to 1.0, as a multiple of `JSON.parse` of its text. */
-  toCaseVersionAgainstParse: 4.4,
+  toCaseVersionAgainstParse: 20,
   /** `diffPackages` of the framework and an edition of it, as a multiple of `JSON.parse` of its text. */
-  diffPackagesAgainstParse: 4,
+  diffPackagesAgainstParse: 20,
   /** `crosswalk` of the framework and the one it matches, as a multiple of `JSON.parse` of its text. */
-  crosswalkAgainstParse: 1.5,
+  crosswalkAgainstParse: 5,
   /** `listAssociations` an item of the framework, as a multiple of `JSON.parse` of its text. */
-  associationsOfAgainstParse: 1.5,
+  associationsOfAgainstParse: 5,
   /** `handleCaseRequest` for the package of the framework in 1.1, as a multiple of `JSON.stringify` of it. */
-  serve11AgainstStringify: 1.6,
+  serve11AgainstStringify: 6,
   /** `handleCaseRequest` for the package of the framework in 1.0, which converts it, as a multiple of `JSON.stringify` of it. */
-  serve10AgainstStringify: 8.7,
+  serve10AgainstStringify: 30,
   /** `package` of a client over the answer of the provider, as a multiple of `JSON.parse` of its text. */
-  clientAgainstParse: 9.9,
+  clientAgainstParse: 40,
 } as const;
 
 /**

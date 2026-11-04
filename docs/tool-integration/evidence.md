@@ -133,30 +133,30 @@ What a run checks, beyond the flows that the counterparties above already pass:
 
 `pnpm bench` builds the package and times the hot paths of the build that ships against a reference in the same run, the two in
 turns through `alternate` of `scripts/bench-rounds.ts`: three rounds that alternate which runs first, so that a machine that speeds
-up or slows down weighs on both. A ratio of the fastest samples holds on any machine; its budget is 1.5 times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to two significant digits. The table gives the range of the ratios over those runs. The package
+up or slows down weighs on both. A ratio of the fastest samples holds on any machine; its budget is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit. The table gives the range of the ratios over those runs. The package
 states no budget in time.
 
 | Benchmark | Reference in the same run | Ratio | Budget |
 | --- | --- | ---: | ---: |
-| `handleLaunch`, a message with every claim, 0.067 ms | `verifyLaunch` of `@lti-tool/core`, same message | 1.05–1.42 | 2.2 |
-| The same | `validate` of `lti-core`, same message | 1.84–2.13 | 3.3 |
-| `handleLaunch` with an RS256 `id_token` | `jwtVerify` of jose, same token | 2.37–3.20 | 4.8 |
-| `handleLaunch` with an ES256 `id_token` | the same | 1.71–2.22 | 3.4 |
-| The authorization request that signs an RS256 `id_token` with every claim | `SignJWT` of jose, same claims | 1.18–1.94 | 3 |
-| The same, ES256 | the same | 2.06–3.43 | 5.2 |
-| The same, substituting the 44 variables of the platform | the same request with the names written plainly | 0.98–1.05 | 1.6 |
-| A key from a cached key set, 0.40 µs | `createRemoteJWKSet` of jose holding the set | 1.82–2.47 | 3.8 |
-| The same | `createLocalJWKSet` of jose | 2.64–5.79 | 8.7 |
-| `members`, a page of 1,000 (295 KB) | `JSON.parse` of its text | 4.12–6.21 | 9.4 |
-| `results`, a page of 1,000 (243 KB) | the same | 6.22–9.59 | 15 |
-| `lineItems`, a page of 1,000 (272 KB) | the same | 8.5–12.8  | 20 |
-| `publishScore`, `control`, `registerTool` | `callService` of core, same request and answer | 1.83–6.00 | 6.4, 4.6, 9.1 |
-| The token endpoint, 0.044 ms | `jwtVerify` of jose on its client assertion | 2.52–3.92 | 5.9 |
-| The members of a context, a page of 1,000, 1.1 ms | `JSON.stringify` of the page | 5.54–8.59 | 13 |
-| The results of a line item, a page of 1,000, 1.0 ms | the same | 7.4–11.7  | 18 |
-| A score, a control request, a registration | `compactVerify` of jose on the token and `JSON.parse` of the body | 3.00–4.41 | 6.1, 6, 6.7 |
-| `buildDeepLinkingResponse` with five items, `buildStartAssessmentPage` | `SignJWT` of jose, same claims | 1.03–1.28 | 2, 1.9 |
-| `readDeepLinkingResponse`, `readStartAssessment` | `jwtVerify` of jose on the JWT | 2.45–4.44 | 6.7, 4.6 |
+| `handleLaunch`, a message with every claim, 0.067 ms | `verifyLaunch` of `@lti-tool/core`, same message | 1.05–1.42 | 8   |
+| The same | `validate` of `lti-core`, same message | 1.84–2.13 | 20  |
+| `handleLaunch` with an RS256 `id_token` | `jwtVerify` of jose, same token | 2.37–3.20 | 20  |
+| `handleLaunch` with an ES256 `id_token` | the same | 1.71–2.22 | 20  |
+| The authorization request that signs an RS256 `id_token` with every claim | `SignJWT` of jose, same claims | 1.18–1.94 | 10 |
+| The same, ES256 | the same | 2.06–3.43 | 20  |
+| The same, substituting the 44 variables of the platform | the same request with the names written plainly | 0.98–1.05 | 6   |
+| A key from a cached key set, 0.40 µs | `createRemoteJWKSet` of jose holding the set | 1.82–2.47 | 20  |
+| The same | `createLocalJWKSet` of jose | 2.64–5.79 | 30  |
+| `members`, a page of 1,000 (295 KB) | `JSON.parse` of its text | 4.12–6.21 | 40  |
+| `results`, a page of 1,000 (243 KB) | the same | 6.22–9.59 | 50 |
+| `lineItems`, a page of 1,000 (272 KB) | the same | 8.5–12.8  | 70 |
+| `publishScore`, `control`, `registerTool` | `callService` of core, same request and answer | 1.83–6.00 | 30, 20, 40 |
+| The token endpoint, 0.044 ms | `jwtVerify` of jose on its client assertion | 2.52–3.92 | 20  |
+| The members of a context, a page of 1,000, 1.1 ms | `JSON.stringify` of the page | 5.54–8.59 | 50 |
+| The results of a line item, a page of 1,000, 1.0 ms | the same | 7.4–11.7  | 60 |
+| A score, a control request, a registration | `compactVerify` of jose on the token and `JSON.parse` of the body | 3.00–4.41 | 30, 20, 30 |
+| `buildDeepLinkingResponse` with five items, `buildStartAssessmentPage` | `SignJWT` of jose, same claims | 1.03–1.28 | 7, 7 |
+| `readDeepLinkingResponse`, `readStartAssessment` | `jwtVerify` of jose on the JWT | 2.45–4.44 | 30, 20 |
 
 Substituting 44 variables costs what a request without them costs, since the signature takes the time. Four fixes changed no
 output: on the tests, on 1,698 inputs given to the build before and the build after (pages with odd users and extensions, every

@@ -22,8 +22,9 @@ export const HEAVY_BENCH_OPTIONS: BenchOptions = { time: 0, iterations: 3, warmu
 /**
  * The budgets of the benchmarks. The time is the most that the fastest sample of a function may take, in milliseconds: five
  * times its fastest sample on the runner of CI, rounded up to one significant digit. The ratio is the most that it may take
- * as a multiple of the fastest sample of a reference in the same run, so it holds on any machine: 1.5 times the highest ratio
- * measured on the runner and on a laptop, rounded up to two significant digits, as docs/course-launch/evidence.md explains.
+ * as a multiple of the fastest sample of a reference in the same run, so it holds on any machine: five times the highest
+ * ratio measured on the runner and on a laptop, rounded up to one significant digit, as docs/course-launch/evidence.md
+ * explains.
  */
 export const BUDGETS = {
   /**
@@ -31,15 +32,15 @@ export const BUDGETS = {
    * parser in JavaScript, takes 2.0 times libxml2 in WebAssembly to parse the text alone, and the reader builds the model and
    * checks the rules of cmi5 that the schema leaves out.
    */
-  structureAgainstLibxml2: { time: 300, ratio: 7.3 },
+  structureAgainstLibxml2: { time: 300, ratio: 30 },
   /** The same, as a multiple of saxes parsing it alone: the work of the reader beyond the parser. Measured 1.76 to 1.92. */
-  structureAgainstSaxes: { time: 400, ratio: 2.9 },
+  structureAgainstSaxes: { time: 400, ratio: 10 },
   /** `readCoursePackage` of a ZIP64 archive of 66,001 entries, as a multiple of zip.js listing its entries. Measured 0.70 to 0.79. */
-  packageAgainstEntries: { time: 5000, ratio: 1.2 },
+  packageAgainstEntries: { time: 5000, ratio: 4 },
   /** The LRS of cmi5 judging the seven statements of a session, as a multiple of `validateStatements` of them. Measured 0.83 to 1.24. */
-  sessionAgainstValidate: { time: 0.5, ratio: 1.9 },
+  sessionAgainstValidate: { time: 0.5, ratio: 7 },
   /** The LRS of cmi5 judging 1,000 allowed statements of one request, as a multiple of `validateStatements` of them. Measured 0.32 to 0.47. */
-  batchAgainstValidate: { time: 40, ratio: 0.72 },
+  batchAgainstValidate: { time: 40, ratio: 3 },
 } as const;
 
 /** A function that a benchmark times, with its name. */

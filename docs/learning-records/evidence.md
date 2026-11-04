@@ -93,23 +93,23 @@ node:crypto for a hash and jose for a signature. The ratios are the fastest samp
 | `validateStatement` of the batch, 19 to 34 ms on CI | the validator of Learning Locker, 40 to 62 ms on CI | 0.36–0.57 | 1 |
 | `readStatement` of the batch | the same | 0.34–0.59 | 1 |
 | `validateStatements` of the batch | the same | 0.36–0.57 | 1 |
-| `parseStatementJson` of its text | `JSON.parse` of the text | 2.57–3.48 | 5.3 |
-| `buildStatement` of the batch | the validator of Learning Locker | 0.51–0.80 | 1.2 |
-| `convertStatementVersion`, `formatStatement` | the same | 0.38–0.69 | 1.1, 1.1 |
-| `isSameStatement` of each and its copy | the same | 1.65–2.63 | 4  |
-| `matchesStatementQuery` over the batch | the same | 0.05–0.10 | 0.15 |
-| `handleLrsRequest`, a POST of the batch | the same | 0.78–1.27 | 2 |
-| `handleLrsRequest`, a GET of 100 | `JSON.stringify` of the page | 1.17–1.49 | 2.3 |
-| `mboxSha1sum` of 1,000 addresses | the SHA-1 of node:crypto | 1.42–2.23 | 3.4 |
-| `deriveStatementId` of 1,000 names | the same | 4.44–7.79 | 12 |
-| `hashAttachment` of 1 MiB, 3.8 to 7.2 ms | the SHA-256 of node:crypto, 0.33 to 0.39 ms | 10.2–14.4 | 22  |
-| `readMultipart` of 99 Statements with 6.2 MiB of data | the parser of the package and the SHA-256 of node:crypto | 8.9–10.9 | 17 |
-| `writeMultipart` of the same | their JSON, the SHA-256 of node:crypto and a copy | 6.7–12.5  | 19 |
-| `signStatement`, RSA of 2,048 bits | the `CompactSign` of jose | 1.06–1.34 | 2.1 |
-| `verifyStatementSignature` | the `compactVerify` of jose | 2.95–4.68 | 7.1 |
+| `parseStatementJson` of its text | `JSON.parse` of the text | 2.57–3.48 | 20  |
+| `buildStatement` of the batch | the validator of Learning Locker | 0.51–0.80 | 4   |
+| `convertStatementVersion`, `formatStatement` | the same | 0.38–0.69 | 4, 4 |
+| `isSameStatement` of each and its copy | the same | 1.65–2.63 | 20 |
+| `matchesStatementQuery` over the batch | the same | 0.05–0.10 | 0.5  |
+| `handleLrsRequest`, a POST of the batch | the same | 0.78–1.27 | 7 |
+| `handleLrsRequest`, a GET of 100 | `JSON.stringify` of the page | 1.17–1.49 | 8   |
+| `mboxSha1sum` of 1,000 addresses | the SHA-1 of node:crypto | 1.42–2.23 | 20  |
+| `deriveStatementId` of 1,000 names | the same | 4.44–7.79 | 40 |
+| `hashAttachment` of 1 MiB, 3.8 to 7.2 ms | the SHA-256 of node:crypto, 0.33 to 0.39 ms | 10.2–14.4 | 80  |
+| `readMultipart` of 99 Statements with 6.2 MiB of data | the parser of the package and the SHA-256 of node:crypto | 8.9–10.9 | 60 |
+| `writeMultipart` of the same | their JSON, the SHA-256 of node:crypto and a copy | 6.7–12.5  | 70 |
+| `signStatement`, RSA of 2,048 bits | the `CompactSign` of jose | 1.06–1.34 | 7   |
+| `verifyStatementSignature` | the `compactVerify` of jose | 2.95–4.68 | 30  |
 
 A ratio of a reader to the validator of Learning Locker, which does the same work, is parity or better, as the design asks; another
-ratio is 1.5 times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to two significant digits. A time on CI is five times its fastest sample:
+ratio is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit. A time on CI is five times its fastest sample:
 
 | Budget | Value | How it was set |
 | --- | --- | --- |

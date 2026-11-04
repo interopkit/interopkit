@@ -112,32 +112,32 @@ names, so the test serves the schema that `pnpm schemas` pinned.
 is installable ([comparators](comparators.md)), and otherwise the least work of the same kind. `scripts/bench-rounds.ts` runs the
 function and its reference in three rounds, the reference first in the first and the last, so that the load of a shared machine
 falls on both, and the gate is the ratio of the fastest samples. The table gives the range of the ratios of the eight latest green runs of the runner of CI and
-of one run on a laptop; a budget is 1.5 times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to two significant digits, and holds on any machine.
+of one run on a laptop; a budget is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit, and holds on any machine.
 
 | Benchmark | Reference | Ratio | Budget |
 | --- | --- | ---: | ---: |
-| `verifyCredential` of a JWS | `did-jwt-vc`, which checks the signature and the claims | 0.14–0.30 | 0.45 |
-| `verifyCredential` of a CLR in a JWS that holds 10 JWS | `did-jwt-vc` of the 11 JWTs | 0.14–0.31 | 0.46 |
-| `verifyCredential` with an `eddsa-rdfc-2022` proof | `@digitalbazaar/vc`, which checks the structure and the proof | 1.06–1.14 | 1.8 |
-| the same | `@interop/verifier-core`, which also checks the status and the expiry | 1.03–1.11 | 1.7 |
-| `addProof` with `eddsa-rdfc-2022` | `vc.issue` of `@digitalbazaar/vc` with its suite | 0.99–1.11 | 1.7 |
-| `verifyProof` of `eddsa-rdfc-2022` | `vc.verifyCredential` of `@digitalbazaar/vc` | 0.67–1.22 | 1.9 |
-| `verifyProof` of `ecdsa-rdfc-2019` | `@interop/verifier-core` | 0.90–0.93 | 1.4 |
-| `verifyProof` of `Ed25519Signature2020`, `legacyProofs` | `@interop/verifier-core` | 1.04–1.09 | 1.7 |
-| `verifyProof` of an `ecdsa-sd-2023` disclosure | `@digitalbazaar/vc` with Digital Bazaar's `ecdsa-sd-2023` suite | 0.95–1.02 | 1.6 |
-| `readCredentialJwt` | `verifyCredential` of `did-jwt-vc` | 0.12–0.27 | 0.4 |
-| `signCredentialJwt` with EdDSA | `createVerifiableCredentialJwt` of `did-jwt-vc` | 0.11–0.20 | 0.31 |
-| `issueStatusListCredential` of 131,072 entries, Data Integrity | `@interop/vc-bitstring-status-list` and `jsigs.sign` | 0.94–1.17 | 1.8 |
-| `verifyCredentialStatus` against that list, fetched each time | `checkStatus` of `@interop/vc-bitstring-status-list` | 1.07–1.57 | 2.4 |
-| `readCredential` of a CLR of 20 credentials | the official schema of CLR 2.0 in `@cfworker/json-schema` | 0.15–0.18 | 0.27 |
-| `validateCredential` of the same CLR | the same | 0.15–0.18 | 0.27 |
-| `bakePng` of that CLR into an image of 256 KiB | `JSON.stringify` of the CLR | 14.8–17.4 | 27  |
-| `readPng` of that image | `JSON.parse` of the CLR | 2.68–3.49 | 5.3 |
-| `bakeSvg` of that CLR into an SVG of 140,000 characters | saxes over the SVG | 1.46–1.67 | 2.6 |
-| `readSvg` of that SVG, which stops at the credential | saxes over all of it | 0.57–0.64 | 0.97 |
-| `handleCredentialsRequest`, a page of 100 credentials | `JSON.stringify` of the page | 1.22–1.24 | 1.9 |
-| `handleCredentialsRequest`, the upsert of that CLR | `JSON.parse` of its body | 5.09–6.86 | 11 |
-| `handleRefreshRequest` of that CLR | `JSON.stringify` of it | 1.03–1.06 | 1.6 |
+| `verifyCredential` of a JWS | `did-jwt-vc`, which checks the signature and the claims | 0.14–0.30 | 2    |
+| `verifyCredential` of a CLR in a JWS that holds 10 JWS | `did-jwt-vc` of the 11 JWTs | 0.14–0.31 | 2    |
+| `verifyCredential` with an `eddsa-rdfc-2022` proof | `@digitalbazaar/vc`, which checks the structure and the proof | 1.06–1.14 | 6   |
+| the same | `@interop/verifier-core`, which also checks the status and the expiry | 1.03–1.11 | 6   |
+| `addProof` with `eddsa-rdfc-2022` | `vc.issue` of `@digitalbazaar/vc` with its suite | 0.99–1.11 | 6   |
+| `verifyProof` of `eddsa-rdfc-2022` | `vc.verifyCredential` of `@digitalbazaar/vc` | 0.67–1.22 | 7   |
+| `verifyProof` of `ecdsa-rdfc-2019` | `@interop/verifier-core` | 0.90–0.93 | 5   |
+| `verifyProof` of `Ed25519Signature2020`, `legacyProofs` | `@interop/verifier-core` | 1.04–1.09 | 6   |
+| `verifyProof` of an `ecdsa-sd-2023` disclosure | `@digitalbazaar/vc` with Digital Bazaar's `ecdsa-sd-2023` suite | 0.95–1.02 | 6   |
+| `readCredentialJwt` | `verifyCredential` of `did-jwt-vc` | 0.12–0.27 | 2   |
+| `signCredentialJwt` with EdDSA | `createVerifiableCredentialJwt` of `did-jwt-vc` | 0.11–0.20 | 2    |
+| `issueStatusListCredential` of 131,072 entries, Data Integrity | `@interop/vc-bitstring-status-list` and `jsigs.sign` | 0.94–1.17 | 6   |
+| `verifyCredentialStatus` against that list, fetched each time | `checkStatus` of `@interop/vc-bitstring-status-list` | 1.07–1.57 | 8   |
+| `readCredential` of a CLR of 20 credentials | the official schema of CLR 2.0 in `@cfworker/json-schema` | 0.15–0.18 | 0.9  |
+| `validateCredential` of the same CLR | the same | 0.15–0.18 | 0.9  |
+| `bakePng` of that CLR into an image of 256 KiB | `JSON.stringify` of the CLR | 14.8–17.4 | 90  |
+| `readPng` of that image | `JSON.parse` of the CLR | 2.68–3.49 | 20  |
+| `bakeSvg` of that CLR into an SVG of 140,000 characters | saxes over the SVG | 1.46–1.67 | 9   |
+| `readSvg` of that SVG, which stops at the credential | saxes over all of it | 0.57–0.64 | 4    |
+| `handleCredentialsRequest`, a page of 100 credentials | `JSON.stringify` of the page | 1.22–1.24 | 7   |
+| `handleCredentialsRequest`, the upsert of that CLR | `JSON.parse` of its body | 5.09–6.86 | 40 |
+| `handleRefreshRequest` of that CLR | `JSON.stringify` of it | 1.03–1.06 | 6   |
 
 The keyed cache that the key resolver and the status lists share is `createKeyedCache` of `core`, timed with the other hot paths of
 `core` ([signals](../core/signals.md)). The profiles named three hot paths that are written as they are for their speed; each

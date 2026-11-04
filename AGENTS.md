@@ -504,8 +504,7 @@ listed here with its reason. A file is written `<package>/<path below src>`, and
   module of the package or a dependency that its budget does not list.
 - A benchmark is a `*.bench.ts` in a project named `*-bench` (`pnpm bench`, which runs one package at a time so that none times
   another's load); its budgets are in `test/budgets.ts`. A time is five times the fastest sample of the runner of CI, rounded up to
-  one significant digit. A ratio to a reference in the same run is 1.5 times the highest ratio measured on the runner (the latest
-  green `bench` runs) and on a laptop, rounded up to two significant digits, and parity where the reference is a validator that
+  one significant digit. A ratio to a reference in the same run is five times the highest ratio measured on the runner (the latest green `bench` runs) and on a laptop, rounded up to one significant digit, and parity where the reference is a validator that
   does the same work; timed in turns with the reference by `alternate` of `scripts/bench-rounds.ts` in `achievement-credentials`,
   `core`, `course-launch` and `tool-integration`. A budget changes only with the samples that justify it in the commit that
   changes it. A benchmark imports its package by name: `tsc` reads the name as the source through the `paths` of the

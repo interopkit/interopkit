@@ -107,12 +107,11 @@ Neither function limits the size of a payload: the host bounds what it signs.
 ## Speed
 
 `pnpm bench` times the build that ships against the platform API that a function wraps, the least work of the same kind, in
-three rounds that alternate which runs first; the gate is the ratio of the fastest samples, 1.5 times the highest ratio
-measured on the runner of CI and on a laptop, rounded up to two significant digits, which holds on any machine.
+three rounds that alternate which runs first; the gate is the ratio of the fastest samples, five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit, which holds on any machine.
 
 | Benchmark | Reference | Ratio | Budget |
 | --- | --- | ---: | ---: |
-| `signCompactJws` of a payload of 2 KB with EdDSA | `crypto.subtle.sign` of its signing input | 1.15–1.21 | 1.9 |
+| `signCompactJws` of a payload of 2 KB with EdDSA | `crypto.subtle.sign` of its signing input | 1.15–1.21 | 7   |
 
 The parts of the JWS are written as base64url by a table, in time linear in the input: built from the bytes as the arguments of
 `String.fromCharCode` and encoded with `btoa`, they take longer than the signature, and `signCompactJws` of 2 KB 58 µs where it

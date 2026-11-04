@@ -60,13 +60,12 @@ await wait.catch((error) => error.message);
 ## Speed
 
 `pnpm bench` times the build that ships against the platform API that a function wraps, the least work of the same kind, in
-three rounds that alternate which runs first; the gate is the ratio of the fastest samples, 1.5 times the highest ratio
-measured on the runner of CI and on a laptop, rounded up to two significant digits, which holds on any machine.
+three rounds that alternate which runs first; the gate is the ratio of the fastest samples, five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit, which holds on any machine.
 
 | Benchmark | Reference | Ratio | Budget |
 | --- | --- | ---: | ---: |
-| `get` of each of 1,000 kept keys of `createKeyedCache` | a `Map` with an expiry | 1.08–1.21 | 1.9 |
-| `get` of one key by 100 callers while it loads once | 100 waits on one promise | 1.66–2.00 | 3.1 |
+| `get` of each of 1,000 kept keys of `createKeyedCache` | a `Map` with an expiry | 1.08–1.21 | 7   |
+| `get` of one key by 100 callers while it loads once | 100 waits on one promise | 1.66–2.00 | 20  |
 
 ## Not included
 

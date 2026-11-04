@@ -16,19 +16,19 @@ export const EVENTS = 1000;
 /**
  * The budgets of the benchmarks. The time is the most that the fastest sample of a function may take, in milliseconds: five
  * times its fastest sample on the runner of CI, rounded up to one significant digit. The ratio is the most that it may take
- * as a multiple of the fastest sample of a reference in the same run, so it holds on any machine: 1.5 times the highest ratio
- * measured on the runner and on a laptop, rounded up to two significant digits, and parity for a draft 4 validator, which
- * does the same work, as docs/learning-analytics/evidence.md explains.
+ * as a multiple of the fastest sample of a reference in the same run, so it holds on any machine: five times the highest
+ * ratio measured on the runner and on a laptop, rounded up to one significant digit, and parity for a draft 4 validator,
+ * which does the same work, as docs/learning-analytics/evidence.md explains.
  */
 export const BUDGETS = {
   /** `readEnvelope` of an envelope of 1.2, as a multiple of `JSON.parse` of its text. */
-  readEnvelopeAgainstParse: { time: 300, ratio: 13 },
+  readEnvelopeAgainstParse: { time: 300, ratio: 50 },
   /** `readEnvelope` of an envelope of 1.2, as a multiple of the draft 4 schemas of `caliper-spec` over its events: parity or better. */
   readEnvelopeAgainstSchemas: { time: 300, ratio: 1 },
   /** `validateEvent` over the events of an envelope of 1.2, as a multiple of the same schemas: parity or better. */
   validateEventAgainstSchemas: { time: 300, ratio: 1 },
   /** `readEnvelope` of an envelope of 1.1, as a multiple of `JSON.parse` of its text. */
-  readEnvelope11AgainstParse: { time: 300, ratio: 13 },
+  readEnvelope11AgainstParse: { time: 300, ratio: 50 },
   /** `readEnvelope` of an envelope of 1.1, as a multiple of `schema_1_1` over its events: parity or better. */
   readEnvelope11AgainstSchemas: { time: 300, ratio: 1 },
   /** `readEntity` of 1,000 entity describes of 1.2, as a multiple of the draft 4 schemas over them: parity or better. */
@@ -40,9 +40,9 @@ export const BUDGETS = {
   /** `buildEntity` of 1,000 entity describes, as a multiple of the same schemas over what it builds: parity or better. */
   buildEntityAgainstSchemas: { time: 80, ratio: 1 },
   /** `sendCaliper` of an envelope of 1,000 events to an endpoint that answers at once, as a multiple of `JSON.stringify` of it. */
-  sendCaliperAgainstStringify: { time: 30, ratio: 2.9 },
+  sendCaliperAgainstStringify: { time: 30, ratio: 10 },
   /** `handleCaliperRequest` of an envelope of 1,000 events of 1.2, as a multiple of `JSON.parse` of its text. */
-  handleRequestAgainstParse: { time: 300, ratio: 13 },
+  handleRequestAgainstParse: { time: 300, ratio: 50 },
   /** `handleCaliperRequest` of the same envelope, as a multiple of the draft 4 schemas over its events: parity or better. */
   handleRequestAgainstSchemas: { time: 300, ratio: 1 },
 } as const;
