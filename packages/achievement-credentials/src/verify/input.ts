@@ -1,4 +1,5 @@
 import { isRecord } from "@interopkit/core/checks";
+import { isCompactJws } from "../compact-jws.js";
 import type { VerifySettings } from "./options.js";
 
 /** What the verification of a credential starts from: a compact JWS, or a credential as an object. */
@@ -8,9 +9,6 @@ export type Prepared =
 
 /** What a verification starts from: a credential, or the address of a hosted Open Badges 2.0 assertion. */
 export type Input = Prepared | { readonly form: "address"; readonly url: string };
-
-/** The shape of a compact JWS: three parts of base64url, which `inspectJwt` checks further. */
-const COMPACT_JWS = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u;
 
 /** The kinds of what `readPng` and `readSvg` return: a credential of Open Badges 3.0 or CLR 2.0, or an Open Badges 2.0 assertion. */
 const BAKED_KINDS: readonly string[] = ["badge", "clr", "badge-v2"];
@@ -38,7 +36,8 @@ export function preparedOf(
     if (value.length > maxInputBytes) {
       return { reason: `The input has ${value.length} characters, more than the ${maxInputBytes} that it may have.` };
     }
-    if (COMPACT_JWS.test(value)) return { prepared: { form: "jws", jws: value } };
+    // The form of a compact JWS, which `inspectJwt` checks further.
+    if (isCompactJws(value)) return { prepared: { form: "jws", jws: value } };
     if (/^https?:\/\//u.test(value)) return { prepared: { form: "address", url: value } };
     return {
       reason:

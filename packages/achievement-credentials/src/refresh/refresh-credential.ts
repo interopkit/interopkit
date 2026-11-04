@@ -9,6 +9,7 @@ import {
   MAX_JSON_TOKENS,
   parseJsonText,
 } from "@interopkit/core/checks";
+import { isCompactJws } from "../compact-jws.js";
 import { jsonRefusals } from "../json-text.js";
 import type { CredentialV1p1, IssuableCredential } from "../model/index.js";
 
@@ -88,7 +89,7 @@ export async function refreshCredential(
   );
   const body = text.trim();
   if (!body.startsWith("{")) {
-    if (!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u.test(body)) {
+    if (!isCompactJws(body)) {
       throw new DataError(
         "The refresh service answered something that is neither a credential as JSON nor a compact JWS.",
       );

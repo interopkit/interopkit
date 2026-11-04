@@ -117,7 +117,8 @@ needs no images should not load an XML parser, and one that calls no server shou
 `verify` have an `internal.ts` for what the other modules and the tests share and the package does not export: the schemas of
 `read`, which the tests compare with the schemas of 1EdTech and the builders write with, the public JWK and thumbprint of `keys`,
 the credential that a JWS carries, and what the provider checks before it loads the verifier. Files directly in `src/` serve
-several modules: the text of JSON under its limits, base64url, and the checks of a flag, of a key resolver and of the suites. The
+several modules: the text of JSON under its limits, base64url, the form of a compact JWS, and the checks of a flag, of a key
+resolver and of the suites. The
 cache of shared loads behind the key resolver and the status lists is `createKeyedCache` of `@interopkit/core`. `pnpm check:standards` and Biome keep modules from
 importing by a deep path or against the layers.
 

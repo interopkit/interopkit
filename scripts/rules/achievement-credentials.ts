@@ -2035,4 +2035,11 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
     replace: "return bytes;",
     test: "packages/achievement-credentials/test/keys.test.ts",
   },
+  {
+    rule: "A compact JWS that a verifier or a refresh takes carries its payload, which a detached JWS does not.",
+    file: "packages/achievement-credentials/src/compact-jws.ts",
+    find: 'return COMPACT_JWS.test(text) && !text.includes("..");',
+    replace: "return COMPACT_JWS.test(text);",
+    test: "packages/achievement-credentials/test/compact-jws.test.ts",
+  },
 ];

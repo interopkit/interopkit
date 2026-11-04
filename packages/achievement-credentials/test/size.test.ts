@@ -14,6 +14,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     holds: [
       "@interopkit/core",
       "@noble/hashes",
+      "achievement-credentials/compact-jws",
       "achievement-credentials/compare",
       "achievement-credentials/issue",
       "achievement-credentials/model",
@@ -26,6 +27,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     holds: [
       "@interopkit/core",
       "achievement-credentials/base64url",
+      "achievement-credentials/compact-jws",
       "achievement-credentials/json-text",
       "achievement-credentials/model",
       "achievement-credentials/read",
@@ -36,7 +38,13 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
   },
   "@interopkit/achievement-credentials/client": {
     gzip: 25_500,
-    holds: ["@interopkit/core", "achievement-credentials/model", "achievement-credentials/read", "valibot"],
+    holds: [
+      "@interopkit/core",
+      "achievement-credentials/compact-jws",
+      "achievement-credentials/model",
+      "achievement-credentials/read",
+      "valibot",
+    ],
   },
   "@interopkit/achievement-credentials/keys": {
     gzip: 61_500,
@@ -70,6 +78,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     holds: [
       "@interopkit/core",
       "achievement-credentials/base64url",
+      "achievement-credentials/compact-jws",
       "achievement-credentials/json-text",
       "achievement-credentials/keys",
       "achievement-credentials/model",
@@ -97,6 +106,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
       "@noble/ed25519",
       "@noble/hashes",
       "@scure/base",
+      "achievement-credentials/compact-jws",
       "achievement-credentials/json-text",
       "achievement-credentials/keys",
       "achievement-credentials/model",
@@ -130,6 +140,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     holds: [
       "@interopkit/core",
       "achievement-credentials/base64url",
+      "achievement-credentials/compact-jws",
       "achievement-credentials/json-text",
       "achievement-credentials/jwt",
       "achievement-credentials/keys",
@@ -142,7 +153,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
   },
   "@interopkit/achievement-credentials/refresh": {
     gzip: 7000,
-    holds: ["@interopkit/core", "achievement-credentials/json-text", "valibot"],
+    holds: ["@interopkit/core", "achievement-credentials/compact-jws", "achievement-credentials/json-text", "valibot"],
   },
   "@interopkit/achievement-credentials/verify": {
     gzip: 62_500,
@@ -151,6 +162,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
       "@interopkit/core",
       "@noble/hashes",
       "achievement-credentials/base64url",
+      "achievement-credentials/compact-jws",
       "achievement-credentials/compare",
       "achievement-credentials/issue",
       "achievement-credentials/json-text",
@@ -170,6 +182,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     holds: [
       "@interopkit/core",
       "achievement-credentials/base64url",
+      "achievement-credentials/compact-jws",
       "achievement-credentials/json-text",
       "achievement-credentials/jwt",
       "achievement-credentials/keys",

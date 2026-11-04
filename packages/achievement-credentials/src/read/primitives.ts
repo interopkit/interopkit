@@ -1,5 +1,6 @@
 import { guardSchema, jsonObjectSchema, type Schema } from "@interopkit/core/checks";
 import * as v from "valibot";
+import { COMPACT_JWS } from "../compact-jws.js";
 import type { ContextEntry, ExtensionTerm } from "../model/index.js";
 
 /** A string. The schemas of 1EdTech give a URI, a name and a text the same type, so the reader checks no more than that. */
@@ -10,9 +11,6 @@ export const OB_CONTEXT_PATTERN = /^https:\/\/purl\.imsglobal\.org\/spec\/ob\/v3
 
 /** The context of CLR 2.0: any `context-2.0.x.json` of the specification's address (CLR B.1.1). */
 export const CLR_CONTEXT_PATTERN = /^https:\/\/purl\.imsglobal\.org\/spec\/clr\/v2p0\/context(-2\.\d\.\d)*\.json$/u;
-
-/** A compact JWS: three parts of base64url characters, the middle one empty for a detached payload (RFC 7515, 7.1). */
-const COMPACT_JWS = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]+$/u;
 
 /** A language tag as the schemas of 1EdTech write it: a language, an optional script and an optional region (BCP 47). */
 const LANGUAGE_TAG = /^[a-z]{2,4}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$/u;
