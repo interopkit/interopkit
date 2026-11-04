@@ -124,7 +124,7 @@
           }
         }
       },
-      "plugins": ["./biome/no-math-random.grit"]
+      "plugins": ["./biome/no-math-random.grit", "./biome/no-spread-arguments.grit"]
     },
     {
       "includes": ["packages/*/src/**", "!packages/core/src/clock.ts"],
@@ -2055,6 +2055,26 @@
                 "extensionMappings": {
                   "ts": "ts"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/*/test/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/*.json"],
+                    "message": "Read a fixture with a typed loader of the package's test folder: the type checker builds a type for every element of an imported JSON file."
+                  }
+                ]
               }
             }
           }

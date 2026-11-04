@@ -338,6 +338,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - Never use `Math.random`, read a clock, or reach for `fetch`. Take a `Clock`, a random source or a `Fetch` from the caller. An option
   `clock` is optional and is `SYSTEM_CLOCK` when it is left out; a random source is an object with `uniform()`.
   `pnpm lint` fails on `Math.random` and clock reads in `packages/*/src`; only `core/src/clock.ts` reads the system time.
+- Never spread an array whose length the input sets into the arguments of a call (`push`, `unshift`, `append`, `prepend`,
+  `replaceChildren`, `Math.max`, `Math.min`): above about 100,000 values that throws a `RangeError`. Loop over the values, or
+  spread into an array literal. `pnpm lint` fails on it in `packages/*/src` (`biome/no-spread-arguments.grit`).
 - A number with a meaning is a named constant with its unit and source.
 - No speculative options, abstractions or modules. Add a method only when a real use needs it, with its validation.
 - No dead code, no compatibility paths, no workarounds. Before 1.0 there is no backward compatibility.
@@ -367,6 +370,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
 
 ## Evidence and tests
 
+- A test reads a fixture with a typed loader (`IDS` of `learning-analytics/test/fixture.ts`; a browser test reads the file with
+  `commands.readFile` of `vitest/browser`) and never imports a JSON file: the type checker builds a type for every element
+  of it. `pnpm lint` fails on the import in `packages/*/test`, and `resolveJsonModule` is off in `tsconfig.base.json`.
 - A test title is a plain sentence about behavior, such as `it("refuses a redirect that the call does not follow")`. It
   carries no identifier of a row, a unit or a clause.
 - Completeness comes from the specifications, not from a list that the repository keeps: tests derive what to cover from the

@@ -26,7 +26,7 @@ export function endorsementsOf(credential: AnyVerifiableCredential): readonly un
       return;
     }
     if (!isRecord(node)) return;
-    found.push(...listOf(node.endorsement), ...listOf(node.endorsementJwt));
+    for (const endorsement of [...listOf(node.endorsement), ...listOf(node.endorsementJwt)]) found.push(endorsement);
     for (const [name, value] of Object.entries(node)) if (!OWN_CREDENTIALS.has(name)) walk(value);
   };
   walk(credential);

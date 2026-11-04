@@ -29,6 +29,7 @@ import {
   issueSink,
   parseDateTimeV2,
   readJwsPayload,
+  TERMS_V2,
 } from "../src/read/internal.js";
 
 /** A resource that the fixture server of the verifier answers with. */
@@ -210,6 +211,15 @@ describe("reading an assertion that embeds its BadgeClass and issuer", () => {
     expect(findings.at(-1)).toMatchObject({ rule: "findings-stopped" });
     expect(validateCredential(value, { maxFindings: 3 })).toHaveLength(4);
     expect(() => readCredential(value, { maxFindings: 2 })).toThrow("the check stopped at its limit");
+  });
+
+  it("lists the terms that contexts after that of 2.0 redefine, though they are more than a call takes as arguments", () => {
+    const redefining = Object.fromEntries([...TERMS_V2].map((term) => [term, `https://example.org/${term}`]));
+    const contexts = Array.from({ length: Math.ceil(150_000 / TERMS_V2.size) }, () => redefining);
+    const findings = validateCredential({ ...soundAssertion(), "@context": [CONTEXTS.openBadgesV2, ...contexts] });
+    expect(findings).toHaveLength(1001);
+    expect(findings.slice(0, 1000).every(({ rule }) => rule === "redefined-term")).toBe(true);
+    expect(findings.at(-1)).toMatchObject({ rule: "findings-stopped" });
   });
 });
 

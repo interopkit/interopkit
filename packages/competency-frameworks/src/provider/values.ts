@@ -32,7 +32,7 @@ export function valuesAt(entity: object, path: string): Found {
       const member = node[name];
       if (Array.isArray(member)) {
         several = true;
-        next.push(...member.flat(Number.POSITIVE_INFINITY));
+        for (const value of member.flat(Number.POSITIVE_INFINITY)) next.push(value);
       } else {
         next.push(member);
       }

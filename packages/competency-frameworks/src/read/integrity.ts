@@ -35,7 +35,12 @@ function identifiersOfEntity(entity: Pick<CFRubric, "identifier" | "CFRubricCrit
   for (const [at, criterion] of (entity.CFRubricCriteria ?? []).entries()) {
     const criterionPath = `${prefix}CFRubricCriteria[${at}]`;
     found.push({ within: `${criterionPath}.identifier`, index: -1, identifier: criterion.identifier });
-    found.push(...identifiersOfList(criterion.CFRubricCriterionLevels, `${criterionPath}.CFRubricCriterionLevels`));
+    for (const level of identifiersOfList(
+      criterion.CFRubricCriterionLevels,
+      `${criterionPath}.CFRubricCriterionLevels`,
+    )) {
+      found.push(level);
+    }
   }
   return found;
 }

@@ -369,6 +369,15 @@ describe("queryEntities on the documents", () => {
       expect(ids({ field: "links.title", predicate: "=", value: "Two" })).toStrictEqual([2]);
     });
 
+    it("through a list of more values than a call takes as arguments", () => {
+      const count = 150_000;
+      const long = [{ id: 1, tags: Array.from({ length: count }, (_, at) => `tag-${at}`) }];
+      const found = (value: string) =>
+        queryEntities(long, { filter: { field: "tags", predicate: "~", value } }).map(({ id }) => id);
+      expect(found(`tag-${count - 1}`)).toStrictEqual([1]);
+      expect(found("tag-none")).toStrictEqual([]);
+    });
+
     it("finds nothing at a path that does not exist, is null, or leads to an object", () => {
       expect(ids({ field: "meta.nothing", predicate: "=", value: "x" })).toStrictEqual([]);
       expect(ids({ field: "note", predicate: "=", value: "null" })).toStrictEqual([]);

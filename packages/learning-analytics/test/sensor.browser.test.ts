@@ -1,6 +1,7 @@
 import { DataError, ServiceError } from "@interopkit/core";
 import { formatDateTime } from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
+import { commands } from "vitest/browser";
 import { type CaliperEndpointOptions, handleCaliperRequest, type ReceivedEnvelope } from "../src/endpoint/index.js";
 import {
   buildEntity,
@@ -13,13 +14,16 @@ import {
   sendCaliper,
   validateEvent,
 } from "../src/index.js";
-import ids from "./fixtures/caliper-ids.json" with { type: "json" };
+import type { IdFixture } from "./fixture.js";
 
 /**
  * The path of a sensor in the engines of the browsers, where a Caliper sensor of a web application runs: the identifiers, the
  * times, the builders, the readers and the send to an endpoint, which the page holds so that the request and the answer are the
  * engine's own `Response` and streams.
  */
+
+/** The file of the identifiers that Python computed, which a page reads through the command of the test runner: it has no file system. */
+const IDS_FILE = "packages/learning-analytics/test/fixtures/caliper-ids.json";
 
 const PERSON = "https://example.edu/users/554433";
 const ASSESSMENT = "https://example.edu/assessments/1";
@@ -70,7 +74,8 @@ function localEndpoint(): { readonly fetch: typeof fetch; readonly received: Rec
 }
 
 describe("the sensor in the engines of the browsers", () => {
-  it("mints the identifiers that Python's uuid5 gives, with the build of uuid for browsers", () => {
+  it("mints the identifiers that Python's uuid5 gives, with the build of uuid for browsers", async () => {
+    const ids: IdFixture = JSON.parse(await commands.readFile(IDS_FILE));
     expect(ids.names.length).toBeGreaterThan(0);
     for (const { parts, uuid } of ids.names) expect(mintUrn(parts)).toBe(`urn:uuid:${uuid}`);
   });

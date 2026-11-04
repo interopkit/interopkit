@@ -5,7 +5,7 @@ import { formatDateTime } from "@interopkit/core/checks";
 import { type AssessmentEvent, buildEvent, type CaliperEvent, mintUrn } from "../src/index.js";
 
 /** The names and the UUIDs that Python's `uuid.uuid5` computed (`validation/caliper_ids.py`). */
-interface IdFixture {
+export interface IdFixture {
   readonly address: string;
   readonly namespace: string;
   readonly rfc9562: { readonly namespace: string; readonly name: string; readonly uuid: string };

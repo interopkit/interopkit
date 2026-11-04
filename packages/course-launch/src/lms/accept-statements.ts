@@ -126,7 +126,7 @@ async function judgeAndReserve(
   const findings: Issue[] = [];
   for (const { statement, index } of order) {
     const judged = judgeStatement(statement, facts, progress);
-    findings.push(...judged.findings.map((finding) => ({ ...finding, path: `[${index}].${finding.path}` })));
+    for (const finding of judged.findings) findings.push({ ...finding, path: `[${index}].${finding.path}` });
     progress = judged.next;
   }
   if (findings.some(({ severity }) => severity === "error")) return findings;

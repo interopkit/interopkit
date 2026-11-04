@@ -13,6 +13,8 @@ import { fullPackage, id, uri } from "./full-package.js";
 const TIME = "2024-06-13T18:46:03Z";
 /** The number of the first association, above the numbers of the items. */
 const ASSOCIATION_BASE = 1_000_000;
+/** The number of the first level of a rubric that a test adds, above the numbers of the associations. */
+const LEVELS_BASE = 2_000_000;
 
 /** Checks a full package that a test has changed, and returns where and what it found. */
 function changed(change: (pkg: Record<string, any>) => void) {
@@ -109,6 +111,27 @@ describe("the identifiers of a package", () => {
     expect(found?.message).toBe(
       `the identifier "${id(10).toUpperCase()}" is also the identifier at CFItems[0].identifier; give each entity an identifier of its own.`,
     );
+  });
+
+  it("are all listed for a criterion whose levels are more than a call takes as arguments", () => {
+    const count = 150_000;
+    const pkg: Record<string, any> = copyOf(fullPackage());
+    const criterion = pkg.CFRubrics[0].CFRubricCriteria[0];
+    const level = criterion.CFRubricCriterionLevels[0];
+    criterion.CFRubricCriterionLevels = Array.from({ length: count }, (_, at) => ({
+      ...level,
+      identifier: id(LEVELS_BASE + at),
+      uri: uri("CFRubricCriterionLevels", LEVELS_BASE + at),
+    }));
+    expect(summary(validatePackage(pkg as CasePackage))).toStrictEqual([]);
+    criterion.CFRubricCriterionLevels.push({ ...level, identifier: id(LEVELS_BASE + count - 1) });
+    expect(summary(validatePackage(pkg as CasePackage))).toStrictEqual([
+      {
+        path: `CFRubrics[0].CFRubricCriteria[0].CFRubricCriterionLevels[${count}].identifier`,
+        rule: "duplicate-identifier",
+        severity: "error",
+      },
+    ]);
   });
 
   it("are warned of when the Information Model does not give their form, and each deviation is one", () => {

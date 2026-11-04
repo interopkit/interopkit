@@ -79,14 +79,17 @@ export function relationIssues(statement: Statement | SubStatement, path: string
       ),
     );
   }
-  issues.push(...contextIssues(statement, path));
-  if (!isSubStatement(statement))
-    issues.push(...authorityIssues(statement, path), ...variantIssues(statement.id, member(path, "id")));
-  if (statement.object.objectType === "StatementRef") {
-    issues.push(...variantIssues(statement.object.id, member(member(path, "object"), "id")));
-  }
   const { context } = statement;
-  issues.push(...variantIssues(context?.registration, member(member(path, "context"), "registration")));
-  issues.push(...variantIssues(context?.statement?.id, member(member(member(path, "context"), "statement"), "id")));
-  return issues;
+  return [
+    ...issues,
+    ...contextIssues(statement, path),
+    ...(isSubStatement(statement)
+      ? []
+      : [...authorityIssues(statement, path), ...variantIssues(statement.id, member(path, "id"))]),
+    ...(statement.object.objectType === "StatementRef"
+      ? variantIssues(statement.object.id, member(member(path, "object"), "id"))
+      : []),
+    ...variantIssues(context?.registration, member(member(path, "context"), "registration")),
+    ...variantIssues(context?.statement?.id, member(member(member(path, "context"), "statement"), "id")),
+  ];
 }

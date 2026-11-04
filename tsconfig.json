@@ -4,7 +4,6 @@
     "noEmit": true,
     "lib": ["ES2023"],
     "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
     "types": ["node"]
   },
   "include": [

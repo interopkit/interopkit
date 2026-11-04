@@ -76,7 +76,7 @@ export function providerStatementIssues(statement: Statement, version: XapiVersi
       ),
     );
   }
-  issues.push(...timeIssues(statement.stored, "stored", version));
+  for (const issue of timeIssues(statement.stored, "stored", version)) issues.push(issue);
   for (const name of ["stored", "authority"] as const) {
     if (statement[name] !== undefined)
       issues.push(warning(name, "lrs-managed-property", `expected no ${name}, which the LRS sets.`));

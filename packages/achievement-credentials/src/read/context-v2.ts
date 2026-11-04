@@ -180,7 +180,7 @@ function replaceIn(node: JsonValue, path: string, issues: Issue[]): JsonValue {
   if (!isRecord(node)) return node;
   const context = node["@context"];
   if (context !== undefined && !holdsContextV2(context)) return node;
-  if (context !== undefined) issues.push(...redefinitions(context, path));
+  if (context !== undefined) for (const issue of redefinitions(context, path)) issues.push(issue);
   const members = Object.entries(node).map(([name, member]) => replaceMember(node, name, member, path, issues));
   // `Object.fromEntries` defines each member, so that a member named `__proto__` stays a member.
   return Object.fromEntries(members);
