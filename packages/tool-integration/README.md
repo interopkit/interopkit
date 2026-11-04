@@ -112,6 +112,9 @@ Both roles have the launch of every message type, key sets, access tokens, the A
 
 ## Documentation
 
+[Choosing](https://interopkit.dev/_interopkit/tool-integration/choosing/) says when the package fits, when another library fits better,
+and what each has that the package lacks.
+
 The [tool guide](https://interopkit.dev/_interopkit/tool-integration/tool/)
 has the routes, the store, every check of a launch, the key set and its rotation, scores, the failure paths and the
 signals; the [roster guide](https://interopkit.dev/_interopkit/tool-integration/roster/) has the members, the groups and the preferences record; the [Deep Linking guide](https://interopkit.dev/_interopkit/tool-integration/deep-linking/) has the items and both roles; the [proctoring guide](https://interopkit.dev/_interopkit/tool-integration/proctoring/) has the Start Assessment message and the Assessment Control Service in both roles; the [registration guide](https://interopkit.dev/_interopkit/tool-integration/registration/) has Dynamic Registration in both roles; the [platform guide](https://interopkit.dev/_interopkit/tool-integration/platform/) has the same for the platform role.

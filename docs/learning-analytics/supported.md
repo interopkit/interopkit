@@ -33,6 +33,10 @@ flowchart LR
 | The 91 rows of the profile tables, the General Profile, the Library Use Profile | Yes | `validateEvent`, `buildEvent`; [judging events](./validate.md) |
 | The event conformance tables of the certification guide    | Yes      | Same                                            |
 | The recommendations of the profiles (generated entity, properties of an attempt, a score, a result and a timeout session) | Yes | Same |
+
+The counts of entities and events are those of `ENTITY_TYPES` and `EVENT_TYPES` of `packages/learning-analytics/src/model/`,
+which `entities.spec.test.ts` and `profiles.spec.test.ts` hold equal to the tables that `scripts/caliper-tables.lock.json` pins;
+the 91 rows are counted by `profiles.spec.test.ts`.
 | Sensor: one envelope of events and entity describes, mixed, with an optional bearer token | Yes | `sendCaliper`; [sending events](./send.md) |
 | Sensor: the maximum payload size of the endpoint, and the ping of section 6.2 | Yes | `maxPayloadBytes`, `pingEndpoint`, `EndpointConfiguration` |
 | Endpoint: 200, 400, 401, 405, 413, 415, 422 and 500 in a fixed order, the configuration of a GET | Yes | `handleCaliperRequest`, `readEnvelope`; [receiving events](./endpoint.md) |

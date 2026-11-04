@@ -90,6 +90,9 @@ are `@interopkit/core`, `@interopkit/learning-records` (the model and the rules 
 
 ## Documentation
 
+[Choosing](https://interopkit.dev/_interopkit/course-launch/choosing/) says when the package fits, when another library fits better,
+and what each has that the package lacks.
+
 | Guide                                                    | For                                                                                     |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | [Architecture](https://interopkit.dev/_interopkit/course-launch/architecture/) | The modules, their layers, and what the package owns                                    |

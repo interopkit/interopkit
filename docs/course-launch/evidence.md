@@ -32,8 +32,8 @@ exist.
 
 | Suite | What runs | Result |
 | --- | --- | --- |
-| LMS suite (`pnpm catapult-lms`) | Jest 27 and Puppeteer 10 in the Chromium of Playwright, against the example LMS over https on the loopback address, with `validation/catapult/lms.interopkit.js` as its adapter | 87 of 87 tests pass: 21 package imports and 66 checks around the runs of the 15 test units, waive and abandon among them |
-| Content suite (`pnpm catapult-content`) | The suite and its player in containers, with the six course examples; each unit in Normal, Browse and Review played by the runtime of the package | 54 of 54 sessions without a violated requirement, each course "conformant"; a session that sends a statement before initialized is recorded with 9.3.0.0-4 |
+| LMS suite (`pnpm catapult-lms`) | Jest 27 and Puppeteer 10 in the Chromium of Playwright, against the example LMS over https on the loopback address, with `validation/catapult/lms.interopkit.js` as its adapter | At CATAPULT `806c0ba`, pinned in `validation/catapult/suite.lock.json` on 2026-11-03, 87 of 87 tests pass: 21 package imports and 66 checks around the runs of the 15 test units, waive and abandon among them |
+| Content suite (`pnpm catapult-content`) | The suite and its player in containers, with the six course examples; each unit in Normal, Browse and Review played by the runtime of the package | At the same commit and date, 54 of 54 sessions without a violated requirement; a session that sends a statement before initialized is recorded with 9.3.0.0-4 |
 
 The units of the LMS suite are built on Rustici's library, and the content suite plays the runtime of this package against
 CATAPULT's own player, so each role is proven against an implementation of other authors. `validation/catapult/README.md` has

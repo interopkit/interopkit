@@ -43,8 +43,9 @@ framework. The tests check the scenario, the stores against the contracts of the
 
 ## The ADL suite
 
-`pnpm adl-lrs` runs the 1,442 tests of the suite for xAPI 2.0 and the 1,365 tests of the suite for 1.0.3, each at a pinned commit
-against a fresh example LRS; all pass. The first runs failed 116 and 2, and every failure was a rule that the handler did not
+`pnpm adl-lrs` runs the 1,442 tests of the suite for xAPI 2.0 at `d17a26a` and the 1,365 tests of the suite for 1.0.3 at
+`5bc232d`, the commits and sizes that `validation/adl-lrs/suite.lock.json` pins since 2026-11-02, each against a fresh example
+LRS; all pass. The first runs failed 116 and 2, and every failure was a rule that the handler did not
 follow, fixed in the handler with a test of its own and a mutation rule. [The README of the folder](../../validation/adl-lrs/README.md)
 lists the causes. The suite of 2.0 carries tests of 1.0.3 into 2.0 that the books do not state, and the handler follows it where
 the books are silent; each such place is in [spec-gaps](spec-gaps.md).

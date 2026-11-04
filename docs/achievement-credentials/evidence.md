@@ -53,6 +53,9 @@ verifies with `verifyProof` and `verifyCredentialStatus`, derives with `deriveDi
 | `vc-bitstring-status-list-test-suite` | `960ab9a` |    56 |   40 |                   16 |              0 |
 | `vc-data-model-2.0-test-suite`        | `6283645` |    59 |   44 |                    0 |             15 |
 
+The counts are those of the run of 2026-11-04 that [the README of the suites](../../validation/w3c-suites/README.md) records,
+which `scripts/test/w3c-suites.test.ts` holds equal to `validation/w3c-suites/suites.lock.json`.
+
 Every test that fails is listed in `validation/w3c-suites/suites.lock.json` with its reason, the run fails when a listed test
 passes, and a suite of another size fails it. A test that the package could fail on a credential of Open Badges or CLR is a
 fault of the package and is fixed there; the first runs found these:

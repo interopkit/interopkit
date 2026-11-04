@@ -127,6 +127,9 @@ passes in. Its dependencies are `@interopkit/core` and [valibot](https://valibot
 
 ## Documentation
 
+[Choosing](https://interopkit.dev/_interopkit/competency-frameworks/choosing/) says when the package fits, when another library fits better,
+and what each has that the package lacks.
+
 [The model guide](https://interopkit.dev/_interopkit/competency-frameworks/model/),
 [the graph guide](https://interopkit.dev/_interopkit/competency-frameworks/graph/),
 [the client guide](https://interopkit.dev/_interopkit/competency-frameworks/client/) and

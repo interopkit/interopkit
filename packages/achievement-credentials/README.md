@@ -167,6 +167,9 @@ needs Node.js 24 or later.
 
 ## Documentation
 
+[Choosing](https://interopkit.dev/_interopkit/achievement-credentials/choosing/) says when the package fits, when another library fits better,
+and what each has that the package lacks.
+
 [The model guide](https://interopkit.dev/_interopkit/achievement-credentials/model/) and
 [the builders guide](https://interopkit.dev/_interopkit/achievement-credentials/issue/) and
 [the baking guide](https://interopkit.dev/_interopkit/achievement-credentials/baking/) and

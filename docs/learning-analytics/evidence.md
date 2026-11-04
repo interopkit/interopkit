@@ -61,8 +61,8 @@ The license of the repository does not allow redistribution, so `pnpm corpus` fe
 | Set                                 | What the readers do                                                                                                                                  |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Positive fixtures of 1.2            | Every event, entity and envelope reads and comes back as the fixture has it                                                                          |
-| Negative fixtures of 1.2            | All 86 malformed events are refused, and 187 of the 191 malformed entities; the four others differ from a valid one only in the form of a number     |
-| Fixtures of 1.1                     | 138 of the 139 documents of the 129 files read as 1.1 and come back as the fixture has them. The one that fails names a `profile`, which 1.1 does not define, and a class of the sender's own context |
+| Negative fixtures of 1.2            | Every malformed event is refused, and every malformed entity but the four that `entities.corpus.test.ts` lists, which differ from a valid one only in the form of a number     |
+| Fixtures of 1.1                     | Every document but one reads as 1.1 and comes back as the fixture has it. The one that fails names a `profile`, which 1.1 does not define, and a class of the sender's own context |
 | Envelopes of 1.1                    | Every envelope is received with every item, with no finding, strict or not, and is answered 422 by an endpoint that reads 1.2 alone                   |
 | Envelopes of 1.2 through a sensor   | `sendCaliper` posts each envelope from its read items, and `accept` receives the sensor, the time and every item equal to the fixture                |
 

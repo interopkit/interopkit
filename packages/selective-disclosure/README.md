@@ -116,6 +116,9 @@ dependencies are `@interopkit/core`, [`@digitalbazaar/di-sd-primitives`](https:/
 
 ## Documentation
 
+[Choosing](https://interopkit.dev/_interopkit/selective-disclosure/choosing/) says when the package fits, when another library fits better,
+and what each has that the package lacks.
+
 [The proofs guide](https://interopkit.dev/_interopkit/selective-disclosure/proofs/) has the options with
 their defaults, the limits, the errors and what to do about them, what is not included and why, the privacy of disclosures, and
 the differences from the references.

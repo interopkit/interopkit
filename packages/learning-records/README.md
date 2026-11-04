@@ -132,6 +132,9 @@ environment variable, writes no log and makes no request. Its dependencies are `
 
 ## Documentation
 
+[Choosing](https://interopkit.dev/_interopkit/learning-records/choosing/) says when the package fits, when another library fits better,
+and what each has that the package lacks.
+
 [The model guide](https://interopkit.dev/_interopkit/learning-records/model/) has the options with their
 defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and why, and the
 differences from the references. The guides of [building](https://interopkit.dev/_interopkit/learning-records/build/),

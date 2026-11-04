@@ -63,6 +63,9 @@ environment variable, writes no log, and calls the network only through the `fet
 
 ## Documentation
 
+[Choosing](https://interopkit.dev/_interopkit/core/choosing/) says when the package fits, when another library fits better,
+and what each has that the package lacks.
+
 Each entry point bundled alone, minified with its dependencies, takes after gzip: `@interopkit/core` 11.7 KB with valibot and jose,
 `/checks` 7.5 KB and `/http` 7.7 KB, each with valibot, and `/oauth` 15.3 KB with oauth4webapi; `test/size.test.ts` holds each to
 its budget and to the modules it lists. [Performance](https://interopkit.dev/_interopkit/core/performance/)

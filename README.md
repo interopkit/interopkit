@@ -62,6 +62,9 @@ flowchart LR
 To launch tools from your platform, or to be launched by one, use `tool-integration`. To report learning events, use
 `learning-analytics`. Neither needs the other.
 
+Each package has a Supported page that lists what it includes and what it leaves out, an Evidence page that gives each suite,
+reference and counterparty with its commit, count and date, and a Choosing page that says when another library fits better.
+
 A host that delivers QTI tests with assesskit connects the two in its own code, through the ports that the player defines.
 interopkit imports nothing from assesskit or measurekit, and they import nothing from it.
 

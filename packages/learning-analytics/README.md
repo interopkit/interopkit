@@ -113,6 +113,9 @@ environment variable, writes no log, and calls the network only through the `fet
 
 ## Documentation
 
+[Choosing](https://interopkit.dev/_interopkit/learning-analytics/choosing/) says when the package fits, when another library fits better,
+and what each has that the package lacks.
+
 The guides say what each part holds: the [architecture](https://interopkit.dev/_interopkit/learning-analytics/architecture/),
 the [model](https://interopkit.dev/_interopkit/learning-analytics/model/), reading
 [Caliper 1.1](https://interopkit.dev/_interopkit/learning-analytics/versions/), what is
