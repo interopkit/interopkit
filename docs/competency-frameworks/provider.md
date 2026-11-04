@@ -15,7 +15,7 @@ flowchart TD
   disc -->|"no"| authorize{"authorize"}
   authorize -->|"401, 403 or 429"| refused["401, 403 or 429"]
   authorize -->|"allowed"| kind{"List or one object?"}
-  kind -->|"list"| query["limit, offset, sort, filter, fields<br/>parseCaseQuery"]
+  kind -->|"list"| query["limit, offset, sort, filter, fields<br/>the query grammar"]
   query -->|"refused"| bad["400 invalid_filter_field<br/>or invalid_selection_field"]
   query -->|"read"| store["FrameworkStore"]
   kind -->|"one object"| uuid{"A UUID?"}
@@ -30,8 +30,8 @@ flowchart TD
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `handleCaseRequest`, `CaseProviderOptions`          | The router and the twelve endpoints of the binding, over a store                         |
 | `FrameworkStore`, `DocumentPage`                    | What the provider needs from the host: one object by identifier, and a page of documents |
-| `parseCaseQuery`, `ParsedCaseQuery`, `QueryRefusal`, `QueryRefusalReason` | The query grammar of the list of documents, for a host that writes its own handler       |
-| `queryEntities`, `QueryEntitiesOptions`             | The filter and the sort in memory, for a store that holds its documents in a list        |
+| `ParsedCaseQuery`                                   | The query of the list of documents that the store receives, read from the parameters     |
+| `queryEntities`                                     | The filter and the sort in memory, for a store that holds its documents in a list        |
 | `localizeOpenApi`, `LocalizeOpenApiOptions`         | The OpenAPI file of 1EdTech made into the localized file that the provider serves        |
 
 The query types `CaseQuery`, `CaseFilter`, `CaseCondition` and `OpenApiDocument` are in the root of the package, because the
@@ -190,16 +190,14 @@ filter nor comes before `AND` or `OR` is read as an apostrophe. `AND` and `OR` m
 sides. A path with dots reaches into nested objects (`licenseURI.title`, `extensions.source`); only its first name is checked
 against the properties of a CFDocument. The filter is URL encoded, and holds at most 2,048 characters after decoding.
 
-`parseCaseQuery` reads these parameters for the names of a CFDocument of CASE 1.1 and returns the `ParsedCaseQuery` or a
-`QueryRefusal` with its `reason`, the code of the binding, and a `message`. On the path of 1.0 the handler holds the names to those of 1.0, which lack
+The handler reads these parameters for the names of a CFDocument of CASE 1.1 and gives the store a `ParsedCaseQuery`, or answers 400
+with the code of the binding and a message. On the path of 1.0 the handler holds the names to those of 1.0, which lack
 `frameworkType`, `caseVersion` and `extensions`.
 
-```ts
-import { parseCaseQuery } from "@interopkit/competency-frameworks/provider";
-
-parseCaseQuery(new Map([["filter", "title~'math' AND creator='Ministry'"], ["sort", "title"], ["orderBy", "desc"]])); // => { filter: { and: [{ field: "title", predicate: "~", value: "math" }, { field: "creator", predicate: "=", value: "Ministry" }] }, sort: "title", orderBy: "desc" }
-parseCaseQuery(new Map([["filter", "nonsense='x'"]])); // => { reason: "invalid_filter_field", message: "The filter names the field \"nonsense\", which a CFDocument of CASE 1.1 does not have." }
-```
+| The parameters of the request                                                  | The store receives, or the answer                                                                                            |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `filter=title~'math' AND creator='Ministry'`, `sort=title`, `orderBy=desc`     | `{ filter: { and: [{ field: "title", predicate: "~", value: "math" }, { field: "creator", predicate: "=", value: "Ministry" }] }, sort: "title", orderBy: "desc", collation }` |
+| `filter=nonsense='x'`                                                          | 400 `invalid_filter_field`: `The filter names the field "nonsense", which a CFDocument of CASE 1.1 does not have.`           |
 
 ## The store
 
@@ -296,7 +294,6 @@ evaluated by the store.
 | The store breaks its contract                                                                                                 | `DataError`: `The answer of FrameworkStore.documents has 5 documents for a limit of 2: it must return at most the limit.` |
 | `authorize` answers a shape other than `AccessDecision`                                                                       | `DataError`: `The decision of authorize is invalid: ...`                                                                  |
 | The `signal` aborts                                                                                                           | The request rejects with the reason of the signal                                                                         |
-| `parseCaseQuery` is given something other than a map of strings                                                               | `DataError`                                                                                                               |
 | `queryEntities` is given entities that are not objects, a query of another shape, or a collation that is not a tag            | `DataError` that names the path and what was expected                                                                     |
 | `localizeOpenApi` is given a document that is not OpenAPI 3 or JSON, or an address that does not end with the root of the API | `DataError`: `The options is invalid at serverUrl: expected an http or https address that ends with /ims/case/v1p1, ...`  |
 

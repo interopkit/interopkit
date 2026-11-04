@@ -139,23 +139,17 @@ A query is checked when `documents` is called, before any request: a property th
 name, an empty list of fields, a predicate or an order that does not exist, a value that is not text, or a logical operator
 with other than two comparisons is a `DataError`.
 
-`writeCaseFilter(filter)` writes the value of the `filter` parameter, and `documents` does the same for its query. A comparison is
+`documents` writes the value of the `filter` parameter from the `CaseFilter` of its query. A comparison is
 `{ field, predicate, value }` with a predicate of `=`, `!=`, `>`, `>=`, `<`, `<=` or `~`. The binding asks a provider to compare
 without regard to case, `=` of a list to need every element, and `~` to need any.
 
-```ts
-import { writeCaseFilter } from "@interopkit/competency-frameworks/client";
+| The `filter` of the query                                                                                                                       | The value of the parameter                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `{ field: "version", predicate: "=", value: "1.0" }`                                                                                            | `version='1.0'`                                             |
+| `{ and: [{ field: "version", predicate: "=", value: "1.0" }, { field: "lastChangeDateTime", predicate: ">", value: "2016-12-12T00:00:00Z" }] }` | `version='1.0' AND lastChangeDateTime>'2016-12-12T00:00:00Z'` |
+| `{ field: "title", predicate: "~", value: "children's" }`                                                                                       | `title~'children''s'`                                       |
 
-writeCaseFilter({ field: "version", predicate: "=", value: "1.0" }); // => "version='1.0'"
-writeCaseFilter({
-  and: [
-    { field: "version", predicate: "=", value: "1.0" },
-    { field: "lastChangeDateTime", predicate: ">", value: "2016-12-12T00:00:00Z" },
-  ],
-}); // => "version='1.0' AND lastChangeDateTime>'2016-12-12T00:00:00Z'"
-```
-
-The binding gives no way to write a single quote inside a value. `writeCaseFilter` writes it twice, as the provider of this package
+The binding gives no way to write a single quote inside a value. The client writes it twice, as the provider of this package
 reads it (`title~'children''s'`); a provider that reads it otherwise needs the value cut at the quote and filtered with `~`.
 
 The request carries the filter percent-encoded, with a space as `%20` and `'` as `%27`, as the binding's examples write it. `fields`

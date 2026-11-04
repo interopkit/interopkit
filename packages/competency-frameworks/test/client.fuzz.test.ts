@@ -1,10 +1,9 @@
 import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { writeCaseFilter } from "../src/client/index.js";
-import { queryString } from "../src/client/internal.js";
+import { queryString, writeCaseFilter } from "../src/client/internal.js";
 import { type CaseFilter, FILTER_PREDICATES } from "../src/index.js";
-import { parseCaseQuery } from "../src/provider/index.js";
+import { parseCaseQuery } from "../src/provider/internal.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
 const RUNS = { seed: 20_241_105, numRuns: 400 };

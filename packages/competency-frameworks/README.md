@@ -64,7 +64,7 @@ flowchart LR
     validate["validatePackage, validateEntity"]
     version["convertCaseVersion"]
     graph["/graph<br/>buildFrameworkTree, crosswalk,<br/>diffPackages, isNewer"]
-    client["/client<br/>createCaseClient, writeCaseFilter"]
+    client["/client<br/>createCaseClient"]
     provider["/provider<br/>handleCaseRequest over a FrameworkStore<br/>paging, filter, sort, fields, discovery"]
   end
   model["CasePackage, CFItem, ...<br/>the model of CASE 1.1"]
@@ -104,11 +104,11 @@ passes in. Its dependencies are `@interopkit/core` and [valibot](https://valibot
 |                                     | `ASSOCIATION_TYPES`, `CASE_VERSIONS`, `ENTITY_KINDS`, `SERVED_KINDS`, `CaseEntityMap`, `STATUS_CODES_MINOR`, `CaseVersion`, `CaseEntityKind`, `CaseEntity`, `ImsxStatusInfo` and the types of the vocabularies |
 |                                     | `CaseQuery`, `CaseFilter`, `CaseCondition`, `OpenApiDocument`, `FILTER_PREDICATES`, `SORT_ORDERS`: what the provider and a client of the endpoints share                                                                                                  |
 | `.../client`                        | `createCaseClient`, `CaseClient`, `CaseClientOptions`: a call for each of the twelve endpoints, paging, errors                                                                                                                                             |
-|                                     | `writeCaseFilter`, `SelectedDocument`: the filter of a request                                                                                                                |
+|                                     | `SelectedDocument`: a document with the fields that a query selected                                                                                                                |
 | `.../graph`                         | `buildFrameworkTree`, `listAssociations`, `crosswalk`, `diffPackages`, `isNewer`, `readAdoptionStatus`, `buildEntityUri`: the questions a consumer asks of a package; `ADOPTION_STATUSES` and the types of the answers and options: `FrameworkNode`, `NodeAssociations`, `CrosswalkLink`, `CrosswalkOptions`, `PackageDiff`, `ChangedItem`, `ReplacedItem`, `AdoptionStatus`, `CaseEntityUriOptions` |
 | `.../provider`                      | `handleCaseRequest`, `CaseProviderOptions`: serve the twelve endpoints of the binding, in 1.1 and in 1.0, over a store                                                                                                                  |
 |                                     | `FrameworkStore`, `DocumentPage`: what the provider needs from the host                                                                                                                                                                       |
-|                                     | `parseCaseQuery`, `ParsedCaseQuery`, `QueryRefusal`, `QueryRefusalReason`, `queryEntities`, `QueryEntitiesOptions`: the query grammar, and the filter and sort in memory                                                                                                        |
+|                                     | `ParsedCaseQuery`, `queryEntities`: the query that the store receives, and the filter and sort in memory                                                                                                        |
 |                                     | `localizeOpenApi`, `LocalizeOpenApiOptions`: the OpenAPI file of 1EdTech made into the localized discovery file                                                                                                                                           |
 
 ## Supported

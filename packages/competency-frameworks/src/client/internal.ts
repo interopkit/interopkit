@@ -1,6 +1,6 @@
 /**
- * What the tests share of `client` and the package does not export: the writer of the parameters of a request.
+ * What the tests share of `client` and the package does not export: the writers of the parameters of a request and of a filter.
  *
  * @module
  */
-export { queryString } from "./query.js";
+export { queryString, writeCaseFilter } from "./query.js";

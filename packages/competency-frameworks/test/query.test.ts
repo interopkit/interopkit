@@ -1,4 +1,3 @@
-import { DataError } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
 import { describe, expect, it } from "vitest";
 import type { CaseFilter, CFDocument } from "../src/index.js";
@@ -6,9 +5,9 @@ import {
   type CaseProviderOptions,
   handleCaseRequest,
   type ParsedCaseQuery,
-  parseCaseQuery,
   queryEntities,
 } from "../src/provider/index.js";
+import { parseCaseQuery } from "../src/provider/internal.js";
 import { type Asked, DISCOVERY, documents, jsonOf, memoryStore, request, serve, V10, V11 } from "./provider-fixture.js";
 
 /** Parses the parameters of a request that a test writes as a list of pairs. */
@@ -19,10 +18,10 @@ const docs = documents();
 const titlesOf = (found: readonly CFDocument[]): string[] => found.map(({ title }) => title);
 
 /** Runs a filter given as the text of the parameter over the documents of the tests. */
-function filtered(text: string, options?: { collation?: string }): string[] {
+function filtered(text: string, collation?: string): string[] {
   const query = filterOf(text);
   if ("reason" in query) throw new Error(`The filter was refused: ${query.message}`);
-  return titlesOf(queryEntities(docs, query, options));
+  return titlesOf(queryEntities(docs, collation === undefined ? query : { ...query, collation }));
 }
 
 describe("the filter of a request", () => {
@@ -299,8 +298,8 @@ describe("queryEntities on the documents", () => {
     });
 
     it("by the collation of the locale for the order of text", () => {
-      expect(filtered("title>'zebra studies'", { collation: "sv" })).toStrictEqual(["Älg i skogen"]);
-      expect(filtered("title>'zebra studies'", { collation: "und" })).toStrictEqual([]);
+      expect(filtered("title>'zebra studies'", "sv")).toStrictEqual(["Älg i skogen"]);
+      expect(filtered("title>'zebra studies'", "und")).toStrictEqual([]);
     });
   });
 
@@ -478,8 +477,7 @@ describe("queryEntities on the documents", () => {
   });
 
   describe("sorts", () => {
-    const sorted = (query: ParsedCaseQuery, options?: { collation?: string }) =>
-      titlesOf(queryEntities(docs, query, options));
+    const sorted = (query: ParsedCaseQuery) => titlesOf(queryEntities(docs, query));
 
     it("ascending by default, by the collation, and not by code point", () => {
       expect(sorted({ sort: "title" })).toStrictEqual([
@@ -501,11 +499,10 @@ describe("queryEntities on the documents", () => {
       ]);
     });
 
-    it("by the collation that the options or the query name", () => {
+    it("by the collation that the query names", () => {
       const swedish = ["apple basics", "Mathematics", "Mathematics 2", "Zebra studies", "Älg i skogen"];
-      expect(sorted({ sort: "title" }, { collation: "sv" })).toStrictEqual(swedish);
       expect(sorted({ sort: "title", collation: "sv" })).toStrictEqual(swedish);
-      expect(sorted({ sort: "title", collation: "und" }, { collation: "sv" })).toStrictEqual(swedish);
+      expect(sorted({ sort: "title", collation: "und" })).not.toStrictEqual(swedish);
     });
 
     it("by the instant of a date and time", () => {
@@ -603,15 +600,9 @@ describe("queryEntities on the documents", () => {
       ["a collation that is not a language tag", "not a tag"],
       ["an empty collation", ""],
     ])("%s", (_, collation) => {
-      expect(() => queryEntities(docs, { sort: "title" }, { collation })).toThrow(
+      expect(() => queryEntities(docs, { sort: "title", collation })).toThrow(
         `The collation must be a BCP 47 language tag such as "und" or "sv-SE", found "${collation}".`,
       );
-      expect(() => queryEntities(docs, { sort: "title", collation })).toThrow(DataError);
-    });
-
-    it("options that are not an object, or have a property it does not know", () => {
-      expect(() => queryEntities(docs, {}, JSON.parse("null"))).toThrow("The options is invalid");
-      expect(() => queryEntities(docs, {}, JSON.parse('{"locale":"sv"}'))).toThrow("The options is invalid");
     });
 
     it.each([

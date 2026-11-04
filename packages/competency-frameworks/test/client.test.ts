@@ -1,7 +1,8 @@
 import { DataError, readStatusInfo, ServiceError } from "@interopkit/core";
 import { hasMoreTokensThan } from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
-import { type CaseClient, type CaseClientOptions, createCaseClient, writeCaseFilter } from "../src/client/index.js";
+import { type CaseClient, type CaseClientOptions, createCaseClient } from "../src/client/index.js";
+import { writeCaseFilter } from "../src/client/internal.js";
 import type { CasePackage, CFDocument } from "../src/index.js";
 import { type FakeProvider, fakeProvider, type Reply } from "./fake-provider.js";
 import { copyOf } from "./fixture.js";

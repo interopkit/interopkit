@@ -2,7 +2,8 @@ import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { type CaseCondition, type CaseFilter, FILTER_PREDICATES } from "../src/index.js";
-import { handleCaseRequest, parseCaseQuery, queryEntities } from "../src/provider/index.js";
+import { handleCaseRequest, queryEntities } from "../src/provider/index.js";
+import { parseCaseQuery } from "../src/provider/internal.js";
 import { DISCOVERY, documents, jsonOf, memoryStore, ORIGIN, V10, V11 } from "./provider-fixture.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */

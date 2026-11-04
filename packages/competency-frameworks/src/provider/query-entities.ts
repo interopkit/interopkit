@@ -9,16 +9,6 @@ import { compareKeys, type Found, likeValue, order, orderKey, type Scalar, value
 export const DEFAULT_COLLATION = "und";
 const LIST_SEPARATOR = ",";
 
-/** The options of `queryEntities`. */
-export interface QueryEntitiesOptions {
-  /**
-   * The locale of the Unicode collation for `sort` and `filter`, as a BCP 47 tag. It wins over the `collation` of the query.
-   *
-   * @defaultValue the `collation` of the query, and `"und"` when it has none
-   */
-  readonly collation?: string;
-}
-
 /** How a filter compares text: the collator that ignores case and keeps accents, and the locale that lower-cases for `~`. */
 interface Comparer {
   readonly match: Intl.Collator;
@@ -36,7 +26,6 @@ const querySchema = strictRecord({
   fields: v.optional(v.array(text)),
   collation: v.optional(text),
 });
-const optionsSchema = strictRecord({ collation: v.optional(text) });
 
 /** Returns the canonical form of a BCP 47 language tag, or `undefined` when the text is not a well-formed tag. */
 export function canonicalLocale(tag: string): string | undefined {
@@ -132,22 +121,17 @@ function passes(entity: object, filter: CaseFilter, comparer: Comparer): boolean
  *
  * @typeParam T - The type of the entities.
  * @param entities - The entities, such as the documents of a store.
- * @param query - What `parseCaseQuery` returns, or a query written by hand.
- * @param options - The collation.
+ * @param query - The query that the provider hands the store, or one written by hand. Its `collation` is the locale of the
+ * Unicode collation, `"und"` when it has none.
  * @returns The entities that pass the filter, in the order of the sort, or in their own order when there is none.
- * @throws `DataError` when the entities are not a list of objects, when the query or the options are not of the types
- * `ParsedCaseQuery` and `QueryEntitiesOptions` give, or when the collation is not a BCP 47 language tag.
+ * @throws `DataError` when the entities are not a list of objects, when the query is not of the type `ParsedCaseQuery`, or when
+ * the collation is not a BCP 47 language tag.
  */
-export function queryEntities<T extends object>(
-  entities: readonly T[],
-  query: ParsedCaseQuery,
-  options?: QueryEntitiesOptions,
-): readonly T[] {
+export function queryEntities<T extends object>(entities: readonly T[], query: ParsedCaseQuery): readonly T[] {
   checkArray(entities, "The entities must be an array");
   for (const [index, entity] of entities.entries()) checkRecord(entity, `The entity at ${index} must be an object`);
   const { filter, sort, orderBy, collation } = parseWith(querySchema, query, "The query");
-  const settings = parseWith(optionsSchema, options === undefined ? {} : options, "The options");
-  const locale = readLocale(settings.collation ?? collation ?? DEFAULT_COLLATION, "The collation");
+  const locale = readLocale(collation ?? DEFAULT_COLLATION, "The collation");
   const comparer = { match: new Intl.Collator(locale, { sensitivity: "accent" }), locale };
   const kept = filter === undefined ? [...entities] : entities.filter((entity) => passes(entity, filter, comparer));
   if (sort === undefined) return kept;

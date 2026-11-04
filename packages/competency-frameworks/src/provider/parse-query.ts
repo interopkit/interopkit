@@ -15,10 +15,10 @@ export interface ParsedCaseQuery extends CaseQuery {
 }
 
 /** The code of the answer to a query that could not be used, as the REST binding writes it (3.4). */
-export type QueryRefusalReason = "invalid_filter_field" | "invalid_selection_field";
+type QueryRefusalReason = "invalid_filter_field" | "invalid_selection_field";
 
 /** Why a query could not be used, and the code that the REST binding gives the answer. */
-export interface QueryRefusal {
+interface QueryRefusal {
   /** The code of the answer: a filter that cannot be read or names an unknown field, or a blank name in `fields`. */
   readonly reason: QueryRefusalReason;
   /** A sentence that says what is wrong and what to write. */
