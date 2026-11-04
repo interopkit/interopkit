@@ -1,7 +1,8 @@
+import * as v from "valibot";
 import { readRetryAfterSeconds } from "./answer-headers.js";
-import { checkPositiveInteger, checkRecord } from "./checks.js";
+import { checkPositiveInteger, checkRecord, parseJsonText, parseWith, type Schema, strictRecord } from "./checks.js";
 import { DataError, LimitError, ServiceError } from "./errors.js";
-import { findExceededJsonLimit, hasMoreTokensThan, MAX_JSON_DEPTH, MAX_JSON_TOKENS, nestsDeeperThan } from "./json.js";
+import { hasMoreTokensThan, MAX_JSON_DEPTH, MAX_JSON_TOKENS } from "./json.js";
 import type { ServiceResponse } from "./service.js";
 
 /** Throws on bytes that are not UTF-8, where the default decoder would replace them. */
@@ -51,24 +52,15 @@ export function readAnswerJson(response: ServiceResponse, what: string, options:
   } catch (error) {
     throw new DataError(`${what} answered with a body that is not UTF-8 text.`, { cause: error });
   }
-  // One reading finds the first limit that the text passes. The depth is refused before the tokens, so a text that passes the
-  // tokens first is read on for its depth.
-  const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
-  if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
-    throw new LimitError(`${what} answered with JSON that nests more than ${maxDepth} levels.`, "maxDepth", maxDepth);
-  }
-  if (excess === "tokens") {
-    throw new LimitError(
-      `${what} answered with a body of more than ${maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
-      "maxTokens",
-      maxTokens,
-    );
-  }
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    throw new DataError(`${what} answered with a body that is not JSON.`, { cause: error });
-  }
+  return parseJsonText(
+    text,
+    { maxDepth, maxTokens },
+    {
+      depth: `${what} answered with JSON that nests more than ${maxDepth} levels.`,
+      tokens: `${what} answered with a body of more than ${maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
+      syntax: () => `${what} answered with a body that is not JSON.`,
+    },
+  );
 }
 
 /**
@@ -145,4 +137,76 @@ export function readStatusDetail<TInfo>(error: ServiceError, readInfo: (json: un
   const seconds = readRetryAfterSeconds(error.headers);
   if (seconds !== undefined) detail.retryAfterSeconds = seconds;
   return detail;
+}
+
+/** The outcomes of a request as a whole that the services of 1EdTech name in an `imsx_StatusInfo`. */
+const STATUS_CODES_MAJOR = ["failure", "processing", "success", "unsupported"] as const;
+
+/** How serious an outcome is, in the words of the services of 1EdTech. */
+const STATUS_SEVERITIES = ["error", "status", "warning"] as const;
+
+/** One detail of a status: the system that gave it, and its code. */
+export interface StatusCodeMinorField {
+  /** The identity of the system that produced the code, such as `TargetEndSystem`. */
+  readonly imsx_codeMinorFieldName: string;
+  /** The code, from the vocabulary of the service, such as `server_busy`. */
+  readonly imsx_codeMinorFieldValue: string;
+}
+
+/** The details of a status: at least one. */
+export interface StatusCodeMinor {
+  /** The details, each with the system that gave it and its code. */
+  readonly imsx_codeMinorField: readonly StatusCodeMinorField[];
+}
+
+/**
+ * The status that a service of 1EdTech returns with an answer that is not a success: the `imsx_StatusInfo` of its REST binding.
+ *
+ * @remarks
+ * CASE, Open Badges and CLR share it. The codes of the details are those of each service, so they are text here and the
+ * package of the service types them as its vocabulary.
+ */
+export interface StatusInfo {
+  /** The outcome of the request as a whole. */
+  readonly imsx_codeMajor: (typeof STATUS_CODES_MAJOR)[number];
+  /** How serious the outcome is. */
+  readonly imsx_severity: (typeof STATUS_SEVERITIES)[number];
+  /** A description of the outcome, for people. */
+  readonly imsx_description?: string;
+  /** The details of the outcome, at least one. */
+  readonly imsx_codeMinor?: StatusCodeMinor;
+}
+
+const statusInfoSchema: Schema<StatusInfo> = strictRecord({
+  imsx_codeMajor: v.picklist(STATUS_CODES_MAJOR),
+  imsx_severity: v.picklist(STATUS_SEVERITIES),
+  imsx_description: v.optional(v.string()),
+  imsx_codeMinor: v.optional(
+    strictRecord({
+      imsx_codeMinorField: v.pipe(
+        v.array(strictRecord({ imsx_codeMinorFieldName: v.string(), imsx_codeMinorFieldValue: v.string() })),
+        v.minLength(1),
+      ),
+    }),
+  ),
+});
+
+/**
+ * Reads what a service of 1EdTech said in the answer that made a call fail: its `imsx_StatusInfo`, if the body is one, and how
+ * long it asks the client to wait.
+ *
+ * @remarks
+ * The REST bindings of CASE, Open Badges and CLR answer an error with an `imsx_StatusInfo` that names the cause in
+ * `imsx_codeMinor`, such as `invalid_filter_field` or `server_busy`. A body that is not one, such as the page of a proxy, gives no
+ * `info`; see {@link readStatusDetail}. The client retries nothing itself: without a `Retry-After`, Open Badges recommends two more
+ * attempts 30 minutes apart, and then telling the user.
+ *
+ * @param error - The error that a call of the client threw.
+ * @returns The status and the delay, each left out when the answer does not give it.
+ * @throws `DataError` when the argument is not a `ServiceError`.
+ * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#retry-behavior | Open Badges 3.0, Retry Behavior}
+ * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1, REST binding 2.4}
+ */
+export function readStatusInfo(error: ServiceError): StatusDetail<StatusInfo> {
+  return readStatusDetail(error, (json) => parseWith(statusInfoSchema, json, "The status"));
 }

@@ -1,7 +1,7 @@
+import { endOfJsonString } from "@interopkit/core/checks";
 import { item, member } from "./path.js";
 
 const QUOTE = 0x22;
-const BACKSLASH = 0x5c;
 const OPEN_BRACE = 0x7b;
 const CLOSE_BRACE = 0x7d;
 const OPEN_BRACKET = 0x5b;
@@ -22,15 +22,6 @@ interface Container {
   readonly names: Set<string> | undefined;
   /** Where the text is in the container: the name of the member, or the index of the element. */
   at: string | number;
-}
-
-/** Returns the index of the quote that ends the string which starts at `start`. The text is valid JSON, so there is one. */
-function endOfString(text: string, start: number): number {
-  for (let quote = text.indexOf('"', start + 1); ; quote = text.indexOf('"', quote + 1)) {
-    let backslashes = 0;
-    while (text.charCodeAt(quote - 1 - backslashes) === BACKSLASH) backslashes += 1;
-    if (backslashes % 2 === 0) return quote;
-  }
 }
 
 /** Reads a name of the text, whose characters are the same whatever the escapes that write them. */
@@ -103,7 +94,7 @@ export function findRepeatedProperty(text: string): Repeat | undefined {
       readStructure(scan, unit);
       continue;
     }
-    const end = endOfString(text, index);
+    const end = endOfJsonString(text, index);
     const repeat = readString(scan, text, index, end);
     if (repeat !== undefined) return repeat;
     index = end;

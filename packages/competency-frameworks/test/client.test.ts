@@ -1,13 +1,7 @@
-import { DataError, ServiceError } from "@interopkit/core";
+import { DataError, readStatusInfo, ServiceError } from "@interopkit/core";
 import { hasMoreTokensThan } from "@interopkit/core/checks";
-import { describe, expect, it, vi } from "vitest";
-import {
-  type CaseClient,
-  type CaseClientOptions,
-  createCaseClient,
-  readStatusInfo,
-  writeCaseFilter,
-} from "../src/client/index.js";
+import { describe, expect, it } from "vitest";
+import { type CaseClient, type CaseClientOptions, createCaseClient, writeCaseFilter } from "../src/client/index.js";
 import type { CasePackage, CFDocument } from "../src/index.js";
 import { type FakeProvider, fakeProvider, type Reply } from "./fake-provider.js";
 import { copyOf } from "./fixture.js";
@@ -737,46 +731,11 @@ describe("writeCaseFilter", () => {
   });
 });
 
-describe("readStatusInfo", () => {
-  const refusal = (body: string, headers: Record<string, string> = {}, status = 429) =>
-    new ServiceError("The CASE provider answered.", status, body, { headers });
-  const busy = { ...entities.imsx_StatusInfo, imsx_description: "Slow down." };
-
-  it("reads the status of the answer and the seconds that Retry-After asks for", () => {
-    const detail = readStatusInfo(refusal(JSON.stringify(busy), { "retry-after": "30" }));
-    expect(detail).toStrictEqual({ info: busy, retryAfterSeconds: 30 });
-  });
-
-  it("reads the status alone when the answer asks for no wait", () => {
-    expect(readStatusInfo(refusal(JSON.stringify(busy)))).toStrictEqual({ info: busy });
-  });
-
-  it("gives no delay for a date, a negative number or text, and gives the delay when the body is no status", () => {
-    for (const value of ["Wed, 21 Oct 2026 07:28:00 GMT", "-5", "1e3", "soon", "", "9999999999999999"]) {
-      expect(readStatusInfo(refusal("{}", { "retry-after": value }))).toStrictEqual({});
-    }
-    expect(readStatusInfo(refusal("<html>busy</html>", { "retry-after": " 7 " }))).toStrictEqual({
-      retryAfterSeconds: 7,
-    });
-    expect(readStatusInfo(refusal(""))).toStrictEqual({});
-    const parse = vi.spyOn(JSON, "parse");
-    try {
-      expect(readStatusInfo(refusal(`[${"[],".repeat(400_000)}[]]`))).toStrictEqual({});
-      expect(parse).not.toHaveBeenCalled();
-    } finally {
-      parse.mockRestore();
-    }
-    expect(readStatusInfo(refusal('{"imsx_codeMajor":"failure"}'))).toStrictEqual({});
-  });
-
-  it("reads the error that a call of the client threw", async () => {
+describe("the status of a refusal", () => {
+  it("is read by readStatusInfo of core from the error that a call of the client threw", async () => {
+    const busy = { ...entities.imsx_StatusInfo, imsx_description: "Slow down." };
     const provider = fakeProvider(() => ({ status: 429, headers: { "Retry-After": "12" }, body: busy }));
     const error = await failureOf(clientOf(provider).item(id(7)));
     expect(readStatusInfo(error as ServiceError)).toStrictEqual({ info: busy, retryAfterSeconds: 12 });
-  });
-
-  it("refuses an argument that is not a ServiceError", () => {
-    expect(() => readStatusInfo(fromJson("null"))).toThrow("The error must be a ServiceError.");
-    expect(() => readStatusInfo(new Error("x") as never)).toThrow(DataError);
   });
 });

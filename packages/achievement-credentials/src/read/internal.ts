@@ -13,7 +13,7 @@ import * as v1p1 from "./v1p1-schemas.js";
 export { ALIASES_V2, KEYWORD_TERMS_V2, PREFIXES_V2, TERMS_V2 } from "./context-v2.js";
 export { usableDescriptionSchema } from "./description-schemas.js";
 export { parseDateTimeV2 } from "./formats-v2.js";
-export { credentialOrReason, issueSink, parseJson, ruleIssues } from "./inspect.js";
+export { credentialOrReason, parseJson, ruleIssues } from "./inspect.js";
 export { DOCUMENT_PLACES, inspectBadgeV2, inspectDocumentV2, isBadgeAssertionV2, isDocumentV2 } from "./inspect-v2.js";
 export { readJwsPayload } from "./jws-payload.js";
 export { type VerifiedKind, verifiedKindOf } from "./kinds.js";

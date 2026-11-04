@@ -1,14 +1,13 @@
 import {
   type CallOptions,
-  DataError,
   findLinkTarget,
-  LimitError,
+  readAnswerJson,
   requestService,
   ServiceError,
   type ServiceInit,
   type ServiceResponse,
 } from "@interopkit/core";
-import { checkHttpsUrl, describe, hasMoreTokensThan } from "@interopkit/core/checks";
+import { checkHttpsUrl, describe } from "@interopkit/core/checks";
 import { createTokenCache } from "@interopkit/core/oauth";
 import { LtiError } from "../../errors.js";
 import type { LtiDeployment } from "../../protocol/index.js";
@@ -94,43 +93,8 @@ export interface ServiceAccess {
   link(response: ServiceResponse, relation: string, url: string): string | undefined;
 }
 
-const DECODER = new TextDecoder("utf-8", { fatal: true });
 /** The statuses of a success, which a call that also expects another status lists beside it. */
 const SUCCESS: readonly number[] = Array.from({ length: 100 }, (_, offset) => 200 + offset);
-
-/**
- * Reads the body of an answer as JSON within a number of tokens, then with the reader of its model.
- *
- * @param what - Names the service in the error, such as `The line item at https://...`.
- * @throws `DataError` when the body is not UTF-8 JSON, has more than `maxTokens` tokens, or breaks the model.
- */
-export function readAnswer<T>(
-  response: ServiceResponse,
-  what: string,
-  maxTokens: number,
-  reader: (value: unknown) => T,
-): T {
-  let text: string;
-  try {
-    text = DECODER.decode(response.body);
-  } catch (error) {
-    throw new DataError(`${what} answered with a body that is not UTF-8 text.`, { cause: error });
-  }
-  if (hasMoreTokensThan(text, maxTokens)) {
-    throw new LimitError(
-      `${what} answered with a body of more than ${maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
-      "maxTokens",
-      maxTokens,
-    );
-  }
-  let json: unknown;
-  try {
-    json = JSON.parse(text);
-  } catch (error) {
-    throw new DataError(`${what} answered with a body that is not JSON.`, { cause: error });
-  }
-  return reader(json);
-}
 
 /** Returns the narrowest scope of a call that the platform offered. */
 function scopeOf(scopes: readonly string[], offered: readonly string[]): string {
@@ -262,7 +226,7 @@ export function createServiceAccess(deployment: LtiDeployment, settings: Service
       }
     },
     read(response, what, reader) {
-      return readAnswer(response, what, settings.maxTokens, reader);
+      return reader(readAnswerJson(response, what, { maxTokens: settings.maxTokens }));
     },
     next(response, url) {
       return findLinkTarget(response.headers, "next", url);

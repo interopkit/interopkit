@@ -7,4 +7,3 @@
 export { type CredentialsClient, createCredentialsClient } from "./client.js";
 export type { CredentialsClientOptions } from "./config.js";
 export { type DiscoverOptions, discoverService, type ServiceDescription } from "./discovery.js";
-export { readStatusInfo, type StatusDetail } from "./status.js";

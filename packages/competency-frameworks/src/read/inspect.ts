@@ -1,21 +1,8 @@
-import { createFindingSink, type FindingSink, type Issue, safeParseBounded } from "@interopkit/core/checks";
+import { buildIssues, type FindingSink, type Issue, safeParseBounded } from "@interopkit/core/checks";
 import type { CaseEntity, CaseEntityKind, CasePackage, CaseVersion } from "../model/index.js";
 import { entityIssues, packageIssues } from "./integrity.js";
-import { toIssues } from "./issues.js";
 import { packageFormIssues } from "./package-form.js";
 import { SCHEMAS } from "./schemas.js";
-
-/**
- * Makes the list of findings of a call that stops at a limit. A reader keeps the errors alone, because it does not report
- * warnings, and a warning does not count toward the limit.
- */
-export function issueSink(maxFindings: number, errorsOnly: boolean): FindingSink<Issue> {
-  return createFindingSink(
-    maxFindings,
-    (finding) => ({ ...finding, severity: "error" }),
-    errorsOnly ? ({ severity }) => severity === "error" : undefined,
-  );
-}
 
 /**
  * Reads a package of a version into a sink of findings, and checks its identifiers, links and tree when its shape is right. The
@@ -30,7 +17,7 @@ export function inspectPackage(
 ): CasePackage | undefined {
   const result = safeParseBounded(SCHEMAS[version].package, value, sink.room);
   if (!result.success) {
-    sink.add(toIssues(result.issues));
+    sink.add(buildIssues(result.issues));
     return undefined;
   }
   sink.add(packageFormIssues(value));
@@ -47,7 +34,7 @@ export function inspectEntity(
 ): CaseEntity | undefined {
   const result = safeParseBounded(SCHEMAS[version].entities[kind], value, sink.room);
   if (!result.success) {
-    sink.add(toIssues(result.issues));
+    sink.add(buildIssues(result.issues));
     return undefined;
   }
   sink.add(packageFormIssues(value));

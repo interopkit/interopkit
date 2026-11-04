@@ -253,7 +253,7 @@ primitives.
 
 | Entry point | Bytes | Gzip | Budget | Holds, besides `@interopkit/core` and valibot |
 | --- | ---: | ---: | ---: | --- |
-| `@interopkit/selective-disclosure` | 225,154 | 70,285 | 88,000 | `base`, `derive`, `document`, `keys`, `proof-value`, `suite`, `verify`; `@digitalbazaar/di-sd-primitives`, `jsonld`, `rdf-canonize` and their small dependencies; the curves and hashes of noble, `@scure/base`, cborg |
+| `@interopkit/selective-disclosure` | 225,154 | 70,282 | 88,000 | `base`, `derive`, `document`, `keys`, `proof-value`, `suite`, `verify`; `@digitalbazaar/di-sd-primitives`, `jsonld`, `rdf-canonize` and their small dependencies; the curves and hashes of noble, `@scure/base`, cborg |
 
 ## Runtimes and dependencies
 

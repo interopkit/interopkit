@@ -1,5 +1,5 @@
-import { DataError, LimitError } from "@interopkit/core";
-import { findExceededJsonLimit, isRecord, nestsDeeperThan } from "@interopkit/core/checks";
+import { DataError } from "@interopkit/core";
+import { isRecord, parseJsonText } from "@interopkit/core/checks";
 import type { Extensions } from "../../model/index.js";
 
 /** Throws on bytes that are not UTF-8, where the default decoder would replace them. */
@@ -23,28 +23,15 @@ export function readObject(
   } catch (error) {
     throw new DataError(`${what} must be a JSON object, and it holds bytes that are not UTF-8.`, { cause: error });
   }
-  // The depth is refused before the tokens, as the text of a request is, so a text that passes the tokens first is read on.
-  const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
-  if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
-    throw new LimitError(
-      `${what} must be a JSON object, and it nests deeper than the limit of ${maxDepth} levels.`,
-      "maxDepth",
-      maxDepth,
-    );
-  }
-  if (excess === "tokens") {
-    throw new LimitError(
-      `${what} must be a JSON object, and it has more than ${maxTokens} tokens, the limit.`,
-      "maxTokens",
-      maxTokens,
-    );
-  }
-  let value: unknown;
-  try {
-    value = JSON.parse(text);
-  } catch (error) {
-    throw new DataError(`${what} must be a JSON object, and it is not valid JSON.`, { cause: error });
-  }
+  const value = parseJsonText(
+    text,
+    { maxDepth, maxTokens },
+    {
+      depth: `${what} must be a JSON object, and it nests deeper than the limit of ${maxDepth} levels.`,
+      tokens: `${what} must be a JSON object, and it has more than ${maxTokens} tokens, the limit.`,
+      syntax: () => `${what} must be a JSON object, and it is not valid JSON.`,
+    },
+  );
   if (!isRecord(value)) throw new DataError(`${what} must be a JSON object, and it is not an object.`);
   return value as Extensions;
 }

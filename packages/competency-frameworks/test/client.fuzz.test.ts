@@ -1,7 +1,7 @@
-import { DataError, ServiceError } from "@interopkit/core";
+import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { readStatusInfo, writeCaseFilter } from "../src/client/index.js";
+import { writeCaseFilter } from "../src/client/index.js";
 import { queryString } from "../src/client/internal.js";
 import { type CaseFilter, FILTER_PREDICATES } from "../src/index.js";
 import { parseCaseQuery } from "../src/provider/index.js";
@@ -76,18 +76,6 @@ describe("the parameters of a request on any query", () => {
         } catch (error) {
           expect(error).toBeInstanceOf(DataError);
         }
-      }),
-      RUNS,
-    );
-  });
-});
-
-describe("the reader of an error on any text", () => {
-  it("read the status of an error whose body is any text, and throw nothing", () => {
-    fc.assert(
-      fc.property(fc.string(), fc.string(), (body, delay) => {
-        const detail = readStatusInfo(new ServiceError("Busy.", 429, body, { headers: { "retry-after": delay } }));
-        expect(detail.retryAfterSeconds === undefined || Number.isSafeInteger(detail.retryAfterSeconds)).toBe(true);
       }),
       RUNS,
     );

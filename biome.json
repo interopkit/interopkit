@@ -1868,7 +1868,8 @@
         "packages/course-launch/test/**",
         "scripts/cmi5-rules.ts",
         "scripts/test/schema-arbitrary.test.ts",
-        "scripts/test/schema-oracle.test.ts"
+        "scripts/test/schema-oracle.test.ts",
+        "packages/core/src/answer.ts"
       ],
       "linter": {
         "rules": {

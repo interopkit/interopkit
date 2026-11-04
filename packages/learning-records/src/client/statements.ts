@@ -1,6 +1,7 @@
 import { type CallOptions, DataError, readAnswer, type ServiceResponse } from "@interopkit/core";
 import {
   checkString,
+  createIssueSink,
   DEFAULT_MAX_FINDINGS,
   describe,
   describeRefusal,
@@ -23,13 +24,7 @@ import {
 } from "../model/index.js";
 import { mediaTypeOf } from "../model/internal.js";
 import { readStatement } from "../read/index.js";
-import {
-  attachmentDataSchema,
-  inspectBatch,
-  issueSink,
-  languageRangesSchema,
-  readEitherVersion,
-} from "../read/internal.js";
+import { attachmentDataSchema, inspectBatch, languageRangesSchema, readEitherVersion } from "../read/internal.js";
 import type { Settings } from "./config.js";
 import { readOptions, signalEntry } from "./options.js";
 import { readQuery } from "./query.js";
@@ -226,7 +221,7 @@ export async function sendStatements(
   options: unknown,
 ): Promise<readonly string[]> {
   const { attachments, role = "provider", signal } = readOptions(sendOptionsSchema, options);
-  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const sink = createIssueSink(DEFAULT_MAX_FINDINGS, true);
   const batch = inspectBatch(statements, { role, version: settings.version }, sink);
   const errors = sink.list();
   if (errors.length > 0) throw new DataError(describeRefusal("The batch of Statements", errors, "validateStatements"));

@@ -1,6 +1,14 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { copyJson, hasMoreTokensThan, MAX_JSON_DEPTH, nestsDeeperThan } from "../src/checks.js";
+import {
+  copyJson,
+  endOfJsonString,
+  hasMoreTokensThan,
+  MAX_JSON_DEPTH,
+  nestsDeeperThan,
+  parseJsonText,
+} from "../src/checks.js";
+import { DataError, LimitError } from "../src/index.js";
 
 /** An object that nests the given number of levels, the outermost included. */
 function nest(levels: number): Record<string, unknown> {
@@ -140,5 +148,83 @@ describe("hasMoreTokensThan", () => {
     expect(hasMoreTokensThan(`[${"0,".repeat(1_000_000)}`, 10)).toBe(true);
     expect(hasMoreTokensThan("", 0)).toBe(false);
     expect(hasMoreTokensThan("   \n\t ", 0)).toBe(false);
+  });
+});
+
+describe("endOfJsonString", () => {
+  it("finds the quote that ends the string", () => {
+    expect(endOfJsonString('"abc"', 0)).toBe(4);
+    expect(endOfJsonString('["abc", 1]', 1)).toBe(5);
+  });
+
+  it("skips a quote that a backslash escapes, and stops at one that an escaped backslash leaves", () => {
+    expect(endOfJsonString(String.raw`["a\"b", 1]`, 1)).toBe(6);
+    expect(endOfJsonString(String.raw`["a\\", 1]`, 1)).toBe(5);
+    expect(endOfJsonString(String.raw`["a\\\"b", 1]`, 1)).toBe(8);
+  });
+
+  it("gives the length of the text for a string that does not end", () => {
+    expect(endOfJsonString('["unterminated', 1)).toBe(14);
+    expect(endOfJsonString(String.raw`"a\"`, 0)).toBe(4);
+  });
+});
+
+describe("parseJsonText", () => {
+  const refusals = {
+    depth: "The text nests too deep.",
+    tokens: "The text has too many tokens.",
+    syntax: (cause: unknown) => `The text is not JSON: ${String(cause).slice(0, 11)}.`,
+  };
+
+  it("parses a text within the limits", () => {
+    expect(parseJsonText('{"a":[1,{"b":null}]}', { maxDepth: 3, maxTokens: 13 }, refusals)).toStrictEqual({
+      a: [1, { b: null }],
+    });
+  });
+
+  it("keeps a property named __proto__ as an own property", () => {
+    const value = parseJsonText('{"__proto__":{"x":1}}', { maxDepth: 3, maxTokens: 20 }, refusals) as object;
+    expect(Object.getPrototypeOf(value)).toBe(Object.prototype);
+    expect(Object.keys(value)).toStrictEqual(["__proto__"]);
+  });
+
+  it("refuses the depth with the limit maxDepth, even when the text passes the tokens first", () => {
+    for (const text of ["[[[[]]]]", `[${"0,".repeat(30)}[[[[0]]]]]`]) {
+      const failure = (() => {
+        try {
+          parseJsonText(text, { maxDepth: 3, maxTokens: 10 }, refusals);
+        } catch (error) {
+          return error;
+        }
+      })();
+      expect(failure, text).toBeInstanceOf(LimitError);
+      expect(failure).toMatchObject({ message: refusals.depth, limit: "maxDepth", maximum: 3 });
+    }
+  });
+
+  it("refuses the tokens with the limit maxTokens when the depth is within its limit", () => {
+    expect(() => parseJsonText(`[${"0,".repeat(30)}0]`, { maxDepth: 3, maxTokens: 10 }, refusals)).toThrow(
+      expect.objectContaining({ message: refusals.tokens, limit: "maxTokens", maximum: 10 }),
+    );
+  });
+
+  it("refuses a text that is not JSON with the sentence of the caller and the error of JSON.parse as the cause", () => {
+    const failure = (() => {
+      try {
+        parseJsonText("{", { maxDepth: 3, maxTokens: 10 }, refusals);
+      } catch (error) {
+        return error;
+      }
+    })();
+    expect(failure).toBeInstanceOf(DataError);
+    expect(failure).not.toBeInstanceOf(LimitError);
+    expect((failure as DataError).cause).toBeInstanceOf(SyntaxError);
+    expect((failure as DataError).message).toBe("The text is not JSON: SyntaxError.");
+  });
+
+  it("refuses a text of a million opening brackets without building anything", () => {
+    expect(() => parseJsonText("[".repeat(1_000_000), { maxDepth: 64, maxTokens: 2_000_000 }, refusals)).toThrow(
+      expect.objectContaining({ limit: "maxDepth" }),
+    );
   });
 });

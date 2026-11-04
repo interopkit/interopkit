@@ -1,9 +1,9 @@
 import { join } from "node:path";
-import { isRecord } from "@interopkit/core/checks";
+import { createIssueSink, isRecord } from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
 import { readSpecPage } from "../../../scripts/spec-examples.js";
 import { CONTEXTS, readCredential, validateCredential } from "../src/index.js";
-import { inspectDocumentV2, issueSink } from "../src/read/internal.js";
+import { inspectDocumentV2 } from "../src/read/internal.js";
 
 type Json = Readonly<Record<string, unknown>>;
 
@@ -25,7 +25,7 @@ const KINDS = {
 /** The findings of one document, read as a document of the class that its type names, as `path rule`. */
 function findingsOf(document: Json): readonly string[] {
   const kind = KINDS[document.type as keyof typeof KINDS];
-  const sink = issueSink(1000, false);
+  const sink = createIssueSink(1000, false);
   inspectDocumentV2(kind, document, sink);
   return sink.list().map(({ path, rule }) => `${path} ${rule}`);
 }

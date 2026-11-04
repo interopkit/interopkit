@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
-import { describeRefusal, type Issue } from "@interopkit/core/checks";
+import { createIssueSink, describeRefusal, type Issue } from "@interopkit/core/checks";
 import type { Entity, EntityByKind, EntityKind } from "../model/index.js";
-import { inspectEntity, issueSink } from "./inspect.js";
+import { inspectEntity } from "./inspect.js";
 import { type EntityReadOptions, readEntityKind, readEntityLimit } from "./options.js";
 
 /**
@@ -29,7 +29,7 @@ export function readEntity<TKind extends EntityKind>(
 ): EntityByKind[TKind];
 export function readEntity(kind: EntityKind, value: unknown, options?: EntityReadOptions): Entity {
   const checkedKind = readEntityKind(kind);
-  const sink = issueSink(readEntityLimit(options), true);
+  const sink = createIssueSink(readEntityLimit(options), true);
   const entity = inspectEntity(checkedKind, value, sink);
   const errors = sink.list();
   if (entity === undefined || errors.length > 0) {
@@ -52,7 +52,7 @@ export function readEntity(kind: EntityKind, value: unknown, options?: EntityRea
  */
 export function validateEntity(kind: EntityKind, value: unknown, options?: EntityReadOptions): readonly Issue[] {
   const checkedKind = readEntityKind(kind);
-  const sink = issueSink(readEntityLimit(options), false);
+  const sink = createIssueSink(readEntityLimit(options), false);
   inspectEntity(checkedKind, value, sink);
   return sink.list();
 }

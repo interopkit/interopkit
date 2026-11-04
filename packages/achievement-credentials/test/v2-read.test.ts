@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { DataError } from "@interopkit/core";
 import type { Issue } from "@interopkit/core/checks";
+import { createIssueSink } from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
 import {
   type Json,
@@ -26,7 +27,6 @@ import {
   DOCUMENT_PLACES,
   inspectBadgeV2,
   inspectDocumentV2,
-  issueSink,
   parseDateTimeV2,
   readJwsPayload,
   TERMS_V2,
@@ -75,7 +75,7 @@ function findingsOf(document: RuleDocument, value: Json): readonly string[] {
   if (document === "assertion") {
     findings = validateCredential(value);
   } else {
-    const sink = issueSink(1000, false);
+    const sink = createIssueSink(1000, false);
     inspectDocumentV2(document, value, sink);
     findings = sink.list();
   }
@@ -310,7 +310,7 @@ describe("reading an assertion with the documents that a verifier fetched", () =
     };
   };
   const read = (assertion: unknown, linked: { readonly badge?: unknown; readonly issuer?: unknown }) => {
-    const sink = issueSink(1000, false);
+    const sink = createIssueSink(1000, false);
     const badge = inspectBadgeV2(assertion, linked, DOCUMENT_PLACES, sink);
     return { badge, findings: sink.list().map(({ path, rule }) => `${path} ${rule}`) };
   };
@@ -362,7 +362,7 @@ describe("the badges that a script writes with jwcrypto", () => {
   it("reads the documents that a verifier fetches: the keys and the revocation list", () => {
     for (const body of Object.values(DOCUMENTS).map((resource) => resource.body)) {
       const type = (body as Json | null)?.type;
-      const sink = issueSink(1000, false);
+      const sink = createIssueSink(1000, false);
       if (type === "CryptographicKey") expect(inspectDocumentV2("cryptographic-key", body, sink)).toBeDefined();
       if (type === "RevocationList") expect(inspectDocumentV2("revocation-list", body, sink)).toBeDefined();
       expect(sink.list()).toStrictEqual([]);

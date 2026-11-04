@@ -1,9 +1,8 @@
 import { DataError, LimitError } from "@interopkit/core";
 import {
   checkString,
-  findExceededJsonLimit,
   MAX_JSON_TOKENS,
-  nestsDeeperThan,
+  parseJsonText,
   parseWith,
   positiveIntegerSchema,
   strictRecord,
@@ -82,30 +81,16 @@ export function parseStatementJson(text: string, options?: ParseStatementJsonOpt
       maxBytes,
     );
   }
-  // One reading finds the first limit that the text passes. The depth is refused before the tokens, so a text that passes the
-  // tokens first is read on for its depth.
-  const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
-  if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
-    throw new LimitError(
-      `The text nests arrays and objects deeper than the limit of ${maxDepth} levels.`,
-      "maxDepth",
-      maxDepth,
-    );
-  }
-  if (excess === "tokens") {
-    throw new LimitError(
-      `The text has more than ${maxTokens} tokens, above the limit of the option maxTokens.`,
-      "maxTokens",
-      maxTokens,
-    );
-  }
-  let value: unknown;
-  try {
-    // `JSON.parse` is the judge of the syntax of RFC 8259, and the search for a repeated property relies on it.
-    value = JSON.parse(text);
-  } catch (error) {
-    throw new DataError(`The text is not valid JSON: ${String(error)}.`, { cause: error });
-  }
+  // `JSON.parse` is the judge of the syntax of RFC 8259, and the search for a repeated property relies on it.
+  const value = parseJsonText(
+    text,
+    { maxDepth, maxTokens },
+    {
+      depth: `The text nests arrays and objects deeper than the limit of ${maxDepth} levels.`,
+      tokens: `The text has more than ${maxTokens} tokens, above the limit of the option maxTokens.`,
+      syntax: (error) => `The text is not valid JSON: ${String(error)}.`,
+    },
+  );
   const repeat = findRepeatedProperty(text);
   if (repeat !== undefined) {
     const where = repeat.path === "" ? "" : ` in ${repeat.path}`;

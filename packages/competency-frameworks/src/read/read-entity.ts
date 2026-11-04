@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
-import { describeRefusal, type Issue } from "@interopkit/core/checks";
+import { createIssueSink, describeRefusal, type Issue } from "@interopkit/core/checks";
 import type { CaseEntityKind, CaseEntityMap } from "../model/index.js";
-import { inspectEntity, issueSink } from "./inspect.js";
+import { inspectEntity } from "./inspect.js";
 import { type ReadOptions, readKind, readSettings } from "./options.js";
 
 /**
@@ -29,7 +29,7 @@ export function readEntity<TKind extends CaseEntityKind>(
 ): CaseEntityMap[TKind] {
   const checkedKind = readKind(kind);
   const { version, maxFindings } = readSettings(options);
-  const sink = issueSink(maxFindings, true);
+  const sink = createIssueSink(maxFindings, true);
   const entity = inspectEntity(checkedKind, value, version, sink);
   const errors = sink.list();
   if (entity === undefined || errors.length > 0)
@@ -53,7 +53,7 @@ export function readEntity<TKind extends CaseEntityKind>(
 export function validateEntity(kind: CaseEntityKind, value: unknown, options?: ReadOptions): readonly Issue[] {
   const checkedKind = readKind(kind);
   const { version, maxFindings } = readSettings(options);
-  const sink = issueSink(maxFindings, false);
+  const sink = createIssueSink(maxFindings, false);
   inspectEntity(checkedKind, value, version, sink);
   return sink.list();
 }

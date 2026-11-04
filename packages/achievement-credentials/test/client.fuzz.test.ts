@@ -1,7 +1,7 @@
 import { DataError, ServiceError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { createCredentialsClient, discoverService, readStatusInfo } from "../src/client/index.js";
+import { createCredentialsClient, discoverService } from "../src/client/index.js";
 import { BASE, fakeServer, JWS, json } from "./fake-server.js";
 import { achievementCredential, PROFILE } from "./fixtures.js";
 
@@ -75,16 +75,6 @@ describe("the client on any answer", () => {
         expect(refusal(await thrownBy(() => discoverService(BASE, "badges", { fetch: fakeServer(make).fetch })))).toBe(
           true,
         );
-      }),
-      RUNS,
-    );
-  });
-
-  it("reads the status of any error without throwing", () => {
-    fc.assert(
-      fc.property(fc.string({ maxLength: 80 }), fc.string({ maxLength: 12 }), (body, delay) => {
-        const detail = readStatusInfo(new ServiceError("refused", 500, body, { headers: { "retry-after": delay } }));
-        expect(detail.retryAfterSeconds === undefined || Number.isSafeInteger(detail.retryAfterSeconds)).toBe(true);
       }),
       RUNS,
     );

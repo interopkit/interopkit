@@ -166,8 +166,19 @@ const TAB = 0x09;
 const LINE_FEED = 0x0a;
 const CARRIAGE_RETURN = 0x0d;
 
-/** Returns the index of the quote that ends the string which starts at `start`, or the length of the text when it does not end. */
-function endOfString(text: string, start: number): number {
+/**
+ * The index of the quote that ends the string of a text of JSON which starts at `start`, or the length of the text when the
+ * string does not end.
+ *
+ * @remarks
+ * Nothing is built, and the text need not be valid JSON. The search for the quote runs in the engine, and a quote ends the
+ * string when an even number of backslashes comes before it.
+ *
+ * @param text - The text.
+ * @param start - The index of the quote that opens the string.
+ * @returns The index of the quote that closes it.
+ */
+export function endOfJsonString(text: string, start: number): number {
   // The search for a quote runs in the engine, which is many times faster than a loop over the units of a long string.
   for (let quote = text.indexOf('"', start + 1); quote !== -1; quote = text.indexOf('"', quote + 1)) {
     // A backslash escapes the next unit, so a quote ends the string when an even number of backslashes comes before it: the
@@ -236,7 +247,7 @@ export function findExceededJsonLimit(
         inLiteral = true;
         break;
       case STRING:
-        index = endOfString(text, index);
+        index = endOfJsonString(text, index);
         inLiteral = false;
         break;
       case OPENING:

@@ -1396,8 +1396,8 @@ export const TOOL_INTEGRATION_RULES: readonly Rule[] = [
   {
     rule: "The client reads an answer only within maxTokens.",
     file: "packages/tool-integration/src/tool/services/access.ts",
-    find: "if (hasMoreTokensThan(text, maxTokens)) {",
-    replace: "if (false) {",
+    find: "readAnswerJson(response, what, { maxTokens: settings.maxTokens })",
+    replace: "readAnswerJson(response, what)",
     test: "packages/tool-integration/test/tool-services.test.ts",
   },
   {

@@ -1,7 +1,7 @@
 import {
-  buildFindings,
+  buildIssues,
   copyJson,
-  createFindingSink,
+  createIssueSink,
   DEFAULT_MAX_FINDINGS,
   describeRefusal,
   type FindingSink,
@@ -10,7 +10,6 @@ import {
   type Schema,
   safeParseBounded,
 } from "@interopkit/core/checks";
-import type * as v from "valibot";
 import {
   type AnyVerifiableCredential,
   type ClrCredentialJwtPayload,
@@ -31,27 +30,10 @@ import {
   subjectIssues,
 } from "./rules.js";
 
-/**
- * Makes the list of findings of a call that stops at a limit. A reader keeps the errors alone, because it does not report
- * warnings, and a warning does not count toward the limit.
- */
-export function issueSink(maxFindings: number, errorsOnly: boolean): FindingSink<Issue> {
-  return createFindingSink(
-    maxFindings,
-    (finding) => ({ ...finding, severity: "error" }),
-    errorsOnly ? ({ severity }) => severity === "error" : undefined,
-  );
-}
-
 /** Tells whether the first context of a value is that of the Verifiable Credentials Data Model 1.1. */
 function isV1p1(value: unknown): boolean {
   const context = isRecord(value) ? value["@context"] : undefined;
   return Array.isArray(context) && context[0] === CONTEXTS.credentialsV1;
-}
-
-/** Turns the issues of a parse into findings that are all errors. */
-function toIssues(issues: readonly v.BaseIssue<unknown>[]): Issue[] {
-  return buildFindings(issues).map((finding) => ({ ...finding, severity: "error" }));
 }
 
 /**
@@ -85,7 +67,7 @@ export function parseInto<TOutput>(
 ): TOutput | undefined {
   const result = safeParseBounded(schema, value, sink.room);
   if (result.success) return result.output;
-  sink.add(toIssues(result.issues));
+  sink.add(buildIssues(result.issues));
   return undefined;
 }
 
@@ -133,7 +115,7 @@ export function credentialOrReason(
   label: string,
   payload = false,
 ): { readonly value: AnyVerifiableCredential } | { readonly reason: string } {
-  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const sink = createIssueSink(DEFAULT_MAX_FINDINGS, true);
   const credential = payload ? inspectClrPayload(value, sink) : inspectCredential(value, undefined, sink);
   const errors = sink.list();
   return credential === undefined || errors.length > 0

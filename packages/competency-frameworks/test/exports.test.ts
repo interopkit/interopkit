@@ -27,7 +27,7 @@ describe("the public API", () => {
   });
 
   it("exports only what the client module documents", () => {
-    expect(Object.keys(client).sort()).toStrictEqual(["writeCaseFilter", "createCaseClient", "readStatusInfo"].sort());
+    expect(Object.keys(client).sort()).toStrictEqual(["writeCaseFilter", "createCaseClient"].sort());
   });
 
   it("exports only what the graph module documents", () => {

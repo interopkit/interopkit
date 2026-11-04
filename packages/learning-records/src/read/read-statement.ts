@@ -1,5 +1,6 @@
 import { DataError } from "@interopkit/core";
 import {
+  createIssueSink,
   DEFAULT_MAX_FINDINGS,
   describe,
   describeRefusal,
@@ -9,7 +10,7 @@ import {
 } from "@interopkit/core/checks";
 import type { Statement } from "../model/index.js";
 import { error } from "./finding.js";
-import { inspectStatement, issueSink } from "./inspect.js";
+import { inspectStatement } from "./inspect.js";
 import { type ReadOptions, type RuleSet, readSettings } from "./options.js";
 import { item } from "./path.js";
 
@@ -33,7 +34,7 @@ import { item } from "./path.js";
  */
 export function readStatement(value: unknown, options?: ReadOptions): Statement {
   const { rules, maxFindings } = readSettings(options);
-  const sink = issueSink(maxFindings, true);
+  const sink = createIssueSink(maxFindings, true);
   const statement = inspectStatement(value, rules, sink);
   const errors = sink.list();
   if (statement === undefined || errors.length > 0) {
@@ -61,7 +62,7 @@ export function readStatement(value: unknown, options?: ReadOptions): Statement 
  */
 export function validateStatement(value: unknown, options?: ReadOptions): readonly Issue[] {
   const { rules, maxFindings } = readSettings(options);
-  const sink = issueSink(maxFindings, false);
+  const sink = createIssueSink(maxFindings, false);
   inspectStatement(value, rules, sink);
   return sink.list();
 }
@@ -73,11 +74,11 @@ export function validateStatement(value: unknown, options?: ReadOptions): readon
  * @throws `DataError` of the rules of 2.0, when neither version takes the value.
  */
 export function readEitherVersion(value: unknown): Statement {
-  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const sink = createIssueSink(DEFAULT_MAX_FINDINGS, true);
   const statement = inspectStatement(value, { role: "lrs", version: "2.0.0" }, sink);
   const errors = sink.list();
   if (statement !== undefined && errors.length === 0) return statement;
-  const other = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const other = createIssueSink(DEFAULT_MAX_FINDINGS, true);
   const earlier = inspectStatement(value, { role: "lrs", version: "1.0.3" }, other);
   if (earlier !== undefined && other.list().length === 0) return earlier;
   throw new DataError(describeRefusal("The statement", errors, "validateStatement"));
@@ -151,7 +152,7 @@ export function inspectBatch(value: unknown, rules: RuleSet, sink: FindingSink<I
  */
 export function validateStatements(value: unknown, options?: ReadOptions): readonly Issue[] {
   const { rules, maxFindings } = readSettings(options);
-  const sink = issueSink(maxFindings, false);
+  const sink = createIssueSink(maxFindings, false);
   inspectBatch(value, rules, sink);
   return sink.list();
 }

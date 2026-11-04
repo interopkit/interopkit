@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
-import { describeRefusal, type Issue } from "@interopkit/core/checks";
+import { createIssueSink, describeRefusal, type Issue } from "@interopkit/core/checks";
 import type { CasePackage } from "../model/index.js";
-import { inspectPackage, issueSink } from "./inspect.js";
+import { inspectPackage } from "./inspect.js";
 import { type ReadOptions, readSettings } from "./options.js";
 
 /**
@@ -22,7 +22,7 @@ import { type ReadOptions, readSettings } from "./options.js";
  */
 export function readPackage(value: unknown, options?: ReadOptions): CasePackage {
   const { version, maxFindings } = readSettings(options);
-  const sink = issueSink(maxFindings, true);
+  const sink = createIssueSink(maxFindings, true);
   const pkg = inspectPackage(value, version, sink);
   const errors = sink.list();
   if (pkg === undefined || errors.length > 0)
@@ -48,7 +48,7 @@ export function readPackage(value: unknown, options?: ReadOptions): CasePackage 
  */
 export function validatePackage(value: unknown, options?: ReadOptions): readonly Issue[] {
   const { version, maxFindings } = readSettings(options);
-  const sink = issueSink(maxFindings, false);
+  const sink = createIssueSink(maxFindings, false);
   inspectPackage(value, version, sink);
   return sink.list();
 }

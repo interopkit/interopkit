@@ -1,13 +1,13 @@
 import { DataError } from "@interopkit/core";
-import { DEFAULT_MAX_FINDINGS, describeRefusal } from "@interopkit/core/checks";
+import { createIssueSink, DEFAULT_MAX_FINDINGS, describeRefusal } from "@interopkit/core/checks";
 import type { Activity, ActivityDefinition, Verb } from "../model/index.js";
-import { inspectStatement, issueSink } from "../read/internal.js";
+import { inspectStatement } from "../read/internal.js";
 import { definitionInOneLanguage, oneLanguage } from "./language.js";
 import type { Mappers } from "./transform.js";
 
 /** Reads the canonical definition of an Activity, which a host gave, with the checks of a Statement whose Object it is. */
 function checkedDefinition(id: string, definition: unknown): ActivityDefinition | undefined {
-  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const sink = createIssueSink(DEFAULT_MAX_FINDINGS, true);
   const value = inspectStatement(
     {
       actor: { mbox: "mailto:probe@example.org" },

@@ -1,9 +1,8 @@
-import { requestService } from "@interopkit/core";
+import { readAnswerJson, requestService } from "@interopkit/core";
 import { checkNonEmptyString, checkRecord, checkString, describe } from "@interopkit/core/checks";
 import { LtiError } from "../../errors.js";
 import type { PlatformConfiguration } from "../../protocol/index.js";
 import { readPlatformConfiguration } from "../../protocol/internal.js";
-import { readAnswer } from "../services/access.js";
 import { isBelowIssuer, refuseAddress } from "./addresses.js";
 import type { RegistrationInitiation } from "./initiation.js";
 import { type DiscoverPlatformOptions, type RegistrationSettings, readRegistrationOptions } from "./options.js";
@@ -72,7 +71,7 @@ export async function discoverPlatform(
     { method: "GET", headers: registrationHeaders(registrationToken) },
     { maxBytes: settings.maxBytes },
   );
-  const platform = readAnswer(response, what, settings.maxTokens, readPlatformConfiguration);
+  const platform = readPlatformConfiguration(readAnswerJson(response, what, { maxTokens: settings.maxTokens }));
   if (!isBelowIssuer(openidConfiguration, platform.issuer)) {
     throw new LtiError(
       `The OpenID configuration at ${describe(openidConfiguration)} is not below its issuer ${describe(platform.issuer)}.`,

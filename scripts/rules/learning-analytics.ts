@@ -245,8 +245,8 @@ export const LEARNING_ANALYTICS_RULES: readonly Rule[] = [
   {
     rule: "The findings of a check stop at the limit that the caller sets.",
     file: "packages/learning-analytics/src/validate/validate-event.ts",
-    find: "const sink = findingSink(maxFindings);",
-    replace: "const sink = findingSink(Number.MAX_SAFE_INTEGER);",
+    find: "const sink = createIssueSink(maxFindings, false);",
+    replace: "const sink = createIssueSink(Number.MAX_SAFE_INTEGER, false);",
     test: "packages/learning-analytics/test/validate.test.ts",
   },
   {
@@ -477,8 +477,8 @@ export const LEARNING_ANALYTICS_RULES: readonly Rule[] = [
   {
     rule: "The findings of an envelope stop at the limit that the host sets.",
     file: "packages/learning-analytics/src/endpoint/envelope.ts",
-    find: "findingSink(maxFindings ?? DEFAULT_MAX_FINDINGS)",
-    replace: "findingSink(Number.MAX_SAFE_INTEGER)",
+    find: "createIssueSink(maxFindings ?? DEFAULT_MAX_FINDINGS, false)",
+    replace: "createIssueSink(Number.MAX_SAFE_INTEGER, false)",
     test: "packages/learning-analytics/test/endpoint.test.ts",
   },
   {

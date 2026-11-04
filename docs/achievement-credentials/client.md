@@ -19,7 +19,7 @@ flowchart LR
   server -->|"304"| unchanged["unchanged"]
   server -->|"404 of the profile"| none["undefined"]
   server -->|"another status"| error["ServiceError<br/>status, headers, body"]
-  error -->|"readStatusInfo"| detail["imsx_StatusInfo<br/>and Retry-After"]
+  error -->|"readStatusInfo of core"| detail["imsx_StatusInfo<br/>and Retry-After"]
 ```
 
 | Call                                      | Request                                       | Gives                                                                |
@@ -29,7 +29,7 @@ flowchart LR
 | `client.upsertCredential(credential, o)`  | `POST .../credentials`                        | `"created"` (201), `"replaced"` (200) or `"unchanged"` (304)          |
 | `client.getProfile(options)`              | `GET .../profile`                             | `Profile`, or `undefined` for 404                                     |
 | `client.putProfile(profile, options)`     | `PUT .../profile`                             | The `Profile` that the server answers with (200)                      |
-| `readStatusInfo(error)`                   |                                               | The `imsx_StatusInfo` and the seconds of `Retry-After` of a refusal   |
+| `readStatusInfo(error)` of `@interopkit/core` |                                           | The `imsx_StatusInfo` and the seconds of `Retry-After` of a refusal   |
 
 `api` is `"badges"` for `/ims/ob/v3p0` and `"clr"` for `/ims/clr/v2p0`. The caller's `options` is `{ signal }`, which ends that
 caller's wait.
@@ -175,7 +175,7 @@ its compact JWS, in the order of the page: the credentials first, then the compa
 | The server answers 201 or 200 to an upsert                                                      | `"created"` or `"replaced"`; the body, which repeats the credential, is not read                                         |
 | The server answers 304 to an upsert                                                             | `"unchanged"`                                                                                                            |
 | The server answers 404 to `getProfile`                                                          | `undefined`                                                                                                              |
-| Another status: 202 or 304 of `putProfile`, 400, 401, 403, 404, 405, 429, 500 or any other      | `ServiceError` with `status`, `headers` and `body`; read it with `readStatusInfo`                                        |
+| Another status: 202 or 304 of `putProfile`, 400, 401, 403, 404, 405, 429, 500 or any other      | `ServiceError` with `status`, `headers` and `body`; read it with `readStatusInfo` of `@interopkit/core`                                      |
 | The server did not answer within `timeoutMs`, or `fetch` rejected                               | `ServiceError` with status 0                                                                                             |
 | The answer is larger than `maxBytes`                                                            | `ServiceError` with the status of the answer, naming the limit; the body is cancelled                                    |
 | The answer is a redirect                                                                        | `ServiceError`: the client follows none. Use the address that the server redirects to as `baseUrl`                       |
@@ -188,7 +188,8 @@ its compact JWS, in the order of the page: the credentials first, then the compa
 A server that accepts a profile and has not applied it answers `putProfile` with 202 and an `imsx_StatusInfo`, which holds no
 profile: that is a `ServiceError` with status 202, and the profile is visible later through `getProfile`.
 
-`readStatusInfo(error)` returns `{ info, retryAfterSeconds }`. `info` is the `imsx_StatusInfo` in the body, left out when the body
+`readStatusInfo(error)` of `@interopkit/core` returns `{ info, retryAfterSeconds }`. `info` is the `imsx_StatusInfo` in the body, whose
+`imsx_codeMinor` names the cause with a code of the vocabulary of Open Badges (OB B.3.6) as text; it is left out when the body
 is not one, as a proxy's page is not. `retryAfterSeconds` is `Retry-After` when it is a number of seconds; the form with a date
 needs a clock and stays in `error.headers["retry-after"]`.
 

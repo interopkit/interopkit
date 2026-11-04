@@ -1,15 +1,9 @@
-import { buildFindings, copyJson, type FindingSink, type Issue, safeParseBounded } from "@interopkit/core/checks";
-import type * as v from "valibot";
+import { buildIssues, copyJson, type FindingSink, type Issue, safeParseBounded } from "@interopkit/core/checks";
 import type { CaliperEvent, CaliperVersion, EntityDocument } from "../model/index.js";
 import { SCHEMA_SETS } from "../read/internal.js";
 import { ADVISED, articled, missingProperties } from "./advised-properties.js";
 import { eventFindings } from "./event-findings.js";
 import { error } from "./finding.js";
-
-/** Turns the issues of a parse into findings that are all errors. */
-function shapeFindings(issues: readonly v.BaseIssue<unknown>[]): Issue[] {
-  return buildFindings(issues).map((finding) => ({ ...finding, severity: "error" }));
-}
 
 /**
  * Copies a value that must be JSON, which also limits how deep it nests, and says in a finding where it is not. A value that
@@ -40,7 +34,7 @@ export function inspectEvent(
   if (copy === undefined) return undefined;
   const result = safeParseBounded(SCHEMA_SETS[version].event, copy.value, sink.room);
   if (!result.success) {
-    sink.add(shapeFindings(result.issues));
+    sink.add(buildIssues(result.issues));
     return undefined;
   }
   if (version === "1.2") sink.add(eventFindings(result.output));
@@ -64,13 +58,13 @@ export function inspectEntity(
   const { entity, entityDocument } = SCHEMA_SETS[version];
   const document = safeParseBounded(entityDocument, copy.value, sink.room);
   if (!document.success) {
-    sink.add(shapeFindings(document.issues));
+    sink.add(buildIssues(document.issues));
     return undefined;
   }
   const { "@context": context, ...rest } = document.output;
   const result = safeParseBounded(entity, rest, sink.room);
   if (!result.success) {
-    sink.add(shapeFindings(result.issues));
+    sink.add(buildIssues(result.issues));
     return undefined;
   }
   const described: EntityDocument = { "@context": context, ...result.output };

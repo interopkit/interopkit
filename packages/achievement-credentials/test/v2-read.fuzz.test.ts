@@ -1,10 +1,11 @@
 import { DataError } from "@interopkit/core";
+import { createIssueSink } from "@interopkit/core/checks";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { BAD_STRINGS, mutate, mutations } from "../../../scripts/json-mutation.js";
 import { soundAssertion, soundRevocationList } from "../../../scripts/open-badges-v2-rules.js";
 import { CONTEXTS, readCredential, summarizeCredential, validateCredential } from "../src/index.js";
-import { inspectDocumentV2, issueSink, readJwsPayload } from "../src/read/internal.js";
+import { inspectDocumentV2, readJwsPayload } from "../src/read/internal.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
 const RUNS = { seed: 20_261_102, numRuns: 300 };
@@ -50,7 +51,7 @@ describe("the reader of Open Badges 2.0 on any value", () => {
           returnsOrRefuses(() => readCredential(value));
           returnsOrRefuses(() => summarizeCredential(value as never));
         }
-        const sink = issueSink(1000, false);
+        const sink = createIssueSink(1000, false);
         expect(() => inspectDocumentV2("revocation-list", members, sink)).not.toThrow();
       }),
       RUNS,
@@ -81,7 +82,7 @@ describe("the reader of Open Badges 2.0 on any value", () => {
   it("gives a revocation list with a change findings that name a path and a kebab-case rule", () => {
     fc.assert(
       fc.property(mutations, (change) => {
-        const sink = issueSink(1000, false);
+        const sink = createIssueSink(1000, false);
         inspectDocumentV2("revocation-list", mutate(soundRevocationList(), change, STRINGS), sink);
         for (const finding of sink.list()) expect(finding.rule).toMatch(/^[a-z0-9-]+$/u);
       }),

@@ -1,5 +1,6 @@
+import { createIssueSink } from "@interopkit/core/checks";
 import type { BadgeAssertionV2, VerificationCheck } from "../model/index.js";
-import { inspectDocumentV2, issueSink } from "../read/internal.js";
+import { inspectDocumentV2 } from "../read/internal.js";
 import type { Context } from "./context.js";
 import { fetchDocumentV2 } from "./fetch-v2.js";
 import { checkOf } from "./result.js";
@@ -21,7 +22,7 @@ export async function checkRevocationList(
   if (!("document" in fetched)) {
     return checkOf("status", "unavailable", "failed" in fetched ? fetched.failed : "The revocation list is gone.");
   }
-  const sink = issueSink(1000, true);
+  const sink = createIssueSink(1000, true);
   const list = inspectDocumentV2("revocation-list", fetched.document, sink);
   if (list === undefined || sink.list().length > 0) {
     return checkOf("status", "unavailable", `The document at ${issuer.revocationList} is not a revocation list.`);

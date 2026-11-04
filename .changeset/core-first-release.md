@@ -29,10 +29,11 @@ that shares one token among callers.
 `@interopkit/core/checks` refuses, with `checkRemoteUrl` and `remoteUrlSchema`, a URL from a message or a document that names
 its host by an IP address, a single label or a name of a private network, or that carries user information. It also reads the
 formats that the standards share (a date, a date and time of RFC 3339, a UUID, a URI, a
-language tag of RFC 5646, of at most 1,024 characters), copies JSON within a depth limit, tells whether the text of JSON nests deeper or has more tokens than a limit, or which of the two limits it passes first in one reading (`findExceededJsonLimit`), turns
-the issues of a parse into findings with a path, a rule and a sentence, and writes the sentence of the refusal of a reader. It
+language tag of RFC 5646, of at most 1,024 characters), copies JSON within a depth limit, tells whether the text of JSON nests deeper or has more tokens than a limit, or which of the two limits it passes first in one reading (`findExceededJsonLimit`), parses a text within both limits with the
+sentences of its caller (`parseJsonText`), turns
+the issues of a parse into findings or errors with a path, a rule and a sentence (`buildFindings`, `buildIssues`), and writes the sentence of the refusal of a reader. It
 bounds the findings of a reader: `safeParseBounded` stops a parse at the first issue beyond a limit, and `createFindingSink`
-holds at most `DEFAULT_MAX_FINDINGS`, 1,000, and ends a list that stopped with a finding that says so. `readJson` of
+and `createIssueSink` hold at most `DEFAULT_MAX_FINDINGS`, 1,000, and end a list that stopped with a finding that says so. `readJson` of
 `@interopkit/core/http` also refuses a body above `maxTokens`.
 
 `basePathSchema` of `@interopkit/core/http` reads the path that a handler is mounted at: `""` or a path that starts with `/` and
@@ -43,5 +44,5 @@ of `achievement-credentials` read their `basePath` with it.
 `readAnswerJson` reads the JSON of the answer of a service within `maxDepth` (64) and `maxTokens` (1,000,000), counted in one
 reading before it is parsed; `readAnswer` runs a reader on the data of an answer and names the service and the standard when the
 data is not valid; `readStatusDetail` reads the status in the body of a refusal with the reader of a package, and its
-`Retry-After`; `hasNextPage` tells from `X-Total-Count`, `Link` and the size of a page whether a list paged by `limit` and
+`Retry-After`, and `readStatusInfo` reads it as the `imsx_StatusInfo` of the REST bindings of CASE, Open Badges and CLR; `hasNextPage` tells from `X-Total-Count`, `Link` and the size of a page whether a list paged by `limit` and
 `offset` goes on. The clients of `competency-frameworks` and `achievement-credentials` read their answers with them.

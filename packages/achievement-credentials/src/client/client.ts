@@ -177,7 +177,7 @@ function credentialBody(settings: Settings, credential: unknown): Body {
  * @remarks
  * Every request is made over HTTPS through `requestService` of `@interopkit/core`: it follows no redirect, ends at
  * `timeoutMs`, reads at most `maxBytes`, and carries the access token that the host's `token` function returns. A status other
- * than the ones a call expects is a `ServiceError` with its status, headers and body, which `readStatusInfo` reads. Nothing is
+ * than the ones a call expects is a `ServiceError` with its status, headers and body, which `readStatusInfo` of `@interopkit/core` reads. Nothing is
  * retried and nothing is kept between calls, so a client is safe to share. The OAuth 2.0 side is the host's: register and get
  * tokens with `@interopkit/core/oauth`, from the endpoints that `discoverService` finds.
  *

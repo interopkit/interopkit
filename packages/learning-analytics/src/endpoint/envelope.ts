@@ -1,5 +1,6 @@
 import { DataError } from "@interopkit/core";
 import {
+  createIssueSink,
   DEFAULT_MAX_FINDINGS,
   describeRefusal,
   type FindingSink,
@@ -20,7 +21,7 @@ import {
 } from "../model/index.js";
 import { time } from "../read/internal.js";
 import { DEPRECATED_IN_1_1 } from "../v1p1/index.js";
-import { findingSink, inspectEntity, inspectEvent } from "../validate/internal.js";
+import { inspectEntity, inspectEvent } from "../validate/internal.js";
 import type { CaliperEndpointOptions } from "./options.js";
 import { versionsSchema } from "./options.js";
 import type { ReceivedEnvelope } from "./received-envelope.js";
@@ -111,7 +112,7 @@ export function assembleEnvelope(
   version: CaliperVersion,
   parsed: boolean,
 ): ReceivedEnvelope {
-  const sink = findingSink(maxFindings ?? DEFAULT_MAX_FINDINGS);
+  const sink = createIssueSink(maxFindings ?? DEFAULT_MAX_FINDINGS, false);
   const data = readItems(fields.data, sink, version, parsed);
   return {
     principal,

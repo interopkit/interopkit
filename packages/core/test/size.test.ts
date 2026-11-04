@@ -9,7 +9,7 @@ import { type EntrySize, entryPoints, entrySize } from "../../../scripts/entry-s
  */
 const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>> = {
   // The cache of key sets picks a key of a set with jose.
-  "@interopkit/core": { gzip: 11_000, holds: ["jose", "valibot"] },
+  "@interopkit/core": { gzip: 15_000, holds: ["jose", "valibot"] },
   "@interopkit/core/checks": { gzip: 8500, holds: ["valibot"] },
   "@interopkit/core/http": { gzip: 9000, holds: ["valibot"] },
   "@interopkit/core/oauth": { gzip: 18_500, holds: ["oauth4webapi", "valibot"] },

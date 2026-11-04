@@ -7,6 +7,7 @@ import {
   readAnswer,
   readAnswerJson,
   readStatusDetail,
+  readStatusInfo,
   ServiceError,
   type ServiceResponse,
 } from "../src/index.js";
@@ -212,6 +213,67 @@ describe("the status of a refusal", () => {
   it("refuses what is not a ServiceError", () => {
     for (const error of [null, new Error("x"), "x", {}]) {
       expect(() => readStatusDetail(error as never, asStatus)).toThrow(DataError);
+    }
+  });
+});
+
+describe("readStatusInfo", () => {
+  const busy = {
+    imsx_codeMajor: "failure",
+    imsx_severity: "error",
+    imsx_description: "Slow down.",
+    imsx_codeMinor: {
+      imsx_codeMinorField: [{ imsx_codeMinorFieldName: "TargetEndSystem", imsx_codeMinorFieldValue: "server_busy" }],
+    },
+  };
+  const refused = (body: string, headers: Record<string, string> = {}) =>
+    new ServiceError("The provider answered.", 429, body, { headers });
+
+  it("reads the imsx_StatusInfo of the body and the seconds that Retry-After asks for", () => {
+    expect(readStatusInfo(refused(JSON.stringify(busy), { "retry-after": " 30 " }))).toStrictEqual({
+      info: busy,
+      retryAfterSeconds: 30,
+    });
+  });
+
+  it("reads the code of a detail as text, whatever the vocabulary of the service", () => {
+    const other = {
+      ...busy,
+      imsx_codeMinor: {
+        imsx_codeMinorField: [{ imsx_codeMinorFieldName: "TargetEndSystem", imsx_codeMinorFieldValue: "invalid_data" }],
+      },
+    };
+    expect(readStatusInfo(refused(JSON.stringify(other))).info?.imsx_codeMinor?.imsx_codeMinorField[0]).toStrictEqual(
+      other.imsx_codeMinor.imsx_codeMinorField[0],
+    );
+  });
+
+  it("gives the delay alone when the body is not a status", () => {
+    const wrong = [
+      "<html>busy</html>",
+      "",
+      "{}",
+      '{"imsx_codeMajor":"failure"}',
+      JSON.stringify({ ...busy, imsx_codeMajor: "broken" }),
+      JSON.stringify({ ...busy, imsx_severity: 1 }),
+      JSON.stringify({ ...busy, extra: true }),
+      JSON.stringify({ ...busy, imsx_codeMinor: { imsx_codeMinorField: [] } }),
+      JSON.stringify({ ...busy, imsx_codeMinor: { imsx_codeMinorField: [{ imsx_codeMinorFieldName: "x" }] } }),
+    ];
+    for (const body of wrong) {
+      expect(readStatusInfo(refused(body, { "retry-after": "7" })), body).toStrictEqual({ retryAfterSeconds: 7 });
+    }
+  });
+
+  it("gives nothing for a Retry-After that is a date, a negative number or text", () => {
+    for (const value of ["Wed, 21 Oct 2026 07:28:00 GMT", "-5", "1e3", "soon", "", "9999999999999999"]) {
+      expect(readStatusInfo(refused("{}", { "retry-after": value }))).toStrictEqual({});
+    }
+  });
+
+  it("refuses what is not a ServiceError", () => {
+    for (const error of [null, new Error("x"), "x", {}]) {
+      expect(() => readStatusInfo(error as never)).toThrow(DataError);
     }
   });
 });

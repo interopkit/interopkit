@@ -1,8 +1,8 @@
 import { callPort, DataError, readClock } from "@interopkit/core";
-import { describeRefusal, formatDateTime, type Issue, isUuid } from "@interopkit/core/checks";
+import { createIssueSink, describeRefusal, formatDateTime, type Issue, isUuid } from "@interopkit/core/checks";
 import type { AttachmentData, Statement } from "../../model/index.js";
 import { mediaTypeOf, STATEMENT_VERSIONS, VERSION_PATTERNS } from "../../model/internal.js";
-import { attachmentHeadersOf, inspectBatch, issueSink } from "../../read/internal.js";
+import { attachmentHeadersOf, inspectBatch } from "../../read/internal.js";
 import { SIGNATURE_USAGE_TYPE } from "../../signing/index.js";
 import { verifySignature } from "../../signing/internal.js";
 import { type Context, isRefusal, type Refusal, refused, type Verdict } from "../verdict.js";
@@ -231,7 +231,7 @@ export async function prepare(
   const converted = inUtcTimestamps(submitted, context.version);
   if (isRefusal(converted)) return converted;
   const list = converted.value;
-  const sink = issueSink(maxFindings, true);
+  const sink = createIssueSink(maxFindings, true);
   const read = inspectBatch(list, { role: "lrs", version: context.version }, sink);
   const errors = sink.list();
   if (errors.length > 0) return refused(400, describeRefusal("The batch of Statements", errors, "validateStatements"));

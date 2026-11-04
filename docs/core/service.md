@@ -155,16 +155,17 @@ page is an opaque address, such as the paging of LTI Advantage: it gives the add
 
 ## The body of an answer
 
-A client reads what a server it does not control answers with three functions, which name the service in every sentence:
+A client reads what a server it does not control answers with four functions, which name the service in every sentence:
 
 | Function                                 | Gives                                                                                                     |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `readAnswerJson(response, what, options)` | The JSON of the body: UTF-8 text whose levels (`maxDepth`, 64) and tokens (`maxTokens`, 1,000,000) are counted in one reading before it is parsed; a text over both is refused for its depth |
 | `readAnswer(what, standard, read)`       | What `read` returns; whatever it throws becomes a `DataError`, whose `cause` is what was thrown: `<what> answered with data that is not valid <standard>: <reason>`. A `LimitError` stays one, with its `limit` and `maximum`: `<what> answered with data over a limit: <reason>` |
+| `readStatusInfo(error)`                  | `readStatusDetail` with the `imsx_StatusInfo` that the REST bindings of CASE, Open Badges and CLR answer an error with: `info` is the status with its `imsx_codeMajor`, `imsx_severity`, `imsx_description` and the details of `imsx_codeMinor`, whose codes are text; left out when the body is no such status |
 | `readStatusDetail(error, readInfo)`      | What a server said when it refused: `info`, the body as `readInfo` reads it, left out when the body is not JSON, has more than 1,000,000 tokens or is refused by `readInfo`; and `retryAfterSeconds`, `Retry-After` in seconds |
 
 ```ts
-import { readAnswer, readAnswerJson, readStatusDetail, ServiceError } from "@interopkit/core";
+import { readAnswer, readAnswerJson, readStatusDetail, readStatusInfo, ServiceError } from "@interopkit/core";
 
 const what = "The service at https://x.example/items";
 const answer = { status: 200, headers: {}, body: new TextEncoder().encode('{"items":[1,2]}') };
@@ -172,6 +173,9 @@ const json = readAnswerJson(answer, what, { maxTokens: 100 });
 readAnswer(what, "CASE", () => json.items.length); // => 2
 const refusal = new ServiceError("refused", 429, '{"code":"busy"}', { headers: { "retry-after": "30" } });
 readStatusDetail(refusal, (body) => body.code); // => { info: "busy", retryAfterSeconds: 30 }
+const status = { imsx_codeMajor: "failure", imsx_severity: "error" };
+const slow = new ServiceError("refused", 429, JSON.stringify(status), { headers: { "retry-after": "30" } });
+readStatusInfo(slow); // => { info: { imsx_codeMajor: "failure", imsx_severity: "error" }, retryAfterSeconds: 30 }
 ```
 
 | Case                                             | Error of `readAnswerJson`                                                                    |

@@ -501,11 +501,4 @@ export const COMPETENCY_FRAMEWORKS_RULES: readonly Rule[] = [
     replace: "const result = safeParseBounded(SCHEMAS[version].package, value, Number.MAX_SAFE_INTEGER);",
     test: "packages/competency-frameworks/test/read.test.ts",
   },
-  {
-    rule: "A reader of CASE counts the errors alone toward the limit, because it does not report warnings.",
-    file: "packages/competency-frameworks/src/read/inspect.ts",
-    find: 'errorsOnly ? ({ severity }) => severity === "error" : undefined,',
-    replace: "undefined,",
-    test: "packages/competency-frameworks/test/read.test.ts",
-  },
 ];

@@ -17,7 +17,7 @@ flowchart LR
   provider -->|"another status"| error["ServiceError<br/>status, headers, body"]
   read --> host
   none --> host
-  error -->|"readStatusInfo"| detail["imsx_StatusInfo<br/>and Retry-After"]
+  error -->|"readStatusInfo of core"| detail["imsx_StatusInfo<br/>and Retry-After"]
 ```
 
 | Call                               | Endpoint                                        | Gives                                             |
@@ -194,7 +194,7 @@ stamps; // => ["2024-06-13T18:46:03+00:00"]
 | The configuration, a query, an identifier, `options` or the value of `authorization` is not valid | `DataError` that names the option and what it must be, before any request                                                    |
 | An identifier is empty, `.` or `..`                                                               | `DataError`: a URL would resolve it to another path. Any other identifier is percent-encoded into one segment                |
 | The provider does not know the object (404)                                                       | `undefined` from a call for one entity                                                                                       |
-| Another status: 400, 401, 403, 429, 500 or any other                                              | `ServiceError` with `status`, `headers` and `body`; read it with `readStatusInfo`                                            |
+| Another status: 400, 401, 403, 429, 500 or any other                                              | `ServiceError` with `status`, `headers` and `body`; read it with `readStatusInfo` of `@interopkit/core`                                            |
 | The provider did not answer within `timeoutMs`, or `fetch` rejected                               | `ServiceError` with status 0                                                                                                 |
 | The answer is larger than `maxBytes`                                                              | `ServiceError` with the status of the answer, naming the limit; the body is cancelled. Raise `maxBytes` for a larger package |
 | The answer has more tokens of JSON than `maxTokens`                                               | `LimitError`: `The CASE provider at <url> answered with a body of more than N tokens of JSON, above the limit of the option maxTokens.` Raise `maxTokens` for a larger package; a framework of 10,000 items has 990,000 |
@@ -205,7 +205,7 @@ stamps; // => ["2024-06-13T18:46:03+00:00"]
 | The `signal` of the call or the configuration aborts                                              | The call rejects with `signal.reason`                                                                                        |
 | `authorization` rejects                                                                           | Its error, unchanged, and no request is made                                                                                 |
 
-`readStatusInfo(error)` returns `{ info, retryAfterSeconds }`. `info` is the `imsx_StatusInfo` in the body, whose `imsx_codeMinor`
+`readStatusInfo(error)` of `@interopkit/core` returns `{ info, retryAfterSeconds }`. `info` is the `imsx_StatusInfo` in the body, whose `imsx_codeMinor`
 names the cause (`invalid_filter_field`, `invalid_selection_field`, `unknownobject`, `invalid_uuid`, `server_busy`,
 `forbidden`, `unauthorised_request`, `internal_server_error`); it is left out when the body is not a status, as a proxy's page is
 not. `retryAfterSeconds` is `Retry-After` when it is a number of seconds. The form with a date needs a clock and stays in

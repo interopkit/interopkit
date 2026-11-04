@@ -1,11 +1,10 @@
-import { requestService } from "@interopkit/core";
+import { readAnswerJson, requestService } from "@interopkit/core";
 import type { PlatformConfiguration, ToolRegistrationResult } from "../../protocol/index.js";
 import {
   readPlatformConfiguration,
   readToolRegistrationResult,
   writePlatformConfiguration,
 } from "../../protocol/internal.js";
-import { readAnswer } from "../services/access.js";
 import { writeAndRead } from "../write-and-read.js";
 import { checkRegistrationAddress } from "./addresses.js";
 import { checkInitiation, REGISTRATION_MEDIA_TYPE, registrationHeaders, serviceOf } from "./discover.js";
@@ -69,7 +68,7 @@ export async function registerTool(
     { method: "POST", headers, body },
     { maxBytes: settings.maxBytes },
   );
-  const result = readAnswer(response, what, settings.maxTokens, readToolRegistrationResult);
+  const result = readToolRegistrationResult(readAnswerJson(response, what, { maxTokens: settings.maxTokens }));
   if (result.registrationClientUri !== undefined) {
     checkRegistrationAddress(
       result.registrationClientUri,

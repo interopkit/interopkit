@@ -34,8 +34,8 @@ reads the service description of a server into the endpoints of its authorizatio
 the OAuth clients of `@interopkit/core/oauth`. `createCredentialsClient` lists the credentials of a user page by page as objects
 and compact JWS (`listCredentials`, from `X-Total-Count`, `Link` or the size of a page, with `since`), adds or replaces one
 (`upsertCredential`, which says `"created"`, `"replaced"` or `"unchanged"`), and reads and replaces the profile. Its access tokens
-come from a function of the host, it follows no redirect, and it retries nothing: `readStatusInfo` gives the `imsx_StatusInfo`
-and the `Retry-After` of a refusal. A page of more credentials than the request asked for, and an answer of more than `maxTokens`
+come from a function of the host, it follows no redirect, and it retries nothing: `readStatusInfo` of `@interopkit/core` gives the
+`imsx_StatusInfo` and the `Retry-After` of a refusal. A page of more credentials than the request asked for, and an answer of more than `maxTokens`
 tokens, are refused before they are read. `readEntity` returns the class of its kind.
 
 `createKeyResolver` resolves the key of a `kid` or a verification method from a `did:key`, a `did:web` or an HTTPS address (a

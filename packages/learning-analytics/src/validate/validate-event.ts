@@ -1,5 +1,4 @@
-import type { Issue } from "@interopkit/core/checks";
-import { findingSink } from "./finding.js";
+import { createIssueSink, type Issue } from "@interopkit/core/checks";
 import { inspectEvent } from "./inspect.js";
 import { readValidateOptions, type ValidateOptions } from "./options.js";
 
@@ -27,7 +26,7 @@ import { readValidateOptions, type ValidateOptions } from "./options.js";
  */
 export function validateEvent(value: unknown, options?: ValidateOptions): readonly Issue[] {
   const { version, maxFindings } = readValidateOptions(options);
-  const sink = findingSink(maxFindings);
+  const sink = createIssueSink(maxFindings, false);
   inspectEvent(value, sink, version);
   return sink.list();
 }

@@ -5,14 +5,15 @@
  * @module @interopkit/core/checks
  */
 import * as v from "valibot";
-import { DataError } from "./errors.js";
-import { FINDINGS_STOPPED_RULE, type Finding } from "./findings.js";
+import { DataError, LimitError } from "./errors.js";
+import { FINDINGS_STOPPED_RULE, type Finding, type Issue } from "./findings.js";
 import { findInstant } from "./formats.js";
-import { copyJson, type JsonObject } from "./json.js";
+import { copyJson, findExceededJsonLimit, type JsonObject, nestsDeeperThan } from "./json.js";
 
 export {
   type BoundedParse,
   createFindingSink,
+  createIssueSink,
   DEFAULT_MAX_FINDINGS,
   type Finding,
   type FindingSink,
@@ -33,6 +34,7 @@ export {
 } from "./formats.js";
 export {
   copyJson,
+  endOfJsonString,
   findExceededJsonLimit,
   hasMoreTokensThan,
   type JsonObject,
@@ -716,6 +718,61 @@ export function buildFindings(issues: readonly v.BaseIssue<unknown>[]): Finding[
     rule: ruleOf(issue),
     message: `${detailOf(issue).text}.`,
   }));
+}
+
+/**
+ * Turns the issues of a parse into issues that are all errors: {@link buildFindings} with the severity that a reader keeps.
+ *
+ * @param issues - The issues of `v.safeParse` with no `abortEarly`.
+ * @returns An error for each issue, in their order.
+ */
+export function buildIssues(issues: readonly v.BaseIssue<unknown>[]): Issue[] {
+  return buildFindings(issues).map((finding) => ({ ...finding, severity: "error" }));
+}
+
+/** The sentences of the errors that {@link parseJsonText} throws, each in the words of the reader that calls it. */
+export interface JsonTextRefusals {
+  /** Says that the text nests more levels than the limit. */
+  readonly depth: string;
+  /** Says that the text has more tokens than the limit. */
+  readonly tokens: string;
+  /** Says that the text is not JSON, given the error of `JSON.parse`. */
+  readonly syntax: (cause: unknown) => string;
+}
+
+/**
+ * Parses a text of JSON within a depth and a number of tokens, which are checked before the text is parsed.
+ *
+ * @remarks
+ * One reading of the text finds the first limit that it passes, and the depth is refused before the tokens wherever the text
+ * passes them, so a text of ten thousand opening brackets, or of a million empty arrays, is refused without building anything.
+ * A property named `__proto__` becomes an own property of the result and changes no prototype. The sentences of the errors are
+ * the caller's, so that each reader says whose text it was.
+ *
+ * @param text - The text.
+ * @param limits - The deepest nesting that is allowed, where `[]` has depth 1, and the most tokens.
+ * @param refusals - The sentences of the three errors.
+ * @returns The parsed value.
+ * @throws `LimitError` with the limit `maxDepth` or `maxTokens`, and the sentence of `refusals`, when the text passes a limit.
+ * @throws `DataError` with the sentence of `refusals.syntax` and the error of `JSON.parse` as its `cause`, when the text is not
+ * JSON.
+ */
+export function parseJsonText(
+  text: string,
+  limits: { readonly maxDepth: number; readonly maxTokens: number },
+  refusals: JsonTextRefusals,
+): unknown {
+  const { maxDepth, maxTokens } = limits;
+  const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
+  if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
+    throw new LimitError(refusals.depth, "maxDepth", maxDepth);
+  }
+  if (excess === "tokens") throw new LimitError(refusals.tokens, "maxTokens", maxTokens);
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new DataError(refusals.syntax(error), { cause: error });
+  }
 }
 
 /**

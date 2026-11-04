@@ -1,7 +1,7 @@
 import { DataError } from "@interopkit/core";
-import { describeRefusal, type FindingSink, type Issue } from "@interopkit/core/checks";
+import { createIssueSink, describeRefusal, type FindingSink, type Issue } from "@interopkit/core/checks";
 import type { AnyCredential, AnyVerifiableCredential, CredentialKind } from "../model/index.js";
-import { inspectCredential, issueSink } from "./inspect.js";
+import { inspectCredential } from "./inspect.js";
 import {
   DOCUMENT_PLACES,
   inspectBadgeAssertionV2,
@@ -59,7 +59,7 @@ export function readCredential(
 export function readCredential(value: unknown, options?: ReadOptions): AnyCredential;
 export function readCredential(value: unknown, options?: ReadOptions): AnyCredential {
   const { kind, maxFindings } = readSettings(options);
-  const sink = issueSink(maxFindings, true);
+  const sink = createIssueSink(maxFindings, true);
   const credential = inspectAny(value, kind, sink);
   const errors = sink.list();
   if (credential === undefined || errors.length > 0) {
@@ -88,7 +88,7 @@ export function readCredential(value: unknown, options?: ReadOptions): AnyCreden
  */
 export function validateCredential(value: unknown, options?: ReadOptions): readonly Issue[] {
   const { kind, maxFindings } = readSettings(options);
-  const sink = issueSink(maxFindings, false);
+  const sink = createIssueSink(maxFindings, false);
   inspectAny(value, kind, sink);
   return sink.list();
 }

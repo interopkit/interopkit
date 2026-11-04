@@ -73,6 +73,7 @@ resolution, and `checkRemoteUrl` does not replace it.
 | `formatIssuePath(issue.path)`                                | Where an issue is, as code writes it: `items[0].session.status`, and the empty string for the value as a whole                                                                                                                                                                                                              |
 | `describeIssue(issue)`                                  | The text of one issue with its path, for a message that wraps the issue of a nested parse                                                                                                                                                                                                                                   |
 | `buildFindings(issues)`                                | The issues of a parse as findings, `{ path, rule, message }`, for a reader or a validator that returns them as data (see Findings)                                                                                                                                                                                          |
+| `buildIssues(issues)` | The same as issues that are all errors, for a reader, whose list keeps the errors alone |
 | `looseRecord(entries)`                              | An object with the given entries that keeps the properties it does not know, and refuses an array                                                                                                                                                                                                                           |
 | `strictRecord(entries)`                             | An object with the given entries that refuses a property it does not know, as `additionalProperties: false` does, and refuses an array                                                                                                                                                                                      |
 | `openRecord(entries)`                               | An object with the given entries that keeps the properties it does not know, as `additionalProperties: true` does, for a JSON-LD class that anyone may extend: they are copied, so they must be JSON, and a member named `__proto__`, `constructor` or `prototype` of the object itself is not carried. It refuses an array |
@@ -131,6 +132,7 @@ flowchart LR
 | Export | Does |
 | ------ | ---- |
 | `DEFAULT_MAX_FINDINGS` | 1,000: the limit of a list of findings unless the caller says another |
+| `createIssueSink(maxFindings, errorsOnly)` | The list of issues of a reader or a validator on `createFindingSink`: it ends a list that stopped with an error, and keeps the errors alone when `errorsOnly` is true, as a reader does, because a warning does not count toward the limit |
 | `createFindingSink(maxFindings, stop, keep?)` | A list that takes findings up to the limit. The first one beyond it is dropped and `stopped` turns true, so that the check stops looking. `stop` makes the last finding in the type of the package, with the rule `findings-stopped`; `keep` leaves findings out of the count, such as the warnings that a reader does not report. `within(place)` gives a view that changes the findings it is given, such as the path of one entry of a batch, and shares the limit |
 | `safeParseBounded(schema, value, limit)` | `v.safeParse` that stops at the first issue beyond `limit`; the issues are those of `v.safeParse`, in the same order. A schema that makes issues and throws them away, such as a union, is parsed again with no limit when the parse stopped on them |
 | `hasMoreTokensThan(text, maxTokens)` | Whether a text of JSON has more tokens than a limit, counted without building anything; `MAX_JSON_TOKENS` is 1,000,000 |
@@ -169,6 +171,12 @@ A member named `__proto__` stays a member of the copy and never changes its prot
 any string, and a string literal hides its brackets. `parseStatementJson` checks the depth with it before it parses.
 `findExceededJsonLimit(text, maxDepth, maxTokens)` reads the text once for both limits and tells which it passes first, in the order of
 the text; `readJson` and the readers of `achievement-credentials` bound a text with it, at the cost of one reading instead of two.
+`parseJsonText(text, { maxDepth, maxTokens }, refusals)` parses a text within both limits and refuses the depth before the tokens,
+wherever the text passes them: `readJson`, `readAnswerJson`, `parseStatementJson` and the documents of an LRS read a text so. The
+caller gives the sentences of the three errors, so that each reader says whose text it was: a `LimitError` with the limit `maxDepth`
+or `maxTokens`, and a `DataError` for a text that is not JSON, with the error of `JSON.parse` as its `cause`.
+`endOfJsonString(text, start)` gives the index of the quote that ends the string which starts at `start`, whatever backslashes come
+before an inner quote, or the length of the text when the string does not end; a scan of a text of JSON walks its strings with it.
 
 ```ts
 import { findExceededJsonLimit } from "@interopkit/core/checks";

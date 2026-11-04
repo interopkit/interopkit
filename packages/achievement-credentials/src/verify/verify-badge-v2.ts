@@ -1,14 +1,7 @@
 import { readClock } from "@interopkit/core";
-import { describeRefusal, isRecord } from "@interopkit/core/checks";
+import { createIssueSink, describeRefusal, isRecord } from "@interopkit/core/checks";
 import type { BadgeAssertionV2, VerificationCheck, VerificationResult } from "../model/index.js";
-import {
-  DOCUMENT_PLACES,
-  inspectBadgeV2,
-  isBadgeAssertionV2,
-  isDocumentV2,
-  issueSink,
-  readJwsPayload,
-} from "../read/internal.js";
+import { DOCUMENT_PLACES, inspectBadgeV2, isBadgeAssertionV2, isDocumentV2, readJwsPayload } from "../read/internal.js";
 import { checkRecipientV2, checkValidityV2 } from "./checks-v2.js";
 import type { Context } from "./context.js";
 import { fetchDocumentV2, isHttpsAddress } from "./fetch-v2.js";
@@ -112,7 +105,7 @@ async function assemble(assertion: Json, context: Context): Promise<Assembled> {
     isRecord(badgeDocument) && "address" in issuer ? { ...badgeDocument, issuer: issuer.address } : badgeDocument;
   const assertionRead =
     "address" in badge ? { ...assertion, badge: badge.address } : { ...assertion, badge: badgeRead };
-  const sink = issueSink(1000, true);
+  const sink = createIssueSink(1000, true);
   const read = inspectBadgeV2(
     assertionRead,
     {

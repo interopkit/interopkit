@@ -1,20 +1,8 @@
 import { DataError } from "@interopkit/core";
-import { createFindingSink, describeRefusal, type FindingSink, type Issue } from "@interopkit/core/checks";
+import { createIssueSink, describeRefusal, type Issue } from "@interopkit/core/checks";
 import type { CourseStructure } from "../model/index.js";
 import { inspectCourseStructure } from "./inspect.js";
 import { type CourseReadOptions, type CourseReadSettings, readCourseReadOptions } from "./options.js";
-
-/**
- * Makes the list of findings of a call that stops at a limit. A reader keeps the errors alone, because it does not report
- * warnings, and a warning does not count toward the limit.
- */
-function courseIssueSink(maxFindings: number, errorsOnly: boolean): FindingSink<Issue> {
-  return createFindingSink(
-    maxFindings,
-    (finding) => ({ ...finding, severity: "error" }),
-    errorsOnly ? ({ severity }) => severity === "error" : undefined,
-  );
-}
 
 /**
  * Reads a course structure with settings that were read already, and throws on its first error.
@@ -22,7 +10,7 @@ function courseIssueSink(maxFindings: number, errorsOnly: boolean): FindingSink<
  * @throws `DataError` as `readCourseStructure` does.
  */
 export function readStructureWith(xml: unknown, settings: CourseReadSettings): CourseStructure {
-  const sink = courseIssueSink(settings.maxFindings, true);
+  const sink = createIssueSink(settings.maxFindings, true);
   const structure = inspectCourseStructure(xml, settings, sink);
   const errors = sink.list();
   if (structure === undefined || errors.length > 0) {
@@ -72,7 +60,7 @@ export function readCourseStructure(xml: string | Uint8Array, options?: CourseRe
  */
 export function validateCourseStructure(xml: string | Uint8Array, options?: CourseReadOptions): readonly Issue[] {
   const settings = readCourseReadOptions(options);
-  const sink = courseIssueSink(settings.maxFindings, false);
+  const sink = createIssueSink(settings.maxFindings, false);
   inspectCourseStructure(xml, settings, sink);
   return sink.list();
 }

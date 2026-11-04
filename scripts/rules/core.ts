@@ -137,13 +137,6 @@ export const CORE_RULES: readonly Rule[] = [
     test: "packages/core/test/http.test.ts",
   },
   {
-    rule: "A JSON body that nests deeper than the limit is refused before it is parsed.",
-    file: "packages/core/src/http/body.ts",
-    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {',
-    replace: "if (false) {",
-    test: "packages/core/test/http.test.ts",
-  },
-  {
     rule: "A quote that a backslash escapes does not end a string, so that brackets inside it are not counted.",
     file: "packages/core/src/json.ts",
     find: "if (backslashes % 2 === 0) return quote;",
@@ -558,20 +551,6 @@ export const CORE_RULES: readonly Rule[] = [
     test: "packages/core/test/formats.test.ts",
   },
   {
-    rule: "An answer that nests more levels of JSON than the limit is refused before it is parsed.",
-    file: "packages/core/src/answer.ts",
-    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {',
-    replace: "if (false) {",
-    test: "packages/core/test/answer.test.ts",
-  },
-  {
-    rule: "An answer that nests deeper than the limit is refused for its depth, whichever limit it passes first.",
-    file: "packages/core/src/answer.ts",
-    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {',
-    replace: 'if (excess === "depth") {',
-    test: "packages/core/test/answer.test.ts",
-  },
-  {
     rule: "The wait of a call of the Open Badges client for the token of the host ends when the call or the client aborts.",
     file: "packages/core/src/service.ts",
     find: `const value = await raceAbort(
@@ -580,13 +559,6 @@ export const CORE_RULES: readonly Rule[] = [
   );`,
     replace: "const value = await service.authorization(either === undefined ? undefined : { signal: either });",
     test: "packages/achievement-credentials/test/client.test.ts",
-  },
-  {
-    rule: "An answer with more tokens of JSON than the limit is refused before it is parsed.",
-    file: "packages/core/src/answer.ts",
-    find: 'if (excess === "tokens") {',
-    replace: "if (false) {",
-    test: "packages/core/test/answer.test.ts",
   },
   {
     rule: "The status that a refusal of a service carries is not parsed when its body has more tokens than a status can have.",
@@ -624,13 +596,6 @@ export const CORE_RULES: readonly Rule[] = [
     test: "packages/core/test/checks.test.ts",
   },
   {
-    rule: "The body of a request with more tokens than the limit is refused before it is parsed.",
-    file: "packages/core/src/http/body.ts",
-    find: 'if (excess === "tokens") {',
-    replace: "if (false) {",
-    test: "packages/core/test/http.test.ts",
-  },
-  {
     rule: "The wait of a call of the CASE client for the credential of the host ends when the call or the client aborts.",
     file: "packages/core/src/service.ts",
     find: `const value = await raceAbort(
@@ -663,5 +628,40 @@ export const CORE_RULES: readonly Rule[] = [
     find: "if (request.body.byteLength > maxBytes) {",
     replace: "if (false) {",
     test: "packages/tool-integration/test/platform-grades.test.ts",
+  },
+  {
+    rule: "A text of JSON that nests deeper than the limit is refused before it is parsed.",
+    file: "packages/core/src/checks.ts",
+    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {',
+    replace: "if (false) {",
+    test: "packages/core/test/json.test.ts",
+  },
+  {
+    rule: "A text of JSON that nests deeper than the limit is refused for its depth, whichever limit it passes first.",
+    file: "packages/core/src/checks.ts",
+    find: 'if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {',
+    replace: 'if (excess === "depth") {',
+    test: "packages/core/test/json.test.ts",
+  },
+  {
+    rule: "A text of JSON with more tokens than the limit is refused before it is parsed, so that its parse has a bound.",
+    file: "packages/core/src/checks.ts",
+    find: 'if (excess === "tokens") throw new LimitError(',
+    replace: "if (false) throw new LimitError(",
+    test: "packages/core/test/json.test.ts",
+  },
+  {
+    rule: "The syntax of a text of JSON is that of RFC 8259, which JSON.parse judges.",
+    file: "packages/core/src/checks.ts",
+    find: "return JSON.parse(text);",
+    replace: 'return evaluate(parse(text, { mode: "json" }).body);',
+    test: "packages/core/test/json.test.ts",
+  },
+  {
+    rule: "A reader of a standard counts the errors alone toward the limit of its findings, because it does not report warnings.",
+    file: "packages/core/src/findings.ts",
+    find: 'errorsOnly ? ({ severity }) => severity === "error" : undefined,',
+    replace: "undefined,",
+    test: "packages/core/test/findings.test.ts",
   },
 ];

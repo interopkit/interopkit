@@ -5,7 +5,7 @@
  */
 export { scopeSchema, stateScopeSchema, targetSchema } from "./document-target.js";
 export { authoritySchema, identifiedAgentSchema } from "./identified.js";
-export { inspectStatement, issueSink } from "./inspect.js";
+export { inspectStatement } from "./inspect.js";
 export { singleActivityIssues } from "./provider.js";
 export { inspectBatch, readEitherVersion } from "./read-statement.js";
 export { patternProblem } from "./response-pattern.js";

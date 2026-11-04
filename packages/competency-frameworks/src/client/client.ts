@@ -226,7 +226,7 @@ async function* pagesOfDocuments(
  * `timeoutMs`, reads at most `maxBytes`, and carries the `Authorization` that the host's function returns. The answers are
  * read with the readers of this package, so a value is in the model of CASE 1.1 whichever version the provider speaks. A
  * provider that answers 404 gives `undefined`; any other status that is not 200 is a `ServiceError` with its status, headers
- * and body, which `readStatusInfo` reads. Nothing is retried and nothing is kept between calls, so a client is safe to share.
+ * and body, which `readStatusInfo` of `@interopkit/core` reads. Nothing is retried and nothing is kept between calls, so a client is safe to share.
  *
  * @param options - The provider's address, the `fetch` and the optional version, credential, limits and signal.
  * @returns The client.

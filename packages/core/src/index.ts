@@ -11,7 +11,11 @@ export {
   readAnswer,
   readAnswerJson,
   readStatusDetail,
+  readStatusInfo,
+  type StatusCodeMinor,
+  type StatusCodeMinorField,
   type StatusDetail,
+  type StatusInfo,
 } from "./answer.js";
 export { findLinkTarget, hasNextLink, hasNextPage, readRetryAfterSeconds, readTotalCount } from "./answer-headers.js";
 export type { CallOptions } from "./call-options.js";

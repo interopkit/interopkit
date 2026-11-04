@@ -1,6 +1,13 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
-import { buildFindings, createFindingSink, DEFAULT_MAX_FINDINGS, safeParseBounded } from "../src/checks.js";
+import {
+  buildFindings,
+  buildIssues,
+  createFindingSink,
+  createIssueSink,
+  DEFAULT_MAX_FINDINGS,
+  safeParseBounded,
+} from "../src/checks.js";
 
 /** A finding of a package, which adds a severity to those of the core. */
 interface Issue {
@@ -121,5 +128,48 @@ describe("safeParseBounded", () => {
     const bad = safeParseBounded(either, [true, ...value], 10);
     expect(bad.success).toBe(false);
     expect(bad.issues).toHaveLength(1);
+  });
+});
+
+describe("createIssueSink", () => {
+  it("keeps the errors alone for a reader, and does not count a warning toward the limit", () => {
+    const sink = createIssueSink(2, true);
+    sink.add([issue("w", "warning"), issue("a"), issue("x", "warning"), issue("b")]);
+    expect(sink.room).toBe(0);
+    expect(sink.stopped).toBe(false);
+    expect(sink.list()).toStrictEqual([issue("a"), issue("b")]);
+  });
+
+  it("keeps every issue for a validator", () => {
+    const sink = createIssueSink(3, false);
+    sink.add([issue("w", "warning"), issue("a"), issue("x", "warning")]);
+    expect(sink.list()).toStrictEqual([issue("w", "warning"), issue("a"), issue("x", "warning")]);
+  });
+
+  it("ends a list that stopped with an error that says so", () => {
+    const sink = createIssueSink(1, true);
+    sink.add([issue("a"), issue("b")]);
+    expect(sink.stopped).toBe(true);
+    expect(sink.list()).toStrictEqual([
+      issue("a"),
+      {
+        path: "",
+        rule: "findings-stopped",
+        message: "the check stopped after 1 findings, so there may be more.",
+        severity: "error",
+      },
+    ]);
+  });
+});
+
+describe("buildIssues", () => {
+  it("gives the findings of the issues of a parse, each an error", () => {
+    const parsed = v.safeParse(v.object({ id: v.string(), count: v.number() }), { id: 1, extra: true });
+    const issues = buildIssues(parsed.issues ?? []);
+    expect(issues).toStrictEqual(
+      buildFindings(parsed.issues ?? []).map((finding) => ({ ...finding, severity: "error" })),
+    );
+    expect(issues.length).toBeGreaterThan(1);
+    expect(new Set(issues.map(({ severity }) => severity))).toStrictEqual(new Set(["error"]));
   });
 });

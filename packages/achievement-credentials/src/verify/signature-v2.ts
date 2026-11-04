@@ -1,10 +1,10 @@
-import { isRecord } from "@interopkit/core/checks";
+import { createIssueSink, isRecord } from "@interopkit/core/checks";
 import { compactVerify, importSPKI } from "jose";
 import { decodeBase64url } from "../base64url.js";
 import { parseJsonText } from "../json-text.js";
 import { MAX_HEADER_CHARS } from "../jwt/internal.js";
 import type { BadgeAssertionV2, CryptographicKeyV2, VerificationCheck } from "../model/index.js";
-import { inspectDocumentV2, issueSink } from "../read/internal.js";
+import { inspectDocumentV2 } from "../read/internal.js";
 import type { Context } from "./context.js";
 import { fetchDocumentV2 } from "./fetch-v2.js";
 import type { Checks } from "./result.js";
@@ -91,7 +91,7 @@ async function keyOf(candidate: Candidate, badge: BadgeAssertionV2, context: Con
         checks: { proof: checkOf("proof", "failed", "failed" in fetched ? fetched.failed : "The key is gone.") },
       };
     }
-    const sink = issueSink(1000, true);
+    const sink = createIssueSink(1000, true);
     key = inspectDocumentV2("cryptographic-key", fetched.document, sink);
     if (key === undefined || sink.list().length > 0 || key.id !== candidate.id) {
       return {

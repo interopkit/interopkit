@@ -111,6 +111,24 @@ export function createFindingSink<TFinding extends Finding>(
   return sink;
 }
 
+/**
+ * Makes the list of issues of a reader or a validator, which stops at a limit and ends with an error that says so.
+ *
+ * @remarks
+ * A reader keeps the errors alone, because it does not report warnings, and a warning does not count toward the limit; a
+ * validator keeps every issue.
+ *
+ * @param maxFindings - The most issues the list holds.
+ * @param errorsOnly - Whether the list takes the errors alone.
+ */
+export function createIssueSink(maxFindings: number, errorsOnly: boolean): FindingSink<Issue> {
+  return createFindingSink(
+    maxFindings,
+    (finding) => ({ ...finding, severity: "error" }),
+    errorsOnly ? ({ severity }) => severity === "error" : undefined,
+  );
+}
+
 /** What {@link safeParseBounded} returns: the output of a parse and the issues it found, at most one more than the limit. */
 export interface BoundedParse<TOutput> {
   /** Whether the value is what the schema describes, with no issue. */

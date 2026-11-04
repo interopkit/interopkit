@@ -2,6 +2,7 @@ import { DataError } from "@interopkit/core";
 import {
   checkProperties,
   checkRecord,
+  createIssueSink,
   DEFAULT_MAX_FINDINGS,
   formatDateTime,
   type Issue,
@@ -23,7 +24,7 @@ import {
   type XapiVersion,
 } from "../model/index.js";
 import { STATEMENT_VERSIONS } from "../model/internal.js";
-import { inspectStatement, issueSink } from "../read/internal.js";
+import { inspectStatement } from "../read/internal.js";
 
 /** The properties that a Statement is built from. */
 const INPUT_PROPERTIES = ["id", "actor", "verb", "object", "timestamp", "result", "context", "attachments"] as const;
@@ -122,7 +123,7 @@ export function buildStatement(input: StatementInput, options?: BuildOptions): S
   const version = versionOf(options);
   checkRecord(input, "A statement input must be an object");
   checkProperties(input, "A statement input", INPUT_PROPERTIES);
-  const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
+  const sink = createIssueSink(DEFAULT_MAX_FINDINGS, true);
   const value = inspectStatement(
     { ...input, timestamp: inUtc(input.timestamp), version: STATEMENT_VERSIONS[version] },
     { role: "provider", version },
