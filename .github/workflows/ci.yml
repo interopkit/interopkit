@@ -112,7 +112,7 @@ jobs:
           // The scripts that only check, or are checked by the tests of scripts, with the identity of the family and the generator of
           // the docs site, which check builds. Every other script serves the tests of the packages.
           const OWN_SCRIPTS =
-            /^scripts\/(test\/|rules\/|check-standards\.ts$|check-identity\.ts$|check-site\.ts$|family\.ts$|identity\.ts$|llms\.ts$|check-duplication\.ts$|check-licenses\.ts$|check-rules\.ts$|check-release\.ts$|check-tarballs\.ts$)/;
+            /^scripts\/(test\/|rules\/|check-standards\.ts$|check-identity\.ts$|check-site\.ts$|family\.ts$|identity\.ts$|llms\.ts$|github-release\.ts$|check-duplication\.ts$|check-licenses\.ts$|check-rules\.ts$|check-release\.ts$|check-tarballs\.ts$)/;
           // The scripts that the tests of one member alone read: a change to one reaches that member, as a change to its files does.
           const MEMBER_SCRIPTS = new Map([
             ["scripts/cmi5-requirements.ts", "packages/course-launch"],

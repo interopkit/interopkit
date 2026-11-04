@@ -502,7 +502,7 @@ export function checkStandards(files: Files): Violation[] {
   return CHECKS.flatMap((check) => check(files));
 }
 
-/** Reads the text files of the repository that git tracks or would track, and the manifests and NOTICE files, without the generated and third-party ones. */
+/** Reads the text files of the repository that git tracks or would track, with the manifests, NOTICE files and the files of the identity, without the generated and third-party ones. */
 export function readRepository(root: string): Files {
   const listing = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
     cwd: root,
@@ -515,7 +515,10 @@ export function readRepository(root: string): Files {
       file === "" ||
       EXCLUDED.test(file) ||
       EXEMPT.test(file) ||
-      !(TEXT_EXTENSIONS.has(extname(file)) || ["package.json", "NOTICE"].includes(basename(file)))
+      !(
+        TEXT_EXTENSIONS.has(extname(file)) ||
+        ["package.json", "NOTICE", "context7.json", "CITATION.cff"].includes(basename(file))
+      )
     )
       continue;
     try {

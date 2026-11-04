@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: If you use interopkit in your work, please cite it as below.
+type: software
+title: interopkit
+abstract: >-
+  Learning standards for JavaScript and TypeScript: LTI 1.3, Caliper 1.2, xAPI 2.0, cmi5, CASE 1.1, Open Badges 3.0, CLR 2.0
+  and the ecdsa-sd-2023 cryptosuite.
+authors:
+  - given-names: Fariz
+    family-names: Wakan
+license: Apache-2.0
+repository-code: https://github.com/interopkit/interopkit
+url: https://interopkit.dev/
+keywords:
+  - lti
+  - lti-advantage
+  - xapi
+  - cmi5
+  - caliper
+  - learning-analytics
+  - learning-record-store
+  - competency-framework
+  - open-badges
+  - comprehensive-learner-record
+  - verifiable-credentials
+  - selective-disclosure
+  - edtech
+  - interoperability
+  - elearning
+  - typescript
+  - javascript

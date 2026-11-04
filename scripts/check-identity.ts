@@ -1,6 +1,6 @@
 import { basename } from "node:path";
 import type { Files, Violation } from "./check-standards.ts";
-import { FAMILY, PACKAGES, REPOSITORY, SITE } from "./family.ts";
+import { FACTS, FAMILY, PACKAGES, REPOSITORY, SITE } from "./family.ts";
 import {
   findPackage,
   firstParagraph,
@@ -89,8 +89,8 @@ function packageViolations(folder: string, manifestFile: string, files: Files): 
 
 /**
  * Each package's `description`, `keywords`, `homepage` and `author` are those of its row of `family.ts`, its README opens with
- * the description as its first sentence, every row names a package that exists, and the root README opens with the family's
- * sentence and gives each package its description.
+ * the description as its first sentence, every row names a package that exists, the root README opens with the family's
+ * sentence and gives each package its description, and `CITATION.cff` and `context7.json` say what `family.ts` says.
  */
 export function checkIdentity(files: Files): Violation[] {
   const folders = [...files.keys()].flatMap((file) => MANIFEST.exec(file)?.[1] ?? []);
@@ -99,7 +99,28 @@ export function checkIdentity(files: Files): Violation[] {
     if (!folders.includes(folderOf(name)))
       found.push(violation("scripts/family.ts", 0, "identity", `${name} has a row but no packages/${folderOf(name)}.`));
   }
-  return [...found, ...rootViolations(files.get("README.md") ?? "")];
+  return [...found, ...rootViolations(files.get("README.md") ?? ""), ...repositoryFileViolations(files)];
+}
+
+/** `CITATION.cff` and `context7.json` give the family's sentence, its site and its facts of use, as `family.ts` does. */
+function repositoryFileViolations(files: Files): Violation[] {
+  const found: Violation[] = [];
+  const citation = (files.get("CITATION.cff") ?? "").replace(/\s+/g, " ");
+  if (!citation.includes(FAMILY.sentence) || !citation.includes(`url: ${SITE}`))
+    found.push(
+      violation("CITATION.cff", 0, "identity", `Give the family's sentence as the abstract and ${SITE} as the url.`),
+    );
+  const context7 = manifestOf(files.get("context7.json") ?? "") ?? {};
+  if (context7.description !== FAMILY.sentence || !sameList(context7.rules, FACTS))
+    found.push(
+      violation(
+        "context7.json",
+        0,
+        "identity",
+        "Give the family's sentence as the description and FACTS as the rules.",
+      ),
+    );
+  return found;
 }
 
 /** The root README opens with the family's sentence and gives each package's description, the same as everywhere. */

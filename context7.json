@@ -1,0 +1,14 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "interopkit",
+  "description": "Learning standards for JavaScript and TypeScript: LTI 1.3, Caliper 1.2, xAPI 2.0, cmi5, CASE 1.1, Open Badges 3.0, CLR 2.0 and the ecdsa-sd-2023 cryptosuite.",
+  "folders": ["docs", "packages"],
+  "excludeFolders": ["docs/api", "scripts", "compat", "**/test"],
+  "excludeFiles": ["AGENTS.md", "CLAUDE.md", "CHANGELOG.md", "CODE_OF_CONDUCT.md", "SECURITY.md"],
+  "rules": [
+    "Import each part from its subpath, such as `@interopkit/tool-integration/tool`; every package is ESM with TypeScript types.",
+    "Inputs and results are plain JSON data; readers throw `DataError` on invalid input, and validators return findings as data.",
+    "Nothing reaches the network or storage on its own: the caller passes a `fetch` and the stores as ports, and may pass a `Clock`.",
+    "A handler takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, which any web framework can build."
+  ]
+}
