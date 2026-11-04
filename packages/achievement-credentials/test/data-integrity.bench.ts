@@ -17,6 +17,8 @@ import { KEYS } from "./key-fixtures.js";
 
 const keys = createKeyResolver({ clock });
 const options = { keys, clock, contexts };
+/** What `addProof` takes: it signs with the signer and does not resolve keys. */
+const signingOptions = { clock, contexts };
 const timeService = { dateNowMs: () => NOW, performanceNowMs: () => 0 };
 const ED25519_2020_CONTEXT = "https://w3id.org/security/suites/ed25519-2020/v1";
 
@@ -36,7 +38,7 @@ const librarySigner = (issuer: ReturnType<typeof issuerOf>, algorithm: string) =
 test("signs and verifies eddsa-rdfc-2022 as fast as Digital Bazaar's vc", async ({ annotate, bench }) => {
   const issuer = issuerOf(KEYS.ed25519);
   const credential = credentialOf(issuer.did);
-  const signed = await addProof(credential, issuer.signer, options);
+  const signed = await addProof(credential, issuer.signer, signingOptions);
   const suite = new DigitalBazaarProof({
     cryptosuite: eddsaRdfc2022,
     date: new Date(NOW),
@@ -55,7 +57,7 @@ test("signs and verifies eddsa-rdfc-2022 as fast as Digital Bazaar's vc", async 
   expect((await theirsVerify()).verified).toBe(true);
   expect((await verifyProof((await theirsSign()) as IssuableCredential, options)).valid).toBe(true);
 
-  const signing = await alternate(bench, "addProof", () => addProof(credential, issuer.signer, options), {
+  const signing = await alternate(bench, "addProof", () => addProof(credential, issuer.signer, signingOptions), {
     name: "Digital Bazaar vc.issue",
     run: theirsSign,
   });
@@ -108,7 +110,10 @@ test("verifies an ecdsa-sd-2023 disclosure as fast as Digital Bazaar's vc with i
   bench,
 }) => {
   const issuer = issuerOf(KEYS.es256);
-  const base = await addProof(credentialOf(issuer.did), issuer.signer, { ...options, cryptosuite: "ecdsa-sd-2023" });
+  const base = await addProof(credentialOf(issuer.did), issuer.signer, {
+    ...signingOptions,
+    cryptosuite: "ecdsa-sd-2023",
+  });
   const disclosure = await deriveDisclosure(base, {
     selectivePointers: ["/credentialSubject/achievement/name"],
     contexts,

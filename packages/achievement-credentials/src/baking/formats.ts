@@ -2,7 +2,7 @@
 export type BakedKind = "badge" | "clr";
 
 /** The kinds of credential that the readers find in an image: those that the bakers write, and an Open Badges 2.0 assertion. */
-export type FoundKind = BakedKind | "badge-v2";
+export type FoundKind = "badge" | "clr" | "badge-v2";
 
 /** Where one kind of credential is written in a PNG and in an SVG. */
 export interface BakedFormat {
