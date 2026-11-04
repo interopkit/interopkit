@@ -14,6 +14,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Every job has a `timeout-minutes` of about three times its last green run, and at least 10 for a job that pulls images or
+# downloads, so that a hung job stops and does not run to the 360 minutes of GitHub, which the Actions minutes of the month cannot
+# bear. `bench` runs the packages one at a time, so its limit is a guess to lower after its first green run.
 jobs:
   # What a push or a pull request changed since the last commit of main whose run passed, or since the base of a pull request,
   # and so which jobs have something to check. A job that is skipped passes a required check. When nothing can be compared,
@@ -26,6 +29,7 @@ jobs:
   # packages whose coverage floors the test job checks. The rules job is in rules.yml.
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       actions: read
@@ -115,8 +119,9 @@ jobs:
           ]);
 
           // The files that a test of scripts reads besides the scripts: every manifest, whose dependencies it holds to exact
-          // versions, and the README of the W3C suites with their lock, which it compares.
-          const SCRIPT_TESTED = /^(validation\/w3c-suites\/(README\.md|suites\.lock\.json)|(.+\/)?package\.json)$/;
+          // versions, the README of the W3C suites with their lock, which it compares, and the workflows, whose jobs it holds to a
+          // timeout and whose release it holds to the mutation rules.
+          const SCRIPT_TESTED = /^(validation\/w3c-suites\/(README\.md|suites\.lock\.json)|(.+\/)?package\.json|\.github\/workflows\/[^/]+\.yml)$/;
 
           let everything = changed === null;
           let scriptTests = false;
@@ -193,6 +198,7 @@ jobs:
 
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -230,6 +236,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.test == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       matrix:
         node: [22, 24]
@@ -299,6 +306,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.spec == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -338,6 +346,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.browsers == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -354,6 +363,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.runtimes == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -382,6 +392,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.bench == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -411,6 +422,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.opensalt == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -426,6 +438,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.moodle == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -441,6 +454,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.adl_lrs == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -456,6 +470,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.sql_lrs == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -472,6 +487,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.w3c_suites == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -494,6 +510,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.validator == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -516,6 +533,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.catapult == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -538,6 +556,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.catapult == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -566,6 +585,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.pylti1p3 == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
