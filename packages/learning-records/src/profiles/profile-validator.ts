@@ -119,8 +119,6 @@ export interface StatementsVerdict {
 
 /** A profile ready to judge Statements against its Statement Templates and Patterns. */
 export interface ProfileValidator {
-  /** The profile, as read. */
-  readonly profile: Profile;
   /** The id of the version of the profile that a Statement names in category to follow it: the latest by `generatedAtTime`. */
   readonly version: string;
   /**
@@ -357,7 +355,6 @@ export function createProfileValidator(profile: unknown, options?: ProfileValida
 
   const prepared: Prepared = { judge, graph, maxFindings, maxStatements, hostStatement };
   return {
-    profile: read.profile,
     version: judge.version,
     validateStatement(statement) {
       const judged = judgeStatement(judge, readEitherVersion(statement), hostStatement);
