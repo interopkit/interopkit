@@ -1,4 +1,5 @@
 import { base64url } from "jose";
+import { decodeBase64url } from "../base64url.js";
 import { MAX_INFLATED_BYTES, type StatusList } from "./bitstring.js";
 
 /** The multibase prefix of base64url without padding, which an `encodedList` starts with. */
@@ -53,12 +54,8 @@ export async function decodeList(
   if (typeof encoded !== "string" || !encoded.startsWith(MULTIBASE_BASE64URL)) {
     return { reason: "The encodedList is not multibase base64url text, which starts with u." };
   }
-  let compressed: Uint8Array;
-  try {
-    compressed = base64url.decode(encoded.slice(MULTIBASE_BASE64URL.length));
-  } catch {
-    return { reason: "The encodedList is not base64url." };
-  }
+  const compressed = decodeBase64url(encoded.slice(MULTIBASE_BASE64URL.length));
+  if (compressed === undefined) return { reason: "The encodedList is not canonical base64url without padding." };
   try {
     const bits = await readLimited(
       new Blob([Uint8Array.from(compressed)]).stream().pipeThrough(new DecompressionStream("gzip")),

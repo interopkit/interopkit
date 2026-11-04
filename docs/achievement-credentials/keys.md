@@ -93,7 +93,7 @@ key of more than 8,192 bits.
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | An HTTPS address             | The keys of the document at that address, and the members of the JWK Set at `https://<host>/.well-known/jwks.json`                         |
 | A `did:key` or a `did:web`   | The keys of its DID document                                                                                                              |
-| A `did:jwk`                  | The key that the DID holds, read from the DID with no request                                                                              |
+| A `did:jwk`                  | The key that the DID holds, read from the DID with no request; a DID that is not the canonical base64url of the key, without padding, holds none |
 | Another DID method, a URN    | Nothing that this resolver reads: a host implements `KeyResolver` itself for such an issuer, or accepts unbound keys                       |
 
 ## The binding

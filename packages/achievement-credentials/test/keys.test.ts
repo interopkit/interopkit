@@ -280,6 +280,19 @@ describe("a key at an HTTPS address", () => {
     expect(requests).toStrictEqual([]);
   });
 
+  it("reads no key from a did:jwk that is not the canonical base64url of its key: padded, or with bits that no byte holds", async () => {
+    // The space after the key makes a text of one more byte than a multiple of three: its base64url ends in a character whose
+    // last four bits no byte holds, and is padded with two characters.
+    const encoded = base64url.encode(`${JSON.stringify(KEYS.es256.publicJwk)} `);
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const unused = `${encoded.slice(0, -1)}${alphabet[alphabet.indexOf(encoded.at(-1) ?? "") | 0b1111]}`;
+    const { fetch } = serve({});
+    const resolver = createKeyResolver({ clock, fetch });
+    expect(await resolver.issuerKeys(`did:jwk:${encoded}`)).toHaveLength(1);
+    expect(await resolver.issuerKeys(`did:jwk:${encoded}==`)).toStrictEqual([]);
+    expect(await resolver.issuerKeys(`did:jwk:${unused}`)).toStrictEqual([]);
+  });
+
   it("publishes nothing for an issuer that is no address and no DID that it reads", async () => {
     const { fetch } = serve({});
     const resolver = createKeyResolver({ clock, fetch });
@@ -289,6 +302,7 @@ describe("a key at an HTTPS address", () => {
       "did:jwk:%%%",
       `did:jwk:${base64url.encode("[[[[[[[")}`,
       `did:jwk:${base64url.encode("not json")}`,
+      `did:jwk:${base64url.encode(new Uint8Array([0xff, 0xfe]))}`,
     ];
     for (const issuer of [
       ...unreadable,

@@ -1,5 +1,5 @@
 import { parseJsonText } from "@interopkit/core/checks";
-import { base64url } from "jose";
+import { decodeBase64url } from "../base64url.js";
 import { jsonRefusals } from "../json-text.js";
 import { publicJwk } from "./jwk.js";
 
@@ -19,15 +19,17 @@ export function isDidJwk(value: string): boolean {
 /**
  * Reads the public key that a `did:jwk` is made of: the DID holds the key and nothing else, so it needs no request.
  *
- * @returns The key, or `undefined` when the DID is too long, is not base64url of a JSON object, or holds a key that cannot
- * verify a credential.
+ * @returns The key, or `undefined` when the DID is too long, is not canonical base64url of a JSON object, or holds a key that
+ * cannot verify a credential.
  */
 export function decodeDidJwk(did: string): JsonWebKey | undefined {
   const [encoded = "", ...rest] = did.slice(PREFIX.length).split("#");
   if (rest.length > 1 || encoded === "" || did.length > MAX_DID_JWK_CHARS) return undefined;
+  const bytes = decodeBase64url(encoded);
+  if (bytes === undefined) return undefined;
   let text: string;
   try {
-    text = new TextDecoder("utf-8", { fatal: true }).decode(base64url.decode(encoded));
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {
     return undefined;
   }

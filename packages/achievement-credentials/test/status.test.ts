@@ -158,6 +158,11 @@ describe("the encoded list", () => {
     expect(await decodeList(5)).toMatchObject({ reason: expect.stringContaining("multibase") });
     expect(await decodeList("x-abc")).toMatchObject({ reason: expect.stringContaining("multibase") });
     expect(await decodeList("u!!!")).toMatchObject({ reason: expect.stringContaining("base64url") });
+    // The list of a credential is the one canonical spelling of its bytes: base64url without padding (Bitstring Status List 2.1).
+    const padded = `${await encodeList(createStatusList())}${"="}`;
+    expect(await decodeList(padded)).toStrictEqual({
+      reason: "The encodedList is not canonical base64url without padding.",
+    });
     expect(await decodeList("uAAAA")).toMatchObject({ reason: expect.stringContaining("GZIP") });
     const encoded = await encodeList(createStatusList());
     expect(await decodeList(encoded, 16_383)).toMatchObject({

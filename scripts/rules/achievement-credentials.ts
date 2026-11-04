@@ -2028,4 +2028,11 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
     replace: "false\n    ? tooLarge(error.message)",
     test: "packages/achievement-credentials/test/provider.test.ts",
   },
+  {
+    rule: "A did:jwk is read only from the one canonical base64url spelling of its key.",
+    file: "packages/achievement-credentials/src/base64url.ts",
+    find: "return (bits & unused) === 0 ? bytes : undefined;",
+    replace: "return bytes;",
+    test: "packages/achievement-credentials/test/keys.test.ts",
+  },
 ];

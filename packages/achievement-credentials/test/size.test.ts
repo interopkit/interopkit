@@ -56,6 +56,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
       "@noble/ed25519",
       "@noble/hashes",
       "@scure/base",
+      "achievement-credentials/base64url",
       "achievement-credentials/json-text",
       "achievement-credentials/model",
       "did-context",
