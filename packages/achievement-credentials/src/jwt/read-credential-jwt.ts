@@ -1,13 +1,14 @@
 import { DataError, raceAbort, readClock, ServiceError } from "@interopkit/core";
-import { describe, isRecord, parseJsonText } from "@interopkit/core/checks";
+import { checkRecord, describe, isRecord, parseJsonText } from "@interopkit/core/checks";
 import { compactVerify, importJWK } from "jose";
 import { decodeBase64url } from "../base64url.js";
 import { type JsonLimits, jsonRefusals } from "../json-text.js";
 import { bindKey, publicJwk, thumbprintOf, thumbprintUri } from "../keys/internal.js";
 import type { AnyVerifiableCredential, ProofResult, VerificationKey } from "../model/index.js";
+import { readTrustSettings, type TrustSettings } from "../option-checks.js";
 import { carriedCredential, readCarried } from "./carried-credential.js";
 import { dateTimeOf, disagreement, valuesOf } from "./claims.js";
-import { type JwtReadOptions, type ReadSettings, readSettings } from "./options.js";
+import type { JwtReadOptions } from "./options.js";
 
 /** The most characters of the protected header: it names an algorithm and a key, and a key of 8,192 bits is under 1,500 characters. */
 export const MAX_HEADER_CHARS = 16_384;
@@ -41,7 +42,7 @@ function readObject(bytes: Uint8Array, name: string, limits: JsonLimits): Step<R
 /** Finds the key that verifies the JWS, from its header: the resolved `kid`, or the embedded `jwk`. */
 async function keyOf(
   header: Readonly<Record<string, unknown>>,
-  settings: ReadSettings,
+  settings: TrustSettings,
 ): Promise<Step<VerificationKey>> {
   const { kid, jwk } = header;
   if ((kid === undefined) === (jwk === undefined)) {
@@ -64,7 +65,7 @@ async function keyOf(
 }
 
 /** Checks the time claims against the clock: a NumericDate, not expired and not yet valid, within the skew. */
-function timeProblem(payload: Readonly<Record<string, unknown>>, settings: ReadSettings): string | undefined {
+function timeProblem(payload: Readonly<Record<string, unknown>>, settings: TrustSettings): string | undefined {
   for (const claim of ["exp", "nbf", "iat"]) {
     const value = payload[claim];
     if (value !== undefined && (typeof value !== "number" || !Number.isFinite(value))) {
@@ -87,7 +88,7 @@ interface Shape {
 }
 
 /** Checks the size and shape of a compact JWS, before anything is decoded, and decodes its header. */
-function shapeOf(jws: string, settings: ReadSettings): Step<Shape> {
+function shapeOf(jws: string, settings: TrustSettings): Step<Shape> {
   if (jws.length > settings.maxInputBytes) {
     return {
       reason: `The JWS has ${jws.length} characters, more than the ${settings.maxInputBytes} that it may have.`,
@@ -111,7 +112,7 @@ function shapeOf(jws: string, settings: ReadSettings): Step<Shape> {
 }
 
 /** Finds what is wrong with the algorithm and the other parameters of the header, or `undefined` when nothing is. */
-function headerProblem(header: Readonly<Record<string, unknown>>, settings: ReadSettings): string | undefined {
+function headerProblem(header: Readonly<Record<string, unknown>>, settings: TrustSettings): string | undefined {
   const { alg, typ, crit } = header;
   if (typeof alg !== "string" || !settings.algorithms.includes(alg)) {
     return `The algorithm ${describe(alg)} is not one of ${settings.algorithms.join(", ")}.`;
@@ -127,7 +128,7 @@ function headerProblem(header: Readonly<Record<string, unknown>>, settings: Read
 async function verifiedKey(
   jws: string,
   header: Readonly<Record<string, unknown>>,
-  settings: ReadSettings,
+  settings: TrustSettings,
 ): Promise<Step<VerificationKey>> {
   const found = await keyOf(header, settings);
   if ("reason" in found) return found;
@@ -161,7 +162,7 @@ interface Payload {
 }
 
 /** Reads the payload of a JWS whose signature verified into a credential, and checks its other claims against it. */
-function payloadOf(bytes: Uint8Array, settings: ReadSettings): { readonly value: Payload } | Fault {
+function payloadOf(bytes: Uint8Array, settings: TrustSettings): { readonly value: Payload } | Fault {
   const payload = readObject(bytes, "payload", settings);
   if ("reason" in payload) return { check: "format", reason: payload.reason };
   const raw = carriedCredential(payload.value);
@@ -181,7 +182,7 @@ type JwtInspection =
  * Reads a credential from a compact JWS as `readCredentialJwt` does, but tells the faults of the form from those of the proof,
  * keeps the time claims as a finding and not a fault, and leaves the key unbound: the caller binds it.
  */
-export async function inspectJwt(jws: string, settings: ReadSettings): Promise<JwtInspection> {
+export async function inspectJwt(jws: string, settings: TrustSettings): Promise<JwtInspection> {
   settings.signal?.throwIfAborted();
   const shape = shapeOf(jws, settings);
   if ("reason" in shape) return { valid: false, check: "format", reason: shape.reason };
@@ -220,8 +221,19 @@ export async function inspectJwt(jws: string, settings: ReadSettings): Promise<J
  * @see {@link https://www.w3.org/TR/vc-jose-cose/ | Securing Verifiable Credentials using JOSE and COSE}
  */
 export async function readCredentialJwt(jws: string, options: JwtReadOptions): Promise<ProofResult> {
-  const settings = readSettings(options);
+  checkRecord(options, "The options of readCredentialJwt must be an object");
+  const settings = readTrustSettings(options);
   if (typeof jws !== "string") throw new DataError(`The JWS must be a string, found ${describe(jws)}.`);
+  return await readCredentialJwtWith(jws, settings);
+}
+
+/**
+ * Reads a credential from a compact JWS as `readCredentialJwt` does, with the settings that its caller has checked.
+ *
+ * @throws `ServiceError` when the key or the keys of the issuer cannot be read.
+ * @throws The `reason` of the signal when it aborts.
+ */
+export async function readCredentialJwtWith(jws: string, settings: TrustSettings): Promise<ProofResult> {
   const invalid = (reason: string): ProofResult => ({ valid: false, reason });
   const inspected = await inspectJwt(jws, settings);
   if (!inspected.valid) return invalid(inspected.reason);

@@ -11,6 +11,7 @@ import {
   failOperation,
   inspectProofs,
   rethrowOperational,
+  verifySettings,
   withProofList,
   withProofObject,
 } from "../src/data-integrity/internal.js";
@@ -315,6 +316,10 @@ describe("verifying an eddsa-rdfc-2022 proof", () => {
     const { credential, read } = await signed();
     await expect(verifyProof(JSON.parse("null"), read)).rejects.toBeInstanceOf(DataError);
     await expect(verifyProof(credential, JSON.parse("null"))).rejects.toBeInstanceOf(DataError);
+    const { contexts: _contexts, ...unloaded } = read;
+    await expect(verifyProof(credential, unloaded as never)).rejects.toThrow(
+      "The option contexts must be a function, found undefined.",
+    );
     const bad: Record<string, string> = {
       clockSkewSeconds: '{"clockSkewSeconds":-1}',
       maxInputBytes: '{"maxInputBytes":0}',
@@ -326,6 +331,8 @@ describe("verifying an eddsa-rdfc-2022 proof", () => {
       suite: '{"suites":[{}]}',
       unnamed: '{"suites":[{"verify":null}]}',
       signal: '{"signal":"x"}',
+      algorithms: '{"algorithms":["HS256"]}',
+      fetch: '{"fetch":5}',
     };
     for (const [name, text] of Object.entries(bad)) {
       await expect(verifyProof(credential, { ...read, ...JSON.parse(text) }), name).rejects.toBeInstanceOf(DataError);
@@ -856,7 +863,7 @@ describe("looking at the proofs of a credential that has been read", () => {
       inspectProofs(
         document as Record<string, unknown>,
         readCredential(document, { kind: "AchievementCredential" }),
-        { keys, clock, contexts: contexts.load, ...extra },
+        verifySettings({ keys, clock, contexts: contexts.load, ...extra }),
         async () => SKIPPED,
       );
     return { credential, check };
@@ -895,29 +902,9 @@ describe("looking at the proofs of a credential that has been read", () => {
       inspectProofs(
         moved as unknown as Record<string, unknown>,
         readCredential(moved, { kind: "AchievementCredential" }),
-        {
-          keys,
-          clock: clockAt(NOW),
-          contexts: world().contexts.load,
-        },
+        verifySettings({ keys, clock: clockAt(NOW), contexts: world().contexts.load }),
         async () => SKIPPED,
       ),
     ).rejects.toBeInstanceOf(ServiceError);
-  });
-
-  it("refuses an option that is not valid, as verifyProof does", async () => {
-    const { credential } = await signed();
-    await expect(
-      inspectProofs(
-        credential as unknown as Record<string, unknown>,
-        readCredential(credential, { kind: "AchievementCredential" }),
-        {
-          keys: createKeyResolver({ clock: clockAt(NOW) }),
-          clock: clockAt(NOW),
-          contexts: "loader" as never,
-        },
-        async () => SKIPPED,
-      ),
-    ).rejects.toBeInstanceOf(DataError);
   });
 });

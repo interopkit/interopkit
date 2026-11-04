@@ -32,7 +32,7 @@ export function preparedOf(
 ): { readonly prepared: Input } | { readonly reason: string } {
   const value = unwrapped(input);
   if (typeof value === "string") {
-    const { maxInputBytes } = settings.jwt;
+    const { maxInputBytes } = settings;
     if (value.length > maxInputBytes) {
       return { reason: `The input has ${value.length} characters, more than the ${maxInputBytes} that it may have.` };
     }

@@ -88,7 +88,7 @@ describe("the import graph of a verifier of JWTs", () => {
     const dynamic = readdirSync(join(PACKAGE, "src", "status"))
       .map((name) => readFileSync(join(PACKAGE, "src", "status", name), "utf8"))
       .flatMap((source) => [...source.matchAll(/import\("([^"]+)"\)/gu)].map((match) => match[1]));
-    expect(dynamic.toSorted()).toStrictEqual(["../data-integrity/index.js", "../data-integrity/index.js"]);
+    expect(dynamic.toSorted()).toStrictEqual(["../data-integrity/index.js", "../data-integrity/internal.js"]);
   });
 
   it("reaches them from verify through one dynamic import, of the internal entry of data-integrity", () => {

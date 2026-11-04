@@ -4,16 +4,12 @@ import {
   checkArray,
   checkFunction,
   checkNonEmptyString,
-  checkNonNegativeInteger,
   checkPositiveInteger,
   checkRecord,
-  checkString,
   describe,
-  MAX_JSON_TOKENS,
-  parseWith,
 } from "@interopkit/core/checks";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
-import { checkFlag, keyResolverSchema, readSuites } from "../option-checks.js";
+import { readTrustSettings, type TrustSettings } from "../option-checks.js";
 import type { StatusList } from "./bitstring.js";
 import type { StatusListCache } from "./status-list-cache.js";
 
@@ -85,11 +81,11 @@ export interface StatusCheckOptions extends CallOptions {
    */
   readonly contexts?: ContextLoader;
   /**
-   * Keeps list credentials across verifications.
+   * Keeps list credentials across verifications, until their `ttl` or `validUntil`.
    *
    * @defaultValue none: fetched for each verification
    */
-  readonly cache?: StatusListCache;
+  readonly statusLists?: StatusListCache;
   /**
    * Issuers other than the credential's that may publish its status list.
    *
@@ -114,6 +110,24 @@ export interface StatusCheckOptions extends CallOptions {
    * @defaultValue `1000000`
    */
   readonly maxTokens?: number;
+  /**
+   * The most characters of a list credential that is a compact JWS, and of one with a Data Integrity proof as JSON.
+   *
+   * @defaultValue `1048576`
+   */
+  readonly maxInputBytes?: number;
+  /**
+   * The most levels that the JSON of the list credential nests.
+   *
+   * @defaultValue `64`
+   */
+  readonly maxDepth?: number;
+  /**
+   * The most tokens of JSON in a list credential with a Data Integrity proof, which a JSON-LD processor reads to check it.
+   *
+   * @defaultValue `20000`
+   */
+  readonly maxJsonLdTokens?: number;
   /**
    * The algorithms that may sign a list credential that is a JWT.
    *
@@ -147,69 +161,31 @@ export interface StatusCheckOptions extends CallOptions {
   readonly suites?: readonly DataIntegritySuite[];
 }
 
-/** The checked options of a status check. */
-export interface CheckSettings {
-  readonly fetch: Fetch;
-  readonly keys: KeyResolver;
-  readonly clock: Clock;
-  readonly contexts: ContextLoader | undefined;
-  readonly cache: StatusListCache | undefined;
+/** The settings of a status check, checked and with their defaults: those of every verification, and of the status lists. */
+export interface StatusSettings extends TrustSettings {
+  readonly statusLists: StatusListCache | undefined;
   readonly statusIssuers: readonly string[];
-  readonly timeoutMs: number | undefined;
-  readonly maxBytes: number | undefined;
-  readonly maxTokens: number;
-  readonly algorithms: readonly string[] | undefined;
-  readonly clockSkewSeconds: number | undefined;
-  readonly allowUnboundKeys: boolean;
-  readonly legacyProofs: boolean;
-  readonly suites: readonly DataIntegritySuite[];
-  readonly signal: AbortSignal | undefined;
 }
 
-/** Checks the options of `verifyCredentialStatus` as a host passes them from JavaScript. */
-export function checkSettings(options: unknown): CheckSettings {
-  checkRecord(options, "The options of verifyCredentialStatus must be an object");
-  const { fetch, clock, contexts, cache, timeoutMs, maxBytes, signal, statusIssuers = [] } = options;
-  const { maxTokens = MAX_JSON_TOKENS, algorithms, clockSkewSeconds } = options;
-  const { allowUnboundKeys = false, legacyProofs = false, suites = [] } = options;
-  checkFunction(fetch, "The option fetch must be a function");
-  const keys = parseWith(keyResolverSchema, options.keys, "The option keys");
-  checkClock(clock);
-  if (contexts !== undefined) checkFunction(contexts, "The option contexts must be a function");
-  if (cache !== undefined) {
-    checkRecord(cache, "The option cache must be an object");
-    checkFunction(cache.get, "The function get of the option cache must be a function");
+/**
+ * Checks the options of a status check as a host passes them from JavaScript, and fills in the defaults: those of every
+ * verification, `statusLists` and `statusIssuers`.
+ *
+ * @param options - The options, which the caller has checked to be an object.
+ * @throws `DataError` when an option is not valid.
+ */
+export function readStatusSettings(options: Readonly<Record<string, unknown>>): StatusSettings {
+  const { statusLists, statusIssuers = [] } = options;
+  if (statusLists !== undefined) {
+    checkRecord(statusLists, "The option statusLists must be an object");
+    checkFunction(statusLists.get, "The function get of the option statusLists must be a function");
   }
   checkArray(statusIssuers, "The option statusIssuers must be an array");
-  for (const issuer of statusIssuers) checkString(issuer, "An issuer of the option statusIssuers");
-  if (timeoutMs !== undefined) checkPositiveInteger(timeoutMs, "The option timeoutMs");
-  if (maxBytes !== undefined) checkPositiveInteger(maxBytes, "The option maxBytes");
-  checkPositiveInteger(maxTokens, "The option maxTokens");
-  if (algorithms !== undefined) {
-    checkArray(algorithms, "The option algorithms must be an array");
-    for (const algorithm of algorithms) checkString(algorithm, "An algorithm of the option algorithms");
-  }
-  if (clockSkewSeconds !== undefined) checkNonNegativeInteger(clockSkewSeconds, "The option clockSkewSeconds");
-  checkFlag(allowUnboundKeys, "The option allowUnboundKeys");
-  checkFlag(legacyProofs, "The option legacyProofs");
-  const checkedSuites = readSuites(suites);
-  if (signal !== undefined) checkAbortSignal(signal, "The option signal");
+  for (const issuer of statusIssuers) checkNonEmptyString(issuer, "An issuer of the option statusIssuers");
   return {
-    fetch: fetch as Fetch,
-    keys,
-    clock: clock ?? SYSTEM_CLOCK,
-    contexts: contexts as ContextLoader | undefined,
-    cache: cache as StatusListCache | undefined,
+    ...readTrustSettings(options),
+    statusLists: statusLists as StatusListCache | undefined,
     statusIssuers: statusIssuers as readonly string[],
-    timeoutMs,
-    maxBytes,
-    maxTokens,
-    algorithms: algorithms as readonly string[] | undefined,
-    clockSkewSeconds,
-    allowUnboundKeys,
-    legacyProofs,
-    suites: checkedSuites,
-    signal,
   };
 }
 

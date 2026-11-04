@@ -142,7 +142,7 @@ export async function checkSignature(jws: string, badge: BadgeAssertionV2, conte
     return { proof: checkOf("proof", "failed", "The parts of the JWS must be canonical base64url without padding.") };
   }
   const alg = algorithmOf(parts[0] ?? "");
-  const { algorithms } = context.settings.jwt;
+  const { algorithms } = context.settings;
   if (alg === undefined || !algorithms.includes(alg)) {
     const detail = `The header of the JWS names no algorithm that the verifier allows (${algorithms.join(", ")}).`;
     return { proof: checkOf("proof", "failed", detail) };

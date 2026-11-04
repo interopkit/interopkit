@@ -13,7 +13,7 @@ import type {
 } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
 import { rethrowOperational } from "./document-loader.js";
-import { type DataIntegrityVerifyOptions, type VerifySettings, verifySettings } from "./options.js";
+import { type DataIntegrityVerifyOptions, type ProofCheckSettings, verifySettings } from "./options.js";
 import { BUILT_IN_SUITES, ED25519_SIGNATURE_2020 } from "./suites.js";
 
 const MILLISECONDS_PER_SECOND = 1000;
@@ -37,7 +37,7 @@ interface Refusal {
 }
 
 /** The suite that checks a proof, or the reason that none does. */
-function suiteOf(proof: Readonly<Record<string, unknown>>, settings: VerifySettings): DataIntegritySuite | Refusal {
+function suiteOf(proof: Readonly<Record<string, unknown>>, settings: ProofCheckSettings): DataIntegritySuite | Refusal {
   if (proof.type === ED25519_SIGNATURE_2020.cryptosuite) {
     return settings.legacyProofs
       ? ED25519_SIGNATURE_2020
@@ -57,7 +57,7 @@ function suiteOf(proof: Readonly<Record<string, unknown>>, settings: VerifySetti
 }
 
 /** Finds what is wrong with a proof before its signature is looked at, or `undefined`. */
-function proofProblem(proof: Readonly<Record<string, unknown>>, settings: VerifySettings): string | undefined {
+function proofProblem(proof: Readonly<Record<string, unknown>>, settings: ProofCheckSettings): string | undefined {
   if (proof.proofPurpose !== ASSERTION) {
     return `The proofPurpose ${describe(proof.proofPurpose)} must be ${ASSERTION}: a credential is an assertion of its issuer.`;
   }
@@ -82,7 +82,7 @@ async function suiteVerdict(
   secured: Readonly<Record<string, unknown>>,
   proof: Readonly<Record<string, unknown>>,
   key: VerificationKey,
-  settings: VerifySettings,
+  settings: ProofCheckSettings,
 ): Promise<boolean | Refusal> {
   try {
     const verifying = suite.verify(secured, proof, {
@@ -107,7 +107,7 @@ type Checked = { readonly key: VerificationKey } | Refusal;
 async function checkSignature(
   secured: Readonly<Record<string, unknown>>,
   proof: Readonly<Record<string, unknown>>,
-  settings: VerifySettings,
+  settings: ProofCheckSettings,
 ): Promise<Checked> {
   if (isBaseProof(proof)) {
     return {
@@ -138,7 +138,7 @@ interface ProofSet {
   readonly all: readonly unknown[];
   /** The credential without its proofs. */
   readonly unsecured: Readonly<Record<string, unknown>>;
-  readonly settings: VerifySettings;
+  readonly settings: ProofCheckSettings;
   /** What each proof came to, by its place in `all`. */
   readonly checked: Map<number, Promise<Checked>>;
 }
@@ -211,8 +211,8 @@ export type IssuerBinding = (key: VerificationKey) => Promise<VerificationCheck>
 
 /** Checks the credential before anything reads it: its size, tokens and depth, and the model; returns the credential as the model has it. */
 function readInput(
-  credential: IssuableCredential,
-  settings: VerifySettings,
+  credential: Readonly<Record<string, unknown>>,
+  settings: ProofCheckSettings,
 ): { readonly value: AnyVerifiableCredential } | { readonly reason: string } {
   try {
     textWithinLimits(credential, settings, "The credential");
@@ -266,7 +266,7 @@ async function bestProof(set: ProofSet, bind: IssuerBinding): Promise<Valid | Re
 async function proofsOf(
   document: Readonly<Record<string, unknown>>,
   credential: AnyVerifiableCredential,
-  settings: VerifySettings,
+  settings: ProofCheckSettings,
   bind: IssuerBinding,
 ): Promise<ProofVerdict> {
   const { proof: secured, ...unsecured } = document;
@@ -303,20 +303,18 @@ async function proofsOf(
  *
  * @param document - The credential as it was received, which the proofs sign.
  * @param credential - The same credential, read into the model.
- * @param options - The options of `verifyProof`.
+ * @param settings - The settings of the verification, which the caller has checked.
  * @param bind - Ties the key of a valid proof to the issuer, as the caller reports it.
  * @returns The verdict.
- * @throws `DataError` when an option is not valid.
  * @throws `ServiceError` when a key or a context cannot be read.
  * @throws The `reason` of the signal when it aborts.
  */
 export async function inspectProofs(
   document: Readonly<Record<string, unknown>>,
   credential: AnyVerifiableCredential,
-  options: DataIntegrityVerifyOptions,
+  settings: ProofCheckSettings,
   bind: IssuerBinding,
 ): Promise<ProofVerdict> {
-  const settings = verifySettings(options);
   settings.signal?.throwIfAborted();
   return await proofsOf(document, credential, settings, bind);
 }
@@ -352,6 +350,19 @@ export async function verifyProof(
 ): Promise<ProofResult> {
   const settings = verifySettings(options);
   if (!isRecord(credential)) throw new DataError(`The credential must be an object, found ${describe(credential)}.`);
+  return await verifyProofWith(credential, settings);
+}
+
+/**
+ * Verifies the Data Integrity proofs of a credential as `verifyProof` does, with the settings that its caller has checked.
+ *
+ * @throws `ServiceError` when a key, what the issuer publishes or a context cannot be read.
+ * @throws The `reason` of the signal when it aborts.
+ */
+export async function verifyProofWith(
+  credential: Readonly<Record<string, unknown>>,
+  settings: ProofCheckSettings,
+): Promise<ProofResult> {
   settings.signal?.throwIfAborted();
   const read = readInput(credential, settings);
   if ("reason" in read) return { valid: false, reason: read.reason };

@@ -3,8 +3,9 @@ import { base64url } from "jose";
 import { describe, expect, it } from "vitest";
 import { type IssuableCredential, readCredential } from "../src/index.js";
 import { readCredentialJwt, signCredentialJwt } from "../src/jwt/index.js";
-import { inspectJwt, readSettings } from "../src/jwt/internal.js";
+import { inspectJwt } from "../src/jwt/internal.js";
 import { createKeyResolver } from "../src/keys/index.js";
+import { readTrustSettings } from "../src/option-checks.js";
 import {
   achievementCredential,
   achievementCredentialV1p1,
@@ -656,6 +657,9 @@ describe("reading a JWT", () => {
       ["a limit of tokens of 0", { maxTokens: 0 }],
       ["allowUnboundKeys that is a string", { allowUnboundKeys: "yes" }],
       ["a signal that is a string", { signal: "stop" }],
+      ["suites of a verification, which a JWT does not need, that are a string", { suites: "x" }],
+      ["a loader of contexts of a verification that is a string", { contexts: "loader" }],
+      ["a limit of a fetch of a verification of 0", { timeoutMs: 0 }],
     ])("are refused for %s", async (_name, extra) => {
       await expect(
         readCredentialJwt("a.b.c", { ...options, ...JSON.parse(JSON.stringify(extra)) }),
@@ -666,7 +670,7 @@ describe("reading a JWT", () => {
 
 describe("inspecting a JWS for a verification", () => {
   const inspect = (jws: string, extra: Record<string, unknown> = {}) =>
-    inspectJwt(jws, readSettings({ ...world().options, ...extra }));
+    inspectJwt(jws, readTrustSettings({ ...world().options, ...extra }));
 
   it("gives the credential, the key and the raw payload, and leaves the key unbound", async () => {
     const { options } = world();
@@ -679,7 +683,7 @@ describe("inspecting a JWS for a verification", () => {
       },
     };
     const jws = await signCredentialJwt(badge(), signerOf(KEYS.es256), { kid: `${ISSUER}#es256` });
-    const inspected = await inspectJwt(jws, readSettings({ ...options, keys }));
+    const inspected = await inspectJwt(jws, readTrustSettings({ ...options, keys }));
     expect(inspected).toMatchObject({ valid: true, key: { id: `${ISSUER}#es256` }, timeFault: undefined });
     expect(published).toBe(0);
     if (inspected.valid) expect(inspected.raw).toMatchObject({ id: "https://example.edu/credentials/1" });

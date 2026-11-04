@@ -45,7 +45,7 @@ export async function verifyCredential(input: string | object, options: VerifyOp
   if (typeof input !== "string" && !isRecord(input)) {
     throw new DataError(`The input must be a credential as an object or a compact JWS, found ${describe(input)}.`);
   }
-  settings.jwt.signal?.throwIfAborted();
+  settings.signal?.throwIfAborted();
   const read = preparedOf(input, settings);
   if ("reason" in read) {
     return resultOf({ format: checkOf("format", "failed", read.reason) }, settings.unavailable);

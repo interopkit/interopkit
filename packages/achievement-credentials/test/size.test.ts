@@ -153,7 +153,13 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
   },
   "@interopkit/achievement-credentials/refresh": {
     gzip: 7000,
-    holds: ["@interopkit/core", "achievement-credentials/compact-jws", "achievement-credentials/json-text", "valibot"],
+    holds: [
+      "@interopkit/core",
+      "achievement-credentials/compact-jws",
+      "achievement-credentials/json-text",
+      "achievement-credentials/option-checks",
+      "valibot",
+    ],
   },
   "@interopkit/achievement-credentials/verify": {
     gzip: 62_500,
@@ -189,6 +195,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
       "achievement-credentials/model",
       "achievement-credentials/option-checks",
       "achievement-credentials/read",
+      "achievement-credentials/status",
       "achievement-credentials/verify",
       "jose",
       "valibot",

@@ -55,7 +55,7 @@ export function badgeV2InputOf(prepared: Prepared, context: Context): BadgeV2Inp
   }
   let payload: Readonly<Record<string, unknown>>;
   try {
-    payload = readJwsPayload(prepared.jws, context.settings.jwt.maxTokens);
+    payload = readJwsPayload(prepared.jws, context.settings.maxTokens);
   } catch {
     // A payload that is no JSON object is no badge of 2.0, and the verification of 3.0 says what is wrong with it.
     return undefined;
@@ -139,7 +139,7 @@ const FORMAT_PASSED = (): VerificationCheck =>
 
 /** The checks that every verified 2.0 badge runs once it is authentic: none has a schema or a refresh, and each has a period and a recipient. */
 function standingOf(badge: BadgeAssertionV2, context: Context): Checks {
-  const { clock, clockSkewSeconds } = context.settings.jwt;
+  const { clock, clockSkewSeconds } = context.settings;
   return {
     schema: checkOf(
       "schema",

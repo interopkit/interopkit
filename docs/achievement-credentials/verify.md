@@ -269,10 +269,10 @@ revocation list the `status` `unavailable`, which `unavailable: "warn"` accepts.
 | `clockSkewSeconds`     | The skew of a time claim, a validity period and a proof's expiry                                           | `60`                                                 |
 | `maxEndorsements`      | The most endorsements of one credential                                                                   | `32`                                                 |
 | `maxNestedCredentials` | The most credentials of one CLR                                                                           | `1000`                                               |
-| `maxInputBytes`        | The most characters of the input, and of each JWS that it holds                                           | `1048576`                                            |
-| `maxDepth`             | The most levels that the JSON of the input, and of each document of a 2.0 badge, nests                    | `64`                                                 |
+| `maxInputBytes`        | The most characters of the input, of each JWS that it holds, and of each status list credential           | `1048576`                                            |
+| `maxDepth`             | The most levels that the JSON of the input, of each status list credential, and of each document of a 2.0 badge, nests | `64`                                    |
 | `maxTokens`            | The most tokens of JSON of the input, and of each document of a 2.0 badge, counted before it is parsed    | `1000000`                                            |
-| `maxJsonLdTokens`      | The most tokens of JSON in a credential with a Data Integrity proof, which a JSON-LD processor reads to check it; a CLR that holds many credentials as objects can need more | `20000` |
+| `maxJsonLdTokens`      | The most tokens of JSON in a credential or a status list credential with a Data Integrity proof, which a JSON-LD processor reads to check it; a CLR that holds many credentials as objects can need more | `20000` |
 | `timeoutMs`            | The time of each fetch                                                                                    | `10000`                                              |
 | `maxBytes`             | The most bytes of each fetch                                                                              | `1048576`                                            |
 | `signal`               | Ends the caller's wait, and so a wait for a `KeyResolver`, a loader of contexts or a suite of the host that ignores the signal it is given. A call has no deadline of its own: a CLR may hold 1,000 credentials, and each may name a status list, a refresh service and a schema, so a host passes `AbortSignal.timeout(...)` | None |
@@ -291,6 +291,7 @@ revocation list the `status` `unavailable`, which `unavailable: "warn"` accepts.
 | Credentials refreshed in one call                  | 16, fixed              | `refresh` `skipped` for the rest, which are verified as they are: a CLR of 1,000 credentials that each name a refresh service would otherwise make the verifier fetch 1,000 of them and keep about 700 MiB |
 | Credentials of one CLR                             | `maxNestedCredentials` | `format` `failed`                                 |
 | Bytes of a schema, a status list or a refresh      | `maxBytes`             | `schema`, `status` or `refresh` `unavailable`      |
+| Characters, tokens and levels of a status list credential, and tokens that a JSON-LD processor reads of it | `maxInputBytes`, `maxTokens`, `maxDepth`, `maxJsonLdTokens` | `status` `failed` |
 | Time of each fetch                                 | `timeoutMs`            | `unavailable`                                     |
 | Tokens and levels of a schema                      | `maxTokens`, `maxDepth` | `schema` `unavailable`                           |
 | Schemas of a credential other than 1EdTech's       | 4, fixed               | `schema` `unavailable`, and none is fetched        |

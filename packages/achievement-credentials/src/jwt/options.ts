@@ -1,43 +1,9 @@
-import { type CallOptions, type Clock, checkClock, DataError, SYSTEM_CLOCK } from "@interopkit/core";
-import {
-  checkAbortSignal,
-  checkArray,
-  checkNonEmptyString,
-  checkNonNegativeInteger,
-  checkPositiveInteger,
-  checkRecord,
-  describe,
-  isRecord,
-  MAX_JSON_DEPTH,
-  MAX_JSON_TOKENS,
-  parseWith,
-} from "@interopkit/core/checks";
+import type { CallOptions, Clock } from "@interopkit/core";
+import { DataError } from "@interopkit/core";
+import { checkAbortSignal, checkNonEmptyString, checkRecord, isRecord } from "@interopkit/core/checks";
 import { publicJwk } from "../keys/internal.js";
 import type { KeyResolver } from "../model/index.js";
-import { checkFlag, keyResolverSchema } from "../option-checks.js";
-
-/** The JOSE algorithms that a credential may be verified with: the RSA, ECDSA and EdDSA algorithms that Web Crypto runs (Open Badges 8.2.1). */
-const VERIFICATION_ALGORITHMS = [
-  "RS256",
-  "RS384",
-  "RS512",
-  "PS256",
-  "PS384",
-  "PS512",
-  "ES256",
-  "ES384",
-  "ES512",
-  "EdDSA",
-] as const;
-
-/** The algorithms that a verification accepts unless it is told others. */
-const DEFAULT_ALGORITHMS: readonly string[] = ["RS256", "RS384", "RS512", "ES256", "ES384", "EdDSA"];
-
-/** The seconds by which the time of a JWT may differ from the clock of the verifier. */
-const DEFAULT_CLOCK_SKEW_SECONDS = 60;
-
-/** The most bytes of a compact JWS: a credential with its images embedded is the largest. */
-const DEFAULT_MAX_INPUT_BYTES = 1_048_576;
+import { checkFlag } from "../option-checks.js";
 
 /** The options of `readCredentialJwt`. */
 export interface JwtReadOptions extends CallOptions {
@@ -115,58 +81,6 @@ export interface JwtSignOptions extends CallOptions {
    * @defaultValue `false`
    */
   readonly signNested?: boolean;
-}
-
-/** The options of a read, checked and with their defaults. */
-export interface ReadSettings {
-  readonly keys: KeyResolver;
-  readonly clock: Clock;
-  readonly algorithms: readonly string[];
-  readonly clockSkewSeconds: number;
-  readonly allowUnboundKeys: boolean;
-  readonly maxInputBytes: number;
-  readonly maxDepth: number;
-  readonly maxTokens: number;
-  readonly signal: AbortSignal | undefined;
-}
-
-/** Checks the options of a read as a host passes them from JavaScript, and fills in the defaults. */
-export function readSettings(options: unknown): ReadSettings {
-  checkRecord(options, "The options of readCredentialJwt must be an object");
-  const keys = parseWith(keyResolverSchema, options.keys, "The option keys");
-  const { clock, signal } = options;
-  checkClock(clock);
-  const { algorithms = DEFAULT_ALGORITHMS, clockSkewSeconds = DEFAULT_CLOCK_SKEW_SECONDS } = options;
-  const { allowUnboundKeys = false, maxInputBytes = DEFAULT_MAX_INPUT_BYTES, maxDepth = MAX_JSON_DEPTH } = options;
-  const { maxTokens = MAX_JSON_TOKENS } = options;
-  checkArray(algorithms, "The option algorithms must be an array");
-  const known: readonly unknown[] = VERIFICATION_ALGORITHMS;
-  const accepted = algorithms.filter(
-    (algorithm): algorithm is string => typeof algorithm === "string" && known.includes(algorithm),
-  );
-  if (accepted.length !== algorithms.length) {
-    const refused = algorithms.find((algorithm) => !accepted.includes(algorithm as string));
-    throw new DataError(
-      `The option algorithms must list ${VERIFICATION_ALGORITHMS.join(", ")}, found ${describe(refused)}.`,
-    );
-  }
-  checkNonNegativeInteger(clockSkewSeconds, "The option clockSkewSeconds");
-  checkPositiveInteger(maxInputBytes, "The option maxInputBytes");
-  checkPositiveInteger(maxDepth, "The option maxDepth");
-  checkPositiveInteger(maxTokens, "The option maxTokens");
-  checkFlag(allowUnboundKeys, "The option allowUnboundKeys");
-  if (signal !== undefined) checkAbortSignal(signal, "The option signal");
-  return {
-    keys,
-    clock: clock ?? SYSTEM_CLOCK,
-    algorithms: accepted,
-    clockSkewSeconds,
-    allowUnboundKeys,
-    maxInputBytes,
-    maxDepth,
-    maxTokens,
-    signal,
-  };
 }
 
 /** The options of a signature, checked: the header that names the key, whether to sign nested credentials, and the signal. */

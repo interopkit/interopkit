@@ -10,3 +10,13 @@ tokens of a credential passed as an object names the option that sets them: `max
 A `did:jwk` and the `encodedList` of a status list are decoded as strictly as the parts of a JWS: the one canonical spelling of
 their bytes in base64url, without padding. A `did:jwk` that is padded, or whose last character holds bits that no byte holds,
 publishes no key, and such an `encodedList` fails the status check.
+
+`readCredentialJwt`, `verifyProof`, `verifyCredentialStatus`, `refreshCredential` and `verifyCredential` read the options of a
+verification with one check and its defaults, and `verifyCredential` hands what it checked to the checks of the proof, the
+status and the refresh without checking it again. So an option of a verification that a function does not take is still refused
+when its value is of the wrong type, and the functions agree where they differed: `verifyCredentialStatus` takes its cache of
+list credentials as `statusLists`, the name that `verifyCredential` gives it (was `cache`); it refuses an empty issuer in
+`statusIssuers`, and an algorithm outside those that verify a JWT before it reads the credential, as `verifyCredential` does;
+and it takes `maxInputBytes`, `maxDepth` and `maxJsonLdTokens`, within which it verifies the list credential as every reader of a
+credential does. `verifyCredential` verifies each status list credential within its own `maxInputBytes`, `maxDepth` and
+`maxJsonLdTokens`, as strictly as the credential.

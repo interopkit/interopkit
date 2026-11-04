@@ -133,7 +133,7 @@ It is valid at this time from its `validFrom` to its `validUntil`, or under the 
 
 A `credentialStatus` of the type `1EdTechRevocationList` names, in its `id`, the address of a JSON list of the revoked
 credentials (1EdTech Revocation List Status Method 1.0, a Candidate Final). The list is fetched over HTTPS within the limits
-above, and kept by `cache` for 300,000 ms. It is not signed, so it is as true as the HTTPS of its address, which the issuer of the
+above, and kept by `statusLists` for 300,000 ms. It is not signed, so it is as true as the HTTPS of its address, which the issuer of the
 credential chose.
 
 | `status`      | When                                                                                                         |
@@ -150,11 +150,14 @@ credential chose.
 | `keys`          | The `KeyResolver` for the list credential's proof                                                                     | Required                         |
 | `clock`         | The `Clock` that the list credential's validity is compared with, within `clockSkewSeconds`                            | `SYSTEM_CLOCK`                         |
 | `contexts`      | The `ContextLoader`, for a list credential with a Data Integrity proof                                                | None: such a list is `unavailable` |
-| `cache`         | A `StatusListCache`                                                                                                    | None: fetched for each verification |
+| `statusLists`   | A `StatusListCache` that keeps list credentials across verifications                                                   | None: fetched for each verification |
 | `statusIssuers` | Issuers other than the credential's that may publish its list                                                         | None                             |
 | `timeoutMs`     | The time a fetch may take                                                                                              | `10000`                          |
 | `maxTokens`     | The most tokens of JSON in the list credential, counted before it is parsed                                             | `1000000`       |
 | `maxBytes`      | The most bytes of the list credential                                                                                  | `1048576`                        |
+| `maxInputBytes` | The most characters of a list credential that is a compact JWS, and of one with a Data Integrity proof as JSON        | `1048576`                        |
+| `maxDepth`      | The most levels that the JSON of the list credential nests                                                            | `64`                             |
+| `maxJsonLdTokens` | The most tokens of JSON in a list credential with a Data Integrity proof, which a JSON-LD processor reads           | `20000`                          |
 | `algorithms`    | The algorithms that may sign a list credential that is a JWT                                                           | `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `EdDSA` |
 | `clockSkewSeconds` | The seconds that the validity of a list credential, and the time claims of one that is a JWT, may be off             | `60`                             |
 | `allowUnboundKeys` | Accept a list credential whose key its issuer does not publish                                                      | `false`                          |

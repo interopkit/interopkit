@@ -1,6 +1,7 @@
 import { DataError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
+import type { IssuableCredential } from "../src/index.js";
 import {
   allocateStatusIndex,
   createStatusList,
@@ -483,6 +484,10 @@ describe("checking the status of a credential", () => {
     });
     const clear = credentialWithStatus({ statusListIndex: "8" }, did);
     expect(await verifyCredentialStatus(clear, options)).toMatchObject({ outcome: "passed" });
+    expect(await verifyCredentialStatus(clear, { ...options, maxJsonLdTokens: 10 })).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("the option maxJsonLdTokens allows"),
+    });
     expect(await verifyCredentialStatus(clear, w.options)).toMatchObject({
       outcome: "unavailable",
       detail: expect.stringContaining("no loader of contexts"),
@@ -527,6 +532,19 @@ describe("checking the status of a credential", () => {
       detail: expect.stringContaining("more than the 20 tokens"),
     });
     expect(await signed.run()).toMatchObject({ outcome: "passed" });
+  });
+
+  it("verifies a list credential in a JWS within the characters and the levels of a credential that it is told", async () => {
+    const signed = status({}, { [LIST_URL]: await listJws(listWith()) });
+    expect(await signed.run()).toMatchObject({ outcome: "passed" });
+    expect(await signed.run({ maxInputBytes: 100 })).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("more than the 100 that it may have"),
+    });
+    expect(await signed.run({ maxDepth: 1 })).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("nests more than 1 levels"),
+    });
   });
 
   it("fails a list credential that nests deeper than the limit before it parses it", async () => {
@@ -591,7 +609,10 @@ describe("checking the status of a credential", () => {
     );
     try {
       for (const index of ["8", "9", "10"]) {
-        await verifyCredentialStatus(credentialWithStatus({ statusListIndex: index }), { ...w.options, cache });
+        await verifyCredentialStatus(credentialWithStatus({ statusListIndex: index }), {
+          ...w.options,
+          statusLists: cache,
+        });
       }
     } finally {
       vi.unstubAllGlobals();
@@ -602,7 +623,7 @@ describe("checking the status of a credential", () => {
   it("passes on the failure of a cache that is no fault of the list", async () => {
     const w = world({ [LIST_URL]: await listJws(listWith()) });
     const cache = { get: async () => Promise.reject(new TypeError("the cache broke")) };
-    await expect(verifyCredentialStatus(credentialWithStatus(), { ...w.options, cache })).rejects.toThrow(
+    await expect(verifyCredentialStatus(credentialWithStatus(), { ...w.options, statusLists: cache })).rejects.toThrow(
       "the cache broke",
     );
   });
@@ -613,17 +634,25 @@ describe("checking the status of a credential", () => {
     const bad = (extra: object) => ({ ...w.options, ...JSON.parse(JSON.stringify(extra)) });
     await expect(verifyCredentialStatus(JSON.parse("null"), w.options)).rejects.toBeInstanceOf(DataError);
     await expect(verifyCredentialStatus(credential, JSON.parse("null"))).rejects.toBeInstanceOf(DataError);
+    const { fetch: _fetch, ...withoutFetch } = w.options;
+    await expect(verifyCredentialStatus(credential, withoutFetch as never)).rejects.toThrow(
+      "The option fetch must be a function, found undefined.",
+    );
     for (const extra of [
       { fetch: 5 },
       { keys: {} },
       { contexts: 5 },
-      { cache: 5 },
-      { cache: {} },
+      { statusLists: 5 },
+      { statusLists: {} },
       { statusIssuers: "x" },
       { statusIssuers: [5] },
+      { statusIssuers: [""] },
       { timeoutMs: 0 },
       { maxBytes: 1.5 },
       { maxTokens: 0 },
+      { maxInputBytes: 0 },
+      { maxDepth: 1.5 },
+      { maxJsonLdTokens: "20000" },
       { algorithms: "ES256" },
       { algorithms: [5] },
       { clockSkewSeconds: -1 },
@@ -639,13 +668,23 @@ describe("checking the status of a credential", () => {
       );
     }
   });
+
+  it("refuses an algorithm that no JWT is verified with, whatever the credential names", async () => {
+    const w = world();
+    const { credentialStatus: _status, ...unnamed } = credentialWithStatus() as unknown as Record<string, unknown>;
+    const credential = unnamed as unknown as IssuableCredential;
+    expect(await verifyCredentialStatus(credential, w.options)).toMatchObject({ outcome: "skipped" });
+    await expect(verifyCredentialStatus(credential, { ...w.options, algorithms: ["HS256"] })).rejects.toThrow(
+      "The option algorithms must list",
+    );
+  });
 });
 
 describe("the cache of status list credentials", () => {
   async function fixture(extra: { ttlMs?: number; validUntil?: string } = {}) {
     const w = world({ [LIST_URL]: await listJws(listWith(), { validFrom: "2024-06-01T00:00:00Z", ...extra }) });
     const cache = createStatusListCache({ clock: w.clock });
-    const run = () => verifyCredentialStatus(credentialWithStatus(), { ...w.options, cache });
+    const run = () => verifyCredentialStatus(credentialWithStatus(), { ...w.options, statusLists: cache });
     const listRequests = () => w.requests.filter((url) => url === LIST_URL).length;
     return { w, run, listRequests };
   }
@@ -683,7 +722,7 @@ describe("the cache of status list credentials", () => {
     expect(listRequests()).toBe(1);
     const w = world({ [LIST_URL]: 503 });
     const cache = createStatusListCache({ clock: w.clock });
-    const check = () => verifyCredentialStatus(credentialWithStatus(), { ...w.options, cache });
+    const check = () => verifyCredentialStatus(credentialWithStatus(), { ...w.options, statusLists: cache });
     expect(await check()).toMatchObject({ outcome: "unavailable" });
     expect(await check()).toMatchObject({ outcome: "unavailable" });
     expect(w.requests.filter((url) => url === LIST_URL)).toHaveLength(2);
@@ -692,7 +731,7 @@ describe("the cache of status list credentials", () => {
   it("keeps a list under the Data Model 1.1 until its expirationDate", async () => {
     const w = world({ [LIST_URL]: await listV1p1Jws("2024-06-14T12:01:00Z", 600_000) });
     const cache = createStatusListCache({ clock: w.clock });
-    const run = () => verifyCredentialStatus(credentialWithStatus(), { ...w.options, cache });
+    const run = () => verifyCredentialStatus(credentialWithStatus(), { ...w.options, statusLists: cache });
     const listRequests = () => w.requests.filter((url) => url === LIST_URL).length;
     expect(await run()).toMatchObject({ outcome: "passed" });
     w.clock.advance(59_000);
@@ -709,7 +748,7 @@ describe("the cache of status list credentials", () => {
     const w = world({ [LIST_URL]: forged });
     const cache = createStatusListCache({ clock: w.clock });
     const check = (options: object = {}) =>
-      verifyCredentialStatus(credentialWithStatus(), { ...w.options, cache, ...options });
+      verifyCredentialStatus(credentialWithStatus(), { ...w.options, statusLists: cache, ...options });
     const refused = { outcome: "failed", detail: expect.stringContaining("STATUS_VERIFICATION_ERROR") };
     expect(await check({ allowUnboundKeys: true })).toMatchObject({ outcome: "passed" });
     expect(await check()).toMatchObject(refused);
@@ -747,7 +786,7 @@ describe("the cache of status list credentials", () => {
       verifyCredentialStatus(credentialWithStatus(), {
         ...w.options,
         keys,
-        cache,
+        statusLists: cache,
         ...(signal === undefined ? {} : { signal }),
       });
     const aborted = check(first.signal);
@@ -766,7 +805,7 @@ describe("the cache of status list credentials", () => {
     const w = world({ [LIST_URL]: await listJws(listWith()) });
     const { hang, seen } = hangingPort();
     await abortsWhileWaiting(
-      (signal) => verifyCredentialStatus(credentialWithStatus(), { ...w.options, cache: { get: hang }, signal }),
+      (signal) => verifyCredentialStatus(credentialWithStatus(), { ...w.options, statusLists: { get: hang }, signal }),
       seen,
     );
   });
@@ -854,7 +893,7 @@ describe("a revocation list of the 1EdTech Revocation List Status Method", () =>
   it("is fetched once across verifications with a cache", async () => {
     const w = world({ [REVOCATIONS]: listOf([]) });
     const cache = createStatusListCache({ clock: clockAt(NOW) });
-    for (let time = 0; time < 3; time += 1) await verifyCredentialStatus(named(), { ...w.options, cache });
+    for (let time = 0; time < 3; time += 1) await verifyCredentialStatus(named(), { ...w.options, statusLists: cache });
     expect(w.requests.filter((url) => url === REVOCATIONS)).toHaveLength(1);
   });
 });

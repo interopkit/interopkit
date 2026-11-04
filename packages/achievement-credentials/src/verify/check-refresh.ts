@@ -1,11 +1,10 @@
 import { DataError, ServiceError } from "@interopkit/core";
 import { isSameCredential } from "../compare/index.js";
 import { VERIFICATION_CHECKS, type VerificationCheck } from "../model/index.js";
-import { refreshCredential } from "../refresh/index.js";
+import { refreshCredentialWith } from "../refresh/internal.js";
 import { type Authentic, type Authenticated, authenticate } from "./authenticate.js";
 import type { Context } from "./context.js";
 import { preparedOf } from "./input.js";
-import { fetchOf } from "./options.js";
 import { type Checks, checkOf } from "./result.js";
 
 /** What a refresh came to: its check, and the credential that took the place of the original when it succeeded. */
@@ -50,16 +49,9 @@ export async function refresh(authentic: Authentic, context: Context): Promise<R
     }
     context.refreshes.count += 1;
   }
-  const { jwt } = settings;
-  let candidate: Awaited<ReturnType<typeof refreshCredential>>;
+  let candidate: Awaited<ReturnType<typeof refreshCredentialWith>>;
   try {
-    candidate = await refreshCredential(authentic.credential, {
-      fetch: fetchOf(settings),
-      timeoutMs: settings.timeoutMs,
-      maxBytes: settings.maxBytes,
-      maxTokens: jwt.maxTokens,
-      ...(jwt.signal === undefined ? {} : { signal: jwt.signal }),
-    });
+    candidate = await refreshCredentialWith(authentic.credential, settings);
   } catch (error) {
     if (error instanceof ServiceError || error instanceof DataError) {
       return unavailable(`The refresh did not succeed, and the original credential is verified: ${error.message}`);

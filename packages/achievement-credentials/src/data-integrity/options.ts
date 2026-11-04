@@ -3,17 +3,13 @@ import {
   checkAbortSignal,
   checkArray,
   checkFunction,
-  checkNonNegativeInteger,
   checkPositiveInteger,
   checkRecord,
   describe,
-  MAX_JSON_DEPTH,
-  MAX_JSON_TOKENS,
-  parseWith,
 } from "@interopkit/core/checks";
 import { DEFAULT_MAX_JSON_LD_TOKENS } from "../json-text.js";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
-import { checkFlag, keyResolverSchema, readSuites } from "../option-checks.js";
+import { readTrustSettings, type TrustSettings } from "../option-checks.js";
 
 /** A cryptosuite that `addProof` signs with: `eddsa-rdfc-2022` or `ecdsa-sd-2023`. */
 export type SigningCryptosuite = "eddsa-rdfc-2022" | "ecdsa-sd-2023";
@@ -135,12 +131,6 @@ export interface DataIntegrityVerifyOptions extends CallOptions {
   readonly maxJsonLdTokens?: number;
 }
 
-/** The seconds by which the time of a proof may differ from the clock of the verifier. */
-const DEFAULT_CLOCK_SKEW_SECONDS = 60;
-
-/** The most bytes of a credential as JSON unless the host says otherwise. */
-const DEFAULT_MAX_INPUT_BYTES = 1_048_576;
-
 /** The options of a signature, checked. */
 export interface ProofSettings {
   readonly cryptosuite: SigningCryptosuite;
@@ -207,53 +197,14 @@ export function disclosureSettings(options: unknown): DisclosureSettings {
   return { selectivePointers, contexts: contexts as ContextLoader, maxJsonLdTokens, signal };
 }
 
-/** The options of a verification, checked and with their defaults. */
-export interface VerifySettings {
-  readonly keys: KeyResolver;
-  readonly clock: Clock;
-  readonly contexts: ContextLoader;
-  readonly clockSkewSeconds: number;
-  readonly allowUnboundKeys: boolean;
-  readonly legacyProofs: boolean;
-  readonly suites: readonly DataIntegritySuite[];
-  readonly maxInputBytes: number;
-  readonly maxDepth: number;
-  readonly maxTokens: number;
-  readonly maxJsonLdTokens: number;
-  readonly signal: AbortSignal | undefined;
-}
+/** The settings of a verification of a proof: those of every verification, with the loader of contexts that it needs. */
+export type ProofCheckSettings = TrustSettings & { readonly contexts: ContextLoader };
 
 /** Checks the options of `verifyProof` as a host passes them from JavaScript, and fills in the defaults. */
-export function verifySettings(options: unknown): VerifySettings {
+export function verifySettings(options: unknown): ProofCheckSettings {
   checkRecord(options, "The options of verifyProof must be an object");
-  const keys = parseWith(keyResolverSchema, options.keys, "The option keys");
-  const { clock, contexts, signal, suites = [] } = options;
-  checkClock(clock);
-  checkFunction(contexts, "The option contexts must be a function");
-  const { clockSkewSeconds = DEFAULT_CLOCK_SKEW_SECONDS, allowUnboundKeys = false, legacyProofs = false } = options;
-  const { maxInputBytes = DEFAULT_MAX_INPUT_BYTES, maxDepth = MAX_JSON_DEPTH, maxTokens = MAX_JSON_TOKENS } = options;
-  const { maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS } = options;
-  checkNonNegativeInteger(clockSkewSeconds, "The option clockSkewSeconds");
-  checkPositiveInteger(maxInputBytes, "The option maxInputBytes");
-  checkPositiveInteger(maxDepth, "The option maxDepth");
-  checkPositiveInteger(maxTokens, "The option maxTokens");
-  checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
-  checkFlag(allowUnboundKeys, "The option allowUnboundKeys");
-  checkFlag(legacyProofs, "The option legacyProofs");
-  const checked = readSuites(suites);
-  if (signal !== undefined) checkAbortSignal(signal, "The option signal");
-  return {
-    keys,
-    clock: clock ?? SYSTEM_CLOCK,
-    contexts: contexts as ContextLoader,
-    clockSkewSeconds,
-    allowUnboundKeys,
-    legacyProofs,
-    suites: checked,
-    maxInputBytes,
-    maxDepth,
-    maxTokens,
-    maxJsonLdTokens,
-    signal,
-  };
+  const settings = readTrustSettings(options);
+  const { contexts } = settings;
+  if (contexts === undefined) throw new DataError("The option contexts must be a function, found undefined.");
+  return { ...settings, contexts };
 }

@@ -1330,15 +1330,15 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
     rule: "A status list is verified as strictly as the credential: its key must belong to its issuer unless the host allows otherwise.",
     file: "packages/achievement-credentials/src/verify/check-status.ts",
-    find: "allowUnboundKeys: jwt.allowUnboundKeys,",
-    replace: "allowUnboundKeys: true,",
+    find: "return await verifyCredentialStatusWith(credential, context.settings);",
+    replace: "return await verifyCredentialStatusWith(credential, { ...context.settings, allowUnboundKeys: true });",
     test: "packages/achievement-credentials/test/verify-checks.test.ts",
   },
   {
     rule: "A list that several credentials of a call name is fetched once for the call.",
-    file: "packages/achievement-credentials/src/verify/check-status.ts",
-    find: "cache: context.statusLists,",
-    replace: "cache: undefined,",
+    file: "packages/achievement-credentials/src/verify/context.ts",
+    find: "statusLists: settings.statusLists ?? createStatusListCache({ clock: settings.clock })",
+    replace: "statusLists: settings.statusLists",
     test: "packages/achievement-credentials/test/verify-held.test.ts",
   },
   {
@@ -1842,8 +1842,8 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
     rule: "The verification passes the limit of tokens of the processors to the check of the proof.",
     file: "packages/achievement-credentials/src/verify/authenticate.ts",
-    find: "maxJsonLdTokens: settings.maxJsonLdTokens,",
-    replace: "",
+    find: "{ ...settings, contexts: settings.contexts }",
+    replace: "{ ...settings, contexts: settings.contexts, maxJsonLdTokens: Number.MAX_SAFE_INTEGER }",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {

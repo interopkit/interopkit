@@ -90,6 +90,9 @@ describe("refreshing a credential", () => {
     const { fetch } = serve({});
     await expect(refreshCredential(JSON.parse("null"), { fetch })).rejects.toBeInstanceOf(DataError);
     await expect(refreshCredential(withService(), JSON.parse("null"))).rejects.toBeInstanceOf(DataError);
+    await expect(refreshCredential(withService(), JSON.parse("{}"))).rejects.toThrow(
+      "The option fetch must be a function, found undefined.",
+    );
     for (const extra of [{ timeoutMs: 0 }, { maxBytes: 1.5 }, { maxTokens: 0 }, { signal: 1 }, { fetch: 5 }]) {
       await expect(
         refreshCredential(withService(), { fetch, ...JSON.parse(JSON.stringify(extra)) }),

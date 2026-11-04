@@ -1,19 +1,10 @@
-import { type CallOptions, type Clock, DataError, type Fetch, ServiceError } from "@interopkit/core";
-import {
-  checkArray,
-  checkFunction,
-  checkNonEmptyString,
-  checkPositiveInteger,
-  checkRecord,
-  describe,
-  isRecord,
-} from "@interopkit/core/checks";
+import { type CallOptions, type Clock, DataError, type Fetch } from "@interopkit/core";
+import { checkNonEmptyString, checkPositiveInteger, checkRecord, describe, isRecord } from "@interopkit/core/checks";
 import type { KnownIdentity } from "../issue/index.js";
-import { DEFAULT_MAX_JSON_LD_TOKENS } from "../json-text.js";
-import { type ReadSettings, readSettings } from "../jwt/internal.js";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
-import { checkFlag, readSuites } from "../option-checks.js";
+import { checkFlag } from "../option-checks.js";
 import type { StatusListCache } from "../status/index.js";
+import { readStatusSettings, type StatusSettings } from "../status/internal.js";
 
 /** The recipient that a verifier knows, to be matched with the subject of a credential. */
 export interface KnownRecipient {
@@ -161,38 +152,18 @@ export interface VerifyOptions extends CallOptions {
   readonly suites?: readonly DataIntegritySuite[];
 }
 
+/** The most endorsements of one credential unless the host says otherwise. */
 const DEFAULT_MAX_ENDORSEMENTS = 32;
+/** The most credentials of one CLR unless the host says otherwise. */
 const DEFAULT_MAX_NESTED_CREDENTIALS = 1000;
-const DEFAULT_TIMEOUT_MS = 10_000;
-const DEFAULT_MAX_BYTES = 1_048_576;
 
-/** A `fetch` that fetches nothing, for a verification that was given none: each use is a service that did not answer. */
-const NO_FETCH: Fetch = () => Promise.reject(new ServiceError("No fetch was given to verify with.", 0, ""));
-
-/** The options of a verification, checked and with their defaults. */
-export interface VerifySettings {
-  /** The options of reading a JWS, which also hold the keys, the clock, the algorithms, the skew and the limits of the input. */
-  readonly jwt: ReadSettings;
-  readonly contexts: ContextLoader | undefined;
-  /** The `fetch` of the host, or undefined. */
-  readonly fetch: Fetch | undefined;
-  readonly statusLists: StatusListCache | undefined;
-  readonly statusIssuers: readonly string[];
+/** The options of a verification, checked and with their defaults: those of a status check, and those of `verifyCredential`. */
+export interface VerifySettings extends StatusSettings {
   readonly recipient: KnownRecipient | undefined;
   readonly refresh: boolean;
   readonly unavailable: "fail" | "warn";
-  readonly legacyProofs: boolean;
-  readonly suites: readonly DataIntegritySuite[];
-  readonly maxJsonLdTokens: number;
   readonly maxEndorsements: number;
   readonly maxNestedCredentials: number;
-  readonly timeoutMs: number;
-  readonly maxBytes: number;
-}
-
-/** Returns what to pass as `fetch` to a function that needs one: the host's, or one that says that none was given. */
-export function fetchOf(settings: VerifySettings): Fetch {
-  return settings.fetch ?? NO_FETCH;
 }
 
 /** Checks the known recipient as a host passes it from JavaScript. */
@@ -217,47 +188,21 @@ function checkRecipient(recipient: unknown): KnownRecipient {
 /** Checks the options of `verifyCredential` as a host passes them from JavaScript, and fills in the defaults. */
 export function verifySettings(options: unknown): VerifySettings {
   checkRecord(options, "The options of verifyCredential must be an object");
-  // The keys, the clock, the algorithms, the skew, the limits of the input and the signal are those of reading a JWS.
-  const jwt = readSettings(options);
-  const { contexts, fetch, statusLists, statusIssuers = [], recipient, suites = [] } = options;
-  const { refresh = true, unavailable = "fail", legacyProofs = false } = options;
+  const { recipient, refresh = true, unavailable = "fail" } = options;
   const { maxEndorsements = DEFAULT_MAX_ENDORSEMENTS, maxNestedCredentials = DEFAULT_MAX_NESTED_CREDENTIALS } = options;
-  const { timeoutMs = DEFAULT_TIMEOUT_MS, maxBytes = DEFAULT_MAX_BYTES } = options;
-  const { maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS } = options;
-  if (contexts !== undefined) checkFunction(contexts, "The option contexts must be a function");
-  if (fetch !== undefined) checkFunction(fetch, "The option fetch must be a function");
-  if (statusLists !== undefined) {
-    checkRecord(statusLists, "The option statusLists must be an object");
-    checkFunction(statusLists.get, "The function get of the option statusLists must be a function");
-  }
-  checkArray(statusIssuers, "The option statusIssuers must be an array");
-  for (const issuer of statusIssuers) checkNonEmptyString(issuer, "An issuer of the option statusIssuers");
+  const settings = readStatusSettings(options);
   checkFlag(refresh, "The option refresh");
-  checkFlag(legacyProofs, "The option legacyProofs");
   if (unavailable !== "fail" && unavailable !== "warn") {
     throw new DataError(`The option unavailable must be "fail" or "warn", found ${describe(unavailable)}.`);
   }
-  checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
   checkPositiveInteger(maxEndorsements, "The option maxEndorsements");
   checkPositiveInteger(maxNestedCredentials, "The option maxNestedCredentials");
-  checkPositiveInteger(timeoutMs, "The option timeoutMs");
-  checkPositiveInteger(maxBytes, "The option maxBytes");
-  const checkedSuites = readSuites(suites);
   return {
-    jwt,
-    contexts: contexts as ContextLoader | undefined,
-    fetch: fetch as Fetch | undefined,
-    statusLists: statusLists as StatusListCache | undefined,
-    statusIssuers: statusIssuers as readonly string[],
+    ...settings,
     recipient: recipient === undefined ? undefined : checkRecipient(recipient),
     refresh,
     unavailable,
-    legacyProofs,
-    suites: checkedSuites,
-    maxJsonLdTokens,
     maxEndorsements,
     maxNestedCredentials,
-    timeoutMs,
-    maxBytes,
   };
 }

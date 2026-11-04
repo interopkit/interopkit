@@ -33,7 +33,7 @@ function readObject(
   context: Context,
 ): { readonly credential: AnyVerifiableCredential } | { readonly reason: string } {
   try {
-    textWithinLimits(value, context.settings.jwt, "The credential");
+    textWithinLimits(value, context.settings, "The credential");
   } catch (error) {
     return { reason: error instanceof DataError ? error.message : "The credential is not JSON." };
   }
@@ -48,7 +48,7 @@ function issuerCheckOf(
   context: Context,
 ): Promise<VerificationCheck> {
   const issuer = typeof credential.issuer === "string" ? credential.issuer : credential.issuer.id;
-  return bindKey(key, issuer, context.settings.jwt);
+  return bindKey(key, issuer, context.settings);
 }
 
 /** What a proof secures: the credential, as written and as read, and the key that verified the proof. */
@@ -74,7 +74,7 @@ const unknownKind = (): Checks => ({ format: checkOf("format", "failed", NOT_A_C
 async function jwsProof(jws: string, context: Context): Promise<ProofStep> {
   let inspected: Awaited<ReturnType<typeof inspectJwt>>;
   try {
-    inspected = await inspectJwt(jws, context.settings.jwt);
+    inspected = await inspectJwt(jws, context.settings);
   } catch (error) {
     if (!(error instanceof ServiceError)) throw error;
     const detail = `The key that verifies the JWS could not be read: ${error.message}`;
@@ -112,26 +112,10 @@ async function dataIntegrityProof(
   }
   // Loaded when a credential with a Data Integrity proof is verified, so that a verifier of JWTs never loads JSON-LD.
   const { inspectProofs } = await import("../data-integrity/internal.js");
-  const { jwt } = settings;
   try {
     // The issuer check of a proof's key is a check of its own, so that its failure is told apart from the proof's.
-    const verdict = await inspectProofs(
-      value,
-      credential,
-      {
-        keys: jwt.keys,
-        clock: jwt.clock,
-        contexts: settings.contexts,
-        clockSkewSeconds: jwt.clockSkewSeconds,
-        legacyProofs: settings.legacyProofs,
-        suites: settings.suites,
-        maxInputBytes: jwt.maxInputBytes,
-        maxDepth: jwt.maxDepth,
-        maxTokens: jwt.maxTokens,
-        maxJsonLdTokens: settings.maxJsonLdTokens,
-        ...(jwt.signal === undefined ? {} : { signal: jwt.signal }),
-      },
-      (key) => issuerCheckOf(credential, key, context),
+    const verdict = await inspectProofs(value, credential, { ...settings, contexts: settings.contexts }, (key) =>
+      issuerCheckOf(credential, key, context),
     );
     if (verdict.valid) {
       const { key, issuer } = verdict;

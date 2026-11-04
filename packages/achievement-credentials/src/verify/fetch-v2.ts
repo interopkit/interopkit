@@ -1,8 +1,8 @@
 import { DataError, requestService, ServiceError } from "@interopkit/core";
 import { checkRemoteUrl, isRecord, parseJsonText } from "@interopkit/core/checks";
 import { jsonRefusals } from "../json-text.js";
+import { fetchOf } from "../option-checks.js";
 import type { Context } from "./context.js";
-import { fetchOf } from "./options.js";
 
 /** The status that a host answers for a hosted assertion that its issuer revoked (Open Badges 2.0, Revoking Hosted Assertions). */
 const GONE = 410;
@@ -55,14 +55,13 @@ export async function fetchDocumentV2(url: unknown, what: string, context: Conte
     return { failed: error instanceof Error ? error.message : String(error) };
   }
   const { settings } = context;
-  const { jwt } = settings;
   let body: Uint8Array;
   try {
     const answer = await requestService(
       {
         fetch: fetchOf(settings),
         timeoutMs: settings.timeoutMs,
-        ...(jwt.signal === undefined ? {} : { signal: jwt.signal }),
+        ...(settings.signal === undefined ? {} : { signal: settings.signal }),
       },
       `${what} at ${url}`,
       url,
@@ -81,7 +80,7 @@ export async function fetchDocumentV2(url: unknown, what: string, context: Conte
   } catch {
     return { failed: `${what} at ${url} is not UTF-8.` };
   }
-  const limits = { maxDepth: jwt.maxDepth, maxTokens: jwt.maxTokens };
+  const limits = { maxDepth: settings.maxDepth, maxTokens: settings.maxTokens };
   let value: unknown;
   try {
     value = parseJsonText(text, limits, jsonRefusals(`${what} at ${url}`, limits));

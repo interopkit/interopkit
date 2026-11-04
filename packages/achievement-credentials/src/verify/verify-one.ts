@@ -59,7 +59,7 @@ async function verifyEach(
 ): Promise<readonly VerificationResult[]> {
   const results: VerificationResult[] = [];
   for (const item of items) {
-    context.settings.jwt.signal?.throwIfAborted();
+    context.settings.signal?.throwIfAborted();
     results.push(await verifyOne(childOf(item), role, context));
   }
   return results;
@@ -67,7 +67,7 @@ async function verifyEach(
 
 /** Runs the checks that need the credential to be authentic and that fetch what it names. */
 async function followUp(authentic: Authentic, role: Role, context: Context): Promise<Checks> {
-  const { clock, clockSkewSeconds } = context.settings.jwt;
+  const { clock, clockSkewSeconds } = context.settings;
   return {
     schema: await checkSchema(authentic, context),
     status: await checkStatus(authentic, context),

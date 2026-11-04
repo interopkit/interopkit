@@ -72,7 +72,7 @@ async function loadSchema(url: string, context: Context): Promise<SchemaLoad> {
       {
         fetch: settings.fetch,
         timeoutMs: settings.timeoutMs,
-        ...(settings.jwt.signal === undefined ? {} : { signal: settings.jwt.signal }),
+        ...(settings.signal === undefined ? {} : { signal: settings.signal }),
       },
       label,
       url,
@@ -83,7 +83,7 @@ async function loadSchema(url: string, context: Context): Promise<SchemaLoad> {
     if (error instanceof ServiceError) return { reason: error.message };
     throw error;
   }
-  const limits = { maxDepth: settings.jwt.maxDepth, maxTokens: settings.jwt.maxTokens };
+  const limits = { maxDepth: settings.maxDepth, maxTokens: settings.maxTokens };
   let schema: unknown;
   try {
     schema = parseJsonText(text, limits, jsonRefusals(label, limits));

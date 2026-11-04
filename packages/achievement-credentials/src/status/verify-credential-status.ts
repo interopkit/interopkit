@@ -1,12 +1,13 @@
 import { callService, DataError, raceAbort, readClock, ServiceError } from "@interopkit/core";
 import { checkRecord, describe, isRecord, MAX_JSON_DEPTH, parseJsonText } from "@interopkit/core/checks";
 import { jsonRefusals } from "../json-text.js";
-import { readCredentialJwt } from "../jwt/index.js";
+import { readCredentialJwtWith } from "../jwt/internal.js";
 import type { AnyVerifiableCredential, CredentialV1p1, IssuableCredential, VerificationCheck } from "../model/index.js";
+import { fetchOf } from "../option-checks.js";
 import { credentialOrReason } from "../read/internal.js";
 import { isSet, MIN_LIST_LENGTH } from "./bitstring.js";
 import { decodeList } from "./encoded-list.js";
-import { type CheckSettings, checkSettings, type StatusCheckOptions } from "./options.js";
+import { readStatusSettings, type StatusCheckOptions, type StatusSettings } from "./options.js";
 
 /** The `type` of the status entry of Bitstring Status List (3.1). */
 const ENTRY_TYPE = "BitstringStatusListEntry";
@@ -20,10 +21,7 @@ const LIST_TYPE = "BitstringStatusListCredential";
 /** What a set bit means for each purpose that this module reads. */
 const MEANING: Readonly<Record<string, string>> = { revocation: "revoked", suspension: "suspended" };
 
-const DEFAULT_TIMEOUT_MS = 10_000;
-const DEFAULT_MAX_BYTES = 1_048_576;
 const MILLISECONDS_PER_SECOND = 1000;
-const DEFAULT_CLOCK_SKEW_SECONDS = 60;
 
 const check = (outcome: VerificationCheck["outcome"], detail: string): VerificationCheck => ({
   check: "status",
@@ -38,7 +36,7 @@ class ListFailure extends Error {}
 class ListUnavailable extends Error {}
 
 /** Parses the text of a list within the levels of a credential and the tokens of the options, or throws what is wrong with it. */
-function parseList(text: string, what: string, settings: CheckSettings): unknown {
+function parseList(text: string, what: string, settings: StatusSettings): unknown {
   const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens: settings.maxTokens };
   try {
     return parseJsonText(text, limits, jsonRefusals(what, limits));
@@ -132,20 +130,11 @@ function entryOf(credential: unknown): Named {
  */
 async function verifiedList(
   text: string,
-  settings: CheckSettings,
+  settings: StatusSettings,
   signal: AbortSignal | undefined,
 ): Promise<AnyVerifiableCredential> {
-  const keyed = {
-    keys: settings.keys,
-    clock: settings.clock,
-    maxTokens: settings.maxTokens,
-    allowUnboundKeys: settings.allowUnboundKeys,
-    ...(settings.algorithms === undefined ? {} : { algorithms: settings.algorithms }),
-    ...(settings.clockSkewSeconds === undefined ? {} : { clockSkewSeconds: settings.clockSkewSeconds }),
-    ...(signal === undefined ? {} : { signal }),
-  };
   if (!text.trimStart().startsWith("{")) {
-    const result = await readCredentialJwt(text.trim(), keyed);
+    const result = await readCredentialJwtWith(text.trim(), { ...settings, signal });
     if (!result.valid) throw new ListFailure(result.reason);
     return asList(result.credential);
   }
@@ -158,12 +147,12 @@ async function verifiedList(
     );
   }
   // Loaded when a list credential with a Data Integrity proof is checked, so that a verifier of JWTs never loads JSON-LD.
-  const { verifyProof } = await import("../data-integrity/index.js");
-  const result = await verifyProof(value as IssuableCredential, {
-    ...keyed,
+  const { verifyProofWith } = await import("../data-integrity/internal.js");
+  // The proof secures the list credential as it was written, which the reader of the model has found to be a credential.
+  const result = await verifyProofWith(value as Readonly<Record<string, unknown>>, {
+    ...settings,
     contexts: settings.contexts,
-    legacyProofs: settings.legacyProofs,
-    suites: settings.suites,
+    signal,
   });
   if (!result.valid) throw new ListFailure(result.reason);
   return asList(result.credential);
@@ -186,20 +175,20 @@ function periodOf(list: AnyVerifiableCredential): { readonly from: number; reado
 }
 
 /** Fetches the text of a list, within the time and size of the options. */
-async function fetchText(url: string, what: string, accept: string, settings: CheckSettings): Promise<string> {
+async function fetchText(url: string, what: string, accept: string, settings: StatusSettings): Promise<string> {
   return await callService(
-    { fetch: settings.fetch, timeoutMs: settings.timeoutMs ?? DEFAULT_TIMEOUT_MS },
+    { fetch: fetchOf(settings), timeoutMs: settings.timeoutMs },
     `${what} at ${url}`,
     url,
     { method: "GET", headers: { accept } },
-    { maxBytes: settings.maxBytes ?? DEFAULT_MAX_BYTES },
+    { maxBytes: settings.maxBytes },
   );
 }
 
 /** Fetches a list credential and checks it, or throws what is wrong with it. */
 async function fetchList(
   url: string,
-  settings: CheckSettings,
+  settings: StatusSettings,
   signal: AbortSignal | undefined,
 ): Promise<AnyVerifiableCredential> {
   const accept = "application/vc+jwt, application/ld+json, application/json";
@@ -207,7 +196,7 @@ async function fetchList(
 }
 
 /** Fetches a revocation list of the 1EdTech Revocation List Status Method, a JSON object, or throws what is wrong with it. */
-async function fetchRevocationList(url: string, settings: CheckSettings): Promise<Readonly<Record<string, unknown>>> {
+async function fetchRevocationList(url: string, settings: StatusSettings): Promise<Readonly<Record<string, unknown>>> {
   const text = await fetchText(url, "The revocation list", "application/json", settings);
   const value = parseList(text, "The revocation list", settings);
   if (!isRecord(value)) throw new ListFailure("The revocation list is not a JSON object.");
@@ -232,7 +221,7 @@ function identityOf(port: object): number {
  * verified is never served to a call that trusts less, so a cache that verifiers of different policies share lends none of
  * them a list that only another would accept.
  */
-function cacheKeyOf(url: string, settings: CheckSettings): string {
+function cacheKeyOf(url: string, settings: StatusSettings): string {
   return JSON.stringify([
     url,
     identityOf(settings.keys),
@@ -240,8 +229,8 @@ function cacheKeyOf(url: string, settings: CheckSettings): string {
     settings.suites.map(identityOf),
     settings.allowUnboundKeys,
     settings.legacyProofs,
-    settings.algorithms ?? null,
-    settings.clockSkewSeconds ?? null,
+    settings.algorithms,
+    settings.clockSkewSeconds,
   ]);
 }
 
@@ -252,7 +241,7 @@ function issuerOf(credential: { readonly issuer: unknown }): string {
 }
 
 /** Tells whether a list of the issuers it names may publish the status of a credential: its issuer, or one of `statusIssuers`. */
-function mayPublish(issuers: readonly unknown[], issuer: string, settings: CheckSettings): boolean {
+function mayPublish(issuers: readonly unknown[], issuer: string, settings: StatusSettings): boolean {
   return issuers.some(
     (named) => named === issuer || (typeof named === "string" && settings.statusIssuers.includes(named)),
   );
@@ -270,10 +259,10 @@ function listOf(value: unknown): readonly unknown[] {
  */
 function readRevocation(
   list: Readonly<Record<string, unknown>>,
-  credential: Readonly<Record<string, unknown>>,
-  settings: CheckSettings,
+  credential: IssuableCredential | CredentialV1p1,
+  settings: StatusSettings,
 ): VerificationCheck {
-  const issuer = issuerOf({ issuer: credential.issuer });
+  const issuer = issuerOf(credential);
   if (list.issuer !== undefined && !mayPublish(listOf(list.issuer), issuer, settings)) {
     return check(
       "failed",
@@ -309,7 +298,7 @@ async function readEntry(
   list: AnyVerifiableCredential,
   entry: Entry,
   issuer: string,
-  settings: CheckSettings,
+  settings: StatusSettings,
 ): Promise<VerificationCheck> {
   const listIssuer = issuerOf(list);
   if (!mayPublish([listIssuer], issuer, settings)) {
@@ -319,7 +308,7 @@ async function readEntry(
     );
   }
   const now = readClock(settings.clock);
-  const skew = (settings.clockSkewSeconds ?? DEFAULT_CLOCK_SKEW_SECONDS) * MILLISECONDS_PER_SECOND;
+  const skew = settings.clockSkewSeconds * MILLISECONDS_PER_SECOND;
   const period = periodOf(list);
   if (now + skew < period.from || now - skew >= period.until) {
     return check("failed", "STATUS_VERIFICATION_ERROR: the status list credential is not valid at this time.");
@@ -367,8 +356,10 @@ async function readEntry(
  * names its `id` with `revoked` true or absent, and a list that names its issuers must name the credential's or one of
  * `statusIssuers`. Such a list is not signed, so it is as true as the HTTPS of its address.
  *
- * A list that cannot be fetched, or whose Data Integrity proof cannot be checked for want of contexts, gives `unavailable`. With a
- * `cache` a list is kept across verifications until its `ttl` or `validUntil`, and 300,000 ms for a revocation list.
+ * The list credential is read within the limits of a credential: `maxInputBytes`, `maxDepth`, `maxTokens` and, for a Data
+ * Integrity proof, `maxJsonLdTokens`. A list that cannot be fetched, or whose Data Integrity proof cannot be checked for want of
+ * contexts, gives `unavailable`. With `statusLists` a list is kept across verifications until its `ttl` or `validUntil`, and
+ * 300,000 ms for a revocation list.
  *
  * @param credential - The credential.
  * @param options - The `fetch`, the keys, the clock and the other options.
@@ -382,20 +373,34 @@ export async function verifyCredentialStatus(
   credential: IssuableCredential | CredentialV1p1,
   options: StatusCheckOptions,
 ): Promise<VerificationCheck> {
-  const settings = checkSettings(options);
+  checkRecord(options, "The options of verifyCredentialStatus must be an object");
+  const settings = readStatusSettings(options);
+  if (settings.fetch === undefined) throw new DataError("The option fetch must be a function, found undefined.");
   checkRecord(credential, "The credential must be an object");
+  return await verifyCredentialStatusWith(credential, settings);
+}
+
+/**
+ * Checks the status of a credential as `verifyCredentialStatus` does, with the settings that its caller has checked.
+ *
+ * @throws The `reason` of the signal when it aborts.
+ */
+export async function verifyCredentialStatusWith(
+  credential: IssuableCredential | CredentialV1p1,
+  settings: StatusSettings,
+): Promise<VerificationCheck> {
   settings.signal?.throwIfAborted();
   const read = entryOf(credential);
   if ("done" in read) return read.done;
-  const { cache, signal } = settings;
+  const { statusLists, signal } = settings;
   const cached = <TDocument extends object>(
     url: string,
     load: (signal: AbortSignal | undefined) => Promise<TDocument>,
   ): Promise<object> => {
-    if (cache === undefined) return load(signal);
+    if (statusLists === undefined) return load(signal);
     // The callers that ask for a list while it loads share the load, so it runs to its own timeouts with no caller's signal.
     // The cache is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
-    const shared = cache.get(
+    const shared = statusLists.get(
       cacheKeyOf(url, settings),
       () => load(undefined),
       signal === undefined ? undefined : { signal },
