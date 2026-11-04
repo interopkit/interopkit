@@ -117,17 +117,16 @@ describe("trademarks", () => {
     const needless = `# Example\n\nNothing of others.\n\n${markLineOf(MARK)}\n`;
     const text = `# Example\n\nIt implements ${MARK_NAME}.\n`;
     const [first = "", ...rest] = linesFor(text);
-    const wrapped = `${text}\n${first.replace(" is a ", " is a\n")}\n${rest.join("\n")}\n`;
+    const parts = first.replace(" is a ", " is a\n").split("\n");
+    const wrapped = `${text}\n${parts.join("\n")}\n${rest.join("\n")}\n`;
+    // The parts of the wrapped line start on line 5; each that holds a symbol stands outside a line.
+    const symbols = parts.flatMap((part, index) => (/[®™]/.test(part) ? [["examples/b/NOTICE", 5 + index]] : []));
     expect(
       checkTrademarks(repository({ "examples/a/README.md": needless, "examples/b/NOTICE": wrapped })).map(
         ({ file, line }) => [file, line],
       ),
-    ).toStrictEqual([
-      ["examples/a/README.md", 5],
-      ["examples/b/NOTICE", 0],
-      ["examples/b/NOTICE", 5],
-      ["examples/b/NOTICE", 6],
-    ]);
+    ).toStrictEqual([["examples/a/README.md", 5], ["examples/b/NOTICE", 0], ...symbols]);
+    expect(symbols.length).toBeGreaterThan(0);
   });
 
   it("refuses a symbol of a mark outside its line, in any Markdown text", () => {
