@@ -4,7 +4,9 @@ xAPI [2.0](https://opensource.ieee.org/xapi/xapi-base-standard-documentation) (I
 [1.0.3](https://github.com/adlnet/xAPI-Spec/tree/1.0.3): the model of a Statement,
 readers that check it against the rules of an LRS and of a Learning Record Provider, validators that list every finding, a
 reader of the text of a request that refuses a property given twice, builders of Statements, the comparison and the formats
-of Statements, the message that carries Attachments, the signature of a Statement, a client of an LRS, and the handler of the requests that an LRS answers. It knows nothing of any product: the host says where a Statement comes from and what it is for.
+of Statements, the message that carries Attachments, the signature of a Statement, a client of an LRS, the handler of the requests that an LRS answers, and
+[xAPI Profiles 1.0](https://github.com/adlnet/xapi-profiles): profiles read and judged, and Statements judged against their
+Statement Templates and Patterns. It knows nothing of any product: the host says where a Statement comes from and what it is for.
 
 ```mermaid
 flowchart LR
@@ -19,6 +21,7 @@ flowchart LR
     signing["/signing<br/>signStatement, verifyStatementSignature"]
     client["/client<br/>createLrsClient"]
     store["/store<br/>handleLrsRequest"]
+    profiles["/profiles<br/>readProfile, createProfileValidator"]
   end
   model["Statement, Actor, Activity, Result, Context, ...<br/>the model of xAPI"]
   host -->|"text"| json
@@ -41,6 +44,8 @@ flowchart LR
   host -->|"an HttpRequest"| store
   store -->|"an HttpResponse"| host
   store <-->|"your stores"| ports[("Statements, documents, Activities")]
+  host -->|"a profile, Statements"| profiles
+  profiles -->|"findings, template and Pattern verdicts"| host
 ```
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
@@ -95,6 +100,7 @@ validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `
 | `@interopkit/learning-records/attachments` | `writeMultipart`, `readMultipart`, `hashAttachment`, `MultipartLimits`, `MultipartMessage`, `MultipartContent`: write and read the `multipart/mixed` message of Statements and Attachment data, and hash the data                                                                                                                        |
 | `@interopkit/learning-records/client`      | `createLrsClient`, `LrsClient`, `LrsClientOptions`, `StatementPage`, `StatementWithAttachments`, `WriteOutcome`, `SendOptions`, `ReadStatementsOptions`, `GetStatementOptions`, `WriteOptions`, `DeleteOptions`, `ListOptions`: send and query Statements, read and write the three kinds of document, and ask for Activities, Agents and About, over your `fetch` |
 | `@interopkit/learning-records/store`       | `handleLrsRequest`, `LrsOptions`, `LrsLimits`, `StatementStore`, `DocumentStore`, `ActivityStore`, `AgentStore`, `Access`, `LrsGrant`, `LrsAction`, `LRS_ACTIONS`, `matchesStatementQuery`, `MatchOptions`, `readBasicAuthorization`: answer the seven resources of an LRS over your stores                                                                                         |
+| `@interopkit/learning-records/profiles`    | `readProfile`, `validateProfile`, `ProfileReadOptions`: read and judge an xAPI Profile; `createProfileValidator`, `ProfileValidator`, `ProfileValidatorOptions`, `StatementVerdict`, `StatementsVerdict`, `RegistrationVerdict`, `PatternVerdict`: judge Statements against its Statement Templates and Patterns; `Profile`, `Concept`, `StatementTemplate`, `StatementTemplateRule`, `Pattern` and the other types, vocabularies and constants |
 | `@interopkit/learning-records/signing`     | `signStatement`, `verifyStatementSignature`, `SIGNATURE_USAGE_TYPE`, `SignedStatement`, `SignatureCheck`: sign a Statement over a `Signer` of `@interopkit/core`, and verify the signature                                                                                                                                               |
 
 ## Supported
@@ -113,6 +119,7 @@ validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `
 | Signed Statements               | A compact JWS in an Attachment with RS256, RS384 or RS512 and an `x5c` chain, signed over a `Signer` and verified against the leaf and the equivalence of the payload                                                          |
 | Client                          | The seven resources over `fetch`: Statements and their twelve filters with pages, State and the two profiles under ETags with the preconditions of the version, Agents, Activities and About                                   |
 | xAPI 1.0.3                      | The rules of each role with `version: "1.0.3"`, builders, signatures, the client, and a route of the LRS with the alternate request syntax and the preconditions of 1.0.3 |
+| xAPI Profiles 1.0               | The model of a profile, the rules of its structure, and the Statement Template and Pattern algorithms, by registration and subregistration |
 | LRS handler                     | All seven resources over plain requests and the ports of your stores: versions, errors, limits, access, voiding, filters and pages, Attachments and signatures, documents under ETags with merge, Agents, Activities and About |
 
 [Supported](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/supported.md) lists what the package includes and what it leaves out.
@@ -127,13 +134,15 @@ differences from the references. The guides of [building](https://github.com/int
 [attachments](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/attachments.md),
 [signing](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/signing.md),
 [the client](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/client.md),
-[the LRS handler](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/store.md) and
-[the versions of xAPI](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/versions.md) do the same.
+[the LRS handler](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/store.md),
+[the versions of xAPI](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/versions.md) and
+[xAPI Profiles](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/profiles.md) do the same.
 
 [The comparators](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/comparators.md) map what other LRSs and
 clients do against the package. [The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/evidence.md) shows what the
 package was checked against: the rules of both versions, both ADL conformance suites, SQL LRS and the validator of Learning
-Locker as oracles, an example LRS with a platform and a dashboard, and four runtimes. [Performance](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/performance.md)
+Locker as oracles, an example LRS with a platform and a dashboard, four runtimes, and for profiles the rules of Part Two, ADL's
+matching of Patterns and the profiles that ADL publishes. [Performance](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/performance.md)
 gives the speed of every hot path, the size of each entry point and the peak memory of each reader.
 
 ## License

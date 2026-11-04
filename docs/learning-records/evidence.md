@@ -79,3 +79,28 @@ allows.
 `pnpm compat:runtimes` bundles the scenario with the packages as they ship and runs it on Node.js, Deno, Bun and workerd. The example uses
 web standards alone, a constant-time comparison included, and the results are the same on each runtime that runs: Node.js, Deno
 and workerd on the machine of this record, and Bun on CI.
+
+## xAPI Profiles
+
+| Layer | Question | Where | Runs |
+| --- | --- | --- | --- |
+| Rules | Does each sentence of Part Two make `validateProfile` find what it says? | `scripts/xapi-profile-rules.ts`, `packages/learning-records/test/profiles-rules.test.ts` | `pnpm test` |
+| Reference | Does the matching of Patterns give what ADL's reference implementation gives? | `validation/xapi_profile_patterns.py`, `packages/learning-records/test/profiles-patterns.test.ts` | `pnpm test` |
+| Corpus | Does the reader judge the profiles that ADL publishes, and the samples of Pan and Persephone, as they are? | `packages/learning-records/test/profiles.corpus.test.ts` | `pnpm test:corpus` |
+| Fuzz | Does any value give findings or a `DataError`, and any text a path or a `DataError`? | `packages/learning-records/test/profiles.fuzz.test.ts` | `pnpm test` |
+
+`validation/xapi_profile_patterns.py` holds `matches` of ADL's `libraries/test_matching.py` (adlnet/xapi-profiles `287386e`),
+ported to Python 3 with no change to its logic, and writes what it gives for ADL's two example Patterns (the per-course Pattern
+of cmi5 and a SCORM-like one), for 400 Patterns drawn as that file draws them, half of them of shared templates, and for two
+Patterns that name one Pattern from two places. Of the 2,586 series of Statements, those that follow a Pattern, prefixes and
+random ones, the matching of the package gives the same outcome and the same number of remaining Statements for every one. ADL's
+property that a Pattern of distinct templates matches every series it draws runs as a property test.
+
+The 82 profiles of ADL's repository of authored profiles (`4e8b1df`) read with 34 sound and 48 with errors that they have, each
+kind listed in [spec-gaps](spec-gaps.md). Pan 0.5.4 (`4aaef10`) states in its tests whether the syntax, the ids and the relations of
+its ten sample profiles are sound; `validateProfile` finds a profile sound exactly when Pan finds all three sound, but for the
+Video profile and the fixed cmi5 profile, whose relations Pan finds unsound only because their templates name verbs that the
+profiles do not define, which the specification does not ask. Persephone 0.9.1 (`92a3f78`) passes its first calibration Statement
+against its calibration profile in its default mode, which asks one template to hold; the Statement matches the Determining
+Properties of two templates and breaks the rules of one, so the algorithm of Part Three gives `invalid`, and the test pins it.
+

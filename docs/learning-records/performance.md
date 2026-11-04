@@ -35,6 +35,9 @@ node:crypto for a hash and jose for a signature. The ratios are the fastest samp
 | `writeMultipart` of the same | their JSON, the SHA-256 of node:crypto and a copy | 6.7–12.5  | 70 |
 | `signStatement`, RSA of 2,048 bits | the `CompactSign` of jose | 1.06–1.34 | 7   |
 | `verifyStatementSignature` | the `compactVerify` of jose | 2.95–4.68 | 30  |
+| `validateProfile` of a profile of 907 concepts, 237 KB | `JSON.parse` of its text | 8.2 on a laptop | 50 |
+| `validateStatement` of a profile's validator on a relay of 1,000 Statements | `readStatement` of each | 1.15 on a laptop | 6 |
+| `validateStatements` of the same, templates and Patterns | the same | 1.55 on a laptop | 8 |
 
 A ratio of a reader to the validator of Learning Locker, which does the same work, is parity or better, as the design asks; another
 ratio is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit. A time on CI is five times its fastest sample, rounded up to one significant digit:
@@ -67,6 +70,7 @@ Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 perc
 | `@interopkit/learning-records` | 56,705 | 19,853 | 24,500 | `build`, `compare`, `format`, `@noble/hashes`, uuid |
 | `@interopkit/learning-records/attachments` | 62,834 | 23,315 | 28,500 | `@noble/hashes`, the multipart parser of Remix |
 | `@interopkit/learning-records/client` | 83,447 | 29,830 | 36,000 | `attachments`, `compare`, `@noble/hashes`, the multipart parser |
+| `@interopkit/learning-records/profiles` | 72,129 | 23,659 | 30,000 | none |
 | `@interopkit/learning-records/signing` | 73,533 | 26,263 | 32,000 | `attachments`, `compare`, `@noble/hashes`, jose |
 | `@interopkit/learning-records/store` | 137,429 | 46,831 | 56,500 | `attachments`, `compare`, `format`, `signing`, `@noble/hashes`, jose, the multipart parser |
 
@@ -89,3 +93,5 @@ of 8 MiB.
 | `verifyStatementSignature` | A JWS of 10 MiB whose payload is near a million tokens of distinct names | 88 MiB | 176 MiB |
 | `readBasicAuthorization` | A header of 10 MiB | 16 MiB | 32 MiB |
 | The alternate request syntax | A form of a million and a half names, and a form of 10 MiB of `+` | 8 and 32 MiB | 16 and 64 MiB |
+| `validateProfile` | The text of a profile of 26,500 verbs near a million tokens, each narrower than the next | 40 MiB | 80 MiB |
+| `validateStatements` of a profile's validator | 10,000 Statements of one registration against a primary Pattern that reaches 1,000 Patterns, each tried at every Statement | 32 MiB | 64 MiB |

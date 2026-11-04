@@ -110,6 +110,39 @@ and the second implements cmi5, a profile with a standard of its own.
 | xAPIWrapper | xAPI Launch | Excluded | As `@xapi/xapi` |
 | xAPIWrapper | `XDomainRequest` of Internet Explorer | Excluded | A browser that no runtime of the package supports |
 
+## xAPI Profiles
+
+Read on 2026-11-04 from the source of each comparator at the commit in the row. No library of JavaScript or TypeScript on npm reads
+a profile or judges Statements against one.
+
+| Comparator | Kind | Version, last change | License |
+| --- | --- | --- | --- |
+| ADL's matching, `libraries/test_matching.py` of xapi-profiles, and `xAPI-Profile-Matching` | The pseudocode of Part Three, in Python and JavaScript | `287386e`, 2024-12-16; `6e98b81`, 2017: unmaintained | Apache-2.0 |
+| ADL's Profile Server, its profile validator | An application of Node.js with JSON Schemas of a profile | `da9159a`, 2025-10-24 | Apache-2.0 |
+| Pan, Yet Analytics | A validator of profiles, Clojure | 0.5.4, `4aaef10`, 2026-10-16 | Apache-2.0 |
+| Persephone, Yet Analytics | A validator of Statements against profiles, Clojure, with a CLI and a server | 0.9.1, `92a3f78`, 2026-10-16 | Apache-2.0 |
+
+| Comparator | Capability | Here | How, or why not |
+| --- | --- | --- | --- |
+| ADL's matching | `matches` of a Pattern over a series of Statements | Has | `validateStatements`; the same outcome on 2,586 series ([evidence](evidence.md)) |
+| Profile Server | A JSON Schema of every object of a profile | Has | `validateProfile`, which also takes what the schemas refuse and the specification allows ([profiles](profiles.md)) |
+| Profile Server | Storing, publishing and searching profiles, SPARQL | Excluded | A service, which a host builds on the model |
+| Pan | The syntax of every object, with a finding at its path | Has | `validateProfile` |
+| Pan | Unique ids, `inScheme` among the versions | Has | `id-repeated`, `in-scheme` |
+| Pan | The relations of concepts, templates and Patterns, with other profiles | Has | The option `profiles` |
+| Pan | Cycles of Patterns | Has | `pattern-cycle`, without recursion |
+| Pan | A Determining Property that names no concept of a profile is an error | Excluded | The specification asks an IRI there, and a template may use any verb of xAPI |
+| Pan | A document of several versions, where one id names an object of each | Excluded | One document describes one profile at its latest version; ADL publishes a document for each version |
+| Pan | The JSON-LD contexts resolve and make every property an absolute IRI | Excluded | JSON-LD processing, which the specification does not ask of a consumer; the Interop Alliance's `jsonld` would do it beside the package |
+| Pan | The IRIs that point outside the profile | Has | The warnings `member-unresolved` name each |
+| Persephone | Statement Template validation against every template of profiles | Has | `validateStatement` |
+| Persephone | A Statement valid against any one template, and a stop at the first error | Partly | The algorithm of Part Three gives `invalid` when one applicable template is broken, and lists every broken rule; the issues name each template |
+| Persephone | StatementRefs through lookups of the host | Has | `findStatement`, and the list of `validateStatements` |
+| Persephone | Pattern matching by registration and subregistration | Has | `validateStatements` |
+| Persephone | Matching one Statement at a time, with the state of each registration kept | Excluded | The greedy algorithm judges a series; a host passes the Statements of a registration so far, and `partial` says they are on the way |
+| Persephone | The path of templates and Patterns at a failure | Partly | Each primary Pattern's outcome and the Statements left |
+| Persephone | A CLI and a web server | Excluded | Applications |
+
 ## What no comparator has
 
 The rules of the provider role, a reader that refuses a property given twice, the immutability rules of 4.2 in `isSameStatement`,

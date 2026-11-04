@@ -1,10 +1,11 @@
 # Architecture of learning-records
 
-`@interopkit/learning-records` has nine modules that share one model. `model` holds the types, the vocabularies and the data
+`@interopkit/learning-records` has ten modules that share one model. `model` holds the types, the vocabularies and the data
 types. `read` turns untrusted data into the model and judges it. `build`, `compare` and `format` make Statements, compare them and
 write them in a format, and each reads a Statement with `read` first. `attachments` writes and reads the message that carries
 Attachments, and `signing` signs a Statement and verifies its signature, with the Attachment of `attachments` and the equivalence
-of `compare`, `client` speaks to an LRS with `read`, `compare` and `attachments`, and `store` answers the requests of one with all of them but `build` and `client`. `model` imports nothing of the family, `read` imports only `model` and `@interopkit/core`, the three that build on
+of `compare`, `client` speaks to an LRS with `read`, `compare` and `attachments`, and `store` answers the requests of one with all of them but `build` and `client`. `profiles` reads xAPI Profiles and judges
+Statements against them with `read` alone. `model` imports nothing of the family, `read` imports only `model` and `@interopkit/core`, the three that build on
 `read` are siblings that never import each other, and `attachments`, `signing`, `client` and `store` are the layers above them.
 
 ```mermaid
@@ -19,6 +20,7 @@ flowchart BT
   signing["signing<br/>signStatement, verifyStatementSignature"]
   client["client<br/>createLrsClient"]
   store["store<br/>handleLrsRequest, matchesStatementQuery"]
+  profiles["profiles<br/>readProfile, validateProfile,<br/>createProfileValidator"]
   root["index.ts<br/>the public API"]
   read --> model
   read --> core
@@ -45,6 +47,8 @@ flowchart BT
   store --> format
   store --> read
   store --> model
+  profiles --> read
+  profiles --> model
   root --> model
   root --> read
   root --> build
@@ -78,6 +82,11 @@ flowchart BT
 |               | `documents/`                                                                                                | The State and profile resources: parameters, ETags and preconditions, merge, the calls to the store, and the reads, writes and removals        |
 |               | `agents.ts`, `activities.ts`, `about.ts`                                                                    | The Agents, Activities and About resources                                                                                                     |
 |               | `query.ts`                                                                                                  | The filters of a query, with the Statement References                                                                                          |
+| `profiles`    | `profile.ts`, `concepts.ts`, `templates.ts`, `patterns.ts`, `schemas.ts`                                    | The model of a profile, its vocabularies and constants, and its shape                                                                          |
+|               | `document-rules.ts`, `profile-rules.ts`, `concept-rules.ts`, `template-rules.ts`, `pattern-rules.ts`, `references.ts` | The rules of Part Two, one concern to a file, over what the ids of the profile and of the others name                                    |
+|               | `read-profile.ts`, `json-path.ts`                                                                           | The reader and the validator, and the JSONPath of the rules                                                                                    |
+|               | `template-match.ts`, `judge-statement.ts`                                                                   | The Statement Template algorithm: Determining Properties, rules, StatementRefs, extensions in their place                                      |
+|               | `pattern-match.ts`, `registrations.ts`, `profile-validator.ts`                                              | The Pattern algorithm, the series of each registration, and the validator                                                                      |
 
 `@interopkit/core/checks` holds what other standards need as much: strict records, the formats of a time, a UUID, a URI and a
 language tag, the copy of JSON within a depth limit, the check of the depth of a text, the conversion of the issues of a parse to

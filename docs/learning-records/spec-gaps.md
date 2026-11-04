@@ -140,3 +140,42 @@ SQL LRS 0.9.11 also differs on the route as a whole, which the flows pin in `sql
 | Answers a Statement of 2.0 as it holds it, with `contextAgents` and `version` 2.0.0 | Answers `convertStatementVersion`: a client of 1.0.3 must get a Statement of 1.0.3. The client of the package reads what SQL LRS answers into that form |
 | Compares a resend with the whole Statement of 2.0, so the form of 1.0.3 is 409   | Compares with the form, so that a client of 1.0.3 that sends again what it read is a resend                                               |
 | Answers 409 to a second State PUT with no precondition                           | Replaces the document, as Communication 3.1 lets State go without headers                                                                 |
+
+## xAPI Profiles
+
+Part Two (the structure) and Part Three (the algorithms) of xAPI Profiles 1.0, at adlnet/xapi-profiles `287386e`, leave these
+choices to a reader. The rules table `scripts/xapi-profile-rules.ts` and the tests of `profiles` pin each one.
+
+| Where | What the specification says | What the package does |
+| --- | --- | --- |
+| The examples of Part Two | Several are not JSON: strings broken over lines with `\`, an Activity without commas, a Pattern whose `definition` is a string | The sound profile of the tests is the profile of the examples, each made whole |
+| `inlineSchema` of an extension | "Object" in the table and "a JSON Schema, as a string" in its text; a string for a document resource | A string, the text of a JSON Schema: an object or a boolean |
+| A property that a table does not list (4.0) | One "not described by this specification" is a compact or an absolute IRI; JSON-LD keywords and their aliases may be anywhere | `id` and `type` are aliases of `@id` and `@type` in the context and are allowed anywhere; a property that the specification describes for another object is the warning `property-out-of-place`; any other is the error `unknown-property` |
+| Empty values (4.0) | "Values in a Profile MUST NOT be ... empty strings" | Everywhere, the values of language maps and of extensions included |
+| `inScheme` (7.1) | "The IRI of the specific Profile version currently being described" | Any version that the profile lists, since an object that an older version made, and the latest keeps unchanged, may keep it |
+| Ids within a document | The specification lists the objects of one version and asks unique version ids | Two objects of one id are `id-repeated`: JSON-LD would make one node with two of each property |
+| `wasRevisionOf` (6.1) | "MUST be used with all versions that succeed other Profile versions" | Every version but the earliest by `generatedAtTime` has it |
+| The version a Statement names (5.0, 9.0) | A Statement names "the most up-to-date conformant Profile version" in category | `validateStatements` judges the Statements that name the latest version of the document by `generatedAtTime`; one that names an older version is judged with that version's document |
+| The JSONPath of a rule (8.1) | Goessner's syntax without filters and scripts, with names, indexes, `*` and unions, and `\|` between paths | Every path starts at `$`; `..` is taken, as Goessner's syntax has it; names in dot notation hold any character but `.`, `[`, `]`, `\|`, `,`, quotes, `*`, parentheses, `?` and space, so `en-US` is a name; double quotes are taken beside single ones; a negative index and a slice are refused; a name finds nothing in an array and an index nothing in an object |
+| `validates(...)[1]` of a StatementRef (Part Three 2.1) | The pseudocode intersects the templates that `validates` returns, which are those whose rules failed when it gives `invalid` | The referred Statement must match one of the named templates, Determining Properties and rules, as Part Two 8.0 says |
+| `follows_rule` (Part Three 2.1) | The pseudocode ends without `return true` | A rule that nothing breaks is followed |
+| A loop of StatementRefs | Not addressed | A Statement that a check reaches again while it judges it is taken as matching; one more than 64 references down is not available |
+| `zeroOrMore` at the end of the Statements (Part Three 2.2) | The pseudocode returns `success` when its member runs out in the middle and nothing remains | As written, as ADL's reference implementation does: the property tests of that file accept `partial` or `success` there |
+| A profile without a primary Pattern (9.0) | A Statement that names the profile "MUST follow a Pattern", and only primary Patterns are matched | The Statements are held to the templates alone, and no registration is asked |
+| A Statement without a registration (9.0) | "All Statements following a primary Pattern MUST use the same registration" | `registration-missing` when the profile has a primary Pattern; the Statement joins no series |
+| A Statement without a timestamp | Statements are ordered by timestamp | It keeps the time of the Statement before it in the list, so it stays where it stands |
+| A subregistration (9.0) | "A variant 2 UUID as specified in RFC 4122", for a profile "present in the category context activities" | The variant digit is 8, 9, a or b; the `profile` must be in category; each fault is a finding, and the Statement still joins the series of its registration |
+
+ADL's repository of authored profiles holds 82 profiles at `4e8b1df`; 34 are sound, and the others break these rules, each pinned in
+`profiles.corpus.test.ts`:
+
+| Rule | Profiles | What they have |
+| --- | ---: | --- |
+| `invalid-format` | 26 | Mostly an empty `seeAlso`; a `generatedAtTime` of `2017-06-30T8:26:00Z`, `2018-03-26` or `2020-xx-xxT00:00:00Z`; a `seeAlso` that is a document's name |
+| `relation-target` | 7 | A concept that matches itself, or a `related` and a `relatedMatch` to a concept that the profile does not define or defines in the same version |
+| `id-repeated` | 6 | The version and the profile with one id: Activity Streams, TinCan, Open Badges |
+| `json-path` | 5 | Locations without `$` (`timestamp`, `result.response`) in the SCORM profile, and an unclosed quote |
+| `in-scheme` | 4 | Concepts in a version that the profile does not list |
+| `empty-value`, `pattern-kind` | 3, 3 | Empty definitions and rules; Patterns of no kind |
+| `missing-property`, `related-deprecated`, `revision-missing` | 2, 2, 1 | Templates without `definition` in cmi5; `related` on concepts that are not deprecated; an unrevised later version |
+

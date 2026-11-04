@@ -1,7 +1,7 @@
 # Supported
 
-What `@interopkit/learning-records` implements of xAPI 2.0 and 1.0.3. The package implements the standards and is not certified
-or endorsed by IEEE or ADL. Section numbers are those of the LRS book (4.x) and the Content book (5.x) of IEEE 9274.1.1; 1.0.3 has
+What `@interopkit/learning-records` implements of xAPI 2.0 and 1.0.3, and of xAPI Profiles 1.0. The package implements the
+standards and is not certified or endorsed by IEEE or ADL. Section numbers are those of the LRS book (4.x) and the Content book (5.x) of IEEE 9274.1.1; 1.0.3 has
 a row of its own.
 
 ```mermaid
@@ -14,7 +14,9 @@ flowchart LR
   model --> client["Client of the seven resources<br/>4.1.4 to 4.1.7"]
   model --> store["Handler of the LRS requests<br/>4.1.1 to 4.1.8"]
   v1["xAPI 1.0.3<br/>Data, Communication"] --> model
-  spec -.-> outside["Not included here:<br/>profiles, cmi5"]
+  profiles["xAPI Profiles 1.0<br/>ADL"] --> profile["Profiles, their rules,<br/>Statements against templates and Patterns"]
+  model --> profile
+  spec -.-> outside["Not included here:<br/>cmi5, launch"]
 ```
 
 | Area               | Specification                       | Included                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -41,13 +43,15 @@ flowchart LR
 | Client             | 4.1.1 to 4.1.7                      | The seven resources over `fetch`: Statements (PUT, POST, GET, the twelve filters, `more`), State, Agent Profile and Activity Profile with ETags and preconditions, Agents, Activities, About; the version header                                                                                                                                                                                       |
 | LRS handler        | 4.1.1 to 4.1.8, 4.2.4, 4.2.5        | All seven resources with HEAD: the version header, errors by `Accept`, the limits with 413, Statements with the twelve filters, the rules of Statement References, pages with `more`, the three formats, voiding, Attachments in both directions and signatures; State and both profiles under ETags with merge, `If-Match`, `If-None-Match` and the retry of lost races; Agents, Activities and About |
 | xAPI 1.0.3         | Data, Communication                 | The rules of each role with `version: "1.0.3"`, builders, signatures, the client, and a route of the LRS with the alternate request syntax, 1.0.3 preconditions and `convertStatementVersion` ([versions](versions.md)) |
+| xAPI Profiles 1.0  | ADL, Parts Two and Three            | The model of a profile with every concept, Statement Template, rule and Pattern; the rules of Part Two, the relations between objects and other profiles given included; the Statement Template and Pattern algorithms of Part Three, StatementRef templates, registrations and subregistrations, the order by timestamp ([profiles](profiles.md)) |
 | Examples           | The IEEE examples repository        | Every Statement and batch of the examples is read, at a pinned hash                                                                                                                                                                                                                                                                                                                                    |
 
 ## Not included
 
 | Not included                  | Why                                                             |
 | ----------------------------- | --------------------------------------------------------------- |
-| xAPI Profiles, cmi5, launch   | Standards of their own                                          |
+| cmi5, launch                  | Standards of their own: cmi5 is `@interopkit/course-launch`     |
+| JSON-LD processing of profiles, the Profile Server | [profiles](profiles.md), Not included          |
 | The vocabularies of ADL: verbs, activity types, attachment usages | The data of profiles, which change apart from the standard; the package names `VERB_VOIDED` and `SIGNATURE_USAGE_TYPE`, which the standard reserves |
 | Storage, accounts, an admin UI, queues | An application's: the handler works over the store ports and `access` |
 | CORS, compression, TLS | The host's web server; the handler answers plain requests |
