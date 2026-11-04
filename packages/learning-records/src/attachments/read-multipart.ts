@@ -13,7 +13,7 @@ import {
 } from "@remix-run/multipart-parser";
 import type { AttachmentData } from "../model/index.js";
 import { isMediaType, isSha2Hex, mediaTypeOf } from "../model/internal.js";
-import { readStatementJson } from "../read/index.js";
+import { parseStatementJson } from "../read/index.js";
 import { checkBytes, hashesTo } from "./hash-attachment.js";
 import { type MultipartLimits, readLimits } from "./limits.js";
 
@@ -104,7 +104,7 @@ function readStatementsPart(part: MultipartPart, limits: Required<MultipartLimit
   } catch (error) {
     throw new DataError("The first part is not valid UTF-8 text, which JSON must be.", { cause: error });
   }
-  return readStatementJson(text, {
+  return parseStatementJson(text, {
     maxBytes: limits.maxPartBytes,
     maxDepth: limits.maxDepth,
     maxTokens: limits.maxTokens,
@@ -151,7 +151,7 @@ function readAttachmentPart(part: MultipartPart): AttachmentData {
  * each other part by its hash.
  *
  * @remarks
- * The first part is read with `readStatementJson`, so a property given twice is refused and the limits of that function
+ * The first part is read with `parseStatementJson`, so a property given twice is refused and the limits of that function
  * apply. Each other part needs an `X-Experience-API-Hash`, and its data must have that hash: a part is matched to the
  * Attachment of a Statement by the hash and in no other way. `Content-Transfer-Encoding` is `binary` when it is absent. A part
  * with no `Content-Type` is `application/octet-stream`, and the `contentType` of the Attachment in the Statement is the one

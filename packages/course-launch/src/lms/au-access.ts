@@ -44,9 +44,9 @@ const decoder = new TextDecoder("utf-8", { fatal: true });
  */
 const AU_CHALLENGE = 'cmi5 realm="xAPI"';
 
-/** A refusal of a request of an assignable unit, with the sentence of the answer and, for a 401, its challenge. */
-function refused(status: 401 | 403, reason: string): Access {
-  return { allowed: false, status, reason, ...(status === 401 ? { challenge: AU_CHALLENGE } : {}) };
+/** A refusal of a request of an assignable unit, with the sentence of the answer and, when it is not authenticated, its challenge. */
+function refused(reason: "unauthenticated" | "forbidden", message: string): Access {
+  return { allowed: false, reason, message, ...(reason === "unauthenticated" ? { challenge: AU_CHALLENGE } : {}) };
 }
 
 /**
@@ -219,10 +219,10 @@ export async function decideAccess(
   if (session === undefined) return lrs.access(request, options);
   const token = await hashOf(credentials.password);
   if (session.token === undefined || !sameHash(token, session.token)) {
-    return refused(401, "The authorization token is not that of the session.");
+    return refused("unauthenticated", "The authorization token is not that of the session.");
   }
   if (session.state !== "active" || readClock(settings.clock) > session.launchedAt + settings.maxSessionMs) {
-    return refused(401, "The session of the authorization token ended (8.2.1).");
+    return refused("unauthenticated", "The session of the authorization token ended (8.2.1).");
   }
   const { basePath } = lrs;
   const pathname = new URL(request.url).pathname;
@@ -235,6 +235,6 @@ export async function decideAccess(
   }
   const asked = { request, query, reads: READS.has(request.method), settings, session };
   const actions = await actionsOf(resource, asked);
-  if (typeof actions === "string") return refused(403, actions);
+  if (typeof actions === "string") return refused("forbidden", actions);
   return { allowed: true, authority: settings.authority, actions, principal: session.id };
 }

@@ -1,5 +1,5 @@
 import { DataError, type HttpMethod, requestWithCredential, type ServiceResponse } from "@interopkit/core";
-import { readStatementJson } from "../read/index.js";
+import { parseStatementJson } from "../read/index.js";
 import type { Settings } from "./config.js";
 
 /** Characters that a header value must not hold: they would end the header and start another. */
@@ -64,5 +64,5 @@ export function jsonOf(response: ServiceResponse, settings: Settings): unknown {
   } catch (error) {
     throw new DataError("The body is not valid UTF-8 text, which JSON must be.", { cause: error });
   }
-  return readStatementJson(text, { maxBytes: settings.maxBytes, maxTokens: settings.maxTokens });
+  return parseStatementJson(text, { maxBytes: settings.maxBytes, maxTokens: settings.maxTokens });
 }

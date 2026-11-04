@@ -7,8 +7,10 @@
  * @module @interopkit/core/http
  */
 export {
+  ACCESS_REFUSAL_STATUSES,
   type AccessDecision,
   type AccessRefusal,
+  type AccessRefusalReason,
   type ReadAccessDecisionOptions,
   readAccessDecision,
 } from "./access.js";

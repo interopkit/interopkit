@@ -13,8 +13,8 @@ export const STATEMENTS = 1000;
 export const BUDGETS = {
   /** `validateStatement` of each of the Statements of the batch. */
   validateStatement: 100,
-  /** `readStatementJson` of the text of the batch. */
-  readStatementJson: 500,
+  /** `parseStatementJson` of the text of the batch. */
+  parseStatementJson: 500,
 } as const;
 
 /**
@@ -26,8 +26,8 @@ export const BUDGETS = {
 export const RATIOS = {
   /** `validateStatement` of the Statements of the batch, as a multiple of the validator of Learning Locker on the same Statements: parity or better. */
   validateAgainstLearningLocker: 1,
-  /** `readStatementJson` of the text of the batch, as a multiple of `JSON.parse` of it. */
-  readJsonAgainstParse: 40,
+  /** `parseStatementJson` of the text of the batch, as a multiple of `JSON.parse` of it. */
+  parseJsonAgainstParse: 40,
   /** `readStatement` of each Statement of the batch, as a multiple of the validator of Learning Locker: parity or better. */
   readAgainstLearningLocker: 1,
   /** `validateStatements` of the batch as a whole, as a multiple of the validator of Learning Locker: parity or better. */

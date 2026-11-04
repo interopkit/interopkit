@@ -54,8 +54,8 @@ export function createProvider(config: ProviderConfig): Provider {
       authorize: async ({ headers }) => {
         if (token === undefined) return { allowed: true };
         const given = headers.authorization;
-        if (given === undefined) return { allowed: false, status: 401 };
-        return given === `Bearer ${token}` ? { allowed: true } : { allowed: false, status: 403 };
+        if (given === undefined) return { allowed: false, reason: "unauthenticated" };
+        return given === `Bearer ${token}` ? { allowed: true } : { allowed: false, reason: "forbidden" };
       },
     });
   const fetch: Fetch = async (url, init) => {

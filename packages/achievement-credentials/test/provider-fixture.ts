@@ -96,8 +96,8 @@ export function bearerAuthorize(asked: Asked[] = []): CredentialsProviderOptions
     asked.push({ port: "authorize", argument: scope, signal: options?.signal });
     const token = /^Bearer (\S+)$/u.exec(request.headers.authorization ?? "")?.[1];
     const grant = token === undefined ? undefined : TOKENS[token];
-    if (grant === undefined) return { allowed: false, status: 401 } satisfies CredentialsAccess;
-    if (!grant.scopes.includes(scope)) return { allowed: false, status: 403 } satisfies CredentialsAccess;
+    if (grant === undefined) return { allowed: false, reason: "unauthenticated" } satisfies CredentialsAccess;
+    if (!grant.scopes.includes(scope)) return { allowed: false, reason: "forbidden" } satisfies CredentialsAccess;
     return { allowed: true, owner: grant.owner } satisfies CredentialsAccess;
   };
 }

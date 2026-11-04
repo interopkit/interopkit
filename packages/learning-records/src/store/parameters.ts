@@ -2,7 +2,7 @@ import { DataError } from "@interopkit/core";
 import { describe, parseWith } from "@interopkit/core/checks";
 import type { Agent } from "../model/index.js";
 import { parseIsoTimestamp } from "../model/internal.js";
-import { readStatementJson } from "../read/index.js";
+import { parseStatementJson } from "../read/index.js";
 import { identifiedAgentSchema } from "../read/internal.js";
 import type { LrsSettingsLimits } from "./options.js";
 
@@ -22,7 +22,7 @@ export function checkNames(parameters: ReadonlyMap<string, string>, known: Reado
  * it, and refuses a property that occurs twice.
  */
 export function readRequestJson(text: string, limits: LrsSettingsLimits): unknown {
-  return readStatementJson(text, {
+  return parseStatementJson(text, {
     maxBytes: limits.maxBodyBytes,
     maxDepth: limits.maxDepth,
     maxTokens: limits.maxTokens,

@@ -175,10 +175,10 @@ describe("the answers of the provider against the OpenAPI document of CASE 1.1",
     const refused = {
       "400": await get(store, `${V11}/CFDocuments?fields=`),
       "401": await get(store, `${V11}/CFItems/${KEY}`, {
-        authorize: () => Promise.resolve({ allowed: false, status: 401 }),
+        authorize: () => Promise.resolve({ allowed: false, reason: "unauthenticated" }),
       }),
       "403": await get(store, `${V11}/CFItems/${KEY}`, {
-        authorize: () => Promise.resolve({ allowed: false, status: 403 }),
+        authorize: () => Promise.resolve({ allowed: false, reason: "forbidden" }),
       }),
       "404": await get(store, `${V11}/CFItems/${KEY}`),
       "500": await get({ ...store, item: () => Promise.reject(new Error("x")) }, `${V11}/CFItems/${KEY}`),
@@ -311,7 +311,7 @@ describe("the answers on the path of 1.0 against the schemas of 1.0", () => {
       await get(holding({}), `${V10}/CFItems/${KEY}`),
       await get(holding({}), `${V10}/CFDocuments?fields=`),
       await get(holding({}), `${V10}/CFItems/${KEY}`, {
-        authorize: () => Promise.resolve({ allowed: false, status: 403 }),
+        authorize: () => Promise.resolve({ allowed: false, reason: "forbidden" }),
       }),
     ];
     for (const answer of answers) expect(valid(jsonOf(answer))).toBe(true);
@@ -321,7 +321,7 @@ describe("the answers on the path of 1.0 against the schemas of 1.0", () => {
     const valid = officialValidator("1.0", "imsx_StatusInfo");
     const unauthorized = jsonOf(
       await get(holding({}), `${V10}/CFItems/${KEY}`, {
-        authorize: () => Promise.resolve({ allowed: false, status: 401 }),
+        authorize: () => Promise.resolve({ allowed: false, reason: "unauthenticated" }),
       }),
     );
     const invalidUuid = jsonOf(await get(holding({}), `${V10}/CFItems/x`));

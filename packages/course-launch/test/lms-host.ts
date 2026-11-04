@@ -283,7 +283,7 @@ async function hostAccess(request: HttpRequest): Promise<Access> {
       ],
     };
   }
-  return { allowed: false, status: 401, reason: "Unknown credential.", challenge: 'Basic realm="xAPI"' };
+  return { allowed: false, reason: "unauthenticated", message: "Unknown credential.", challenge: 'Basic realm="xAPI"' };
 }
 
 /** Builds a plain request from the arguments of a `fetch`, with header names in lower case. */

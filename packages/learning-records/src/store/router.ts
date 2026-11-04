@@ -1,6 +1,13 @@
 import { callPort } from "@interopkit/core";
 import { nonEmptyStringSchema } from "@interopkit/core/checks";
-import { checkHttpRequest, type HttpRequest, type HttpResponse, readAccessDecision } from "@interopkit/core/http";
+import {
+  ACCESS_REFUSAL_STATUSES,
+  type AccessRefusalReason,
+  checkHttpRequest,
+  type HttpRequest,
+  type HttpResponse,
+  readAccessDecision,
+} from "@interopkit/core/http";
 import * as v from "valibot";
 import type { XapiVersion } from "../model/index.js";
 import { authoritySchema } from "../read/internal.js";
@@ -74,10 +81,10 @@ const grantSchema = v.object({
 });
 
 /** The sentence of a refusal for which `access` gives no reason. */
-const REFUSALS: Readonly<Record<401 | 403 | 429, string>> = {
-  401: "The request is not authenticated.",
-  403: "The request is not allowed.",
-  429: "The client sends too many requests: retry later.",
+const REFUSALS: Readonly<Record<AccessRefusalReason, string>> = {
+  unauthenticated: "The request is not authenticated.",
+  forbidden: "The request is not allowed.",
+  "too-many-requests": "The client sends too many requests: retry later.",
 };
 
 /** Tells whether the actions of a credential allow an action: reading its own Statements lets it ask to read Statements. */
@@ -95,11 +102,11 @@ function resourceOf(pathname: string, basePath: string): Resource | undefined {
 /** Writes the answer for a request that access refuses. */
 function denial(decision: Extract<Access, { readonly allowed: false }>, refuse: Refuse): HttpResponse {
   const headers: Record<string, string> = {};
-  if (decision.status === 401 && decision.challenge !== undefined) headers["www-authenticate"] = decision.challenge;
-  if (decision.status === 429 && decision.retryAfterSeconds !== undefined) {
-    headers["retry-after"] = String(decision.retryAfterSeconds);
-  }
-  return refuse(decision.status, decision.reason ?? REFUSALS[decision.status], headers);
+  const { reason, message, challenge, retryAfterSeconds } = decision;
+  if (reason === "unauthenticated" && challenge !== undefined) headers["www-authenticate"] = challenge;
+  if (reason === "too-many-requests" && retryAfterSeconds !== undefined)
+    headers["retry-after"] = String(retryAfterSeconds);
+  return refuse(ACCESS_REFUSAL_STATUSES[reason], message ?? REFUSALS[reason], headers);
 }
 
 /** The request that the LRS answers, after the alternate syntax: what it asks, and the version whose rules answer it. */

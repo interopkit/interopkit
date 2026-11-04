@@ -146,7 +146,12 @@ export function createLms(config: LmsConfig): Lms {
         given !== undefined && sameSecret(given.user, user) && sameSecret(given.password, password),
     );
     if (known === undefined) {
-      return { allowed: false, status: 401, reason: "Send a credential of the LMS.", challenge: 'cmi5 realm="xAPI"' };
+      return {
+        allowed: false,
+        reason: "unauthenticated",
+        message: "Send a credential of the LMS.",
+        challenge: 'cmi5 realm="xAPI"',
+      };
     }
     return { allowed: true, authority: known.authority, actions: known.actions };
   };

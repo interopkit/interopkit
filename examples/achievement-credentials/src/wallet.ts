@@ -98,10 +98,10 @@ export function createWallet(config: WalletConfig): Wallet {
         },
         authorize: async (request, scope) => {
           const given = request.headers.authorization;
-          if (given === undefined) return { allowed: false, status: 401 };
+          if (given === undefined) return { allowed: false, reason: "unauthenticated" };
           return given === `Bearer ${token}` && SCOPES.includes(scope)
             ? { allowed: true, owner: OWNER }
-            : { allowed: false, status: 403 };
+            : { allowed: false, reason: "forbidden" };
         },
       }),
   };

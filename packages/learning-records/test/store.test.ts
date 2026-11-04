@@ -143,7 +143,9 @@ describe("handleLrsRequest: the version header", () => {
 
   it("names the version of the route in every answer, whatever its status, and the latest it serves when a request names none it serves", async () => {
     const lrs = memory();
-    const options = optionsOf(lrs, { access: async () => ({ allowed: false, status: 401, reason: "no" }) });
+    const options = optionsOf(lrs, {
+      access: async () => ({ allowed: false, reason: "unauthenticated", message: "no" }),
+    });
     const answers = [
       await handleLrsRequest(requestOf("GET", "/statements"), optionsOf(lrs)),
       await handleLrsRequest(requestOf("PUT", "/statements", { query: { statementId: "x" } }), optionsOf(lrs)),
@@ -238,30 +240,38 @@ describe("handleLrsRequest: access", () => {
     expect(seen).toStrictEqual([BASIC, controller.signal]);
   });
 
-  it("refuses with the status and the reason of access, and calls no store", async () => {
-    const decisions: Access[] = [
-      { allowed: false, status: 401, reason: "Log in.", challenge: 'Basic realm="xAPI"' },
-      { allowed: false, status: 403, reason: "Not yours." },
-      { allowed: false, status: 429, reason: "Slow down.", retryAfterSeconds: 30 },
+  it("refuses with the status of the reason of access and its message, and calls no store", async () => {
+    const decisions: [Access, number, string][] = [
+      [
+        { allowed: false, reason: "unauthenticated", message: "Log in.", challenge: 'Basic realm="xAPI"' },
+        401,
+        "Log in.",
+      ],
+      [{ allowed: false, reason: "forbidden", message: "Not yours." }, 403, "Not yours."],
+      [
+        { allowed: false, reason: "too-many-requests", message: "Slow down.", retryAfterSeconds: 30 },
+        429,
+        "Slow down.",
+      ],
     ];
-    for (const decision of decisions) {
+    for (const [decision, status, message] of decisions) {
       const lrs = memory();
       const response = await handleLrsRequest(request(), optionsOf(lrs, { access: async () => decision }));
-      expect(response.status).toBe(decision.allowed ? 0 : decision.status);
-      expect(jsonOf(response)).toStrictEqual({ message: decision.allowed ? "" : decision.reason });
+      expect(response.status).toBe(status);
+      expect(jsonOf(response)).toStrictEqual({ message });
       expect(lrs.calls).toStrictEqual([]);
     }
   });
 
-  it("refuses with the sentence of the status when access gives no reason", async () => {
-    for (const [status, message] of [
-      [401, "The request is not authenticated."],
-      [403, "The request is not allowed."],
-      [429, "The client sends too many requests: retry later."],
+  it("refuses with the status of the reason, and its sentence when access gives no message", async () => {
+    for (const [reason, status, message] of [
+      ["unauthenticated", 401, "The request is not authenticated."],
+      ["forbidden", 403, "The request is not allowed."],
+      ["too-many-requests", 429, "The client sends too many requests: retry later."],
     ] as const) {
       const response = await handleLrsRequest(
         request(),
-        optionsOf(memory(), { access: async () => ({ allowed: false, status }) }),
+        optionsOf(memory(), { access: async () => ({ allowed: false, reason }) }),
       );
       expect([response.status, jsonOf(response)]).toStrictEqual([status, { message }]);
     }
@@ -272,7 +282,12 @@ describe("handleLrsRequest: access", () => {
       handleLrsRequest(
         request(),
         optionsOf(memory(), {
-          access: async () => ({ allowed: false, status: 401, reason: "Log in.", ...(challenge && { challenge }) }),
+          access: async () => ({
+            allowed: false,
+            reason: "unauthenticated",
+            message: "Log in.",
+            ...(challenge && { challenge }),
+          }),
         }),
       );
     expect((await ask401('Bearer realm="x"')).headers["www-authenticate"]).toBe('Bearer realm="x"');
@@ -283,8 +298,8 @@ describe("handleLrsRequest: access", () => {
         optionsOf(memory(), {
           access: async () => ({
             allowed: false,
-            status: 429,
-            reason: "Slow.",
+            reason: "too-many-requests",
+            message: "Slow.",
             ...(retryAfterSeconds !== undefined && { retryAfterSeconds }),
           }),
         }),
@@ -360,8 +375,8 @@ describe("handleLrsRequest: access", () => {
       { allowed: true, authority: AUTHORITY, actions: ["x"] },
       { allowed: true, authority: AUTHORITY, actions: [], principal: "" },
       { allowed: true, authority: AUTHORITY, actions: [], principal: 7 },
-      { allowed: false, status: 404, reason: "x" },
-      { allowed: false, status: 401, reason: 7 },
+      { allowed: false, reason: "not-found", message: "x" },
+      { allowed: false, reason: "unauthenticated", message: 7 },
     ] as unknown[]) {
       const asking = handleLrsRequest(request(), optionsOf(memory(), { access: async () => decision as Access }));
       await expect(asking).rejects.toBeInstanceOf(DataError);

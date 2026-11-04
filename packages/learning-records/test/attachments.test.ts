@@ -366,7 +366,7 @@ describe("readMultipart", () => {
       );
     });
 
-    it("limits the first part by maxPartBytes with the limit of readStatementJson", () => {
+    it("limits the first part by maxPartBytes with the limit of parseStatementJson", () => {
       const statements = `[${"0,".repeat(600_000)}0]`;
       expect(() => readMultipart(CONTENT_TYPE, messageOf(BOUNDARY, statements, []))).toThrow(
         "The text has more than 1000000 tokens",

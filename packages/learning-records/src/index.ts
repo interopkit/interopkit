@@ -71,10 +71,10 @@ export {
   type XapiVersion,
 } from "./model/index.js";
 export {
+  type ParseStatementJsonOptions,
+  parseStatementJson,
   type ReadOptions,
-  type ReadStatementJsonOptions,
   readStatement,
-  readStatementJson,
   validateStatement,
   validateStatements,
 } from "./read/index.js";

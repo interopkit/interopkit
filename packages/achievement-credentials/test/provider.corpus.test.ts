@@ -176,7 +176,7 @@ describe.each(APIS)("the provider of the %s API against its OpenAPI file", (api)
       if (scopes.length === 0) continue;
       const { options, held } = serving(api, {
         authorize: async (_request, scope) =>
-          scopes.includes(scope) ? { allowed: false, status: 403 } : { allowed: true, owner: "learner-1" },
+          scopes.includes(scope) ? { allowed: false, reason: "forbidden" } : { allowed: true, owner: "learner-1" },
       });
       const response = await handleCredentialsRequest(requestFor(api, path, method), options);
       expect(response.status, operation.operationId).toBe(403);

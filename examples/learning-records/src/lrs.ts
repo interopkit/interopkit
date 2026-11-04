@@ -90,8 +90,8 @@ export function createLrs(config: LrsConfig): Lrs {
     if (known === undefined) {
       return {
         allowed: false,
-        status: 401,
-        reason: "Send the user and password of a client.",
+        reason: "unauthenticated",
+        message: "Send the user and password of a client.",
         challenge: 'Basic realm="xAPI"',
       };
     }

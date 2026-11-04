@@ -26,20 +26,21 @@ export const unknownObject = (): HttpResponse => failure(404, "Unknown Object", 
 export const invalidUuid = (): HttpResponse => failure(404, "Invalid UUID", "invalid_uuid");
 
 /**
- * The answer for a request that the host's `authorize` refuses, with the host's reason when it gives one: 401 with its challenge,
- * or that of a bearer token; 403; or 429 with the statement that the binding gives and `Retry-After` when known.
+ * The answer for a request that the host's `authorize` refuses, with the host's message when it gives one: 401 for
+ * `unauthenticated`, with its challenge or that of a bearer token; 403 for `forbidden`; or 429 for `too-many-requests`, with the
+ * statement that the binding gives and `Retry-After` when known.
  */
 export function refused(refusal: AccessRefusal): HttpResponse {
-  const { status, reason, challenge, retryAfterSeconds } = refusal;
-  if (status === 401) {
-    return failure(401, reason ?? "The request was not authorized.", "unauthorised_request", {
+  const { reason, message, challenge, retryAfterSeconds } = refusal;
+  if (reason === "unauthenticated") {
+    return failure(401, message ?? "The request was not authorized.", "unauthorised_request", {
       "www-authenticate": challenge ?? "Bearer",
     });
   }
-  if (status === 403) return failure(403, reason ?? "The request is not allowed.", "forbidden");
+  if (reason === "forbidden") return failure(403, message ?? "The request is not allowed.", "forbidden");
   return failure(
     429,
-    reason ?? "The provider is busy: retry at a later time.",
+    message ?? "The provider is busy: retry at a later time.",
     "server_busy",
     retryAfterSeconds === undefined ? {} : { "retry-after": String(retryAfterSeconds) },
   );

@@ -11,14 +11,14 @@ import {
 import * as v from "valibot";
 import { findRepeatedProperty } from "./repeated-property.js";
 
-/** The most bytes of text that `readStatementJson` reads unless the caller says otherwise: 10 MiB, the size of an LRS request. */
+/** The most bytes of text that `parseStatementJson` reads unless the caller says otherwise: 10 MiB, the size of an LRS request. */
 const DEFAULT_MAX_BYTES = 10_485_760;
 
-/** The deepest nesting of arrays and objects that `readStatementJson` reads unless the caller says otherwise. */
+/** The deepest nesting of arrays and objects that `parseStatementJson` reads unless the caller says otherwise. */
 const DEFAULT_MAX_DEPTH = 64;
 
-/** The options of `readStatementJson`. */
-export interface ReadStatementJsonOptions {
+/** The options of `parseStatementJson`. */
+export interface ParseStatementJsonOptions {
   /**
    * The most bytes of the text, counted as UTF-8.
    *
@@ -66,7 +66,7 @@ const optionsSchema = strictRecord({
  * @throws `DataError` when the text is not JSON, or has a property twice, or when the options are not valid.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
-export function readStatementJson(text: string, options?: ReadStatementJsonOptions): unknown {
+export function parseStatementJson(text: string, options?: ParseStatementJsonOptions): unknown {
   checkString(text, "The text");
   const {
     maxBytes = DEFAULT_MAX_BYTES,

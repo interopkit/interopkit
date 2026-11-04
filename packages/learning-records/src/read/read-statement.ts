@@ -21,7 +21,7 @@ import { item } from "./path.js";
  * The result shares nothing with the input. A single Activity of `contextActivities` is returned as a list of one, as an LRS
  * returns it (4.2.4.2). A Statement with an error is not returned, and warnings are not reported: `validateStatement` lists
  * the findings, with their severity. A property that occurs twice in the text is not a property of a value: read the text
- * with `readStatementJson`. The check stops after `maxFindings` errors, and the error says that there may be more.
+ * with `parseStatementJson`. The check stops after `maxFindings` errors, and the error says that there may be more.
  *
  * @param value - The Statement, such as the parsed text of a request.
  * @param options - Whose rules apply, of which version, and the most errors to count.

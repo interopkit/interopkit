@@ -1307,7 +1307,12 @@ describe("handleLrsRequest: About", () => {
       "/about",
       {},
       {
-        access: async () => ({ allowed: false, status: 401, reason: "Sign in.", challenge: 'Basic realm="xAPI"' }),
+        access: async () => ({
+          allowed: false,
+          reason: "unauthenticated",
+          message: "Sign in.",
+          challenge: 'Basic realm="xAPI"',
+        }),
       },
     );
     expect(refused.status).toBe(401);

@@ -106,6 +106,7 @@ describe("the public API", () => {
   it("exports from the http subpath only what the package documents", () => {
     expect(Object.keys(http).sort()).toStrictEqual(
       [
+        "ACCESS_REFUSAL_STATUSES",
         "basePathSchema",
         "buildJsonResponse",
         "buildPageLinks",

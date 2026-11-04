@@ -529,7 +529,7 @@ describe("a defect of a reader", () => {
     vi.resetModules();
     vi.doMock("../src/read/index.js", async (importOriginal) => ({
       ...(await importOriginal<typeof import("../src/read/index.js")>()),
-      readStatementJson: () => {
+      parseStatementJson: () => {
         throw new TypeError("a defect of the reader");
       },
     }));

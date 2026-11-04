@@ -86,14 +86,14 @@ allows.
 `pnpm bench` times the build that ships on 1,000 Statements of 771 KB that xAPI 1.0.3 and 2.0 both take, against a reference in
 the same run: the validator of Learning Locker for the work on each Statement, `JSON.parse` and `JSON.stringify` for a text,
 node:crypto for a hash and jose for a signature. The ratios are the fastest samples of seven runs on a laptop at a load of 10 to
-28, and the times of `validateStatement` and `readStatementJson` are those of the runners of CI.
+28, and the times of `validateStatement` and `parseStatementJson` are those of the runners of CI.
 
 | Benchmark | Reference | Ratio | Budget |
 | --- | --- | ---: | ---: |
 | `validateStatement` of the batch, 19 to 34 ms on CI | the validator of Learning Locker, 40 to 62 ms on CI | 0.41–0.52 | 1 |
 | `readStatement` of the batch | the same | 0.48–0.55 | 1 |
 | `validateStatements` of the batch | the same | 0.46–0.71 | 1 |
-| `readStatementJson` of its text | `JSON.parse` of the text | 3.4–3.8 | 40 |
+| `parseStatementJson` of its text | `JSON.parse` of the text | 3.4–3.8 | 40 |
 | `buildStatement` of the batch | the validator of Learning Locker | 0.76–0.79 | 4 |
 | `convertStatementVersion`, `formatStatement` | the same | 0.52–0.60 | 3 |
 | `isSameStatement` of each and its copy | the same | 2.3–3.4 | 20 |
@@ -114,7 +114,7 @@ ratio is five times the highest measured, rounded up to one significant digit. A
 | Budget | Value | How it was set |
 | --- | --- | --- |
 | `validateStatement` of the batch, in milliseconds | 100 | Five times the fastest of five samples of the runners of CI, 18.84, rounded up to one significant digit |
-| `readStatementJson` of the batch, in milliseconds | 500 | Five times the fastest of five samples of the runners of CI, 94.46, rounded up to one significant digit. The samples were taken before the scan, which reads about four times faster; the ratio is the budget that holds it |
+| `parseStatementJson` of the batch, in milliseconds | 500 | Five times the fastest of five samples of the runners of CI, 94.46, rounded up to one significant digit. The samples were taken before the scan, which reads about four times faster; the ratio is the budget that holds it |
 
 `JSON.parse` judges the syntax first, so the search for a repeated name is a scan of the strings and the brackets that keeps the
 names of the open objects and builds nothing else; a parser that builds a syntax tree took 16 to 18 times `JSON.parse`. A test
@@ -149,7 +149,7 @@ process only grows; the test reports the rise.
 
 | Reader | Worst input | Peak rose by | Budget |
 | --- | --- | ---: | ---: |
-| `readStatementJson` | A million tokens of distinct names, the most that the search for a repeat keeps | 58–65 MiB | 128 MiB |
+| `parseStatementJson` | A million tokens of distinct names, the most that the search for a repeat keeps | 58–65 MiB | 128 MiB |
 | `validateStatements` | A Statement whose context holds a million wrong Activities | 2 MiB | 64 MiB |
 | `readMultipart` | The most parts and bytes that the limits take, 10 MiB | 6–10 MiB | 64 MiB |
 | `handleLrsRequest`, a POST | 1,000 Statements of 1.9 MB near a million tokens | 34–37 MiB | 128 MiB |

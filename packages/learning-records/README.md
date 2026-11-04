@@ -10,7 +10,7 @@ of Statements, the message that carries Attachments, the signature of a Statemen
 flowchart LR
   host["Your application<br/>a request, a file or your own events"]
   subgraph pkg["@interopkit/learning-records"]
-    json["readStatementJson<br/>text, no repeated property"]
+    json["parseStatementJson<br/>text, no repeated property"]
     read["readStatement<br/>shape, then the rules between properties"]
     validate["validateStatement, validateStatements"]
     build["buildStatement, buildVoidingStatement,<br/>deriveStatementId"]
@@ -59,7 +59,7 @@ npm install @interopkit/learning-records
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@interopkit/learning-records`             | `readStatement`, `ReadOptions`: read a Statement into the model for the rules of an LRS or of a provider, and throw `DataError` on an error                                                                                                                                                                                              |
 |                                            | `validateStatement`, `validateStatements`: judge a Statement or a batch and return every finding, errors and warnings, as data, each an `Issue` of `@interopkit/core/checks`                                                                                                                                                                                         |
-|                                            | `readStatementJson`, `ReadStatementJsonOptions`: parse the text of a request, and refuse a property that occurs twice; a limit throws `LimitError` of `@interopkit/core`                                                                                                                                                                                                                    |
+|                                            | `parseStatementJson`, `ParseStatementJsonOptions`: parse the text of a request, and refuse a property that occurs twice; a limit throws `LimitError` of `@interopkit/core`                                                                                                                                                                                                                    |
 |                                            | `buildStatement`, `BuildOptions`, `StatementInput`, `buildVoidingStatement`: build the Statement of an event, or the one that voids another, checked against the rules of a provider                                                                                                                                                                          |
 |                                            | `deriveStatementId`, `mboxSha1sum`, `formatDuration`, `parseDuration`, `isDuration`: the id of an event, the hash of an address, and the durations of the standard; a Timestamp is written by `formatDateTime` of `@interopkit/core/checks`                                                                                                                                                        |
 |                                            | `isSameStatement`, `convertStatementVersion`: whether two Statements are the same by the rules of immutability, and a Statement in the form of 1.0.3                                                                                                                                                                                                                                                        |
@@ -72,7 +72,7 @@ npm install @interopkit/learning-records
 | `@interopkit/learning-records/signing`     | `signStatement`, `verifyStatementSignature`, `SIGNATURE_USAGE_TYPE`, `SignedStatement`, `SignatureCheck`: sign a Statement over a `Signer` of `@interopkit/core`, and verify the signature                                                                                                                                               |
 
 ```ts
-import { readStatement, readStatementJson, validateStatement } from "@interopkit/learning-records";
+import { readStatement, parseStatementJson, validateStatement } from "@interopkit/learning-records";
 
 const text = JSON.stringify({
   id: "6690e6c9-3ef0-4ed3-8b37-7f3964730bee",
@@ -83,7 +83,7 @@ const text = JSON.stringify({
   context: { contextActivities: { parent: { id: "https://example.org/activities/program-1" } } },
   timestamp: "2024-06-13T20:46:03.250+02:00",
 });
-const statement = readStatement(readStatementJson(text));
+const statement = readStatement(parseStatementJson(text));
 statement.result?.duration; // => "PT1H30M"
 statement.context?.contextActivities?.parent?.length; // => 1
 
@@ -106,7 +106,7 @@ validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `
 | Interaction patterns            | The form of every `correctResponsesPattern` by interaction type, and its characterstring parameters                                                                                                                            |
 | Building                        | A Statement from an event with the time in UTC, an id that a resend repeats, the Statement that voids another, durations and the hash of an address                                                                            |
 | Comparing and formats           | Whether two Statements are the same by the rules of immutability, and a Statement as `ids`, `exact` or `canonical`                                                                                                             |
-| Text of a request               | `readStatementJson`: RFC 8259 syntax, limits of size, depth and tokens, and a property given twice refused                                                                                                                     |
+| Text of a request               | `parseStatementJson`: RFC 8259 syntax, limits of size, depth and tokens, and a property given twice refused                                                                                                                     |
 | Attachments                     | The `multipart/mixed` message of Statements and Attachment data, matched by SHA-2 hash, within limits                                                                                                                          |
 | Signed Statements               | A compact JWS in an Attachment with RS256, RS384 or RS512 and an `x5c` chain, signed over a `Signer` and verified against the leaf and the equivalence of the payload                                                          |
 | Client                          | The seven resources over `fetch`: Statements and their twelve filters with pages, State and the two profiles under ETags with the preconditions of the version, Agents, Activities and About                                   |

@@ -53,8 +53,9 @@ export interface LrsGrant {
 
 /**
  * The decision of `access` about a request, an `AccessDecision` of `@interopkit/core/http`: who it is from and what it may do,
- * or that it is refused with 401, 403 or 429, and optionally the sentence of the answer (`reason`), the `WWW-Authenticate` of a
- * 401 (`challenge`, such as `Basic realm="xAPI"`) and the `Retry-After` of a 429 (`retryAfterSeconds`).
+ * or the `reason` it is refused for, `unauthenticated` (401), `forbidden` (403) or `too-many-requests` (429), and optionally the
+ * sentence of the answer (`message`), the `WWW-Authenticate` of an `unauthenticated` refusal (`challenge`, such as
+ * `Basic realm="xAPI"`) and the `Retry-After` of a `too-many-requests` one (`retryAfterSeconds`).
  */
 export type Access = AccessDecision<LrsGrant>;
 

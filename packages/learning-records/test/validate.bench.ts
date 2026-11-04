@@ -1,4 +1,4 @@
-import { readStatement, readStatementJson, validateStatement, validateStatements } from "@interopkit/learning-records";
+import { parseStatementJson, readStatement, validateStatement, validateStatements } from "@interopkit/learning-records";
 import { expect, test } from "vitest";
 import { benchBatch, checkWithLearningLocker, validateWithLearningLocker } from "./batch.js";
 import { BENCH_OPTIONS, BUDGETS, expectRatio, expectWithin, RATIOS, STATEMENTS } from "./budgets.js";
@@ -27,9 +27,15 @@ test("checks a batch of 1,000 Statements as fast as the validator of Learning Lo
   await expectWithin(annotate, "validateStatement", ours, BUDGETS.validateStatement);
 
   const parse = await bench("JSON.parse", () => JSON.parse(text)).run(BENCH_OPTIONS);
-  const read = await bench("readStatementJson", () => readStatementJson(text)).run(BENCH_OPTIONS);
-  await expectRatio(annotate, "readStatementJson", read, { ...parse, name: "JSON.parse" }, RATIOS.readJsonAgainstParse);
-  await expectWithin(annotate, "readStatementJson", read, BUDGETS.readStatementJson);
+  const read = await bench("parseStatementJson", () => parseStatementJson(text)).run(BENCH_OPTIONS);
+  await expectRatio(
+    annotate,
+    "parseStatementJson",
+    read,
+    { ...parse, name: "JSON.parse" },
+    RATIOS.parseJsonAgainstParse,
+  );
+  await expectWithin(annotate, "parseStatementJson", read, BUDGETS.parseStatementJson);
 });
 
 test("reads a batch of 1,000 Statements, and checks it as a whole, as fast as the validator of Learning Locker checks them", async ({

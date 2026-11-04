@@ -560,7 +560,7 @@ describe("X-Experience-API-Consistent-Through", () => {
       store,
       {},
       {},
-      { access: async () => ({ allowed: false, status: 401, reason: "Sign in." }) },
+      { access: async () => ({ allowed: false, reason: "unauthenticated", message: "Sign in." }) },
     );
     expect(denied.status).toBe(401);
     expect(denied.headers[THROUGH]).toBeUndefined();

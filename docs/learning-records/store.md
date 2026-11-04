@@ -299,9 +299,10 @@ every request and needs no action: a host that lets anyone ask About answers `{ 
 
 `access` is asked about every request that names a resource and a method. It answers an `AccessDecision` of
 `@interopkit/core/http`: `{ allowed: true, authority, actions }`, with an optional `principal` that names who the request is
-from for `accept`, or `{ allowed: false, status }` with 401, 403 or 429. A
-refusal's `reason` is the message of the answer (by default a sentence of its status), a 401 carries `challenge` as
-`WWW-Authenticate`, and a 429 carries `retryAfterSeconds` as `Retry-After`. A request for an action that `actions` does not list is 403; the action of each
+from for `accept`, or `{ allowed: false, reason }`, whose `reason` is `unauthenticated` (401), `forbidden` (403) or
+`too-many-requests` (429). A refusal's `message` is the message of the answer (by default a sentence of its reason), an
+`unauthenticated` one carries `challenge` as `WWW-Authenticate`, and a `too-many-requests` one carries `retryAfterSeconds` as
+`Retry-After`. A request for an action that `actions` does not list is 403; the action of each
 method is in the table of [the resources](#the-resources).
 
 A credential with `statements.read.mine` and not `statements.read` reads only the Statements whose `authority` is the one that

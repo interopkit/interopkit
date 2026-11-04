@@ -107,7 +107,7 @@ for (const request of requests)
       authorize: async (asked, scope) =>
         asked.headers.authorization === `Bearer ${token}` && scopes.includes(scope)
           ? { allowed: true, owner: "learner-1" }
-          : { allowed: false, status: 401 },
+          : { allowed: false, reason: "unauthenticated" },
       serviceDescription: {
         openapi: "3.0.1",
         info: {
@@ -189,10 +189,10 @@ reaches.
 | `authorize` answers                                       | The provider answers                                                                                    |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `{ allowed: true, owner }`                                | Goes on with the stores of `owner`, and of no one else                                                  |
-| `{ allowed: false, status: 401, reason?, challenge? }`    | 401 `unauthorizedrequest` with `WWW-Authenticate` of `challenge`, or `Bearer`                            |
-| `{ allowed: false, status: 403, reason? }`                | 403 `forbidden` with `WWW-Authenticate: Bearer error="insufficient_scope", scope="<scope>"` (RFC 6750)  |
-| `{ allowed: false, status: 429, retryAfterSeconds? }`     | 429 `server_busy`, with `Retry-After` when the seconds are given                                        |
-| A `reason` in a refusal                                   | The `imsx_description` of the answer, in place of the provider's sentence                               |
+| `{ allowed: false, reason: "unauthenticated", message?, challenge? }`    | 401 `unauthorizedrequest` with `WWW-Authenticate` of `challenge`, or `Bearer`                            |
+| `{ allowed: false, reason: "forbidden", message? }`                | 403 `forbidden` with `WWW-Authenticate: Bearer error="insufficient_scope", scope="<scope>"` (RFC 6750)  |
+| `{ allowed: false, reason: "too-many-requests", retryAfterSeconds? }`     | 429 `server_busy`, with `Retry-After` when the seconds are given                                        |
+| A `message` in a refusal                                  | The `imsx_description` of the answer, in place of the provider's sentence                               |
 | Rejects or throws                                         | 500 `internal_server_error`                                                                             |
 | Another shape                                             | `DataError`                                                                                             |
 

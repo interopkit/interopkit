@@ -13,7 +13,7 @@ import { convertStatementVersion } from "../compare/index.js";
 import { equivalenceKey } from "../compare/internal.js";
 import { type Statement, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 import { findInstant, parseIsoTimestamp } from "../model/internal.js";
-import { type ReadStatementJsonOptions, readStatement, readStatementJson } from "../read/index.js";
+import { type ParseStatementJsonOptions, parseStatementJson, readStatement } from "../read/index.js";
 import { readEitherVersion } from "../read/internal.js";
 import { isCertificate, SIGNATURE_ALGORITHMS } from "./constants.js";
 
@@ -179,7 +179,7 @@ async function verifyJws(jws: string, { key, algorithm }: VerifyingKey): Promise
 function readPayload(
   payload: Uint8Array,
   version: XapiVersion,
-  limits: ReadStatementJsonOptions,
+  limits: ParseStatementJsonOptions,
 ): Statement | undefined {
   let text: string;
   try {
@@ -188,7 +188,7 @@ function readPayload(
     return undefined;
   }
   try {
-    const json = readStatementJson(text, limits);
+    const json = parseStatementJson(text, limits);
     return version === "1.0.3" ? convertStatementVersion(readEitherVersion(json), "1.0.3") : readStatement(json);
   } catch (error) {
     if (error instanceof DataError) return undefined;
@@ -242,7 +242,7 @@ function checkWithoutKey(
   jws: string,
   stated: Statement,
   version: XapiVersion,
-  limits: ReadStatementJsonOptions,
+  limits: ParseStatementJsonOptions,
   noKey: Failure,
 ): Failure {
   const payload = unverifiedPayload(jws);
@@ -282,15 +282,15 @@ export function verifyStatementSignature(
 
 /**
  * Verifies a signature as `verifyStatementSignature` does, and reads its payload within the limits of the JSON of a request that
- * the handler of an LRS sets, which the defaults of `readStatementJson` would exceed.
+ * the handler of an LRS sets, which the defaults of `parseStatementJson` would exceed.
  *
- * @param limits - The limits of the JSON of the payload, as `readStatementJson` takes them.
+ * @param limits - The limits of the JSON of the payload, as `parseStatementJson` takes them.
  */
 export async function verifySignature(
   statement: Statement,
   signature: Uint8Array,
   options: SignatureVerifyOptions | undefined,
-  limits: ReadStatementJsonOptions,
+  limits: ParseStatementJsonOptions,
 ): Promise<SignatureCheck> {
   const {
     key,

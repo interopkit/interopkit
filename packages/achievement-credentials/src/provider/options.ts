@@ -36,7 +36,8 @@ export interface CredentialsProviderOptions extends CallOptions {
   readonly profiles: ProfileStore;
   /**
    * Checks the access token of a request against the scope that its operation needs, and names the owner of the resources that
-   * the token reaches; or refuses it with 401, 403 or 429. It is not asked for the service description, which is public.
+   * the token reaches; or refuses it, `unauthenticated`, `forbidden` or `too-many-requests`, which the provider answers with 401,
+   * 403 or 429. It is not asked for the service description, which is public.
    */
   readonly authorize: (request: HttpRequest, scope: string, options?: CallOptions) => Promise<CredentialsAccess>;
   /**

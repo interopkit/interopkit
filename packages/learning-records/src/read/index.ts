@@ -5,8 +5,8 @@
  * @module
  */
 export type { ReadOptions } from "./options.js";
-export { readStatement, validateStatement, validateStatements } from "./read-statement.js";
 export {
-  type ReadStatementJsonOptions,
-  readStatementJson,
-} from "./read-statement-json.js";
+  type ParseStatementJsonOptions,
+  parseStatementJson,
+} from "./parse-statement-json.js";
+export { readStatement, validateStatement, validateStatements } from "./read-statement.js";

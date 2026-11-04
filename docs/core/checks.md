@@ -166,7 +166,7 @@ the value is not JSON. `JsonValue` and `JsonObject` are the types.
 A member named `__proto__` stays a member of the copy and never changes its prototype.
 
 `nestsDeeperThan(text, maxDepth)` tells whether the arrays and objects of a text of JSON nest deeper than a limit, without parsing it: the text may be
-any string, and a string literal hides its brackets. `readStatementJson` checks the depth with it before it parses.
+any string, and a string literal hides its brackets. `parseStatementJson` checks the depth with it before it parses.
 `findExceededJsonLimit(text, maxDepth, maxTokens)` reads the text once for both limits and tells which it passes first, in the order of
 the text; `readJson` and the readers of `achievement-credentials` bound a text with it, at the cost of one reading instead of two.
 

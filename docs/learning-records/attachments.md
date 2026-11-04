@@ -49,7 +49,7 @@ body of the request; an LRS answers a query with `attachments=true` the same way
 
 | Part             | Written                                                                                                     | Read                                                                                                           |
 | ---------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| First            | `Content-Type: application/json`, then one Statement (PUT), an array (POST) or a result with `more` (a GET) | `Content-Type` absent or `application/json` with any parameters; the JSON is read by `readStatementJson`       |
+| First            | `Content-Type: application/json`, then one Statement (PUT), an array (POST) or a result with `more` (a GET) | `Content-Type` absent or `application/json` with any parameters; the JSON is read by `parseStatementJson`       |
 | Others           | `Content-Type`, `Content-Transfer-Encoding: binary` and `X-Experience-API-Hash`, the hash in lower case     | The hash is required; the encoding is `binary` when absent; the type is `application/octet-stream` when absent |
 | Boundary         | `interopkit-` and 32 hexadecimal digits of the hash of the first part and of the hashes of the other parts  | One to 70 characters, in the `boundary` parameter, quoted or not                                               |
 | `Content-Length` | Not written                                                                                                 | Checked against the data when a part has it                                                                    |
@@ -79,7 +79,7 @@ in memory.
 | `maxTokens`     | 1,000,000  | The most tokens of JSON in the first part, counted before it is parsed                        |
 
 The headers of a part are at most 8,192 bytes, which the parser fixes. The first part is also read within the limits of
-`readStatementJson`: `maxPartBytes` bytes, `maxDepth` levels and `maxTokens` tokens.
+`parseStatementJson`: `maxPartBytes` bytes, `maxDepth` levels and `maxTokens` tokens.
 
 ## Errors
 

@@ -2,7 +2,7 @@ import { type AnyNode, evaluate, parse, tokenize } from "@humanwhocodes/momoa";
 import { DataError, LimitError } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
-import { readStatement, readStatementJson, validateStatements } from "../src/index.js";
+import { parseStatementJson, readStatement, validateStatements } from "../src/index.js";
 import { fullStatement, minimalStatement } from "./full-statement.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
@@ -70,13 +70,13 @@ const jsonText: fc.Arbitrary<string> = fc.letrec<{ value: string }>((tie) => ({
   ),
 })).value;
 
-describe("readStatementJson", () => {
+describe("parseStatementJson", () => {
   it("finds the first repeated property where a parser that builds a syntax tree finds it", () => {
     fc.assert(
       fc.property(jsonText, (text) => {
         const repeat = repeatOfTree(parse(text, { mode: "json" }).body, "");
-        if (repeat === undefined) expect(readStatementJson(text)).toStrictEqual(JSON.parse(text));
-        else expect(() => readStatementJson(text)).toThrow(`The text has the property ${repeat}.`);
+        if (repeat === undefined) expect(parseStatementJson(text)).toStrictEqual(JSON.parse(text));
+        else expect(() => parseStatementJson(text)).toThrow(`The text has the property ${repeat}.`);
       }),
       { ...RUNS, numRuns: 2000 },
     );
@@ -85,7 +85,7 @@ describe("readStatementJson", () => {
   it("returns the value that JSON.parse returns, for a Statement and for a batch", () => {
     for (const value of [fullStatement(), [minimalStatement(), fullStatement()]]) {
       const text = JSON.stringify(value);
-      expect(readStatementJson(text)).toStrictEqual(JSON.parse(text));
+      expect(parseStatementJson(text)).toStrictEqual(JSON.parse(text));
     }
   });
 
@@ -93,8 +93,8 @@ describe("readStatementJson", () => {
     fc.assert(
       fc.property(fc.jsonValue(), (value) => {
         const text = JSON.stringify(value);
-        expect(readStatementJson(text)).toStrictEqual(JSON.parse(text));
-        expect(readStatementJson(JSON.stringify(value, null, "\t"))).toStrictEqual(JSON.parse(text));
+        expect(parseStatementJson(text)).toStrictEqual(JSON.parse(text));
+        expect(parseStatementJson(JSON.stringify(value, null, "\t"))).toStrictEqual(JSON.parse(text));
       }),
       RUNS,
     );
@@ -102,8 +102,8 @@ describe("readStatementJson", () => {
 
   it("reads the text of a Statement that an LRS then reads as a Statement", () => {
     const text = JSON.stringify(fullStatement());
-    expect(readStatement(readStatementJson(text))).toStrictEqual(fullStatement());
-    expect(validateStatements(readStatementJson(`[${text},${JSON.stringify(minimalStatement())}]`))).toStrictEqual([]);
+    expect(readStatement(parseStatementJson(text))).toStrictEqual(fullStatement());
+    expect(validateStatements(parseStatementJson(`[${text},${JSON.stringify(minimalStatement())}]`))).toStrictEqual([]);
   });
 
   describe("a property that occurs twice", () => {
@@ -115,24 +115,24 @@ describe("readStatementJson", () => {
       ['{\n  "actor": {},\n  "actor": {}\n}', 'The text has the property "actor" twice, at line 3 column 3.'],
       ['{"__proto__":1,"__proto__":2}', 'The text has the property "__proto__" twice, at line 1 column 16.'],
     ])("refuses %j, and says where", (text, sentence) => {
-      expect(() => readStatementJson(text)).toThrow(DataError);
-      expect(() => readStatementJson(text)).toThrow(sentence);
-      expect(() => readStatementJson(text)).toThrow("An LRS rejects a property that occurs more than once.");
+      expect(() => parseStatementJson(text)).toThrow(DataError);
+      expect(() => parseStatementJson(text)).toThrow(sentence);
+      expect(() => parseStatementJson(text)).toThrow("An LRS rejects a property that occurs more than once.");
     });
 
     it("counts two names as one when the escapes in them write the same characters", () => {
-      expect(() => readStatementJson('{"a":1,"\\u0061":2}')).toThrow('The text has the property "a" twice');
-      expect(() => readStatementJson('{"\\/":1,"/":2}')).toThrow('The text has the property "/" twice');
+      expect(() => parseStatementJson('{"a":1,"\\u0061":2}')).toThrow('The text has the property "a" twice');
+      expect(() => parseStatementJson('{"\\/":1,"/":2}')).toThrow('The text has the property "/" twice');
     });
 
     it("reads the same name in objects that are not the same object", () => {
       const text = '{"a":{"id":1},"b":{"id":2},"c":[{"id":3},{"id":4}],"d":{"a":{"id":5}}}';
-      expect(readStatementJson(text)).toStrictEqual(JSON.parse(text));
+      expect(parseStatementJson(text)).toStrictEqual(JSON.parse(text));
     });
 
     it("reads names that differ in case, and names that look alike", () => {
       const text = '{"id":1,"Id":2,"ID":3,"i d":4,"id ":5}';
-      expect(readStatementJson(text)).toStrictEqual(JSON.parse(text));
+      expect(parseStatementJson(text)).toStrictEqual(JSON.parse(text));
     });
 
     it("refuses a repeat at any depth of a Statement", () => {
@@ -140,14 +140,14 @@ describe("readStatementJson", () => {
         '"name":"Example Learner"',
         '"name":"Example Learner","name":"Ex"',
       );
-      expect(() => readStatementJson(text)).toThrow('The text has the property "name" twice in actor');
+      expect(() => parseStatementJson(text)).toThrow('The text has the property "name" twice in actor');
     });
 
     it("refuses a text that repeats a property, for any text of an object with a repeated name", () => {
       fc.assert(
         fc.property(fc.string(), fc.jsonValue(), fc.jsonValue(), (name, first, second) => {
           const text = `{${JSON.stringify(name)}:${JSON.stringify(first)},${JSON.stringify(name)}:${JSON.stringify(second)}}`;
-          expect(() => readStatementJson(text)).toThrow(DataError);
+          expect(() => parseStatementJson(text)).toThrow(DataError);
         }),
         RUNS,
       );
@@ -156,7 +156,7 @@ describe("readStatementJson", () => {
 
   describe("a property named __proto__", () => {
     it("is a property of the result and changes no prototype", () => {
-      const result = readStatementJson('{"__proto__":{"polluted":true},"a":1}') as Record<string, unknown>;
+      const result = parseStatementJson('{"__proto__":{"polluted":true},"a":1}') as Record<string, unknown>;
       expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
       expect(Object.keys(result)).toStrictEqual(["__proto__", "a"]);
       expect((result as { polluted?: boolean }).polluted).toBeUndefined();
@@ -193,8 +193,8 @@ describe("readStatementJson", () => {
       '"a\tb"',
       '"a\nb"',
     ])("refuses %j with a sentence", (text) => {
-      expect(() => readStatementJson(text)).toThrow(DataError);
-      expect(() => readStatementJson(text)).toThrow(/^The text is not valid JSON: /);
+      expect(() => parseStatementJson(text)).toThrow(DataError);
+      expect(() => parseStatementJson(text)).toThrow(/^The text is not valid JSON: /);
     });
 
     it("refuses any text that JSON.parse refuses, and reads any text that it reads", () => {
@@ -217,12 +217,12 @@ describe("readStatementJson", () => {
               valid = false;
             }
             if (!valid) {
-              expect(() => readStatementJson(text)).toThrow(/^The text is not valid JSON: /);
+              expect(() => parseStatementJson(text)).toThrow(/^The text is not valid JSON: /);
               return;
             }
             // A text of valid JSON is read, unless an object in it repeats a property.
             try {
-              expect(readStatementJson(text)).toStrictEqual(expected);
+              expect(parseStatementJson(text)).toStrictEqual(expected);
             } catch (error) {
               expect(String(error)).toContain(" twice");
             }
@@ -234,64 +234,64 @@ describe("readStatementJson", () => {
 
     it("refuses what is not a string", () => {
       for (const value of [null, undefined, 5, {}, []] as unknown[]) {
-        expect(() => readStatementJson(value as string)).toThrow(DataError);
-        expect(() => readStatementJson(value as string)).toThrow(/^The text must be a string, found /);
+        expect(() => parseStatementJson(value as string)).toThrow(DataError);
+        expect(() => parseStatementJson(value as string)).toThrow(/^The text must be a string, found /);
       }
     });
   });
 
   describe("the limits", () => {
     it("counts the bytes of the text and not its characters, and refuses the text above the limit", () => {
-      expect(readStatementJson('"€€"', { maxBytes: 8 })).toBe("€€");
-      expect(() => readStatementJson('"€€€"', { maxBytes: 8 })).toThrow(
+      expect(parseStatementJson('"€€"', { maxBytes: 8 })).toBe("€€");
+      expect(() => parseStatementJson('"€€€"', { maxBytes: 8 })).toThrow(
         "The text has 11 bytes or more, above the limit of 8 bytes.",
       );
-      expect(readStatementJson("[1,2,3]", { maxBytes: 7 })).toStrictEqual([1, 2, 3]);
-      expect(() => readStatementJson("[1,2,3]", { maxBytes: 6 })).toThrow(DataError);
+      expect(parseStatementJson("[1,2,3]", { maxBytes: 7 })).toStrictEqual([1, 2, 3]);
+      expect(() => parseStatementJson("[1,2,3]", { maxBytes: 6 })).toThrow(DataError);
     });
 
     it("refuses 10 MiB and one more byte without reading it", () => {
-      expect(() => readStatementJson(" ".repeat(10_485_761))).toThrow("above the limit of 10485760 bytes");
+      expect(() => parseStatementJson(" ".repeat(10_485_761))).toThrow("above the limit of 10485760 bytes");
     });
 
     it("reads nesting up to the depth and refuses one level more", () => {
-      expect(readStatementJson("[[[]]]", { maxDepth: 3 })).toStrictEqual([[[]]]);
-      expect(() => readStatementJson("[[[[]]]]", { maxDepth: 3 })).toThrow(
+      expect(parseStatementJson("[[[]]]", { maxDepth: 3 })).toStrictEqual([[[]]]);
+      expect(() => parseStatementJson("[[[[]]]]", { maxDepth: 3 })).toThrow(
         "The text nests arrays and objects deeper than the limit of 3 levels.",
       );
-      expect(() => readStatementJson('{"a":{"b":{"c":{}}}}', { maxDepth: 3 })).toThrow("deeper than the limit of 3");
+      expect(() => parseStatementJson('{"a":{"b":{"c":{}}}}', { maxDepth: 3 })).toThrow("deeper than the limit of 3");
     });
 
     it("reads 64 levels unless told otherwise, and refuses 65", () => {
-      expect(readStatementJson("[".repeat(64) + "]".repeat(64))).toBeInstanceOf(Array);
-      expect(() => readStatementJson("[".repeat(65) + "]".repeat(65))).toThrow("deeper than the limit of 64");
+      expect(parseStatementJson("[".repeat(64) + "]".repeat(64))).toBeInstanceOf(Array);
+      expect(() => parseStatementJson("[".repeat(65) + "]".repeat(65))).toThrow("deeper than the limit of 64");
     });
 
     it("counts the tokens of the text and refuses the text above the limit", () => {
-      expect(readStatementJson("[1,2,3]", { maxTokens: 7 })).toStrictEqual([1, 2, 3]);
-      expect(() => readStatementJson("[1,2,3]", { maxTokens: 6 })).toThrow(
+      expect(parseStatementJson("[1,2,3]", { maxTokens: 7 })).toStrictEqual([1, 2, 3]);
+      expect(() => parseStatementJson("[1,2,3]", { maxTokens: 6 })).toThrow(
         "The text has more than 6 tokens, above the limit of the option maxTokens.",
       );
-      expect(readStatementJson('{"a":[true,null,-1.5e+2,"x"]}', { maxTokens: 13 })).toStrictEqual({
+      expect(parseStatementJson('{"a":[true,null,-1.5e+2,"x"]}', { maxTokens: 13 })).toStrictEqual({
         a: [true, null, -150, "x"],
       });
-      expect(() => readStatementJson('{"a":[true,null,-1.5e+2,"x"]}', { maxTokens: 12 })).toThrow(DataError);
+      expect(() => parseStatementJson('{"a":[true,null,-1.5e+2,"x"]}', { maxTokens: 12 })).toThrow(DataError);
     });
 
     it("reads the most tokens by default, 1,000,000, and refuses one more", () => {
       // Two brackets, two tokens for each "0,", and the two of the inner []: 2 + 2 * 499,998 + 2 = 1,000,000.
       const atTheLimit = `[${"0,".repeat(499_998)}[]]`;
-      expect(readStatementJson(atTheLimit)).toHaveLength(499_999);
+      expect(parseStatementJson(atTheLimit)).toHaveLength(499_999);
       // Two brackets, two tokens for each "0,", and the last 0: 2 + 2 * 499,999 + 1 = 1,000,001.
       const oneMore = `[${"0,".repeat(499_999)}0]`;
-      expect(() => readStatementJson(oneMore)).toThrow("The text has more than 1000000 tokens");
+      expect(() => parseStatementJson(oneMore)).toThrow("The text has more than 1000000 tokens");
     });
 
     it("counts the tokens as a tokenizer does", () => {
       const text = '[0,{"a":[true,null,-1.5e+2,"x\\"y"]},[], "z" ]';
       const count = tokenize(text, { mode: "json" }).length;
-      expect(readStatementJson(text, { maxTokens: count })).toStrictEqual(JSON.parse(text));
-      expect(() => readStatementJson(text, { maxTokens: count - 1 })).toThrow(`more than ${count - 1} tokens`);
+      expect(parseStatementJson(text, { maxTokens: count })).toStrictEqual(JSON.parse(text));
+      expect(() => parseStatementJson(text, { maxTokens: count - 1 })).toThrow(`more than ${count - 1} tokens`);
     });
 
     it("refuses the text of 10 MiB that has the most tokens, the worst for memory, before it parses anything", () => {
@@ -299,7 +299,7 @@ describe("readStatementJson", () => {
       expect(worst.length).toBe(10_485_759);
       const parse = vi.spyOn(JSON, "parse");
       try {
-        expect(() => readStatementJson(worst)).toThrow("The text has more than 1000000 tokens");
+        expect(() => parseStatementJson(worst)).toThrow("The text has more than 1000000 tokens");
         expect(parse).not.toHaveBeenCalled();
       } finally {
         parse.mockRestore();
@@ -308,23 +308,23 @@ describe("readStatementJson", () => {
 
     it("refuses a text over both limits for its depth, whichever it passes first", () => {
       // The fifth token passes a limit of four tokens before the brackets pass the depth of three.
-      expect(() => readStatementJson("[1,2,[[[[]]]]]", { maxDepth: 3, maxTokens: 4 })).toThrow(
+      expect(() => parseStatementJson("[1,2,[[[[]]]]]", { maxDepth: 3, maxTokens: 4 })).toThrow(
         "The text nests arrays and objects deeper than the limit of 3 levels.",
       );
-      expect(() => readStatementJson("[[[[1,2,3]]]]", { maxDepth: 3, maxTokens: 4 })).toThrow(
+      expect(() => parseStatementJson("[[[[1,2,3]]]]", { maxDepth: 3, maxTokens: 4 })).toThrow(
         "The text nests arrays and objects deeper than the limit of 3 levels.",
       );
     });
 
     it("refuses a hundred thousand opening brackets before it parses anything", () => {
-      expect(() => readStatementJson("[".repeat(100_000))).toThrow("deeper than the limit of 64");
-      expect(() => readStatementJson('{"a":'.repeat(50_000))).toThrow("deeper than the limit of 64");
+      expect(() => parseStatementJson("[".repeat(100_000))).toThrow("deeper than the limit of 64");
+      expect(() => parseStatementJson('{"a":'.repeat(50_000))).toThrow("deeper than the limit of 64");
     });
 
     it("names the limit that a text went over and its value, so that a handler can answer 413", () => {
       const over = (text: string, options: object) => {
         try {
-          readStatementJson(text, options);
+          parseStatementJson(text, options);
         } catch (error) {
           return error;
         }
@@ -341,7 +341,7 @@ describe("readStatementJson", () => {
     it("reads a depth above the stack when the caller allows it, since the search for a repeat does not recurse", () => {
       const levels = 2_000;
       const text = `${'{"a":'.repeat(levels)}1${"}".repeat(levels)}`;
-      expect(() => readStatementJson(text, { maxDepth: levels })).not.toThrow();
+      expect(() => parseStatementJson(text, { maxDepth: levels })).not.toThrow();
     });
 
     it.each([
@@ -356,7 +356,7 @@ describe("readStatementJson", () => {
       [{ limit: 1 }, 'The options object is invalid: unexpected property "limit".'],
     ])("refuses the options %j", (options, sentence) => {
       const given = JSON.parse(JSON.stringify(options));
-      expect(() => readStatementJson("{}", given)).toThrow(new DataError(sentence));
+      expect(() => parseStatementJson("{}", given)).toThrow(new DataError(sentence));
     });
   });
 });

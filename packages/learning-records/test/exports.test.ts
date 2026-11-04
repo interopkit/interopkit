@@ -22,7 +22,7 @@ describe("the public API", () => {
         "mboxSha1sum",
         "parseDuration",
         "readStatement",
-        "readStatementJson",
+        "parseStatementJson",
         "RULE_ROLES",
         "STATEMENT_FORMATS",
         "validateStatement",

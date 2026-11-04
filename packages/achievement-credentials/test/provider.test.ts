@@ -185,7 +185,7 @@ describe("the scopes of the operations", () => {
       authorize: async (_request, scope) =>
         scope === SCOPES.badges.getCredentials
           ? { allowed: true, owner: "learner-1" }
-          : { allowed: false, status: 403 },
+          : { allowed: false, reason: "forbidden" },
     });
     expect((await handle(options, "GET", `${CLR}/credentials`)).status).toBe(403);
   });
@@ -195,7 +195,7 @@ describe("the scopes of the operations", () => {
       serving("badges", {
         authorize: async () => ({
           allowed: false,
-          status: 429,
+          reason: "too-many-requests",
           ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds }),
         }),
       }).options;
@@ -211,8 +211,8 @@ describe("the scopes of the operations", () => {
     const expired = await handle(
       refusing({
         allowed: false,
-        status: 401,
-        reason: "The token expired.",
+        reason: "unauthenticated",
+        message: "The token expired.",
         challenge: 'Bearer error="invalid_token"',
       }),
       "GET",
@@ -220,10 +220,10 @@ describe("the scopes of the operations", () => {
     );
     expect(expired.headers["www-authenticate"]).toBe('Bearer error="invalid_token"');
     expect(JSON.parse(String(expired.body))).toMatchObject({ imsx_description: "The token expired." });
-    const plain = await handle(refusing({ allowed: false, status: 401 }), "GET", `${OB}/credentials`);
+    const plain = await handle(refusing({ allowed: false, reason: "unauthenticated" }), "GET", `${OB}/credentials`);
     expect(plain.headers["www-authenticate"]).toBe("Bearer");
     const denied = await handle(
-      refusing({ allowed: false, status: 403, reason: "Not yours." }),
+      refusing({ allowed: false, reason: "forbidden", message: "Not yours." }),
       "GET",
       `${OB}/profile`,
     );
@@ -597,7 +597,12 @@ describe("the ports", () => {
         "The answer of ProfileStore.put",
       ],
       ["GET", `${OB}/profile`, { authorize: answering({ allowed: true }) }, "The decision of authorize"],
-      ["GET", `${OB}/profile`, { authorize: answering({ allowed: false, status: 500 }) }, "The decision of authorize"],
+      [
+        "GET",
+        `${OB}/profile`,
+        { authorize: answering({ allowed: false, reason: "server-error" }) },
+        "The decision of authorize",
+      ],
     ];
     for (const [method, path, extra, message] of cases) {
       const body =

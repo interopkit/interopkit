@@ -1,26 +1,49 @@
 import * as v from "valibot";
 import { nonNegativeIntegerSchema, parseWith, type Schema } from "../checks.js";
 
-/** A host's refusal of a request: not authenticated (401), not allowed (403), or one request too many (429). */
+/**
+ * The reasons for which a host refuses a request, each with the HTTP status that a handler answers it with: the request is not
+ * authenticated (401), it is not allowed (403), or the client asks too often (429).
+ */
+export const ACCESS_REFUSAL_STATUSES = {
+  /** The request is not authenticated: 401. */
+  unauthenticated: 401,
+  /** The request is not allowed: 403. */
+  forbidden: 403,
+  /** The client asks too often: 429. */
+  "too-many-requests": 429,
+} as const;
+
+/** Why a host refuses a request: `unauthenticated`, `forbidden` or `too-many-requests`, a key of `ACCESS_REFUSAL_STATUSES`. */
+export type AccessRefusalReason = keyof typeof ACCESS_REFUSAL_STATUSES;
+
+/** The reasons, for the schema of a decision. */
+const ACCESS_REFUSAL_REASONS = [
+  "unauthenticated",
+  "forbidden",
+  "too-many-requests",
+] as const satisfies readonly AccessRefusalReason[];
+
+/** A host's refusal of a request: not authenticated, not allowed, or one request too many. */
 export interface AccessRefusal {
   /** The request is refused. */
   readonly allowed: false;
-  /** 401 when the request is not authenticated, 403 when it is not allowed, 429 when the client asks too often. */
-  readonly status: 401 | 403 | 429;
+  /** Why, which sets the status of the answer: 401 for `unauthenticated`, 403 for `forbidden`, 429 for `too-many-requests`. */
+  readonly reason: AccessRefusalReason;
   /**
    * Says why, as a sentence, which the handler sends as the message of its answer.
    *
-   * @defaultValue none: the handler's sentence for the status
+   * @defaultValue none: the handler's sentence for the reason
    */
-  readonly reason?: string;
+  readonly message?: string;
   /**
-   * The `WWW-Authenticate` header of a 401, such as `Basic realm="xAPI"` or `Bearer error="invalid_token"`.
+   * The `WWW-Authenticate` header of an `unauthenticated` refusal, such as `Basic realm="xAPI"` or `Bearer error="invalid_token"`.
    *
    * @defaultValue none: the handler's challenge, or no header where its protocol names none
    */
   readonly challenge?: string;
   /**
-   * The seconds that a refused client should wait, sent as `Retry-After` with 429.
+   * The seconds that a client refused for `too-many-requests` should wait, sent as `Retry-After`.
    *
    * @defaultValue none: no `Retry-After`
    */
@@ -53,8 +76,8 @@ const decisionSchema = v.variant("allowed", [
   v.looseObject({ allowed: v.literal(true) }),
   v.object({
     allowed: v.literal(false),
-    status: v.picklist([401, 403, 429]),
-    reason: v.optional(v.string()),
+    reason: v.picklist(ACCESS_REFUSAL_REASONS),
+    message: v.optional(v.string()),
     challenge: v.optional(v.string()),
     retryAfterSeconds: v.optional(nonNegativeIntegerSchema),
   }),
@@ -62,7 +85,8 @@ const decisionSchema = v.variant("allowed", [
 
 /**
  * Reads the decision that a host's port, such as `authorize`, gave about a request: `{ allowed: true }`, or an `AccessRefusal`
- * with a status of 401, 403 or 429 and, optionally, its reason, the challenge of a 401 and the whole seconds of `Retry-After`.
+ * with its `reason`, `unauthenticated`, `forbidden` or `too-many-requests`, and, optionally, its message, the challenge of an
+ * `unauthenticated` refusal and the whole seconds of `Retry-After`.
  *
  * @remarks
  * A handler reads what its port answered with it, so that a port that answers another shape is a `DataError` that names the

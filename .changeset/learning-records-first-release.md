@@ -7,7 +7,7 @@ value into the model for the rules of an LRS or of a Learning Record Provider (`
 of the standard and the rules between them, and returns a copy; it throws a `DataError` that names the path of the first error
 and counts the others. `validateStatement` and `validateStatements` return the findings, at most `maxFindings` (1,000) of them for a whole batch,
 with their path, rule, sentence and severity, as data: identifiers, the voided verb, scores, the forms of IRIs, UUIDs, times, durations and language tags, the form of
-each interaction's response patterns, and for a provider UTC times and what the LRS sets. `readStatementJson` parses the text of
+each interaction's response patterns, and for a provider UTC times and what the LRS sets. `parseStatementJson` parses the text of
 a request within limits of size, depth and tokens, at four to seven times the time of `JSON.parse`, and refuses an object that
 names a property twice; a text over a limit of its size throws `JsonLimitError`. `buildStatement` makes the
 Statement of an event with the time in UTC, and checks it against the rules of a provider; `buildVoidingStatement` makes the one that

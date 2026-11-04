@@ -26,25 +26,26 @@ export const notAllowed = (method: string, allowed: readonly string[]): HttpResp
   });
 
 /**
- * The answer for a request that the host's `authorize` refuses, with the host's reason when it gives one: 401 with its challenge,
- * or that of a bearer token (RFC 6750); 403 with the challenge of RFC 6750 that names the scope the operation needs, since a
- * token that does not hold it is the refusal that this API knows; or 429 with `Retry-After` when the host gives the seconds.
+ * The answer for a request that the host's `authorize` refuses, with the host's message when it gives one: 401 for
+ * `unauthenticated`, with its challenge or that of a bearer token (RFC 6750); 403 for `forbidden`, with the challenge of RFC 6750
+ * that names the scope the operation needs, since a token that does not hold it is the refusal that this API knows; or 429 for
+ * `too-many-requests`, with `Retry-After` when the host gives the seconds.
  */
 export function refused(refusal: AccessRefusal, scope: string): HttpResponse {
-  const { status, reason, challenge, retryAfterSeconds } = refusal;
-  if (status === 401) {
-    return failure(401, reason ?? "The request was not authorized.", "unauthorizedrequest", {
+  const { reason, message, challenge, retryAfterSeconds } = refusal;
+  if (reason === "unauthenticated") {
+    return failure(401, message ?? "The request was not authorized.", "unauthorizedrequest", {
       "www-authenticate": challenge ?? "Bearer",
     });
   }
-  if (status === 403) {
-    return failure(403, reason ?? "The request is not allowed.", "forbidden", {
+  if (reason === "forbidden") {
+    return failure(403, message ?? "The request is not allowed.", "forbidden", {
       "www-authenticate": `Bearer error="insufficient_scope", scope="${scope}"`,
     });
   }
   return failure(
     429,
-    reason ?? "The server is receiving too many requests: retry at a later time.",
+    message ?? "The server is receiving too many requests: retry at a later time.",
     "server_busy",
     retryAfterSeconds === undefined ? {} : { "retry-after": String(retryAfterSeconds) },
   );

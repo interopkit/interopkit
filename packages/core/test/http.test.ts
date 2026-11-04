@@ -766,29 +766,29 @@ describe("readAccessDecision", () => {
   const grant = { grant: v.object({ owner: v.pipe(v.string(), v.nonEmpty()) }) };
   const read = (value: unknown) => readAccessDecision(value, "The decision", grant);
 
-  it("reads an allowed decision with what it grants, and a refusal with its status and delay", () => {
+  it("reads an allowed decision with what it grants, and a refusal with its reason, message and delay", () => {
     expect(read({ allowed: true, owner: "learner-1", extra: 1 })).toStrictEqual({ allowed: true, owner: "learner-1" });
-    expect(read({ allowed: false, status: 429, retryAfterSeconds: 30 })).toStrictEqual({
+    expect(read({ allowed: false, reason: "too-many-requests", retryAfterSeconds: 30 })).toStrictEqual({
       allowed: false,
-      status: 429,
+      reason: "too-many-requests",
       retryAfterSeconds: 30,
     });
     expect(readAccessDecision({ allowed: true, owner: "x" }, "The decision")).toStrictEqual({ allowed: true });
     const refusal = {
       allowed: false,
-      status: 401,
-      reason: "The token expired.",
+      reason: "unauthenticated",
+      message: "The token expired.",
       challenge: 'Bearer error="invalid_token"',
     };
     expect(read(refusal)).toStrictEqual(refusal);
   });
 
-  it("refuses another shape: a status outside 401, 403 and 429, a delay that is not whole, an allowed one without its grant", () => {
+  it("refuses another shape: a reason that is not one of the three, a delay that is not whole, an allowed one without its grant", () => {
     const bad = [
-      { allowed: false, status: 500 },
-      { allowed: false, status: 429, retryAfterSeconds: 1.5 },
-      { allowed: false, status: 401, reason: 5 },
-      { allowed: false, status: 401, challenge: ["Basic"] },
+      { allowed: false, reason: "server-error" },
+      { allowed: false, reason: "too-many-requests", retryAfterSeconds: 1.5 },
+      { allowed: false, reason: "unauthenticated", message: 5 },
+      { allowed: false, reason: "unauthenticated", challenge: ["Basic"] },
       { allowed: true },
       { allowed: true, owner: "" },
       { allowed: "yes", owner: "x" },
