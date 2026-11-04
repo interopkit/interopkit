@@ -76,8 +76,8 @@ export function readCredentialChunk(image: Uint8Array, chunk: Chunk, kind: Found
   }
   try {
     return UTF8.decode(image.subarray(text, chunk.dataEnd));
-  } catch {
-    throw new DataError(`${label} holds text that is not UTF-8.`);
+  } catch (error) {
+    throw new DataError(`${label} holds text that is not UTF-8.`, { cause: error });
   }
 }
 

@@ -36,9 +36,8 @@ export const unauthorized = (): HttpResponse =>
 export const unsupportedType = (): HttpResponse =>
   problem(415, "Unsupported Media Type", "The body must be application/json.");
 
-/** The answer for a body above the limit: 413. */
-export const tooLarge = (bytes: number, limit: number): HttpResponse =>
-  problem(413, "Content Too Large", `The body has ${bytes} bytes, above the limit of ${limit} bytes.`);
+/** The answer for a body above a limit, of its bytes or of what it holds: 413. */
+export const tooLarge = (sentence: string): HttpResponse => problem(413, "Content Too Large", limited(sentence));
 
 /** The answer for a body that is not an envelope, or an envelope that strict reading refuses: 400, with the first fault. */
 export const badRequest = (sentence: string): HttpResponse => problem(400, "Bad Request", limited(sentence));

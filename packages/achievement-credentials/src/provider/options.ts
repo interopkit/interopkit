@@ -143,6 +143,7 @@ export function readDescription(settings: ProviderSettings): ServiceDescriptionD
   } catch (error) {
     throw new DataError(
       `${label} is not a service description: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     );
   }
   const usable = parseWith(usableDescriptionSchema, description, label);

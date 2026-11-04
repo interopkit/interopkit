@@ -1,6 +1,6 @@
 import { readRetryAfterSeconds } from "./answer-headers.js";
 import { checkPositiveInteger, checkRecord } from "./checks.js";
-import { DataError, ServiceError } from "./errors.js";
+import { DataError, LimitError, ServiceError } from "./errors.js";
 import { findExceededJsonLimit, hasMoreTokensThan, MAX_JSON_DEPTH, MAX_JSON_TOKENS, nestsDeeperThan } from "./json.js";
 import type { ServiceResponse } from "./service.js";
 
@@ -37,8 +37,8 @@ export interface ReadAnswerJsonOptions {
  * @param what - Names the service in the sentence of an error, such as `The CASE provider at https://example.org/...`.
  * @param options - The limits.
  * @returns The parsed value.
- * @throws `DataError` that names the service, when the options are not valid, or the body is not UTF-8, nests deeper or has
- * more tokens than the limits, or is not JSON.
+ * @throws `LimitError`, a `DataError` that names the service, when the body nests deeper or has more tokens than the limits.
+ * @throws `DataError` that names the service, when the options are not valid, or the body is not UTF-8 or not JSON.
  */
 export function readAnswerJson(response: ServiceResponse, what: string, options: ReadAnswerJsonOptions = {}): unknown {
   checkRecord(options, "The options of readAnswerJson must be an object");
@@ -48,24 +48,26 @@ export function readAnswerJson(response: ServiceResponse, what: string, options:
   let text: string;
   try {
     text = DECODER.decode(response.body);
-  } catch {
-    throw new DataError(`${what} answered with a body that is not UTF-8 text.`);
+  } catch (error) {
+    throw new DataError(`${what} answered with a body that is not UTF-8 text.`, { cause: error });
   }
   // One reading finds the first limit that the text passes. The depth is refused before the tokens, so a text that passes the
   // tokens first is read on for its depth.
   const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
   if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
-    throw new DataError(`${what} answered with JSON that nests more than ${maxDepth} levels.`);
+    throw new LimitError(`${what} answered with JSON that nests more than ${maxDepth} levels.`, "maxDepth", maxDepth);
   }
   if (excess === "tokens") {
-    throw new DataError(
+    throw new LimitError(
       `${what} answered with a body of more than ${maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
+      "maxTokens",
+      maxTokens,
     );
   }
   try {
     return JSON.parse(text);
-  } catch {
-    throw new DataError(`${what} answered with a body that is not JSON.`);
+  } catch (error) {
+    throw new DataError(`${what} answered with a body that is not JSON.`, { cause: error });
   }
 }
 
@@ -75,19 +77,25 @@ export function readAnswerJson(response: ServiceResponse, what: string, options:
  * @remarks
  * Whatever the reader throws is the fault of the answer that it was given, so any error, and not only a `DataError`, becomes a
  * `DataError` whose sentence names the service, the standard and the reader's reason, and whose `cause` is what the reader
- * threw.
+ * threw. A `LimitError` stays one, with its limit and its maximum, so that every limit of a reading is told by one class.
  *
  * @param what - Names the service in the sentence, such as `The CASE provider at https://example.org/...`.
  * @param standard - Names the standard that the data must follow, such as `CASE` or `Open Badges`.
  * @param read - Reads the data, and throws when it is not valid.
  * @returns What the reader returns.
  * @throws `DataError`: `<what> answered with data that is not valid <standard>: <reason>`.
+ * @throws `LimitError`, when the reader threw one: `<what> answered with data over a limit: <reason>`.
  */
 export function readAnswer<TValue>(what: string, standard: string, read: () => TValue): TValue {
   try {
     return read();
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
+    if (error instanceof LimitError) {
+      throw new LimitError(`${what} answered with data over a limit: ${reason}`, error.limit, error.maximum, {
+        cause: error,
+      });
+    }
     throw new DataError(`${what} answered with data that is not valid ${standard}: ${reason}`, { cause: error });
   }
 }

@@ -1,5 +1,5 @@
 import jsonld from "@interop/jsonld";
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { describe, expect, it, vi } from "vitest";
 import { addProof, deriveDisclosure, validateJsonLd, verifyProof } from "../src/data-integrity/index.js";
 import { boundedCanonize, EDDSA_RDFC_2022 } from "../src/data-integrity/internal.js";
@@ -123,15 +123,19 @@ describe("the tokens that a processor of JSON-LD reads", () => {
     for (let level = 0; level < 4_000; level += 1) deep = { nested: deep };
     const credential = credentialOf(sd.did, { extra: deep });
     await expect(validateJsonLd(credential, { contexts: contexts.load })).rejects.toThrow(
-      new DataError("The credential nests more than 64 levels of JSON."),
+      new LimitError("The credential nests more than 64 levels of JSON.", "maxDepth", 64),
     );
     await expect(deriveDisclosure(credential, { selectivePointers: [], contexts: contexts.load })).rejects.toThrow(
-      new DataError("The credential nests more than 64 levels of JSON."),
+      new LimitError("The credential nests more than 64 levels of JSON.", "maxDepth", 64),
     );
     // Over both limits, the credential is refused for its tokens, which name the option that a host can raise, though its
     // brackets pass the levels at the 200th token and its tokens pass 5,000 later.
-    await expect(validateJsonLd(credential, { contexts: contexts.load, maxJsonLdTokens: 5_000 })).rejects.toThrow(
-      /maxJsonLdTokens/u,
+    await expect(validateJsonLd(credential, { contexts: contexts.load, maxJsonLdTokens: 5_000 })).rejects.toMatchObject(
+      {
+        name: "LimitError",
+        limit: "maxJsonLdTokens",
+        maximum: 5_000,
+      },
     );
   });
 

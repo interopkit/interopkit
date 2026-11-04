@@ -19,7 +19,7 @@ import {
   readQuery,
   readText,
 } from "../src/http/index.js";
-import { DataError } from "../src/index.js";
+import { DataError, LimitError } from "../src/index.js";
 
 const encoder = new TextEncoder();
 const FORM = { "content-type": "application/x-www-form-urlencoded" };
@@ -167,7 +167,7 @@ describe("the parameters of a query and a form", () => {
       ["b", "22"],
     ]);
     expect(() => readForm(post("a=1&b=223"), { maxBytes: 8 })).toThrow(
-      new DataError("The body of the request has 9 bytes, above the limit of 8 bytes."),
+      new LimitError("The body of the request has 9 bytes, above the limit of 8 bytes.", "maxBytes", 8),
     );
     expect([...readForm(post("a=1&b=223"))]).toHaveLength(2);
   });
@@ -311,7 +311,7 @@ describe("readJson", () => {
     const text = `"${"a".repeat(98)}"`;
     expect(json(text, { maxBytes: 100 })).toBe("a".repeat(98));
     expect(() => json(`${text} `, { maxBytes: 100 })).toThrow(
-      new DataError("The body of the request has 101 bytes, above the limit of 100 bytes."),
+      new LimitError("The body of the request has 101 bytes, above the limit of 100 bytes.", "maxBytes", 100),
     );
   });
 
@@ -319,7 +319,11 @@ describe("readJson", () => {
     const limit = 1_048_576;
     expect(json(`"${"a".repeat(limit - 2)}"`)).toHaveLength(limit - 2);
     expect(() => json(`"${"a".repeat(limit - 1)}"`)).toThrow(
-      new DataError(`The body of the request has ${limit + 1} bytes, above the limit of ${limit} bytes.`),
+      new LimitError(
+        `The body of the request has ${limit + 1} bytes, above the limit of ${limit} bytes.`,
+        "maxBytes",
+        limit,
+      ),
     );
   });
 
@@ -331,7 +335,7 @@ describe("readJson", () => {
   it("accepts arrays and objects nested to exactly the deepest level and refuses one level more", () => {
     expect(json(nested(3), { maxDepth: 3 })).toStrictEqual([[[]]]);
     expect(() => json(nested(4), { maxDepth: 3 })).toThrow(
-      new DataError("The JSON of the request nests deeper than the limit of 3 levels."),
+      new LimitError("The JSON of the request nests deeper than the limit of 3 levels.", "maxDepth", 3),
     );
     expect(() => json('{"a":{"b":{"c":{}}}}', { maxDepth: 3 })).toThrow("nests deeper than the limit of 3 levels");
     expect(json('{"a":{"b":{}}}', { maxDepth: 3 })).toStrictEqual({ a: { b: {} } });
@@ -340,14 +344,18 @@ describe("readJson", () => {
   it("limits the depth to 64 levels unless told otherwise", () => {
     expect(json(nested(64))).toHaveLength(1);
     expect(() => json(nested(65))).toThrow(
-      new DataError("The JSON of the request nests deeper than the limit of 64 levels."),
+      new LimitError("The JSON of the request nests deeper than the limit of 64 levels.", "maxDepth", 64),
     );
   });
 
   it("accepts a body of exactly the most tokens and refuses one token more", () => {
     expect(json("[1,2,3]", { maxTokens: 7 })).toStrictEqual([1, 2, 3]);
     expect(() => json("[1,2,3]", { maxTokens: 6 })).toThrow(
-      new DataError("The JSON of the request has more than 6 tokens, above the limit of the option maxTokens."),
+      new LimitError(
+        "The JSON of the request has more than 6 tokens, above the limit of the option maxTokens.",
+        "maxTokens",
+        6,
+      ),
     );
   });
 

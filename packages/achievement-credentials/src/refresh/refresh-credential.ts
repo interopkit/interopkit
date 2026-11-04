@@ -7,7 +7,7 @@ import {
   isRecord,
   MAX_JSON_TOKENS,
 } from "@interopkit/core/checks";
-import { parseJsonText } from "../json-text.js";
+import { parseJsonText, refusalError } from "../json-text.js";
 import type { CredentialV1p1, IssuableCredential } from "../model/index.js";
 
 /** The types of a refresh service: `1EdTechCredentialRefresh` of Open Badges 9.1, and `ImsCredentialRefresh` that CLR 8.1 writes. */
@@ -95,7 +95,7 @@ export async function refreshCredential(
     return body;
   }
   const parsed = parseJsonText(body, { maxDepth: MAX_DEPTH, maxTokens }, "The refreshed credential");
-  if ("reason" in parsed) throw new DataError(parsed.reason);
+  if ("reason" in parsed) throw refusalError(parsed);
   // A text that starts with a brace and parses is an object.
   return parsed.value as Readonly<Record<string, unknown>>;
 }

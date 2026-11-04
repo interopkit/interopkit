@@ -59,7 +59,7 @@ requests[0].body.data[0].id === event.id; // => true
 | `sensor`    | The absolute IRI that identifies the sensor (section 5.2), which is checked                                                                           | required                              |
 | `sendTime`  | The time of sending in epoch milliseconds. A resend has the time of the resend                                                                        | required                              |
 | `timeoutMs` | The most time in milliseconds from the request to the last byte of the answer                                                                         | `DEFAULT_CALIPER_TIMEOUT_MS`, `10000` |
-| `maxPayloadBytes` | The most bytes of the envelope that the endpoint takes, which its configuration gives in kilobytes of 1,024 bytes. A larger envelope is a `DataError` before any request | none |
+| `maxPayloadBytes` | The most bytes of the envelope that the endpoint takes, which its configuration gives in kilobytes of 1,024 bytes. A larger envelope is a `LimitError` before any request | none |
 | `signal`    | An `AbortSignal` that ends this caller's wait                                                                                                         | none                                  |
 
 The request is a `POST` with `Content-Type: application/json` and, when there is a token, `Authorization: Bearer <token>`. The
@@ -141,7 +141,7 @@ result.status; // => "available"
 | Any other status                    | `{ status: "unavailable", httpStatus }`                                                                                              |
 | A redirect                          | `ServiceError` with the status: no redirect is followed                                                                              |
 | Nothing, or not within `timeoutMs`  | `ServiceError` with status `0`                                                                                                       |
-| 200 and a body that is not the configuration | `DataError`: not JSON, nested deeper than 64 levels, a property of its own, or no `caliperSupportedVersions`                |
+| 200 and a body that is not the configuration | `DataError`: not JSON, a property of its own, or no `caliperSupportedVersions`; a `LimitError` for JSON nested deeper than 64 levels |
 
 A sender that learns `caliperMaximumPayloadSize` from the ping gives `maxPayloadBytes` its value times 1,024. Splitting the data
 into several envelopes is the host's: `sendCaliper` refuses an envelope that is too large and sends nothing.

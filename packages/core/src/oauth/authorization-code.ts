@@ -108,11 +108,13 @@ function checkCallback(
         `The authorization server refused the authorization: ${error.error}${description}.`,
         400,
         body,
+        { cause: error },
       );
     }
     // What else oauth4webapi finds wrong with the callback: another or no `state` or `iss`, or the tokens of an implicit flow.
     throw new DataError(
       `The callback does not answer the authorization request: ${error instanceof Error ? error.message : String(error)}.`,
+      { cause: error },
     );
   }
   if (!validated.get("code"))

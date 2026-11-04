@@ -197,9 +197,9 @@ stamps; // => ["2024-06-13T18:46:03+00:00"]
 | Another status: 400, 401, 403, 429, 500 or any other                                              | `ServiceError` with `status`, `headers` and `body`; read it with `readStatusInfo`                                            |
 | The provider did not answer within `timeoutMs`, or `fetch` rejected                               | `ServiceError` with status 0                                                                                                 |
 | The answer is larger than `maxBytes`                                                              | `ServiceError` with the status of the answer, naming the limit; the body is cancelled. Raise `maxBytes` for a larger package |
-| The answer has more tokens of JSON than `maxTokens`                                               | `DataError`: `The CASE provider at <url> answered with a body of more than N tokens of JSON, above the limit of the option maxTokens.` Raise `maxTokens` for a larger package; a framework of 10,000 items has 990,000 |
+| The answer has more tokens of JSON than `maxTokens`                                               | `LimitError`: `The CASE provider at <url> answered with a body of more than N tokens of JSON, above the limit of the option maxTokens.` Raise `maxTokens` for a larger package; a framework of 10,000 items has 990,000 |
 | The answer is a redirect                                                                          | `ServiceError`: the client follows none. Use the address that the provider redirects to as `baseUrl`                         |
-| The answer is not UTF-8, or nests more than 128 levels of JSON                                    | `DataError` that names the provider and says which, before the answer is parsed                                              |
+| The answer is not UTF-8, or nests more than 128 levels of JSON                                    | `DataError`, or a `LimitError` for the levels, that names the provider and says which, before the answer is parsed           |
 | The answer is not JSON, or is JSON that is not valid CASE                                         | `DataError`: `The CASE provider at <url> answered with data that is not valid CASE: <the first fault>`                       |
 | The client is configured for 1.0 and `discovery` is called                                        | `DataError`: 1.0 defines no discovery file                                                                                   |
 | The `signal` of the call or the configuration aborts                                              | The call rejects with `signal.reason`                                                                                        |
@@ -225,8 +225,8 @@ not. `retryAfterSeconds` is `Retry-After` when it is a number of seconds. The fo
 | ----------------------------- | ---------- | ------------------------ |
 | `timeoutMs`                   | 10,000 ms  | `ServiceError`, status 0 |
 | `maxBytes`                    | 16,777,216 | `ServiceError`           |
-| `maxTokens`                   | 2,000,000  | `DataError`              |
-| Levels of JSON in an answer   | 128: an extension, which the readers bound to 64 levels, may sit below the levels of a package | `DataError` |
+| `maxTokens`                   | 2,000,000  | `LimitError`             |
+| Levels of JSON in an answer   | 128: an extension, which the readers bound to 64 levels, may sit below the levels of a package | `LimitError` |
 | `pageSize`                    | 100        | The provider caps it     |
 | Logical operators in a filter | 1          | `DataError`              |
 | Redirects                     | 0          | `ServiceError`           |

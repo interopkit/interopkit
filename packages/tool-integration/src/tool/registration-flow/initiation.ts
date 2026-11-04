@@ -50,7 +50,7 @@ export function readRegistrationInitiation(request: HttpRequest): RegistrationIn
   try {
     checkHttpsUrl(configuration, "The parameter openid_configuration");
   } catch (error) {
-    if (error instanceof DataError) throw new LtiError(error.message, "request-invalid");
+    if (error instanceof DataError) throw new LtiError(error.message, "request-invalid", { cause: error });
     throw error;
   }
   if (new URL(configuration).hash !== "") {

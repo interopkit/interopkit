@@ -83,8 +83,10 @@ The headers of a part are at most 8,192 bytes, which the parser fixes. The first
 
 ## Errors
 
-Every error is a `DataError`. A message over a limit is a `MultipartLimitError`, a `DataError` whose `limit` is `parts`,
-`part-bytes`, `total-bytes` or `header-bytes`, so that a host answers 413 for it and 400 for a malformed message.
+Every error is a `DataError`. A message over a limit is a `LimitError` of `@interopkit/core`, a `DataError` whose `limit` is
+`maxParts`, `maxPartBytes`, `maxTotalBytes`, `maxHeaderBytes` (fixed at 8,192), or `maxDepth` or `maxTokens` of the first part,
+with its value in `maximum`, so that a host answers 413 for it and 400 for a malformed message, whose `cause` is the error of the
+parser.
 
 | Error                                                                                              | When                                                            | What to do                                                         |
 | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------ |

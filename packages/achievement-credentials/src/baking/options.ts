@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { checkPositiveInteger, checkProperties, checkRecord, describe, MAX_JSON_TOKENS } from "@interopkit/core/checks";
 
 /**
@@ -64,7 +64,11 @@ export function limitsOf(options: unknown, names: readonly ("maxBytes" | "maxTok
 /** Refuses an image of more bytes than the limit; `what` names it in the message, such as `The image`. */
 export function checkImageSize(bytes: number, maxBytes: number, what: string): void {
   if (bytes > maxBytes) {
-    throw new DataError(`${what} has ${bytes} bytes, more than the ${maxBytes} that the option maxBytes allows.`);
+    throw new LimitError(
+      `${what} has ${bytes} bytes, more than the ${maxBytes} that the option maxBytes allows.`,
+      "maxBytes",
+      maxBytes,
+    );
   }
 }
 

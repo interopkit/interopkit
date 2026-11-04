@@ -93,8 +93,8 @@ host routes the requests that reach it.
 | Limit                              | Value                   | Refused with     |
 | ---------------------------------- | ----------------------- | ---------------- |
 | Bytes of the answer                | `maxBytes`, 1,048,576   | `ServiceError`   |
-| Levels that the answer nests       | 64                      | `DataError`      |
-| Tokens of JSON in the answer       | `maxTokens`, 1,000,000  | `DataError`      |
+| Levels that the answer nests       | 64                      | `LimitError`     |
+| Tokens of JSON in the answer       | `maxTokens`, 1,000,000  | `LimitError`     |
 
 ## Errors
 

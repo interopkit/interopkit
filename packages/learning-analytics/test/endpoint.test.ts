@@ -218,18 +218,18 @@ describe("handleCaliperRequest: the order of the checks", () => {
     expect(notJson.status).toBe(413);
   });
 
-  it("answers 400 for a body that is not JSON, not UTF-8, too deep, or too long in tokens", async () => {
+  it("answers 400 for a body that is not JSON or not UTF-8, and 413 for one too deep or too long in tokens", async () => {
     const endpoint = recorder({ maxTokens: 50 });
-    for (const body of [
-      "{",
-      "",
-      "null,",
-      new Uint8Array([0xff, 0xfe]),
-      `${"[".repeat(65)}${"]".repeat(65)}`,
-      JSON.stringify(envelopeOf()),
-    ]) {
+    for (const [body, status] of [
+      ["{", 400],
+      ["", 400],
+      ["null,", 400],
+      [new Uint8Array([0xff, 0xfe]), 400],
+      [`${"[".repeat(65)}${"]".repeat(65)}`, 413],
+      [JSON.stringify(envelopeOf()), 413],
+    ] as const) {
       const response = await handleCaliperRequest(request(body), endpoint.options);
-      expect(response.status, String(body)).toBe(400);
+      expect(response.status, String(body)).toBe(status);
       expect(response.headers["content-type"]).toBe("application/problem+json");
     }
     expect(endpoint.received).toHaveLength(0);

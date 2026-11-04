@@ -1,4 +1,4 @@
-import { type Clock, DataError, readClock } from "@interopkit/core";
+import { type Clock, DataError, LimitError, readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import { type HttpRequest, readForm } from "@interopkit/core/http";
 import { LtiError } from "../errors.js";
@@ -143,16 +143,17 @@ function readMessage(request: HttpRequest, settings: ToolMessageSettings): strin
     );
   }
   if (request.body.byteLength > settings.maxFormBytes) {
-    throw new LtiError(
+    throw new LimitError(
       `The form of the message has ${request.body.byteLength} bytes, above the limit of ${settings.maxFormBytes} bytes of the option maxFormBytes.`,
-      "form-too-large",
+      "maxFormBytes",
+      settings.maxFormBytes,
     );
   }
   let form: ReadonlyMap<string, string>;
   try {
     form = readForm(request);
   } catch (error) {
-    if (error instanceof DataError) throw new LtiError(error.message, "request-invalid");
+    if (error instanceof DataError) throw new LtiError(error.message, "request-invalid", { cause: error });
     throw error;
   }
   const message = form.get(MESSAGE_PARAMETER);

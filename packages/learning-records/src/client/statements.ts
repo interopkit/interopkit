@@ -299,7 +299,9 @@ function readResult(
       return readAnswered(entry, version);
     } catch (error) {
       if (!(error instanceof DataError)) throw error;
-      throw new DataError(`The page has an invalid Statement at statements[${index}]. ${error.message}`);
+      throw new DataError(`The page has an invalid Statement at statements[${index}]. ${error.message}`, {
+        cause: error,
+      });
     }
   });
   return { statements, more: result.more ?? "" };
@@ -321,8 +323,8 @@ function nextUrl(settings: Settings, current: string, more: string, followed: Re
   let next: URL;
   try {
     next = new URL(more, current);
-  } catch {
-    throw new DataError(`The address of the next page is not an address: ${JSON.stringify(more)}.`);
+  } catch (error) {
+    throw new DataError(`The address of the next page is not an address: ${JSON.stringify(more)}.`, { cause: error });
   }
   if (next.origin !== settings.origin || next.username !== "" || next.password !== "") {
     throw new DataError(

@@ -159,6 +159,13 @@ describe("readRegistrationInitiation", () => {
     for (const text of ["null", "5", "[]"])
       expect(() => readRegistrationInitiation(JSON.parse(text))).toThrow(DataError);
   });
+
+  it("keeps the refusal of the address as the cause of the LtiError", () => {
+    const sent = initiationRequest({ openid_configuration: "http://lms.example.edu/.well-known/openid-configuration" });
+    expect(() => readRegistrationInitiation(sent)).toThrow(
+      expect.objectContaining({ name: "LtiError", reason: "request-invalid", cause: expect.any(DataError) }),
+    );
+  });
 });
 
 describe("discoverPlatform", () => {

@@ -12,7 +12,7 @@ export function refuseAddress(url: string, label: string): void {
   try {
     checkRemoteUrl(url, label);
   } catch (error) {
-    if (error instanceof DataError) throw new LtiError(error.message, "service-origin-refused");
+    if (error instanceof DataError) throw new LtiError(error.message, "service-origin-refused", { cause: error });
     throw error;
   }
 }

@@ -131,6 +131,7 @@ export function checkServiceUrl(url: string, registration: PlatformRegistration,
     throw new LtiError(
       `${error instanceof Error ? error.message : String(error)} A platform on a private network names its origins in the serviceOrigins of the registration.`,
       "service-origin-refused",
+      { cause: error },
     );
   }
 }

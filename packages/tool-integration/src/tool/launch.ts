@@ -1,4 +1,4 @@
-import { DataError, readClock } from "@interopkit/core";
+import { DataError, LimitError, readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse, readForm } from "@interopkit/core/http";
 import { LtiError } from "../errors.js";
@@ -28,9 +28,10 @@ function requiredField(form: ReadonlyMap<string, string>, name: string): string 
 /** Reads the form of a launch within its size limit. */
 function readLaunchForm(request: HttpRequest, maxBytes: number): ReadonlyMap<string, string> {
   if (request.body.byteLength > maxBytes) {
-    throw new LtiError(
+    throw new LimitError(
       `The form of the launch has ${request.body.byteLength} bytes, above the limit of ${maxBytes} bytes of the option maxFormBytes.`,
-      "form-too-large",
+      "maxFormBytes",
+      maxBytes,
     );
   }
   return readForm(request);

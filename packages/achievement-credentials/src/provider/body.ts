@@ -20,7 +20,9 @@ export function bodyTypeOf(
   accepted: readonly string[],
 ): { readonly type: string } | { readonly refusal: HttpResponse } {
   const size = request.body.byteLength;
-  if (size > settings.maxBodyBytes) return { refusal: tooLarge(size, settings.maxBodyBytes) };
+  if (size > settings.maxBodyBytes) {
+    return { refusal: tooLarge(`The body has ${size} bytes, above the limit of ${settings.maxBodyBytes} bytes.`) };
+  }
   const type = mediaTypeOf(request);
   return type !== undefined && accepted.includes(type) ? { type } : { refusal: unsupportedType(type, accepted) };
 }

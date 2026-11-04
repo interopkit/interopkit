@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 
 /** The encodings of a course structure that the reader takes: those that every XML processor must read. */
@@ -60,12 +60,17 @@ function encodingOf(bytes: Uint8Array): StructureEncoding {
  * Turns a course structure into text within a limit of bytes: a string as it is, bytes as UTF-8, or as UTF-16 when a byte order
  * mark says so, decoded strictly. The byte order mark is not part of the text.
  *
- * @throws `DataError` when the structure is neither a string nor bytes, is above the limit, or is not valid in its encoding.
+ * @throws `LimitError` when the structure is above the limit.
+ * @throws `DataError` when the structure is neither a string nor bytes, or is not valid in its encoding.
  */
 export function decodeStructure(input: unknown, maxBytes: number): DecodedStructure {
   if (typeof input === "string") {
     if (utf8BytesOver(input, maxBytes)) {
-      throw new DataError(`The course structure has more than ${maxBytes} bytes, the limit of the option maxBytes.`);
+      throw new LimitError(
+        `The course structure has more than ${maxBytes} bytes, the limit of the option maxBytes.`,
+        "maxBytes",
+        maxBytes,
+      );
     }
     return { text: input.startsWith(BYTE_ORDER_MARK) ? input.slice(1) : input, encoding: undefined };
   }
@@ -73,15 +78,19 @@ export function decodeStructure(input: unknown, maxBytes: number): DecodedStruct
     throw new DataError(`The course structure must be a string or a Uint8Array, found ${describe(input)}.`);
   }
   if (input.byteLength > maxBytes) {
-    throw new DataError(
+    throw new LimitError(
       `The course structure has ${input.byteLength} bytes, above the limit of ${maxBytes} bytes of the option maxBytes.`,
+      "maxBytes",
+      maxBytes,
     );
   }
   const encoding = encodingOf(input);
   try {
     return { text: new TextDecoder(encoding, { fatal: true }).decode(input), encoding };
-  } catch {
-    throw new DataError(`The course structure is not valid ${encoding.toUpperCase()}: its bytes cannot be decoded.`);
+  } catch (error) {
+    throw new DataError(`The course structure is not valid ${encoding.toUpperCase()}: its bytes cannot be decoded.`, {
+      cause: error,
+    });
   }
 }
 

@@ -8,7 +8,7 @@ cmi5 that the schema leaves out.
 ```mermaid
 flowchart TD
   input["A string, or bytes<br/>UTF-8, or UTF-16 with a byte order mark"] --> limits{"Within maxBytes?"}
-  limits -->|"no"| refused["DataError"]
+  limits -->|"no"| refused["LimitError"]
   limits -->|"yes"| parse["saxes, with namespaces<br/>maxDepth, maxElements as it reads"]
   parse -->|"not well-formed, a DOCTYPE,<br/>another root"| stop["One last finding"]
   parse --> schema["The schema: the order and number of elements,<br/>attributes, enumerations, decimals, languages"]
@@ -116,9 +116,9 @@ structures with a scheme of its own writes them, and imports them into its LMS, 
 
 | Limit                         | Default    | Refused with                                                                                |
 | ----------------------------- | ---------- | ------------------------------------------------------------------------------------------- |
-| Bytes                         | 16,777,216 | `DataError` before the structure is parsed                                                  |
-| Depth                         | 64         | `DataError` when the parser meets the element past it                                       |
-| Elements and attributes       | 1,000,000  | `DataError` when the parser meets the one past it, before it keeps it                       |
+| Bytes (`maxBytes`)            | 16,777,216 | `LimitError` before the structure is parsed                                                 |
+| Depth (`maxDepth`)            | 64         | `LimitError` when the parser meets the element past it                                      |
+| Elements and attributes (`maxElements`) | 1,000,000  | `LimitError` when the parser meets the one past it, before it keeps it            |
 | Encoding                      | UTF-8; UTF-16 with a byte order mark | `DataError` for bytes that are not valid, and for a declaration of another encoding |
 | Findings                      | 1,000      | The list stops, and its last finding says so                                                |
 | Levels of blocks to write     | 64         | `DataError` before the model is read                                                        |
@@ -135,7 +135,7 @@ for the million texts.
 | Error                                                                         | Thrown by                       | What to do                                                                    |
 | ----------------------------------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------- |
 | `DataError` "The course structure is invalid at …"                            | `readCourseStructure`, `writeCourseStructure` | Fix the first finding; `validateCourseStructure` lists every one |
-| `DataError` "The course structure has more than … bytes", "nests more than …", "has more than … elements and attributes" | Every reader | Raise the option if the structure is trusted, or refuse it |
+| `LimitError` "The course structure has more than … bytes", "nests more than …", "has more than … elements and attributes"; its `limit` names the option and `maximum` its value | Every reader | Raise the option if the structure is trusted, or refuse it: a host answers 413 |
 | `DataError` "The course structure is not valid UTF-8", "declares the encoding …" | Every reader                 | Write the structure in UTF-8, or in UTF-16 with a byte order mark             |
 | `DataError` "The course structure must be a string or a Uint8Array"           | Every reader                    | Pass the text or the bytes of the file                                        |
 | `DataError` "The options object is invalid at …"                              | Every reader                    | Fix the option it names                                                       |

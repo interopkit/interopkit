@@ -241,8 +241,9 @@ describe("readDeepLinkingResponse", () => {
     );
     expect(large.body.byteLength).toBeGreaterThan(FORM_LIMIT);
     await expect(readDeepLinkingResponse(large, toolMessageOptions(ctx))).rejects.toMatchObject({
-      name: LTI_ERROR,
-      reason: "form-too-large",
+      name: "LimitError",
+      limit: "maxFormBytes",
+      maximum: FORM_LIMIT,
     });
   });
 
@@ -251,8 +252,9 @@ describe("readDeepLinkingResponse", () => {
     const items = Array.from({ length: 101 }, () => ({ type: "html", html: "<p></p>" }));
     const hundredAndOne = await responseTo(ctx, await sealedData(ctx), items);
     await expect(readDeepLinkingResponse(hundredAndOne, toolMessageOptions(ctx))).rejects.toMatchObject({
-      name: LTI_ERROR,
-      reason: "content-items-limit",
+      name: "LimitError",
+      limit: "maxContentItems",
+      maximum: 100,
     });
     // Items that are not items are not read at all when they are too many.
     const garbage = await responseTo(
@@ -261,7 +263,7 @@ describe("readDeepLinkingResponse", () => {
       Array.from({ length: 101 }, () => 5),
     );
     await expect(readDeepLinkingResponse(garbage, toolMessageOptions(ctx))).rejects.toMatchObject({
-      reason: "content-items-limit",
+      limit: "maxContentItems",
     });
     const three = await responseTo(ctx, await sealedData(ctx), items.slice(0, 3));
     await expect(readDeepLinkingResponse(three, toolMessageOptions(ctx, { maxContentItems: 2 }))).rejects.toThrow(
@@ -298,11 +300,31 @@ describe("the form of a Deep Linking response", () => {
     await refused(ctx, messageForm(RETURN_URL, jwt, { JWT: jwt }), "request-invalid");
   });
 
+  it("keeps the error of the reader of the form as the cause of its refusal", async () => {
+    const ctx = setup();
+    const failure = readDeepLinkingResponse(
+      request({ url: RETURN_URL, method: "POST", headers: { "content-type": "text/plain" }, body: "JWT=x" }),
+      toolMessageOptions(ctx),
+    );
+    await expect(failure).rejects.toMatchObject({
+      name: LTI_ERROR,
+      reason: "request-invalid",
+      cause: {
+        name: "DataError",
+        message: 'The content type of the request must be application/x-www-form-urlencoded, found "text/plain".',
+      },
+    });
+  });
+
   it("is read within maxFormBytes, measured before it is decoded", async () => {
     const ctx = setup();
     const form = await responseTo(ctx, await sealedData(ctx), []);
     const small = toolMessageOptions(ctx, { maxFormBytes: form.body.byteLength - 1 });
-    await expect(readDeepLinkingResponse(form, small)).rejects.toMatchObject({ reason: "form-too-large", status: 400 });
+    await expect(readDeepLinkingResponse(form, small)).rejects.toMatchObject({
+      name: "LimitError",
+      limit: "maxFormBytes",
+      maximum: form.body.byteLength - 1,
+    });
     await expect(readDeepLinkingResponse(form, small)).rejects.toThrow("maxFormBytes");
     expect(
       (await readDeepLinkingResponse(form, toolMessageOptions(ctx, { maxFormBytes: form.body.byteLength }))).items,

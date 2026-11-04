@@ -242,7 +242,8 @@ describe("readStartAssessment", () => {
     const padding = "x".repeat(FORM_LIMIT);
     const large = await startAssessment(ctx, sessionData, { "https://tool.example.com/padding": padding });
     await expect(readStartAssessment(large, toolMessageOptions(ctx))).rejects.toMatchObject({
-      reason: "form-too-large",
+      name: "LimitError",
+      limit: "maxFormBytes",
     });
     await expect(
       readStartAssessment(large, toolMessageOptions(ctx, { maxFormBytes: 4 * FORM_LIMIT })),

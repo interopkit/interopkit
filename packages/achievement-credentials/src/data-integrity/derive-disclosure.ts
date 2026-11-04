@@ -35,7 +35,7 @@ export async function deriveDisclosure(
   checkRecord(credential, "The credential must be an object");
   signal?.throwIfAborted();
   const tooLarge = processingProblem(credential, maxJsonLdTokens);
-  if (tooLarge !== undefined) throw new DataError(tooLarge);
+  if (tooLarge !== undefined) throw tooLarge;
   let derived: Readonly<Record<string, unknown>>;
   try {
     derived = await deriveProof(withProofObject({ ...structuredClone(credential) }), {

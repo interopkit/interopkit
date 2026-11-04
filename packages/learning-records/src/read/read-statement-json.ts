@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import {
   checkString,
   findExceededJsonLimit,
@@ -16,26 +16,6 @@ const DEFAULT_MAX_BYTES = 10_485_760;
 
 /** The deepest nesting of arrays and objects that `readStatementJson` reads unless the caller says otherwise. */
 const DEFAULT_MAX_DEPTH = 64;
-
-/** The limit of a text of JSON that it went over. */
-export type JsonLimit = "bytes" | "tokens";
-
-/** The error for a text of JSON over a limit of its size, which a handler answers with 413 and not with 400. */
-export class JsonLimitError extends DataError {
-  /** Error class name. */
-  override name = "JsonLimitError";
-  /** The limit that the text went over. */
-  readonly limit: JsonLimit;
-
-  /**
-   * @param message - Says which limit the text went over.
-   * @param limit - The limit.
-   */
-  constructor(message: string, limit: JsonLimit) {
-    super(message);
-    this.limit = limit;
-  }
-}
 
 /** The options of `readStatementJson`. */
 export interface ReadStatementJsonOptions {
@@ -81,9 +61,9 @@ const optionsSchema = strictRecord({
  * @param text - The text of a request or a file.
  * @param options - The limits.
  * @returns The parsed value, which `readStatement` or `validateStatements` reads.
- * @throws `JsonLimitError`, a `DataError`, when the text is longer or has more tokens than the limits.
- * @throws `DataError` when the text is deeper than the limit, is not JSON, or has a property twice, or when the options are not
- * valid.
+ * @throws `LimitError` of `@interopkit/core`, a `DataError`, when the text has more bytes, levels or tokens than the limits:
+ * an LRS answers 413.
+ * @throws `DataError` when the text is not JSON, or has a property twice, or when the options are not valid.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  */
 export function readStatementJson(text: string, options?: ReadStatementJsonOptions): unknown {
@@ -96,18 +76,27 @@ export function readStatementJson(text: string, options?: ReadStatementJsonOptio
   // A string of more units than the limit has more bytes than it, so the longer ones need no encoding.
   const bytes = text.length > maxBytes ? text.length : new TextEncoder().encode(text).byteLength;
   if (bytes > maxBytes) {
-    throw new JsonLimitError(`The text has ${bytes} bytes or more, above the limit of ${maxBytes} bytes.`, "bytes");
+    throw new LimitError(
+      `The text has ${bytes} bytes or more, above the limit of ${maxBytes} bytes.`,
+      "maxBytes",
+      maxBytes,
+    );
   }
   // One reading finds the first limit that the text passes. The depth is refused before the tokens, so a text that passes the
   // tokens first is read on for its depth.
   const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
   if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
-    throw new DataError(`The text nests arrays and objects deeper than the limit of ${maxDepth} levels.`);
+    throw new LimitError(
+      `The text nests arrays and objects deeper than the limit of ${maxDepth} levels.`,
+      "maxDepth",
+      maxDepth,
+    );
   }
   if (excess === "tokens") {
-    throw new JsonLimitError(
+    throw new LimitError(
       `The text has more than ${maxTokens} tokens, above the limit of the option maxTokens.`,
-      "tokens",
+      "maxTokens",
+      maxTokens,
     );
   }
   let value: unknown;
@@ -115,7 +104,7 @@ export function readStatementJson(text: string, options?: ReadStatementJsonOptio
     // `JSON.parse` is the judge of the syntax of RFC 8259, and the search for a repeated property relies on it.
     value = JSON.parse(text);
   } catch (error) {
-    throw new DataError(`The text is not valid JSON: ${String(error)}.`);
+    throw new DataError(`The text is not valid JSON: ${String(error)}.`, { cause: error });
   }
   const repeat = findRepeatedProperty(text);
   if (repeat !== undefined) {

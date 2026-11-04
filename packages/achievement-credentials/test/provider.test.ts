@@ -473,24 +473,24 @@ describe("the limits of a body", () => {
     expect(ports(asked).filter((port) => port !== "authorize")).toStrictEqual([]);
   });
 
-  it("refuses JSON over the token limit or the depth limit before it parses it", async () => {
+  it("refuses JSON over the token limit or the depth limit with 413, before it parses it", async () => {
     const { options } = serving("badges", { maxTokens: 50 });
     const many = await handle(options, "POST", `${OB}/credentials`, {
       body: json(achievementCredential()),
       type: JSON_TYPE,
     });
-    expect(many.status).toBe(400);
+    expect(many.status).toBe(413);
     expect(readEntity("imsx_StatusInfo", jsonOf(many)).imsx_description).toContain("50 tokens");
     const deep = await handle(serving().options, "POST", `${OB}/credentials`, {
       body: `${"[".repeat(100)}${"]".repeat(100)}`,
       type: JSON_TYPE,
     });
-    expect(deep.status).toBe(400);
+    expect(deep.status).toBe(413);
     const payload = await handle(options, "POST", `${OB}/credentials`, {
       body: unsignedJws(achievementCredential()),
       type: "text/plain",
     });
-    expect(payload.status).toBe(422);
+    expect(payload.status).toBe(413);
     expect(readEntity("imsx_StatusInfo", jsonOf(payload)).imsx_description).toContain("50 tokens");
   });
 });
@@ -528,6 +528,19 @@ describe("the profile", () => {
     expect((await put("{", JSON_TYPE)).status).toBe(400);
     expect((await put(json(PROFILE), "text/plain")).status).toBe(415);
     expect((await put(json(PROFILE), "application/vc+ld+json")).status).toBe(415);
+    expect(held.profiles.size).toBe(0);
+  });
+
+  it("refuses a profile over maxTokens or 64 levels with 413, before it parses it", async () => {
+    const { options, held } = serving("badges", { maxTokens: 5 });
+    const many = await handle(options, "PUT", `${OB}/profile`, { body: json(PROFILE), type: JSON_TYPE });
+    expect(many.status).toBe(413);
+    expect(readEntity("imsx_StatusInfo", jsonOf(many)).imsx_description).toContain("more than 5 tokens");
+    const deep = await handle(serving().options, "PUT", `${OB}/profile`, {
+      body: `{"a":${"[".repeat(100)}${"]".repeat(100)}}`,
+      type: JSON_TYPE,
+    });
+    expect(deep.status).toBe(413);
     expect(held.profiles.size).toBe(0);
   });
 });

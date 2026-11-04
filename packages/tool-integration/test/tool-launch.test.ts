@@ -111,9 +111,9 @@ describe("the size of the form of a launch", () => {
     const over = formPost({ ...fields, pad: filler(65_537) }, { cookie });
     const gets = ctx.store.gets;
     await expect(handleLaunch(over, ctx.options)).rejects.toMatchObject({
-      name: "LtiError",
-      reason: "form-too-large",
-      status: 400,
+      name: "LimitError",
+      limit: "maxFormBytes",
+      maximum: 65_536,
       message: "The form of the launch has 65537 bytes, above the limit of 65536 bytes of the option maxFormBytes.",
     });
     expect(ctx.store.gets).toBe(gets);
@@ -123,7 +123,8 @@ describe("the size of the form of a launch", () => {
     const ctx = setup();
     const { request: post } = await cookieLogin(ctx);
     await expect(handleLaunch(post, { ...ctx.options, maxFormBytes: 100 })).rejects.toMatchObject({
-      reason: "form-too-large",
+      limit: "maxFormBytes",
+      maximum: 100,
     });
     expect(launchOf(await handleLaunch(post, { ...ctx.options, maxFormBytes: post.body.byteLength })).issuer).toBe(
       ISSUER,

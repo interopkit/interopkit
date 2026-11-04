@@ -1,8 +1,8 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { copyJson, describe, hasMoreTokensThan, isRecord, MAX_JSON_DEPTH } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { decodeBase64url } from "../base64url.js";
-import { parseJsonText } from "../json-text.js";
+import { parseJsonText, refusalError } from "../json-text.js";
 import { readCredential } from "../read/index.js";
 import { isBadgeAssertionV2, isDocumentV2, jws } from "../read/internal.js";
 import type { BakedKind } from "./formats.js";
@@ -48,7 +48,7 @@ function kindOfJws(compact: string, maxTokens: number): BakedKind {
   const payload = decodePayload(compact.slice(compact.indexOf(".") + 1, compact.lastIndexOf(".")));
   // The tokens and the levels are counted before the parser builds anything.
   const parsed = parseJsonText(payload, { maxDepth: MAX_JSON_DEPTH, maxTokens }, "The payload of the compact JWS");
-  if ("reason" in parsed) throw new DataError(parsed.reason);
+  if ("reason" in parsed) throw refusalError(parsed);
   const claims = parsed.value;
   if (isDocumentV2(claims)) throw new DataError(NOT_BAKED_V2);
   const names = typeNames(isRecord(claims) && claims.vc !== undefined ? claims.vc : claims);
@@ -64,8 +64,8 @@ function kindOfJws(compact: string, maxTokens: number): BakedKind {
  *
  * @param credential - The credential, as a host passes it from JavaScript.
  * @param maxTokens - The most tokens of JSON that the credential may have.
- * @throws `DataError` when the credential is neither a compact JWS nor a credential that `readCredential` accepts, or has more
- * than `maxTokens` tokens of JSON.
+ * @throws `LimitError` when the credential has more than `maxTokens` tokens of JSON.
+ * @throws `DataError` when the credential is neither a compact JWS nor a credential that `readCredential` accepts.
  */
 export function textToBake(credential: unknown, maxTokens: number): CredentialText {
   if (typeof credential === "string") {
@@ -85,8 +85,10 @@ export function textToBake(credential: unknown, maxTokens: number): CredentialTe
   const text = JSON.stringify(copy.value);
   // Counted before the readers walk the value, which costs them a copy and the memory of their findings.
   if (hasMoreTokensThan(text, maxTokens)) {
-    throw new DataError(
+    throw new LimitError(
       `The credential has more than the ${maxTokens} tokens of JSON that the option maxTokens allows.`,
+      "maxTokens",
+      maxTokens,
     );
   }
   const read = readCredential(copy.value);
@@ -110,12 +112,15 @@ export function bakedJws(text: string): string {
  *
  * @param text - The text of the element or the chunk.
  * @param maxTokens - The most tokens of JSON that the credential may have.
- * @throws `DataError` when the text is not the JSON of an object, nests too deep, or has more than `maxTokens` tokens.
+ * @throws `LimitError` when the text nests too deep, or has more than `maxTokens` tokens.
+ * @throws `DataError` when the text is not the JSON of an object.
  */
 export function bakedJson(text: string, maxTokens: number): object {
   const parsed = parseJsonText(text.trim(), { maxDepth: MAX_JSON_DEPTH, maxTokens }, "The credential in the image");
   if ("reason" in parsed) {
-    throw new DataError(parsed.overLimit ? parsed.reason : "The credential in the image is not the JSON of an object.");
+    throw refusalError(
+      parsed.exceeded === undefined ? { reason: "The credential in the image is not the JSON of an object." } : parsed,
+    );
   }
   if (isRecord(parsed.value)) return parsed.value;
   throw new DataError("The credential in the image is not the JSON of an object.");

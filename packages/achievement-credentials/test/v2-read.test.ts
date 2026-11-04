@@ -476,9 +476,11 @@ describe("readJwsPayload", () => {
     expect(readJwsPayload(jws(encode('{"a":[1,2]}')), 9)).toStrictEqual({ value: { a: [1, 2] } });
     expect(readJwsPayload(jws(encode('{"a":[1,2,3]}')), 9)).toStrictEqual({
       reason: "The payload of the JWS has more than the 9 tokens of JSON that it may have.",
+      exceeded: { limit: "maxTokens", maximum: 9 },
     });
     expect(readJwsPayload(jws(encode(`{"a":${"[".repeat(64)}${"]".repeat(64)}}`)), 1000)).toStrictEqual({
       reason: "The payload of the JWS nests more than 64 levels.",
+      exceeded: { limit: "maxDepth", maximum: 64 },
     });
   });
 });

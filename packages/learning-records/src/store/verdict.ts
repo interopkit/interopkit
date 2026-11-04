@@ -1,8 +1,6 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import type { HttpRequest } from "@interopkit/core/http";
-import { MultipartLimitError } from "../attachments/index.js";
 import type { XapiVersion } from "../model/index.js";
-import { JsonLimitError } from "../read/index.js";
 import type { LrsSettings } from "./options.js";
 import type { Access } from "./ports.js";
 import type { Refuse } from "./status.js";
@@ -27,15 +25,15 @@ export function refused(status: number, message: string): Refusal {
 }
 
 /**
- * Runs a reader of the request: a `DataError` that it throws is the request's fault and is refused with 400, and a text or a
- * multipart message over a limit of its size with 413 (4.1.5).
+ * Runs a reader of the request: a `DataError` that it throws is the request's fault and is refused with 400, and a
+ * `LimitError`, a text or a multipart message over a limit, with 413 (4.1.5).
  */
 export function attempt<T>(read: () => T): Verdict<T> {
   try {
     return { value: read() };
   } catch (error) {
     if (!(error instanceof DataError)) throw error;
-    return refused(error instanceof MultipartLimitError || error instanceof JsonLimitError ? 413 : 400, error.message);
+    return refused(error instanceof LimitError ? 413 : 400, error.message);
   }
 }
 

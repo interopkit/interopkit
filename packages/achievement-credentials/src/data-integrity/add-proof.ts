@@ -69,7 +69,7 @@ export async function addProof(
   const checked = credentialOrReason(credential, "The credential");
   if ("reason" in checked) throw new DataError(checked.reason);
   const tooLarge = processingProblem(credential, settings.maxJsonLdTokens);
-  if (tooLarge !== undefined) throw new DataError(tooLarge);
+  if (tooLarge !== undefined) throw tooLarge;
   const document = { ...structuredClone(credential) };
   const { signal, contexts } = settings;
   const withSignal = signal === undefined ? {} : { signal };

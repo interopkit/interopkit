@@ -47,7 +47,7 @@ function readRequest(request: HttpRequest): TokenRequest {
   try {
     form = readForm(request);
   } catch (error) {
-    if (error instanceof DataError) throw new LtiError(error.message, "request-invalid");
+    if (error instanceof DataError) throw new LtiError(error.message, "request-invalid", { cause: error });
     throw error;
   }
   if (form.get("grant_type") !== CLIENT_CREDENTIALS_GRANT) {

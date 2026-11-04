@@ -80,7 +80,7 @@ Use these words with these meanings in code, comments and docs.
 | Path                                 | Holds                                                                                               |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
 | `packages/core/`                     | The shared foundation                                                                               |
-| `packages/core/src/errors.ts`        | `InteropkitError`, `DataError`, `ServiceError`                                                      |
+| `packages/core/src/errors.ts`        | `InteropkitError`, `DataError`, `LimitError`, `ServiceError`                                        |
 | `packages/core/src/checks.ts`        | Checks of one value and the valibot side, which `@interopkit/core/checks` exports                   |
 | `packages/core/src/formats.ts`       | `isDate`, `isDateTime`, `findInstant`, `isUuid`, `isAbsoluteUri` and their schemas; `checks.ts` exports them, and `parseDateTime`, which throws where `findInstant` returns `undefined` |
 | `packages/core/src/json.ts`          | `JsonValue`, `copyJson`, `MAX_JSON_DEPTH`, the counts of depth and tokens; `checks.ts` exports them |
@@ -310,7 +310,11 @@ Where the code departs from `STANDARDS.md`, with the reason.
   `strictRecord`; a list that the compacted form writes as its only member is read into a list with `many`, so that the model
   has one form.
 - Expected outcomes that a caller must handle are values in the result. Invalid input and broken invariants throw `DataError`.
-  A failed call to a service is a `ServiceError` with its `status`, `headers` and `body`.
+  A failed call to a service is a `ServiceError` with its `status`, `headers` and `body`. Input over a limit of a reader or a
+  handler, a `max*` option or a fixed limit, throws the `LimitError` of `core`, a `DataError` with `limit`, the name of the
+  option or of the fixed limit, and `maximum`, its value, so that a host answers 413 from one check; a handler answers 413 for
+  it, unless its specification names another answer. Every error class takes `options?: ErrorOptions` last, and an error that
+  reports another, caught or wrapped, passes `{ cause }`.
 - Anything that waits on I/O is async and takes `signal` of `CallOptions`, which ends that caller's wait. Work that several
   callers share, such as a key set fetch, runs to its own timeout and takes no caller's signal. Every port receives the
   signal.

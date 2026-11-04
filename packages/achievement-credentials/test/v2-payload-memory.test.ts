@@ -16,6 +16,7 @@ describe("the peak memory of reading the payload of a hostile JWS", () => {
     const before = peak();
     expect(readJwsPayload(jws, 1_000_000)).toStrictEqual({
       reason: "The payload of the JWS has more than the 1000000 tokens of JSON that it may have.",
+      exceeded: { limit: "maxTokens", maximum: 1_000_000 },
     });
     expect(peak() - before).toBeLessThan(BUDGET);
   });

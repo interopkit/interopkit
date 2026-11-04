@@ -1,4 +1,4 @@
-import { DataError, raceAbort, ServiceError } from "@interopkit/core";
+import { DataError, LimitError, raceAbort, ServiceError } from "@interopkit/core";
 import type { ContextLoader } from "../model/index.js";
 import { MAX_DEEP_ITERATIONS } from "./canonize.js";
 
@@ -52,14 +52,19 @@ export function rethrowOperational(error: unknown, signal?: AbortSignal): void {
 const DEEP_ITERATIONS_MESSAGE = /^Maximum deep iterations exceeded/u;
 
 /**
- * Says what a limit of the canonicalization means, when the error of a processor is one: the sentence that names the limit, or
- * `undefined` for any other error.
+ * Says what a limit of the canonicalization means, when the error of a processor is one: the `LimitError` that names the limit,
+ * with the error as its cause, or `undefined` for any other error.
  */
-export function limitOf(error: unknown): string | undefined {
+export function limitOf(error: unknown): LimitError | undefined {
   let current: unknown = error;
   for (let depth = 0; depth < MAX_CAUSE_DEPTH && current instanceof Error; depth += 1) {
     if (DEEP_ITERATIONS_MESSAGE.test(current.message)) {
-      return `The credential needs more than ${MAX_DEEP_ITERATIONS} runs of the Hash N-Degree Quads algorithm to canonicalize: too many blank nodes look alike, as the items of a long list do.`;
+      return new LimitError(
+        `The credential needs more than ${MAX_DEEP_ITERATIONS} runs of the Hash N-Degree Quads algorithm to canonicalize: too many blank nodes look alike, as the items of a long list do.`,
+        "maxDeepIterations",
+        MAX_DEEP_ITERATIONS,
+        { cause: error },
+      );
     }
     current = wrapped(current);
   }
@@ -74,9 +79,9 @@ export function limitOf(error: unknown): string | undefined {
 export function failOperation(error: unknown, signal?: AbortSignal): never {
   rethrowOperational(error, signal);
   const limit = limitOf(error);
-  if (limit !== undefined) throw new DataError(limit);
+  if (limit !== undefined) throw limit;
   const refused = causeOf(error, DataError);
   if (refused !== undefined) throw refused;
   const message = error instanceof Error ? error.message : String(error);
-  throw new DataError(`The credential cannot be processed as JSON-LD: ${message}`);
+  throw new DataError(`The credential cannot be processed as JSON-LD: ${message}`, { cause: error });
 }

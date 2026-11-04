@@ -79,7 +79,7 @@ its own pages.
 | Check                                                                                         | Refused with                                   |
 | --------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | The address names a public host (`checkRemoteUrl`), before anything is fetched               | `LtiError` `service-origin-refused`            |
-| No redirect; the answer within `maxBytes` and `maxTokens`                                    | `ServiceError`, `DataError`                    |
+| No redirect; the answer within `maxBytes` and `maxTokens`                                    | `ServiceError`, `LimitError`                   |
 | The configuration holds to section 2.1: `private_key_jwt`, `RS256`, `openid`, `id_token`, https endpoints, an issuer without query or fragment | `DataError` |
 | The address is below the issuer (section 3.4): the same origin after parsing, a path equal to the issuer's or below it at a slash, no fragment | `LtiError` `issuer-mismatch` (401) |
 | Every endpoint (authorization, registration, key set, token) names a public host             | `LtiError` `service-origin-refused`            |

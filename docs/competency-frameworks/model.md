@@ -200,7 +200,7 @@ The conversion reads the structure of the value as far as it converts it: the li
 | Limit                                       | Value | Refused with                        |
 | ------------------------------------------- | ----- | ----------------------------------- |
 | Levels that the value of an extension nests | 64    | `invalid-value` at the `extensions` |
-| Levels that `convertCaseVersion` reads           | 64    | `DataError`                         |
+| Levels that `convertCaseVersion` reads           | 64    | `LimitError`                        |
 
 The size of what is read is the caller's: the readers take a value that was already parsed, so the caller limits the bytes
 and the depth of the text that it parses. The walk over `isChildOf` keeps its own stack, so a chain of any length does not
@@ -215,7 +215,7 @@ exhaust the stack of the host.
 | `options` is not an object, has a property other than `version` and `maxFindings`, or `version` is not `"1.0"` or `"1.1"`, or `maxFindings` is not a positive integer                                                             | `DataError`: `The read options is invalid at version: expected "1.0" or "1.1", found "2.0".`                                                                                                                      |
 | The kind of `readEntity` or `validateEntity` is not one of `ENTITY_KINDS`                                                                                           | `DataError` that lists the kinds                                                                                                                                                                                  |
 | `validatePackage` or `validateEntity` is given a value that is not a package or an entity                                                                           | The findings. It does not throw                                                                                                                                                                                   |
-| `convertCaseVersion` is given a version other than `"1.0"`, a value that is not an object, a list or object of the wrong type, or a value that nests more than 64 levels | `DataError` that names the path and what was expected: `CFItems must be an array, found an object.`                                                                                                               |
+| `convertCaseVersion` is given a version other than `"1.0"`, a value that is not an object, or a list or object of the wrong type; a `LimitError` when the value nests more than 64 levels | `DataError` that names the path and what was expected: `CFItems must be an array, found an object.`                                                                                                               |
 | `convertCaseVersion` meets a property that JSON cannot hold                                                                                                              | `DataError` that names the property                                                                                                                                                                               |
 
 ## Not included

@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { buildJsonResponse, type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
 import { errorBody } from "../../protocol/internal.js";
 import { refusal, tooLarge } from "../answers.js";
@@ -10,7 +10,8 @@ function mediaTypeOf(request: HttpRequest): string | undefined {
 
 /**
  * Reads the JSON body of a request to a service into a model: 415 for another media type, 413 for a body above the limit,
- * measured before it is parsed, and 400 for a body that is not JSON or not the model, with the path of its first invalid member.
+ * measured before it is parsed, or for JSON above the limits of its levels and tokens, and 400 for a body that is not JSON or
+ * not the model, with the path of its first invalid member.
  *
  * @param mediaType - The media type of the body, such as `application/vnd.ims.lis.v1.score+json`.
  * @param read - The reader of the model, which throws `DataError`.
@@ -31,10 +32,11 @@ export function readBody<T>(
       },
     });
   }
-  if (request.body.byteLength > maxBytes) return tooLarge(request.body.byteLength, maxBytes);
   try {
+    // `readJson` measures the body before it decodes it, and throws a `LimitError` above `maxBytes`.
     return { value: read(readJson(request, { maxBytes })) };
   } catch (error) {
+    if (error instanceof LimitError) return tooLarge(error.message);
     if (error instanceof DataError) return refusal(400, invalid, error.message);
     throw error;
   }

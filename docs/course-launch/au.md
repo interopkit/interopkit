@@ -107,7 +107,7 @@ initialize by default.
 
 | Limit | Value | Refused with |
 | --- | --- | --- |
-| Launch URL; its actor | 65,536 characters; 1,000 tokens of JSON | `DataError` |
+| Launch URL; its actor | 65,536 characters; 1,000 tokens of JSON | `LimitError` (`maxLaunchUrlLength`, `maxActorTokens`) |
 | Answer of the fetch URL | 65,536 bytes, 1,000 tokens of JSON | `ServiceError` |
 | An answer of the LRS, the launch data among them | 1,048,576 bytes | `ServiceError` |
 | Preferences document | 4,096 bytes | `ServiceError` |

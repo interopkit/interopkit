@@ -236,7 +236,8 @@ describe("the request", () => {
 
 describe("a service that does not answer", () => {
   it("rejects with a ServiceError of status 0 that names the service and the reason when fetch rejects", async () => {
-    const fetch: Fetch = () => Promise.reject(new TypeError("fetch failed"));
+    const failed = new TypeError("fetch failed");
+    const fetch: Fetch = () => Promise.reject(failed);
     const error = await failureOf(callService({ fetch, timeoutMs: DEFAULT_TIMEOUT_MS }, WHAT, URL_OF_SERVICE, GET));
     expect(error).toBeInstanceOf(ServiceError);
     expect(error).toMatchObject({
@@ -244,6 +245,7 @@ describe("a service that does not answer", () => {
       status: 0,
       body: "",
     });
+    expect((error as ServiceError).cause).toBe(failed);
   });
 
   it("rejects with status 0 when fetch rejects with a value that is not an Error", async () => {
@@ -258,6 +260,7 @@ describe("a service that does not answer", () => {
     );
     expect(error).toBeInstanceOf(ServiceError);
     expect(error).toMatchObject({ message: `${WHAT} did not answer within ${SHORT_DEADLINE_MS} ms.`, status: 0 });
+    expect((error as ServiceError).cause).toMatchObject({ name: "TimeoutError" });
   });
 
   it("rejects with status 0 at the deadline when fetch honors its signal and rejects first", async () => {

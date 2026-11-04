@@ -19,7 +19,6 @@ describe("the public API", () => {
         "INTERACTION_TYPES",
         "isDuration",
         "isSameStatement",
-        "JsonLimitError",
         "mboxSha1sum",
         "parseDuration",
         "readStatement",
@@ -35,12 +34,7 @@ describe("the public API", () => {
   });
 
   it("exports from the subpaths only what each documents", () => {
-    expect(Object.keys(attachments).sort()).toStrictEqual([
-      "MultipartLimitError",
-      "hashAttachment",
-      "readMultipart",
-      "writeMultipart",
-    ]);
+    expect(Object.keys(attachments).sort()).toStrictEqual(["hashAttachment", "readMultipart", "writeMultipart"]);
     expect(Object.keys(client)).toStrictEqual(["createLrsClient"]);
     expect(Object.keys(store).sort()).toStrictEqual([
       "LRS_ACTIONS",

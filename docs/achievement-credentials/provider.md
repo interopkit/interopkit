@@ -21,7 +21,7 @@ flowchart TD
   query -->|"refused"| badQuery["400 invalid_query_parameter"]
   query --> list["CredentialStore.list"]
   list --> page["200 credential, compactJwsString,<br/>X-Total-Count, Link"]
-  operation -->|"upsertCredential"| body["413, 415, 400: the body;<br/>422: not a credential of the API"]
+  operation -->|"upsertCredential"| body["413: over a limit; 415, 400: the body;<br/>422: not a credential of the API"]
   body --> verify{"verify set?"}
   verify -->|"yes"| verified["verifyCredential, no refresh<br/>422 when it does not verify"]
   verify -->|"no"| upsert["CredentialStore.upsert"]
@@ -280,12 +280,12 @@ Every port receives the `signal` of the options. The handler keeps nothing betwe
 | 201    | A new credential                                                                                       |                           |
 | 304    | An upsert that changed nothing, with no body                                                           |                           |
 | 400    | A `limit`, `offset` or `since` that cannot be used, or a parameter given twice                         | `invalid_query_parameter` |
-| 400    | A body that is not UTF-8, not JSON, over `maxTokens` or 64 levels, or a `text/plain` that is no compact JWS | `unknown`            |
+| 400    | A body that is not UTF-8 or not JSON, or a `text/plain` that is no compact JWS                         | `unknown`                 |
 | 401    | `authorize` refuses: no token it accepts                                                               | `unauthorizedrequest`     |
 | 403    | `authorize` refuses: the token lacks the scope                                                         | `forbidden`               |
 | 404    | A path that is no endpoint of the API, or no profile                                                   | `not_found`               |
 | 405    | A method that the endpoint does not serve                                                              | `not_allowed`             |
-| 413    | A body above `maxBodyBytes`                                                                            | `unknown`                 |
+| 413    | A body above `maxBodyBytes`, or JSON over `maxTokens` or 64 levels, in a body or in the payload of its JWS | `unknown`                 |
 | 415    | A body of a media type that the operation does not take                                                | `unknown`                 |
 | 422    | JSON that is not a credential or a profile of the API, a credential of another kind, one that does not verify | `invalid_data`     |
 | 429    | `authorize` refuses: one request too many                                                              | `server_busy`             |

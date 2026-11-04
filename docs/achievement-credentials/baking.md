@@ -141,11 +141,11 @@ an overwrite. `replace` removes every chunk or element of either kind before it 
 
 | Limit                                                  | Value             | Refused with                                                  |
 | ------------------------------------------------------ | ----------------- | ------------------------------------------------------------- |
-| Bytes of an image, and of a baked image                | 10,485,760        | `DataError`, before any of the image is read                  |
-| Tokens of JSON in a credential (`maxTokens`)           | 1,000,000         | `DataError`, before the text is parsed                        |
-| Levels of JSON in a credential                         | 64                | `DataError`, before the text is parsed                        |
-| Elements open at once in an SVG                        | 256               | `DataError`, when the parser meets the 257th                  |
-| Attributes of one element of an SVG                    | 256               | `DataError`, when the parser meets the 257th                  |
+| Bytes of an image, and of a baked image (`maxBytes`)   | 10,485,760        | `LimitError`, before any of the image is read                 |
+| Tokens of JSON in a credential (`maxTokens`)           | 1,000,000         | `LimitError`, before the text is parsed                       |
+| Levels of JSON in a credential that an image holds     | 64                | `LimitError` (`maxDepth`), before the text is parsed          |
+| Elements open at once in an SVG                        | 256               | `LimitError` (`maxSvgDepth`), when the parser meets the 257th |
+| Attributes of one element of an SVG                    | 256               | `LimitError` (`maxSvgAttributes`), when the parser meets the 257th |
 | Bytes of one PNG chunk                                 | 2,147,483,647     | `DataError`; a chunk that claims more than the image holds is refused too |
 
 The limits are set so that no image costs much more than its size to read. Measured on Node.js 26 with images of 10 MiB:

@@ -214,12 +214,13 @@ only for a `state` that the tool issued.
 
 ### What `handleLaunch` checks
 
-A request that is not a POST of a form with `id_token` and `state` is a `DataError`. Then, in this order, a failure throws
-`LtiError` with the reason in the table. The login stays in the store until the launch succeeds or expires.
+A request that is not a POST of a form with `id_token` and `state` is a `DataError`, and a form of more than `maxFormBytes`,
+65,536 by default, measured before it is decoded, a `LimitError` of `@interopkit/core` with `limit` `maxFormBytes`. Then, in
+this order, a failure throws `LtiError` with the reason in the table. The login stays in the store until the launch succeeds or
+expires.
 
 | Check                                                                                                                           | Reason                                            |
 | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| The form has at most `maxFormBytes`, 65,536 by default, measured before it is decoded                                          | `form-too-large`                                  |
 | The form has no `oauth_consumer_key`, which an LTI 1.0 to 1.2 launch carries                                                    | `legacy-launch`                                   |
 | The form has no `error`: the platform's authentication error response (Security Framework section 5.1.1.5), whose `error` and `error_description` the message quotes | `platform-error` |
 | `state` names a login in the store, made of base64url characters                                                                | `state-unknown`                                   |
@@ -449,6 +450,7 @@ read no other clock.
 | `LtiError` `token-malformed`, `algorithm-unsupported`, `key-unknown`, `signature-invalid`, `issuer-mismatch`, `audience-mismatch`, `audience-untrusted`, `authorized-party-missing`, `authorized-party-mismatch`, `token-expired`, `issued-in-future`, `nonce-mismatch` | The `id_token` fails validation                                             | 401                                            |
 | `LtiError` `state-unknown`, `state-expired`, `state-reused`, `state-cookie`, `origin-mismatch`, `storage-mismatch`, `deployment-mismatch`                                                                             | The launch is not bound to a login of the tool                              | 403                                            |
 | `LtiError`, other reasons                                                                                                                                                                                             | The platform broke the protocol, or a scope is not available                | 400                                            |
+| `LimitError`, a `DataError`                                                                                                                                                                                           | A form is over `maxFormBytes`, or the initiation of a login over 65,536 bytes; `limit` names the limit and `maximum` its value | 413                                            |
 | `DataError`                                                                                                                                                                                                           | An argument or a request has the wrong shape                                | 400                                            |
 | `ServiceError`                                                                                                                                                                                                        | The platform did not answer, or answered with an error                      | 502 or 504 for a host that proxies the failure |
 

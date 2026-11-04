@@ -17,7 +17,7 @@ export { findLinkTarget, hasNextLink, hasNextPage, readRetryAfterSeconds, readTo
 export type { CallOptions } from "./call-options.js";
 export { callPort, type PortOutcome } from "./call-port.js";
 export { type Clock, checkClock, readClock, SYSTEM_CLOCK } from "./clock.js";
-export { DataError, InteropkitError, ServiceError, type ServiceErrorOptions } from "./errors.js";
+export { DataError, InteropkitError, LimitError, ServiceError, type ServiceErrorOptions } from "./errors.js";
 export { createJwksCache, type JwksCache, type JwksCacheOptions } from "./jwks-cache.js";
 export { createKeyedCache, type KeyedCache, type KeyedCacheOptions } from "./keyed-cache.js";
 export { raceAbort } from "./race-abort.js";

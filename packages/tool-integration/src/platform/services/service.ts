@@ -112,7 +112,7 @@ export function fromStore<T>(label: string, read: () => T): T {
     return read();
   } catch (error) {
     if (error instanceof DataError || error instanceof TypeError) {
-      throw new DataError(`The answer of ${label} breaks its contract: ${error.message}`);
+      throw new DataError(`The answer of ${label} breaks its contract: ${error.message}`, { cause: error });
     }
     throw error;
   }

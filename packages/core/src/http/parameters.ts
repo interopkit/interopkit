@@ -1,5 +1,5 @@
 import { checkPositiveInteger, checkRecord, describe } from "../checks.js";
-import { DataError } from "../errors.js";
+import { DataError, LimitError } from "../errors.js";
 import { readText } from "./body.js";
 import type { HttpRequest } from "./request.js";
 
@@ -45,8 +45,9 @@ export interface ReadFormOptions {
  * @param request - The request, which `checkHttpRequest` has accepted.
  * @param options - The limit on the size of the body.
  * @returns The parameters by name.
- * @throws `DataError` when the options are not valid, or the body is not `application/x-www-form-urlencoded`, is larger
- * than `maxBytes`, is not UTF-8, or a parameter occurs more than once.
+ * @throws `LimitError`, a `DataError`, when the body has more bytes than `maxBytes`: answer 413.
+ * @throws `DataError` when the options are not valid, or the body is not `application/x-www-form-urlencoded`, is not UTF-8,
+ * or a parameter occurs more than once.
  */
 export function readForm(request: HttpRequest, options: ReadFormOptions = {}): ReadonlyMap<string, string> {
   checkRecord(options, "The options of readForm must be an object");
@@ -56,8 +57,10 @@ export function readForm(request: HttpRequest, options: ReadFormOptions = {}): R
     throw new DataError(`The content type of the request must be ${FORM_TYPE}, found ${describe(type)}.`);
   }
   if (options.maxBytes !== undefined && request.body.byteLength > options.maxBytes) {
-    throw new DataError(
+    throw new LimitError(
       `The body of the request has ${request.body.byteLength} bytes, above the limit of ${options.maxBytes} bytes.`,
+      "maxBytes",
+      options.maxBytes,
     );
   }
   // A `+` is a space. Written so here, on the bytes, it costs a form of 10 MiB no memory: URLSearchParams joins a rope with a node

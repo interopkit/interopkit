@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { SaxesParser, type SaxesTagNS } from "saxes";
 import { BAKED_KINDS, FORMATS, FOUND_KINDS, type FoundKind, VERIFY_ATTRIBUTE } from "./formats.js";
 
@@ -81,12 +81,16 @@ export function scanSvg(svg: string, all: boolean): SvgScan {
   const kinds = all ? BAKED_KINDS : FOUND_KINDS;
 
   parser.on("error", (error) => {
-    if (!done) throw new DataError(`The SVG is not well-formed XML at ${error.message}`);
+    if (!done) throw new DataError(`The SVG is not well-formed XML at ${error.message}`, { cause: error });
   });
   parser.on("opentagstart", (tag) => {
     if (done) return;
     if (depth >= MAX_SVG_DEPTH) {
-      throw new DataError(`The SVG nests more than ${MAX_SVG_DEPTH} elements, the most that it may here.`);
+      throw new LimitError(
+        `The SVG nests more than ${MAX_SVG_DEPTH} elements, the most that it may here.`,
+        "maxSvgDepth",
+        MAX_SVG_DEPTH,
+      );
     }
     attributes = 0;
     // The parser has read the one character that ends the name (a space, `/` or `>`), and the name follows the `<`.
@@ -96,8 +100,10 @@ export function scanSvg(svg: string, all: boolean): SvgScan {
     if (done) return;
     attributes += 1;
     if (attributes > MAX_SVG_ATTRIBUTES) {
-      throw new DataError(
+      throw new LimitError(
         `An element of the SVG has more than ${MAX_SVG_ATTRIBUTES} attributes, the most that it may here.`,
+        "maxSvgAttributes",
+        MAX_SVG_ATTRIBUTES,
       );
     }
   });

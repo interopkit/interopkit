@@ -1,3 +1,4 @@
+import { LimitError } from "@interopkit/core";
 import { LtiError } from "@interopkit/tool-integration";
 import {
   buildRegistrationInitiation,
@@ -41,13 +42,14 @@ export interface Platform {
   initiateRegistration(initiationUrl: string): Promise<string>;
 }
 
-/** Answers a route of the host with text, or with the status of a refusal of the library. */
+/** Answers a route of the host with text, or with the status of a refusal of the library: 413 for any of its limits. */
 async function answerWith(read: () => Promise<string>): Promise<Awaited<ReturnType<Handler>>> {
   try {
     return { status: 200, headers: { "content-type": "text/plain" }, body: await read() };
   } catch (error) {
-    if (error instanceof LtiError) {
-      return { status: error.status, headers: { "content-type": "text/plain" }, body: error.message };
+    if (error instanceof LtiError || error instanceof LimitError) {
+      const status = error instanceof LtiError ? error.status : 413;
+      return { status, headers: { "content-type": "text/plain" }, body: error.message };
     }
     throw error;
   }

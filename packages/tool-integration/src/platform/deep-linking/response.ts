@@ -1,4 +1,4 @@
-import { DataError, readClock } from "@interopkit/core";
+import { DataError, LimitError, readClock } from "@interopkit/core";
 import { describe, type JsonObject } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest } from "@interopkit/core/http";
 import { LtiError } from "../../errors.js";
@@ -44,7 +44,9 @@ function readItems(items: readonly JsonObject[]): ContentItem[] {
       return readContentItem(item);
     } catch (error) {
       if (error instanceof DataError) {
-        throw new LtiError(`The item ${index + 1} is not a content item: ${error.message}`, "content-item-refused");
+        throw new LtiError(`The item ${index + 1} is not a content item: ${error.message}`, "content-item-refused", {
+          cause: error,
+        });
       }
       throw error;
     }
@@ -87,9 +89,10 @@ export async function readDeepLinkingResponse(
   const { registration, claims } = token;
   const listed = claims[CLAIM.contentItems];
   if (Array.isArray(listed) && listed.length > settings.maxContentItems) {
-    throw new LtiError(
+    throw new LimitError(
       `The response lists ${listed.length} items, above the limit of ${settings.maxContentItems} of the option maxContentItems.`,
-      "content-items-limit",
+      "maxContentItems",
+      settings.maxContentItems,
     );
   }
   const message = readToolMessage(claims, {

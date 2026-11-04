@@ -230,13 +230,13 @@ a Profile or an address.
 | Limit                                                   | Value                | Refused with                            |
 | ------------------------------------------------------- | -------------------- | --------------------------------------- |
 | Characters of the credential as JSON                    | `maxInputBytes`, 1,048,576 | `valid: false`, before it is read |
-| Levels that the credential nests                        | `maxDepth`, 64       | `valid: false`, before it is read; signing, deriving and validating: `DataError`, at 64, before anything copies it |
+| Levels that the credential nests                        | `maxDepth`, 64       | `valid: false`, before it is read; signing, deriving and validating: `LimitError`, at 64, before anything copies it |
 | Tokens of JSON in the credential                        | `maxTokens`, 1,000,000 | `valid: false`, before it is read     |
-| Tokens of JSON in a credential that a JSON-LD processor reads | `maxJsonLdTokens`, 20,000 | `valid: false` with the limit; signing, deriving and validating: `DataError` |
-| Runs of Hash N-Degree Quads in one canonicalization     | 1,000, fixed         | `valid: false` with the limit; signing: `DataError` |
+| Tokens of JSON in a credential that a JSON-LD processor reads | `maxJsonLdTokens`, 20,000 | `valid: false` with the limit; signing, deriving and validating: `LimitError` |
+| Runs of Hash N-Degree Quads in one canonicalization     | 1,000, fixed         | `valid: false` with the limit; signing: `LimitError` (`maxDeepIterations`) |
 | Proofs of a credential that are checked                 | 4, fixed             | The rest are not looked at, and the reason says so |
-| Bytes of a context, levels of a context                 | `maxBytes`, 64       | `ServiceError`, `DataError`             |
-| Tokens of JSON in a context                             | `maxTokens`, 1,000,000 | `DataError`, before it is parsed      |
+| Bytes of a context, levels of a context                 | `maxBytes`, 64       | `ServiceError`, `LimitError`            |
+| Tokens of JSON in a context                             | `maxTokens`, 1,000,000 | `LimitError`, before it is parsed     |
 | Contexts kept in memory                                 | 100                  | The oldest goes first                   |
 | Findings of `validateJsonLd`                            | 100                  | The rest are not reported               |
 
@@ -261,7 +261,7 @@ canonicalized once for all of them. Bounded as it is, a credential at the token 
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | An option or an argument has the wrong type; a signer of another algorithm or with no `keyId` | `DataError` that names it                                         |
 | The credential to sign is not valid, or its graph cannot be canonicalized                    | `DataError`: `The credential is invalid ...`, `... cannot be processed as JSON-LD: ...` |
-| The credential has more tokens than `maxJsonLdTokens`, or needs more than 1,000 runs of Hash N-Degree Quads | While signing, deriving or validating: `DataError` that names the limit. While verifying: `valid: false` with the same sentence |
+| The credential has more tokens than `maxJsonLdTokens`, or needs more than 1,000 runs of Hash N-Degree Quads | While signing, deriving or validating: `LimitError` with the limit and its value. While verifying: `valid: false` with the same sentence |
 | A context has no pin or is not the pinned document                                           | While signing or deriving: `DataError`. While verifying: `valid: false` |
 | A context, a key or what the issuer publishes cannot be fetched                              | `ServiceError`                                                     |
 | A disclosure hides what the model requires                                                   | `DataError` that names the pointers to add                         |

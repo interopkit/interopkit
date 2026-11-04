@@ -160,7 +160,7 @@ describe("the body of a request that stores Statements", () => {
     expect(store.calls.filter((call) => call !== "consistentThrough")).toStrictEqual([]);
   });
 
-  it("refuses a body that is not UTF-8, and JSON nested deeper than the limit", async () => {
+  it("refuses a body that is not UTF-8 with 400, and JSON nested deeper than the limit with 413", async () => {
     const store = memory();
     const bytes = await handleLrsRequest(
       requestOf("POST", "/statements", { headers: JSON_TYPE, body: Uint8Array.from([0xff, 0xfe]) }),
@@ -170,7 +170,7 @@ describe("the body of a request that stores Statements", () => {
     const nested = await send("POST", `{"a":${"[".repeat(5)}${"]".repeat(5)}}`, {
       changes: { limits: { maxDepth: 4 } },
     });
-    expect(nested.response.status).toBe(400);
+    expect(nested.response.status).toBe(413);
     expect(reasonOf(nested.response)).toContain("deeper than the limit of 4");
   });
 
@@ -846,14 +846,14 @@ describe("Attachments", () => {
       expect(bare.status).toBe(400);
     });
 
-    it("refuses JSON nested deeper than limits.maxDepth in the first part with 400", async () => {
+    it("refuses JSON nested deeper than limits.maxDepth in the first part with 413", async () => {
       const message = writeMultipart(statementOf(1), []);
       const text = new TextDecoder().decode(message.body).replace(/\{.*\}/u, `{"a":${"[".repeat(5)}${"]".repeat(5)}}`);
       const response = await handleLrsRequest(
         requestOf("POST", "/statements", { headers: { "content-type": message.contentType }, body: text }),
         optionsOf(memory(), { limits: { maxDepth: 4 } }),
       );
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(413);
     });
   });
 });

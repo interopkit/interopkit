@@ -80,8 +80,8 @@ export async function signCompactJws(
       ...(signer.keyId === undefined ? {} : { kid: signer.keyId }),
       ...given,
     });
-  } catch {
-    throw new DataError("The header must be plain data that JSON can hold.");
+  } catch (error) {
+    throw new DataError("The header must be plain data that JSON can hold.", { cause: error });
   }
   callOptions.signal?.throwIfAborted();
   const signingInput = `${encodeBase64Url(encoder.encode(protectedHeader))}.${encodeBase64Url(payload)}`;

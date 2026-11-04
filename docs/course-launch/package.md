@@ -11,6 +11,7 @@ flowchart TD
   sniff -->|"PK, a ZIP archive"| directory["The central directory, within maxDirectoryBytes<br/>and maxEntries, through zip.js"]
   sniff -->|"<, white space or a byte order mark"| xml["readCourseStructure, packaged: false"]
   sniff -->|"anything else"| neither["DataError"]
+  directory -.->|"over a limit"| limited["LimitError"]
   directory --> entries{"Each entry: a link, encrypted,<br/>a name that folds onto another?<br/>A warning of zip.js?"}
   entries -->|"yes"| refused["DataError"]
   entries -->|"no"| inflate["cmi5.xml at the root,<br/>inflated within maxBytes"]
@@ -87,9 +88,9 @@ package sets, and these:
 
 | Limit                        | Default    | Refused with                                                                                         |
 | ---------------------------- | ---------- | ---------------------------------------------------------------------------------------------------- |
-| Entries                      | 100,000    | `DataError` at the entry past it, as zip.js lists them                                               |
-| Central directory            | 16,777,216 | `DataError` before it is read: zip.js reads it in one read, the only read that may ask for so much    |
-| `cmi5.xml`                   | 16,777,216 | `DataError` for a size above it in its header; zip.js refuses data that inflates past its header     |
+| Entries (`maxEntries`)       | 100,000    | `LimitError` at the entry past it, as zip.js lists them                                              |
+| Central directory (`maxDirectoryBytes`) | 16,777,216 | `LimitError` before it is read: zip.js reads it in one read, the only read that may ask for so much |
+| `cmi5.xml` (`maxBytes`)      | 16,777,216 | `LimitError` for a size above it in its header; zip.js refuses data that inflates past its header, a `DataError` |
 | Archive                      | none       | A `Blob` is read for its central directory and `cmi5.xml` alone; the host bounds an upload            |
 
 The central directory of a package of real courses has a few kilobytes: about 1 KB in each of the six course examples of
@@ -121,7 +122,7 @@ and the archive is read again by `readCoursePackage` with its default limits bef
 | `DataError` "The ZIP package is ambiguous: …", "holds … as a symbolic link", "holds … encrypted", "holds … and …" | Write the archive again without what the message names |
 | `DataError` "The ZIP package has no cmi5.xml at its root …"                    | Put the course structure at the root, named `cmi5.xml` in lower case              |
 | `DataError` "The course package has no file …, which the URL … names"          | Add the file, or fix the URL                                                     |
-| `DataError` "… above the limit … of the option …"                              | Raise the option for a trusted package, or refuse it                             |
+| `LimitError` "… above the limit … of the option …", with the option in `limit` and its value in `maximum` | Raise the option for a trusted package, or refuse it: a host answers 413 |
 | `DataError` "The course structure is invalid at …"                             | Fix the structure; [the structure guide](structure.md#rules) lists the rules     |
 | `DataError` "The file … of the package must be …", "The files … are one file …" | Give the files of a package by paths of names below its root                    |
 

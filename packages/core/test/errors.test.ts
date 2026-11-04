@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DataError, InteropkitError, ServiceError } from "../src/index.js";
+import { DataError, InteropkitError, LimitError, ServiceError } from "../src/index.js";
 
 describe("InteropkitError", () => {
   it("is an Error with its own name", () => {
@@ -15,6 +15,37 @@ describe("DataError", () => {
     const error = new DataError("The option timeoutMs must be a positive integer, found 0.");
     expect(error).toBeInstanceOf(InteropkitError);
     expect(error.name).toBe("DataError");
+  });
+});
+
+describe("LimitError", () => {
+  it("is a DataError that names the limit that the input went over and its value", () => {
+    const error = new LimitError("The body of the request has 9 bytes, above the limit of 8 bytes.", "maxBytes", 8);
+    expect(error).toBeInstanceOf(DataError);
+    expect(error.name).toBe("LimitError");
+    expect([error.limit, error.maximum]).toStrictEqual(["maxBytes", 8]);
+  });
+});
+
+describe("the cause of an error", () => {
+  it("is carried by every error class, and absent when none is given", () => {
+    const cause = new TypeError("fetch failed");
+    expect(new InteropkitError("failed", { cause }).cause).toBe(cause);
+    expect(new DataError("invalid", { cause }).cause).toBe(cause);
+    expect(new LimitError("too large", "maxBytes", 8, { cause }).cause).toBe(cause);
+    expect(new ServiceError("did not answer", 0, "", { cause }).cause).toBe(cause);
+    expect(new ServiceError("busy", 429, "", { headers: { "retry-after": "30" }, cause })).toMatchObject({
+      cause,
+      headers: { "retry-after": "30" },
+    });
+    for (const error of [
+      new InteropkitError("failed"),
+      new DataError("invalid"),
+      new LimitError("too large", "maxBytes", 8),
+      new ServiceError("did not answer", 0, "", { headers: {} }),
+    ]) {
+      expect("cause" in error, error.name).toBe(false);
+    }
   });
 });
 

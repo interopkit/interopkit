@@ -564,7 +564,6 @@ describe("handleLrsRequest: POST of a document", () => {
     ["a body that is a string", '"s"', JSON_TYPE, "is not an object"],
     ["a body that is null", "null", JSON_TYPE, "is not an object"],
     ["a body that is not UTF-8", new Uint8Array([123, 255, 125]), JSON_TYPE, "not UTF-8"],
-    ["a body nested too deep", `${"[".repeat(65)}${"]".repeat(65)}`, JSON_TYPE, "deeper than the limit of 64"],
   ])("answers 400 for %s where no document exists", async (_name, body, type, message) => {
     const store = memory();
     const response = await send(store, "POST", "/activities/state", {
@@ -574,6 +573,18 @@ describe("handleLrsRequest: POST of a document", () => {
     });
     expect(response.status).toBe(400);
     expect(reasonOf(response)).toContain(message);
+    expect(store.documents.size).toBe(0);
+  });
+
+  it("answers 413 for a body nested deeper than the limit where no document exists", async () => {
+    const store = memory();
+    const response = await send(store, "POST", "/activities/state", {
+      query: STATE,
+      headers: { "content-type": JSON_TYPE, "if-none-match": "*" },
+      body: `${"[".repeat(65)}${"]".repeat(65)}`,
+    });
+    expect(response.status).toBe(413);
+    expect(reasonOf(response)).toContain("deeper than the limit of 64");
     expect(store.documents.size).toBe(0);
   });
 
@@ -651,7 +662,7 @@ describe("handleLrsRequest: POST of a document", () => {
       { "if-match": "*" },
       { limits: { maxDepth: 2, maxTokens: 5 } },
     );
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(413);
     expect(reasonOf(response)).toBe(
       "The body of the POST must be a JSON object, and it nests deeper than the limit of 2 levels.",
     );

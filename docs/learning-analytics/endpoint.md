@@ -17,7 +17,9 @@ flowchart TD
   t -->|"no"| r415["415"]
   t -->|"yes"| z{"within maxPayloadBytes?"}
   z -->|"no"| r413["413"]
-  z -->|"yes"| j{"JSON within its limits,<br/>four fields, one item or more?"}
+  z -->|"yes"| l{"JSON within its levels<br/>and maxTokens?"}
+  l -->|"no"| r413
+  l -->|"yes"| j{"JSON, four fields,<br/>one item or more?"}
   j -->|"no"| r400["400"]
   j -->|"yes"| v{"dataVersion in versions?"}
   v -->|"no"| r422["422"]
@@ -73,7 +75,7 @@ of the later ones: one that is not authorized is never parsed.
 | 3    | `authorize` names a principal for the token                                         | 401 with `WWW-Authenticate: Bearer`        |
 | 4    | (POST) The media type is `application/json`; parameters and case are ignored        | 415                                        |
 | 5    | (POST) The body has at most `maxPayloadBytes`                                       | 413                                        |
-| 6    | (POST) The body is UTF-8 JSON within the depth and `maxTokens`, and an envelope of four properties and one item or more | 400 |
+| 6    | (POST) The body is UTF-8 JSON within the depth and `maxTokens`, and an envelope of four properties and one item or more | 413 over a limit, 400 otherwise |
 | 7    | (POST) `dataVersion` is the context of a version in `versions`: 1.2 and 1.1 by default | 422                                     |
 | 8    | (POST) With `strict`, no item has an error                                          | 400                                        |
 | 9    | (POST) `accept` resolves                                                            | 200 with an empty body; 500 if it rejects  |
@@ -155,8 +157,8 @@ down), `caliperSupportedVersions` (the contexts of `versions`, in that order) an
 | Limit                         | Value                | Refused with                     |
 | ----------------------------- | -------------------- | -------------------------------- |
 | Bytes of the body             | 1,048,576            | 413                              |
-| Levels of JSON                | 64                   | 400                              |
-| Tokens of JSON                | 1,000,000            | 400                              |
+| Levels of JSON                | 64                   | 413                              |
+| Tokens of JSON                | 1,000,000            | 413                              |
 | Findings                      | 1,000                | The list stops, and says so      |
 | Characters of a `detail`      | 500                  | Cut                              |
 

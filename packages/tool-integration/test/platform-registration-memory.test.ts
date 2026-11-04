@@ -47,7 +47,10 @@ describe("the peak memory of the bodies of the registration endpoint", () => {
       }),
     );
     const before = peak();
-    for (const post of posts) expect((await handle(ctx, post, registering)).status).toBe(400);
+    const statuses: number[] = [];
+    for (const post of posts) statuses.push((await handle(ctx, post, registering)).status);
+    // The nesting passes the limit of levels, 413; the array is read within its limits and is not the model, 400.
+    expect(statuses).toStrictEqual([413, 400]);
     const rise = peak() - before;
     await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
     expect(rise).toBeLessThan(BUDGET);

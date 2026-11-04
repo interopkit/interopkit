@@ -2,7 +2,7 @@
 
 import { jwtVerify } from "jose";
 import { describe, expect, it } from "vitest";
-import { createJwksCache, DataError, type Fetch, ServiceError } from "../src/index.js";
+import { createJwksCache, DataError, type Fetch, LimitError, ServiceError } from "../src/index.js";
 
 const JWKS_URL = "https://lms.example.edu/jwks";
 const NO_KEY = { code: "ERR_JWKS_NO_MATCHING_KEY" };
@@ -170,7 +170,7 @@ describe("createJwksCache", () => {
     expect(party.requests).toHaveLength(4);
   });
 
-  it("throws DataError for a set of more than 100 keys, before it reads one, and keeps nothing of it", async () => {
+  it("throws LimitError for a set of more than 100 keys, before it reads one, and keeps nothing of it", async () => {
     const { clock, party, fetch } = setup();
     const cache = createJwksCache({ fetch, clock });
     const set = (count: number) => ({
@@ -178,7 +178,7 @@ describe("createJwksCache", () => {
     });
     party.keySetResponse = () => Response.json(set(101));
     await expect(key(cache, "0")).rejects.toStrictEqual(
-      new DataError(`The key set at ${JWKS_URL} has 101 keys, above the limit of 100.`),
+      new LimitError(`The key set at ${JWKS_URL} has 101 keys, above the limit of 100.`, "maxKeys", 100),
     );
     party.keySetResponse = () => Response.json(set(100));
     expect(await key(cache, "99")).toBeDefined();

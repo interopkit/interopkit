@@ -1,4 +1,4 @@
-import { DataError, raceAbort } from "@interopkit/core";
+import { DataError, LimitError, raceAbort } from "@interopkit/core";
 import { copyJson, describe, isRecord } from "@interopkit/core/checks";
 import { MAX_DEEP_ITERATIONS } from "../limits.js";
 import type { Contexts } from "./options.js";
@@ -12,13 +12,17 @@ export interface Processing {
    * Waits for work that uses `options`.
    *
    * @throws The `reason` of the signal when it aborts, so that the caller's wait ends while the work runs on; the error of
-   * the caller's loader when it failed, which the processors would have wrapped in theirs; and a `DataError` for any other
-   * failure, which is a fault of the document or its contexts.
+   * the caller's loader when it failed, which the processors would have wrapped in theirs; a `LimitError` when the document
+   * needs more runs of Hash N-Degree Quads than `MAX_DEEP_ITERATIONS`; and a `DataError` for any other failure, which is a
+   * fault of the document or its contexts.
    */
   wait<T>(work: Promise<T>): Promise<T>;
   /** Whether a failure of `wait` is the caller's, an abort or a failed loader, and not a fault of the document. */
   callerFailed(): boolean;
 }
+
+/** The message that `rdf-canonize` gives when a canonicalization runs the Hash N-Degree Quads algorithm more often than it may. */
+const DEEP_ITERATIONS_MESSAGE = /^Maximum deep iterations exceeded/u;
 
 /** The text of an error as a sentence: it ends in one full stop. */
 function messageOf(error: unknown): string {
@@ -63,9 +67,11 @@ export function createProcessing(contexts: Contexts, signal?: AbortSignal): Proc
         if (failure !== undefined) throw failure.error;
         if (signal?.aborted) throw signal.reason;
         if (error instanceof DataError) throw error;
-        throw new DataError(`The document cannot be processed as JSON-LD with its contexts: ${messageOf(error)}`, {
-          cause: error,
-        });
+        const message = `The document cannot be processed as JSON-LD with its contexts: ${messageOf(error)}`;
+        if (error instanceof Error && DEEP_ITERATIONS_MESSAGE.test(error.message)) {
+          throw new LimitError(message, "maxDeepIterations", MAX_DEEP_ITERATIONS, { cause: error });
+        }
+        throw new DataError(message, { cause: error });
       }
     },
     callerFailed() {

@@ -160,7 +160,7 @@ A client reads what a server it does not control answers with three functions, w
 | Function                                 | Gives                                                                                                     |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `readAnswerJson(response, what, options)` | The JSON of the body: UTF-8 text whose levels (`maxDepth`, 64) and tokens (`maxTokens`, 1,000,000) are counted in one reading before it is parsed; a text over both is refused for its depth |
-| `readAnswer(what, standard, read)`       | What `read` returns; whatever it throws becomes a `DataError`, whose `cause` is what was thrown: `<what> answered with data that is not valid <standard>: <reason>` |
+| `readAnswer(what, standard, read)`       | What `read` returns; whatever it throws becomes a `DataError`, whose `cause` is what was thrown: `<what> answered with data that is not valid <standard>: <reason>`. A `LimitError` stays one, with its `limit` and `maximum`: `<what> answered with data over a limit: <reason>` |
 | `readStatusDetail(error, readInfo)`      | What a server said when it refused: `info`, the body as `readInfo` reads it, left out when the body is not JSON, has more than 1,000,000 tokens or is refused by `readInfo`; and `retryAfterSeconds`, `Retry-After` in seconds |
 
 ```ts
@@ -174,12 +174,12 @@ const refusal = new ServiceError("refused", 429, '{"code":"busy"}', { headers: {
 readStatusDetail(refusal, (body) => body.code); // => { info: "busy", retryAfterSeconds: 30 }
 ```
 
-| Case                                             | `DataError` of `readAnswerJson`                                                              |
+| Case                                             | Error of `readAnswerJson`                                                                    |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| The body is not UTF-8                            | `<what> answered with a body that is not UTF-8 text.`                                        |
-| It nests deeper than `maxDepth`                  | `<what> answered with JSON that nests more than <maxDepth> levels.`                          |
-| It has more tokens than `maxTokens`              | `<what> answered with a body of more than <maxTokens> tokens of JSON, above the limit of the option maxTokens.` |
-| It is not JSON                                   | `<what> answered with a body that is not JSON.`                                              |
+| The body is not UTF-8                            | `DataError`: `<what> answered with a body that is not UTF-8 text.`                           |
+| It nests deeper than `maxDepth`                  | `LimitError` (`maxDepth`): `<what> answered with JSON that nests more than <maxDepth> levels.` |
+| It has more tokens than `maxTokens`              | `LimitError` (`maxTokens`): `<what> answered with a body of more than <maxTokens> tokens of JSON, above the limit of the option maxTokens.` |
+| It is not JSON                                   | `DataError`, whose `cause` is the `SyntaxError`: `<what> answered with a body that is not JSON.` |
 | An option is not a positive integer              | Names the option                                                                             |
 
 ## Failure paths

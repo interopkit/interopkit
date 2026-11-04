@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import {
   checkArray,
   checkRecord,
@@ -82,7 +82,11 @@ function member(path: string, name: string): string {
 /** Throws when an object of the model nests deeper than any package or entity of CASE does. */
 function checkDepth(depth: number, path: string): void {
   if (depth > MAX_JSON_DEPTH) {
-    throw new DataError(`${path} nests more than ${MAX_JSON_DEPTH} levels, the most that a package or an entity has.`);
+    throw new LimitError(
+      `${path} nests more than ${MAX_JSON_DEPTH} levels, the most that a package or an entity has.`,
+      "maxDepth",
+      MAX_JSON_DEPTH,
+    );
   }
 }
 
@@ -274,8 +278,9 @@ function convertAssociations(value: unknown, path: string, dropped: Issue[], dep
  * @param value - The package or the entity in the model of 1.1.
  * @param version - The version to convert to.
  * @returns The value in the form of 1.0, which shares nothing with the input, and what was left out.
+ * @throws `LimitError` when a part of the value that the conversion reads nests more than `MAX_JSON_DEPTH` levels.
  * @throws `DataError` when the version is not `"1.0"`, the value is not an object, a part of it that the conversion reads
- * has the wrong type or nests more than `MAX_JSON_DEPTH` levels, or a property that it copies is not JSON.
+ * has the wrong type, or a property that it copies is not JSON.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1, section 1.3}
  */
 export function convertCaseVersion(value: CasePackage, version: "1.0"): VersionedValue<CasePackage>;

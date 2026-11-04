@@ -1,6 +1,5 @@
 import jsonld from "@interop/jsonld";
 import type { CallOptions } from "@interopkit/core";
-import { DataError } from "@interopkit/core";
 import { checkAbortSignal, checkFunction, checkPositiveInteger, checkRecord, isRecord } from "@interopkit/core/checks";
 import { DEFAULT_MAX_JSON_LD_TOKENS } from "../json-text.js";
 import type { ContextLoader, IssuableCredential, JsonLdIssue } from "../model/index.js";
@@ -70,7 +69,7 @@ export async function validateJsonLd(
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   signal?.throwIfAborted();
   const tooLarge = processingProblem(credential, maxJsonLdTokens);
-  if (tooLarge !== undefined) throw new DataError(tooLarge);
+  if (tooLarge !== undefined) throw tooLarge;
   const issues: JsonLdIssue[] = [];
   const document = structuredClone(credential);
   const load = documentLoaderOf(contexts as ContextLoader, signal);

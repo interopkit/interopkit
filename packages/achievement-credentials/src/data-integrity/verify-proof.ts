@@ -275,7 +275,7 @@ async function proofsOf(
   if (all.length === 0) return { valid: false, reason: "The credential has no proof.", unavailable: false };
   // A credential that is too large for the processors costs no work, whatever the number of its proofs.
   const tooLarge = processingProblem(document, settings.maxJsonLdTokens);
-  if (tooLarge !== undefined) return { valid: false, reason: tooLarge, unavailable: false };
+  if (tooLarge !== undefined) return { valid: false, reason: tooLarge.message, unavailable: false };
   try {
     const best = await bestProof({ all, unsecured, settings, checked: new Map() }, bind);
     if ("key" in best) return { valid: true, credential, ...best };

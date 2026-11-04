@@ -133,7 +133,7 @@ single-use ledger (`once`) and the limits.
 
 | Check                                                                   | Refused with, a reason of `LtiError`                                      |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| A POST of a form with the parameter `JWT`, within `maxFormBytes`        | `request-invalid`, `form-too-large`                                       |
+| A POST of a form with the parameter `JWT`, within `maxFormBytes`        | `request-invalid`; a `LimitError` (`maxFormBytes`) above the limit, which the host answers with 413 |
 | The tool that `iss` names, its algorithm, key and signature             | `token-malformed`, `client-unknown`, `algorithm-unsupported`, `key-unknown`, `signature-invalid` |
 | `aud` as the platform's issuer; `azp`, when present, as the same        | `audience-mismatch`, `audience-untrusted`, `authorized-party-mismatch`    |
 | `exp`, `iat` and `nonce`; an expiry within an hour                      | `claim-missing`, `claim-invalid`, `token-expired`, `issued-in-future`, `assertion-lifetime` |
@@ -199,6 +199,7 @@ after the end. The host maps the actions to its delivery, such as the pause of a
 | `DataError` from `control`                              | The request breaks section 5.1, or the answer is not a status                        | Fix the request; the platform's answer is refused          |
 | `LtiError` `scope-unavailable`, `service-origin-refused` | The platform offered no `control.all`, or the URL may not receive the token          | Pass the scope; name the platform's private origin in `serviceOrigins` |
 | `LtiError` of `readStartAssessment`, 400 or 401         | The form or the token fails a check                                                   | Answer with its `status`                                   |
+| `LimitError` from `readStartAssessment`                 | The form is over `maxFormBytes`                                                       | Answer 413                                                 |
 | `LtiError` `nonce-replayed`, `session-data-invalid`, 403 | A replay, or session data that is not this platform's, this tool's, this attempt's or current | Answer 403; the candidate starts again from the platform |
 
 ## Data flows

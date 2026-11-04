@@ -91,10 +91,10 @@ that has no body, such as 204, takes `null`.
 
 | Option or limit               | Default                          | Unit   | Refused with | Where                                                               |
 | ----------------------------- | -------------------------------- | ------ | ------------ | ------------------------------------------------------------------- |
-| `readJson` `options.maxBytes` | 1,048,576                        | bytes  | `DataError`  | The size of the body, counted in bytes                              |
-| `readJson` `options.maxDepth` | 64                               | levels | `DataError`  | Arrays and objects nested inside each other: `[]` is 1, `[[]]` is 2 |
-| `readJson` `options.maxTokens` | 1,000,000                       | tokens | `DataError`  | Each bracket, brace, colon and comma, each string, each number and each `true`, `false` and `null` |
-| `readForm` `options.maxBytes` | none                             | bytes  | `DataError`  | The size of the body, counted before anything is decoded            |
+| `readJson` `options.maxBytes` | 1,048,576                        | bytes  | `LimitError` | The size of the body, counted in bytes                              |
+| `readJson` `options.maxDepth` | 64                               | levels | `LimitError` | Arrays and objects nested inside each other: `[]` is 1, `[[]]` is 2 |
+| `readJson` `options.maxTokens` | 1,000,000                       | tokens | `LimitError` | Each bracket, brace, colon and comma, each string, each number and each `true`, `false` and `null` |
+| `readForm` `options.maxBytes` | none                             | bytes  | `LimitError` | The size of the body, counted before anything is decoded            |
 | `buildJsonResponse` `options.headers` | none                             |        |              | Win over the `content-type` that it sets                            |
 | `buildJsonResponse` `options.type` | `application/json;charset=UTF-8` |        |              | The media type of the answer                                        |
 | `readOffsetPage` `limit`      | `sizes.pageSize`, at most `sizes.maxPageSize` | items | `DataError` | A whole number of at least 1 in digits; a larger one is lowered to `maxPageSize` |
@@ -175,7 +175,8 @@ negotiate(ranges, ["text/html", "image/jpeg", "text/plain"]); // => "text/plain"
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
 | `DataError` | `checkHttpRequest`: the value is not an object with a string `method` and an absolute `url`, a `Uint8Array` `body`, and `headers` of strings by name in lower case | Build the request as shown above; encode text with `TextEncoder` |
 | `DataError` | `readText`, `readJson`, `readForm`: the body holds bytes that are not UTF-8                                                                                        | Answer 400                                                       |
-| `DataError` | `readJson`: the body is larger or deeper than the limits, or is not JSON                                                                                           | Answer 400, or 413 for the size                                  |
+| `LimitError` | `readJson`, `readForm`: the body has more bytes, levels or tokens than a limit; `limit` names the option and `maximum` its value                                  | Answer 413                                                       |
+| `DataError` | `readJson`: the body is not JSON; its `cause` is the `SyntaxError` of the parse                                                                                   | Answer 400                                                       |
 | `DataError` | `readJson`: an option is not a positive integer                                                                                                                    | Fix the option                                                   |
 | `DataError` | `readQuery`, `readForm`: a parameter occurs twice, or a form has another media type                                                                                | Answer 400, or 415 for the media type                            |
 | `DataError` | `negotiate`: `accept` is not a string, or `offered` is not a list of at least one `type/subtype` without parameters                                                | Fix the call                                                     |

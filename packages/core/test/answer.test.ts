@@ -3,6 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   DataError,
+  LimitError,
   readAnswer,
   readAnswerJson,
   readStatusDetail,
@@ -18,6 +19,16 @@ const answer = (body: string | Uint8Array<ArrayBuffer>): ServiceResponse => ({
   headers: {},
   body: typeof body === "string" ? new TextEncoder().encode(body) : body,
 });
+
+/** Runs a reading and returns what it throws. */
+function errorOf(read: () => unknown): unknown {
+  try {
+    read();
+  } catch (error) {
+    return error;
+  }
+  throw new Error("The reading did not throw.");
+}
 
 /** Runs a reading and returns the message of what it throws. */
 function messageOf(read: () => unknown): string {
@@ -89,6 +100,26 @@ describe("the JSON of an answer", () => {
     );
   });
 
+  it("is refused over a limit with a LimitError that names the limit and its value", () => {
+    expect(errorOf(() => readAnswerJson(answer("[[[]]]"), WHAT, { maxDepth: 2 }))).toMatchObject({
+      name: "LimitError",
+      limit: "maxDepth",
+      maximum: 2,
+    });
+    expect(errorOf(() => readAnswerJson(answer("[1,2,3]"), WHAT, { maxTokens: 6 }))).toMatchObject({
+      name: "LimitError",
+      limit: "maxTokens",
+      maximum: 6,
+    });
+  });
+
+  it("keeps the error of the decoder and of the parser as the cause", () => {
+    expect(errorOf(() => readAnswerJson(answer(Uint8Array.of(0x7b, 0xe9, 0x7d)), WHAT))).toMatchObject({
+      cause: { name: "TypeError" },
+    });
+    expect(errorOf(() => readAnswerJson(answer("[1,"), WHAT))).toMatchObject({ cause: { name: "SyntaxError" } });
+  });
+
   it("is refused options of the wrong type", () => {
     for (const options of [null, "x", { maxDepth: 0 }, { maxTokens: 1.5 }, { maxDepth: "64" }]) {
       expect(() => readAnswerJson(answer("[]"), WHAT, JSON.parse(JSON.stringify(options)))).toThrow(DataError);
@@ -113,6 +144,19 @@ describe("the reading of the data of an answer", () => {
         throw new TypeError("no such property");
       }),
     ).toThrow(new DataError("The CASE provider at b answered with data that is not valid CASE: no such property"));
+  });
+
+  it("keeps a LimitError that the reader threw as a LimitError, with its limit, its value and the cause", () => {
+    const over = new LimitError("The text has more than 9 tokens.", "maxTokens", 9);
+    const error = errorOf(() =>
+      readAnswer(WHAT, "xAPI", () => {
+        throw over;
+      }),
+    );
+    expect(error).toStrictEqual(
+      new LimitError(`${WHAT} answered with data over a limit: The text has more than 9 tokens.`, "maxTokens", 9),
+    );
+    expect((error as LimitError).cause).toBe(over);
   });
 
   it("keeps what the reader threw as the cause", () => {

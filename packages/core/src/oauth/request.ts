@@ -46,18 +46,23 @@ function refusal(error: unknown, what: string, answer: ServiceResponse | undefin
   const body = new TextDecoder().decode(answer?.body);
   if (error instanceof oauth.ResponseBodyError) {
     const description = error.error_description === undefined ? "" : ` (${error.error_description})`;
-    return new ServiceError(`${what} refused the request: ${error.error}${description}.`, error.status, body);
+    return new ServiceError(`${what} refused the request: ${error.error}${description}.`, error.status, body, {
+      cause: error,
+    });
   }
   if (error instanceof oauth.WWWAuthenticateChallengeError) {
     return new ServiceError(
       `${what} answered ${error.status} and challenged the client to authenticate.`,
       error.status,
       body,
+      { cause: error },
     );
   }
   const invalid = error instanceof oauth.OperationProcessingError || error instanceof oauth.UnsupportedOperationError;
   if (invalid && answer !== undefined) {
-    return new ServiceError(`${what} answered with a response that is not valid: ${error.message}.`, status, body);
+    return new ServiceError(`${what} answered with a response that is not valid: ${error.message}.`, status, body, {
+      cause: error,
+    });
   }
   return error;
 }

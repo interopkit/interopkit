@@ -127,12 +127,12 @@ The checks, in order:
 
 | Check                                    | Refused with, a reason of `LtiError`                                                                         |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| A POST of a form with the parameter `JWT`, within `maxFormBytes` | `request-invalid`, `form-too-large`                                                         |
+| A POST of a form with the parameter `JWT`, within `maxFormBytes` | `request-invalid`; a `LimitError` (`maxFormBytes`) above the limit, which the host answers with 413 |
 | The tool that `iss` names, looked up with `client` | `token-malformed`, `client-unknown`                                                                  |
 | An algorithm of the tool's registration, a key of its key set, the signature | `algorithm-unsupported`, `key-unknown`, `signature-invalid`                       |
 | `aud` as the platform's issuer alone; `azp`, when present, as the same | `audience-mismatch`, `audience-untrusted`, `authorized-party-mismatch`                       |
 | `exp`, `iat` and `nonce` present; not expired; not issued in the future; expiring within an hour | `claim-missing`, `claim-invalid`, `token-expired`, `issued-in-future`, `assertion-lifetime`  |
-| At most `maxContentItems` items, counted before one is read | `content-items-limit`                                                                  |
+| At most `maxContentItems` items, counted before one is read | a `LimitError` (`maxContentItems`), which the host answers with 413                    |
 | The message type, the version and a deployment of the tool | `message-type-unsupported`, `version-unsupported`, `deployment-unknown`                              |
 | The `nonce`, once: `once` records it until the message stops verifying | `nonce-replayed`                                                                         |
 | The `data` claim: sealed by this platform (or by an earlier hint key), for this tool and deployment, not expired | `deep-linking-data-invalid`                                |
@@ -189,7 +189,8 @@ markup that the package renders.
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
 | `DataError` from `buildDeepLinkingResponse`                          | An argument has the wrong type, an item is not a content item, or the platform does not accept the items | Fix the caller; choose items the request accepts                 |
 | `LtiError` `platform-unknown`, `deployment-unknown`                | The tool's registration is gone, or no longer lists the deployment                         | Register the platform or the deployment again                    |
-| `LtiError` of `readDeepLinkingResponse`, 400                       | The sender broke the protocol: the form, the items, their number                          | Answer 400; the tool fixes its response                          |
+| `LtiError` of `readDeepLinkingResponse`, 400                       | The sender broke the protocol: the form or the items                                       | Answer 400; the tool fixes its response                          |
+| `LimitError` from `readDeepLinkingResponse`                        | The form is over `maxFormBytes`, or the items over `maxContentItems`                       | Answer 413                                                       |
 | `LtiError` of `readDeepLinkingResponse`, 401                       | The token fails validation                                                                 | Answer 401                                                       |
 | `LtiError` `nonce-replayed`, `deep-linking-data-invalid`, 403      | The response is a replay, or its data is not this platform's, this tool's or current        | Answer 403; the user starts the request again                    |
 | `DataError` from `readDeepLinkingResponse`                         | The request or an option has the wrong type, or a port breaks its contract                 | Fix the host                                                     |

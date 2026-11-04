@@ -61,8 +61,8 @@ export function jsonOf(response: ServiceResponse, settings: Settings): unknown {
   let text: string;
   try {
     text = new TextDecoder("utf-8", { fatal: true }).decode(response.body);
-  } catch {
-    throw new DataError("The body is not valid UTF-8 text, which JSON must be.");
+  } catch (error) {
+    throw new DataError("The body is not valid UTF-8 text, which JSON must be.", { cause: error });
   }
   return readStatementJson(text, { maxBytes: settings.maxBytes, maxTokens: settings.maxTokens });
 }

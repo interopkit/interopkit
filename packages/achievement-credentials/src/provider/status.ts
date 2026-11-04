@@ -63,9 +63,8 @@ export const unreadable = (description: string): HttpResponse => failure(400, de
 /** The answer for a body that reads, and is not a credential or a profile of the API: 422, as OB B.3.6 pairs `invalid_data`. */
 export const invalidData = (description: string): HttpResponse => failure(422, description, "invalid_data");
 
-/** The answer for a body above the limit: 413. */
-export const tooLarge = (bytes: number, limit: number): HttpResponse =>
-  failure(413, `The body has ${bytes} bytes, above the limit of ${limit} bytes.`, "unknown");
+/** The answer for a body above a limit, of its bytes or of what it holds: 413. */
+export const tooLarge = (description: string): HttpResponse => failure(413, description, "unknown");
 
 /** The answer for a body of a media type that the operation does not take: 415. */
 export const unsupportedType = (found: string | undefined, accepted: readonly string[]): HttpResponse =>

@@ -68,9 +68,10 @@ export function itemsByKey(pkg: CasePackage): Map<string, CFPckgItem> {
 export function copyOf<TValue>(value: TValue, label: string): TValue {
   try {
     return structuredClone(value);
-  } catch {
+  } catch (error) {
     throw new DataError(
       `${label} must be plain data that can be copied: it holds a function or a symbol, or nests too deep.`,
+      { cause: error },
     );
   }
 }

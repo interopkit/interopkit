@@ -17,11 +17,9 @@ export type LtiErrorReason =
   | "client-mismatch"
   | "client-unknown"
   | "content-item-refused"
-  | "content-items-limit"
   | "deep-linking-data-invalid"
   | "deployment-mismatch"
   | "deployment-unknown"
-  | "form-too-large"
   | "hint-expired"
   | "hint-invalid"
   | "hint-missing"
@@ -119,9 +117,10 @@ export class LtiError extends InteropkitError {
   /**
    * @param message - Says what failed and what is expected.
    * @param reason - A kebab-case code that names the failed check.
+   * @param options - The `cause`: the error that this one reports.
    */
-  constructor(message: string, reason: LtiErrorReason) {
-    super(message);
+  constructor(message: string, reason: LtiErrorReason, options?: ErrorOptions) {
+    super(message, options);
     this.reason = reason;
     this.status = STATUS_OF_REASON.get(reason) ?? 400;
   }

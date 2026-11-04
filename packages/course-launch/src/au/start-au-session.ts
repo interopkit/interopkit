@@ -81,8 +81,8 @@ function documentJson(document: LrsDocument | undefined, maxBytes: number, what:
   }
   try {
     return JSON.parse(text);
-  } catch {
-    throw new DataError(`${what} is not JSON.`);
+  } catch (error) {
+    throw new DataError(`${what} is not JSON.`, { cause: error });
   }
 }
 

@@ -489,7 +489,7 @@ describe("the bounds of the JSON in a parameter", () => {
       expect(tokens.status).toBe(413);
       expect(reasonOf(tokens)).toContain("The text has more than 4 tokens");
       const nested = await ask('{"mbox":"mailto:a@example.org","member":[{}]}', { maxDepth: 2 });
-      expect(nested.status).toBe(400);
+      expect(nested.status).toBe(413);
       expect(reasonOf(nested)).toContain("nests arrays and objects deeper than the limit of 2 levels");
     },
   );

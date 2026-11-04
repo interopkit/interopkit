@@ -93,8 +93,10 @@ export function unverifiedClaims(token: string, maxTokens: number = MAX_JSON_TOK
   let text: string;
   try {
     text = new TextDecoder("utf-8", { fatal: true }).decode(base64url.decode(token.split(".")[1] ?? ""));
-  } catch {
-    throw new LtiError("The payload of the token must be in UTF-8 (RFC 7519 section 7.2).", "token-malformed");
+  } catch (error) {
+    throw new LtiError("The payload of the token must be in UTF-8 (RFC 7519 section 7.2).", "token-malformed", {
+      cause: error,
+    });
   }
   if (hasMoreTokensThan(text, maxTokens)) {
     throw new LtiError(`The payload of the token has more than ${maxTokens} JSON tokens.`, "token-malformed");
@@ -102,8 +104,10 @@ export function unverifiedClaims(token: string, maxTokens: number = MAX_JSON_TOK
   let claims: unknown;
   try {
     claims = JSON.parse(text);
-  } catch {
-    throw new LtiError("The payload of the token must be a JSON object (RFC 7519 section 7.2).", "token-malformed");
+  } catch (error) {
+    throw new LtiError("The payload of the token must be a JSON object (RFC 7519 section 7.2).", "token-malformed", {
+      cause: error,
+    });
   }
   if (!isRecord(claims)) {
     throw new LtiError("The payload of the token must be a JSON object (RFC 7519 section 7.2).", "token-malformed");

@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { copyJson, hasMoreTokensThan, type JsonObject } from "@interopkit/core/checks";
 
 /** A document, or a proof, as the functions of the package take it: JSON that they read and do not change. */
@@ -25,7 +25,7 @@ export function readJson(value: JsonDocument, label: string): JsonObject {
  *
  * @param text - The document and its proof, as JSON.
  * @param limits - The most bytes and the most tokens allowed.
- * @throws `DataError` when it has more bytes or more tokens.
+ * @throws `LimitError` when it has more bytes or more tokens.
  */
 export function checkSize(
   text: string,
@@ -33,13 +33,17 @@ export function checkSize(
 ): void {
   const size = encoder.encode(text).length;
   if (size > maxBytes) {
-    throw new DataError(
+    throw new LimitError(
       `The document with its proof has ${size} bytes as JSON, more than the option maxBytes allows, ${maxBytes}.`,
+      "maxBytes",
+      maxBytes,
     );
   }
   if (hasMoreTokensThan(text, maxTokens)) {
-    throw new DataError(
+    throw new LimitError(
       `The document with its proof has more tokens of JSON than the option maxTokens allows, ${maxTokens}.`,
+      "maxTokens",
+      maxTokens,
     );
   }
 }

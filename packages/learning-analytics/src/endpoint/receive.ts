@@ -1,4 +1,4 @@
-import { callPort, DataError } from "@interopkit/core";
+import { callPort, DataError, LimitError } from "@interopkit/core";
 import { MAX_JSON_DEPTH } from "@interopkit/core/checks";
 import { type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
 import { assembleEnvelope, type EnvelopeFields, parseEnvelope, strictRefusal } from "./envelope.js";
@@ -15,10 +15,12 @@ function mediaTypeOf(request: HttpRequest): string | undefined {
 function bodyRefusal(request: HttpRequest, settings: EndpointSettings): HttpResponse | undefined {
   if (mediaTypeOf(request) !== "application/json") return unsupportedType();
   const size = request.body.byteLength;
-  return size > settings.maxPayloadBytes ? tooLarge(size, settings.maxPayloadBytes) : undefined;
+  return size > settings.maxPayloadBytes
+    ? tooLarge(`The body has ${size} bytes, above the limit of ${settings.maxPayloadBytes} bytes.`)
+    : undefined;
 }
 
-/** Parses the body as JSON within the limits, and reads the fields of the envelope: 400 for the first fault. */
+/** Parses the body as JSON within the limits, and reads the fields of the envelope: 413 over a limit, 400 for another fault. */
 function fieldsOf(
   request: HttpRequest,
   settings: EndpointSettings,
@@ -31,6 +33,7 @@ function fieldsOf(
     });
     return { fields: parseEnvelope(value) };
   } catch (error) {
+    if (error instanceof LimitError) return { refusal: tooLarge(error.message) };
     if (error instanceof DataError) return { refusal: badRequest(error.message) };
     throw error;
   }

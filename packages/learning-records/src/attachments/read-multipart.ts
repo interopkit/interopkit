@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { checkString, describe } from "@interopkit/core/checks";
 import {
   getMultipartBoundary,
@@ -14,7 +14,6 @@ import {
 import type { AttachmentData } from "../model/index.js";
 import { isMediaType, isSha2Hex, mediaTypeOf } from "../model/internal.js";
 import { readStatementJson } from "../read/index.js";
-import { type MultipartLimit, MultipartLimitError } from "./errors.js";
 import { checkBytes, hashesTo } from "./hash-attachment.js";
 import { type MultipartLimits, readLimits } from "./limits.js";
 
@@ -25,6 +24,9 @@ const JSON_TYPE = "application/json";
 const BINARY_TYPE = "application/octet-stream";
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
+
+/** The most bytes of the headers of one part, the default of the parser, which a request of xAPI does not come near. */
+const MAX_HEADER_BYTES = 8192;
 
 /** What `readMultipart` finds in a message. */
 export interface MultipartContent {
@@ -46,12 +48,17 @@ function boundaryOf(contentType: string): string {
   return boundary;
 }
 
-/** Names the limit that a parser error reports, or none when the message is malformed. */
-function limitOf(error: MultipartParseError): MultipartLimit | undefined {
-  if (error instanceof MaxPartsExceededError) return "parts";
-  if (error instanceof MaxFileSizeExceededError) return "part-bytes";
-  if (error instanceof MaxTotalSizeExceededError) return "total-bytes";
-  return error instanceof MaxHeaderSizeExceededError ? "header-bytes" : undefined;
+/** Names the limit that a parser error reports, with its value, or none when the message is malformed. */
+function limitOf(
+  error: MultipartParseError,
+  limits: Required<MultipartLimits>,
+): { readonly limit: string; readonly maximum: number } | undefined {
+  if (error instanceof MaxPartsExceededError) return { limit: "maxParts", maximum: limits.maxParts };
+  if (error instanceof MaxFileSizeExceededError) return { limit: "maxPartBytes", maximum: limits.maxPartBytes };
+  if (error instanceof MaxTotalSizeExceededError) return { limit: "maxTotalBytes", maximum: limits.maxTotalBytes };
+  return error instanceof MaxHeaderSizeExceededError
+    ? { limit: "maxHeaderBytes", maximum: MAX_HEADER_BYTES }
+    : undefined;
 }
 
 /** Splits the message into its parts, within the limits. */
@@ -60,6 +67,7 @@ function splitParts(body: Uint8Array, boundary: string, limits: Required<Multipa
     return [
       ...parseMultipart(body, {
         boundary,
+        maxHeaderSize: MAX_HEADER_BYTES,
         maxParts: limits.maxParts,
         maxFileSize: limits.maxPartBytes,
         maxTotalSize: limits.maxTotalBytes,
@@ -68,8 +76,10 @@ function splitParts(body: Uint8Array, boundary: string, limits: Required<Multipa
   } catch (error) {
     if (!(error instanceof MultipartParseError)) throw error;
     const message = `The multipart message is not valid: ${error.message}.`;
-    const limit = limitOf(error);
-    throw limit === undefined ? new DataError(message) : new MultipartLimitError(message, limit);
+    const over = limitOf(error, limits);
+    throw over === undefined
+      ? new DataError(message, { cause: error })
+      : new LimitError(message, over.limit, over.maximum, { cause: error });
   }
 }
 
@@ -77,8 +87,8 @@ function splitParts(body: Uint8Array, boundary: string, limits: Required<Multipa
 function headersOf(part: MultipartPart): MultipartHeaders {
   try {
     return part.headers;
-  } catch {
-    throw new DataError("A part has a header that is not valid UTF-8 text.");
+  } catch (error) {
+    throw new DataError("A part has a header that is not valid UTF-8 text.", { cause: error });
   }
 }
 
@@ -91,8 +101,8 @@ function readStatementsPart(part: MultipartPart, limits: Required<MultipartLimit
   let text: string;
   try {
     text = decoder.decode(part.bytes);
-  } catch {
-    throw new DataError("The first part is not valid UTF-8 text, which JSON must be.");
+  } catch (error) {
+    throw new DataError("The first part is not valid UTF-8 text, which JSON must be.", { cause: error });
   }
   return readStatementJson(text, {
     maxBytes: limits.maxPartBytes,

@@ -1,5 +1,5 @@
 import { checkPositiveInteger, checkRecord } from "../checks.js";
-import { DataError } from "../errors.js";
+import { DataError, LimitError } from "../errors.js";
 import { findExceededJsonLimit, MAX_JSON_DEPTH, MAX_JSON_TOKENS, nestsDeeperThan } from "../json.js";
 import type { HttpRequest } from "./request.js";
 
@@ -46,8 +46,10 @@ export interface ReadJsonOptions {
 export function readText(request: HttpRequest): string {
   try {
     return DECODER.decode(request.body);
-  } catch {
-    throw new DataError("The body of the request must be UTF-8 text, and it holds bytes that are not UTF-8.");
+  } catch (error) {
+    throw new DataError("The body of the request must be UTF-8 text, and it holds bytes that are not UTF-8.", {
+      cause: error,
+    });
   }
 }
 
@@ -62,8 +64,8 @@ export function readText(request: HttpRequest): string {
  * @param request - The request, which `checkHttpRequest` has accepted.
  * @param options - The limits. Default: 1,048,576 bytes, depth 64 and 1,000,000 tokens.
  * @returns The parsed value.
- * @throws `DataError` when the options are not valid, or the body is larger or deeper than the limits, is not UTF-8, or is
- * not JSON.
+ * @throws `LimitError`, a `DataError`, when the body has more bytes, levels or tokens than the limits: answer 413.
+ * @throws `DataError` when the options are not valid, or the body is not UTF-8 or not JSON.
  */
 export function readJson(request: HttpRequest, options: ReadJsonOptions = {}): unknown {
   checkRecord(options, "The options of readJson must be an object");
@@ -74,8 +76,10 @@ export function readJson(request: HttpRequest, options: ReadJsonOptions = {}): u
   const maxDepth = options.maxDepth ?? MAX_JSON_DEPTH;
   const maxTokens = options.maxTokens ?? MAX_JSON_TOKENS;
   if (request.body.byteLength > maxBytes) {
-    throw new DataError(
+    throw new LimitError(
       `The body of the request has ${request.body.byteLength} bytes, above the limit of ${maxBytes} bytes.`,
+      "maxBytes",
+      maxBytes,
     );
   }
   const text = readText(request);
@@ -83,16 +87,22 @@ export function readJson(request: HttpRequest, options: ReadJsonOptions = {}): u
   // tokens first is read on for its depth.
   const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
   if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
-    throw new DataError(`The JSON of the request nests deeper than the limit of ${maxDepth} levels.`);
+    throw new LimitError(
+      `The JSON of the request nests deeper than the limit of ${maxDepth} levels.`,
+      "maxDepth",
+      maxDepth,
+    );
   }
   if (excess === "tokens") {
-    throw new DataError(
+    throw new LimitError(
       `The JSON of the request has more than ${maxTokens} tokens, above the limit of the option maxTokens.`,
+      "maxTokens",
+      maxTokens,
     );
   }
   try {
     return JSON.parse(text);
-  } catch {
-    throw new DataError("The body of the request must be JSON, and it is not valid JSON.");
+  } catch (error) {
+    throw new DataError("The body of the request must be JSON, and it is not valid JSON.", { cause: error });
   }
 }

@@ -1,7 +1,7 @@
 // cspell:ignore Ehtml
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { BlobWriter, Uint8ArrayReader, ZipWriter } from "@zip.js/zip.js/lib/zip-core-native.js";
 import { describe, expect, it } from "vitest";
 import { type CourseStructure, readCourseStructure } from "../src/index.js";
@@ -125,14 +125,20 @@ describe("reading a ZIP package", () => {
     const zip = archive("package.zip");
     await expect(readCoursePackage(zip, { maxEntries: 4 })).resolves.toMatchObject({ source: "zip" });
     await expect(readCoursePackage(zip, { maxEntries: 3 })).rejects.toThrow(
-      new DataError("The ZIP package has more than 3 entries, the limit of the option maxEntries."),
+      new LimitError("The ZIP package has more than 3 entries, the limit of the option maxEntries.", "maxEntries", 3),
     );
     await expect(readCoursePackage(zip, { maxDirectoryBytes: 100 })).rejects.toThrow(
       /^The ZIP package has a central directory of \d+ bytes or more, above the limit of 100 bytes of the option maxDirectoryBytes\.$/u,
     );
+    await expect(readCoursePackage(zip, { maxDirectoryBytes: 100 })).rejects.toMatchObject({
+      name: "LimitError",
+      limit: "maxDirectoryBytes",
+      maximum: 100,
+    });
     await expect(readCoursePackage(zip, { maxBytes: 100 })).rejects.toThrow(
       /^The cmi5\.xml of the ZIP package has \d+ bytes, above the limit of 100 bytes of the option maxBytes\.$/u,
     );
+    await expect(readCoursePackage(zip, { maxBytes: 100 })).rejects.toMatchObject({ limit: "maxBytes", maximum: 100 });
   });
 
   it("finds the files that the assignable units of blocks name", async () => {

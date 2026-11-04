@@ -23,7 +23,7 @@ export function writeAndRead<TModel, TWritten, TRead>(
     const written = write(value as TModel);
     return { written, read: read(written) };
   } catch (error) {
-    if (error instanceof TypeError) throw new DataError(`${refusal}: ${error.message}.`);
+    if (error instanceof TypeError) throw new DataError(`${refusal}: ${error.message}.`, { cause: error });
     throw error;
   }
 }

@@ -1,4 +1,4 @@
-import { type CallOptions, DataError } from "@interopkit/core";
+import { type CallOptions, DataError, LimitError } from "@interopkit/core";
 import { abortSignalSchema, describe, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type { AssignableUnit, Block, CourseStructure } from "../model/index.js";
@@ -76,8 +76,10 @@ async function headOf(archive: Blob | Uint8Array): Promise<Uint8Array> {
 async function bytesOf(archive: Blob | Uint8Array, maxBytes: number): Promise<Uint8Array> {
   if (archive instanceof Uint8Array) return archive;
   if (archive.size > maxBytes) {
-    throw new DataError(
+    throw new LimitError(
       `The course package has ${archive.size} bytes, above the limit of ${maxBytes} bytes of the option maxBytes.`,
+      "maxBytes",
+      maxBytes,
     );
   }
   return new Uint8Array(await archive.arrayBuffer());

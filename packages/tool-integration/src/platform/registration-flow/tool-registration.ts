@@ -31,7 +31,9 @@ function configurationOf(value: unknown): ToolConfiguration {
     return readToolConfiguration(writeToolConfiguration(value as ToolConfiguration));
   } catch (error) {
     // The writer takes the types of the model, and a member of another kind fails it with a TypeError.
-    if (error instanceof TypeError) throw new DataError(`The configuration of the tool is not one: ${error.message}.`);
+    if (error instanceof TypeError) {
+      throw new DataError(`The configuration of the tool is not one: ${error.message}.`, { cause: error });
+    }
     throw error;
   }
 }

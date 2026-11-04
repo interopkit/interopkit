@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import {
   type Entry,
   type FileEntry,
@@ -38,8 +38,10 @@ class LimitedReader extends Reader<Blob | Uint8Array> {
 
   override async readUint8Array(index: number, length: number): Promise<Uint8Array> {
     if (length > this.#maxRead) {
-      throw new DataError(
+      throw new LimitError(
         `The ZIP package has a central directory of ${length} bytes or more, above the limit of ${this.#maxRead} bytes of the option maxDirectoryBytes.`,
+        "maxDirectoryBytes",
+        this.#maxRead,
       );
     }
     const end = Math.min(index + length, this.size);
@@ -116,7 +118,7 @@ function refusalOf(error: unknown, signal: AbortSignal | undefined): unknown {
   if (signal?.aborted === true) return signal.reason;
   if (error instanceof DataError) return error;
   const reason = error instanceof Error ? error.message : String(error);
-  return new DataError(`The ZIP package is not a valid ZIP archive: ${reason}.`);
+  return new DataError(`The ZIP package is not a valid ZIP archive: ${reason}.`, { cause: error });
 }
 
 /** What reading the entries of an archive keeps: the names of its files and the entry of its course structure. */
@@ -134,8 +136,10 @@ async function readEntries(reader: ZipReader<unknown>, limits: ArchiveLimits): P
   const seen = new Map<string, string>();
   for await (const entry of reader.getEntriesGenerator()) {
     if (seen.size >= limits.maxEntries) {
-      throw new DataError(
+      throw new LimitError(
         `The ZIP package has more than ${limits.maxEntries} entries, the limit of the option maxEntries.`,
+        "maxEntries",
+        limits.maxEntries,
       );
     }
     checkEntry(entry, seen);
@@ -153,8 +157,10 @@ async function readEntries(reader: ZipReader<unknown>, limits: ArchiveLimits): P
  */
 async function readStructureFile(entry: FileEntry, limits: ArchiveLimits, signal: AbortSignal | undefined) {
   if (entry.uncompressedSize > limits.maxStructureBytes) {
-    throw new DataError(
+    throw new LimitError(
       `The cmi5.xml of the ZIP package has ${entry.uncompressedSize} bytes, above the limit of ${limits.maxStructureBytes} bytes of the option maxBytes.`,
+      "maxBytes",
+      limits.maxStructureBytes,
     );
   }
   const bytes = await entry.getData(new Uint8ArrayWriter(), signal === undefined ? {} : { signal });

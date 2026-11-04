@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { LimitError } from "@interopkit/core";
 import { type FindingSink, type Issue, isAbsoluteUri } from "@interopkit/core/checks";
 import { SaxesParser, type SaxesTagNS } from "saxes";
 import {
@@ -198,13 +198,17 @@ class StructureWalk {
     const { maxDepth, maxElements } = this.settings;
     this.counted += 1;
     if (this.counted > maxElements) {
-      throw new DataError(
+      throw new LimitError(
         `The course structure has more than ${maxElements} elements and attributes, the limit of the option maxElements.`,
+        "maxElements",
+        maxElements,
       );
     }
     if (element && this.depth >= maxDepth) {
-      throw new DataError(
+      throw new LimitError(
         `The course structure nests more than ${maxDepth} elements, the limit of the option maxDepth.`,
+        "maxDepth",
+        maxDepth,
       );
     }
     if (element) this.depth += 1;

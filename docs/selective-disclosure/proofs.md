@@ -139,10 +139,10 @@ the caller say why.
 
 | Limit                                              | Value      | Applies to                                                                                                              |
 | -------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `maxBytes`                                         | 1,048,576  | The document with its proof, as JSON, in bytes; a `DataError`, and `false` from `verify`                                |
-| `maxTokens`                                        | 20,000     | The document with its proof, as JSON, in tokens, counted before any processing; a `DataError`, and `false` from `verify` |
+| `maxBytes`                                         | 1,048,576  | The document with its proof, as JSON, in bytes; a `LimitError`, and `false` from `verify`                               |
+| `maxTokens`                                        | 20,000     | The document with its proof, as JSON, in tokens, counted before any processing; a `LimitError`, and `false` from `verify` |
 | Levels that a document, a proof or a context nests | 64         | Checked before any processing; a `DataError`, and `false` from `verify`; not replaceable                                |
-| Deep iterations of RDF canonicalization            | 1,000      | `maxDeepIterations` of `rdf-canonize`: blank nodes that take more runs of Hash N-Degree Quads to tell apart are refused; not replaceable |
+| Deep iterations of RDF canonicalization            | 1,000      | `maxDeepIterations` of `rdf-canonize`: blank nodes that take more runs of Hash N-Degree Quads to tell apart are refused with a `LimitError` (`maxDeepIterations`), and `false` from `verify`; not replaceable |
 | Bytes of a signature, an HMAC key, a label         | 64, 32, 32 | Fixed by the Recommendation; a proof value with other lengths does not parse                                            |
 
 The work of the JSON-LD processors grows faster than the size of a document, so bytes alone do not bound it. `jsonld` adds
@@ -189,7 +189,7 @@ reaches the caller as it was.
 | `The proofValue of a base proof ...`                            | The value does not parse: not base64url, not CBOR, wrong items or lengths | Ask the issuer for the proof again                                                             |
 | `Nothing is selected to reveal`                                 | No mandatory pointers and no `selectivePointers`                          | Choose at least one pointer                                                                    |
 | `The base proof has ... signatures`                             | The proof does not belong to the document: the statements do not match    | Derive from the document as the issuer signed it                                               |
-| `The document cannot be processed as JSON-LD with its contexts` | A term no context defines, a context that does not parse, more than 1,000 deep iterations | Define the term in a context, or correct the document; the sentence after the colon says which |
+| `The document cannot be processed as JSON-LD with its contexts` | A term no context defines, a context that does not parse, more than 1,000 deep iterations, which is a `LimitError`; the `cause` is the error of the processor | Define the term in a context, or correct the document; the sentence after the colon says which |
 | `The context loader must return the context of ...`             | The loader answered with something other than a JSON object               | Return the parsed context document                                                             |
 | `The option publicKeyJwk holds a private key (d)`               | `verify` got a private JWK                                                | Pass the public key                                                                            |
 

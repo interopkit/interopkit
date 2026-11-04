@@ -216,9 +216,11 @@ function failure(
 ) {
   const aborted = callers.find((signal) => signal.aborted);
   if (aborted !== undefined) return aborted.reason;
-  if (deadline.aborted) return new ServiceError(`${what} did not answer within ${service.timeoutMs} ms.`, 0, "");
+  if (deadline.aborted) {
+    return new ServiceError(`${what} did not answer within ${service.timeoutMs} ms.`, 0, "", { cause: error });
+  }
   const reason = error instanceof Error ? error.message : String(error);
-  return new ServiceError(`${what} did not answer: ${reason}.`, 0, "");
+  return new ServiceError(`${what} did not answer: ${reason}.`, 0, "", { cause: error });
 }
 
 /**

@@ -223,7 +223,8 @@ A store that answers with something other than its contract (a line item that is
 | `LtiError` `service-origin-refused`                    | The URL may not receive the token                                                    | Name the platform's origins in `serviceOrigins`                  |
 | `LtiError` `platform-unknown`, `deployment-unknown`    | The registration is gone, or no longer lists the deployment                          | Register the platform or the deployment again                    |
 | `ServiceError`                                         | The token endpoint or a service answered with an error, or not at all                | Read its `status` and `Retry-After`; resend a score with a later timestamp |
-| `DataError`                                            | An argument has the wrong type, a body breaks its model, or an answer is above `maxTokens` | Fix the caller, or raise the limit                          |
+| `DataError`                                            | An argument has the wrong type, or a body breaks its model                                  | Fix the caller                                              |
+| `LimitError`, a `DataError`                            | An answer is above `maxTokens`                                                              | Raise the limit                                             |
 
 ## Data flows
 

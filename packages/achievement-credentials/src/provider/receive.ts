@@ -9,7 +9,7 @@ import { readCredential } from "../read/index.js";
 import { jws, verifiedKindOf } from "../read/internal.js";
 import { bodyTypeOf } from "./body.js";
 import type { ProviderSettings } from "./options.js";
-import { invalidData, unreadable } from "./status.js";
+import { invalidData, tooLarge, unreadable } from "./status.js";
 import type { ReceivedCredential } from "./store.js";
 
 /** The media type of a credential signed as a VC-JWT, sent as its compact JWS (OB 6.2.3.1). */
@@ -111,13 +111,13 @@ function credentialOfBody(
       };
     }
     const carried = credentialInJws(text, settings.maxTokens);
-    return "reason" in carried
-      ? { refusal: invalidData(carried.reason) }
-      : { received: text, credential: carried.value, text };
+    if ("value" in carried) return { received: text, credential: carried.value, text };
+    return { refusal: carried.exceeded === undefined ? invalidData(carried.reason) : tooLarge(carried.reason) };
   }
   // The tokens and the levels are counted on the text that was decoded once, before the parser builds anything.
   const parsed = parseJsonText(text, { maxDepth: MAX_JSON_DEPTH, maxTokens: settings.maxTokens }, "The body");
-  if ("reason" in parsed) return { refusal: unreadable(parsed.reason) };
+  if ("reason" in parsed)
+    return { refusal: parsed.exceeded === undefined ? unreadable(parsed.reason) : tooLarge(parsed.reason) };
   const json = parsed.value;
   if (!isRecord(json)) return { refusal: invalidData("The body must be a credential as a JSON object.") };
   try {

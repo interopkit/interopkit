@@ -41,7 +41,8 @@ describe("the peak memory of readDeepLinkingResponse", () => {
     expect(listing.body.byteLength).toBeLessThan(MIB);
     const before = peak();
     await expect(readDeepLinkingResponse(listing, toolMessageOptions(ctx))).rejects.toMatchObject({
-      reason: "content-items-limit",
+      name: "LimitError",
+      limit: "maxContentItems",
     });
     const rise = peak() - before;
     await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);

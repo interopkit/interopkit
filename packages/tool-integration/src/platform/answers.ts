@@ -9,9 +9,9 @@ export function refusal(status: number, error: string, description: string): Htt
   return buildJsonResponse(status, errorBody(error, description), { headers: NO_STORE });
 }
 
-/** Builds the answer to a request whose body is larger than the limit. */
-export function tooLarge(bytes: number, maxBytes: number): HttpResponse {
-  return refusal(413, "request_too_large", `The body has ${bytes} bytes, above the limit of ${maxBytes} bytes.`);
+/** Builds the answer to a request whose body, or what it holds, is larger than a limit. */
+export function tooLarge(description: string): HttpResponse {
+  return refusal(413, "request_too_large", description);
 }
 
 /** Builds the answer to a method that a route does not serve, with the methods it does in `Allow`. */

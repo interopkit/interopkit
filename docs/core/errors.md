@@ -1,14 +1,21 @@
 # Errors
 
 Every error that an interopkit package throws extends `InteropkitError`, so one `instanceof` catches them all. A message is
-a full sentence that names the offending value or path and says what to do.
+a full sentence that names the offending value or path and says what to do. Every class takes `ErrorOptions` after its own
+arguments, and an error that reports another, such as the failure of a `fetch` or the `SyntaxError` of a parse, carries it as
+its `cause`.
 
 ```mermaid
 classDiagram
   Error <|-- InteropkitError
   InteropkitError <|-- DataError
+  DataError <|-- LimitError
   InteropkitError <|-- ServiceError
   InteropkitError <|-- LtiError
+  class LimitError {
+    +string limit
+    +number maximum
+  }
   class ServiceError {
     +number status
     +string body
@@ -26,7 +33,8 @@ term of `LtiErrorReason`, the kebab-case union that the package exports, so that
 ## Quick start
 
 ```ts
-import { DataError, InteropkitError, ServiceError } from "@interopkit/core";
+import { DataError, InteropkitError, LimitError, ServiceError } from "@interopkit/core";
+import { readJson } from "@interopkit/core/http";
 
 const error = new ServiceError("The key set answered 503.", 503, "busy");
 error instanceof InteropkitError; // => true
@@ -34,6 +42,15 @@ error instanceof DataError; // => false
 error.status; // => 503
 error.headers; // => {}
 new ServiceError("The key set answered 429.", 429, "", { headers: { "retry-after": "30" } }).headers["retry-after"]; // => "30"
+
+const body = new TextEncoder().encode("[1,2,3]");
+const request = { method: "POST", url: "https://lrs.example/x", headers: {}, body };
+const thrownBy = (run) => { try { run(); } catch (error) { return error; } };
+const over = thrownBy(() => readJson(request, { maxTokens: 6 }));
+over instanceof LimitError; // => true
+over instanceof DataError; // => true
+[over.limit, over.maximum]; // => ["maxTokens", 6]
+new DataError("The body is not JSON.", { cause: new SyntaxError("Unexpected end") }).cause.message; // => "Unexpected end"
 ```
 
 ## Classes
@@ -42,7 +59,26 @@ new ServiceError("The key set answered 429.", 429, "", { headers: { "retry-after
 | ----------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `InteropkitError` | Never by itself: it is the base class                                                                  | `message`, `name`                                                                                                                                                                                 |
 | `DataError`       | An argument has the wrong type or is out of range, or data breaks the shape it must have               |                                                                                                                                                                                                   |
+| `LimitError`      | Untrusted input is over a limit of a reader or a handler: more bytes, tokens, levels, parts, entries or characters than it allows. It is a `DataError` | `limit`, the name of the limit: the option that sets it, such as `maxBytes`, or a fixed limit that the guide of the reader names; `maximum`, its value |
 | `ServiceError`    | A call to an HTTP service fails: no answer, an error status, a redirect or an answer that is too large | `status`, the HTTP status, and 0 when the call got no answer; `body`, the text of the answer up to 65,536 bytes; `headers`, those of the answer by name in lower case, and none without an answer |
+
+## Answering a limit
+
+Every reader and handler of the packages throws `LimitError` at each of its limits, so a host answers 413 for any of them from
+one check, before it answers 400 for another `DataError`:
+
+```ts
+import { DataError, LimitError } from "@interopkit/core";
+
+const statusOf = (error) => (error instanceof LimitError ? 413 : error instanceof DataError ? 400 : 500);
+statusOf(new LimitError("The body has 2 MiB.", "maxBytes", 1_048_576)); // => 413
+statusOf(new DataError("The body is not JSON.")); // => 400
+```
+
+The handlers of the packages answer 413 themselves, except where their specification names another answer: the token endpoint
+of an LTI platform answers 400 `invalid_request`, as OAuth 2.0 does for every fault of a request, and a token whose payload is
+over a limit is `token-malformed`, which a launch answers 401. A client that reads the answer of a service throws `LimitError`
+too, for the levels and the tokens of its JSON; an answer over `maxBytes` is a `ServiceError`, a failure of the service.
 
 ## Expected outcomes are not errors
 

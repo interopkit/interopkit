@@ -1,22 +1,19 @@
 import { isRecord, MAX_JSON_DEPTH } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { decodeBase64url } from "../base64url.js";
-import { parseJsonText } from "../json-text.js";
+import { type JsonTextRefusal, parseJsonText } from "../json-text.js";
 import { jws } from "./primitives.js";
 
 /** Throws on bytes that are not UTF-8, where the default decoder would replace them. */
 const UTF8 = new TextDecoder("utf-8", { fatal: true });
 
-/** What `readJwsPayload` returns: the payload as a JSON object, or the reason that it is not one. */
+/** What `readJwsPayload` returns: the payload as a JSON object, or the reason that it is not one, with the limit it is over. */
 export type JwsPayload =
   | {
       /** The payload. */
       readonly value: Readonly<Record<string, unknown>>;
     }
-  | {
-      /** A sentence that says what is wrong with the JWS or its payload. */
-      readonly reason: string;
-    };
+  | JsonTextRefusal;
 
 /**
  * Reads the payload of a compact JWS as a JSON object, without checking its signature: what a verifier reads first to learn
@@ -45,7 +42,7 @@ export function readJwsPayload(compact: string, maxTokens: number): JwsPayload {
   }
   // The tokens and the levels are counted before the parser builds anything.
   const parsed = parseJsonText(text, { maxDepth: MAX_JSON_DEPTH, maxTokens }, "The payload of the JWS");
-  if ("reason" in parsed) return { reason: parsed.reason };
+  if ("reason" in parsed) return parsed;
   const { value } = parsed;
   return isRecord(value) ? { value } : { reason: "The payload of the JWS is not a JSON object." };
 }

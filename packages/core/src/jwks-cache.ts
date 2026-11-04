@@ -2,7 +2,7 @@ import { createLocalJWKSet, errors, type JSONWebKeySet, type JWTVerifyGetKey } f
 import type { CallOptions } from "./call-options.js";
 import { checkFunction, checkHttpsUrl, checkPositiveInteger, checkRecord, isRecord } from "./checks.js";
 import { type Clock, checkClock } from "./clock.js";
-import { DataError } from "./errors.js";
+import { DataError, LimitError } from "./errors.js";
 import { createKeyedCache } from "./keyed-cache.js";
 import { callService, DEFAULT_TIMEOUT_MS, type Fetch } from "./service.js";
 
@@ -75,23 +75,31 @@ function hasKeys(value: unknown): value is JSONWebKeySet {
 
 /** Reads the text of a key set into the function of jose that picks a key from it. */
 function readKeySet(text: string, url: string): JWTVerifyGetKey {
-  const refusal = () => new DataError(`The key set at ${url} must be a JWK Set (RFC 7517 section 5).`);
+  const refusal = (cause?: unknown) =>
+    new DataError(
+      `The key set at ${url} must be a JWK Set (RFC 7517 section 5).`,
+      cause === undefined ? undefined : { cause },
+    );
   let set: unknown;
   try {
     // The text has at most 64 KiB, which bounds what its parse holds.
     set = JSON.parse(text);
-  } catch {
-    throw refusal();
+  } catch (error) {
+    throw refusal(error);
   }
   if (!hasKeys(set)) throw refusal();
   if (set.keys.length > MAX_KEYS) {
-    throw new DataError(`The key set at ${url} has ${set.keys.length} keys, above the limit of ${MAX_KEYS}.`);
+    throw new LimitError(
+      `The key set at ${url} has ${set.keys.length} keys, above the limit of ${MAX_KEYS}.`,
+      "maxKeys",
+      MAX_KEYS,
+    );
   }
   try {
     return createLocalJWKSet(set);
-  } catch {
+  } catch (error) {
     // jose throws a JWKSInvalid for a key that is not an object.
-    throw refusal();
+    throw refusal(error);
   }
 }
 

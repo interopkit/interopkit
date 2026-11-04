@@ -92,6 +92,18 @@ function get(url: string, method = "GET") {
   return request({ url, method });
 }
 
+describe("LtiError", () => {
+  it("carries the error that it reports as its cause", () => {
+    const cause = new DataError("The form of the request is not one.");
+    expect(new LtiError("The request is not valid.", "request-invalid", { cause })).toMatchObject({
+      reason: "request-invalid",
+      status: 400,
+      cause,
+    });
+    expect("cause" in new LtiError("The request is not valid.", "request-invalid")).toBe(false);
+  });
+});
+
 describe("buildPlatformEndpoints and the configuration", () => {
   it("gives the URLs of the authorization endpoint, the key set, the token endpoint and the storage page", () => {
     expect(buildPlatformEndpoints(config)).toEqual({

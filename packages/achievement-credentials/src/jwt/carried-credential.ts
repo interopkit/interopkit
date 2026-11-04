@@ -1,10 +1,11 @@
 import { isRecord } from "@interopkit/core/checks";
+import type { JsonTextRefusal } from "../json-text.js";
 import type { AnyVerifiableCredential } from "../model/index.js";
 import { credentialOrReason, readJwsPayload } from "../read/internal.js";
 import { ADDED_CLAIMS, dateTimeOf } from "./claims.js";
 
 /** A credential read from a payload, or the sentence that says why the payload holds none. */
-type Carried = { readonly value: AnyVerifiableCredential } | { readonly reason: string };
+type Carried = { readonly value: AnyVerifiableCredential } | JsonTextRefusal;
 
 /** Builds the credential that a payload in the `vc` claim form carries (VC Data Model 1.1, section 6.3.1): the claims fill what `vc` leaves out. */
 function foldClaims(payload: Readonly<Record<string, unknown>>, vc: Readonly<Record<string, unknown>>) {

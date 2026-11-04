@@ -33,7 +33,7 @@ describe("the peak memory of a launch", () => {
     const huge = formPost({ id_token: "a".repeat(64 * MIB), state: auth.state }, { cookie });
     const before = peak();
     await expect(handleLaunch(atLimit, ctx.options)).rejects.toMatchObject({ reason: "token-malformed" });
-    await expect(handleLaunch(huge, ctx.options)).rejects.toMatchObject({ reason: "form-too-large" });
+    await expect(handleLaunch(huge, ctx.options)).rejects.toMatchObject({ name: "LimitError", limit: "maxFormBytes" });
     const rise = peak() - before;
     await annotate(`The peak rose by ${(rise / MIB).toFixed(1)} MiB.`);
     expect(rise).toBeLessThan(BUDGET);

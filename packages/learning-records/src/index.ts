@@ -71,8 +71,6 @@ export {
   type XapiVersion,
 } from "./model/index.js";
 export {
-  type JsonLimit,
-  JsonLimitError,
   type ReadOptions,
   type ReadStatementJsonOptions,
   readStatement,

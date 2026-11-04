@@ -2,6 +2,7 @@ import {
   type CallOptions,
   DataError,
   findLinkTarget,
+  LimitError,
   requestService,
   ServiceError,
   type ServiceInit,
@@ -112,19 +113,21 @@ export function readAnswer<T>(
   let text: string;
   try {
     text = DECODER.decode(response.body);
-  } catch {
-    throw new DataError(`${what} answered with a body that is not UTF-8 text.`);
+  } catch (error) {
+    throw new DataError(`${what} answered with a body that is not UTF-8 text.`, { cause: error });
   }
   if (hasMoreTokensThan(text, maxTokens)) {
-    throw new DataError(
+    throw new LimitError(
       `${what} answered with a body of more than ${maxTokens} tokens of JSON, above the limit of the option maxTokens.`,
+      "maxTokens",
+      maxTokens,
     );
   }
   let json: unknown;
   try {
     json = JSON.parse(text);
-  } catch {
-    throw new DataError(`${what} answered with a body that is not JSON.`);
+  } catch (error) {
+    throw new DataError(`${what} answered with a body that is not JSON.`, { cause: error });
   }
   return reader(json);
 }

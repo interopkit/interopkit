@@ -1,7 +1,6 @@
 import { DataIntegrityProof } from "@interop/data-integrity-proof";
 import { ecdsaRdfc2019 } from "@interop/ecdsa-signature";
 import { Ed25519Signature2020, eddsaRdfc2022 } from "@interop/ed25519-signature";
-import { DataError } from "@interopkit/core";
 import { selectiveDisclosureSuite } from "@interopkit/selective-disclosure";
 import type { DataIntegritySuite } from "../model/index.js";
 import { boundedCanonize } from "./canonize.js";
@@ -72,7 +71,7 @@ function libraryGlue(name: string, make: () => DataIntegrityProof, cryptosuite: 
         rethrowOperational(error, signal);
         // A limit is not a signature that fails: the caller reports it as the limit that it is.
         const limit = limitOf(error);
-        if (limit !== undefined) throw new DataError(limit);
+        if (limit !== undefined) throw limit;
         return false;
       }
     },

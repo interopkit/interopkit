@@ -286,7 +286,11 @@ interface Addressed {
  */
 async function address(request: HttpRequest, settings: PlatformSettings): Promise<Addressed | HttpResponse> {
   if (request.method !== "GET" && request.method !== "POST") return methodNotAllowed(request.method, "GET, POST");
-  if (request.body.byteLength > settings.maxBodyBytes) return tooLarge(request.body.byteLength, settings.maxBodyBytes);
+  if (request.body.byteLength > settings.maxBodyBytes) {
+    return tooLarge(
+      `The body has ${request.body.byteLength} bytes, above the limit of ${settings.maxBodyBytes} bytes.`,
+    );
+  }
   let parameters: ReadonlyMap<string, string>;
   try {
     parameters = request.method === "GET" ? readQuery(request) : readForm(request);

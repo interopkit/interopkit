@@ -22,6 +22,7 @@ describe("the public API", () => {
         "hasNextLink",
         "hasNextPage",
         "InteropkitError",
+        "LimitError",
         "raceAbort",
         "readAnswer",
         "readAnswerJson",

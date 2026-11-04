@@ -1,5 +1,5 @@
 // cspell:ignore aalert Ehtml
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import {
   type CourseStructure,
@@ -652,11 +652,17 @@ describe("the limits of reading", () => {
     const bytes = new TextEncoder().encode(xml).byteLength;
     expect(validateCourseStructure(xml, { maxBytes: bytes })).toStrictEqual([]);
     expect(() => validateCourseStructure(xml, { maxBytes: bytes - 1 })).toThrow(
-      new DataError(`The course structure has more than ${bytes - 1} bytes, the limit of the option maxBytes.`),
+      new LimitError(
+        `The course structure has more than ${bytes - 1} bytes, the limit of the option maxBytes.`,
+        "maxBytes",
+        bytes - 1,
+      ),
     );
     expect(() => validateCourseStructure(new TextEncoder().encode(xml), { maxBytes: bytes - 1 })).toThrow(
-      new DataError(
+      new LimitError(
         `The course structure has ${bytes} bytes, above the limit of ${bytes - 1} bytes of the option maxBytes.`,
+        "maxBytes",
+        bytes - 1,
       ),
     );
     // A lone surrogate is three bytes, as TextEncoder writes it, and then a character that XML does not take.
@@ -671,7 +677,11 @@ describe("the limits of reading", () => {
   it("refuses a structure that nests deeper than maxDepth", () => {
     expect(validateCourseStructure(structure(), { maxDepth: 4 })).toStrictEqual([]);
     expect(() => validateCourseStructure(structure(), { maxDepth: 3 })).toThrow(
-      new DataError("The course structure nests more than 3 elements, the limit of the option maxDepth."),
+      new LimitError(
+        "The course structure nests more than 3 elements, the limit of the option maxDepth.",
+        "maxDepth",
+        3,
+      ),
     );
   });
 
@@ -680,8 +690,10 @@ describe("the limits of reading", () => {
     const count = (xml.match(/<[a-zA-Z]/gu) ?? []).length + (xml.match(/=/gu) ?? []).length - 2;
     expect(validateCourseStructure(xml, { maxElements: count })).toStrictEqual([]);
     expect(() => validateCourseStructure(xml, { maxElements: count - 1 })).toThrow(
-      new DataError(
+      new LimitError(
         `The course structure has more than ${count - 1} elements and attributes, the limit of the option maxElements.`,
+        "maxElements",
+        count - 1,
       ),
     );
   });

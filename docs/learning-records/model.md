@@ -181,8 +181,9 @@ text, `[0,0,0,...]`, has one token for each byte. Peak memory of the process, me
 | 300,000 empty objects through `validateStatements` | 1,001 findings | 131 MB |
 
 The findings add no more than `maxFindings` of about a kilobyte, whatever the size of the value, and the check stops at the first
-finding beyond it, in the rules between properties as in the schema. A text whose limit of bytes or tokens refuses it throws
-`JsonLimitError`, a `DataError` that names the limit, so that an LRS answers 413.
+finding beyond it, in the rules between properties as in the schema. A text that a limit refuses throws `LimitError` of
+`@interopkit/core`, a `DataError` whose `limit` is `maxBytes`, `maxDepth` or `maxTokens` and whose `maximum` is its value, so that
+an LRS answers 413.
 
 ## Errors
 
@@ -191,10 +192,10 @@ finding beyond it, in the rules between properties as in the schema. A text whos
 | `The statement is invalid at <path>: <sentence>. 2 more errors: validateStatement lists every finding.` | `readStatement` found an error                             | Call `validateStatement` for the whole list, and answer the sender with the paths       |
 | `The statement is invalid at <path>: <sentence>. At least 2 more errors: the check stopped at its limit, ...` | `readStatement` counted `maxFindings` errors and stopped   | Call `validateStatement` with a higher `maxFindings`, or refuse the Statement as it is   |
 | `The options object is invalid at role: expected "lrs" or "provider", found "x".`                       | The options are not an object with a known `role`          | Pass `{ role: "lrs" }` or `{ role: "provider" }`                                        |
-| `The text is not valid JSON: <the parser's message>.`                                                   | `readStatementJson` could not parse the text               | Answer the sender that the body is malformed                                            |
+| `The text is not valid JSON: <the parser's message>.`                                                   | `readStatementJson` could not parse the text; the `cause` is the `SyntaxError` | Answer the sender that the body is malformed                                            |
 | `The text has the property "id" twice in actor, at line 3 column 5. ...`                                | An object of the text names a property twice               | Refuse the request; an LRS shall reject a Statement that uses a property more than once |
 | `The text has N bytes or more, above the limit of M bytes.`                                             | The text is longer than `maxBytes`                         | Answer with 413 as the standard asks, or raise the limit                                |
-| `The text nests arrays and objects deeper than the limit of N levels.`                                  | The text is deeper than `maxDepth`                         | Refuse it, or raise the limit                                                           |
+| `The text nests arrays and objects deeper than the limit of N levels.`                                  | The text is deeper than `maxDepth`                         | Answer with 413, or raise the limit                                                     |
 | `The text has more than N tokens, above the limit of the option maxTokens.`                             | The text has more tokens than `maxTokens`                  | Answer with 413, or raise the limit if the host can hold the memory                     |
 
 ## Not included

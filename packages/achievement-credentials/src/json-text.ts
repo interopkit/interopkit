@@ -1,3 +1,4 @@
+import { DataError, LimitError } from "@interopkit/core";
 import { findExceededJsonLimit, hasMoreTokensThan } from "@interopkit/core/checks";
 
 /** What a text of JSON may be before it is parsed. */
@@ -8,18 +9,33 @@ export interface JsonLimits {
   readonly maxTokens: number;
 }
 
+/** Why a text of JSON is refused: the sentence, and the limit with its value when a limit refuses it. */
+export interface JsonTextRefusal {
+  readonly reason: string;
+  /** The name of the limit that the text is over and its value; none when the text is within the limits and not JSON. */
+  readonly exceeded?: { readonly limit: string; readonly maximum: number };
+}
+
 /**
  * Says which limit of tokens or levels a text of JSON is over, or that it is over none: the tokens first, which bound the memory
  * of the tree, then the levels, which bound the stack of a parser that recurses.
  */
-function overLimit(text: string, limits: JsonLimits, what: string): string | undefined {
+function overLimit(text: string, limits: JsonLimits, what: string): Required<JsonTextRefusal> | undefined {
   // One reading finds the first limit that the text passes. The tokens are refused before the levels, so a text that passes
   // the levels first is read on for its tokens.
   const excess = findExceededJsonLimit(text, limits.maxDepth, limits.maxTokens);
   if (excess === "tokens" || (excess === "depth" && hasMoreTokensThan(text, limits.maxTokens))) {
-    return `${what} has more than the ${limits.maxTokens} tokens of JSON that it may have.`;
+    const reason = `${what} has more than the ${limits.maxTokens} tokens of JSON that it may have.`;
+    return { reason, exceeded: { limit: "maxTokens", maximum: limits.maxTokens } };
   }
-  return excess === "depth" ? `${what} nests more than ${limits.maxDepth} levels.` : undefined;
+  if (excess !== "depth") return undefined;
+  const reason = `${what} nests more than ${limits.maxDepth} levels.`;
+  return { reason, exceeded: { limit: "maxDepth", maximum: limits.maxDepth } };
+}
+
+/** The error of a text that a check refused: a `LimitError` when a limit refused it, and a `DataError` otherwise. */
+export function refusalError({ reason, exceeded }: JsonTextRefusal): DataError {
+  return exceeded === undefined ? new DataError(reason) : new LimitError(reason, exceeded.limit, exceeded.maximum);
 }
 
 /**
@@ -29,19 +45,19 @@ function overLimit(text: string, limits: JsonLimits, what: string): string | und
  * @param text - The text.
  * @param limits - The most levels and tokens.
  * @param what - Names the text in the sentence, such as `The document`.
- * @returns The value, or the sentence that says which limit the text is over or that it is not JSON.
+ * @returns The value, or the sentence that says that the text is not JSON, or which limit it is over with that limit.
  */
 export function parseJsonText(
   text: string,
   limits: JsonLimits,
   what: string,
-): { readonly value: unknown } | { readonly reason: string; readonly overLimit: boolean } {
+): { readonly value: unknown } | JsonTextRefusal {
   const over = overLimit(text, limits, what);
-  if (over !== undefined) return { reason: over, overLimit: true };
+  if (over !== undefined) return over;
   try {
     return { value: JSON.parse(text) };
   } catch {
-    return { reason: `${what} is not JSON.`, overLimit: false };
+    return { reason: `${what} is not JSON.` };
   }
 }
 
@@ -77,7 +93,7 @@ export function textWithinLimits(
     return { reason: `${what} has ${text.length} characters, more than the ${limits.maxCharacters} that it may have.` };
   }
   const over = overLimit(text, limits, what);
-  return over === undefined ? { text } : { reason: over };
+  return over === undefined ? { text } : { reason: over.reason };
 }
 
 /**

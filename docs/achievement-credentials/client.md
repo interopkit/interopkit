@@ -179,8 +179,8 @@ its compact JWS, in the order of the page: the credentials first, then the compa
 | The server did not answer within `timeoutMs`, or `fetch` rejected                               | `ServiceError` with status 0                                                                                             |
 | The answer is larger than `maxBytes`                                                            | `ServiceError` with the status of the answer, naming the limit; the body is cancelled                                    |
 | The answer is a redirect                                                                        | `ServiceError`: the client follows none. Use the address that the server redirects to as `baseUrl`                       |
-| The answer has more tokens of JSON than `maxTokens`                                             | `DataError`: `The Open Badges API at <url> answered with a body of more than N tokens of JSON, above the limit of the option maxTokens.` Raise `maxTokens` for a server that sends larger pages |
-| The answer is not UTF-8 or not JSON, nests more than 64 levels, or is not valid Open Badges or CLR | `DataError`: `The Open Badges API at <url> answered with data that is not valid Open Badges: <the first fault>`       |
+| The answer has more tokens of JSON than `maxTokens`, or nests more than 64 levels                | `LimitError`: `The Open Badges API at <url> answered with a body of more than N tokens of JSON, above the limit of the option maxTokens.` Raise `maxTokens` for a server that sends larger pages |
+| The answer is not UTF-8 or not JSON, or is not valid Open Badges or CLR                         | `DataError`: `The Open Badges API at <url> answered with data that is not valid Open Badges: <the first fault>`, with the reader's error as its `cause` |
 | A page holds more credentials than `pageSize`, or a credential or a profile is too long          | `DataError`, before the readers see it                                                                                   |
 | The service description lacks the authorization code flow, or has an address that is not `https` | `DataError` that names the path of the first fault                                                                      |
 | The `signal` of the call or the configuration aborts                                            | The call rejects with `signal.reason`                                                                                    |
@@ -221,8 +221,8 @@ replaces the whole profile.
 | `maxBytes` of an answer                            | 16,777,216 | `ServiceError`                                                                    |
 | Bytes of a service description                     | 1,048,576  | `ServiceError`                                                                    |
 | `pageSize`                                         | 100        | `DataError` when a page holds more                                                |
-| Levels of JSON in an answer                        | 64         | `DataError`, before the text is parsed                                            |
-| `maxTokens` of an answer                           | 1,000,000  | `DataError`, before the text is parsed                                            |
+| Levels of JSON in an answer                        | 64         | `LimitError`, before the text is parsed                                           |
+| `maxTokens` of an answer                           | 1,000,000  | `LimitError`, before the text is parsed                                           |
 | Redirects                                          | 0          | `ServiceError`                                                                    |
 
 `JSON.parse` takes about forty times the text of small objects in memory, so the client counts the tokens of an answer before it

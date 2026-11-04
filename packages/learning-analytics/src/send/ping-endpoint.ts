@@ -1,4 +1,4 @@
-import { type CallOptions, DataError, requestService } from "@interopkit/core";
+import { type CallOptions, DataError, LimitError, requestService } from "@interopkit/core";
 import { checkRecord, MAX_JSON_DEPTH, nestsDeeperThan, parseWith } from "@interopkit/core/checks";
 import type { EndpointConfiguration } from "../model/index.js";
 import { endpointConfigurationSchema } from "./configuration.js";
@@ -73,13 +73,17 @@ export async function pingEndpoint(sender: CaliperSender, options?: CallOptions)
   // The answer has at most 65,536 bytes, so it has far fewer tokens than the limit of a text of JSON: only its depth is counted.
   const text = new TextDecoder().decode(answer.body);
   if (nestsDeeperThan(text, MAX_JSON_DEPTH)) {
-    throw new DataError(`${what} answered with JSON that nests deeper than the limit of ${MAX_JSON_DEPTH} levels.`);
+    throw new LimitError(
+      `${what} answered with JSON that nests deeper than the limit of ${MAX_JSON_DEPTH} levels.`,
+      "maxDepth",
+      MAX_JSON_DEPTH,
+    );
   }
   let value: unknown;
   try {
     value = JSON.parse(text);
-  } catch {
-    throw new DataError(`${what} answered with a body that is not JSON.`);
+  } catch (error) {
+    throw new DataError(`${what} answered with a body that is not JSON.`, { cause: error });
   }
   return {
     status: "available",

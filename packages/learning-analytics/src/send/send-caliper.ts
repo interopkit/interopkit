@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: The names of HTTP headers are those of their specifications.
 
-import { type CallOptions, callService, DataError } from "@interopkit/core";
+import { type CallOptions, callService, DataError, LimitError } from "@interopkit/core";
 import {
   checkArray,
   checkNonEmptyString,
@@ -50,7 +50,7 @@ function envelopeText(envelope: Readonly<Record<string, unknown>>): string {
     return JSON.stringify(envelope);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    throw new DataError(`The Caliper data must be JSON: ${reason}`);
+    throw new DataError(`The Caliper data must be JSON: ${reason}`, { cause: error });
   }
 }
 
@@ -102,8 +102,10 @@ export async function sendCaliper(
   if (maxPayloadBytes !== undefined) {
     const size = new TextEncoder().encode(body).byteLength;
     if (size > maxPayloadBytes) {
-      throw new DataError(
+      throw new LimitError(
         `The envelope has ${size} bytes, above the option maxPayloadBytes of ${maxPayloadBytes}: send fewer events and entities in each envelope.`,
+        "maxPayloadBytes",
+        maxPayloadBytes,
       );
     }
   }
