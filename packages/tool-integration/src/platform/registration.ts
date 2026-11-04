@@ -5,14 +5,13 @@ import {
   httpsUrlSchema,
   isRecord,
   looseRecord,
-  mapSchema,
   nonEmptyStringSchema,
   parseWith,
 } from "@interopkit/core/checks";
 import { errors, type JWTVerifyGetKey } from "jose";
 import * as v from "valibot";
 import { APPROVED_ALGORITHMS, type JwsAlgorithm } from "../protocol/index.js";
-import { checkAllowList, IDENTIFIER, isVerifyKey, type JwksCache } from "../protocol/internal.js";
+import { checkAllowList, IDENTIFIER, isVerifyKey, type JwksCache, STRING_RECORD } from "../protocol/internal.js";
 
 /** The host's record of one tool that the platform launches, as the platform's administrator and the tool agreed on it. */
 export interface ToolRegistration {
@@ -72,7 +71,7 @@ const registrationSchema = v.pipe(
     keys: v.optional(keysSchema),
     scopes: v.array(nonEmptyStringSchema),
     algorithms: v.optional(v.pipe(v.array(v.picklist(APPROVED_ALGORITHMS)), v.minLength(1))),
-    custom: v.optional(mapSchema(v.string())),
+    custom: v.optional(STRING_RECORD),
     allow: v.optional(v.string()),
   }),
   v.check(

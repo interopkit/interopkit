@@ -190,10 +190,7 @@ describe("handleLaunch", () => {
           "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student",
           "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner",
         ],
-        custom: new Map([
-          ["exam", "tryout-1"],
-          ["attempt", "2"],
-        ]),
+        custom: { exam: "tryout-1", attempt: "2" },
         resourceLink: {
           id: "200d101f-2c14-434a-a0f3-57c2a42369fd",
           title: "Introduction Assignment",
@@ -234,7 +231,7 @@ describe("handleLaunch", () => {
       };
       const { request: post } = await cookieLogin(ctx, { claims });
       const launch = launchOf(await handleLaunch(post, ctx.options));
-      expect(launch).toMatchObject({ roles: [], custom: new Map(), services: { grades: { scopes: [AGS_SCOPES[2]] } } });
+      expect(launch).toMatchObject({ roles: [], custom: {}, services: { grades: { scopes: [AGS_SCOPES[2]] } } });
       expect(launch.user.subject).toBeUndefined();
       expect(launch.services.grades?.lineitem).toBeUndefined();
     });

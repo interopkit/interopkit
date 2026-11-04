@@ -105,7 +105,7 @@ export interface LtiResourceLinkItem extends ItemBase {
     readonly height?: number;
   };
   /** The custom properties that every launch of the link carries. */
-  readonly custom?: ReadonlyMap<string, string>;
+  readonly custom?: Readonly<Record<string, string>>;
   /** The line item that the link is expected to receive scores in. */
   readonly lineItem?: ItemLineItem;
   /** When the link is available to learners. */

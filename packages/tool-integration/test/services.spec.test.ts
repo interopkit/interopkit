@@ -292,10 +292,7 @@ describe("the examples of Submission Review", () => {
     expect(readLineItemInput(items[1]).submissionReview).toEqual({
       label: "Open My Tool Viewer",
       url: "https://platform.example.com/act/849023/sub",
-      custom: new Map([
-        ["action", "review"],
-        ["a_id", "23942"],
-      ]),
+      custom: { action: "review", a_id: "23942" },
     });
     expect(readLineItemInput(blocks.find((block) => "scoreMaximum" in block) ?? {}).submissionReview).toEqual({
       label: "Chapter 5",

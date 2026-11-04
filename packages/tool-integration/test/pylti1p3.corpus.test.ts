@@ -369,7 +369,7 @@ describe("PyLTI1p3 as the tool: Deep Linking", () => {
       type: "ltiResourceLink",
       title: "Quiz 4",
       url: `${TOOL_ORIGIN}/lti/launch?quiz=4`,
-      custom: new Map([["quiz", "4"]]),
+      custom: { quiz: "4" },
     });
   });
 });

@@ -129,12 +129,12 @@ async function resolveVariable(variable: string, call: SubstitutionCall): Promis
 export async function substitute(
   custom: Readonly<Record<string, string>>,
   call: SubstitutionCall,
-): Promise<Map<string, string> | undefined> {
-  const substituted = new Map<string, string>();
+): Promise<Readonly<Record<string, string>> | undefined> {
+  const substituted: [string, string][] = [];
   for (const [name, value] of Object.entries(custom)) {
     const resolved = value.startsWith("$") ? await resolveVariable(value.slice(1), call) : undefined;
     if (resolved === FAILED) return undefined;
-    substituted.set(name, resolved ?? value);
+    substituted.push([name, resolved ?? value]);
   }
-  return substituted;
+  return Object.fromEntries(substituted);
 }

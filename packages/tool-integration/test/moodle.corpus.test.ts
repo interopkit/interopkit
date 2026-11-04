@@ -260,7 +260,7 @@ describe("Moodle as the platform", () => {
               type: "ltiResourceLink",
               title: "Quiz 4",
               url: `${tool.launchUrl}?quiz=4`,
-              custom: new Map([["quiz", "4"]]),
+              custom: { quiz: "4" },
               lineItem: { scoreMaximum: 40, label: "Quiz 4" },
             },
           ],

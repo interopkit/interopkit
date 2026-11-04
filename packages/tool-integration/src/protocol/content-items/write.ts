@@ -79,7 +79,7 @@ function writeLtiResourceLink(item: LtiResourceLinkItem): Record<string, JsonVal
     thumbnail: writeImage(item.thumbnail),
     window: writeWindow(item.window),
     iframe: item.iframe && compact({ ...item.iframe }),
-    custom: item.custom && Object.fromEntries(item.custom),
+    custom: item.custom,
     lineItem: writeLineItem(item.lineItem),
     available: item.available && compact({ ...item.available }),
     submission: item.submission && compact({ ...item.submission }),

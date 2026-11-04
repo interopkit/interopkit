@@ -42,8 +42,13 @@ async function prepare(input: MessageInput, options: PlatformLoginOptions): Prom
   const message = readMessageInput(input, "The message");
   const { config } = options;
   // The rules that bind the sender hold before the message is kept, so that the authentication request cannot fail on them.
-  const custom = new Map(Object.entries(message.custom ?? {}));
-  writeMessage(toWrite(message, { issuer: config.issuer, custom, services: requestedClaims(message, config.origin) }));
+  writeMessage(
+    toWrite(message, {
+      issuer: config.issuer,
+      custom: message.custom ?? {},
+      services: requestedClaims(message, config.origin),
+    }),
+  );
   const call = callOptionsOf(options);
   await options.check(message, call);
   const registration = readToolRegistration(await options.registration(message.clientId, call), message.clientId);

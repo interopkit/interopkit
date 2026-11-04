@@ -33,7 +33,7 @@ import type {
 /** What the writer takes of a message beside the model: no claims read back, and the vendor claims of the sender. */
 interface WriteExtras {
   /** The custom properties by name. */
-  readonly custom?: ReadonlyMap<string, string>;
+  readonly custom?: Readonly<Record<string, string>>;
   /** The service claims of the message. */
   readonly services?: MessageServices;
   /** The LTI 1.1 migration claim, with its signature when the sender computed one. */
@@ -224,7 +224,7 @@ function writeBase(message: MessageToWrite): Members {
         locale: presentation.locale,
       }),
     [CLAIM.lis]: message.lis && { ...message.lis },
-    [CLAIM.custom]: message.custom?.size ? Object.fromEntries(message.custom) : undefined,
+    [CLAIM.custom]: message.custom && Object.keys(message.custom).length > 0 ? { ...message.custom } : undefined,
     [CLAIM.migration]:
       migration &&
       compact({

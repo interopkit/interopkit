@@ -99,7 +99,7 @@ export function createTool({ options }: ToolSetup): Tool {
             type: "ltiResourceLink",
             title: "Drawing tryout 2",
             url: new URL(LAUNCH_PATH, launch.targetLinkUri).href,
-            custom: new Map([["exam", "tryout-2"]]),
+            custom: { exam: "tryout-2" },
             lineItem: { scoreMaximum: 20, label: "Drawing tryout 2", resourceId: "tryout-2" },
           },
         ],
@@ -203,7 +203,7 @@ function launchSummary(launch: LtiMessage): Record<string, unknown> {
         messageType: launch.messageType,
         subject: launch.user.subject,
         title: launch.resourceLink.title,
-        custom: Object.fromEntries(launch.custom),
+        custom: launch.custom,
         ags: launch.services.grades,
       }
     : {

@@ -22,6 +22,7 @@ export {
   required,
   STRING,
   STRING_ARRAY,
+  STRING_RECORD,
 } from "./claims/index.js";
 export { CLOCK_SKEW_SECONDS } from "./clock-skew.js";
 export {

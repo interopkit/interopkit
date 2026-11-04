@@ -138,7 +138,7 @@ describe("lti-core as the tool", () => {
       type: "ltiResourceLink",
       title: "Quiz 3",
       url: `${TOOL}/lti/launch?quiz=3`,
-      custom: new Map([["quiz", "3"]]),
+      custom: { quiz: "3" },
     });
   });
 

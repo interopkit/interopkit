@@ -62,7 +62,7 @@ export function buildToolRegistration(registered: RegisteredTool, grant: Registr
     redirectUris: [...configuration.redirectUris],
     jwksUrl: configuration.jwksUri,
     scopes,
-    ...(custom === undefined ? {} : { custom: Object.fromEntries(custom) }),
+    ...(custom === undefined ? {} : { custom: { ...custom } }),
   };
   checkToolRegistration(registration);
   return registration;

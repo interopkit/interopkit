@@ -40,7 +40,7 @@ const ITEMS: readonly ContentItem[] = [
     title: "Tryout 1",
     url: "https://tool.example.org/lti/tryout-1",
     lineItem: { scoreMaximum: 100, label: "Tryout 1", resourceId: "tryout-1", tag: "exam" },
-    custom: new Map([["exam", "tryout-1"]]),
+    custom: { exam: "tryout-1" },
   },
   { type: "link", url: "https://tool.example.org/syllabus", title: "Syllabus" },
   { type: "file", url: "https://tool.example.org/notes.pdf", title: "Notes", mediaType: "application/pdf" },

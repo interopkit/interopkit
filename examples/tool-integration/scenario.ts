@@ -303,7 +303,7 @@ export async function runScenario(): Promise<Outcome> {
               type: item.type,
               title: item.title,
               url: item.url,
-              custom: Object.fromEntries(item.custom ?? []),
+              custom: item.custom,
               lineItem: item.lineItem && {
                 scoreMaximum: item.lineItem.scoreMaximum,
                 label: item.lineItem.label,

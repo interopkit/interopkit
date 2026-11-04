@@ -97,11 +97,6 @@ function checkResponse(value: unknown): asserts value is DeepLinkingResponseInpu
  */
 function writeItem(item: unknown, index: number): { readonly written: JsonObject; readonly read: ContentItem } {
   checkRecord(item, `The item ${index + 1} must be an object`);
-  if (item.custom !== undefined && !(item.custom instanceof Map)) {
-    throw new DataError(
-      `The custom properties of the item ${index + 1} must be a Map of strings, found ${describe(item.custom)}.`,
-    );
-  }
   return writeAndRead(item, `The item ${index + 1} is not a content item`, writeContentItem, readContentItem);
 }
 

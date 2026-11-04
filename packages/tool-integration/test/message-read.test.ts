@@ -90,10 +90,7 @@ describe("readMessage of the claims every message has", () => {
       platform: { guid: "ex/48bbb541-ce55-456e-8b7d-ebc59a38d435", name: "Example Tool Platform" },
       presentation: { documentTarget: "iframe", height: 320, width: 240 },
       resourceLink: { id: "200d101f-2c14-434a-a0f3-57c2a42369fd", title: "Introduction Assignment" },
-      custom: new Map([
-        ["exam", "tryout-1"],
-        ["attempt", "2"],
-      ]),
+      custom: { exam: "tryout-1", attempt: "2" },
       services: { grades: { lineitem: "https://lms.example.edu/2344/lineitems/1234/lineitem" } },
     });
   });
@@ -237,13 +234,11 @@ describe("readMessage of the claims every message has", () => {
       title: undefined,
       description: undefined,
     });
-    expect(message.custom).toStrictEqual(
-      new Map([
-        ["canvas_user_uuid", "170000004597788"],
-        ["canvas_api_domain", "school.instructure.com"],
-        ["canvas_account_uuid", "LC6nuzxUST0u7aNHCm0yCjEww5wAtjO5GiSlrHMu"],
-      ]),
-    );
+    expect(message.custom).toStrictEqual({
+      canvas_user_uuid: "170000004597788",
+      canvas_api_domain: "school.instructure.com",
+      canvas_account_uuid: "LC6nuzxUST0u7aNHCm0yCjEww5wAtjO5GiSlrHMu",
+    });
     expect(message.lis).toEqual({ course_offering_sourcedid: "$CourseSection.sourcedId" });
     expect(message.context).toMatchObject({ id: "7f956bcc8f67cd076ae464862ce83596a1bb3293", type: ["Account"] });
     expect(message.user).toMatchObject({ locale: "en", email: "user@school.example" });
@@ -271,14 +266,7 @@ describe("readMessage of the claims every message has", () => {
       claimsOf("LtiResourceLinkRequest", { ...RESOURCE_LINK, [`${CORE}custom`]: custom }),
       options,
     );
-    expect(message.custom).toStrictEqual(
-      new Map([
-        ["id", "170000004597788"],
-        ["on", "true"],
-        ["off", "false"],
-        ["name", "x"],
-      ]),
-    );
+    expect(message.custom).toStrictEqual({ id: "170000004597788", on: "true", off: "false", name: "x" });
     for (const value of [null, [], {}]) {
       const claims = claimsOf("LtiResourceLinkRequest", { ...RESOURCE_LINK, [`${CORE}custom`]: { a: value } });
       expect(() => readMessage(claims, options), JSON.stringify(value)).toThrow(
@@ -293,15 +281,13 @@ describe("readMessage of the claims every message has", () => {
         claimsOf("LtiResourceLinkRequest", { ...RESOURCE_LINK, [`${CORE}custom`]: JSON.parse(json) }),
         options,
       ).custom;
-    expect(custom('{"a":9007199254740991,"b":-9007199254740991,"c":1.5,"d":0,"e":-3}')).toStrictEqual(
-      new Map([
-        ["a", "9007199254740991"],
-        ["b", "-9007199254740991"],
-        ["c", "1.5"],
-        ["d", "0"],
-        ["e", "-3"],
-      ]),
-    );
+    expect(custom('{"a":9007199254740991,"b":-9007199254740991,"c":1.5,"d":0,"e":-3}')).toStrictEqual({
+      a: "9007199254740991",
+      b: "-9007199254740991",
+      c: "1.5",
+      d: "0",
+      e: "-3",
+    });
     // JSON parsing has already changed these: 2^53 + 1 reads as 2^53, and 1e400 as Infinity.
     for (const json of ["9007199254740993", "9007199254740992", "-9007199254740993", "1e400", "-1e400", "1e300"]) {
       expect(() => custom(`{"a":${json}}`), json).toThrow(expect.objectContaining({ reason: "claim-invalid" }));

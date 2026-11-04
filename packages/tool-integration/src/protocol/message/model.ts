@@ -198,7 +198,7 @@ export interface MessageBase extends LtiDeployment {
   /** The identifiers of the Learning Information Services. */
   readonly lis?: Readonly<Record<string, string>>;
   /** The custom properties by name. */
-  readonly custom: ReadonlyMap<string, string>;
+  readonly custom: Readonly<Record<string, string>>;
   /** The service claims of the message. */
   readonly services: MessageServices;
   /** The LTI 1.1 migration claim; `verified` is true only when its signature matched the host's LTI 1.1 secret. */

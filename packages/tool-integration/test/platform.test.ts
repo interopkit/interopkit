@@ -409,7 +409,7 @@ describe("the authentication request", () => {
       context: { id: "course-1", label: "C1", title: "Course 1" },
       resourceLink: { id: "session-1-q-draw", title: "Drawing tool" },
     });
-    expect(message.custom).toEqual(new Map([["exam", "tryout-1"]]));
+    expect(message.custom).toEqual({ exam: "tryout-1" });
     expect(message.services).toEqual({});
     expect(claims[`${CLAIM}tool_platform`]).toBeUndefined();
   });
@@ -562,7 +562,7 @@ describe("the authentication request", () => {
       exam: "tryout-1",
     };
     const { claims } = await launch(ctx, { ...baseMessage, custom }, { substitution });
-    expect(Object.fromEntries(modelOf(claims).custom)).toEqual({
+    expect(modelOf(claims).custom).toEqual({
       tool: "course-1",
       exam: "tryout-1",
       user: "candidate-7",
@@ -678,7 +678,7 @@ describe("the authentication request", () => {
     const custom = Object.fromEntries(Object.keys(expected).map((name) => [name, `$${name}`]));
     const ctx = setup();
     const full = await launch(ctx, { ...message, custom }, { config: { ...config, instance } });
-    expect(Object.fromEntries(modelOf(full.claims).custom)).toEqual(expected);
+    expect(modelOf(full.claims).custom).toEqual(expected);
     const empty = await launch(setup(), {
       ...baseFields,
       messageType: "LtiEndAssessment",
@@ -687,7 +687,7 @@ describe("the authentication request", () => {
       context: undefined,
       custom,
     });
-    expect(new Set(modelOf(empty.claims).custom.values())).toEqual(new Set([""]));
+    expect(new Set(Object.values(modelOf(empty.claims).custom ?? {}))).toEqual(new Set([""]));
   });
 
   it("refuses to the browser what comes before the tool and its redirect URI are known, and takes nothing", async () => {
@@ -1299,7 +1299,7 @@ describe("properties", () => {
         async (custom) => {
           const ctx = setup();
           const { claims } = await launch(ctx, { ...baseMessage, custom });
-          expect(Object.fromEntries(modelOf(claims).custom)).toEqual(custom);
+          expect(modelOf(claims).custom).toEqual(custom);
         },
       ),
       { seed: 11, numRuns: 15 },

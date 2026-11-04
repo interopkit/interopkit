@@ -114,7 +114,7 @@ describe("the launch of LTI Core Appendix E", () => {
       targetLinkUri: launch[`${CLAIM}target_link_uri`],
       resourceLink: launch[`${CLAIM}resource_link`],
     });
-    expect(Object.fromEntries(read.custom)).toEqual(launch[`${CLAIM}custom`]);
+    expect(read.custom).toEqual(launch[`${CLAIM}custom`]);
   });
 
   it("is written back as the claims of the example, vendor claims included", () => {
@@ -427,7 +427,7 @@ describe("the platform role against the same examples", () => {
       context: read.context,
       presentation: read.presentation,
       lis: read.lis,
-      custom: Object.fromEntries(read.custom),
+      custom: read.custom,
       extensions: Object.fromEntries(Object.entries(read.claims).filter(([name]) => name.startsWith("http://"))),
       resourceLink: read.resourceLink,
     };

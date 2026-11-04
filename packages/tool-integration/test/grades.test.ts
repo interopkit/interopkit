@@ -66,10 +66,7 @@ describe("the line item", () => {
       submissionReview: {
         label: "Open",
         url: "https://tool.example.com/review",
-        custom: new Map([
-          ["action", "review"],
-          ["__proto__x", "1"],
-        ]),
+        custom: { action: "review", __proto__x: "1" },
       },
       extensions: { "https://www.toolexample.com/lti/lineitem": { weight: 2 } },
     });
@@ -380,7 +377,7 @@ describe("the bodies of AGS", () => {
     const review = fc.record({
       label: some(text),
       url: some(link),
-      custom: some(fc.dictionary(text, text, { maxKeys: 2 }).map((entries) => new Map(Object.entries(entries)))),
+      custom: some(fc.dictionary(text, text, { maxKeys: 2 })),
     });
     const item = fc.record({
       id: link,

@@ -78,7 +78,7 @@ describe("writeMessage", () => {
           locale: "en",
         },
         lis: { person_sourcedid: "p1" },
-        custom: new Map([["exam", "1"]]),
+        custom: { exam: "1" },
         extensions: { "http://www.ExamplePlatformVendor.com/session": { id: "x" } },
       }),
     );
@@ -129,7 +129,7 @@ describe("writeMessage", () => {
   });
 
   it("keeps a custom name such as __proto__ as data", () => {
-    const claims = writeMessage(link({ custom: new Map([["__proto__", "x"]]) }));
+    const claims = writeMessage(link({ custom: JSON.parse('{"__proto__":"x"}') }));
     const custom = claims[`${CORE}custom`];
     expect(Object.keys(custom as object)).toEqual(["__proto__"]);
     expect(Object.getPrototypeOf(custom)).toBe(Object.prototype);
@@ -449,7 +449,7 @@ const common = fc.record({
     }),
   ),
   lis: some(fc.dictionary(memberName(text), text, { maxKeys: 3 })),
-  custom: fc.dictionary(memberName(text), text, { maxKeys: 3 }).map((entries) => new Map(Object.entries(entries))),
+  custom: fc.dictionary(memberName(text), text, { maxKeys: 3 }),
   services: fc.record({
     grades: some(fc.record({ scopes: fc.array(text, { maxLength: 3 }), lineitems: some(url), lineitem: some(url) })),
     roster: some(fc.record({ contextMembershipsUrl: url, serviceVersions: some(fc.array(text, { maxLength: 2 })) })),

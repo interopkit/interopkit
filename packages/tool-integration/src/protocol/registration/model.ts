@@ -65,7 +65,7 @@ export interface ToolMessageConfiguration {
   /** An icon for the link. */
   readonly iconUri?: string;
   /** The custom properties of every launch of this message; they win over the tool's. */
-  readonly customParameters?: ReadonlyMap<string, string>;
+  readonly customParameters?: Readonly<Record<string, string>>;
   /** Where the platform should add links for this message. */
   readonly placements?: readonly string[];
   /** The roles that may launch this message; one is enough. */
@@ -91,7 +91,7 @@ export interface ToolLtiConfiguration {
   /** The default address to launch. */
   readonly targetLinkUri: string;
   /** The custom properties of every launch of the tool. */
-  readonly customParameters?: ReadonlyMap<string, string>;
+  readonly customParameters?: Readonly<Record<string, string>>;
   /** A short description in plain text. */
   readonly description?: string;
   /** The messages the tool supports. */

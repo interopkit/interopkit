@@ -63,7 +63,7 @@ async function answer(
   return { page, post, jwt, ...readToken(jwt) };
 }
 
-const exam = new Map([["exam", "tryout-1"]]);
+const exam = { exam: "tryout-1" };
 const test: ContentItem = {
   type: "ltiResourceLink",
   title: "Tryout 1",
@@ -342,10 +342,9 @@ describe("buildDeepLinkingResponse", () => {
     const bad: readonly [string, string][] = [
       ["The item 1 must be an object, found null.", "null"],
       ["The item 1 must be an object, found 5.", "5"],
-      [
-        "The custom properties of the item 1 must be a Map of strings, found an object.",
-        '{"type":"ltiResourceLink","custom":{"a":"b"}}',
-      ],
+      ['The content item of type "ltiResourceLink"', '{"type":"ltiResourceLink","custom":5}'],
+      ['The content item of type "ltiResourceLink"', '{"type":"ltiResourceLink","custom":{"exam":1}}'],
+      ['the property "__proto__" is refused', '{"type":"ltiResourceLink","custom":{"__proto__":"x"}}'],
       ["The item 1 is not a content item", '{"type":"link","icon":null}'],
       ['The content item of type "link"', '{"type":"link"}'],
       ['The content item of type "ltiResourceLink"', '{"type":"ltiResourceLink","title":5}'],
@@ -362,10 +361,6 @@ describe("buildDeepLinkingResponse", () => {
       await expect(attempt, text).rejects.toThrow(DataError);
       await expect(attempt, text).rejects.toThrow(message);
     }
-    const custom = new Map([["exam", JSON.parse("1")]]);
-    await expect(
-      buildDeepLinkingResponse(launch, { items: [{ type: "ltiResourceLink", custom }] }, ctx.options),
-    ).rejects.toThrow(DataError);
   });
 
   it("throws DataError for arguments of other types", async () => {

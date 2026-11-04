@@ -231,7 +231,7 @@ describe("@lti-tool/core as the tool: Deep Linking", () => {
       type: "ltiResourceLink",
       title: "Quiz 2",
       url: `${TOOL}/lti/launch?quiz=2`,
-      custom: new Map([["quiz", "2"]]),
+      custom: { quiz: "2" },
     });
   });
 });

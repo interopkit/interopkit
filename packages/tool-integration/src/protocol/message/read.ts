@@ -132,7 +132,7 @@ function readBase(claims: Claims, options: ReadMessageOptions<string>): MessageB
     platform: optional(claims, CLAIM.platformInstance, OWNER, platformInstanceSchema),
     presentation: optional(claims, CLAIM.launchPresentation, OWNER, presentationSchema),
     lis: optional(claims, CLAIM.lis, OWNER, lisSchema),
-    custom: optional(claims, CLAIM.custom, OWNER, CUSTOM_RECORD) ?? new Map<string, string>(),
+    custom: optional(claims, CLAIM.custom, OWNER, CUSTOM_RECORD) ?? {},
     services: readServices(claims),
     // Whether the signature matches the host's LTI 1.1 secret is for `verifyMigration`, which needs the secret.
     migration: migration && { ...migration, verified: false },

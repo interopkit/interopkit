@@ -77,10 +77,7 @@ describe("a content item", () => {
     }
     const lti = readContentItem(items.ltiResourceLink);
     expect(lti).toMatchObject({
-      custom: new Map([
-        ["quiz_id", "az-123"],
-        ["duedate", "$ResourceLink.submission.endDateTime"],
-      ]),
+      custom: { quiz_id: "az-123", duedate: "$ResourceLink.submission.endDateTime" },
     });
   });
 
@@ -210,7 +207,7 @@ describe("the content items", () => {
       thumbnail: some(image),
       window: some(window),
       iframe: some(fc.record({ width: size, height: size })),
-      custom: some(fc.dictionary(text, text, { maxKeys: 2 }).map((entries) => new Map(Object.entries(entries)))),
+      custom: some(fc.dictionary(text, text, { maxKeys: 2 })),
       lineItem: some(
         fc.record({
           scoreMaximum: fc.double({ min: 0.001, max: 1e6, noNaN: true }),

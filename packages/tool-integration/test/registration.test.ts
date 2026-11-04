@@ -181,7 +181,7 @@ describe("the registration that a tool asks for", () => {
       supportedMediaTypes: ["image/*"],
     });
     expect(read.lti.extensions).toEqual({ "https://myplatform.example.org/branding": { color: "green" } });
-    expect(read.lti.customParameters).toEqual(new Map([["context_history", "$Context.id.history"]]));
+    expect(read.lti.customParameters).toEqual({ context_history: "$Context.id.history" });
     expect(writeToolConfiguration(read)).toEqual(full);
   });
 
@@ -286,9 +286,7 @@ describe("the configurations of Dynamic Registration", () => {
   const url = text.map((path) => `https://example.com/${encodeURIComponent(path)}`);
   const some = <TValue>(value: fc.Arbitrary<TValue>) => fc.option(value, { nil: undefined });
   const list = (value: fc.Arbitrary<string>) => some(fc.array(value, { maxLength: 3 }));
-  const map = some(
-    fc.dictionary(text, text, { minKeys: 1, maxKeys: 2 }).map((entries) => new Map(Object.entries(entries))),
-  );
+  const record = some(fc.dictionary(text, text, { minKeys: 1, maxKeys: 2 }));
   const extensions = some(fc.dictionary(url, plainJson, { minKeys: 1, maxKeys: 2 }));
   const localized = (name: string) =>
     some(
@@ -304,7 +302,7 @@ describe("the configurations of Dynamic Registration", () => {
     targetLinkUri: some(url),
     label: some(text),
     iconUri: some(url),
-    customParameters: map,
+    customParameters: record,
     placements: list(text),
     roles: list(text),
     supportedTypes: list(text),
@@ -317,7 +315,7 @@ describe("the configurations of Dynamic Registration", () => {
     secondaryDomains: list(text.filter((domain) => !domain.includes("://"))),
     deploymentId: some(text),
     targetLinkUri: url,
-    customParameters: map,
+    customParameters: record,
     description: some(text),
     messages: fc.array(message, { maxLength: 2 }),
     claims: fc.array(text, { maxLength: 3 }),

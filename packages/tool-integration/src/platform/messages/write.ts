@@ -20,7 +20,7 @@ export interface Issued {
   /** The instance of the platform, the `tool_platform` claim. */
   readonly instance?: PlatformInstance | undefined;
   /** The custom properties, substituted. */
-  readonly custom: ReadonlyMap<string, string>;
+  readonly custom: Readonly<Record<string, string>>;
   /** The migration claim with the signature of its consumer key, when the host gave the secret. */
   readonly migration?: MigrationClaim | undefined;
   /** The claims of the services that the message offers. */

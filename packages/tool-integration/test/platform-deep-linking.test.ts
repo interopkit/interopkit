@@ -132,7 +132,7 @@ describe("readDeepLinkingResponse", () => {
     });
     expect(read.settings).not.toHaveProperty("data");
     expect(read.items).toMatchObject([
-      { type: "ltiResourceLink", title: "Tryout 1", custom: new Map([["exam", "tryout-1"]]) },
+      { type: "ltiResourceLink", title: "Tryout 1", custom: { exam: "tryout-1" } },
       { type: "link", iframe: { src: "https://tool.example.com/embed" } },
       { type: "file", mediaType: "application/pdf" },
       { type: "html", html: "<p>Hi</p>" },

@@ -39,8 +39,14 @@ export const HTTPS_URL = httpsUrlSchema;
 /** An array of strings. */
 export const STRING_ARRAY = v.array(v.string());
 
-/** An object whose values are strings. */
-export const STRING_RECORD = mapSchema(v.string());
+/**
+ * An object of strings whose property names are data, read into a record: a property named `__proto__`, `constructor` or
+ * `prototype` is refused.
+ */
+export const STRING_RECORD = v.pipe(
+  mapSchema(v.string()),
+  v.transform((entries): Readonly<Record<string, string>> => Object.fromEntries(entries)),
+);
 
 /**
  * A string that a platform may send as `null`, which is read as absent: Canvas sends `"title": null` and `"description": null`
@@ -69,11 +75,14 @@ const CUSTOM_NUMBER = v.pipe(
  * sends a number or a boolean, as Canvas does for `canvas_user_uuid`, has it read as its text, when the number is one that
  * keeps its value as text.
  */
-export const CUSTOM_RECORD = mapSchema(
-  v.pipe(
-    v.union([v.string(), CUSTOM_NUMBER, v.boolean()]),
-    v.transform((item) => String(item)),
+export const CUSTOM_RECORD = v.pipe(
+  mapSchema(
+    v.pipe(
+      v.union([v.string(), CUSTOM_NUMBER, v.boolean()]),
+      v.transform((item) => String(item)),
+    ),
   ),
+  v.transform((entries): Readonly<Record<string, string>> => Object.fromEntries(entries)),
 );
 
 /** The failure of a claim: `claim-missing` when it is absent, else `claim-invalid`. */

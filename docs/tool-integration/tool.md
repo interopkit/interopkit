@@ -259,14 +259,12 @@ An `LtiMessage` is a union by `messageType`; [Messages and vocabularies](model.m
 | `user`                               | `subject`, the user's `sub`, absent in an anonymous launch, and the identity claims: names, email, picture, locale       |
 | `roles`                              | The role URIs, as the platform sent them; `canonicalizeRole` maps a deprecated simple name to its URI                    |
 | `context`, `platform`, `presentation` | The `context`, `tool_platform` and `launch_presentation` claims                                                         |
-| `custom`                             | The custom properties of the link, a `Map`                                                                               |
+| `custom`                             | The custom properties of the link, a record of strings by name                                                           |
 | `services`                           | The service claims: `grades` has `scopes`, `lineitems` and `lineitem`, `roster` the `contextMembershipsUrl`, `groups` the group URLs and `preferences` the host and the activities; a service the platform does not offer is absent  |
 | `claims`                             | Every claim of the token as JSON, vendor claims among them                                                               |
 | `migration`                          | The `lti1p1` claim, with `verified` true only when `legacySecret` gave the secret that signs its consumer key            |
 | `resourceLink`                       | `LtiResourceLinkRequest`: `id`, `title`, `description`                                                                   |
 | `settings`                           | `LtiDeepLinkingRequest`: the ten settings of Deep Linking 4.4.1, `returnUrl`, `acceptTypes` and `data` among them        |
-
-A message holds a `Map`; a host that stores it converts `custom` to an array of entries.
 
 **The LTI 1.1 migration claim.** A platform that moved from LTI 1.1 signs the `oauth_consumer_key` of the integration with the
 shared secret of 1.1 (`oauth_consumer_key_sign`, the Migration Guide). With `legacySecret`, `handleLaunch` asks the host for that

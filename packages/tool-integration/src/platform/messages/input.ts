@@ -5,7 +5,6 @@ import {
   type JsonObject,
   type JsonValue,
   jsonObjectSchema,
-  mapSchema,
   nonEmptyStringSchema,
   nonNegativeIntegerSchema,
   parseWith,
@@ -27,7 +26,7 @@ import {
   type ResourceLink,
   type UserIdentity,
 } from "../../protocol/index.js";
-import { HTTPS_URL, IDENTIFIER, STRING_ARRAY } from "../../protocol/internal.js";
+import { HTTPS_URL, IDENTIFIER, STRING_ARRAY, STRING_RECORD } from "../../protocol/internal.js";
 
 /** What every message that the host launches carries: plain data that a store can keep, with no secret in it. */
 export interface MessageInputBase {
@@ -274,12 +273,6 @@ export type MessageInput =
 
 const TEXT = v.optional(v.string());
 
-/** An object of strings whose property names are data, read into a record. */
-const STRING_MAP = v.pipe(
-  mapSchema(v.string()),
-  v.transform((map): Readonly<Record<string, string>> => Object.fromEntries(map)),
-);
-
 const identityEntries = {
   name: TEXT,
   givenName: TEXT,
@@ -322,8 +315,8 @@ const baseEntries = {
       locale: TEXT,
     }),
   ),
-  lis: v.optional(STRING_MAP),
-  custom: v.optional(STRING_MAP),
+  lis: v.optional(STRING_RECORD),
+  custom: v.optional(STRING_RECORD),
   extensions: v.optional(jsonObjectSchema),
   migration: v.optional(
     strictRecord({

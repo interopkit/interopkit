@@ -10,7 +10,7 @@ export interface SubmissionReview {
   /** The address to launch; the platform uses the target link of the resource link, or the base address of the tool, when absent. */
   readonly url?: string;
   /** The custom properties that the review message carries. */
-  readonly custom?: ReadonlyMap<string, string>;
+  readonly custom?: Readonly<Record<string, string>>;
 }
 
 /** The `submissionReview` property of a line item, which both the line item service and a Deep Linking resource link carry. */
@@ -26,5 +26,5 @@ export const submissionReviewSchema = v.pipe(
  */
 export function writeSubmissionReview(review: SubmissionReview): Record<string, JsonValue> {
   if (review.url !== undefined) checkHttpsUrl(review.url, "The URL of a submission review");
-  return compact({ label: review.label, url: review.url, custom: review.custom && Object.fromEntries(review.custom) });
+  return compact({ label: review.label, url: review.url, custom: review.custom });
 }
