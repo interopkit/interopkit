@@ -209,6 +209,25 @@ Two.
 | `timestamp-repeated`                     | warning  | Two Statements of a series at one time, which the order of the list then decides              |
 | `pattern`                                | error    | The Statements of a registration follow no primary Pattern; the verdict gives each outcome    |
 
+## The JSONPath of a rule
+
+The `location` and `selector` of a rule are paths in the syntax of Goessner with `|` between paths (Part Two 8.1), and a rule
+comes from a profile of anyone, so a filter or a script in it must be refused, never run. `json-path.ts` reads the syntax in 232
+lines with no dependency. No library reads that syntax, as the releases below show when run on `$.a.b | $.c[0]`, `$.c[?(@ > 1)]`, `$.c[(@.length-1)]` and a filter that assigns a global
+(2026-11-05):
+
+| Library, release         | Released   | `\|` between paths                   | Filters and scripts                                                  | Why it is not adopted                                              |
+| ------------------------ | ---------- | ------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `jsonpath-plus` 11.3.0   | 2026-11-03 | Read as one path: finds nothing      | Evaluates `?()` filters and `()` scripts                             | Evaluates what a rule must refuse, and has no union                |
+| `jsonpath` 1.3.0         | 2026-03-05 | Lexical error                        | Evaluates filters and scripts                                        | The same, and `underscore` 1.13.7 under it has an advisory (GHSA-qpx9-hpmf-5gmw) with no fix |
+| `nimma` 0.7.2            | 2025-04-01 | Parse error                          | Evaluates filters and scripts                                        | The same, and no release in the last year                          |
+| `json-p3` 3.0.2          | 2026-10-29 | Refused                              | Filters of RFC 9535; no script                                       | RFC 9535 has no `\|`; a rule would still need its own reader      |
+| `jsonpath-js` 0.3.1      | 2026-03-04 | Refused                              | Filters of RFC 9535; no script                                       | The same                                                           |
+| `jsonpath-rfc9535` 1.3.0 | 2025-04-04 | Refused                              | Filters of RFC 9535; no script                                       | The same, and no release in the last year                          |
+
+Adopting one would leave the package to split the text on `|`, to scan it for `?` and `(` and to map every result to the path
+that `selectJsonPath` returns, which is the reader that is written here.
+
 ## Limits
 
 | Limit                   | Value                | Cost at the limit                                                                                     |
