@@ -2,7 +2,7 @@
  * The attachments of a Statement: the hash that names their data, and the `multipart/mixed` message that carries them with the
  * Statements.
  *
- * @module
+ * @module @interopkit/learning-records/attachments
  */
 
 export { hashAttachment } from "./hash-attachment.js";

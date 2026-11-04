@@ -109,6 +109,7 @@ Use these words with these meanings in code, comments and docs.
 | `docs/<package>/`                    | The guides of each package, one per module, with its `supported.md`, `comparators.md`, `spec-gaps.md`, `evidence.md` and `performance.md`; TypeDoc publishes them with the API reference |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
 | `compat/`                            | The scenarios of the examples on each runtime                                                       |
+| `scripts/family.ts`                  | The identity of the family, which the standards check, the docs site and `llms.txt` read      |
 | `scripts/`                           | The standards, duplication and mutation checks (`scripts/rules/<package>.ts` holds the rules of each package), the harness of the peak-memory tests, pinned downloads, and the oracle and generators that tests share |
 | `validation/`                        | Python scripts that write fixtures, the containers of counterparties (`validation/opensalt/`, `validation/sql-lrs/`, `validation/1edtech-validator/`), the ADL suite (`validation/adl-lrs/`), the W3C suites (`validation/w3c-suites/`), PyLTI1p3 (`validation/pylti1p3/`), Moodle (`validation/moodle/`), CATAPULT (`validation/catapult/`), and what the runners of the counterparties in containers share (`validation/containers/`) |
 | `biome/`                             | Biome GritQL plugins                                                                                |
@@ -435,18 +436,35 @@ listed here with its reason. A file is written `<package>/<path below src>`, and
   `// => result`, and `runGuideSamples` of `scripts/guide-samples.ts` runs the samples of the README and the guides in a test
   of the package and fails on a result that differs; `typecheckGuideSamples` compiles them under `strict`. What a call throws
   goes into a table of errors, not into a sample. No marketing language, emojis or filler.
-- Visualization comes first, then tables, then short prose. Every README, `CONTRIBUTING.md` and guide opens with a Mermaid
-  diagram of the architecture, the flow or the states that it describes (`pnpm check:standards` fails without one). GitHub
+- Visualization comes first, then tables, then short prose. Every README, `CONTRIBUTING.md` and guide has a Mermaid
+  diagram of the architecture, the flow or the states that it describes (`pnpm check:standards` fails without one): a guide
+  and `CONTRIBUTING.md` open with it, and the README of a package gives it under `## Architecture`, after the quick start,
+  since npm shows a diagram as its source. GitHub
   renders the diagrams, and the Mermaid plugin of TypeDoc renders them on the docs site (`typedoc.json` pins the version of
   Mermaid that the site loads).
 - Each guide has the diagram, a quick start that runs, the options with their defaults, the limits with their values, the
   errors with what to do about them, what is not included and why, and the differences from the references. The guide of a
   module has the sections `## Quick start`, `## Errors`, `## Not included` and `## Differences from the references`, with
   "None" and the reason where there is nothing to say, and every page writes what it leaves out as a table that opens with
-  `| Not included | Why |`; `pnpm check:standards` fails on a guide without them. The README of a package has the sections
-  `## Quick start`, `## API`, `## Supported`, `## Documentation` and `## License`, and the root README `## Which package`,
-  `## Documentation`, `## Development`, `## Layout` and `## License`, in that order. Speed, size and memory are in
+  `| Not included | Why |`; `pnpm check:standards` fails on a guide without them. The README of a package opens with its
+  description as its first sentence and the install line, and has the sections `## Quick start`, `## Architecture`, `## API`,
+  `## Supported`, `## Documentation` and `## License`; the root README opens with the family's sentence and has
+  `## Which package`, with each package's description, `## Documentation`, `## Development`, `## Layout` and `## License`, in
+  that order. The root README and the README of each package link absolutely: a guide or a package at its page on the docs
+  site, any other file at its address in the repository. Speed, size and memory are in
   `docs/<package>/performance.md`, and what shows that a package is right is in `evidence.md`.
+- `scripts/family.ts` holds the identity of the family: `SITE`, the base of the docs site (`https://interopkit.dev/`, a
+  labeled default until the owner buys the domain), the family's sentence, each package's description, keywords and label,
+  and the marks of others with their holders. A package's `description`, `keywords`, `homepage` and `author` and the first
+  sentence of its README come from its row, and `scripts/check-identity.ts` holds them to it in `pnpm check:standards`;
+  change a sentence in `family.ts` first. The plugin `docs/typedoc-seo.ts` reads the same file.
+- Marks of others are named nominatively (`STANDARDS.md` section 2, "Names"): the plain name and version, never in a package
+  name, and no claim word (compliant, conformant, certified, official, approved, endorsed) in a README, a NOTICE, a guide or a
+  description; a test result is a dated count with its suite, commit and date, and a quotation of a specification stays in
+  quotation marks. Every README and NOTICE carries, each on a line of its own, the line of each mark it names, the line of each
+  body whose standard it names and the line that interopkit is not affiliated with them, as `linesFor` of
+  `scripts/identity.ts` writes them; the symbol of a mark appears only inside those lines, and the footer of the docs site carries all of
+  them. `pnpm check:standards` names any line that is missing or not needed.
 - Each document has one purpose: `README.md` for users, `docs/<package>/` for guides, `CONTRIBUTING.md` for the contribution
   process, `AGENTS.md` for conventions, `SECURITY.md` for deployment security.
 

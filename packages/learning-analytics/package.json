@@ -1,23 +1,25 @@
 {
   "name": "@interopkit/learning-analytics",
   "version": "0.0.0",
-  "description": "Caliper Analytics 1.2 events with identifiers that stay the same when an event is reported again, a sensor that sends them to an endpoint, and the endpoint that receives them.",
+  "description": "Caliper Analytics 1.2 for JavaScript and TypeScript: the event and entity model, a sensor that sends events, and the endpoint that receives and checks them; reads Caliper 1.1.",
   "keywords": [
-    "interopkit",
-    "learning-analytics",
+    "caliper",
     "caliper-analytics",
+    "caliper-1.2",
+    "learning-analytics",
+    "learning-events",
     "sensor",
-    "events",
-    "json-ld"
+    "json-ld",
+    "typescript"
   ],
-  "author": "Fariz Wakan",
+  "author": "Fariz Wakan (https://github.com/luthfanwakan)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/interopkit/interopkit.git",
     "directory": "packages/learning-analytics"
   },
-  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/learning-analytics#readme",
+  "homepage": "https://interopkit.dev/_interopkit/learning-analytics/",
   "bugs": "https://github.com/interopkit/interopkit/issues",
   "type": "module",
   "sideEffects": false,

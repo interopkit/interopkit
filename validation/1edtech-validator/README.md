@@ -72,3 +72,7 @@ validator that changes one fails it:
 The inspector of Open Badges 2.0 is not run. It fetches the documents of a badge from the public Internet, which a badge of the
 example cannot reach; [the guide of Open Badges 2.0](../../docs/achievement-credentials/open-badges-2.md) compares the package
 with `openbadges-validator-core`, which that validator recommends for 2.0, in `v2-validator.corpus.test.ts`.
+
+CLR Standard® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+W3C® is a trademark of the World Wide Web Consortium.
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc. or W3C.

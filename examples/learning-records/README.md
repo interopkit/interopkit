@@ -60,3 +60,5 @@ prints its address. The tests run with the rest of the repository (`pnpm test`),
 `pnpm exec vitest run --project example-learning-records`. The conformance suite of ADL runs with `pnpm adl-lrs`
 ([validation/adl-lrs](../../validation/adl-lrs/README.md)). The scenario uses web standards only, so the runtimes of `compat/` run
 it unchanged.
+
+interopkit is not affiliated with, endorsed by or approved by ADL.

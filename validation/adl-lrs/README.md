@@ -68,3 +68,6 @@ exists was written, and the route of 1.0.3 refuses it with 400.
 The suite is not the standard: it carries tests of xAPI 1.0.3 into 2.0 that the IEEE books do not state, among them the rules for
 `authority`, `revision`, `platform` and `version`, and one test, a timestamp with no seconds, that SQL LRS fails. The handler
 follows the suite where the books are silent, and `docs/learning-records/spec-gaps.md` lists each such place.
+
+IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
+interopkit is not affiliated with, endorsed by or approved by IEEE or ADL.

@@ -1,49 +1,14 @@
 # @interopkit/competency-frameworks
 
-CASE (Competencies and Academic Standards Exchange) [1.1](https://www.imsglobal.org/spec/case/v1p1) and
-[1.0](https://www.imsglobal.org/spec/case/v1p0): the model of a competency framework package and of each entity that CASE
-exchanges, readers that check them against the JSON schemas of 1EdTech and the rules of a package, validators that list
-every finding, the conversion of 1.1 data to the form of 1.0, what a consumer asks of a framework (its tree, its crosswalks,
-its changes and its staleness), a client that reads frameworks from a provider, and a provider that serves a store of
-frameworks over the REST binding. It knows nothing of any product: the host says where a framework comes from and what it
-is for.
+CASE 1.1 and 1.0 for JavaScript and TypeScript: the model of a competency framework, readers checked against the published CASE
+JSON schemas, crosswalks, changes, and a client and a provider of the CASE REST API.
 
-```mermaid
-flowchart LR
-  host["Your application<br/>a framework from a file, a response<br/>or your own database"]
-  subgraph pkg["@interopkit/competency-frameworks"]
-    read["readPackage, readEntity<br/>schemas, then identifiers, links, tree"]
-    validate["validatePackage, validateEntity"]
-    version["convertCaseVersion"]
-    graph["/graph<br/>buildFrameworkTree, crosswalk,<br/>diffPackages, isNewer"]
-    client["/client<br/>createCaseClient, writeCaseFilter"]
-    provider["/provider<br/>handleCaseRequest over a FrameworkStore<br/>paging, filter, sort, fields, discovery"]
-  end
-  model["CasePackage, CFItem, ...<br/>the model of CASE 1.1"]
-  old[("A consumer of CASE 1.0")]
-  host -->|"JSON as parsed"| read
-  read --> model
-  host -->|"JSON as parsed"| validate
-  validate -->|"findings"| host
-  model --> version
-  model --> graph
-  graph -->|"tree, links, changes"| host
-  version -->|"1.0 form and what was left out"| old
-  remote[("A CASE provider")]
-  host -->|"id, query, your fetch"| client
-  client -->|"GET"| remote
-  remote -->|"JSON"| client
-  client -->|"valid CASE 1.1"| host
-  client --> read
-  consumer[("A consumer of CASE")]
-  host -->|"HttpRequest, FrameworkStore"| provider
-  provider -->|"HttpResponse in 1.1 or 1.0"| consumer
-  version --> provider
-```
-
-It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
-environment variable and writes no log. The only requests it makes are those of the client, through the `fetch` that the
-host passes in. Its dependencies are `@interopkit/core` and [valibot](https://valibot.dev).
+It has the model of a competency framework package and of each entity that CASE [1.1](https://www.imsglobal.org/spec/case/v1p1)
+and [1.0](https://www.imsglobal.org/spec/case/v1p0) exchange, readers that check them against the published JSON schemas and the
+rules of a package, validators that list every finding, the conversion of 1.1 data to the form of 1.0, what a consumer asks of a
+framework (its tree, its crosswalks, its changes and its staleness), a client that reads frameworks from a provider, and a
+provider that serves a store of frameworks over the REST binding. It knows nothing of any product: the host says where a
+framework comes from and what it is for.
 
 ```bash
 npm install @interopkit/competency-frameworks
@@ -89,6 +54,45 @@ validatePackage({ CFDocument: { title: 5 } }).map((finding) => `${finding.path} 
 others. `validatePackage` and `validateEntity` do not throw for a value, and return each finding with its `path`, its `rule`,
 a `message` and its `severity`. A warning does not keep a value from being read.
 
+## Architecture
+
+```mermaid
+flowchart LR
+  host["Your application<br/>a framework from a file, a response<br/>or your own database"]
+  subgraph pkg["@interopkit/competency-frameworks"]
+    read["readPackage, readEntity<br/>schemas, then identifiers, links, tree"]
+    validate["validatePackage, validateEntity"]
+    version["convertCaseVersion"]
+    graph["/graph<br/>buildFrameworkTree, crosswalk,<br/>diffPackages, isNewer"]
+    client["/client<br/>createCaseClient, writeCaseFilter"]
+    provider["/provider<br/>handleCaseRequest over a FrameworkStore<br/>paging, filter, sort, fields, discovery"]
+  end
+  model["CasePackage, CFItem, ...<br/>the model of CASE 1.1"]
+  old[("A consumer of CASE 1.0")]
+  host -->|"JSON as parsed"| read
+  read --> model
+  host -->|"JSON as parsed"| validate
+  validate -->|"findings"| host
+  model --> version
+  model --> graph
+  graph -->|"tree, links, changes"| host
+  version -->|"1.0 form and what was left out"| old
+  remote[("A CASE provider")]
+  host -->|"id, query, your fetch"| client
+  client -->|"GET"| remote
+  remote -->|"JSON"| client
+  client -->|"valid CASE 1.1"| host
+  client --> read
+  consumer[("A consumer of CASE")]
+  host -->|"HttpRequest, FrameworkStore"| provider
+  provider -->|"HttpResponse in 1.1 or 1.0"| consumer
+  version --> provider
+```
+
+It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
+environment variable and writes no log. The only requests it makes are those of the client, through the `fetch` that the host
+passes in. Its dependencies are `@interopkit/core` and [valibot](https://valibot.dev).
+
 ## API
 
 | Subpath                             | Exports                                                                                                                                                                                                                                                   |
@@ -119,23 +123,25 @@ a `message` and its `severity`. A warning does not keep a value from being read.
 | The REST binding, as a consumer               | The twelve endpoints with their set types, paging with `X-Total-Count` and `Link`, sort, filter and field selection, `imsx_StatusInfo`, discovery, TLS only, a credential through a function of the host |
 | The provider                                  | The twelve endpoints in both versions, paging, sorting, filtering, field selection, the status of a failure, service discovery                                                                           |
 
-[Supported](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/supported.md) lists what the package includes and what it leaves out.
+[Supported](https://interopkit.dev/_interopkit/competency-frameworks/supported/) lists what the package includes and what it leaves out.
 
 ## Documentation
 
-[The model guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/model.md),
-[the graph guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/graph.md),
-[the client guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/client.md) and
-[the provider guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/provider.md) have the options
+[The model guide](https://interopkit.dev/_interopkit/competency-frameworks/model/),
+[the graph guide](https://interopkit.dev/_interopkit/competency-frameworks/graph/),
+[the client guide](https://interopkit.dev/_interopkit/competency-frameworks/client/) and
+[the provider guide](https://interopkit.dev/_interopkit/competency-frameworks/provider/) have the options
 with their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
 why, and the differences from the references.
 
-[The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/evidence.md) shows what the
-package was checked against: the official schemas, real frameworks of public providers, an example provider and consumer,
-OpenSALT and four runtimes. [Performance](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/performance.md) gives the speed of every hot
+[The evidence guide](https://interopkit.dev/_interopkit/competency-frameworks/evidence/) shows what the
+package was checked against: the published schemas, real frameworks of public providers, an example provider and consumer,
+OpenSALT and four runtimes. [Performance](https://interopkit.dev/_interopkit/competency-frameworks/performance/) gives the speed of every hot
 path, the size of each entry point and the peak memory of each reader.
 
 ## License
 
-[Apache-2.0](LICENSE). Copyright Fariz Wakan. CASE and 1EdTech are trademarks of 1EdTech Consortium, Inc.; see
-[NOTICE](NOTICE). This package implements CASE 1.1 and 1.0 and is not certified by 1EdTech.
+[Apache-2.0](https://github.com/interopkit/interopkit/blob/main/packages/competency-frameworks/LICENSE). Copyright Fariz Wakan. See [NOTICE](https://github.com/interopkit/interopkit/blob/main/packages/competency-frameworks/NOTICE).
+
+CASE® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc.

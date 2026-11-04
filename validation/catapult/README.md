@@ -50,3 +50,6 @@ flowchart LR
 
 Locally, run each from a fresh clone in `/Users/nb-dk-0715/Documents/gates/<unit>/` with `COMPOSE_PROJECT_NAME` set to the unit:
 the images are built for linux/amd64, which an arm64 host emulates.
+
+IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
+interopkit is not affiliated with, endorsed by or approved by IEEE or ADL.

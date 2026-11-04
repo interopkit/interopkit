@@ -96,3 +96,7 @@ serves, with a reference to test it by. None is a rule that the package breaks f
 |     3 | `ecdsa`  | They verify a derived proof of the vector of the specification, whose credential has no `validFrom` and names an issuer at `https://vc.example`; a signature of the authors cannot take the property that Open Badges requires. What they check of a proof value, its header and the count of its signatures is tested in `selective-disclosure` (`proof-value.test.ts`, `verify.test.ts`) |
 
 The tests that the status suite skips are pending in the suite itself, and no test of it fails.
+
+CLR Standard® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+W3C® is a trademark of the World Wide Web Consortium.
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc. or W3C.

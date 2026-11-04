@@ -68,3 +68,6 @@ The flows pin what the two do differently as a client and a server:
 | A second State write with no precondition on the 1.0.3 route         | Answers 409, as it does on 2.0.0, where 1.0.3 asks that State go without headers; the LRS of the package replaces the document |
 | A Statement of 2.0 read on the 1.0.3 route                           | Answers it as it holds it, with `contextAgents` and `version` 2.0.0; the client of 1.0.3 reads it into the form of 1.0.3        |
 | The form of 1.0.3 of a Statement of 2.0 sent again on the 1.0.3 route | Answers 409, since it compares with the whole Statement; the LRS of the package answers 204                                     |                                            |
+
+IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
+interopkit is not affiliated with, endorsed by or approved by IEEE or ADL.

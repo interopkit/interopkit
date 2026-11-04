@@ -4,7 +4,7 @@ What the hot paths of `@interopkit/competency-frameworks` cost, how much each en
 
 ```mermaid
 flowchart LR
-  speed["10,000 items against<br/>the official schemas<br/>pnpm bench"] --> time["Time and ratio budgets<br/>packages/competency-frameworks/test/budgets.ts"]
+  speed["10,000 items against<br/>the published schemas<br/>pnpm bench"] --> time["Time and ratio budgets<br/>packages/competency-frameworks/test/budgets.ts"]
   size["Each entry point alone<br/>pnpm test"] --> gzip["Gzip budget and the modules it may hold<br/>packages/competency-frameworks/test/size.test.ts"]
   memory["Peak memory of each reader<br/>pnpm test"] --> heap["Heap of each case<br/>packages/competency-frameworks/test/peak-memory.test.ts"]
 ```
@@ -25,7 +25,7 @@ warm-up, and the gate is the fastest sample.
 The range of the fastest sample is that of the eight latest green runs of the `bench` job on main.
 
 The other benchmarks are ratios to a reference in the same run, so they hold on any machine. The ratios are the fastest samples
-of seven runs on a laptop at a load of 10 to 28; the official schemas are applied by `@cfworker/json-schema`.
+of seven runs on a laptop at a load of 10 to 28; the published schemas are applied by `@cfworker/json-schema`.
 
 | Benchmark                                   | Reference                                       |     Ratio | Budget |
 | ------------------------------------------- | ----------------------------------------------- | --------: | -----: |
@@ -41,7 +41,7 @@ of seven runs on a laptop at a load of 10 to 28; the official schemas are applie
 | `handleCaseRequest` for the package in 1.0  | the same                                        | 3.99–5.76 | 30     |
 | `package` of a client                       | `JSON.parse` of the answer                      | 5.65–6.56 | 40     |
 
-A ratio to an official schema is parity or better; another is five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit, and a time five times the fastest sample of the runner of CI (`ubuntu-latest`, Node.js 22) over the eight latest green runs of the
+A ratio to a published schema is parity or better; another is five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit, and a time five times the fastest sample of the runner of CI (`ubuntu-latest`, Node.js 22) over the eight latest green runs of the
 `bench` job, rounded up to one significant digit; the fastest samples of one benchmark differ by up to 1.7 times from run to run. A budget changes only with the
 reason in the commit that changes it. No other library reads CASE packages, so the references are the schemas and the JSON.
 

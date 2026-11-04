@@ -1,9 +1,10 @@
 @interopkit/course-launch
 Copyright Fariz Wakan
 
-cmi5 is a specification of ADL, the Advanced Distributed Learning Initiative of the United States Department of Defense,
-written with the former AICC and published under the Apache License 2.0. xAPI and Experience API name the standard IEEE
-9274.1.1, and IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc. This package implements cmi5
-and is not certified or endorsed by ADL or IEEE. It includes no text or file of the specification or of its test suites: the
-schema, the examples, the requirements and the packages that its tests read are downloaded at pinned hashes and never
-committed.
+This package implements cmi5, a specification of ADL, the Advanced Distributed Learning Initiative of the United States
+Department of Defense, written with the former AICC and published under the Apache License 2.0, over xAPI, the standard IEEE
+9274.1.1. It includes no text or file of the specification or of its test suites: the schema, the examples, the requirements
+and the packages that its tests read are downloaded at pinned hashes and never committed.
+
+IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
+interopkit is not affiliated with, endorsed by or approved by IEEE or ADL.

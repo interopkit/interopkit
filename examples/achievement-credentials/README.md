@@ -74,3 +74,6 @@ The tests run with the rest of the repository (`pnpm test`), or alone with
 `pnpm w3c-suites` ([validation/w3c-suites](../../validation/w3c-suites/README.md)), and the credentials go through the public
 validator of 1EdTech with `pnpm validator` ([validation/1edtech-validator](../../validation/1edtech-validator/README.md)). The
 scenario uses web standards only, so the runtimes of `compat/` run it unchanged.
+
+W3C® is a trademark of the World Wide Web Consortium.
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc. or W3C.

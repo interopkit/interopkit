@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { basename, dirname, extname, join, posix, resolve } from "node:path";
+import { checkClaimWords, checkIdentity, checkReadmeLinks, checkTrademarks } from "./check-identity.ts";
 
 /** One breach of the standards: the file, the 1-based line (0 for the whole file), the rule and what to do. */
 export interface Violation {
@@ -242,12 +243,15 @@ export function checkGuideSections(files: Files): Violation[] {
   });
 }
 
-/** The sections of a README, in order: the root's guide the reader to a package, and each package's is its npm page. */
+/**
+ * The sections of a README, in order: the root's guide the reader to a package, and each package's is its npm page, which gives
+ * the install line and a minimal example before the diagram, since npm shows a Mermaid diagram as its source.
+ */
 const README_SECTIONS: readonly { readonly pattern: RegExp; readonly sections: readonly string[] }[] = [
   { pattern: /^README\.md$/, sections: ["Which package", "Documentation", "Development", "Layout", "License"] },
   {
     pattern: /^packages\/[^/]+\/README\.md$/,
-    sections: ["Quick start", "API", "Supported", "Documentation", "License"],
+    sections: ["Quick start", "Architecture", "API", "Supported", "Documentation", "License"],
   },
 ];
 
@@ -487,6 +491,10 @@ export const CHECKS: readonly ((files: Files) => Violation[])[] = [
   checkEntries,
   checkDownloads,
   checkConsole,
+  checkIdentity,
+  checkTrademarks,
+  checkClaimWords,
+  checkReadmeLinks,
 ];
 
 /** Runs every check over the files. */
@@ -494,7 +502,7 @@ export function checkStandards(files: Files): Violation[] {
   return CHECKS.flatMap((check) => check(files));
 }
 
-/** Reads the text files of the repository that git tracks or would track, without the generated and third-party ones. */
+/** Reads the text files of the repository that git tracks or would track, and the manifests and NOTICE files, without the generated and third-party ones. */
 export function readRepository(root: string): Files {
   const listing = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
     cwd: root,
@@ -507,7 +515,7 @@ export function readRepository(root: string): Files {
       file === "" ||
       EXCLUDED.test(file) ||
       EXEMPT.test(file) ||
-      !(TEXT_EXTENSIONS.has(extname(file)) || basename(file) === "package.json")
+      !(TEXT_EXTENSIONS.has(extname(file)) || ["package.json", "NOTICE"].includes(basename(file)))
     )
       continue;
     try {

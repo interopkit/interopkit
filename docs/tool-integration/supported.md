@@ -1,7 +1,7 @@
 # Supported
 
 What `@interopkit/tool-integration` implements of LTI 1.3: the tool role first, then the platform role. The package
-implements these specifications and is not certified by 1EdTech.
+implements these specifications, and [the evidence](evidence.md) gives each check with its count and date.
 
 ```mermaid
 flowchart LR
@@ -64,7 +64,7 @@ flowchart LR
 | ----------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | Third-party login                   | Core 4.1, Security 5.1.1   | `prepareToolLaunch`: all parameters; the message kept in the `LaunchStore`, two sealed hints                     |                                                            |
 | Authentication request and response | Security 5.1.1             | `/authorize`, GET and form POST; a refusal is the authentication error response of 5.1.1.5                     |                                                            |
-| Client assertions                   | Security 4.1.1, 5.1.3, 5.4 | The six approved algorithms, or the registration's `algorithms`; audiences, `message_type`, deployment, `jti`  |                                                            |
+| Client assertions                   | Security 4.1.1, 5.1.3, 5.4 | The six algorithms of `APPROVED_ALGORITHMS`, or the registration's `algorithms`; audiences, `message_type`, deployment, `jti`  |                                                            |
 | Algorithms                          | Security 7.2               | Signs with the `Signer` of the key set, one of the six; verifies the six                                        |                                                            |
 | Message types                       | Core 5, DL 4.4, SR 2, Proctoring 4 | `LtiResourceLinkRequest`, `LtiDeepLinkingRequest`, `LtiSubmissionReviewRequest`, `LtiStartProctoring`, `LtiEndAssessment` | |
 | Required claims                     | Core 5.3                   | Every message, through the one model                                                                            |                                                            |

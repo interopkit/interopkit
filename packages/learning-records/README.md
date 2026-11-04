@@ -1,12 +1,48 @@
 # @interopkit/learning-records
 
-xAPI [2.0](https://opensource.ieee.org/xapi/xapi-base-standard-documentation) (IEEE 9274.1.1-2023) and
-[1.0.3](https://github.com/adlnet/xAPI-Spec/tree/1.0.3): the model of a Statement,
-readers that check it against the rules of an LRS and of a Learning Record Provider, validators that list every finding, a
-reader of the text of a request that refuses a property given twice, builders of Statements, the comparison and the formats
-of Statements, the message that carries Attachments, the signature of a Statement, a client of an LRS, the handler of the requests that an LRS answers, and
-[xAPI Profiles 1.0](https://github.com/adlnet/xapi-profiles): profiles read and judged, and Statements judged against their
-Statement Templates and Patterns. It knows nothing of any product: the host says where a Statement comes from and what it is for.
+xAPI 2.0 (IEEE 9274.1.1) and 1.0.3 for JavaScript and TypeScript: the Statement model, validators for the rules of an LRS and a
+provider, builders, signatures, an LRS client, an LRS request handler, and xAPI Profiles 1.0 with Statements matched to a
+profile's templates and patterns.
+
+It has the model of a Statement of xAPI [2.0](https://opensource.ieee.org/xapi/xapi-base-standard-documentation) (IEEE
+9274.1.1-2023) and [1.0.3](https://github.com/adlnet/xAPI-Spec/tree/1.0.3), readers that check it against the rules of an LRS
+and of a Learning Record Provider, validators that list every finding, a reader of the text of a request that refuses a property
+given twice, builders of Statements, the comparison and the formats of Statements, the message that carries Attachments, the
+signature of a Statement, a client of an LRS, the handler of the requests that an LRS answers, and [xAPI Profiles
+1.0](https://github.com/adlnet/xapi-profiles): profiles read and judged, and Statements judged against their Statement Templates
+and Patterns. It knows nothing of any product: the host says where a Statement comes from and what it is for.
+
+```bash
+npm install @interopkit/learning-records
+```
+
+## Quick start
+
+```ts
+import { readStatement, parseStatementJson, validateStatement } from "@interopkit/learning-records";
+
+const text = JSON.stringify({
+  id: "6690e6c9-3ef0-4ed3-8b37-7f3964730bee",
+  actor: { name: "Example Learner", mbox: "mailto:learner@example.org" },
+  verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
+  object: { id: "https://example.org/activities/course-1" },
+  result: { score: { scaled: 0.9 }, duration: "PT1H30M" },
+  context: { contextActivities: { parent: { id: "https://example.org/activities/program-1" } } },
+  timestamp: "2024-06-13T20:46:03.250+02:00",
+});
+const statement = readStatement(parseStatementJson(text));
+statement.result?.duration; // => "PT1H30M"
+statement.context?.contextActivities?.parent?.length; // => 1
+
+validateStatement(statement, { role: "provider" }).map((finding) => `${finding.severity} ${finding.rule} at ${finding.path}`); // => ["error timestamp-not-utc at timestamp"]
+validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `${finding.rule} at ${finding.path}`); // => ["invalid-format at actor.mbox", "missing-property at verb", "missing-property at object"]
+```
+
+`readStatement` returns the model, or throws a `DataError` that names the path of the first error and counts the others.
+`validateStatement` does not throw for a value, and returns each finding with its `path`, its `rule`, a `message` and its
+`severity`. A warning does not keep a Statement from being read.
+
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -54,36 +90,6 @@ environment variable, writes no log and makes no request. Its dependencies are `
 [@noble/hashes](https://github.com/paulmillr/noble-hashes), [jose](https://github.com/panva/jose) (`/signing`) and
 [@remix-run/multipart-parser](https://github.com/remix-run/remix/tree/main/packages/multipart-parser) (`/attachments`).
 
-```bash
-npm install @interopkit/learning-records
-```
-
-## Quick start
-
-```ts
-import { readStatement, parseStatementJson, validateStatement } from "@interopkit/learning-records";
-
-const text = JSON.stringify({
-  id: "6690e6c9-3ef0-4ed3-8b37-7f3964730bee",
-  actor: { name: "Example Learner", mbox: "mailto:learner@example.org" },
-  verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
-  object: { id: "https://example.org/activities/course-1" },
-  result: { score: { scaled: 0.9 }, duration: "PT1H30M" },
-  context: { contextActivities: { parent: { id: "https://example.org/activities/program-1" } } },
-  timestamp: "2024-06-13T20:46:03.250+02:00",
-});
-const statement = readStatement(parseStatementJson(text));
-statement.result?.duration; // => "PT1H30M"
-statement.context?.contextActivities?.parent?.length; // => 1
-
-validateStatement(statement, { role: "provider" }).map((finding) => `${finding.severity} ${finding.rule} at ${finding.path}`); // => ["error timestamp-not-utc at timestamp"]
-validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `${finding.rule} at ${finding.path}`); // => ["invalid-format at actor.mbox", "missing-property at verb", "missing-property at object"]
-```
-
-`readStatement` returns the model, or throws a `DataError` that names the path of the first error and counts the others.
-`validateStatement` does not throw for a value, and returns each finding with its `path`, its `rule`, a `message` and its
-`severity`. A warning does not keep a Statement from being read.
-
 ## API
 
 | Subpath                                    | Exports                                                                                                                                                                                                                                                                                                                                  |
@@ -122,30 +128,32 @@ validateStatement({ actor: { mbox: "learner@example.org" } }).map((finding) => `
 | xAPI Profiles 1.0               | The model of a profile, the rules of its structure, and the Statement Template and Pattern algorithms, by registration and subregistration |
 | LRS handler                     | All seven resources over plain requests and the ports of your stores: versions, errors, limits, access, voiding, filters and pages, Attachments and signatures, documents under ETags with merge, Agents, Activities and About |
 
-[Supported](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/supported.md) lists what the package includes and what it leaves out.
+[Supported](https://interopkit.dev/_interopkit/learning-records/supported/) lists what the package includes and what it leaves out.
 
 ## Documentation
 
-[The model guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/model.md) has the options with their
+[The model guide](https://interopkit.dev/_interopkit/learning-records/model/) has the options with their
 defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and why, and the
-differences from the references. The guides of [building](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/build.md),
-[comparing](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/compare.md),
-[formats](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/format.md),
-[attachments](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/attachments.md),
-[signing](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/signing.md),
-[the client](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/client.md),
-[the LRS handler](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/store.md),
-[the versions of xAPI](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/versions.md) and
-[xAPI Profiles](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/profiles.md) do the same.
+differences from the references. The guides of [building](https://interopkit.dev/_interopkit/learning-records/build/),
+[comparing](https://interopkit.dev/_interopkit/learning-records/compare/),
+[formats](https://interopkit.dev/_interopkit/learning-records/format/),
+[attachments](https://interopkit.dev/_interopkit/learning-records/attachments/),
+[signing](https://interopkit.dev/_interopkit/learning-records/signing/),
+[the client](https://interopkit.dev/_interopkit/learning-records/client/),
+[the LRS handler](https://interopkit.dev/_interopkit/learning-records/store/),
+[the versions of xAPI](https://interopkit.dev/_interopkit/learning-records/versions/) and
+[xAPI Profiles](https://interopkit.dev/_interopkit/learning-records/profiles/) do the same.
 
-[The comparators](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/comparators.md) map what other LRSs and
-clients do against the package. [The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/evidence.md) shows what the
+[The comparators](https://interopkit.dev/_interopkit/learning-records/comparators/) map what other LRSs and
+clients do against the package. [The evidence guide](https://interopkit.dev/_interopkit/learning-records/evidence/) shows what the
 package was checked against: the rules of both versions, both ADL conformance suites, SQL LRS and the validator of Learning
 Locker as oracles, an example LRS with a platform and a dashboard, four runtimes, and for profiles the rules of Part Two, ADL's
-matching of Patterns and the profiles that ADL publishes. [Performance](https://github.com/interopkit/interopkit/blob/main/docs/learning-records/performance.md)
+matching of Patterns and the profiles that ADL publishes. [Performance](https://interopkit.dev/_interopkit/learning-records/performance/)
 gives the speed of every hot path, the size of each entry point and the peak memory of each reader.
 
 ## License
 
-[Apache-2.0](LICENSE). Copyright Fariz Wakan. xAPI is the standard IEEE 9274.1.1; see [NOTICE](NOTICE). This package implements
-xAPI 2.0 and 1.0.3 and is not certified or endorsed by IEEE or ADL.
+[Apache-2.0](https://github.com/interopkit/interopkit/blob/main/packages/learning-records/LICENSE). Copyright Fariz Wakan. See [NOTICE](https://github.com/interopkit/interopkit/blob/main/packages/learning-records/NOTICE).
+
+IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
+interopkit is not affiliated with, endorsed by or approved by IEEE or ADL.

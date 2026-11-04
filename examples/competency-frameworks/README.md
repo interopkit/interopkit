@@ -57,3 +57,6 @@ CASE (`pnpm schemas`, then `pnpm exec vitest run --project example-competency-fr
 file answers with a body its schema accepts, in both versions, and every property of every class is in the data. The flows
 against OpenSALT run with `pnpm opensalt` ([validation/opensalt](../../validation/opensalt/README.md)). The scenario uses web
 standards only, so the runtimes of `compat/` run it unchanged.
+
+CASE® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc.

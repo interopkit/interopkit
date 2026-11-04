@@ -1,62 +1,20 @@
 # @interopkit/achievement-credentials
 
-Open Badges [3.0](https://www.imsglobal.org/spec/ob/v3p0/main/) and the Comprehensive Learner Record
-[2.0](https://www.imsglobal.org/spec/clr/v2p0/main/): the model of an achievement credential, of a CLR and of the APIs that
-exchange them, under both versions of the Verifiable Credentials Data Model, and readers that check them against the JSON
-schemas of 1EdTech and the rules of the specifications. Validators list every finding. Builders write the credentials that an
-issuer awards, and functions hash the identity of a recipient, compare two credentials and summarize one for display. A credential
-can be baked into a PNG or an SVG image and read out of one, a client talks to the Open Badges and CLR APIs of a server, and a
-provider answers them as the server, over the host's stores. Keys
-resolve from DIDs and HTTPS documents, a key is bound to the issuer that publishes it, and a credential is signed and read as a
-JSON Web Token. A credential, its endorsements and the credentials of a CLR are verified as Open Badges and CLR say: the proof,
-the issuer's hold on the key, the status, the validity and the recipient. The readers also read [Open Badges 2.0](https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html)
-assertions with their BadgeClass and issuer, which are read, found in images and verified, hosted or signed, and never written. It knows nothing of any product: the host says where a credential comes from and what it is for.
+Open Badges 3.0 and CLR 2.0 for JavaScript and TypeScript: the credential model, readers, issuing, Data Integrity and JWT
+proofs, status lists, verification, and the Open Badges and CLR APIs; reads and verifies Open Badges 2.0.
 
-```mermaid
-flowchart LR
-  host["Your application<br/>a credential from a file, a response,<br/>a wallet or your own database"]
-  subgraph pkg["@interopkit/achievement-credentials"]
-    read["readCredential, readEntity<br/>schemas, then the rules of the subject"]
-    validate["validateCredential, validateEntity"]
-    build["buildAchievementCredential, buildEndorsementCredential,<br/>buildClrCredential, buildCaseAlignment"]
-    compare["isSameCredential, selectNewerCredential,<br/>summarizeCredential, hashIdentifier"]
-    baking["baking: bakePng, readPng,<br/>bakeSvg, readSvg"]
-    client["client: discoverService,<br/>createCredentialsClient"]
-    provider["provider: handleCredentialsRequest"]
-    jwt["signCredentialJwt, readCredentialJwt"]
-    keys["createKeyResolver, verifyIssuerKey"]
-    verify["verifyCredential"]
-  end
-  model["AchievementCredential, ClrCredential, Profile, ...<br/>the model of Open Badges 3.0 and CLR 2.0;<br/>BadgeAssertionV2 of Open Badges 2.0"]
-  host -->|"JSON as parsed"| read
-  read --> model
-  host -->|"JSON as parsed"| validate
-  validate -->|"findings"| host
-  host -->|"parts: issuer, achievement, subject"| build
-  build --> model
-  model --> compare
-  compare -->|"equal, newer, what to show"| host
-  host -->|"image, credential"| baking
-  baking -->|"image with the credential,<br/>or the credential in an image"| host
-  host <-->|"credentials, profile, fetch, token"| client
-  client <-->|"HTTPS"| server[("Resource server")]
-  wallet[("A client of the APIs")] <-->|"requests"| provider
-  provider <-->|"stores, authorize"| host
-  host -->|"a credential, a signer"| jwt
-  jwt -->|"a compact JWS, or a credential with its key"| host
-  jwt --> keys
-  host -->|"a credential or a 2.0 badge,<br/>keys, a clock, a fetch"| verify
-  verify -->|"every check, and what the proof secures"| host
-  verify --> jwt
-  keys -->|"your fetch"| docs["Key documents:<br/>DID, JWK, key set"]
-```
-
-It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
-environment variable and writes no log. It reaches the network only through a `fetch` that you pass. Its dependencies are
-`@interopkit/core`, [valibot](https://valibot.dev), [@noble/hashes](https://github.com/paulmillr/noble-hashes),
-[saxes](https://github.com/lddubeau/saxes), which `/baking` loads, [jose](https://github.com/panva/jose), the key and Data Integrity
-libraries of the [Interop Alliance](https://github.com/interop-alliance) and `@interopkit/selective-disclosure`; it needs Node.js 24
-or later.
+It has the model of an achievement credential of Open Badges [3.0](https://www.imsglobal.org/spec/ob/v3p0/main/), of a CLR
+[2.0](https://www.imsglobal.org/spec/clr/v2p0/main/) and of the APIs that exchange them, under both versions of the Verifiable
+Credentials Data Model, and readers that check them against the published JSON schemas and the rules of the specifications.
+Validators list every finding. Builders write the credentials that an issuer awards, and functions hash the identity of a
+recipient, compare two credentials and summarize one for display. A credential can be baked into a PNG or an SVG image and read
+out of one, a client talks to the Open Badges and CLR APIs of a server, and a provider answers them as the server, over the
+host's stores. Keys resolve from DIDs and HTTPS documents, a key is bound to the issuer that publishes it, and a credential is
+signed and read as a JSON Web Token. A credential, its endorsements and the credentials of a CLR are verified as Open Badges and
+CLR say: the proof, the issuer's hold on the key, the status, the validity and the recipient. The readers also read [Open Badges
+2.0](https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html) assertions with their BadgeClass and issuer,
+which are read, found in images and verified, hosted or signed, and never written. It knows nothing of any product: the host
+says where a credential comes from and what it is for.
 
 ```bash
 npm install @interopkit/achievement-credentials
@@ -100,6 +58,54 @@ validateCredential({ ...input, validFrom: "2024-06-13", credentialSubject: { typ
 the others. `validateCredential` and `validateEntity` do not throw for a value, and return each finding with its `path`, its
 `rule`, a `message` and its `severity`. A warning does not keep a value from being read. The result is the data model: a list
 that the compacted form of JSON-LD writes as its only member is a list in it.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  host["Your application<br/>a credential from a file, a response,<br/>a wallet or your own database"]
+  subgraph pkg["@interopkit/achievement-credentials"]
+    read["readCredential, readEntity<br/>schemas, then the rules of the subject"]
+    validate["validateCredential, validateEntity"]
+    build["buildAchievementCredential, buildEndorsementCredential,<br/>buildClrCredential, buildCaseAlignment"]
+    compare["isSameCredential, selectNewerCredential,<br/>summarizeCredential, hashIdentifier"]
+    baking["baking: bakePng, readPng,<br/>bakeSvg, readSvg"]
+    client["client: discoverService,<br/>createCredentialsClient"]
+    provider["provider: handleCredentialsRequest"]
+    jwt["signCredentialJwt, readCredentialJwt"]
+    keys["createKeyResolver, verifyIssuerKey"]
+    verify["verifyCredential"]
+  end
+  model["AchievementCredential, ClrCredential, Profile, ...<br/>the model of Open Badges 3.0 and CLR 2.0;<br/>BadgeAssertionV2 of Open Badges 2.0"]
+  host -->|"JSON as parsed"| read
+  read --> model
+  host -->|"JSON as parsed"| validate
+  validate -->|"findings"| host
+  host -->|"parts: issuer, achievement, subject"| build
+  build --> model
+  model --> compare
+  compare -->|"equal, newer, what to show"| host
+  host -->|"image, credential"| baking
+  baking -->|"image with the credential,<br/>or the credential in an image"| host
+  host <-->|"credentials, profile, fetch, token"| client
+  client <-->|"HTTPS"| server[("Resource server")]
+  wallet[("A client of the APIs")] <-->|"requests"| provider
+  provider <-->|"stores, authorize"| host
+  host -->|"a credential, a signer"| jwt
+  jwt -->|"a compact JWS, or a credential with its key"| host
+  jwt --> keys
+  host -->|"a credential or a 2.0 badge,<br/>keys, a clock, a fetch"| verify
+  verify -->|"every check, and what the proof secures"| host
+  verify --> jwt
+  keys -->|"your fetch"| docs["Key documents:<br/>DID, JWK, key set"]
+```
+
+It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
+environment variable and writes no log. It reaches the network only through a `fetch` that you pass. Its dependencies are
+`@interopkit/core`, [valibot](https://valibot.dev), [@noble/hashes](https://github.com/paulmillr/noble-hashes),
+[saxes](https://github.com/lddubeau/saxes), which `/baking` loads, [jose](https://github.com/panva/jose), the key and Data
+Integrity libraries of the [Interop Alliance](https://github.com/interop-alliance) and `@interopkit/selective-disclosure`; it
+needs Node.js 24 or later.
 
 ## API
 
@@ -150,34 +156,38 @@ that the compacted form of JSON-LD writes as its only member is a list in it.
 | API, key and security models          | The answers of `getCredentials`, `imsx_StatusInfo`, the service description, Multikey, JWK, JWKS, the CLR JWT payloads and the OAuth error terms       |
 | Vocabularies                          | The five enumerations with `ext:` terms, the CLR association types, the codes of a status                                                              |
 | Rules of the specifications           | A subject that something identifies, an identity hash in a form that the specification names                                                           |
-| Builders                              | An AchievementCredential, an EndorsementCredential and a ClrCredential, or the payload of a CLR in a JWT, with the contexts, types and official schema |
+| Builders                              | An AchievementCredential, an EndorsementCredential and a ClrCredential, or the payload of a CLR in a JWT, with the contexts, types and published schema |
 | Recipients and comparison             | `sha256$` hashes, `sha256$` and `md5$` matching, credential equality and the newer credential, a summary for display                                   |
 | Baking                                | A compact JWS or a credential with an embedded proof in an `iTXt` chunk of a PNG or an element of an SVG, for both kinds                                |
 | API client                            | Service discovery, `getCredentials` with paging, `upsertCredential`, `getProfile` and `putProfile`, of the Open Badges API and the CLR Standard API        |
 | API provider                          | The five operations of both APIs as the resource server: scopes, paging headers, JSON and compact JWS, created, replaced and unchanged, verification before storing |
 | Open Badges 2.0                       | An assertion with its BadgeClass and issuer, embedded or as a `BadgeAssertionV2`; the aliases of its context; its rules; `sha256$` and `md5$` recipients; summaries; baked images; hosted and signed verification with the issuer's policy, keys and revocation list |
 
-[Supported](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/supported.md) lists what the package includes and what it leaves out.
+[Supported](https://interopkit.dev/_interopkit/achievement-credentials/supported/) lists what the package includes and what it leaves out.
 
 ## Documentation
 
-[The model guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/model.md) and
-[the builders guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/issue.md) and
-[the baking guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/baking.md) and
-[the client guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/client.md) and
-[the provider guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/provider.md) and
-[the guide of Open Badges 2.0](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/open-badges-2.md) have the options with
+[The model guide](https://interopkit.dev/_interopkit/achievement-credentials/model/) and
+[the builders guide](https://interopkit.dev/_interopkit/achievement-credentials/issue/) and
+[the baking guide](https://interopkit.dev/_interopkit/achievement-credentials/baking/) and
+[the client guide](https://interopkit.dev/_interopkit/achievement-credentials/client/) and
+[the provider guide](https://interopkit.dev/_interopkit/achievement-credentials/provider/) and
+[the guide of Open Badges 2.0](https://interopkit.dev/_interopkit/achievement-credentials/open-badges-2/) have the options with
 their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
 why, and the differences from the references.
 
-[The comparators](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/comparators.md) map what the
+[The comparators](https://interopkit.dev/_interopkit/achievement-credentials/comparators/) map what the
 validator of 1EdTech and other verifiers of verifiable credentials do against the package.
 
-[The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/evidence.md) shows what the package was checked against.
-[Performance](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/performance.md) gives the speed of every hot path, the size of each entry point and the peak
+[The evidence guide](https://interopkit.dev/_interopkit/achievement-credentials/evidence/) shows what the package was checked against.
+[Performance](https://interopkit.dev/_interopkit/achievement-credentials/performance/) gives the speed of every hot path, the size of each entry point and the peak
 memory of each reader.
 
 ## License
 
-[Apache-2.0](LICENSE). Copyright Fariz Wakan. Open Badges, CLR and 1EdTech are trademarks of 1EdTech Consortium, Inc.; see
-[NOTICE](NOTICE). This package implements Open Badges 3.0 and CLR 2.0, reads and verifies Open Badges 2.0, and is not certified by 1EdTech.
+[Apache-2.0](https://github.com/interopkit/interopkit/blob/main/packages/achievement-credentials/LICENSE). Copyright Fariz Wakan. See [NOTICE](https://github.com/interopkit/interopkit/blob/main/packages/achievement-credentials/NOTICE).
+
+CASE® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+CLR Standard® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+W3C® is a trademark of the World Wide Web Consortium.
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc. or W3C.

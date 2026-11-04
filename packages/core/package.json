@@ -1,23 +1,23 @@
 {
   "name": "@interopkit/core",
   "version": "0.0.0",
-  "description": "The foundation that the interopkit packages share: their errors, the checks of their arguments and the findings of their readers, a clock and a random source, the call to a service over HTTP with a deadline, a size limit and no redirects, requests and answers as plain data, a signer port with compact JWS, and OAuth 2.0 clients.",
+  "description": "The shared foundation of the interopkit packages: errors, argument checks, bounded HTTP service calls, plain request and response types, a signing port and OAuth 2.0 clients.",
   "keywords": [
     "interopkit",
     "interoperability",
-    "learning-platform",
     "http-client",
+    "oauth2",
     "abort-signal",
     "argument-validation"
   ],
-  "author": "Fariz Wakan",
+  "author": "Fariz Wakan (https://github.com/luthfanwakan)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/interopkit/interopkit.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/core#readme",
+  "homepage": "https://interopkit.dev/_interopkit/core/",
   "bugs": "https://github.com/interopkit/interopkit/issues",
   "type": "module",
   "sideEffects": false,

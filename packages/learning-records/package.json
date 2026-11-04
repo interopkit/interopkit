@@ -1,24 +1,28 @@
 {
   "name": "@interopkit/learning-records",
   "version": "0.0.0",
-  "description": "xAPI 2.0 and 1.0.3 learning records: the model of a Statement, readers and validators for the rules of an LRS and of a Learning Record Provider, builders, signatures, a client of an LRS, the handler of its requests, and xAPI Profiles 1.0 with the validation of Statements against them.",
+  "description": "xAPI 2.0 (IEEE 9274.1.1) and 1.0.3 for JavaScript and TypeScript: the Statement model, validators for the rules of an LRS and a provider, builders, signatures, an LRS client, an LRS request handler, and xAPI Profiles 1.0 with Statements matched to a profile's templates and patterns.",
   "keywords": [
-    "interopkit",
-    "learning-records",
     "xapi",
+    "xapi-2.0",
     "experience-api",
-    "learning-record-store",
+    "tin-can",
     "statements",
-    "xapi-profiles"
+    "learning-record-store",
+    "lrs",
+    "lrp",
+    "learning-records",
+    "xapi-profiles",
+    "typescript"
   ],
-  "author": "Fariz Wakan",
+  "author": "Fariz Wakan (https://github.com/luthfanwakan)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/interopkit/interopkit.git",
     "directory": "packages/learning-records"
   },
-  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/learning-records#readme",
+  "homepage": "https://interopkit.dev/_interopkit/learning-records/",
   "bugs": "https://github.com/interopkit/interopkit/issues",
   "type": "module",
   "sideEffects": false,

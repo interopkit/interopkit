@@ -1,23 +1,24 @@
 {
   "name": "@interopkit/course-launch",
   "version": "0.0.0",
-  "description": "ADL cmi5 course launch: the course structure and its reader, validator and writer, course packages in ZIP or XML, the rules of the statements of a session, an LMS role and an assignable unit runtime.",
+  "description": "cmi5 for JavaScript and TypeScript: the course structure with its reader, validator and writer, course packages, the LMS role over an xAPI LRS, and the assignable unit runtime.",
   "keywords": [
-    "interopkit",
-    "course-launch",
     "cmi5",
     "xapi",
     "course-structure",
-    "assignable-unit"
+    "assignable-unit",
+    "lms",
+    "elearning",
+    "typescript"
   ],
-  "author": "Fariz Wakan",
+  "author": "Fariz Wakan (https://github.com/luthfanwakan)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/interopkit/interopkit.git",
     "directory": "packages/course-launch"
   },
-  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/course-launch#readme",
+  "homepage": "https://interopkit.dev/_interopkit/course-launch/",
   "bugs": "https://github.com/interopkit/interopkit/issues",
   "type": "module",
   "sideEffects": false,

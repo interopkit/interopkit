@@ -1,41 +1,13 @@
 # @interopkit/learning-analytics
 
-[Caliper Analytics 1.2](https://www.imsglobal.org/spec/caliper/v1p2) events and entities, a sensor that sends them to an
-endpoint, and the endpoint that receives them. It has the model of every entity of Caliper 1.2 and of the Library Use Profile,
-reads and judges what arrives from elsewhere, including Caliper 1.1 documents and envelopes, builds events, gives them identifiers that stay the same when an event is
-reported again, posts them in one envelope, and answers the requests of sensors. It knows nothing of any product: the host says
-what happened, and which of its events becomes which Caliper event is the host's mapping.
+Caliper Analytics 1.2 for JavaScript and TypeScript: the event and entity model, a sensor that sends events, and the endpoint
+that receives and checks them; reads Caliper 1.1.
 
-```mermaid
-flowchart LR
-  host["Your application<br/>attempts, scores, sessions"]
-  subgraph pkg["@interopkit/learning-analytics"]
-    model["model: 76 entity and 25 event types,<br/>vocabularies, contexts"]
-    read["readEntity, readEvent"]
-    validate["validateEvent, validateEntity:<br/>the rules of the profiles"]
-    build["buildEvent, buildEntity, mintUrn,<br/>checkIri"]
-    send["sendCaliper, pingEndpoint"]
-    endpointNode["handleCaliperRequest,<br/>readEnvelope"]
-  end
-  core["@interopkit/core<br/>errors, checks, callService"]
-  endpoint[("Caliper endpoint")]
-  host -->|"events as plain data"| build
-  host -->|"entities from elsewhere"| read
-  host -->|"what to send, or what arrived"| validate
-  read --> model
-  validate --> read
-  build --> validate
-  build --> send
-  endpointNode --> validate
-  host -.->|"fetch, signal, time"| send
-  send --> core
-  core -->|"POST and GET over HTTPS<br/>bearer token, no redirect, deadline"| endpoint
-  host -->|"HttpRequest, authorize, accept"| endpointNode
-```
-
-It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
-environment variable, writes no log, and calls the network only through the `fetch` that the caller passes. Its dependencies
-are `@interopkit/core`, [uuid](https://github.com/uuidjs/uuid) and [valibot](https://valibot.dev).
+It has the model of every entity of [Caliper Analytics 1.2](https://www.imsglobal.org/spec/caliper/v1p2) and of the Library Use
+Profile, reads and judges what arrives from elsewhere, including Caliper 1.1 documents and envelopes, builds events, gives them
+identifiers that stay the same when an event is reported again, posts them in one envelope, and answers the requests of sensors.
+It knows nothing of any product: the host says what happened, and which of its events becomes which Caliper event is the host's
+mapping.
 
 ```bash
 npm install @interopkit/learning-analytics
@@ -77,6 +49,39 @@ sent; // => [{ url: "https://lrs.example/caliper", method: "POST", authorization
 A call that fails rejects with a `ServiceError` whose `status` is the HTTP status, or 0 when the endpoint did not answer. A
 resend sends the same events, so with the same identifiers, and a new `sendTime`.
 
+## Architecture
+
+```mermaid
+flowchart LR
+  host["Your application<br/>attempts, scores, sessions"]
+  subgraph pkg["@interopkit/learning-analytics"]
+    model["model: 76 entity and 25 event types,<br/>vocabularies, contexts"]
+    read["readEntity, readEvent"]
+    validate["validateEvent, validateEntity:<br/>the rules of the profiles"]
+    build["buildEvent, buildEntity, mintUrn,<br/>checkIri"]
+    send["sendCaliper, pingEndpoint"]
+    endpointNode["handleCaliperRequest,<br/>readEnvelope"]
+  end
+  core["@interopkit/core<br/>errors, checks, callService"]
+  endpoint[("Caliper endpoint")]
+  host -->|"events as plain data"| build
+  host -->|"entities from elsewhere"| read
+  host -->|"what to send, or what arrived"| validate
+  read --> model
+  validate --> read
+  build --> validate
+  build --> send
+  endpointNode --> validate
+  host -.->|"fetch, signal, time"| send
+  send --> core
+  core -->|"POST and GET over HTTPS<br/>bearer token, no redirect, deadline"| endpoint
+  host -->|"HttpRequest, authorize, accept"| endpointNode
+```
+
+It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
+environment variable, writes no log, and calls the network only through the `fetch` that the caller passes. Its dependencies are
+`@interopkit/core`, [uuid](https://github.com/uuidjs/uuid) and [valibot](https://valibot.dev).
+
 ## API
 
 | Subpath                          | Exports                                                                                                                                       |
@@ -104,21 +109,24 @@ resend sends the same events, so with the same identifiers, and a new `sendTime`
 | Endpoint                     | The role of section 6: 200, 400, 401, 415, 422 and the configuration, with `authorize` before any parsing |
 | Caliper 1.1                  | Read, never written: the events and entities of 1.1 and its six extension profiles, and envelopes of 1.1 at the endpoint |
 
-[Supported](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/supported.md) lists what the package includes and what it leaves out.
+[Supported](https://interopkit.dev/_interopkit/learning-analytics/supported/) lists what the package includes and what it leaves out.
 
 ## Documentation
 
-The guides say what each part holds: the [architecture](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/architecture.md),
-the [model](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/model.md), reading
-[Caliper 1.1](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/versions.md), what is
-[supported](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/supported.md) and what is not,
-the places where the [specifications disagree](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/spec-gaps.md),
-the [evidence](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/evidence.md) that it does what it says, and its
-[performance](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/performance.md): speed, size and peak memory.
+The guides say what each part holds: the [architecture](https://interopkit.dev/_interopkit/learning-analytics/architecture/),
+the [model](https://interopkit.dev/_interopkit/learning-analytics/model/), reading
+[Caliper 1.1](https://interopkit.dev/_interopkit/learning-analytics/versions/), what is
+[supported](https://interopkit.dev/_interopkit/learning-analytics/supported/) and what is not,
+the places where the [specifications disagree](https://interopkit.dev/_interopkit/learning-analytics/spec-gaps/),
+the [evidence](https://interopkit.dev/_interopkit/learning-analytics/evidence/) that it does what it says, and its
+[performance](https://interopkit.dev/_interopkit/learning-analytics/performance/): speed, size and peak memory.
 A complete sensor, which sends again after a failure, and an endpoint that receives both versions are in the
 [example](https://github.com/interopkit/interopkit/tree/main/examples/learning-analytics#readme).
 
 ## License
 
-[Apache-2.0](LICENSE). Copyright Fariz Wakan. Caliper Analytics, Sensor API and 1EdTech are trademarks of 1EdTech
-Consortium, Inc.; see [NOTICE](NOTICE). This package implements Caliper Analytics 1.2 and is not certified by 1EdTech.
+[Apache-2.0](https://github.com/interopkit/interopkit/blob/main/packages/learning-analytics/LICENSE). Copyright Fariz Wakan. See [NOTICE](https://github.com/interopkit/interopkit/blob/main/packages/learning-analytics/NOTICE).
+
+LTI® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+Caliper Analytics® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc.

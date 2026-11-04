@@ -1,7 +1,11 @@
 @interopkit/tool-integration
 Copyright Fariz Wakan
 
-LTI, Learning Tools Interoperability, LTI Advantage and 1EdTech are trademarks of 1EdTech Consortium, Inc. This package
-implements the LTI 1.3 specifications of 1EdTech: Core, the Security Framework, Deep Linking, Assignment and Grade Services,
-Names and Role Provisioning Services, Context Groups, the AfA PNP Connector, Proctoring Services and Dynamic Registration. It
-is not certified by 1EdTech and includes no 1EdTech files.
+This package implements LTI (Learning Tools Interoperability) 1.3: Core, the Security Framework, Deep Linking, Assignment and
+Grade Services, Names and Role Provisioning Services, Context Groups, the AfA PNP Connector, Proctoring Services and Dynamic
+Registration. It includes no file of 1EdTech.
+
+LTI® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+Learning Tools Interoperability® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+AccessForAll® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc.

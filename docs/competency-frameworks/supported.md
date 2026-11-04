@@ -1,7 +1,7 @@
 # Supported
 
-What `@interopkit/competency-frameworks` implements of CASE. The package implements these specifications and is not certified
-by 1EdTech. It claims no conformance of a provider or a consumer.
+What `@interopkit/competency-frameworks` implements of CASE. The package implements these specifications; [the evidence](evidence.md) gives each check with its count and date, and
+the package claims nothing of a provider or a consumer.
 
 ```mermaid
 flowchart LR

@@ -1,7 +1,10 @@
 @interopkit/competency-frameworks
 Copyright Fariz Wakan
 
-CASE, Competencies and Academic Standards Exchange, and 1EdTech are trademarks of 1EdTech Consortium, Inc. This package
-implements CASE 1.1 and 1.0: the model of a framework package, readers and the conversion between the versions. It is not
-certified by 1EdTech and includes no 1EdTech files: the JSON schemas that its tests read are downloaded at pinned hashes and
-never committed.
+This package implements CASE (Competencies and Academic Standards Exchange) 1.1 and 1.0: the model of a framework package, its
+readers, the conversion between the versions, and a client and a provider of the REST binding. It includes no file of 1EdTech:
+the JSON schemas that its tests read are downloaded at pinned hashes and never committed.
+
+CASE® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+Competencies and Academic Standards Exchange® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc.

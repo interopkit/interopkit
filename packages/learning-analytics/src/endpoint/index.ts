@@ -1,7 +1,7 @@
 /**
  * The endpoint: receives the envelopes that sensors send, and answers their requests for its configuration.
  *
- * @module
+ * @module @interopkit/learning-analytics/endpoint
  */
 
 export { readEnvelope } from "./envelope.js";

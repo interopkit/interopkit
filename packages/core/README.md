@@ -1,19 +1,13 @@
 # @interopkit/core
 
-The shared foundation of the interopkit packages: their errors, the checks of their arguments and the findings of their
-readers, a clock and a random source, the call to a service over HTTP with a deadline, a size limit and no redirects, requests
-and answers as plain data, the signing port, and OAuth 2.0 clients. Most users install the package of a standard, such as
-[`@interopkit/tool-integration`](https://github.com/interopkit/interopkit/tree/main/packages/tool-integration#readme) or
-[`@interopkit/competency-frameworks`](https://github.com/interopkit/interopkit/tree/main/packages/competency-frameworks#readme),
-which depends on it.
+The shared foundation of the interopkit packages: errors, argument checks, bounded HTTP service calls, plain request and
+response types, a signing port and OAuth 2.0 clients.
 
-```mermaid
-flowchart BT
-  core["@interopkit/core<br/>errors, checks, clock, service calls,<br/>http, signer, oauth"]
-  standards["The package of each standard:<br/>tool-integration, learning-analytics,<br/>competency-frameworks and the others"] --> core
-  host["Your application"] --> standards
-  host -.->|"service calls, errors, Clock,<br/>HttpRequest, HttpResponse, Signer"| core
-```
+It has their errors, the checks of their arguments and the findings of their readers, a clock and a random source, the call to a
+service over HTTP with a deadline, a size limit and no redirects, requests and answers as plain data, the signing port, and
+OAuth 2.0 clients. Most users install the package of a standard, such as
+[`@interopkit/tool-integration`](https://interopkit.dev/_interopkit/tool-integration/) or
+[`@interopkit/competency-frameworks`](https://interopkit.dev/_interopkit/competency-frameworks/), which depends on it.
 
 ```bash
 npm install @interopkit/core
@@ -35,6 +29,16 @@ const body = await callService(
 ```
 
 A call that fails rejects with a `ServiceError` whose `status` is the HTTP status, or 0 when the service did not answer.
+
+## Architecture
+
+```mermaid
+flowchart BT
+  core["@interopkit/core<br/>errors, checks, clock, service calls,<br/>http, signer, oauth"]
+  standards["The package of each standard:<br/>tool-integration, learning-analytics,<br/>competency-frameworks and the others"] --> core
+  host["Your application"] --> standards
+  host -.->|"service calls, errors, Clock,<br/>HttpRequest, HttpResponse, Signer"| core
+```
 
 ## API
 
@@ -61,18 +65,17 @@ environment variable, writes no log, and calls the network only through the `fet
 
 Each entry point bundled alone, minified with its dependencies, takes after gzip: `@interopkit/core` 11.7 KB with valibot and jose,
 `/checks` 7.5 KB and `/http` 7.7 KB, each with valibot, and `/oauth` 15.3 KB with oauth4webapi; `test/size.test.ts` holds each to
-its budget and to the modules it lists. [Performance](https://github.com/interopkit/interopkit/blob/main/docs/core/performance.md)
-gives the speed of the hot paths, the sizes and the peak memory of the readers. The guides say more: [service calls](https://github.com/interopkit/interopkit/blob/main/docs/core/service.md),
-[requests and answers](https://github.com/interopkit/interopkit/blob/main/docs/core/http.md),
-[signing](https://github.com/interopkit/interopkit/blob/main/docs/core/signer.md),
-[OAuth clients](https://github.com/interopkit/interopkit/blob/main/docs/core/oauth.md),
-[signals](https://github.com/interopkit/interopkit/blob/main/docs/core/signals.md),
-[checks](https://github.com/interopkit/interopkit/blob/main/docs/core/checks.md),
-[errors](https://github.com/interopkit/interopkit/blob/main/docs/core/errors.md),
-[clock](https://github.com/interopkit/interopkit/blob/main/docs/core/clock.md) and
-[random](https://github.com/interopkit/interopkit/blob/main/docs/core/random.md).
+its budget and to the modules it lists. [Performance](https://interopkit.dev/_interopkit/core/performance/)
+gives the speed of the hot paths, the sizes and the peak memory of the readers. The guides say more: [service calls](https://interopkit.dev/_interopkit/core/service/),
+[requests and answers](https://interopkit.dev/_interopkit/core/http/),
+[signing](https://interopkit.dev/_interopkit/core/signer/),
+[OAuth clients](https://interopkit.dev/_interopkit/core/oauth/),
+[signals](https://interopkit.dev/_interopkit/core/signals/),
+[checks](https://interopkit.dev/_interopkit/core/checks/),
+[errors](https://interopkit.dev/_interopkit/core/errors/),
+[clock](https://interopkit.dev/_interopkit/core/clock/) and
+[random](https://interopkit.dev/_interopkit/core/random/).
 
 ## License
 
-[Apache-2.0](LICENSE). Copyright Fariz Wakan. LTI, Caliper Analytics and 1EdTech are trademarks of 1EdTech Consortium, Inc.;
-see [NOTICE](NOTICE).
+[Apache-2.0](https://github.com/interopkit/interopkit/blob/main/packages/core/LICENSE). Copyright Fariz Wakan. See [NOTICE](https://github.com/interopkit/interopkit/blob/main/packages/core/NOTICE).

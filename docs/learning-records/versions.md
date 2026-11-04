@@ -155,7 +155,7 @@ does not break it.
 
 | Not included                                 | Why                                                                                                     |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 0.9 and 0.95                                 | 1.0.3 asks an LRS to refuse a version before 1.0.0, and only a conformant LRS of that version may serve it |
+| 0.9 and 0.95                                 | 1.0.3 asks an LRS to refuse a version before 1.0.0, and only an LRS that meets the rules of that version may serve it |
 | Converting a Statement of 1.0.3 to 2.0       | A Statement of 1.0.x is a Statement of 2.0 but for its `version` and the forms of a time, and is kept as it was |
 | OAuth 1.0 and Common Access Cards            | The host's, through `access`; `readBasicAuthorization` reads the Basic of 1.0.3 Communication 4.0        |
 | `convertStatementVersion` to a version other than 1.0.3 | The package speaks two versions                                                                  |

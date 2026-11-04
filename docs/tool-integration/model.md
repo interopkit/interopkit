@@ -119,7 +119,7 @@ The tool verifies the `id_token` of a platform with these rules before it reads 
 | A token with several audiences has `azp`, and `azp` is the client identifier                             | `authorized-party-missing`, `authorized-party-mismatch` |
 | `exp` is later than the time minus 60 seconds; `iat` is not later than the time plus 60 seconds          | `token-expired`, `issued-in-future`        |
 
-A `KeySet` is the keys of one party: a `Signer` that signs with an approved algorithm, and the public keys that the party
+A `KeySet` is the keys of one party: a `Signer` that signs with an algorithm of `APPROVED_ALGORITHMS`, and the public keys that the party
 publishes, each with a `kid` that no other key has. Keep the earlier public key in the set until every token it signed has
 expired and one cache lifetime has passed (Security Framework 6.4).
 

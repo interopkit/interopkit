@@ -1,41 +1,19 @@
 # @interopkit/tool-integration
 
-LTI 1.3 for learning platforms and tools, in both roles. In the tool role your application is launched by a learning
-platform: it answers its login, validates the launch of every message type, serves its key set, answers a Deep Linking request,
-sends a proctored candidate back to start, reads and writes the platform's gradebook, reads its members, groups and preferences
-records, and controls a proctored attempt through its services, and registers itself with a platform through Dynamic Registration. In the platform role your application launches tools: it keeps the message of a launch in your store and starts the
-tool's login, and one handler answers the tool's authentication request with the `id_token`, publishes the key set, issues
-access tokens, serves the storage page, the grade services over your gradebook, the roster services over your roster, groups and records and the Assessment Control Service over your attempts, Dynamic Registration over your registrations, and two functions read the tool's Deep Linking response and Start Assessment message. A handler takes an `HttpRequest` and returns an `HttpResponse` of [`@interopkit/core/http`](https://github.com/interopkit/interopkit/blob/main/docs/core/http.md): plain objects that any web framework can build.
-You pass in the stores, the registrations, a `fetch` and a clock.
+LTI 1.3 for JavaScript and TypeScript, in the tool and the platform role: launches, Deep Linking, Assignment and Grade Services,
+Names and Role Provisioning, Context Groups, Proctoring and Dynamic Registration.
 
-```mermaid
-flowchart LR
-  platform["Learning platform"]
-  subgraph host["Your application"]
-    routes["Routes<br/>login URL, launch URL"]
-    ports["Ports<br/>LtiStore, LaunchStore, GradebookStore,<br/>registration lookup, fetch, Clock"]
-  end
-  subgraph pkg["@interopkit/tool-integration"]
-    tool["/tool<br/>handleLogin, handleLaunch, serveToolJwks,<br/>buildDeepLinkingResponse, buildStartAssessmentPage,<br/>createServiceClient"]
-    platformRole["/platform<br/>prepareToolFrame,<br/>handlePlatformRequest"]
-    root["root<br/>LtiError, createJwksCache,<br/>the model of messages, vocabularies"]
-  end
-  http["@interopkit/core/http<br/>HttpRequest, HttpResponse"]
-  platform <-->|"login, launch, tokens, scores"| routes
-  routes --> tool
-  routes -.->|"HttpRequest, HttpResponse"| http
-  tool --> ports
-  platformRole --> ports
-  tool --> root
-  platformRole --> root
-```
-
-It runs in Node.js, browsers, Deno, Bun and Cloudflare Workers: it uses web standards only, reads no environment variable,
-writes no log, and calls the network only through the `fetch` that you pass. Its dependencies are
-[`@interopkit/core`](https://github.com/interopkit/interopkit/tree/main/packages/core#readme),
-[jose](https://github.com/panva/jose) and [valibot](https://valibot.dev). It implements the specifications and is not
-certified by 1EdTech; [Supported](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/supported.md) lists
-what it includes and what it does not.
+In the tool role your application is launched by a learning platform: it answers its login, validates the launch of every
+message type, serves its key set, answers a Deep Linking request, sends a proctored candidate back to start, reads and writes
+the platform's gradebook, reads its members, groups and preferences records, controls a proctored attempt through its services,
+and registers itself with a platform through Dynamic Registration. In the platform role your application launches tools: it
+keeps the message of a launch in your store and starts the tool's login, and one handler answers the tool's authentication
+request with the `id_token`, publishes the key set, issues access tokens, serves the storage page, the grade services over your
+gradebook, the roster services over your roster, groups and records, the Assessment Control Service over your attempts and
+Dynamic Registration over your registrations; two functions read the tool's Deep Linking response and Start Assessment message.
+A handler takes an `HttpRequest` and returns an `HttpResponse` of
+[`@interopkit/core/http`](https://interopkit.dev/_interopkit/core/http/): plain objects that any web framework can build. You
+pass in the stores, the registrations, a `fetch` and a clock.
 
 ```bash
 npm install @interopkit/tool-integration
@@ -90,6 +68,36 @@ logins.size; // => 1
 A failure throws `LtiError` for a check of the specifications (with its `reason`), `DataError` for a malformed request or
 option, and `ServiceError` for a platform that does not answer.
 
+## Architecture
+
+```mermaid
+flowchart LR
+  platform["Learning platform"]
+  subgraph host["Your application"]
+    routes["Routes<br/>login URL, launch URL"]
+    ports["Ports<br/>LtiStore, LaunchStore, GradebookStore,<br/>registration lookup, fetch, Clock"]
+  end
+  subgraph pkg["@interopkit/tool-integration"]
+    tool["/tool<br/>handleLogin, handleLaunch, serveToolJwks,<br/>buildDeepLinkingResponse, buildStartAssessmentPage,<br/>createServiceClient"]
+    platformRole["/platform<br/>prepareToolFrame,<br/>handlePlatformRequest"]
+    root["root<br/>LtiError, createJwksCache,<br/>the model of messages, vocabularies"]
+  end
+  http["@interopkit/core/http<br/>HttpRequest, HttpResponse"]
+  platform <-->|"login, launch, tokens, scores"| routes
+  routes --> tool
+  routes -.->|"HttpRequest, HttpResponse"| http
+  tool --> ports
+  platformRole --> ports
+  tool --> root
+  platformRole --> root
+```
+
+It runs in Node.js, browsers, Deno, Bun and Cloudflare Workers: it uses web standards only, reads no environment variable,
+writes no log, and calls the network only through the `fetch` that you pass. Its dependencies are
+[`@interopkit/core`](https://interopkit.dev/_interopkit/core/), [jose](https://github.com/panva/jose) and
+[valibot](https://valibot.dev). [Supported](https://interopkit.dev/_interopkit/tool-integration/supported/) lists what it
+includes and what it does not.
+
 ## API
 
 | Subpath                                 | Exports                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -100,21 +108,24 @@ option, and `ServiceError` for a platform that does not answer.
 
 ## Supported
 
-Both roles have the launch of every message type, key sets, access tokens, the Assignment and Grade Services, Names and Role Provisioning, Context Groups, the AfA PNP Connector, Deep Linking, Proctoring Services and Dynamic Registration ([what is supported](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/supported.md)).
+Both roles have the launch of every message type, key sets, access tokens, the Assignment and Grade Services, Names and Role Provisioning, Context Groups, the AfA PNP Connector, Deep Linking, Proctoring Services and Dynamic Registration ([what is supported](https://interopkit.dev/_interopkit/tool-integration/supported/)).
 
 ## Documentation
 
-The [tool guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/tool.md)
+The [tool guide](https://interopkit.dev/_interopkit/tool-integration/tool/)
 has the routes, the store, every check of a launch, the key set and its rotation, scores, the failure paths and the
-signals; the [roster guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/roster.md) has the members, the groups and the preferences record; the [Deep Linking guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/deep-linking.md) has the items and both roles; the [proctoring guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/proctoring.md) has the Start Assessment message and the Assessment Control Service in both roles; the [registration guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/registration.md) has Dynamic Registration in both roles; the [platform guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/platform.md) has the same for the platform role.
+signals; the [roster guide](https://interopkit.dev/_interopkit/tool-integration/roster/) has the members, the groups and the preferences record; the [Deep Linking guide](https://interopkit.dev/_interopkit/tool-integration/deep-linking/) has the items and both roles; the [proctoring guide](https://interopkit.dev/_interopkit/tool-integration/proctoring/) has the Start Assessment message and the Assessment Control Service in both roles; the [registration guide](https://interopkit.dev/_interopkit/tool-integration/registration/) has Dynamic Registration in both roles; the [platform guide](https://interopkit.dev/_interopkit/tool-integration/platform/) has the same for the platform role.
 
-[The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/evidence.md) shows what the package
+[The evidence guide](https://interopkit.dev/_interopkit/tool-integration/evidence/) shows what the package
 was checked against: the examples and vocabularies of the specifications, tokens that another library signs, tools of other authors
 (`@lti-tool/core`, `lti-core` and PyLTI1p3) that launch from the platform role and use its services, Moodle in both roles, and
-four runtimes. [Performance](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/performance.md) gives the speed of the launch and of the pages of the
+four runtimes. [Performance](https://interopkit.dev/_interopkit/tool-integration/performance/) gives the speed of the launch and of the pages of the
 services, the size of each entry point and the peak memory of each reader.
 
 ## License
 
-[Apache-2.0](LICENSE). Copyright Fariz Wakan. LTI, Learning Tools Interoperability and 1EdTech are trademarks of 1EdTech
-Consortium, Inc.; see [NOTICE](NOTICE).
+[Apache-2.0](https://github.com/interopkit/interopkit/blob/main/packages/tool-integration/LICENSE). Copyright Fariz Wakan. See [NOTICE](https://github.com/interopkit/interopkit/blob/main/packages/tool-integration/NOTICE).
+
+LTI® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+AccessForAll® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc.

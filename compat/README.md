@@ -70,3 +70,9 @@ pnpm compat:runtimes node workerd   # only these (node always runs, as the refer
 | Deno    | CI                                 | 2.9.6        |
 | Bun     | CI                                 | 1.4.3        |
 | workerd | `workerd` in `compat/package.json` | 1.20261016.1 |
+
+Caliper Analytics® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+CASE® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+W3C® is a trademark of the World Wide Web Consortium.
+IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc., W3C, IEEE or ADL.

@@ -1,22 +1,23 @@
 {
   "name": "@interopkit/selective-disclosure",
   "version": "0.0.0",
-  "description": "The ecdsa-sd-2023 Data Integrity cryptosuite for any verifiable credential: a base proof for the issuer, a derived proof for the holder and its verification.",
+  "description": "The W3C ecdsa-sd-2023 Data Integrity cryptosuite for JavaScript and TypeScript: base proofs for issuers, derived proofs for holders and their verification, for any verifiable credential.",
   "keywords": [
-    "interopkit",
-    "selective-disclosure",
     "ecdsa-sd-2023",
+    "selective-disclosure",
     "data-integrity",
-    "verifiable-credentials"
+    "verifiable-credentials",
+    "cryptosuite",
+    "typescript"
   ],
-  "author": "Fariz Wakan",
+  "author": "Fariz Wakan (https://github.com/luthfanwakan)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/interopkit/interopkit.git",
     "directory": "packages/selective-disclosure"
   },
-  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/selective-disclosure#readme",
+  "homepage": "https://interopkit.dev/_interopkit/selective-disclosure/",
   "bugs": "https://github.com/interopkit/interopkit/issues",
   "type": "module",
   "sideEffects": false,

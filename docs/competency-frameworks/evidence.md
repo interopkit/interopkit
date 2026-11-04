@@ -1,12 +1,12 @@
 # Evidence for competency-frameworks
 
-What shows that the package does what it says: the official schemas, real frameworks of public providers, an example provider
+What shows that the package does what it says: the published schemas, real frameworks of public providers, an example provider
 and consumer, OpenSALT as a counterparty, and four runtimes. Each layer answers a question that the one before cannot. The
 speed, the size and the peak memory are in [performance](performance.md).
 
 ```mermaid
 flowchart LR
-  schemas["Official schemas and<br/>OpenAPI file of CASE<br/>pnpm schemas"] --> frameworks["Real frameworks of<br/>public providers<br/>pinned by hash"]
+  schemas["Published schemas and<br/>OpenAPI file of CASE<br/>pnpm schemas"] --> frameworks["Real frameworks of<br/>public providers<br/>pinned by hash"]
   frameworks --> example["Example provider<br/>and consumer<br/>every endpoint, every property"]
   example --> opensalt["OpenSALT in containers<br/>import, read, synchronize<br/>pnpm opensalt"]
   example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat:runtimes"]
@@ -39,7 +39,7 @@ Written back as published means equal after the keys of every object are sorted,
 tree holds each item once, and a framework differs from itself in nothing.
 
 The package schema of CASE 1.0 has no `CFDocumentURI` in an item or an association and no `CFPackageURI` in the document,
-since a package is one document. The provider of South Carolina writes them, so the official schema refuses its packages. The
+since a package is one document. The provider of South Carolina writes them, so the published schema refuses its packages. The
 readers read them with three `package-form-link` warnings, one for the document and one for each list, and leave the links out
 ([spec gaps](spec-gaps.md)); each link names the package's own document. The package that the reader returns equals the
 published one without those links, which the schema accepts. The teacher standards also have five items whose `licenseURI`
@@ -115,15 +115,15 @@ results must equal those of Node.js.
 
 | Not included                                        | Why                                                                                                                       |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Certification by 1EdTech                            | It needs membership and a suite of 1EdTech; the docs say that the package implements CASE, and never that it is certified |
+| Certification by 1EdTech                            | It needs membership and a suite of 1EdTech; the docs say that the package implements CASE, and state test results as dated counts |
 | Frameworks that a provider may change, as live tests | A test of a live provider fails when the provider is down or edits a framework; the downloads are pinned instead          |
 | OpenSALT 3.x                                        | The 4.x line is where the project works, and its images are the ones tested                                              |
 | A bearer token or the Security Framework in the flows against OpenSALT | OpenSALT's token is made in its web interface for a user; the authorization port is tested with the example provider |
-| A timing against another library                    | None reads or writes CASE packages in any language; the official schemas are the reference of the readers                 |
+| A timing against another library                    | None reads or writes CASE packages in any language; the published schemas are the reference of the readers                 |
 
 ## Differences from the references
 
-The reference of a real framework is the official schema of its version, applied by `@cfworker/json-schema`; the reader and the
+The reference of a real framework is the published schema of its version, applied by `@cfworker/json-schema`; the reader and the
 schema agree on every file above but the two of South Carolina, which the schema refuses and the reader reads with warnings. The reference of the example provider is the OpenAPI file of CASE 1.1, whose schemas are
 stricter than the JSON schemas about identifiers and URIs, as [spec-gaps](spec-gaps.md) lists. The reference of OpenSALT is itself: the table
 of its differences is what it does at the pinned image, not a claim about its other builds.

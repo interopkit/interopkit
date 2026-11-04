@@ -1,7 +1,9 @@
 @interopkit/learning-records
 Copyright Fariz Wakan
 
-xAPI and Experience API name the standard IEEE 9274.1.1, and IEEE is a trademark of the Institute of Electrical and
-Electronics Engineers, Inc. ADL is the Advanced Distributed Learning Initiative of the United States Department of Defense.
-This package implements xAPI 2.0 and is not certified or endorsed by IEEE or ADL. It includes no text or file of the
+This package implements xAPI (the Experience API) 2.0, the standard IEEE 9274.1.1, and 1.0.3 of ADL, the Advanced Distributed
+Learning Initiative of the United States Department of Defense, and xAPI Profiles 1.0. It includes no text or file of the
 standard: the examples that its tests read are downloaded at pinned hashes and never committed.
+
+IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
+interopkit is not affiliated with, endorsed by or approved by IEEE or ADL.

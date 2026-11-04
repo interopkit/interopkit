@@ -137,7 +137,7 @@ the platform, which the options check: the issuer on `config.origin` (the config
 | `/registration`                                        | POST     | A registration, with the token of `buildRegistrationInitiation`                     |
 | `/registration/{client}`                               | GET, PUT | The registration of the calling tool, with an access token of a scope of `lti-reg`   |
 
-The configuration names the endpoints, `private_key_jwt` with the six approved algorithms, `openid` and the scopes of every service
+The configuration names the endpoints, `private_key_jwt` with the six algorithms of `APPROVED_ALGORITHMS`, `openid` and the scopes of every service
 whose store is given, `id_token`, the algorithm of the signer, the variables that the message answers and those of `substitution`,
 and what `discovery` and `config.instance` say.
 

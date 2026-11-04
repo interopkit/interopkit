@@ -2082,7 +2082,7 @@
       }
     },
     {
-      "includes": ["scripts/**", "examples/**", "compat/**", "validation/**"],
+      "includes": ["docs/*.ts", "scripts/**", "examples/**", "compat/**", "validation/**"],
       "linter": {
         "rules": {
           "suspicious": {

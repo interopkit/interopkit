@@ -16,6 +16,7 @@ import {
   checkTestTitles,
   type Files,
 } from "../check-standards.ts";
+import { familyFiles } from "./family-repository.ts";
 
 /** The files of a repository as the checks read them. */
 function repository(files: Record<string, string>): Files {
@@ -187,7 +188,7 @@ describe("guide sections", () => {
 
 describe("README sections", () => {
   const root = "# A\n## Which package\n## Documentation\n## Development\n## Layout\n## License\n";
-  const pkg = "# A\n## Quick start\n## API\n## Supported\n## Documentation\n## License\n";
+  const pkg = "# A\n## Quick start\n## Architecture\n## API\n## Supported\n## Documentation\n## License\n";
 
   it("accepts the sections of the root and of a package in their order, with others between them", () => {
     const files = repository({
@@ -201,7 +202,8 @@ describe("README sections", () => {
   it("names the section that is missing or out of order", () => {
     const files = repository({
       "README.md": root.replace("## Layout\n", ""),
-      "packages/a/README.md": "# A\n## API\n## Quick start\n## Supported\n## Documentation\n## License\n",
+      "packages/a/README.md":
+        "# A\n## Quick start\n## API\n## Architecture\n## Supported\n## Documentation\n## License\n",
     });
     expect(
       checkReadmeSections(files).map(({ file, message }) => [file, message.match(/; "([^"]+)" is/)?.[1]]),
@@ -371,7 +373,7 @@ describe("console", () => {
 describe("all checks", () => {
   it("reports nothing for a repository that holds the standards", () => {
     const files = repository({
-      "README.md": `# A\n\n${DIAGRAM}\n## Which package\n## Documentation\n## Development\n## Layout\n## License\n`,
+      ...familyFiles(),
       "packages/a/src/index.ts": "export const A = 1;\n",
       "packages/a/test/a.test.ts": 'it("returns one", () => {});\n',
     });
@@ -379,7 +381,7 @@ describe("all checks", () => {
   });
 
   it("names the rule and the line of each violation", () => {
-    const files = repository({ "packages/a/src/x.ts": "const a = 1;\n// §1\n" });
+    const files = repository({ ...familyFiles(), "packages/a/src/x.ts": "const a = 1;\n// §1\n" });
     expect(checkStandards(files)).toStrictEqual([
       {
         file: "packages/a/src/x.ts",

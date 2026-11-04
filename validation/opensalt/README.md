@@ -70,3 +70,6 @@ OpenSALT can import a framework from a URL, and `pnpm opensalt` does not use tha
 accepts only public HTTPS addresses and refuses every address in a private range, which a container network and a test
 machine are. The flows take the package from the example provider with the client and send it to the route that the editor
 uses for a file (`/salt/case/import`), which checks the file against the JSON schema of CASE 1.1.
+
+CASE® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc.

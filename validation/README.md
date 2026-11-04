@@ -40,3 +40,8 @@ validation/.venv/bin/python validation/ob2_badges.py
 
 A script generates its RSA keys at each run, so the signatures differ between runs; the cases and the reasons do not. Commit
 the regenerated fixture. CI runs only the TypeScript tests.
+
+CASE® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+W3C® is a trademark of the World Wide Web Consortium.
+IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc., W3C, IEEE or ADL.

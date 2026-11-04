@@ -64,3 +64,6 @@ pnpm --filter @interopkit/example-learning-analytics start
 The tests run with the rest of the repository (`pnpm test`), or alone with
 `pnpm exec vitest run --project example-learning-analytics`. The scenario uses web standards only, so the runtimes of
 `compat/` run it unchanged.
+
+Caliper Analytics® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc.

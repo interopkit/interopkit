@@ -35,7 +35,7 @@ first has nothing that the model lacks, and the second is not readable without m
 | --- | --- | --- | --- |
 | Validator | A credential as JSON, as a compact JWS, and baked in a PNG or an SVG | Has | `verifyCredential` takes each; `readPng`, `readSvg` |
 | Validator | `@context` and `type` of each class | Has | The readers ([model](model.md)) |
-| Validator | The official JSON Schemas of Open Badges and CLR | Has | The readers, proven against the published files |
+| Validator | The published JSON Schemas of Open Badges and CLR | Has | The readers, proven against the published files |
 | Validator | A schema that `credentialSchema` names | Partly | Fetched and judged within a bound of work; one that runs a regular expression, a `format` among them, is `unavailable` ([verify](verify.md)) |
 | Validator | A subject identified by `id` or `identifier` | Has | `subject-unidentified` |
 | Validator | The types of evidence, of the issuer, its `otherIdentifier` and `parentOrg` | Has | The schemas of each class |

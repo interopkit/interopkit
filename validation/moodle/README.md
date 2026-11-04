@@ -67,3 +67,6 @@ the source.
 
 What Moodle does differently from the specifications, and what the package does about it, is in
 [the evidence guide](../../docs/tool-integration/evidence.md).
+
+LTI® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc.

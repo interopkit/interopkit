@@ -22,7 +22,7 @@ flowchart LR
 | `ims-caliper` | Library of Caliper 1.1, JavaScript | 1.1.0, 2019-06-25 | MIT | 10 | 6 | 0 | 4 | 0 |
 | `@timeback/caliper` | Client of one vendor's API, TypeScript | 0.3.3, 2026-09-25 | None | 12 | 6 | 0 | 6 | 0 |
 | `1EdTech/CaliperBootcamp` | Proof of concept: a library, a collector and a generator | `0a2d118`, 2025-06-04 | MIT | 10 | 5 | 0 | 5 | 0 |
-| Certification guide of Caliper 1.2 | Requirements of a certified sensor | 1.2 Final | 1EdTech | 4 | 1 | 0 | 3 | 0 |
+| Certification guide of Caliper 1.2 | Requirements that the certification of a sensor checks | 1.2 Final | 1EdTech | 4 | 1 | 0 | 3 | 0 |
 | **All** | | | | **36** | **18** | **0** | **18** | **0** |
 
 The Caliper Analytics Connector is a specification for members and is not read; the certification service needs membership
@@ -81,7 +81,7 @@ mintUrn(["event", "attempt-1", "started"]) === mintUrn(["event", "attempt-1", "s
 | Comparator | Capability | Here | How, or why not |
 | --- | --- | --- | --- |
 | Certification guide | The event conformance table of each profile: actions, actors, objects and generated entities | Has | `validateEvent` reads both tables; what only the guide allows is a warning |
-| Certification guide | The rows that a sensor must send in all to be certified | Excluded | A property of everything that a sensor sends, which the certification service checks, and not of one event |
+| Certification guide | The rows that a sensor must send in all for its certification | Excluded | A property of everything that a sensor sends, which the certification service checks, and not of one event |
 | Certification guide | The certification of a sensor | Excluded | It needs membership; the docs say "implements" |
 | Certification guide | The certification of an endpoint | Excluded | The guide offers none |
 

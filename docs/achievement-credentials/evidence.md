@@ -19,7 +19,7 @@ flowchart LR
 | Schemas, examples     | Does the reader judge as the schemas of 1EdTech do, and read what the pages print?                | `packages/achievement-credentials/test/*.corpus.test.ts`, `*.spec.test.ts`                      | `pnpm test:corpus`, `pnpm test:spec` |
 | Vectors               | Does a function of the package give the bytes that the Recommendations print?                     | `packages/achievement-credentials/test/vectors.spec.test.ts`                                    | `pnpm test:spec`    |
 | Example               | Does a host award, store, serve, verify, revoke, refresh and show credentials with the package?   | `examples/achievement-credentials/test/*.test.ts`                                               | `pnpm test`         |
-| Interoperability      | Do the suites of the W3C find the service of the example conformant?                               | `validation/w3c-suites/`                                                                        | `pnpm w3c-suites`   |
+| Interoperability      | How many tests of each W3C suite does the service of the example pass?                               | `validation/w3c-suites/`                                                                        | `pnpm w3c-suites`   |
 | Validator             | Does the application of 1EdTech take what the example makes, as JSON, JWS, PNG and SVG?            | `validation/1edtech-validator/`, `examples/achievement-credentials/test/validator.corpus.test.ts` | `pnpm validator`    |
 | Counterparties        | Does each side verify what the other signs, and refuse what the other changes?                    | `packages/achievement-credentials/test/counterparties.corpus.test.ts`                           | `pnpm test:corpus`  |
 | Runtimes              | Does the scenario give the same results everywhere?                                               | `compat/`                                                                                       | `pnpm compat:runtimes`       |
@@ -117,7 +117,7 @@ Data Integrity libraries, which uses Web Crypto and imports no module of Node.js
 
 | Not included                                           | Why                                                                                                                       |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| Certification by 1EdTech                               | It needs membership and the suite of 1EdTech; the docs say that the package implements Open Badges and CLR, and never that it is certified |
+| Certification by 1EdTech                               | It needs membership and the suite of 1EdTech; the docs say that the package implements Open Badges and CLR, and state test results as dated counts |
 | `vc-jose-cose-test-suite`                              | Its implementations are Docker images with a command line, and the package secures nothing with COSE or SD-JWT              |
 | The inspector of Open Badges 2.0 of the validator      | It fetches the documents of a badge from the public Internet; the package is compared with `openbadges-validator-core` instead |
 | Verifiable Presentations                               | The envelope of a protocol of delivery, which the host speaks; it passes each credential to `verifyCredential`             |

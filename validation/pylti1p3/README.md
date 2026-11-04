@@ -65,3 +65,6 @@ pnpm pylti1p3
 The flows pass for a platform that signs with RS256 and with ES256: PyLTI1p3 reads the algorithm of the key set and accepts both.
 Each difference between PyLTI1p3 and the specifications, and what the platform does about it, is in
 [the evidence guide](../../docs/tool-integration/evidence.md).
+
+LTI® is a trademark of 1EdTech® Consortium, Inc. (1edtech.org).
+interopkit is not affiliated with, endorsed by or approved by 1EdTech Consortium, Inc.

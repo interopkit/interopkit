@@ -10,7 +10,7 @@ recipient of a credential. `buildCaseAlignment` aligns an achievement to an item
 flowchart LR
   parts["Parts from the issuer:<br/>issuer, achievement, subject, dates"] --> input{"Input: JSON of at most 64 levels,<br/>the properties of the input only"}
   input -->|"a fault"| refused["DataError that names every fault"]
-  input -->|"sound"| write["Write: contexts, types,<br/>subject, official schema"]
+  input -->|"sound"| write["Write: contexts, types,<br/>subject, published schema"]
   write --> check{"Check: schema of the class,<br/>rules of the subject"}
   check -->|"a fault"| refused
   check -->|"sound"| credential["A credential: a copy,<br/>without a proof"]
@@ -81,9 +81,9 @@ the copy. It adds no proof: a signer does.
 
 | Builder                      | Writes                                                                                                                                   |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `buildAchievementCredential` | The contexts of the Verifiable Credentials Data Model 2.0, Open Badges 3.0.3 and the extensions of 1EdTech (which define the type of the `credentialSchema`, so that the credential survives JSON-LD safe mode), the types `VerifiableCredential` and `OpenBadgeCredential`, a subject of type `AchievementSubject` that holds the `subject` and the `achievement`, and the `credentialSchema` of the official AchievementCredential schema |
-| `buildEndorsementCredential` | The same contexts, the types `VerifiableCredential` and `EndorsementCredential`, a subject of type `EndorsementSubject` with the `id` that `endorses` and the `comment`, and the official EndorsementCredential schema                                                              |
-| `buildClrCredential`         | The contexts of the Verifiable Credentials Data Model 2.0, CLR 2.0.1, Open Badges 3.0.3 and the extensions, the types `VerifiableCredential` and `ClrCredential`, a subject of type `ClrSubject` that holds the learner, the credentials, the achievements and the associations, and the official ClrCredential schema |
+| `buildAchievementCredential` | The contexts of the Verifiable Credentials Data Model 2.0, Open Badges 3.0.3 and the extensions of 1EdTech (which define the type of the `credentialSchema`, so that the credential survives JSON-LD safe mode), the types `VerifiableCredential` and `OpenBadgeCredential`, a subject of type `AchievementSubject` that holds the `subject` and the `achievement`, and the `credentialSchema` of the published AchievementCredential schema |
+| `buildEndorsementCredential` | The same contexts, the types `VerifiableCredential` and `EndorsementCredential`, a subject of type `EndorsementSubject` with the `id` that `endorses` and the `comment`, and the published EndorsementCredential schema                                                              |
+| `buildClrCredential`         | The contexts of the Verifiable Credentials Data Model 2.0, CLR 2.0.1, Open Badges 3.0.3 and the extensions, the types `VerifiableCredential` and `ClrCredential`, a subject of type `ClrSubject` that holds the learner, the credentials, the achievements and the associations, and the published ClrCredential schema |
 
 | Input             | Meaning                                                                                                                                                       | Default                    |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
@@ -93,7 +93,7 @@ the copy. It adds no proof: a signer does.
 | `name`            | The name for display                                                                                                                                          | Required                   |
 | `subject`         | Who earned the achievement (AchievementCredential) or the learner (CLR): `id` or `identifier`, one of them at least                                           | Required                   |
 | `achievement`     | The `Achievement` that was earned (AchievementCredential)                                                                                                     | Required                   |
-| `endorses`        | The identifier of what is endorsed (EndorsementCredential)                                                                                                    | Required                   |
+| `endorses`        | The identifier of what the endorsement is about (EndorsementCredential)                                                                                                    | Required                   |
 | `credentials`     | The credentials of the CLR, at least one: objects, or all compact JWS strings for a CLR that is signed as a VC-JWT after its credentials were signed          | Required                   |
 | the rest          | `validUntil`, `description`, `image`, `awardedDate`, `evidence`, `endorsement`, `endorsementJwt`, `credentialStatus`, `refreshService`, `termsOfUse`, `comment`, `achievements`, `associations`, `partial`, and in `subject` `result`, `activityStartDate`, `activityEndDate`, `creditsEarned`, `role`, `term` | None: the property is left out |
 

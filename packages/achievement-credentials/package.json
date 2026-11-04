@@ -1,23 +1,28 @@
 {
   "name": "@interopkit/achievement-credentials",
   "version": "0.0.0",
-  "description": "Open Badges 3.0 and CLR 2.0 credentials: the model of an achievement credential and of the API, readers that check them against the 1EdTech schemas, builders, identity hashes and comparison, the keys that verify them, their proofs, status lists and refresh, their verification, and the provider of the Open Badges and CLR APIs.",
+  "description": "Open Badges 3.0 and CLR 2.0 for JavaScript and TypeScript: the credential model, readers, issuing, Data Integrity and JWT proofs, status lists, verification, and the Open Badges and CLR APIs; reads and verifies Open Badges 2.0.",
   "keywords": [
-    "interopkit",
-    "achievement-credentials",
     "open-badges",
+    "openbadges",
+    "open-badges-3",
     "clr",
+    "comprehensive-learner-record",
     "verifiable-credentials",
-    "learning-standards"
+    "digital-credentials",
+    "achievement-credentials",
+    "data-integrity",
+    "bitstring-status-list",
+    "typescript"
   ],
-  "author": "Fariz Wakan",
+  "author": "Fariz Wakan (https://github.com/luthfanwakan)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/interopkit/interopkit.git",
     "directory": "packages/achievement-credentials"
   },
-  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/achievement-credentials#readme",
+  "homepage": "https://interopkit.dev/_interopkit/achievement-credentials/",
   "bugs": "https://github.com/interopkit/interopkit/issues",
   "type": "module",
   "sideEffects": false,

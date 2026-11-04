@@ -4,7 +4,7 @@ What the hot paths of `@interopkit/achievement-credentials` cost, how much each 
 
 ```mermaid
 flowchart LR
-  speed["Every hot path against<br/>Digital Bazaar, the Interop Alliance,<br/>did-jwt-vc, the official schemas<br/>pnpm bench"] --> time["Time and ratio budgets<br/>packages/achievement-credentials/test/budgets.ts"]
+  speed["Every hot path against<br/>Digital Bazaar, the Interop Alliance,<br/>did-jwt-vc, the published schemas<br/>pnpm bench"] --> time["Time and ratio budgets<br/>packages/achievement-credentials/test/budgets.ts"]
   size["Each entry point alone<br/>pnpm test"] --> gzip["Gzip budget and the modules it may hold<br/>packages/achievement-credentials/test/size.test.ts"]
   memory["Peak memory of each reader<br/>pnpm test"] --> heap["Heap of each case<br/>packages/achievement-credentials/test/peak-memory.test.ts"]
 ```
@@ -32,7 +32,7 @@ of one run on a laptop; a budget is five times the highest ratio measured on the
 | `signCredentialJwt` with EdDSA | `createVerifiableCredentialJwt` of `did-jwt-vc` | 0.11–0.20 | 2    |
 | `issueStatusListCredential` of 131,072 entries, Data Integrity | `@interop/vc-bitstring-status-list` and `jsigs.sign` | 0.94–1.17 | 6   |
 | `verifyCredentialStatus` against that list, fetched each time | `checkStatus` of `@interop/vc-bitstring-status-list` | 1.07–1.57 | 8   |
-| `readCredential` of a CLR of 20 credentials | the official schema of CLR 2.0 in `@cfworker/json-schema` | 0.15–0.18 | 0.9  |
+| `readCredential` of a CLR of 20 credentials | the published schema of CLR 2.0 in `@cfworker/json-schema` | 0.15–0.18 | 0.9  |
 | `validateCredential` of the same CLR | the same | 0.15–0.18 | 0.9  |
 | `bakePng` of that CLR into an image of 256 KiB | `JSON.stringify` of the CLR | 14.8–17.4 | 90  |
 | `readPng` of that image | `JSON.parse` of the CLR | 2.68–3.49 | 20  |

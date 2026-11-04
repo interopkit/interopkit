@@ -1,25 +1,31 @@
 {
   "name": "@interopkit/tool-integration",
   "version": "0.0.0",
-  "description": "LTI 1.3 for learning platforms and tools, in both roles: the launch of every message type, access tokens, the Assignment and Grade Services, Names and Role Provisioning, Context Groups, the AfA PNP Connector, Deep Linking, Proctoring Services and Dynamic Registration, over plain requests and answers, with ports for storage, registrations, fetch and time.",
+  "description": "LTI 1.3 for JavaScript and TypeScript, in the tool and the platform role: launches, Deep Linking, Assignment and Grade Services, Names and Role Provisioning, Context Groups, Proctoring and Dynamic Registration.",
   "keywords": [
-    "interopkit",
-    "interoperability",
-    "learning-platform",
+    "lti",
+    "lti-1.3",
+    "lti13",
+    "lti-advantage",
     "learning-tools-interoperability",
+    "lti-tool",
+    "lti-platform",
     "deep-linking",
     "assignment-and-grade-services",
+    "names-and-role-provisioning",
+    "dynamic-registration",
+    "lms",
     "openid-connect",
-    "jose"
+    "typescript"
   ],
-  "author": "Fariz Wakan",
+  "author": "Fariz Wakan (https://github.com/luthfanwakan)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/interopkit/interopkit.git",
     "directory": "packages/tool-integration"
   },
-  "homepage": "https://github.com/interopkit/interopkit/tree/main/packages/tool-integration#readme",
+  "homepage": "https://interopkit.dev/_interopkit/tool-integration/",
   "bugs": "https://github.com/interopkit/interopkit/issues",
   "type": "module",
   "sideEffects": false,

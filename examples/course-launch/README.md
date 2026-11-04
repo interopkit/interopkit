@@ -35,3 +35,6 @@ flowchart LR
 ```bash
 pnpm --filter @interopkit/example-course-launch start
 ```
+
+IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
+interopkit is not affiliated with, endorsed by or approved by IEEE or ADL.

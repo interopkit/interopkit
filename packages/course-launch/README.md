@@ -1,10 +1,40 @@
 # @interopkit/course-launch
 
-[cmi5](https://github.com/AICC/CMI-5_Spec_Current) (Quartz), the specification of ADL for launching the units of a course and
-tracking them with xAPI: the vocabularies of the specification, the course structure with a reader that enforces its schema
-and the rules of cmi5, a validator that lists every finding and a writer, course packages in ZIP or XML, read within limits and
-written, the rules of the statements of a session with the readers of what a launch gives, the LMS role over the LRS of
+cmi5 for JavaScript and TypeScript: the course structure with its reader, validator and writer, course packages, the LMS role
+over an xAPI LRS, and the assignable unit runtime.
+
+[cmi5](https://github.com/AICC/CMI-5_Spec_Current) (Quartz) is the specification of ADL for launching the units of a course and
+tracking them with xAPI. The package has its vocabularies, the course structure with a reader that enforces its schema and the
+rules of cmi5, a validator that lists every finding and a writer, course packages in ZIP or XML, read within limits and written,
+the rules of the statements of a session with the readers of what a launch gives, the LMS role over the LRS of
 `@interopkit/learning-records`, and the runtime of an assignable unit. It knows nothing of any product.
+
+```bash
+npm install @interopkit/course-launch
+```
+
+## Quick start
+
+```ts
+import { readCourseStructure } from "@interopkit/course-launch";
+
+const xml = `<courseStructure xmlns="https://w3id.org/xapi/profiles/cmi5/v1/CourseStructure.xsd">
+  <course id="https://example.org/courses/geology">
+    <title><langstring lang="en-US">Introduction to Geology</langstring></title>
+    <description><langstring lang="en-US">Plate tectonics and the history of the Earth.</langstring></description>
+  </course>
+  <au id="https://example.org/courses/geology/au/1" moveOn="CompletedOrPassed" masteryScore="0.8">
+    <title><langstring lang="en-US">Plate tectonics</langstring></title>
+    <description><langstring lang="en-US">How the plates move.</langstring></description>
+    <url>https://content.example.org/geology/1/index.html</url>
+  </au>
+</courseStructure>`;
+const [unit] = readCourseStructure(xml).children;
+unit?.kind === "au" ? [unit.moveOn, unit.masteryScore] : undefined;
+// => ["CompletedOrPassed", 0.8]
+```
+
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -39,35 +69,10 @@ flowchart LR
 ```
 
 It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
-environment variable, writes no log and makes no request but through the client of an LRS that the host passes. Its
-dependencies are `@interopkit/core`, `@interopkit/learning-records` (the model and the rules of xAPI, its client and its LRS),
-[valibot](https://valibot.dev), [saxes](https://github.com/lddubeau/saxes), [uuid](https://github.com/uuidjs/uuid) (`/lms`)
-and [zip.js](https://gildas-lormeau.github.io/zip.js/) (`/package`).
-
-```bash
-npm install @interopkit/course-launch
-```
-
-## Quick start
-
-```ts
-import { readCourseStructure } from "@interopkit/course-launch";
-
-const xml = `<courseStructure xmlns="https://w3id.org/xapi/profiles/cmi5/v1/CourseStructure.xsd">
-  <course id="https://example.org/courses/geology">
-    <title><langstring lang="en-US">Introduction to Geology</langstring></title>
-    <description><langstring lang="en-US">Plate tectonics and the history of the Earth.</langstring></description>
-  </course>
-  <au id="https://example.org/courses/geology/au/1" moveOn="CompletedOrPassed" masteryScore="0.8">
-    <title><langstring lang="en-US">Plate tectonics</langstring></title>
-    <description><langstring lang="en-US">How the plates move.</langstring></description>
-    <url>https://content.example.org/geology/1/index.html</url>
-  </au>
-</courseStructure>`;
-const [unit] = readCourseStructure(xml).children;
-unit?.kind === "au" ? [unit.moveOn, unit.masteryScore] : undefined;
-// => ["CompletedOrPassed", 0.8]
-```
+environment variable, writes no log and makes no request but through the client of an LRS that the host passes. Its dependencies
+are `@interopkit/core`, `@interopkit/learning-records` (the model and the rules of xAPI, its client and its LRS),
+[valibot](https://valibot.dev), [saxes](https://github.com/lddubeau/saxes), [uuid](https://github.com/uuidjs/uuid) (`/lms`) and
+[zip.js](https://gildas-lormeau.github.io/zip.js/) (`/package`).
 
 ## API
 
@@ -81,24 +86,27 @@ unit?.kind === "au" ? [unit.moveOn, unit.masteryScore] : undefined;
 
 ## Supported
 
-[Supported](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/supported.md) lists what of cmi5 the package covers and what it leaves out. It passes CATAPULT's LMS and content suites at `806c0ba` ([evidence](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/evidence.md)).
+[Supported](https://interopkit.dev/_interopkit/course-launch/supported/) lists what of cmi5 the package covers and what it leaves out. It passes CATAPULT's LMS and content suites at `806c0ba` ([evidence](https://interopkit.dev/_interopkit/course-launch/evidence/)).
 
 ## Documentation
 
 | Guide                                                    | For                                                                                     |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [Architecture](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/architecture.md) | The modules, their layers, and what the package owns                                    |
-| [Course structure](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/structure.md) | Reading, validating and writing `cmi5.xml`: the rules, options, limits and errors       |
-| [Course package](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/package.md)    | Reading and writing ZIP and XML packages within limits, and what a package may not hold |
-| [Rules of a session](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/rules.md)  | The launch URL, the launch data, the preferences, and the rules of the statements of a session |
-| [Assignable unit](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/au.md)        | The runtime of a unit: its start, its statements, a reload, and what it skips and what the LMS refuses |
-| [LMS](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/lms.md)                   | Registrations, launches, the fetch URL, the rules of cmi5 on the host's LRS, satisfaction, abandoned sessions and waivers |
-| [Evidence](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/evidence.md)         | The requirement map, CATAPULT's suites and the other counterparties and oracles         |
-| [Performance](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/performance.md)   | Speed against libxml2, saxes and zip.js, the size of each entry point and the peak memory |
-| [Comparators](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/comparators.md)   | The other implementations of cmi5 and how their capabilities map to the package         |
-| [Supported](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/supported.md)       | What of cmi5 the package covers, and what it leaves out                                 |
-| [Spec gaps](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/spec-gaps.md)       | Where the specification, its schema and CATAPULT differ, and the reading taken          |
+| [Architecture](https://interopkit.dev/_interopkit/course-launch/architecture/) | The modules, their layers, and what the package owns                                    |
+| [Course structure](https://interopkit.dev/_interopkit/course-launch/structure/) | Reading, validating and writing `cmi5.xml`: the rules, options, limits and errors       |
+| [Course package](https://interopkit.dev/_interopkit/course-launch/package/)    | Reading and writing ZIP and XML packages within limits, and what a package may not hold |
+| [Rules of a session](https://interopkit.dev/_interopkit/course-launch/rules/)  | The launch URL, the launch data, the preferences, and the rules of the statements of a session |
+| [Assignable unit](https://interopkit.dev/_interopkit/course-launch/au/)        | The runtime of a unit: its start, its statements, a reload, and what it skips and what the LMS refuses |
+| [LMS](https://interopkit.dev/_interopkit/course-launch/lms/)                   | Registrations, launches, the fetch URL, the rules of cmi5 on the host's LRS, satisfaction, abandoned sessions and waivers |
+| [Evidence](https://interopkit.dev/_interopkit/course-launch/evidence/)         | The requirement map, CATAPULT's suites and the other counterparties and oracles         |
+| [Performance](https://interopkit.dev/_interopkit/course-launch/performance/)   | Speed against libxml2, saxes and zip.js, the size of each entry point and the peak memory |
+| [Comparators](https://interopkit.dev/_interopkit/course-launch/comparators/)   | The other implementations of cmi5 and how their capabilities map to the package         |
+| [Supported](https://interopkit.dev/_interopkit/course-launch/supported/)       | What of cmi5 the package covers, and what it leaves out                                 |
+| [Spec gaps](https://interopkit.dev/_interopkit/course-launch/spec-gaps/)       | Where the specification, its schema and CATAPULT differ, and the reading taken          |
 
 ## License
 
-[Apache-2.0](LICENSE). Copyright Fariz Wakan. cmi5 is a specification of ADL, the Advanced Distributed Learning Initiative of the United States Department of Defense; xAPI names the standard IEEE 9274.1.1, and IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.; see [NOTICE](NOTICE). This package implements cmi5 and is not certified or endorsed by ADL or IEEE.
+[Apache-2.0](https://github.com/interopkit/interopkit/blob/main/packages/course-launch/LICENSE). Copyright Fariz Wakan. See [NOTICE](https://github.com/interopkit/interopkit/blob/main/packages/course-launch/NOTICE).
+
+IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
+interopkit is not affiliated with, endorsed by or approved by IEEE or ADL.
