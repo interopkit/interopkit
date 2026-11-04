@@ -20,12 +20,11 @@ import {
 
 export {
   type BoundedParse,
-  createFindingSink,
   createIssueSink,
   DEFAULT_MAX_FINDINGS,
   type Finding,
-  type FindingSink,
   type Issue,
+  type IssueSink,
   safeParseBounded,
 } from "./findings.js";
 export {

@@ -1,4 +1,4 @@
-import { buildIssues, type FindingSink, type Issue, safeParseBounded } from "@interopkit/core/checks";
+import { buildIssues, type IssueSink, safeParseBounded } from "@interopkit/core/checks";
 import type { CaseEntity, CaseEntityKind, CasePackage, CaseVersion } from "../model/index.js";
 import { entityIssues, packageIssues } from "./integrity.js";
 import { packageFormIssues } from "./package-form.js";
@@ -10,11 +10,7 @@ import { SCHEMAS } from "./schemas.js";
  *
  * @returns The package, a copy that shares nothing with the input, when its shape is right, whatever else is found.
  */
-export function inspectPackage(
-  value: unknown,
-  version: CaseVersion,
-  sink: FindingSink<Issue>,
-): CasePackage | undefined {
+export function inspectPackage(value: unknown, version: CaseVersion, sink: IssueSink): CasePackage | undefined {
   const result = safeParseBounded(SCHEMAS[version].package, value, sink.room);
   if (!result.success) {
     sink.add(buildIssues(result.issues));
@@ -30,7 +26,7 @@ export function inspectEntity(
   kind: CaseEntityKind,
   value: unknown,
   version: CaseVersion,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
 ): CaseEntity | undefined {
   const result = safeParseBounded(SCHEMAS[version].entities[kind], value, sink.room);
   if (!result.success) {

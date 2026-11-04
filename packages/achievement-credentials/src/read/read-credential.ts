@@ -1,5 +1,5 @@
 import { DataError } from "@interopkit/core";
-import { createIssueSink, describeRefusal, type FindingSink, type Issue } from "@interopkit/core/checks";
+import { createIssueSink, describeRefusal, type Issue, type IssueSink } from "@interopkit/core/checks";
 import type { AnyCredential, AnyVerifiableCredential, CredentialKind } from "../model/index.js";
 import { inspectCredential } from "./inspect.js";
 import {
@@ -15,11 +15,7 @@ import { type ReadOptions, readSettings } from "./options.js";
  * Reads a credential of any kind: an Open Badges 2.0 assertion when the value is a document under the context of Open Badges
  * 2.0 or a `BadgeAssertionV2` and no kind is asked for, else a credential of Open Badges 3.0 or CLR 2.0.
  */
-function inspectAny(
-  value: unknown,
-  kind: CredentialKind | undefined,
-  sink: FindingSink<Issue>,
-): AnyCredential | undefined {
+function inspectAny(value: unknown, kind: CredentialKind | undefined, sink: IssueSink): AnyCredential | undefined {
   if (kind === undefined && isDocumentV2(value)) return inspectBadgeV2(value, {}, DOCUMENT_PLACES, sink);
   if (kind === undefined && isBadgeAssertionV2(value)) return inspectBadgeAssertionV2(value, sink);
   return inspectCredential(value, kind, sink);

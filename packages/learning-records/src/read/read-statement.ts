@@ -4,8 +4,8 @@ import {
   DEFAULT_MAX_FINDINGS,
   describe,
   describeRefusal,
-  type FindingSink,
   type Issue,
+  type IssueSink,
   isRecord,
 } from "@interopkit/core/checks";
 import type { Statement } from "../model/index.js";
@@ -90,7 +90,7 @@ function inBatch(index: number, path: string): string {
 }
 
 /** Finds the Statements of a batch that repeat the id of an earlier one: an LRS rejects the batch (4.1.6.1). */
-function duplicateIds(batch: readonly unknown[], sink: FindingSink<Issue>): void {
+function duplicateIds(batch: readonly unknown[], sink: IssueSink): void {
   const first = new Map<string, number>();
   for (const [index, entry] of batch.entries()) {
     if (sink.stopped) return;
@@ -116,7 +116,7 @@ function duplicateIds(batch: readonly unknown[], sink: FindingSink<Issue>): void
  * Judges a batch of Statements into a sink, and returns the Statements whose shape is right, in order: when the sink holds no
  * error, one for each entry. The batch is read once, whether the caller wants every finding or the errors alone.
  */
-export function inspectBatch(value: unknown, rules: RuleSet, sink: FindingSink<Issue>): readonly Statement[] {
+export function inspectBatch(value: unknown, rules: RuleSet, sink: IssueSink): readonly Statement[] {
   if (!Array.isArray(value)) {
     sink.add([error("", "wrong-type", `expected an array of Statements, found ${describe(value)}.`)]);
     return [];

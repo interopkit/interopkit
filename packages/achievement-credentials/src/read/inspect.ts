@@ -4,8 +4,8 @@ import {
   createIssueSink,
   DEFAULT_MAX_FINDINGS,
   describeRefusal,
-  type FindingSink,
   type Issue,
+  type IssueSink,
   isRecord,
   type Schema,
   safeParseBounded,
@@ -42,11 +42,7 @@ function isV1p1(value: unknown): boolean {
  *
  * @returns The value as the schema reads it when its shape is right.
  */
-export function parseJson<TOutput>(
-  schema: Schema<TOutput>,
-  value: unknown,
-  sink: FindingSink<Issue>,
-): TOutput | undefined {
+export function parseJson<TOutput>(schema: Schema<TOutput>, value: unknown, sink: IssueSink): TOutput | undefined {
   const copy = copyJson(value, "");
   if ("problem" in copy) {
     sink.add([{ path: "", rule: "invalid-value", message: `${copy.problem}.`, severity: "error" }]);
@@ -60,11 +56,7 @@ export function parseJson<TOutput>(
  *
  * @returns The value as the schema reads it when its shape is right.
  */
-export function parseInto<TOutput>(
-  schema: Schema<TOutput>,
-  value: unknown,
-  sink: FindingSink<Issue>,
-): TOutput | undefined {
+export function parseInto<TOutput>(schema: Schema<TOutput>, value: unknown, sink: IssueSink): TOutput | undefined {
   const result = safeParseBounded(schema, value, sink.room);
   if (result.success) return result.output;
   sink.add(buildIssues(result.issues));
@@ -75,7 +67,7 @@ export function parseInto<TOutput>(
 export function inspectCredential(
   value: unknown,
   kind: CredentialKind | undefined,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
 ): AnyVerifiableCredential | undefined {
   const schemas = CREDENTIAL_SCHEMAS[kind ?? kindOfType(isRecord(value) ? value.type : undefined)];
   const schema: Schema<AnyVerifiableCredential> = isV1p1(value) ? schemas.v1p1 : schemas.v2;
@@ -85,7 +77,7 @@ export function inspectCredential(
 }
 
 /** Reads an object of a class, and judges it when its shape is right. */
-export function inspectEntity(kind: EntityKind, value: unknown, sink: FindingSink<Issue>): Entity | undefined {
+export function inspectEntity(kind: EntityKind, value: unknown, sink: IssueSink): Entity | undefined {
   const entity = parseJson(ENTITY_SCHEMAS[kind], value, sink);
   if (entity !== undefined) sink.add(ruleIssues(entity));
   return entity;
@@ -95,7 +87,7 @@ export function inspectEntity(kind: EntityKind, value: unknown, sink: FindingSin
  * Reads the payload of a CLR that is signed as a JWT, and judges it when its shape is right. Its nested credentials are
  * compact JWS, which CLR 7.2.4.1 asks for.
  */
-function inspectClrPayload(value: unknown, sink: FindingSink<Issue>): ClrCredentialJwtPayload | undefined {
+function inspectClrPayload(value: unknown, sink: IssueSink): ClrCredentialJwtPayload | undefined {
   const payload = parseJson(clrCredentialJwtPayloadSchema, value, sink);
   if (payload !== undefined) sink.add(ruleIssues(payload));
   return payload;

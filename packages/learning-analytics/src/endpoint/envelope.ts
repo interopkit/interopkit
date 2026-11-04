@@ -3,8 +3,8 @@ import {
   createIssueSink,
   DEFAULT_MAX_FINDINGS,
   describeRefusal,
-  type FindingSink,
   type Issue,
+  type IssueSink,
   isRecord,
   nonEmptyStringSchema,
   parseWith,
@@ -85,7 +85,7 @@ function placed(index: number): (finding: Issue) => Issue {
  */
 function readItems(
   items: readonly unknown[],
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
   version: CaliperVersion,
   parsed: boolean,
 ): (CaliperEvent | EntityDocument)[] {

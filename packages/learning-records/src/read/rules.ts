@@ -1,4 +1,4 @@
-import type { FindingSink, Issue } from "@interopkit/core/checks";
+import type { Issue, IssueSink } from "@interopkit/core/checks";
 import type { Statement } from "../model/index.js";
 import { VERSION_PATTERNS } from "../model/internal.js";
 import { error } from "./finding.js";
@@ -36,7 +36,7 @@ function versionIssues(statement: Statement): Issue[] {
  * @param input - The Statement as it was given, for the rules that the reading changes: a single Activity of a context becomes a list.
  * @param sink - Takes the findings.
  */
-export function judgeRules(statement: Statement, rules: RuleSet, input: unknown, sink: FindingSink<Issue>): void {
+export function judgeRules(statement: Statement, rules: RuleSet, input: unknown, sink: IssueSink): void {
   const { role, version } = rules;
   const provider = role === "provider";
   walkStatement(statement, {

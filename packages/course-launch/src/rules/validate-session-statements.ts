@@ -1,5 +1,5 @@
 import {
-  createFindingSink,
+  createIssueSink,
   DEFAULT_MAX_FINDINGS,
   type Issue,
   isAbsoluteUri,
@@ -91,7 +91,7 @@ export function validateSessionStatements(
     "The options object",
   );
   const facts = readFacts(session);
-  const sink = createFindingSink<Issue>(maxFindings, (finding) => ({ ...finding, severity: "error" }));
+  const sink = createIssueSink(maxFindings, false);
   const xapi = validateStatements(statements, { role: "lrs", version: "1.0.3", maxFindings });
   sink.add(xapi);
   if (!Array.isArray(statements)) return sink.list();

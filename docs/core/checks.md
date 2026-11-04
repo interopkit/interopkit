@@ -130,7 +130,7 @@ issue. The readers and validators of the packages stop at `maxFindings` (`DEFAUL
 ```mermaid
 flowchart LR
   value["Untrusted value"] --> parse["safeParseBounded(schema, value, room)<br/>stops at the first issue beyond the room"]
-  parse --> sink["createFindingSink(maxFindings, stop, keep?)"]
+  parse --> sink["createIssueSink(maxFindings, errorsOnly)"]
   rules["Rules between the properties"] --> sink
   sink --> list["sink.list(): the findings,<br/>and findings-stopped last when it stopped"]
 ```
@@ -138,8 +138,7 @@ flowchart LR
 | Export | Does |
 | ------ | ---- |
 | `DEFAULT_MAX_FINDINGS` | 1,000: the limit of a list of findings unless the caller says another |
-| `createIssueSink(maxFindings, errorsOnly)` | The list of issues of a reader or a validator on `createFindingSink`: it ends a list that stopped with an error, and keeps the errors alone when `errorsOnly` is true, as a reader does, because a warning does not count toward the limit |
-| `createFindingSink(maxFindings, stop, keep?)` | A list that takes findings up to the limit. The first one beyond it is dropped and `stopped` turns true, so that the check stops looking. `stop` makes the last finding in the type of the package, with the rule `findings-stopped`; `keep` leaves findings out of the count, such as the warnings that a reader does not report. `within(place)` gives a view that changes the findings it is given, such as the path of one entry of a batch, and shares the limit |
+| `createIssueSink(maxFindings, errorsOnly)` | The `IssueSink` of a reader or a validator: a list that takes issues up to the limit. The first one beyond it is dropped and `stopped` turns true, so that the check stops looking, and the list ends with an error with the rule `findings-stopped`. With `errorsOnly` it keeps the errors alone, as a reader does, and a warning does not count toward the limit. `within(place)` gives a view that changes the issues it is given, such as the path of one entry of a batch, and shares the limit |
 | `safeParseBounded(schema, value, limit)` | `v.safeParse` that stops at the first issue beyond `limit`; the issues are those of `v.safeParse`, in the same order. A schema that makes issues and throws them away, such as a union, is parsed again with no limit when the parse stopped on them |
 | `hasMoreTokensThan(text, maxTokens)` | Whether a text of JSON has more tokens than a limit, counted without building anything; `MAX_JSON_TOKENS` is 1,000,000 |
 

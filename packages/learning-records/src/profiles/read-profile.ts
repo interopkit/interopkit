@@ -4,8 +4,8 @@ import {
   createIssueSink,
   DEFAULT_MAX_FINDINGS,
   describeRefusal,
-  type FindingSink,
   type Issue,
+  type IssueSink,
   MAX_JSON_DEPTH,
   MAX_JSON_TOKENS,
   parseJsonText,
@@ -90,7 +90,7 @@ function parseProfileText(input: unknown, maxTokens: number): unknown {
  *
  * @returns The profile, a copy that shares nothing with the input, when its shape is right, whatever else is found.
  */
-function inspectProfile(input: unknown, others: readonly Profile[], sink: FindingSink<Issue>): Profile | undefined {
+function inspectProfile(input: unknown, others: readonly Profile[], sink: IssueSink): Profile | undefined {
   const parse = safeParseBounded(profileSchema, input, sink.room);
   if (!parse.success) {
     sink.add(buildIssues(parse.issues));

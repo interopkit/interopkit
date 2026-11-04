@@ -1,4 +1,4 @@
-import { buildIssues, type FindingSink, type Issue, safeParseBounded } from "@interopkit/core/checks";
+import { buildIssues, type IssueSink, safeParseBounded } from "@interopkit/core/checks";
 import type { Statement } from "../model/index.js";
 import type { RuleSet } from "./options.js";
 import { judgeRules } from "./rules.js";
@@ -10,7 +10,7 @@ import { STATEMENT_SCHEMAS } from "./schemas.js";
  *
  * @returns The Statement, a copy that shares nothing with the input, when its shape is right, whatever else is found.
  */
-export function inspectStatement(input: unknown, rules: RuleSet, sink: FindingSink<Issue>): Statement | undefined {
+export function inspectStatement(input: unknown, rules: RuleSet, sink: IssueSink): Statement | undefined {
   const result = safeParseBounded(STATEMENT_SCHEMAS[rules.version], input, sink.room);
   if (!result.success) {
     sink.add(buildIssues(result.issues));

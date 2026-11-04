@@ -84,7 +84,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/checks.ts`        | Checks of one value and the valibot side, `buildFindings`, `buildIssues` and `parseJsonText`, which `@interopkit/core/checks` exports |
 | `packages/core/src/formats.ts`       | `isDate`, `isDateTime`, `findInstant`, `isUuid`, `isAbsoluteUri` and their schemas; `checks.ts` exports them, and `parseDateTime`, which throws where `findInstant` returns `undefined` |
 | `packages/core/src/json.ts`          | `JsonValue`, `copyJson`, `MAX_JSON_DEPTH`, the counts of depth and tokens, `endOfJsonString`; `checks.ts` exports them |
-| `packages/core/src/findings.ts`      | `Finding`, `Issue`, `createFindingSink`, `createIssueSink`, `safeParseBounded`, `DEFAULT_MAX_FINDINGS`; `checks.ts` exports them |
+| `packages/core/src/findings.ts`      | `Finding`, `Issue`, `IssueSink`, `createIssueSink`, `safeParseBounded`, `DEFAULT_MAX_FINDINGS`; `checks.ts` exports them |
 | `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                  |
 | `packages/core/src/call-options.ts`  | `CallOptions`, the `signal` of every call that waits on I/O                                         |
 | `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `requestWithCredential`, `clientOptionsEntries`, `DEFAULT_TIMEOUT_MS` |
@@ -340,7 +340,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
   `severity`. The `message` reads
   after the path and does not hold it; the rules are those that `buildFindings` names and those that a table of the guide lists.
 - A reader and a validator that list findings take `maxFindings` (default 1,000, `DEFAULT_MAX_FINDINGS`): they parse with
-  `safeParseBounded`, never `v.safeParse`, and fill a `createFindingSink` of `core/checks`, whose last finding says that the list
+  `safeParseBounded`, never `v.safeParse`, and fill a `createIssueSink` of `core/checks`, whose last finding says that the list
   stopped; a reader counts errors alone. The checks that follow the schema yield their findings one at a time, so that a full
   list stops them, and a finding names a bounded part of the value. A text of JSON is counted with `hasMoreTokensThan` before
   `JSON.parse`, or with `findExceededJsonLimit` where its levels are bounded too, which reads it once for both, and a client has a

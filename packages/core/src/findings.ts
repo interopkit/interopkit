@@ -29,68 +29,64 @@ export const DEFAULT_MAX_FINDINGS = 1_000;
 /** The `rule` of the last finding of a list that stopped at the limit. */
 export const FINDINGS_STOPPED_RULE = "findings-stopped";
 
-/** Makes the finding that ends a list that stopped at the limit: the value may have more findings than the list holds. */
-function stoppedFinding(maxFindings: number): Finding {
+/** Makes the error that ends a list that stopped at the limit: the value may have more findings than the list holds. */
+function stoppedIssue(maxFindings: number): Issue {
   return {
     path: "",
     rule: FINDINGS_STOPPED_RULE,
     message: `the check stopped after ${maxFindings} findings, so there may be more.`,
+    severity: "error",
   };
 }
 
-/** A list of findings that holds at most a limit, and tells the check that fills it when to stop. */
-export interface FindingSink<TFinding extends Finding> {
-  /** How many more findings the list takes before it is full. */
+/** The list of issues of a reader or a validator, which holds at most a limit and tells the check that fills it when to stop. */
+export interface IssueSink {
+  /** How many more issues the list takes before it is full. */
   readonly room: number;
-  /** Whether a finding beyond the limit was offered, so that the check can stop looking. */
+  /** Whether an issue beyond the limit was offered, so that the check can stop looking. */
   readonly stopped: boolean;
-  /** Adds findings, up to the limit; the first one beyond it is dropped and stops the list. */
-  add(findings: Iterable<TFinding>): void;
-  /** Returns a view that changes each finding it is given, such as the path of one entry of a batch, and fills this list. */
-  within(place: (finding: TFinding) => TFinding): FindingSink<TFinding>;
-  /** Returns the findings, and a last one that says the list stopped when it did. */
-  list(): TFinding[];
+  /** Adds issues, up to the limit; the first one beyond it is dropped and stops the list. */
+  add(issues: Iterable<Issue>): void;
+  /** Returns a view that changes each issue it is given, such as the path of one entry of a batch, and fills this list. */
+  within(place: (issue: Issue) => Issue): IssueSink;
+  /** Returns the issues, and a last error that says the list stopped when it did. */
+  list(): Issue[];
 }
 
-/** Changes each finding as it is read, so that a list which stopped reads no further. */
-function* placedFindings<TFinding extends Finding>(
-  findings: Iterable<TFinding>,
-  place: (finding: TFinding) => TFinding,
-): Generator<TFinding> {
-  for (const finding of findings) yield place(finding);
+/** Changes each issue as it is read, so that a list which stopped reads no further. */
+function* placedIssues(issues: Iterable<Issue>, place: (issue: Issue) => Issue): Generator<Issue> {
+  for (const issue of issues) yield place(issue);
 }
 
 /**
- * Makes a list of findings that stops at a limit, so that a value which is wrong in a million places costs the memory of a
- * limit and not of a million.
+ * Makes the list of issues of a reader or a validator, which stops at a limit and ends with an error that says so, so that a
+ * value which is wrong in a million places costs the memory of a limit and not of a million.
  *
- * @param maxFindings - The most findings the list holds.
- * @param stop - Makes the last finding of a list that stopped, in the type of the findings of the package.
- * @param keep - Which findings the list takes, such as the errors alone: a finding it leaves out is not counted. Default:
- * every finding.
+ * @remarks
+ * A reader keeps the errors alone, because it does not report warnings, and a warning does not count toward the limit; a
+ * validator keeps every issue.
+ *
+ * @param maxFindings - The most issues the list holds.
+ * @param errorsOnly - Whether the list takes the errors alone.
  */
-export function createFindingSink<TFinding extends Finding>(
-  maxFindings: number,
-  stop: (finding: Finding) => TFinding,
-  keep: (finding: TFinding) => boolean = () => true,
-): FindingSink<TFinding> {
-  const kept: TFinding[] = [];
+export function createIssueSink(maxFindings: number, errorsOnly: boolean): IssueSink {
+  const kept: Issue[] = [];
   let stopped = false;
-  const sink: FindingSink<TFinding> = {
+  const sink: IssueSink = {
     get room() {
       return maxFindings - kept.length;
     },
     get stopped() {
       return stopped;
     },
-    add(findings) {
-      for (const finding of findings) {
-        if (!keep(finding)) continue;
+    add(issues) {
+      for (const issue of issues) {
+        if (errorsOnly && issue.severity !== "error") continue;
         if (kept.length >= maxFindings) {
           stopped = true;
           return;
         }
-        kept.push(finding);
+        kept.push(issue);
       }
     },
     within(place) {
@@ -101,32 +97,14 @@ export function createFindingSink<TFinding extends Finding>(
         get stopped() {
           return sink.stopped;
         },
-        add: (findings) => sink.add(placedFindings(findings, place)),
-        within: (inner) => sink.within((finding) => place(inner(finding))),
+        add: (issues) => sink.add(placedIssues(issues, place)),
+        within: (inner) => sink.within((issue) => place(inner(issue))),
         list: () => sink.list(),
       };
     },
-    list: () => (stopped ? [...kept, stop(stoppedFinding(maxFindings))] : [...kept]),
+    list: () => (stopped ? [...kept, stoppedIssue(maxFindings)] : [...kept]),
   };
   return sink;
-}
-
-/**
- * Makes the list of issues of a reader or a validator, which stops at a limit and ends with an error that says so.
- *
- * @remarks
- * A reader keeps the errors alone, because it does not report warnings, and a warning does not count toward the limit; a
- * validator keeps every issue.
- *
- * @param maxFindings - The most issues the list holds.
- * @param errorsOnly - Whether the list takes the errors alone.
- */
-export function createIssueSink(maxFindings: number, errorsOnly: boolean): FindingSink<Issue> {
-  return createFindingSink(
-    maxFindings,
-    (finding) => ({ ...finding, severity: "error" }),
-    errorsOnly ? ({ severity }) => severity === "error" : undefined,
-  );
 }
 
 /** What {@link safeParseBounded} returns: the output of a parse and the issues it found, at most one more than the limit. */

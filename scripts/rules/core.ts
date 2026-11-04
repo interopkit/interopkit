@@ -588,13 +588,6 @@ export const CORE_RULES: readonly Rule[] = [
     test: "packages/core/test/findings.test.ts",
   },
   {
-    rule: "A finding that a list does not keep, such as a warning for a reader, does not count toward its limit.",
-    file: "packages/core/src/findings.ts",
-    find: "if (!keep(finding)) continue;",
-    replace: "",
-    test: "packages/core/test/findings.test.ts",
-  },
-  {
     rule: "The refusal of a reader says that there may be more errors when the list stopped at its limit.",
     file: "packages/core/src/checks.ts",
     find: "const stopped = errors.at(-1)?.rule === FINDINGS_STOPPED_RULE;",
@@ -666,8 +659,8 @@ export const CORE_RULES: readonly Rule[] = [
   {
     rule: "A reader of a standard counts the errors alone toward the limit of its findings, because it does not report warnings.",
     file: "packages/core/src/findings.ts",
-    find: 'errorsOnly ? ({ severity }) => severity === "error" : undefined,',
-    replace: "undefined,",
+    find: 'if (errorsOnly && issue.severity !== "error") continue;',
+    replace: "",
     test: "packages/core/test/findings.test.ts",
   },
 ];

@@ -58,7 +58,6 @@ describe("the public API", () => {
         "checkString",
         "buildIssues",
         "copyJson",
-        "createFindingSink",
         "createIssueSink",
         "dateSchema",
         "DEFAULT_MAX_FINDINGS",

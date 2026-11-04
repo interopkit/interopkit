@@ -4,9 +4,9 @@ import {
   createIssueSink,
   DEFAULT_MAX_FINDINGS,
   describe,
-  type FindingSink,
   guardSchema,
   type Issue,
+  type IssueSink,
   parseWith,
   positiveIntegerSchema,
   strictRecord,
@@ -251,7 +251,7 @@ function judgeSeries(
   prepared: Prepared,
   series: Series,
   judged: ReadonlyMap<number, TemplateJudgement>,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
 ): RegistrationVerdict {
   const { graph } = prepared;
   const outcomes = series.indexes.map((index) => judged.get(index));

@@ -32,8 +32,8 @@ formats that the standards share (a date, a date and time of RFC 3339, a UUID, a
 language tag of RFC 5646, of at most 1,024 characters), copies JSON within a depth limit, tells whether the text of JSON nests deeper or has more tokens than a limit, or which of the two limits it passes first in one reading (`findExceededJsonLimit`), parses a text within both limits with the
 sentences of its caller (`parseJsonText`), turns
 the issues of a parse into findings or errors with a path, a rule and a sentence (`buildFindings`, `buildIssues`), and writes the sentence of the refusal of a reader. It
-bounds the findings of a reader: `safeParseBounded` stops a parse at the first issue beyond a limit, and `createFindingSink`
-and `createIssueSink` hold at most `DEFAULT_MAX_FINDINGS`, 1,000, and end a list that stopped with a finding that says so. `readJson` of
+bounds the findings of a reader: `safeParseBounded` stops a parse at the first issue beyond a limit, and the `IssueSink` of
+`createIssueSink` holds at most `DEFAULT_MAX_FINDINGS`, 1,000, and ends a list that stopped with an error that says so. `readJson` of
 `@interopkit/core/http` also refuses a body above `maxTokens`.
 
 `basePathSchema` of `@interopkit/core/http` reads the path that a handler is mounted at: `""` or a path that starts with `/` and

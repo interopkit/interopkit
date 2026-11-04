@@ -1,4 +1,4 @@
-import { buildIssues, copyJson, type FindingSink, type Issue, safeParseBounded } from "@interopkit/core/checks";
+import { buildIssues, copyJson, type IssueSink, safeParseBounded } from "@interopkit/core/checks";
 import type { CaliperEvent, CaliperVersion, EntityDocument } from "../model/index.js";
 import { SCHEMA_SETS } from "../read/internal.js";
 import { ADVISED, articled, missingProperties } from "./advised-properties.js";
@@ -9,7 +9,7 @@ import { error } from "./finding.js";
  * Copies a value that must be JSON, which also limits how deep it nests, and says in a finding where it is not. A value that
  * `JSON.parse` made of a request within the depth of `MAX_JSON_DEPTH` is JSON that nothing else holds, so it is read as it is.
  */
-function copyOf(value: unknown, sink: FindingSink<Issue>, parsed: boolean): { readonly value: unknown } | undefined {
+function copyOf(value: unknown, sink: IssueSink, parsed: boolean): { readonly value: unknown } | undefined {
   if (parsed) return { value };
   const copy = copyJson(value, "");
   if (!("problem" in copy)) return { value: copy.value };
@@ -26,7 +26,7 @@ function copyOf(value: unknown, sink: FindingSink<Issue>, parsed: boolean): { re
  */
 export function inspectEvent(
   value: unknown,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
   version: CaliperVersion,
   parsed = false,
 ): CaliperEvent | undefined {
@@ -49,7 +49,7 @@ export function inspectEvent(
  */
 export function inspectEntity(
   value: unknown,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
   version: CaliperVersion,
   parsed = false,
 ): EntityDocument | undefined {

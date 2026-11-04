@@ -1,7 +1,7 @@
 import {
   copyJson,
-  type FindingSink,
   type Issue,
+  type IssueSink,
   isRecord,
   type JsonValue,
   type Schema,
@@ -78,7 +78,7 @@ function readDocument<TDocument>(
   rules: (document: TDocument, place: string) => Issue[],
   value: unknown,
   place: string,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
 ): ReadDocument<TDocument> {
   const copy = copyJson(value, place);
   if ("problem" in copy) {
@@ -99,7 +99,7 @@ function readPrepared<TDocument>(
   rules: (document: TDocument, place: string) => Issue[],
   copy: JsonValue,
   place: string,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
 ): ReadDocument<TDocument> {
   const document = parseInto(
     schema,
@@ -154,7 +154,7 @@ function linkedDocument(
   given: unknown,
   path: string,
   what: string,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
 ): Linked | undefined {
   const named = isRecord(holder) ? holder[property] : undefined;
   if (isRecord(named)) {
@@ -175,7 +175,7 @@ function readLinked<TDocument>(
   rules: (document: TDocument, place: string) => Issue[],
   linked: Linked,
   place: string,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
 ): ReadDocument<TDocument> {
   return "embedded" in linked
     ? readPrepared(schema, rules, linked.embedded, place, sink)
@@ -200,7 +200,7 @@ export function inspectBadgeV2(
   assertion: unknown,
   linked: LinkedDocumentsV2,
   places: PlacesV2,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
 ): BadgeAssertionV2 | undefined {
   const read = readDocument(assertionV2Schema, assertionIssuesV2, assertion, places.assertion, sink);
   const badgeValue = linkedDocument(
@@ -248,7 +248,7 @@ const badgeAssertionV2Schema = strictRecord({
  * @param sink - Receives the findings.
  * @returns The badge, when each document has the shape of its class.
  */
-export function inspectBadgeAssertionV2(value: unknown, sink: FindingSink<Issue>): BadgeAssertionV2 | undefined {
+export function inspectBadgeAssertionV2(value: unknown, sink: IssueSink): BadgeAssertionV2 | undefined {
   const parts = parseInto(badgeAssertionV2Schema, value, sink);
   if (parts === undefined) return undefined;
   return inspectBadgeV2(parts.assertion, { badge: parts.badge, issuer: parts.issuer }, MODEL_PLACES, sink);
@@ -302,7 +302,7 @@ const DOCUMENT_CLASSES: {
 export function inspectDocumentV2<TKind extends keyof DocumentsV2>(
   kind: TKind,
   value: unknown,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
 ): DocumentsV2[TKind] | undefined {
   const { schema, rules } = DOCUMENT_CLASSES[kind];
   return readDocument(schema, rules, value, "", sink).document;

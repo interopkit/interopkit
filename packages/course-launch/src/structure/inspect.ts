@@ -1,5 +1,5 @@
 import { LimitError } from "@interopkit/core";
-import { type FindingSink, type Issue, isAbsoluteUri } from "@interopkit/core/checks";
+import { type IssueSink, isAbsoluteUri } from "@interopkit/core/checks";
 import { SaxesParser, type SaxesTagNS } from "saxes";
 import {
   type AssignableUnit,
@@ -145,14 +145,9 @@ class StructureWalk {
   private readonly text: string;
   private readonly encoding: StructureEncoding | undefined;
   private readonly settings: CourseReadSettings;
-  private readonly sink: FindingSink<Issue>;
+  private readonly sink: IssueSink;
 
-  constructor(
-    text: string,
-    encoding: StructureEncoding | undefined,
-    settings: CourseReadSettings,
-    sink: FindingSink<Issue>,
-  ) {
+  constructor(text: string, encoding: StructureEncoding | undefined, settings: CourseReadSettings, sink: IssueSink) {
     this.text = text;
     this.encoding = encoding;
     this.settings = settings;
@@ -656,7 +651,7 @@ class StructureWalk {
 export function inspectCourseStructure(
   input: unknown,
   settings: CourseReadSettings,
-  sink: FindingSink<Issue>,
+  sink: IssueSink,
 ): CourseStructure | undefined {
   const { text, encoding } = decodeStructure(input, settings.maxBytes);
   return new StructureWalk(text, encoding, settings, sink).run();
