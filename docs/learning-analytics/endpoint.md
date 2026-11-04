@@ -107,7 +107,6 @@ const envelope = readEnvelope(
     dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p2",
     data: [{ "@context": "http://purl.imsglobal.org/ctx/caliper/v1p2", id: "https://exam.example/users/554433", type: "Person" }],
   },
-  "exam-app",
 );
 envelope.data.length; // => 1
 envelope.findings; // => []
@@ -122,8 +121,9 @@ envelope.findings; // => []
 | `data`        | The events and entity describes that read, as the [model](./model.md) has them, copies that share nothing with the request. One that did not read is left out |
 | `findings`    | What `validateEvent` and `validateEntity` found in each item, with `data[index]` before each path: the errors of the items left out, and the warnings and errors of the profile rules of those that read. At most `maxFindings`, and a last finding with the rule `findings-stopped` when the list stopped |
 
-`readEnvelope(value, principal, options)` does steps 6 to 8 for a value that is already parsed, and throws a `DataError` where the
-handler answers 400 or 422. Its options are `versions`, `maxFindings` and `strict`.
+`readEnvelope(value, options)` does steps 6 to 8 for a value that is already parsed, and throws a `DataError` where the
+handler answers 400 or 422. It returns the envelope without `principal`, which only the handler knows from `authorize`. Its options are
+`versions`, `maxFindings` and `strict`.
 
 An item is an event when its `type` is that of an event, and an entity describe otherwise. It is read as `readEvent` and
 `readEntity` read it in the version of the envelope, and judged as [`validateEvent`](./validate.md) does. An envelope of 1.1

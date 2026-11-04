@@ -626,9 +626,8 @@ describe("handleCaliperRequest: input of other types", () => {
 
 describe("readEnvelope", () => {
   it("reads an envelope that follows section 5.2 into the envelope that the host receives", () => {
-    const envelope = readEnvelope(envelopeOf([PERSON, soundAt(0)]), "tool-7");
+    const envelope = readEnvelope(envelopeOf([PERSON, soundAt(0)]));
     expect(envelope).toStrictEqual({
-      principal: "tool-7",
       sensor: "https://exam.example/sensors/1",
       sendTime: "2023-11-14T22:13:20.000Z",
       dataVersion: CALIPER_CONTEXT,
@@ -637,39 +636,34 @@ describe("readEnvelope", () => {
     });
   });
 
-  it("throws a DataError for a value that is not an envelope, one of another version, and a principal that is none", () => {
-    expect(() => readEnvelope(fromJson("[]"), "tool-7")).toThrow("The envelope is invalid");
+  it("throws a DataError for a value that is not an envelope, and one of another version", () => {
+    expect(() => readEnvelope(fromJson("[]"))).toThrow("The envelope is invalid");
     expect(() =>
-      readEnvelope(envelopeOf(undefined, { dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p3" }), "tool-7"),
+      readEnvelope(envelopeOf(undefined, { dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p3" })),
     ).toThrow(
       `The dataVersion of the envelope must be ${CALIPER_CONTEXT} or ${CALIPER_1_1_CONTEXT}, the versions that the endpoint reads, found "http://purl.imsglobal.org/ctx/caliper/v1p3".`,
     );
     expect(() =>
-      readEnvelope(envelopeOf(undefined, { dataVersion: CALIPER_1_1_CONTEXT }), "tool-7", { versions: ["1.2"] }),
+      readEnvelope(envelopeOf(undefined, { dataVersion: CALIPER_1_1_CONTEXT }), { versions: ["1.2"] }),
     ).toThrow(
       `The dataVersion of the envelope must be ${CALIPER_CONTEXT}, the versions that the endpoint reads, found "${CALIPER_1_1_CONTEXT}".`,
     );
-    for (const principal of ["", fromJson<never>("null"), 7]) {
-      expect(() => readEnvelope(envelopeOf(), principal as never), String(principal)).toThrow(
-        "The principal is invalid",
-      );
-    }
   });
 
   it("throws for an item with an error only when strict, and counts the errors", () => {
     const bad = { ...STARTED_DOCUMENT, actor: { id: "person-1", type: "Person" }, nickname: 1 };
     const given = envelopeOf([bad]);
-    expect(readEnvelope(given, "tool-7").data).toStrictEqual([]);
-    expect(() => readEnvelope(given, "tool-7", { strict: true })).toThrow(
+    expect(readEnvelope(given).data).toStrictEqual([]);
+    expect(() => readEnvelope(given, { strict: true })).toThrow(
       'The envelope is invalid at data[0].actor.id: expected an absolute IRI or a blank node identifier, found "person-1". 1 more error: readEnvelope without strict lists every finding.',
     );
-    expect(() => readEnvelope(given, "tool-7", { strict: false })).not.toThrow();
+    expect(() => readEnvelope(given, { strict: false })).not.toThrow();
   });
 
   it("limits its findings, and rejects options of other types", () => {
     const bad = { ...STARTED_DOCUMENT, actor: 5 };
     expect(
-      readEnvelope(envelopeOf([bad, bad, bad]), "tool-7", { maxFindings: 1 }).findings.map(({ rule }) => rule),
+      readEnvelope(envelopeOf([bad, bad, bad]), { maxFindings: 1 }).findings.map(({ rule }) => rule),
     ).toStrictEqual(["invalid-format", "findings-stopped"]);
     for (const options of [
       "null",
@@ -681,12 +675,12 @@ describe("readEnvelope", () => {
       '{"versions":"1.2"}',
       "[]",
     ]) {
-      expect(() => readEnvelope(envelopeOf(), "tool-7", fromJson<never>(options)), options).toThrow("The read options");
+      expect(() => readEnvelope(envelopeOf(), fromJson<never>(options)), options).toThrow("The read options");
     }
   });
 
   it("finds an item of a host's envelope that JSON cannot hold, and reads the others", () => {
-    const envelope = readEnvelope(envelopeOf([soundAt(0), { ...soundAt(1), eventTime: new Date(0) }]), "tool-7");
+    const envelope = readEnvelope(envelopeOf([soundAt(0), { ...soundAt(1), eventTime: new Date(0) }]));
     expect(envelope.data).toHaveLength(1);
     expect(envelope.findings).toMatchObject([{ path: "data[1]", rule: "invalid-value", severity: "error" }]);
   });
@@ -694,7 +688,7 @@ describe("readEnvelope", () => {
   it("does not change the value it is given", () => {
     const given = JSON.parse(JSON.stringify(envelopeOf([PERSON, soundAt(0)])));
     const before = JSON.stringify(given);
-    const envelope = readEnvelope(given, "tool-7");
+    const envelope = readEnvelope(given);
     expect(JSON.stringify(given)).toBe(before);
     expect(envelope.data[1]).not.toBe(given.data[1]);
   });

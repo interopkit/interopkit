@@ -13,14 +13,14 @@ test("reads an envelope of 1,000 events of Caliper 1.2 faster than the schemas c
   const envelope = envelopeOf("1.2", batch);
   const text = JSON.stringify(envelope);
   await annotate(`The envelope has ${EVENTS} events and ${new TextEncoder().encode(text).length} bytes of JSON.`);
-  expect(readEnvelope(envelope, "tool-7").findings.filter(({ severity }) => severity === "error")).toStrictEqual([]);
+  expect(readEnvelope(envelope).findings.filter(({ severity }) => severity === "error")).toStrictEqual([]);
   expect(batch.every(accepts)).toBe(true);
 
   const schemas = await bench("draft 4 schemas", () => {
     for (const event of batch) accepts(event);
   }).run(BENCH_OPTIONS);
   const parse = await bench("JSON.parse", () => JSON.parse(text)).run(BENCH_OPTIONS);
-  const read = await bench("readEnvelope", () => readEnvelope(envelope, "tool-7")).run(BENCH_OPTIONS);
+  const read = await bench("readEnvelope", () => readEnvelope(envelope)).run(BENCH_OPTIONS);
   await expectRatio(annotate, "readEnvelopeAgainstParse", read, { ...parse, name: "JSON.parse" });
   await expectRatio(annotate, "readEnvelopeAgainstSchemas", read, { ...schemas, name: "the draft 4 schemas" });
   const validate = await bench("validateEvent", () => {
@@ -61,13 +61,13 @@ test("reads an envelope of 1,000 events of Caliper 1.1 faster than schema_1_1 ch
   const envelope = envelopeOf("1.1", batch);
   const text = JSON.stringify(envelope);
   await annotate(`The envelope has ${EVENTS} events and ${new TextEncoder().encode(text).length} bytes of JSON.`);
-  expect(readEnvelope(envelope, "tool-7").findings).toStrictEqual([]);
+  expect(readEnvelope(envelope).findings).toStrictEqual([]);
 
   const schemas = await bench("schema_1_1", () => {
     for (const event of batch) accepts(event);
   }).run(SLOW_REFERENCE_OPTIONS);
   const parse = await bench("JSON.parse", () => JSON.parse(text)).run(BENCH_OPTIONS);
-  const read = await bench("readEnvelope", () => readEnvelope(envelope, "tool-7")).run(BENCH_OPTIONS);
+  const read = await bench("readEnvelope", () => readEnvelope(envelope)).run(BENCH_OPTIONS);
   await expectRatio(annotate, "readEnvelope11AgainstParse", read, { ...parse, name: "JSON.parse" });
   await expectRatio(annotate, "readEnvelope11AgainstSchemas", read, { ...schemas, name: "schema_1_1" });
 });

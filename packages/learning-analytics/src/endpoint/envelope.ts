@@ -101,21 +101,19 @@ function readItems(
 }
 
 /**
- * Makes the envelope that an endpoint hands to its host: the fields, the principal who sent it, and the items that read, as the
- * version of Caliper reads them, with what was found in them. The items of an envelope that `JSON.parse` made of a request
+ * Makes the envelope that an endpoint reads: the fields, and the items that read, as the version of Caliper reads them, with
+ * what was found in them. The items of an envelope that `JSON.parse` made of a request
  * within the depth of `MAX_JSON_DEPTH` are JSON that nothing else holds, and are read without a copy; those of a host are copied.
  */
 export function assembleEnvelope(
   fields: EnvelopeFields,
-  principal: string,
   maxFindings: number | undefined,
   version: CaliperVersion,
   parsed: boolean,
-): ReceivedEnvelope {
+): Omit<ReceivedEnvelope, "principal"> {
   const sink = createIssueSink(maxFindings ?? DEFAULT_MAX_FINDINGS, false);
   const data = readItems(fields.data, sink, version, parsed);
   return {
-    principal,
     sensor: fields.sensor,
     sendTime: fields.sendTime,
     dataVersion: contextOfVersion(version),
@@ -125,7 +123,7 @@ export function assembleEnvelope(
 }
 
 /** The sentence that refuses an envelope under `strict`, or `undefined` when no item has an error. */
-export function strictRefusal(envelope: ReceivedEnvelope): string | undefined {
+export function strictRefusal(envelope: Pick<ReceivedEnvelope, "findings">): string | undefined {
   const errors = envelope.findings.filter(({ severity }) => severity === "error");
   return errors.length === 0 ? undefined : describeRefusal("The envelope", errors, "readEnvelope without strict");
 }
@@ -141,20 +139,17 @@ export function strictRefusal(envelope: ReceivedEnvelope): string | undefined {
  * is copied, and nothing of it is kept.
  *
  * @param value - The envelope: the parsed text of a request.
- * @param principal - Who sent it, as the host named them; it goes into the result, and the `sensor` of the envelope does not.
  * @param options - The versions that it reads, the most findings to list, and whether an error in an item refuses the envelope.
- * @returns The envelope that the host receives.
- * @throws `DataError` when the principal is not a non-empty string, the options are not valid, the value is not an envelope of
+ * @returns The envelope, without the `principal` that `handleCaliperRequest` adds from `authorize`.
+ * @throws `DataError` when the options are not valid, the value is not an envelope of
  * section 5.2, its `dataVersion` is the context of a version that the options leave out or of none, or, with `strict`, an item
  * has an error.
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2#envelope-0 | Caliper Analytics 1.2, Envelope}
  */
 export function readEnvelope(
   value: unknown,
-  principal: string,
   options?: Pick<CaliperEndpointOptions, "versions" | "maxFindings" | "strict">,
-): ReceivedEnvelope {
-  const who = parseWith(nonEmptyStringSchema, principal, "The principal");
+): Omit<ReceivedEnvelope, "principal"> {
   const settings = parseWith(readOptionsSchema, options === undefined ? {} : options, "The read options");
   const fields = parseEnvelope(value);
   const versions = settings.versions ?? CALIPER_VERSIONS;
@@ -164,7 +159,7 @@ export function readEnvelope(
       `The dataVersion of the envelope must be ${versions.map(contextOfVersion).join(" or ")}, the versions that the endpoint reads, found ${JSON.stringify(fields.dataVersion)}.`,
     );
   }
-  const envelope = assembleEnvelope(fields, who, settings.maxFindings, version, false);
+  const envelope = assembleEnvelope(fields, settings.maxFindings, version, false);
   const refusal = settings.strict === true ? strictRefusal(envelope) : undefined;
   if (refusal !== undefined) throw new DataError(refusal);
   return envelope;

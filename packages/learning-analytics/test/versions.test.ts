@@ -461,10 +461,10 @@ describe("the endpoint and a sensor of Caliper 1.1", () => {
   });
 
   it("reads an envelope of 1.1 with readEnvelope, and one of 1.2 when its versions leave 1.1 out", () => {
-    expect(readEnvelope(given([sound(1)]), "tool-7").dataVersion).toBe(CALIPER_1_1_CONTEXT);
-    expect(readEnvelope(given([sound(1)]), "tool-7", { versions: ["1.1"] }).data).toStrictEqual([sound(1)]);
-    expect(readEnvelope(envelopeOf(), "tool-7", { versions: ["1.2"] }).dataVersion).toBe(CALIPER_CONTEXT);
-    expect(() => readEnvelope(given([sound(1)]), "tool-7", { versions: ["1.2"] })).toThrow(DataError);
-    expect(() => readEnvelope(envelopeOf(), "tool-7", { versions: ["1.1"] })).toThrow(DataError);
+    expect(readEnvelope(given([sound(1)])).dataVersion).toBe(CALIPER_1_1_CONTEXT);
+    expect(readEnvelope(given([sound(1)]), { versions: ["1.1"] }).data).toStrictEqual([sound(1)]);
+    expect(readEnvelope(envelopeOf(), { versions: ["1.2"] }).dataVersion).toBe(CALIPER_CONTEXT);
+    expect(() => readEnvelope(given([sound(1)]), { versions: ["1.2"] })).toThrow(DataError);
+    expect(() => readEnvelope(envelopeOf(), { versions: ["1.1"] })).toThrow(DataError);
   });
 });

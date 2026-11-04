@@ -99,7 +99,7 @@ export const READINGS = {
   readEnvelope: {
     input: () => envelopeOf([hostileEvent()]),
     read: (envelope: Record<string, unknown>) => {
-      const read = readEnvelope(envelope, "tool-7");
+      const read = readEnvelope(envelope);
       return `${read.data.length} events, ${describeFindings(read.findings)}`;
     },
   },

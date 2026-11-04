@@ -59,10 +59,10 @@ export async function receive(
     return unsupportedVersion(fields.dataVersion, settings.versions.map(contextOfVersion));
   }
   // `readJson` parsed the body within the depth of `MAX_JSON_DEPTH`, so the items need no copy.
-  const envelope = assembleEnvelope(fields, principal, settings.maxFindings, version, true);
+  const envelope = assembleEnvelope(fields, settings.maxFindings, version, true);
   const fault = settings.strict ? strictRefusal(envelope) : undefined;
   if (fault !== undefined) return badRequest(fault);
   const { accept, signal } = settings;
-  const accepted = await callPort(() => accept(envelope, { signal }), { signal });
+  const accepted = await callPort(() => accept({ principal, ...envelope }, { signal }), { signal });
   return accepted === undefined ? internalError() : received();
 }
