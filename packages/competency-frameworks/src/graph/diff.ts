@@ -1,3 +1,4 @@
+import { isSameJson } from "@interopkit/core/checks";
 import type { CasePackage, CFPckgItem } from "../model/index.js";
 import { identifierKey, isCaseNode } from "../model/internal.js";
 import { checkPackageView, copyOf, itemsByKey } from "./package-view.js";
@@ -30,30 +31,6 @@ export interface PackageDiff {
   readonly replaced: readonly ReplacedItem[];
 }
 
-/** One pair of values still to compare, and the depth they are at. */
-interface Pair {
-  readonly first: unknown;
-  readonly second: unknown;
-}
-
-/** Tells whether two JSON values are equal, whatever the order of the properties of an object, without recursion. */
-function sameJson(first: unknown, second: unknown): boolean {
-  const pairs: Pair[] = [{ first, second }];
-  for (let pair = pairs.pop(); pair !== undefined; pair = pairs.pop()) {
-    const [a, b] = [pair.first, pair.second];
-    if (a === b) continue;
-    if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
-    if (Array.isArray(a) !== Array.isArray(b)) return false;
-    const [keysA, keysB] = [Object.keys(a), Object.keys(b)];
-    if (keysA.length !== keysB.length) return false;
-    for (const key of keysA) {
-      if (!Object.hasOwn(b, key)) return false;
-      pairs.push({ first: Reflect.get(a, key), second: Reflect.get(b, key) });
-    }
-  }
-  return true;
-}
-
 /**
  * Compares two versions of a framework by its items.
  *
@@ -83,7 +60,7 @@ export function diffPackages(before: CasePackage, after: CasePackage): PackageDi
   const removed = [...earlier].filter(([key]) => !later.has(key)).map(([, item]) => copy(item));
   const changed = [...later].flatMap(([key, item]) => {
     const old = earlier.get(key);
-    return old === undefined || sameJson(old, item) ? [] : [{ before: copy(old), after: copy(item) }];
+    return old === undefined || isSameJson(old, item) ? [] : [{ before: copy(old), after: copy(item) }];
   });
   const known = new Set((before.CFAssociations ?? []).map(({ identifier }) => identifierKey(identifier)));
   const uriOf = (node: { readonly identifier: string; readonly uri: string }) => {

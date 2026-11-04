@@ -431,6 +431,13 @@ export const CORE_RULES: readonly Rule[] = [
     test: "packages/core/test/json.test.ts",
   },
   {
+    rule: "Two JSON values differ when a nested value differs, so that an item of a framework is changed then.",
+    file: "packages/core/src/json.ts",
+    find: "pairs.push([Reflect.get(left, name), Reflect.get(right, name)]);",
+    replace: "Reflect.get(left, name);",
+    test: "packages/core/test/json.test.ts",
+  },
+  {
     rule: "A copy of JSON refuses a member named __proto__, constructor or prototype, at any depth.",
     file: "packages/core/src/json.ts",
     find: "if (reserved !== undefined) {",

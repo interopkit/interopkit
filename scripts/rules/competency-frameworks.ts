@@ -355,13 +355,6 @@ export const COMPETENCY_FRAMEWORKS_RULES: readonly Rule[] = [
     test: "packages/competency-frameworks/test/graph.test.ts",
   },
   {
-    rule: "An item is changed when a nested property differs.",
-    file: "packages/competency-frameworks/src/graph/diff.ts",
-    find: "pairs.push({ first: Reflect.get(a, key), second: Reflect.get(b, key) });",
-    replace: "Reflect.get(a, key);",
-    test: "packages/competency-frameworks/test/graph.test.ts",
-  },
-  {
     rule: "The difference lists only the replacedBy associations that the earlier package lacks.",
     file: "packages/competency-frameworks/src/graph/diff.ts",
     find: "return isNew && association.associationType",

@@ -4,6 +4,7 @@ import {
   copyJson,
   endOfJsonString,
   hasMoreTokensThan,
+  isSameJson,
   MAX_JSON_DEPTH,
   nestsDeeperThan,
   parseJsonText,
@@ -98,6 +99,53 @@ describe("copyJson", () => {
     expect(copyJson(value, "value")).toStrictEqual({
       problem: `value${".n".repeat(MAX_JSON_DEPTH)} nests more than ${MAX_JSON_DEPTH} levels, the most that a JSON value may here`,
     });
+  });
+});
+
+describe("isSameJson", () => {
+  it("compares primitives by value, arrays in order and objects in any order", () => {
+    expect(isSameJson(1, 1)).toBe(true);
+    expect(isSameJson("a", "a")).toBe(true);
+    expect(isSameJson(null, null)).toBe(true);
+    expect(isSameJson(1, "1")).toBe(false);
+    expect(isSameJson(null, {})).toBe(false);
+    expect(isSameJson([1, 2], [1, 2])).toBe(true);
+    expect(isSameJson([1, 2], [2, 1])).toBe(false);
+    expect(isSameJson([1], [1, 1])).toBe(false);
+    expect(isSameJson({ a: 1, b: [true] }, { b: [true], a: 1 })).toBe(true);
+    expect(isSameJson({ a: 1 }, { a: 1, b: 2 })).toBe(false);
+    expect(isSameJson({ a: 1, b: 2 }, { a: 1, c: 2 })).toBe(false);
+    expect(isSameJson({ 0: "x" }, ["x"])).toBe(false);
+    expect(isSameJson([], {})).toBe(false);
+  });
+
+  it("compares values nested deeper than a stack holds", () => {
+    const deep = (leaf: number) => {
+      let value: unknown = leaf;
+      for (let level = 0; level < 200_000; level += 1) value = [value];
+      return value;
+    };
+    expect(isSameJson(deep(1), deep(1))).toBe(true);
+    expect(isSameJson(deep(1), deep(2))).toBe(false);
+  });
+
+  it("finds any value the same as its copy, and as the copy with its members in another order", () => {
+    const reversed = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(reversed);
+      if (typeof value !== "object" || value === null) return value;
+      return Object.fromEntries(
+        Object.entries(value)
+          .reverse()
+          .map(([name, member]) => [name, reversed(member)]),
+      );
+    };
+    fc.assert(
+      fc.property(fc.jsonValue(), (value) => {
+        expect(isSameJson(value, structuredClone(value))).toBe(true);
+        expect(isSameJson(value, reversed(value))).toBe(true);
+      }),
+      { seed: 20_261_104, numRuns: 300 },
+    );
   });
 });
 

@@ -72,6 +72,7 @@ describe("the public API", () => {
         "isDateTime",
         "isLanguageTag",
         "isRecord",
+        "isSameJson",
         "isUuid",
         "describeIssue",
         "jsonObjectSchema",

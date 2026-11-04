@@ -1,4 +1,4 @@
-import { type Issue, isDateTime, parseDateTime } from "@interopkit/core/checks";
+import { type Issue, isDateTime, isSameJson, parseDateTime } from "@interopkit/core/checks";
 import { type Activity, type Actor, type Context, type Statement, VERB_VOIDED } from "@interopkit/learning-records";
 import { CMI5_CATEGORIES, CMI5_EXTENSIONS, type Cmi5Verb } from "../model/index.js";
 import { categoryIdsOf, classifyStatement, cmi5VerbOf } from "./classify.js";
@@ -48,19 +48,6 @@ export function timeOf(text: string | undefined): number | undefined {
   const offset = /^[Zz]$/u.test(zone) ? "Z" : `${digits.slice(0, 3)}:${digits.slice(3) || "00"}`;
   const written = `${year}-${month}-${day}T${hour}:${minute}:${second}${fraction}${offset}`;
   return isDateTime(written) ? parseDateTime(written) : undefined;
-}
-
-/** Compares two values of JSON by content, the order of the members of an object aside. */
-function sameJson(left: unknown, right: unknown): boolean {
-  if (left === right) return true;
-  if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) return false;
-  if (Array.isArray(left) !== Array.isArray(right)) return false;
-  const leftEntries = Object.entries(left);
-  const rightMembers = new Map(Object.entries(right));
-  return (
-    leftEntries.length === rightMembers.size &&
-    leftEntries.every(([key, value]) => rightMembers.has(key) && sameJson(value, rightMembers.get(key)))
-  );
 }
 
 /** Tells whether two Actors are the same person by the identifier of xAPI that they carry. */
@@ -126,7 +113,7 @@ function judgeContext(statement: Statement, facts: SessionFacts, found: Findings
       "session-id",
       "has no session id, which every statement of a session carries (9.6.3.1).",
     );
-  } else if (!sameJson(context.extensions[CMI5_EXTENSIONS.sessionId], sessionId)) {
+  } else if (!isSameJson(context.extensions[CMI5_EXTENSIONS.sessionId], sessionId)) {
     found.error("context.extensions", "session-id", "has a session id other than that of the session (9.6.3.1).");
   }
   judgeTemplate(facts.launchData.contextTemplate, context, found);
@@ -156,7 +143,7 @@ function judgeTemplateActivities(template: Context, context: Context | undefined
 function judgeTemplate(template: Context, context: Context | undefined, found: Findings): void {
   judgeTemplateActivities(template, context, found);
   for (const [key, value] of Object.entries(template.extensions ?? {})) {
-    if (key !== CMI5_EXTENSIONS.sessionId && !sameJson(context?.extensions?.[key], value)) {
+    if (key !== CMI5_EXTENSIONS.sessionId && !isSameJson(context?.extensions?.[key], value)) {
       found.error(
         "context.extensions",
         "context-template",
@@ -166,7 +153,7 @@ function judgeTemplate(template: Context, context: Context | undefined, found: F
   }
   const members = new Map<string, unknown>(Object.entries(context ?? {}));
   for (const [key, value] of Object.entries(template)) {
-    if (key !== "contextActivities" && key !== "extensions" && !sameJson(members.get(key), value)) {
+    if (key !== "contextActivities" && key !== "extensions" && !isSameJson(members.get(key), value)) {
       found.error(
         `context.${key}`,
         "context-template",

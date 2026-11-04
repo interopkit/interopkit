@@ -178,6 +178,35 @@ export function copyJson(value: unknown, path: string): JsonValueCopy {
   return copied instanceof Fault ? { problem: `${placeOfFault(path, copied)} ${copied.what}` } : { value: copied };
 }
 
+/**
+ * Tells whether two JSON values are the same: the same primitive, arrays of the same values in the same order, or objects with
+ * the same members in any order.
+ *
+ * @remarks
+ * The two values are walked side by side with a list of pairs and no recursion, so a value of any depth costs no stack. An
+ * object is compared by its own enumerable members, which are all that JSON has.
+ *
+ * @param first - A JSON value.
+ * @param second - Another JSON value.
+ * @returns Whether they are the same.
+ */
+export function isSameJson(first: unknown, second: unknown): boolean {
+  const pairs: [unknown, unknown][] = [[first, second]];
+  for (let pair = pairs.pop(); pair !== undefined; pair = pairs.pop()) {
+    const [left, right] = pair;
+    if (left === right) continue;
+    if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) return false;
+    if (Array.isArray(left) !== Array.isArray(right)) return false;
+    const names = Object.keys(left);
+    if (names.length !== Object.keys(right).length) return false;
+    for (const name of names) {
+      if (!Object.hasOwn(right, name)) return false;
+      pairs.push([Reflect.get(left, name), Reflect.get(right, name)]);
+    }
+  }
+  return true;
+}
+
 const QUOTE = 0x22;
 const BACKSLASH = 0x5c;
 const OPEN_BRACE = 0x7b;

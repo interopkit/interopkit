@@ -1,4 +1,4 @@
-import { isRecord } from "@interopkit/core/checks";
+import { isSameJson } from "@interopkit/core/checks";
 import type { Statement } from "../model/index.js";
 import { type JsonPath, parseJsonPath, selectJsonPath } from "./json-path.js";
 import type { RulePresence, StatementTemplate } from "./templates.js";
@@ -27,24 +27,6 @@ interface CompiledRule {
 export interface CompiledTemplate {
   readonly template: StatementTemplate;
   readonly rules: readonly CompiledRule[];
-}
-
-/** Tells whether two JSON values are the same: the same primitive, or arrays and objects of the same values. */
-function isSameJson(left: unknown, right: unknown): boolean {
-  if (left === right) return true;
-  if (Array.isArray(left)) {
-    return (
-      Array.isArray(right) &&
-      left.length === right.length &&
-      left.every((entry, index) => isSameJson(entry, right[index]))
-    );
-  }
-  if (!isRecord(left) || !isRecord(right) || Array.isArray(right)) return false;
-  const keys = Object.keys(left);
-  return (
-    keys.length === Object.keys(right).length &&
-    keys.every((key) => Object.hasOwn(right, key) && isSameJson(left[key], right[key]))
-  );
 }
 
 /** Builds the set of the values of a rule: strings, numbers and booleans by a hash, objects and arrays by comparison. */

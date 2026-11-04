@@ -180,7 +180,7 @@ export const COURSE_LAUNCH_RULES: readonly Rule[] = [
   {
     rule: "A statement holds the session id of its session and no other.",
     file: "packages/course-launch/src/rules/judge-statement.ts",
-    find: "} else if (!sameJson(context.extensions[CMI5_EXTENSIONS.sessionId], sessionId)) {",
+    find: "} else if (!isSameJson(context.extensions[CMI5_EXTENSIONS.sessionId], sessionId)) {",
     replace: "} else if (false) {",
     test: "packages/course-launch/test/session.test.ts",
   },

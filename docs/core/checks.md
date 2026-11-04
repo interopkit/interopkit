@@ -170,6 +170,11 @@ the value is not JSON. `JsonValue` and `JsonObject` are the types.
 
 A member named `__proto__`, `constructor` or `prototype` is refused at any depth, as the schemas refuse it.
 
+`isSameJson(first, second)` tells whether two JSON values are the same: the same primitive, arrays of the same values in the same
+order, or objects with the same members in any order. It walks the values without recursion, so a value of any depth costs no
+stack. The rules of an xAPI Profile, the context template of cmi5 and the comparison of two versions of a CASE framework compare
+values with it.
+
 `nestsDeeperThan(text, maxDepth)` tells whether the arrays and objects of a text of JSON nest deeper than a limit, without parsing it: the text may be
 any string, and a string literal hides its brackets. `parseStatementJson` checks the depth with it before it parses.
 `findExceededJsonLimit(text, maxDepth, maxTokens)` reads the text once for both limits and tells which it passes first, in the order of
