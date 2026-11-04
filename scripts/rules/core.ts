@@ -389,27 +389,6 @@ export const CORE_RULES: readonly Rule[] = [
     test: "packages/core/test/formats.test.ts",
   },
   {
-    rule: "A key set is fetched again only after the refresh time, whatever the kid.",
-    file: "packages/core/src/jwks-cache.ts",
-    find: "const fetched = await sets.get(url, load(url), callOptions, refreshAfter);",
-    replace: "const fetched = await sets.get(url, load(url), callOptions, 0);",
-    test: "packages/core/test/jwks-cache.test.ts",
-  },
-  {
-    rule: "A key set of more keys than the limit is refused before jose copies them.",
-    file: "packages/core/src/jwks-cache.ts",
-    find: "if (set.keys.length > MAX_KEYS) {",
-    replace: "if (false) {",
-    test: "packages/core/test/jwks-cache.test.ts",
-  },
-  {
-    rule: "A key set is cached for its lifetime.",
-    file: "packages/core/src/jwks-cache.ts",
-    find: "lifetime: () => ttlSeconds * MILLISECONDS_PER_SECOND,",
-    replace: "lifetime: () => 0,",
-    test: "packages/core/test/jwks-cache.test.ts",
-  },
-  {
     rule: "A request parameter that occurs twice is refused.",
     file: "packages/core/src/http/parameters.ts",
     find: "if (collected.has(name)) throw",

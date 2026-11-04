@@ -8,7 +8,7 @@ not keep the cookie, whose pages ask the platform's capabilities for the frame t
 validates the launch of every message type, with the versions, the message types, the audiences and the algorithms that the
 host accepts, binds it to the deployment and the target of its login, refuses the platform's authentication error and a form
 above `maxFormBytes`, and verifies the LTI 1.1 migration claim with the host's secret. It signs with the `Signer` of each
-registration, serves its key set with every key of a rotation (`serveToolJwks`), answers a Deep Linking request with the page that posts
+registration, keeps the JWK Sets of other parties by the `Clock` of the host for `jwtVerify` of jose (`createJwksCache`: a set of up to 100 keys is fetched again past its lifetime, and for a missing `kid` at most once a refresh time), serves its key set with every key of a rotation (`serveToolJwks`), answers a Deep Linking request with the page that posts
 the signed response (`buildDeepLinkingResponse`, which holds the items of the five types and of others to what the request accepts),
 sends a proctored candidate back with the page that posts the signed Start Assessment message (`buildStartAssessmentPage`, which
 returns the session data and holds the verified claims to the values that the platform sent), and calls the Assignment and

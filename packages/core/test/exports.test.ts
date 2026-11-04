@@ -13,7 +13,6 @@ describe("the public API", () => {
         "checkClock",
         "clientOptionsEntries",
         "createCryptoKeySigner",
-        "createJwksCache",
         "createKeyedCache",
         "DataError",
         "DEFAULT_MAX_BYTES",

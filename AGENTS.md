@@ -96,7 +96,6 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/oauth/`           | The OAuth 2.0 clients and the token cache, which `@interopkit/core/oauth` exports                   |
 | `packages/core/src/race-abort.ts` | `raceAbort`, which ends a wait when a signal aborts                                              |
 | `packages/core/src/keyed-cache.ts`   | `createKeyedCache`: values by key with a lifetime, whose loads are shared work                      |
-| `packages/core/src/jwks-cache.ts`    | `createJwksCache`: the JWK Sets of other parties on `createKeyedCache`, which `tool-integration` exports too |
 | `packages/core/src/call-port.ts`     | `callPort`, which turns the failure of a port into a value for a handler                            |
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/` (`claims/`, `message/`, one folder for each service body), `tool/`, `platform/` |
 | `packages/learning-analytics/`       | Caliper 1.2, and 1.1 read: `model/`, `v1p1/`, `read/`, `validate/`, `build/`, `send/`, `endpoint/`  |

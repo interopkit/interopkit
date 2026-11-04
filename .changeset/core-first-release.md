@@ -9,9 +9,7 @@ a deadline, a size limit of 65,536 bytes unless the call says otherwise, no redi
 bodies as text or bytes, statuses that a call returns as values, a `ServiceError` that carries the status, the headers and the
 body of the answer, and a `signal` that ends the caller's wait, and
 `raceAbort`, which ends one caller's wait on work that several callers share, and `createKeyedCache`, which keeps values by
-key and shares the load of each. `createJwksCache` keeps the JWK Sets of other parties on it, by the `Clock` of the host, for
-`jwtVerify` of jose: a set of up to 100 keys is fetched again past its lifetime, and for a missing `kid` at most once a refresh
-time. `readRetryAfterSeconds` reads the retry header of an answer, and `findLinkTarget` gives the address of a link only on the
+key and shares the load of each. `readRetryAfterSeconds` reads the retry header of an answer, and `findLinkTarget` gives the address of a link only on the
 origin of the request. `@interopkit/core/http` holds the request
 and the answer of a handler as plain data with bodies as bytes, `readText`, `readJson`, `readQuery` and `readForm` with a limit on its bytes,
 `readBearerToken`, which reads the bearer token of RFC 6750 from `Authorization`, and `buildJsonResponse`. For the providers of the 1EdTech services it reads

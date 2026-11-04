@@ -71,6 +71,12 @@ const CASES: readonly {
     outcome: "running; refused by maxBytes",
   },
   {
+    title: "refuses the key sets at the limits of bytes and keys, one nested too deep to copy, and one far above",
+    name: "keySets",
+    heapMiB: 32,
+    outcome: "DataError above the limit of 100 keys; JWKSNoMatchingKey; DataError; ServiceError",
+  },
+  {
     title: "refuses login initiations at the limit of repeated and of distinct parameters, and a form far above it",
     name: "toolLogin",
     heapMiB: 16,

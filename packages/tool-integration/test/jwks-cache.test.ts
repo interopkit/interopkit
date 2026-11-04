@@ -1,8 +1,9 @@
 // biome-ignore-all lint/style/useNamingConvention: the members of a JWK are those of RFC 7517, such as key_ops.
 
+import { DataError, type Fetch, LimitError, ServiceError } from "@interopkit/core";
 import { jwtVerify } from "jose";
 import { describe, expect, it } from "vitest";
-import { createJwksCache, DataError, type Fetch, LimitError, ServiceError } from "../src/index.js";
+import { createJwksCache } from "../src/index.js";
 
 const JWKS_URL = "https://lms.example.edu/jwks";
 const NO_KEY = { code: "ERR_JWKS_NO_MATCHING_KEY" };

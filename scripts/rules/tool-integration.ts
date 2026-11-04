@@ -4,6 +4,27 @@ import type { Rule } from "./rule.ts";
 /** The rules of `@interopkit/tool-integration` that a test must guard, each with the test that guards it. */
 export const TOOL_INTEGRATION_RULES: readonly Rule[] = [
   {
+    rule: "A key set is fetched again only after the refresh time, whatever the kid.",
+    file: "packages/tool-integration/src/protocol/jwks.ts",
+    find: "const fetched = await sets.get(url, load(url), callOptions, refreshAfter);",
+    replace: "const fetched = await sets.get(url, load(url), callOptions, 0);",
+    test: "packages/tool-integration/test/jwks-cache.test.ts",
+  },
+  {
+    rule: "A key set of more keys than the limit is refused before jose copies them.",
+    file: "packages/tool-integration/src/protocol/jwks.ts",
+    find: "if (set.keys.length > MAX_KEYS) {",
+    replace: "if (false) {",
+    test: "packages/tool-integration/test/jwks-cache.test.ts",
+  },
+  {
+    rule: "A key set is cached for its lifetime.",
+    file: "packages/tool-integration/src/protocol/jwks.ts",
+    find: "lifetime: () => ttlSeconds * MILLISECONDS_PER_SECOND,",
+    replace: "lifetime: () => 0,",
+    test: "packages/tool-integration/test/jwks-cache.test.ts",
+  },
+  {
     rule: "JSON of the body of a service over the limit of its levels or tokens is refused with 413.",
     file: "packages/tool-integration/src/platform/services/body.ts",
     find: "if (error instanceof LimitError) return tooLarge(error.message);",

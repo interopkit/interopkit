@@ -334,7 +334,7 @@ is about to expire, and sends it only to the registration's `serviceOrigins`, or
 
 ## The key set cache
 
-`createJwksCache({ fetch, clock })`, which the package exports from [`@interopkit/core`](../core/signals.md), keeps the key set of
+`createJwksCache({ fetch, clock })` keeps the key set of
 each URL, which comes from a registration and never from a token, as a `createLocalJWKSet` of jose in a `createKeyedCache`.
 `cache.keySet(url, options)` returns the function that resolves the public key of a token from its header, and `jwtVerify` of
 jose takes it. The `signal` of `options` ends the wait of the caller that holds the function; the fetch is shared work and runs

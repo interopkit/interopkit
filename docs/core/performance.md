@@ -42,8 +42,8 @@ module that its budget does not list. Gzip is measured on Node.js 22; other vers
 
 | Entry point | Bytes | Gzip | Budget | Holds, besides valibot |
 | --- | ---: | ---: | ---: | --- |
-| `@interopkit/core` | 33,587 | 11,707 | 15,000 | jose, for the key set cache |
-| `@interopkit/core/checks` | 21,945 | 7,639 | 8,500 | nothing more |
+| `@interopkit/core` | 26,927 | 9,417 | 12,000 | nothing more |
+| `@interopkit/core/checks` | 22,338 | 7,768 | 8,500 | nothing more |
 | `@interopkit/core/http` | 22,419 | 7,151 | 9,000 | nothing more |
 | `@interopkit/core/oauth` | 47,092 | 15,293 | 18,500 | oauth4webapi |
 
@@ -59,4 +59,3 @@ steps of 8 MiB.
 | `serviceEndless` | An answer without end, read to a limit of 1 MiB | 8 MiB | 16 MiB |
 | `formPluses` | A form of 10 MiB of plus signs | 8 MiB | 16 MiB |
 | `jsonObjects` | A body at the size limit of the most empty objects that the tokens allow | 32 MiB | 64 MiB |
-| `keySets` | Key sets at the limits of bytes and keys, one nested too deep to copy, and one far above the limit | 16 MiB | 32 MiB |

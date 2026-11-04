@@ -31,12 +31,6 @@ const CASES: readonly {
     heapMiB: 64,
     outcome: "a list of 333332 objects",
   },
-  {
-    title: "refuses the key sets at the limits of bytes and keys, one nested too deep to copy, and one far above",
-    name: "keySets",
-    heapMiB: 32,
-    outcome: "DataError above the limit of 100 keys; JWKSNoMatchingKey; DataError; ServiceError",
-  },
 ];
 
 let bundle: Bundle;
