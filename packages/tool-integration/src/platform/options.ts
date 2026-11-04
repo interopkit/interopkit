@@ -41,7 +41,7 @@ export interface PlatformOptions {
   readonly clock?: Clock;
 }
 
-/** The options of `prepareToolLaunch` and `prepareToolFrame`. */
+/** The options of `prepareToolLaunch`. */
 export interface PlatformLoginOptions extends PlatformOptions, CallOptions {
   /** Looks up the registration of a tool by its client identifier, or returns `undefined` when there is none. */
   readonly registration: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
@@ -49,12 +49,6 @@ export interface PlatformLoginOptions extends PlatformOptions, CallOptions {
   readonly check: (message: MessageInput, options?: CallOptions) => Promise<void>;
   /** Where the platform keeps the message until the tool's authentication request. */
   readonly launches: LaunchStore;
-  /**
-   * The name of the frame that shows the storage page, which the tool's `lti_storage_target` names.
-   *
-   * @defaultValue `"lti-storage"`
-   */
-  readonly storageTarget?: string;
 }
 
 /** What the launch of a tool is, as `checkLaunch` sees it before the message is taken. */
@@ -156,12 +150,6 @@ export interface PlatformRequestOptions extends PlatformOptions, CallOptions {
    */
   readonly maxPageSize?: number;
   /**
-   * The name of the frame of the tool, the only one that the storage page answers.
-   *
-   * @defaultValue `"lti-tool"`
-   */
-  readonly toolFrame?: string;
-  /**
    * The most bytes of the body of a request, measured before it is parsed.
    *
    * @defaultValue `65536`
@@ -249,8 +237,6 @@ export interface ToolMessageSettings extends Required<Omit<ToolMessageOptions, "
   readonly signal?: AbortSignal;
 }
 
-/** The name of the frame of the tool, which the storage page answers, when the host names none. */
-const DEFAULT_TOOL_FRAME = "lti-tool";
 /**
  * The most bytes of a body: the form of an authentication request or a token request is a few kilobytes, and a JSON body of a
  * service, such as a line item or a score, less.
@@ -310,7 +296,6 @@ const loginOptionsSchema = strictRecord({
   registration: functionSchema<PlatformLoginOptions["registration"]>(),
   check: functionSchema<PlatformLoginOptions["check"]>(),
   launches: launchStoreSchema,
-  storageTarget: v.optional(nonEmptyStringSchema),
   signal: v.optional(abortSignalSchema),
 });
 
@@ -350,7 +335,6 @@ const requestOptionsSchema = strictRecord({
   ),
   pageSize: v.optional(positiveIntegerSchema),
   maxPageSize: v.optional(positiveIntegerSchema),
-  toolFrame: v.optional(nonEmptyStringSchema),
   maxBodyBytes: v.optional(positiveIntegerSchema),
   sessionDataLifetimeSeconds: v.optional(positiveIntegerSchema),
   deepLinkingLifetimeSeconds: v.optional(positiveIntegerSchema),
@@ -422,7 +406,7 @@ export function readInitiationOptions(options: unknown): RegistrationInitiationO
 }
 
 /**
- * Checks the options of `prepareToolLaunch` and `prepareToolFrame`.
+ * Checks the options of `prepareToolLaunch`.
  *
  * @throws `DataError` that names the option and what it must be.
  */
@@ -441,7 +425,6 @@ export function readRequestOptions(options: unknown): PlatformSettings {
   return {
     ...read,
     clock: read.clock ?? SYSTEM_CLOCK,
-    toolFrame: read.toolFrame ?? DEFAULT_TOOL_FRAME,
     pageSize: read.pageSize ?? DEFAULT_PAGE_SIZE,
     maxPageSize: read.maxPageSize ?? DEFAULT_MAX_PAGE_SIZE,
     maxBodyBytes: read.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES,

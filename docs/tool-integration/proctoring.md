@@ -14,7 +14,7 @@ sequenceDiagram
   participant P as Platform role
   participant B as Browser
   participant T as Proctoring tool
-  H->>P: prepareToolFrame(LtiStartProctoring, services.control)
+  H->>P: prepareToolLaunch(LtiStartProctoring, services.control)
   P-->>B: login, then the id_token: session_data sealed, the acs claim
   B->>T: handleLaunch
   T->>T: checks of the candidate and the room

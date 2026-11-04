@@ -148,7 +148,7 @@ describe("the claims of the roster services", () => {
       prepareToolLaunch({ ...noContext, services: { roster: true, groups: { sets: false } } }, ctx.login),
     ).rejects.toThrow("offers the roster and group services, which need its context");
     const connector = { ...noContext, services: { preferences: { activityIds: ["activity-1"] } } };
-    await expect(prepareToolLaunch(connector, ctx.login)).resolves.toEqual(expect.any(String));
+    await expect(prepareToolLaunch(connector, ctx.login)).resolves.toMatchObject({ url: expect.any(String) });
   });
 
   it("refuses a message whose services are of other types or lack what they need", async () => {

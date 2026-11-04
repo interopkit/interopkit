@@ -13,7 +13,7 @@ sequenceDiagram
   participant P as Platform role
   participant B as Browser
   participant T as Tool role
-  H->>P: prepareToolFrame(LtiDeepLinkingRequest with settings and data)
+  H->>P: prepareToolLaunch(LtiDeepLinkingRequest with settings and data)
   P-->>B: login, then the id_token with data sealed (settings, data, expiry)
   B->>T: the request: handleLaunch
   T->>T: the user chooses

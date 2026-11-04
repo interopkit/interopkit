@@ -6,7 +6,7 @@ import {
   type MessageInput,
   type PlatformEndpoints,
   type PlatformFrame,
-  prepareToolFrame,
+  prepareToolLaunch,
   type ReceivedDeepLinkingResponse,
   type ReceivedStartAssessment,
   readDeepLinkingResponse,
@@ -84,7 +84,7 @@ export function createPlatform(setup: PlatformSetup): Platform {
     endpoints,
     handle: (request) =>
       (routes[new URL(request.url).pathname] ?? ((sent) => handlePlatformRequest(sent, requests)))(request),
-    frame: (message) => prepareToolFrame(message, login),
+    frame: (message) => prepareToolLaunch(message, login),
     gradebook,
     deepLinked,
     attempts,

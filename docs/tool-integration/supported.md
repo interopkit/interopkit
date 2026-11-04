@@ -51,7 +51,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  login["prepareToolLaunch<br/>prepareToolFrame<br/>LaunchStore"] --> authorize["/authorize<br/>id_token"]
+  login["prepareToolLaunch<br/>LaunchStore"] --> authorize["/authorize<br/>id_token"]
   authorize --> token["/jwks<br/>/token"]
   login -.-> storage["/storage<br/>buildCapabilitiesScript"]
   token --> ags["/contexts/.../line-items<br/>GradebookStore"]

@@ -75,7 +75,7 @@ export async function handlePlatformRequest(
       return answerToken(request, settings);
     case PATHS.storage:
       if (request.method !== "GET") return methodNotAllowed(request.method, "GET");
-      return storagePage(settings.config.frameOrigin, settings.toolFrame);
+      return storagePage(settings.config.frameOrigin);
     case PATHS.registration: {
       const store = settings.services?.registrations;
       return store === undefined ? notFound() : answerRegistration(request, store, settings);

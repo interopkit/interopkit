@@ -187,14 +187,16 @@ export async function createPair(
     store,
     keys,
     toolKeys,
-    login: (message) =>
-      prepareToolLaunch(message, {
+    login: async (message) => {
+      const { url } = await prepareToolLaunch(message, {
         config,
         clock: CLOCK,
         registration: lookup,
         check: async () => undefined,
         launches,
-      }),
+      });
+      return url;
+    },
   };
 }
 

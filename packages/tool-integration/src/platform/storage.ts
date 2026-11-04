@@ -2,6 +2,12 @@
 import type { HttpResponse } from "@interopkit/core/http";
 import { escapeHtml, pagePolicy } from "../protocol/internal.js";
 
+/** The name of the frame that shows the storage page, which the tool's `lti_storage_target` names. */
+export const STORAGE_TARGET = "lti-storage";
+
+/** The name of the frame of the tool, the only one that the storage page answers. */
+export const TOOL_FRAME = "lti-tool";
+
 /**
  * The most bytes, as the sum of the lengths of the keys and values, that the page keeps for one origin. It is the least that
  * a platform must offer.
@@ -99,10 +105,9 @@ const SCRIPT = `(function () {
  *
  * @see {@link https://www.imsglobal.org/spec/lti-cs-oidc/v0p1 | LTI Client Side OIDC 0.1}
  * @param frameOrigin - The origin of the page that frames this one, the only one that may.
- * @param toolFrame - The name of the frame of the tool, the only one that the page answers.
  */
-export async function storagePage(frameOrigin: string, toolFrame: string): Promise<HttpResponse> {
-  const config = { tool: toolFrame, maxBytes: STORAGE_MAX_BYTES, maxKeys: STORAGE_MAX_KEYS };
+export async function storagePage(frameOrigin: string): Promise<HttpResponse> {
+  const config = { tool: TOOL_FRAME, maxBytes: STORAGE_MAX_BYTES, maxKeys: STORAGE_MAX_KEYS };
   const html = `<!doctype html>
 <html lang="en">
 <head>

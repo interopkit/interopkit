@@ -296,14 +296,16 @@ export async function createReferencePlatform(settings: ReferencePlatformOptions
     options,
     toolMessage: { config, clock: CLOCK, client, jwks, once },
     handle,
-    login: (message) =>
-      prepareToolLaunch(message, {
+    login: async (message) => {
+      const { url } = await prepareToolLaunch(message, {
         config,
         clock: CLOCK,
         registration: client,
         check: async () => undefined,
         launches,
-      }),
+      });
+      return url;
+    },
     async authenticate(authenticationUrl) {
       const page = await handle({ method: "GET", url: authenticationUrl, headers: {}, body: new Uint8Array() });
       const post = readPost(page);

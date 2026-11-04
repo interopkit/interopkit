@@ -2,7 +2,7 @@
 
 `@interopkit/tool-integration/platform` launches tools as an LTI 1.3 platform. The host describes what it launches as a
 `MessageInput` of plain data: a resource link, a Deep Linking request, a Start Proctoring or an End Assessment message.
-`prepareToolLaunch` keeps it in the host's `LaunchStore` and returns the URL of the tool's login; one handler,
+`prepareToolLaunch` keeps it in the host's `LaunchStore` and returns the URL of the tool's login with what the page that frames it needs; one handler,
 `handlePlatformRequest`, answers every request to the platform's origin: the tool's authentication request with the `id_token`
 of the kept message, the key set, the token requests, the storage page and the routes of the services whose stores the host
 gives ([grade services](grades.md), [roster services](roster.md), [proctoring](proctoring.md)), and Dynamic Registration over a
@@ -17,7 +17,7 @@ sequenceDiagram
   participant S as LaunchStore
   participant T as Tool
   P->>H: open the resource
-  H->>K: prepareToolFrame(message, options)
+  H->>K: prepareToolLaunch(message, options)
   K->>H: check(message), registration(clientId)
   K->>S: put(id, message, 300 s)
   K-->>H: url, storageUrl, allow
@@ -32,11 +32,10 @@ sequenceDiagram
 
 | Function                                   | Does                                                                                                      |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `prepareToolLaunch(message, options)`       | Keeps a message for a tool and returns the URL of the tool's third-party initiated login                  |
-| `prepareToolFrame(message, options)`       | Does the same and returns what the page needs: that URL, the storage page and the `allow` list            |
+| `prepareToolLaunch(message, options)`      | Keeps a message for a tool and returns what the page needs: the URL of the tool's third-party initiated login, the storage page, the names of the two frames and the `allow` list |
 | `handlePlatformRequest(request, options)`  | Answers every request to the platform's origin                                                            |
 | `buildPlatformEndpoints(config)`           | Returns the URLs of the endpoints, which the tool's administrator registers with the tool                 |
-| `buildCapabilitiesScript(options)`         | Returns the inline script, with its CSP hash, that answers `lti.capabilities` on the host's frame page     |
+| `buildCapabilitiesScript()`                | Returns the inline script, with its CSP hash, that answers `lti.capabilities` on the host's frame page     |
 | `readDeepLinkingResponse(request, options)` | Reads and verifies the form that a tool posts to the return URL of a Deep Linking request ([Deep Linking](deep-linking.md)) |
 | `readStartAssessment(request, options)`    | Reads and verifies the form that a proctoring tool posts to the start assessment URL ([proctoring](proctoring.md)) |
 | `buildRegistrationInitiation(url, options)` | Returns the tool's initiation URL with the configuration and a single-use registration token ([registration](registration.md)) |
@@ -51,7 +50,7 @@ launches a tool from a platform built on these functions.
 
 ```ts
 import { createCryptoKeySigner } from "@interopkit/core";
-import { buildPlatformEndpoints, handlePlatformRequest, prepareToolFrame } from "@interopkit/tool-integration/platform";
+import { buildPlatformEndpoints, handlePlatformRequest, prepareToolLaunch } from "@interopkit/tool-integration/platform";
 import { createJwksCache } from "@interopkit/tool-integration";
 
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
@@ -84,7 +83,7 @@ const launches = {
   },
 };
 const clock = { now: () => 1_700_000_000_000 };
-const frame = await prepareToolFrame(
+const frame = await prepareToolLaunch(
   {
     messageType: "LtiResourceLinkRequest",
     clientId: "tool-1",
@@ -98,6 +97,8 @@ const frame = await prepareToolFrame(
 );
 new URL(frame.url).searchParams.get("client_id"); // => "tool-1"
 frame.storageUrl; // => "https://lti.platform.example/storage"
+frame.storageTarget; // => "lti-storage"
+frame.toolFrame; // => "lti-tool"
 kept.size; // => 1
 
 const options = {
@@ -306,12 +307,12 @@ and attempt and not expired, and the host starts the attempt only when its own s
 ## The frame page and the storage page
 
 `/storage` serves the page that keeps `state` and `nonce` for the tool: `lti.put_data` and `lti.get_data` of LTI Client Side
-OIDC 0.1, kept by the origin of the message, answered only to the frame named `toolFrame`, with the minimum limits of 4,096 bytes
+OIDC 0.1, kept by the origin of the message, answered only to the frame named `toolFrame` of `prepareToolLaunch`, with the minimum limits of 4,096 bytes
 and 500 keys for an origin and `storage_exhaustion` beyond them. Its policy allows its one script by hash, and only `frameOrigin`
 may frame it.
 
 The tool's pages ask the window that frames them for its capabilities first (Client Side postMessages 0.1 section 4.1). The
-host's frame page answers with the script of `buildCapabilitiesScript({ storageTarget })`, which names the storage frame for
+host's frame page names its two frames as `prepareToolLaunch` returns them, and answers with the script of `buildCapabilitiesScript()`, which names the storage frame for
 `lti.put_data` and `lti.get_data`; its `hash` goes in the page's `script-src`. The script answers at once, to the window and
 the origin that asked.
 
@@ -324,7 +325,6 @@ the origin that asked.
 | `registration(clientId, options)`     | required for the login | Looks up a tool                                                                          |
 | `check(message, options)`             | required for the login | Confirms that the message is the caller's, and throws otherwise                          |
 | `launches`                            | required               | The `LaunchStore`: `put` and `take`, atomic across processes                             |
-| `storageTarget`                       | `"lti-storage"`        | The frame that shows the storage page                                                    |
 | `client(clientId, options)`           | required for requests  | Looks up a tool                                                                          |
 | `once(id, expiresAt, options)`        | required for requests  | Records an identifier until a time; `false` when it was used. Atomic across processes    |
 | `jwks`                                | required for requests  | The cache of the tools' key sets, from `createJwksCache`                                 |
@@ -336,7 +336,6 @@ the origin that asked.
 | `discovery`                           | the defaults of each   | What the OpenID configuration says of the messages, the claims and the kinds of subject ([registration](registration.md)) |
 | `pageSize`                            | 100                    | The items of a page of a service when the request names no `limit`                       |
 | `maxPageSize`                         | 1,000                  | The most items of a page of a service                                                    |
-| `toolFrame`                           | `"lti-tool"`           | The frame of the tool that the storage page answers                                      |
 | `maxBodyBytes`                        | 65,536                 | The most bytes of a body, measured before it is parsed                                   |
 | `sessionDataLifetimeSeconds`          | 3,600                  | How long the session data of a Start Proctoring message is valid                         |
 | `deepLinkingLifetimeSeconds`          | 86,400                 | How long the data of a Deep Linking request is valid                                     |
@@ -381,7 +380,7 @@ A port that answers with something other than its contract (a registration that 
 
 | Point                                                        | Effect of an aborted signal                                                   |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| `prepareToolLaunch` and `prepareToolFrame`, before `put`      | Rejects with `signal.reason`; nothing is kept or signed                       |
+| `prepareToolLaunch`, before `put`                             | Rejects with `signal.reason`; nothing is kept or signed                       |
 | `/authorize`, before `take`                                  | Rejects with `signal.reason`; the message stays                               |
 | `/authorize`, after `take`                                   | Rejects with `signal.reason`; the launch is spent, so the tool starts again   |
 | `/token`, before `once`                                      | Rejects with `signal.reason`; the assertion is unspent                        |

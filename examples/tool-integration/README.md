@@ -11,7 +11,7 @@ sequenceDiagram
   participant B as Browser
   participant T as Tool
   participant P as Platform handlers
-  H->>P: prepareToolFrame(message)
+  H->>P: prepareToolLaunch(message)
   P-->>H: login URL, storage URL; the message kept
   B->>T: login URL (handleLogin)
   T-->>B: page: keep state and nonce in the platform's storage
@@ -24,22 +24,22 @@ sequenceDiagram
   P->>H: GradebookStore: lineItem, keepScore, results
   T->>P: the members, the groups, the record of needs (handlePlatformRequest)
   P->>H: RosterStore, GroupStore, PreferencesStore
-  H->>P: prepareToolFrame(LtiDeepLinkingRequest)
+  H->>P: prepareToolLaunch(LtiDeepLinkingRequest)
   B->>T: the same login and launch
   T-->>B: buildDeepLinkingResponse: page that posts the signed JWT to the return URL
   B->>H: POST JWT to the host's route
   H->>P: readDeepLinkingResponse: the items and the data of the host
-  H->>P: prepareToolFrame(LtiStartProctoring), with the Assessment Control Service
+  H->>P: prepareToolLaunch(LtiStartProctoring), with the Assessment Control Service
   B->>T: the same login and launch
   T-->>B: buildStartAssessmentPage: page that posts the signed JWT to the start assessment URL
   B->>H: POST JWT to the host's route
   H->>P: readStartAssessment: the attempt starts
   T->>P: control: pause (handlePlatformRequest)
   P->>H: AssessmentControl.control
-  H->>P: prepareToolFrame(LtiSubmissionReviewRequest)
+  H->>P: prepareToolLaunch(LtiSubmissionReviewRequest)
   B->>T: the same login and launch
   T->>P: the line item and the result of the user (handlePlatformRequest)
-  H->>P: prepareToolFrame(LtiEndAssessment)
+  H->>P: prepareToolLaunch(LtiEndAssessment)
   B->>T: the same login and launch
   H->>P: buildRegistrationInitiation(the second tool's initiation URL)
   B->>T: initiation URL with openid_configuration and registration_token

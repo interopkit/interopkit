@@ -1,6 +1,6 @@
 /**
- * The platform role of LTI 1.3: what launches tools. The host keeps a message for a tool with `prepareToolLaunch` or
- * `prepareToolFrame`, whose URL its page opens in the tool's frame, and routes every request to the platform's origin to
+ * The platform role of LTI 1.3: what launches tools. The host keeps a message for a tool with `prepareToolLaunch`, whose
+ * URL its page opens in the tool's frame, and routes every request to the platform's origin to
  * `handlePlatformRequest`: the tool's authentication request, which receives the `id_token` of the kept message, the key set,
  * the token requests, the storage page of the client-side login, and the routes of the services whose stores the host gives:
  * the line items, results and scores of the Assignment and Grade Services over a `GradebookStore`, the members of a context over a
@@ -14,10 +14,10 @@
  *
  * @module @interopkit/tool-integration/platform
  */
-export { buildCapabilitiesScript, type CapabilitiesScript, type CapabilitiesScriptOptions } from "./capabilities.js";
+export { buildCapabilitiesScript, type CapabilitiesScript } from "./capabilities.js";
 export { buildPlatformEndpoints, type PlatformConfig, type PlatformEndpoints } from "./config.js";
 export { type ReceivedDeepLinkingResponse, readDeepLinkingResponse } from "./deep-linking/response.js";
-export { type PlatformFrame, prepareToolFrame, prepareToolLaunch } from "./login.js";
+export { type PlatformFrame, prepareToolLaunch } from "./login.js";
 export type {
   DeepLinkingInputSettings,
   DeepLinkingRequestInput,

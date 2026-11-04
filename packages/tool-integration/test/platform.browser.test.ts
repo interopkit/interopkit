@@ -93,7 +93,7 @@ function platform(path: string): { login: PlatformLoginOptions; requests: Platfo
 /** Makes the platform answer the authentication request of a launch with the given `state`. */
 async function answer(path: string, state: string): Promise<HttpResponse> {
   const { login, requests } = platform(path);
-  const initiation = new URL(await prepareToolLaunch(message, login));
+  const initiation = new URL((await prepareToolLaunch(message, login)).url);
   const parameters = new URLSearchParams([
     ["scope", "openid"],
     ["response_type", "id_token"],
@@ -327,7 +327,7 @@ window.parent.postMessage({ subject: "lti.capabilities", message_id: "c-1" }, "*
 </script>`;
 
   it("answers the tool's frame with the frame of the storage page for lti.put_data and lti.get_data", async () => {
-    const { source } = await buildCapabilitiesScript({ storageTarget: "storage-7" });
+    const { source } = await buildCapabilitiesScript();
     const answers: Record<string, unknown>[] = [];
     const listen = (event: MessageEvent): void => {
       if (event.data?.answer !== undefined) answers.push(event.data);
@@ -345,8 +345,8 @@ window.parent.postMessage({ subject: "lti.capabilities", message_id: "c-1" }, "*
         message_id: "c-1",
         supported_messages: [
           { subject: "lti.capabilities" },
-          { subject: "lti.put_data", frame: "storage-7" },
-          { subject: "lti.get_data", frame: "storage-7" },
+          { subject: "lti.put_data", frame: "lti-storage" },
+          { subject: "lti.get_data", frame: "lti-storage" },
         ],
       },
     });

@@ -2,13 +2,13 @@ import { readClock } from "@interopkit/core";
 import { describe } from "@interopkit/core/checks";
 import { LtiError } from "../errors.js";
 import { callOptionsOf, MILLISECONDS, randomToken, toSeconds, writeMessage } from "../protocol/internal.js";
-import { DEFAULT_STORAGE_TARGET } from "./capabilities.js";
 import { endpointsOf, type PlatformConfig } from "./config.js";
 import { type MessageInput, readMessageInput } from "./messages/input.js";
 import { toWrite } from "./messages/write.js";
 import { checkLoginOptions, type PlatformLoginOptions } from "./options.js";
-import { readToolRegistration, type ToolRegistration } from "./registration.js";
+import { readToolRegistration } from "./registration.js";
 import { requestedClaims } from "./services/routes.js";
+import { STORAGE_TARGET, TOOL_FRAME } from "./storage.js";
 import { sealHint, sealLoginHint } from "./tokens.js";
 
 /** How long a launch is kept, and its hint valid, in seconds: the time for the browser to go to the tool and back. */
@@ -30,14 +30,51 @@ function refuseOwnOrigins(urls: readonly string[], config: PlatformConfig): void
   }
 }
 
-/** A login that the platform prepared: the URL to send the browser to, and the registration of the tool it is for. */
-interface Prepared {
+/** The frame of a tool: what the page that shows it needs. */
+export interface PlatformFrame {
+  /** The URL of the tool's login, to which the frame of the tool navigates. */
   readonly url: string;
-  readonly registration: ToolRegistration;
+  /** The URL of the storage page, which the frame named `storageTarget` shows beside the frame of the tool. */
+  readonly storageUrl: string;
+  /** The name of the frame that shows the storage page, which the login names to the tool. */
+  readonly storageTarget: string;
+  /** The name of the frame of the tool, the only one that the storage page answers. */
+  readonly toolFrame: string;
+  /**
+   * The `allow` attribute of the tool's frame.
+   *
+   * @defaultValue none, so that the tool may use no feature that needs permission
+   */
+  readonly allow?: string;
 }
 
-/** Checks the arguments, finds the tool, keeps the message and builds the URL of the tool's login with the sealed hints. */
-async function prepare(input: MessageInput, options: PlatformLoginOptions): Promise<Prepared> {
+/**
+ * Keeps a message for a tool and returns what the page that shows the tool needs: the URL of the tool's third-party initiated
+ * login, for the frame to navigate to, the URL of the storage page, the names of the two frames, and the `allow` list of the
+ * tool's registration.
+ *
+ * @remarks
+ * The order is: the message is read and held to the rules of the sender, `check` confirms that it is the caller's, the tool is
+ * looked up with `registration`, the deployment must be one of the tool's, and the target and the tool's URLs must be on none of
+ * the platform's origins. Only then is the message kept in `launches` for 300 seconds, under a random identifier. The URL
+ * carries `iss`, `client_id`, `lti_deployment_id`, `target_link_uri` and `lti_storage_target`, and two hints sealed with the
+ * hint key: `lti_message_hint` names the kept message, the tool, the deployment and the user with an expiry of 300 seconds,
+ * and `login_hint` names the kept message. They are signed and not encrypted.
+ *
+ * @see {@link https://www.imsglobal.org/spec/security/v1p1/#step-1-third-party-initiated-login | LTI Security Framework 1.1, third-party initiated login}
+ * @param input - The message to send the tool.
+ * @param options - The platform, its tools, the check of the caller and the store of launches.
+ * @returns The frame of the tool.
+ * @throws `DataError` when an argument or an option has the wrong type, the message is not valid or breaks a rule of the
+ * sender (LTI 1.3 Core sections 5.3 and 5.4), or the registration is not one.
+ * @throws `LtiError` (`tool-unknown`) when the platform has no tool with the client identifier, (`deployment-unknown`) when
+ * the deployment is not the tool's, and (`origin-refused`) when the target or the tool's URLs are on the platform's, the frame
+ * page's or a reserved origin.
+ * @throws The error of `options.check`, `options.registration` or `options.launches.put`, which stop the launch before
+ * anything is signed.
+ * @throws The `reason` of `options.signal` when it aborts.
+ */
+export async function prepareToolLaunch(input: MessageInput, options: PlatformLoginOptions): Promise<PlatformFrame> {
   checkLoginOptions(options);
   const message = readMessageInput(input, "The message");
   const { config } = options;
@@ -87,65 +124,15 @@ async function prepare(input: MessageInput, options: PlatformLoginOptions): Prom
     ["target_link_uri", message.targetLinkUri],
     ["client_id", registration.clientId],
     ["lti_deployment_id", message.deploymentId],
-    ["lti_storage_target", options.storageTarget ?? DEFAULT_STORAGE_TARGET],
+    ["lti_storage_target", STORAGE_TARGET],
   ];
   for (const [name, value] of parameters) url.searchParams.append(name, value);
-  return { url: url.href, registration };
-}
-
-/** The frame of a tool: what the page that shows it needs. */
-export interface PlatformFrame {
-  /** The URL of the tool's login, to which the frame of the tool navigates. */
-  readonly url: string;
-  /** The URL of the storage page, which a frame named `storageTarget` shows beside the frame of the tool. */
-  readonly storageUrl: string;
-  /**
-   * The `allow` attribute of the tool's frame.
-   *
-   * @defaultValue none, so that the tool may use no feature that needs permission
-   */
-  readonly allow?: string;
-}
-
-/**
- * Keeps a message for a tool and returns the URL of the tool's third-party initiated login, for the frame to navigate to.
- *
- * @remarks
- * The order is: the message is read and held to the rules of the sender, `check` confirms that it is the caller's, the tool is
- * looked up with `registration`, the deployment must be one of the tool's, and the target and the tool's URLs must be on none of
- * the platform's origins. Only then is the message kept in `launches` for 300 seconds, under a random identifier. The URL
- * carries `iss`, `client_id`, `lti_deployment_id`, `target_link_uri` and `lti_storage_target`, and two hints sealed with the
- * hint key: `lti_message_hint` names the kept message, the tool, the deployment and the user with an expiry of 300 seconds,
- * and `login_hint` names the kept message. They are signed and not encrypted.
- *
- * @see {@link https://www.imsglobal.org/spec/security/v1p1/#step-1-third-party-initiated-login | LTI Security Framework 1.1, third-party initiated login}
- * @param message - The message to send the tool.
- * @param options - The platform, its tools, the check of the caller and the store of launches.
- * @returns The URL of the tool's login.
- * @throws `DataError` when an argument or an option has the wrong type, the message is not valid or breaks a rule of the
- * sender (LTI 1.3 Core sections 5.3 and 5.4), or the registration is not one.
- * @throws `LtiError` (`tool-unknown`) when the platform has no tool with the client identifier, (`deployment-unknown`) when
- * the deployment is not the tool's, and (`origin-refused`) when the target or the tool's URLs are on the platform's, the frame
- * page's or a reserved origin.
- * @throws The error of `options.check`, `options.registration` or `options.launches.put`, which stop the launch before
- * anything is signed.
- * @throws The `reason` of `options.signal` when it aborts.
- */
-export async function prepareToolLaunch(message: MessageInput, options: PlatformLoginOptions): Promise<string> {
-  return (await prepare(message, options)).url;
-}
-
-/**
- * Keeps a message for a tool as `prepareToolLaunch` does, and returns what the page that shows the tool needs: the URL of the
- * login, the URL of the storage page, and the `allow` list of the tool's registration.
- *
- * @param message - The message to send the tool.
- * @param options - The platform, its tools, the check of the caller and the store of launches.
- * @returns The frame of the tool.
- * @throws As {@link prepareToolLaunch} does.
- */
-export async function prepareToolFrame(message: MessageInput, options: PlatformLoginOptions): Promise<PlatformFrame> {
-  const { url, registration } = await prepare(message, options);
   const { allow } = registration;
-  return { url, storageUrl: endpointsOf(options.config).storage, ...(allow === undefined ? {} : { allow }) };
+  return {
+    url: url.href,
+    storageUrl: endpointsOf(config).storage,
+    storageTarget: STORAGE_TARGET,
+    toolFrame: TOOL_FRAME,
+    ...(allow === undefined ? {} : { allow }),
+  };
 }

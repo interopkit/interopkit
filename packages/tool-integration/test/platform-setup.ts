@@ -201,7 +201,7 @@ export async function begin(
   ctx: Setup,
   message: MessageInput = baseMessage,
 ): Promise<{ initiation: Initiation; parameters: URLSearchParams; url: string }> {
-  const url = await prepareToolLaunch(message, ctx.login);
+  const { url } = await prepareToolLaunch(message, ctx.login);
   const initiation = readInitiation(url, ctx.tools.get(message.clientId)?.loginUrl ?? TOOL_LOGIN_URL);
   const redirect = ctx.tools.get(message.clientId)?.redirectUris[0];
   return { initiation, parameters: authenticationParameters(initiation, "state-1", "nonce-1", redirect), url };

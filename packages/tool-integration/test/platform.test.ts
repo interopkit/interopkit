@@ -12,7 +12,6 @@ import {
   type LaunchToCheck,
   type MessageInput,
   type PlatformConfig,
-  prepareToolFrame,
   prepareToolLaunch,
 } from "../src/platform/index.js";
 import { LAUNCH_TTL_SECONDS, openHint, openToken, sealHint } from "../src/platform/internal.js";
@@ -172,7 +171,7 @@ describe("buildPlatformEndpoints and the configuration", () => {
   });
 });
 
-describe("prepareToolLaunch and prepareToolFrame", () => {
+describe("prepareToolLaunch", () => {
   it("builds the third-party initiated login of the tool with the parameters of LTI 1.3 Core section 4.1", async () => {
     const ctx = setup();
     const { initiation } = await begin(ctx);
@@ -212,17 +211,18 @@ describe("prepareToolLaunch and prepareToolFrame", () => {
     expect(ctx.kept.size).toBe(2);
   });
 
-  it("names the frame of the storage page as the host says, and gives the frame the storage page and the allow list", async () => {
+  it("returns the URL, the storage page, the names of the two frames and the allow list", async () => {
     const ctx = setup({ tools: [toolRegistration({ allow: "microphone" })] });
-    const url = await prepareToolLaunch(baseMessage, { ...ctx.login, storageTarget: "frame-2" });
-    expect(new URL(url).searchParams.get("lti_storage_target")).toBe("frame-2");
-    const frame = await prepareToolFrame(baseMessage, ctx.login);
+    const frame = await prepareToolLaunch(baseMessage, ctx.login);
     expect(frame).toEqual({
       url: expect.stringContaining(TOOL_ORIGIN),
       storageUrl: endpoints.storage,
+      storageTarget: "lti-storage",
+      toolFrame: "lti-tool",
       allow: "microphone",
     });
-    const plain = await prepareToolFrame(baseMessage, setup().login);
+    expect(new URL(frame.url).searchParams.get("lti_storage_target")).toBe(frame.storageTarget);
+    const plain = await prepareToolLaunch(baseMessage, setup().login);
     expect("allow" in plain).toBe(false);
   });
 
@@ -320,7 +320,7 @@ describe("prepareToolLaunch and prepareToolFrame", () => {
 
   it("keeps the query of the login URL of the tool", async () => {
     const ctx = setup({ tools: [toolRegistration({ loginUrl: `${TOOL_ORIGIN}/lti/login?tenant=7` })] });
-    const url = new URL(await prepareToolLaunch(baseMessage, ctx.login));
+    const url = new URL((await prepareToolLaunch(baseMessage, ctx.login)).url);
     expect(url.searchParams.get("tenant")).toBe("7");
     expect(url.searchParams.get("iss")).toBe(ISSUER);
   });
@@ -331,7 +331,7 @@ describe("prepareToolLaunch and prepareToolFrame", () => {
       null,
       { ...ctx.login, check: "yes" },
       { ...ctx.login, launches: { put: () => undefined } },
-      { ...ctx.login, storageTarget: "" },
+      { ...ctx.login, storageTarget: "lti-storage" },
       { ...ctx.login, signal: "aborted" },
       { ...ctx.login, clock: JSON.parse("{}") },
     ];
@@ -829,7 +829,7 @@ describe("the authentication request", () => {
   it("opens a hint that a previous hint key sealed, and refuses one of a key it does not hold", async () => {
     const ctx = setup();
     const rotated = { ...ctx.login, config: { ...config, hintKey: previousHintKey, previousHintKeys: [] } };
-    const url = await prepareToolLaunch(baseMessage, rotated);
+    const { url } = await prepareToolLaunch(baseMessage, rotated);
     const search = new URL(url).searchParams;
     const parameters = new URLSearchParams([
       ["scope", "openid"],
@@ -1146,9 +1146,9 @@ describe("the token endpoint", () => {
 describe("the storage page and the routes", () => {
   it("serves the storage page that answers the frame of the tool, framed only by the player", async () => {
     const ctx = setup();
-    const page = await handle(ctx, get(endpoints.storage), { toolFrame: "frame-7" });
+    const page = await handle(ctx, get(endpoints.storage));
     expect(page.status).toBe(200);
-    expect(textOf(page.body)).toContain("frame-7");
+    expect(textOf(page.body)).toContain("lti-tool");
     expect(page.headers["content-security-policy"]).toContain(`frame-ancestors ${PLAYER_ORIGIN}`);
     expect((await handle(ctx, get(endpoints.storage, "POST"))).status).toBe(405);
   });
@@ -1173,7 +1173,7 @@ describe("the storage page and the routes", () => {
       { ...ctx.requests, maxBodyBytes: "65536" },
       { ...ctx.requests, maxBodyBytes: 0 },
       { ...ctx.requests, substitution: { names: "User.id", resolve: async () => "" } },
-      { ...ctx.requests, toolFrame: "" },
+      { ...ctx.requests, toolFrame: "lti-tool" },
       { ...ctx.requests, unknown: true },
     ];
     for (const options of cases) {
@@ -1184,22 +1184,9 @@ describe("the storage page and the routes", () => {
 
 describe("buildCapabilitiesScript", () => {
   it("names the frame of the storage page for lti.put_data and lti.get_data, with the hash of the script", async () => {
-    const { source, hash } = await buildCapabilitiesScript({ storageTarget: "frame-2" });
-    expect(source).toContain('var target = "frame-2";');
+    const { source, hash } = await buildCapabilitiesScript();
+    expect(source).toContain('var target = "lti-storage";');
     expect(hash).toBe(`'sha256-${(await import("node:crypto")).createHash("sha256").update(source).digest("base64")}'`);
-    expect((await buildCapabilitiesScript()).source).toContain('var target = "lti-storage";');
-  });
-
-  it("writes any name as a literal that cannot close the script", async () => {
-    const { source } = await buildCapabilitiesScript({ storageTarget: '</script><script>alert(1)//"$&' });
-    expect(source).not.toContain("</script>");
-    expect(source).toContain('"\\u003c/script>\\u003cscript>alert(1)//\\"$&"');
-  });
-
-  it("throws DataError for options of other types", async () => {
-    await expect(buildCapabilitiesScript(JSON.parse("null"))).rejects.toThrow(DataError);
-    await expect(buildCapabilitiesScript(JSON.parse('{"storageTarget":5}'))).rejects.toThrow(DataError);
-    await expect(buildCapabilitiesScript({ storageTarget: "" })).rejects.toThrow(DataError);
   });
 });
 
@@ -1227,7 +1214,7 @@ describe("the tool role and the platform role together", () => {
       store: new MemoryStore(),
       jwks: createJwksCache({ fetch: platformFetch, clock: ctx.clock }),
     };
-    const initiation = new URL(await prepareToolLaunch(message, ctx.login));
+    const initiation = new URL((await prepareToolLaunch(message, ctx.login)).url);
     initiation.searchParams.delete("lti_storage_target");
     const login = await handleLogin(request({ url: initiation.href }), options);
     const page = await handle(ctx, request({ url: login.headers.location ?? "" }));
