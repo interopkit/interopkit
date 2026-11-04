@@ -1,5 +1,6 @@
+import { parseJsonText } from "@interopkit/core/checks";
 import { base64url } from "jose";
-import { parseJsonText } from "../json-text.js";
+import { jsonRefusals } from "../json-text.js";
 import { publicJwk } from "./jwk.js";
 
 const PREFIX = "did:jwk:";
@@ -31,6 +32,11 @@ export function decodeDidJwk(did: string): JsonWebKey | undefined {
     return undefined;
   }
   // The levels are counted before the parser builds anything; the length of the DID bounds the tokens.
-  const parsed = parseJsonText(text, { maxDepth: MAX_JWK_DEPTH, maxTokens: MAX_DID_JWK_CHARS }, "The JWK of the DID");
-  return "value" in parsed ? publicJwk(parsed.value) : undefined;
+  const limits = { maxDepth: MAX_JWK_DEPTH, maxTokens: MAX_DID_JWK_CHARS };
+  try {
+    return publicJwk(parseJsonText(text, limits, jsonRefusals("The JWK of the DID", limits)));
+  } catch {
+    // The text is not JSON of two levels.
+    return undefined;
+  }
 }

@@ -1,11 +1,11 @@
 import { DataError } from "@interopkit/core";
 import { checkRecord } from "@interopkit/core/checks";
 import { deriveProof } from "@interopkit/selective-disclosure";
+import { textWithinLimits } from "../json-text.js";
 import type { IssuableCredential } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
 import { failOperation } from "./document-loader.js";
 import { type DisclosureOptions, disclosureSettings } from "./options.js";
-import { processingProblem } from "./processing-limits.js";
 import { withProofList, withProofObject } from "./proof-list.js";
 
 /**
@@ -34,8 +34,7 @@ export async function deriveDisclosure(
   const { selectivePointers, contexts, maxJsonLdTokens, signal } = disclosureSettings(options);
   checkRecord(credential, "The credential must be an object");
   signal?.throwIfAborted();
-  const tooLarge = processingProblem(credential, maxJsonLdTokens);
-  if (tooLarge !== undefined) throw tooLarge;
+  textWithinLimits(credential, { tokensOption: "maxJsonLdTokens", maxTokens: maxJsonLdTokens }, "The credential");
   let derived: Readonly<Record<string, unknown>>;
   try {
     derived = await deriveProof(withProofObject({ ...structuredClone(credential) }), {

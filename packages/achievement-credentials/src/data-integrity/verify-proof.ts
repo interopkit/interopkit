@@ -14,7 +14,6 @@ import type {
 import { credentialOrReason } from "../read/internal.js";
 import { rethrowOperational } from "./document-loader.js";
 import { type DataIntegrityVerifyOptions, type VerifySettings, verifySettings } from "./options.js";
-import { processingProblem } from "./processing-limits.js";
 import { BUILT_IN_SUITES, ED25519_SIGNATURE_2020 } from "./suites.js";
 
 const MILLISECONDS_PER_SECOND = 1000;
@@ -215,12 +214,12 @@ function readInput(
   credential: IssuableCredential,
   settings: VerifySettings,
 ): { readonly value: AnyVerifiableCredential } | { readonly reason: string } {
-  const text = textWithinLimits(
-    credential,
-    { maxCharacters: settings.maxInputBytes, maxDepth: settings.maxDepth, maxTokens: settings.maxTokens },
-    "The credential",
-  );
-  return "reason" in text ? text : credentialOrReason(credential, "The credential");
+  try {
+    textWithinLimits(credential, settings, "The credential");
+  } catch (error) {
+    return { reason: error instanceof DataError ? error.message : "The credential is not JSON." };
+  }
+  return credentialOrReason(credential, "The credential");
 }
 
 /** What the proofs of a credential came to: the proof that is valid with the issuer check of its key, or why none is. */
@@ -274,8 +273,16 @@ async function proofsOf(
   const all = Array.isArray(secured) ? secured : secured === undefined ? [] : [secured];
   if (all.length === 0) return { valid: false, reason: "The credential has no proof.", unavailable: false };
   // A credential that is too large for the processors costs no work, whatever the number of its proofs.
-  const tooLarge = processingProblem(document, settings.maxJsonLdTokens);
-  if (tooLarge !== undefined) return { valid: false, reason: tooLarge.message, unavailable: false };
+  try {
+    textWithinLimits(
+      document,
+      { tokensOption: "maxJsonLdTokens", maxTokens: settings.maxJsonLdTokens },
+      "The credential",
+    );
+  } catch (error) {
+    const reason = error instanceof DataError ? error.message : "The credential is not JSON.";
+    return { valid: false, reason, unavailable: false };
+  }
   try {
     const best = await bestProof({ all, unsecured, settings, checked: new Map() }, bind);
     if ("key" in best) return { valid: true, credential, ...best };

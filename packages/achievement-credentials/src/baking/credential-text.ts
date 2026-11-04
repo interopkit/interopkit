@@ -1,8 +1,15 @@
 import { DataError, LimitError } from "@interopkit/core";
-import { copyJson, describe, hasMoreTokensThan, isRecord, MAX_JSON_DEPTH } from "@interopkit/core/checks";
+import {
+  copyJson,
+  describe,
+  hasMoreTokensThan,
+  isRecord,
+  MAX_JSON_DEPTH,
+  parseJsonText,
+} from "@interopkit/core/checks";
 import * as v from "valibot";
 import { decodeBase64url } from "../base64url.js";
-import { parseJsonText, refusalError } from "../json-text.js";
+import { jsonRefusals } from "../json-text.js";
 import { readCredential } from "../read/index.js";
 import { isBadgeAssertionV2, isDocumentV2, jws } from "../read/internal.js";
 import type { BakedKind } from "./formats.js";
@@ -12,6 +19,9 @@ const UTF8 = new TextDecoder("utf-8", { fatal: true });
 /** Why an Open Badges 2.0 assertion is not baked: 2.0 is read and never issued, and Open Badges 3.0 supersedes it. */
 const NOT_BAKED_V2 =
   "The credential is an Open Badges 2.0 assertion, which is read and never baked: bake a credential of Open Badges 3.0 or CLR 2.0.";
+
+/** Why the JSON that an image holds is not read as a credential. */
+const NOT_AN_OBJECT = "The credential in the image is not the JSON of an object.";
 
 /** The credential as an image holds it: its kind, and the text that is written. */
 export interface CredentialText {
@@ -46,10 +56,9 @@ function typeNames(value: unknown): readonly unknown[] {
 function kindOfJws(compact: string, maxTokens: number): BakedKind {
   // A compact JWS has exactly two dots (the `jws` schema), so what lies between them is the payload.
   const payload = decodePayload(compact.slice(compact.indexOf(".") + 1, compact.lastIndexOf(".")));
-  // The tokens and the levels are counted before the parser builds anything.
-  const parsed = parseJsonText(payload, { maxDepth: MAX_JSON_DEPTH, maxTokens }, "The payload of the compact JWS");
-  if ("reason" in parsed) throw refusalError(parsed);
-  const claims = parsed.value;
+  // The levels and the tokens are counted before the parser builds anything.
+  const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens };
+  const claims = parseJsonText(payload, limits, jsonRefusals("The payload of the compact JWS", limits));
   if (isDocumentV2(claims)) throw new DataError(NOT_BAKED_V2);
   const names = typeNames(isRecord(claims) && claims.vc !== undefined ? claims.vc : claims);
   if (!names.some((name) => typeof name === "string")) {
@@ -116,14 +125,13 @@ export function bakedJws(text: string): string {
  * @throws `DataError` when the text is not the JSON of an object.
  */
 export function bakedJson(text: string, maxTokens: number): object {
-  const parsed = parseJsonText(text.trim(), { maxDepth: MAX_JSON_DEPTH, maxTokens }, "The credential in the image");
-  if ("reason" in parsed) {
-    throw refusalError(
-      parsed.exceeded === undefined ? { reason: "The credential in the image is not the JSON of an object." } : parsed,
-    );
-  }
-  if (isRecord(parsed.value)) return parsed.value;
-  throw new DataError("The credential in the image is not the JSON of an object.");
+  const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens };
+  const value = parseJsonText(text.trim(), limits, {
+    ...jsonRefusals("The credential in the image", limits),
+    syntax: () => NOT_AN_OBJECT,
+  });
+  if (isRecord(value)) return value;
+  throw new DataError(NOT_AN_OBJECT);
 }
 
 /**

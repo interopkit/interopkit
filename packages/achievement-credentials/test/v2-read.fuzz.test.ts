@@ -95,11 +95,18 @@ describe("readJwsPayload on any text", () => {
   /** A compact JWS with a payload of the given text and a header and a signature that are not checked. */
   const jws = (payload: string) => `eyJhbGciOiJSUzI1NiJ9.${Buffer.from(payload, "utf8").toString("base64url")}.c2ln`;
 
-  it("returns a payload or a reason, and throws nothing", () => {
+  it("returns a payload or throws a DataError, and nothing else", () => {
+    const outcome = (compact: string) => {
+      try {
+        return typeof readJwsPayload(compact, 1000);
+      } catch (error) {
+        return error instanceof DataError ? "refused" : error;
+      }
+    };
     fc.assert(
       fc.property(fc.string(), fc.string({ unit: "binary" }), (text, payload) => {
-        expect(readJwsPayload(text, 1000)).toBeTypeOf("object");
-        expect(readJwsPayload(jws(payload), 1000)).toBeTypeOf("object");
+        expect(["object", "refused"]).toContain(outcome(text));
+        expect(["object", "refused"]).toContain(outcome(jws(payload)));
       }),
       RUNS,
     );
@@ -109,7 +116,7 @@ describe("readJwsPayload on any text", () => {
     fc.assert(
       fc.property(fc.dictionary(fc.string(), fc.jsonValue({ maxDepth: 5 })), (object) => {
         const text = JSON.stringify(object);
-        expect(readJwsPayload(jws(text), 1_000_000)).toStrictEqual({ value: JSON.parse(text) });
+        expect(readJwsPayload(jws(text), 1_000_000)).toStrictEqual(JSON.parse(text));
       }),
       RUNS,
     );

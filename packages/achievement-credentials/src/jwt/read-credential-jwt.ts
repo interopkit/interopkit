@@ -1,8 +1,8 @@
 import { DataError, raceAbort, readClock } from "@interopkit/core";
-import { describe, isRecord } from "@interopkit/core/checks";
+import { describe, isRecord, parseJsonText } from "@interopkit/core/checks";
 import { compactVerify, importJWK } from "jose";
 import { decodeBase64url } from "../base64url.js";
-import { type JsonLimits, parseJsonText } from "../json-text.js";
+import { type JsonLimits, jsonRefusals } from "../json-text.js";
 import { bindKey, publicJwk, thumbprintOf, thumbprintUri } from "../keys/internal.js";
 import type { AnyVerifiableCredential, ProofResult, VerificationKey } from "../model/index.js";
 import { carriedCredential, readCarried } from "./carried-credential.js";
@@ -28,10 +28,14 @@ function readObject(bytes: Uint8Array, name: string, limits: JsonLimits): Step<R
   } catch {
     return { reason: `The ${name} of the JWS is not UTF-8.` };
   }
-  // The tokens and the levels are counted before the parser builds anything.
-  const parsed = parseJsonText(text, limits, `The ${name} of the JWS`);
-  if ("reason" in parsed) return parsed;
-  return isRecord(parsed.value) ? { value: parsed.value } : { reason: `The ${name} of the JWS is not a JSON object.` };
+  // The levels and the tokens are counted before the parser builds anything.
+  let value: unknown;
+  try {
+    value = parseJsonText(text, limits, jsonRefusals(`The ${name} of the JWS`, limits));
+  } catch (error) {
+    return { reason: error instanceof DataError ? error.message : `The ${name} of the JWS is not JSON.` };
+  }
+  return isRecord(value) ? { value } : { reason: `The ${name} of the JWS is not a JSON object.` };
 }
 
 /** Finds the key that verifies the JWS, from its header: the resolved `kid`, or the embedded `jwk`. */

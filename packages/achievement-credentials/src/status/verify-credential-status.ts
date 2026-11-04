@@ -1,6 +1,6 @@
-import { callService, raceAbort, readClock, ServiceError } from "@interopkit/core";
-import { checkRecord, describe, isRecord } from "@interopkit/core/checks";
-import { parseJsonText } from "../json-text.js";
+import { callService, DataError, raceAbort, readClock, ServiceError } from "@interopkit/core";
+import { checkRecord, describe, isRecord, MAX_JSON_DEPTH, parseJsonText } from "@interopkit/core/checks";
+import { jsonRefusals } from "../json-text.js";
 import { readCredentialJwt } from "../jwt/index.js";
 import type { AnyVerifiableCredential, CredentialV1p1, IssuableCredential, VerificationCheck } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
@@ -22,7 +22,6 @@ const MEANING: Readonly<Record<string, string>> = { revocation: "revoked", suspe
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_BYTES = 1_048_576;
-const MAX_DEPTH = 64;
 const MILLISECONDS_PER_SECOND = 1000;
 const DEFAULT_CLOCK_SKEW_SECONDS = 60;
 
@@ -37,6 +36,16 @@ class ListFailure extends Error {}
 
 /** A list credential that cannot be checked with what the host gave, which is not a fault of the credential. */
 class ListUnavailable extends Error {}
+
+/** Parses the text of a list within the levels of a credential and the tokens of the options, or throws what is wrong with it. */
+function parseList(text: string, what: string, settings: CheckSettings): unknown {
+  const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens: settings.maxTokens };
+  try {
+    return parseJsonText(text, limits, jsonRefusals(what, limits));
+  } catch (error) {
+    throw new ListFailure(error instanceof DataError ? error.message : `${what} is not JSON.`, { cause: error });
+  }
+}
 
 /** The entry of a credential that this module reads, with the index it names. */
 interface Entry {
@@ -140,13 +149,8 @@ async function verifiedList(
     if (!result.valid) throw new ListFailure(result.reason);
     return asList(result.credential);
   }
-  const parsed = parseJsonText(
-    text,
-    { maxDepth: MAX_DEPTH, maxTokens: settings.maxTokens },
-    "The status list credential",
-  );
-  if ("reason" in parsed) throw new ListFailure(parsed.reason);
-  const checked = credentialOrReason(parsed.value, "The status list credential");
+  const value = parseList(text, "The status list credential", settings);
+  const checked = credentialOrReason(value, "The status list credential");
   if ("reason" in checked) throw new ListFailure(checked.reason);
   if (settings.contexts === undefined) {
     throw new ListUnavailable(
@@ -155,7 +159,7 @@ async function verifiedList(
   }
   // Loaded when a list credential with a Data Integrity proof is checked, so that a verifier of JWTs never loads JSON-LD.
   const { verifyProof } = await import("../data-integrity/index.js");
-  const result = await verifyProof(parsed.value as IssuableCredential, {
+  const result = await verifyProof(value as IssuableCredential, {
     ...keyed,
     contexts: settings.contexts,
     legacyProofs: settings.legacyProofs,
@@ -205,10 +209,9 @@ async function fetchList(
 /** Fetches a revocation list of the 1EdTech Revocation List Status Method, a JSON object, or throws what is wrong with it. */
 async function fetchRevocationList(url: string, settings: CheckSettings): Promise<Readonly<Record<string, unknown>>> {
   const text = await fetchText(url, "The revocation list", "application/json", settings);
-  const parsed = parseJsonText(text, { maxDepth: MAX_DEPTH, maxTokens: settings.maxTokens }, "The revocation list");
-  if ("reason" in parsed) throw new ListFailure(parsed.reason);
-  if (!isRecord(parsed.value)) throw new ListFailure("The revocation list is not a JSON object.");
-  return parsed.value;
+  const value = parseList(text, "The revocation list", settings);
+  if (!isRecord(value)) throw new ListFailure("The revocation list is not a JSON object.");
+  return value;
 }
 
 /** The number of each object of a host that decides whether a list credential counts, kept while the object lives. */

@@ -1,11 +1,11 @@
-import { callPort, DataError, LimitError } from "@interopkit/core";
+import { callPort, DataError } from "@interopkit/core";
 import { isRecord, parseWith } from "@interopkit/core/checks";
 import { buildJsonResponse, type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
 import type { Profile } from "../model/index.js";
 import { readEntity } from "../read/index.js";
 import { bodyTypeOf } from "./body.js";
 import type { ProviderSettings } from "./options.js";
-import { failure, internalError, invalidData, tooLarge, unreadable } from "./status.js";
+import { failure, internalError, invalidData, unreadableJson } from "./status.js";
 import { foundProfileSchema, profileSchema } from "./store.js";
 
 /** The media type of a profile in a request (OB 6.2.5.1). */
@@ -31,8 +31,7 @@ function profileOfBody(
   try {
     json = readJson(request, { maxBytes: settings.maxBodyBytes, maxTokens: settings.maxTokens });
   } catch (error) {
-    if (error instanceof LimitError) return { refusal: tooLarge(error.message) };
-    return { refusal: unreadable(error instanceof DataError ? error.message : "The body is not JSON.") };
+    return { refusal: unreadableJson(error) };
   }
   if (!isRecord(json)) return { refusal: invalidData("The body must be a profile as a JSON object.") };
   try {

@@ -1,10 +1,9 @@
 import jsonld from "@interop/jsonld";
 import type { CallOptions } from "@interopkit/core";
 import { checkAbortSignal, checkFunction, checkPositiveInteger, checkRecord, isRecord } from "@interopkit/core/checks";
-import { DEFAULT_MAX_JSON_LD_TOKENS } from "../json-text.js";
+import { DEFAULT_MAX_JSON_LD_TOKENS, textWithinLimits } from "../json-text.js";
 import type { ContextLoader, IssuableCredential, JsonLdIssue } from "../model/index.js";
 import { documentLoaderOf, failOperation } from "./document-loader.js";
-import { processingProblem } from "./processing-limits.js";
 
 /** The most events that are collected, so that a credential of ten thousand unknown terms costs no more than this. */
 const MAX_ISSUES = 100;
@@ -68,8 +67,7 @@ export async function validateJsonLd(
   checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
   if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   signal?.throwIfAborted();
-  const tooLarge = processingProblem(credential, maxJsonLdTokens);
-  if (tooLarge !== undefined) throw tooLarge;
+  textWithinLimits(credential, { tokensOption: "maxJsonLdTokens", maxTokens: maxJsonLdTokens }, "The credential");
   const issues: JsonLdIssue[] = [];
   const document = structuredClone(credential);
   const load = documentLoaderOf(contexts as ContextLoader, signal);

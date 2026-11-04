@@ -1,7 +1,7 @@
-import { createIssueSink, isRecord } from "@interopkit/core/checks";
+import { createIssueSink, isRecord, parseJsonText } from "@interopkit/core/checks";
 import { compactVerify, importSPKI } from "jose";
 import { decodeBase64url } from "../base64url.js";
-import { parseJsonText } from "../json-text.js";
+import { jsonRefusals } from "../json-text.js";
 import { MAX_HEADER_CHARS } from "../jwt/internal.js";
 import type { BadgeAssertionV2, CryptographicKeyV2, VerificationCheck } from "../model/index.js";
 import { inspectDocumentV2 } from "../read/internal.js";
@@ -31,10 +31,14 @@ function algorithmOf(header: string): string | undefined {
   } catch {
     return undefined;
   }
-  const parsed = parseJsonText(text, HEADER_LIMITS, "The header of the JWS");
-  return "value" in parsed && isRecord(parsed.value) && typeof parsed.value.alg === "string"
-    ? parsed.value.alg
-    : undefined;
+  let parsed: unknown;
+  try {
+    parsed = parseJsonText(text, HEADER_LIMITS, jsonRefusals("The header of the JWS", HEADER_LIMITS));
+  } catch {
+    // The header is not JSON within its limits, so it names no algorithm.
+    return undefined;
+  }
+  return isRecord(parsed) && typeof parsed.alg === "string" ? parsed.alg : undefined;
 }
 
 /** The id of a key that a badge names: the IRI, or the `id` of a key that it embeds. */

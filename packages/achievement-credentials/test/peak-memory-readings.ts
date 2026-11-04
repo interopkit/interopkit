@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { base64url } from "jose";
 import { soundAssertion } from "../../../scripts/open-badges-v2-rules.js";
-import type { Reading } from "../../../scripts/peak-memory-child.js";
+import { type Reading, refusal } from "../../../scripts/peak-memory-child.js";
 import { bakePng, readPng, readSvg } from "../src/baking/index.js";
 import { DEFAULT_MAX_BYTES } from "../src/baking/internal.js";
 import { addProof, verifyProof } from "../src/data-integrity/index.js";
@@ -202,7 +202,7 @@ export const READINGS = {
       const payload = `{"a":[${"[],".repeat(4_000_000)}[]]}`;
       return `eyJhbGciOiJSUzI1NiJ9.${Buffer.from(payload).toString("base64url")}.c2ln`;
     },
-    read: (jws: string) => JSON.stringify(readJwsPayload(jws, TOKENS)),
+    read: (jws: string) => refusal(() => readJwsPayload(jws, TOKENS)),
   },
   /** A CLR of 600 credentials whose refresh services each answer a credential of 600,000 characters. */
   verify: {

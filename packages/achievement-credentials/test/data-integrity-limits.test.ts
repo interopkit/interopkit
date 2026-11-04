@@ -122,21 +122,22 @@ describe("the tokens that a processor of JSON-LD reads", () => {
     let deep: Record<string, unknown> = { name: "x" };
     for (let level = 0; level < 4_000; level += 1) deep = { nested: deep };
     const credential = credentialOf(sd.did, { extra: deep });
-    await expect(validateJsonLd(credential, { contexts: contexts.load })).rejects.toThrow(
-      new LimitError("The credential nests more than 64 levels of JSON.", "maxDepth", 64),
-    );
+    const nests = new LimitError("The credential nests more than 64 levels.", "maxDepth", 64);
+    await expect(validateJsonLd(credential, { contexts: contexts.load })).rejects.toThrow(nests);
     await expect(deriveDisclosure(credential, { selectivePointers: [], contexts: contexts.load })).rejects.toThrow(
-      new LimitError("The credential nests more than 64 levels of JSON.", "maxDepth", 64),
+      nests,
     );
-    // Over both limits, the credential is refused for its tokens, which name the option that a host can raise, though its
-    // brackets pass the levels at the 200th token and its tokens pass 5,000 later.
-    await expect(validateJsonLd(credential, { contexts: contexts.load, maxJsonLdTokens: 5_000 })).rejects.toMatchObject(
-      {
-        name: "LimitError",
-        limit: "maxJsonLdTokens",
-        maximum: 5_000,
-      },
-    );
+    // Over both limits, the credential is refused for its levels, as every reader of the family refuses a text of JSON, though
+    // its properties pass the tokens before its nesting passes the levels.
+    const both = credentialOf(sd.did, { many: manyProperties(6000), extra: deep });
+    await expect(validateJsonLd(both, { contexts: contexts.load })).rejects.toMatchObject({
+      name: "LimitError",
+      limit: "maxDepth",
+      maximum: 64,
+    });
+    await expect(
+      validateJsonLd(credentialOf(sd.did, { many: manyProperties(6000) }), { contexts: contexts.load }),
+    ).rejects.toMatchObject({ name: "LimitError", limit: "maxJsonLdTokens", maximum: 20_000 });
   });
 
   it("are not counted in a value that is not JSON, which validateJsonLd is refused as such", async () => {

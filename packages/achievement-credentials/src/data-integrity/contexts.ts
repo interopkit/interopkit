@@ -4,6 +4,7 @@ import {
   DataError,
   DEFAULT_TIMEOUT_MS,
   type Fetch,
+  LimitError,
   raceAbort,
   ServiceError,
 } from "@interopkit/core";
@@ -15,10 +16,11 @@ import {
   describe,
   MAX_JSON_DEPTH,
   MAX_JSON_TOKENS,
+  parseJsonText,
 } from "@interopkit/core/checks";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
-import { parseJsonText, refusalError } from "../json-text.js";
+import { jsonRefusals } from "../json-text.js";
 import type { ContextLoader } from "../model/index.js";
 import { canonicalJson } from "./canonical-json.js";
 
@@ -228,14 +230,18 @@ export function createContextLoader(options: ContextLoaderOptions): ContextLoade
       { method: "GET", headers: { accept: "application/ld+json, application/json" } },
       { maxBytes },
     );
-    const parsed = parseJsonText(text, { maxDepth: MAX_JSON_DEPTH, maxTokens }, `The context ${url}`);
-    if ("reason" in parsed) {
-      if (parsed.exceeded !== undefined) throw refusalError(parsed);
-      throw new ServiceError(parsed.reason, 200, text.slice(0, 256));
+    const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens };
+    let document: unknown;
+    try {
+      document = parseJsonText(text, limits, jsonRefusals(`The context ${url}`, limits));
+    } catch (error) {
+      // A text over a limit is refused as such; one that is not JSON is a service that answered something else.
+      if (error instanceof LimitError || !(error instanceof DataError)) throw error;
+      throw new ServiceError(error.message, 200, text.slice(0, 256), { cause: error });
     }
-    check(url, parsed.value);
-    await hostCache?.put(url, parsed.value);
-    return parsed.value;
+    check(url, document);
+    await hostCache?.put(url, document);
+    return document;
   };
 
   /** Returns the load of a context: the kept one, or a new one that is forgotten if it fails. */

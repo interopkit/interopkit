@@ -1,7 +1,7 @@
 import { Validator } from "@cfworker/json-schema";
-import { callService, ServiceError } from "@interopkit/core";
-import { isRecord } from "@interopkit/core/checks";
-import { parseJsonText } from "../json-text.js";
+import { callService, DataError, ServiceError } from "@interopkit/core";
+import { isRecord, parseJsonText } from "@interopkit/core/checks";
+import { jsonRefusals } from "../json-text.js";
 import type { VerificationCheck } from "../model/index.js";
 import { OFFICIAL_SCHEMA_IDS, SCHEMA_TYPE } from "../model/internal.js";
 import type { Authentic } from "./authenticate.js";
@@ -83,10 +83,13 @@ async function loadSchema(url: string, context: Context): Promise<SchemaLoad> {
     if (error instanceof ServiceError) return { reason: error.message };
     throw error;
   }
-  const { maxDepth, maxTokens } = settings.jwt;
-  const parsed = parseJsonText(text, { maxDepth, maxTokens }, label);
-  if ("reason" in parsed) return { reason: parsed.reason };
-  const schema = parsed.value;
+  const limits = { maxDepth: settings.jwt.maxDepth, maxTokens: settings.jwt.maxTokens };
+  let schema: unknown;
+  try {
+    schema = parseJsonText(text, limits, jsonRefusals(label, limits));
+  } catch (error) {
+    return { reason: error instanceof DataError ? error.message : `${label} is not JSON.` };
+  }
   if (!isRecord(schema)) return { reason: `${label} is not a JSON object.` };
   if (runsRegularExpressions(schema)) {
     return { reason: `${label} runs regular expressions, which no schema that a credential names is allowed to do.` };

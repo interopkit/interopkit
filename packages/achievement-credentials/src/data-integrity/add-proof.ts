@@ -3,12 +3,12 @@ import jsigs from "@interop/jsonld-signatures";
 import { DataError, raceAbort, readClock, type Signer } from "@interopkit/core";
 import { checkRecord, describe } from "@interopkit/core/checks";
 import { addBaseProof } from "@interopkit/selective-disclosure";
+import { textWithinLimits } from "../json-text.js";
 import type { IssuableCredential } from "../model/index.js";
 import { credentialOrReason } from "../read/internal.js";
 import { documentLoaderOf, failOperation } from "./document-loader.js";
 import { defaultMandatoryPointers } from "./mandatory-pointers.js";
 import { type ProofOptions, proofSettings } from "./options.js";
-import { processingProblem } from "./processing-limits.js";
 import { withProofList } from "./proof-list.js";
 import { EDDSA_RDFC_2022_CRYPTOSUITE } from "./suites.js";
 
@@ -68,8 +68,11 @@ export async function addProof(
   settings.signal?.throwIfAborted();
   const checked = credentialOrReason(credential, "The credential");
   if ("reason" in checked) throw new DataError(checked.reason);
-  const tooLarge = processingProblem(credential, settings.maxJsonLdTokens);
-  if (tooLarge !== undefined) throw tooLarge;
+  textWithinLimits(
+    credential,
+    { tokensOption: "maxJsonLdTokens", maxTokens: settings.maxJsonLdTokens },
+    "The credential",
+  );
   const document = { ...structuredClone(credential) };
   const { signal, contexts } = settings;
   const withSignal = signal === undefined ? {} : { signal };

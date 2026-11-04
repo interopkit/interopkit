@@ -1,11 +1,11 @@
+import { DataError } from "@interopkit/core";
 import { isRecord } from "@interopkit/core/checks";
-import type { JsonTextRefusal } from "../json-text.js";
 import type { AnyVerifiableCredential } from "../model/index.js";
 import { credentialOrReason, readJwsPayload } from "../read/internal.js";
 import { ADDED_CLAIMS, dateTimeOf } from "./claims.js";
 
 /** A credential read from a payload, or the sentence that says why the payload holds none. */
-type Carried = { readonly value: AnyVerifiableCredential } | JsonTextRefusal;
+type Carried = { readonly value: AnyVerifiableCredential } | { readonly reason: string };
 
 /** Builds the credential that a payload in the `vc` claim form carries (VC Data Model 1.1, section 6.3.1): the claims fill what `vc` leaves out. */
 function foldClaims(payload: Readonly<Record<string, unknown>>, vc: Readonly<Record<string, unknown>>) {
@@ -42,9 +42,12 @@ export function readCarried(candidate: unknown): Carried {
  *
  * @param jws - The compact JWS, whose length the caller has limited.
  * @param maxTokens - The most tokens of JSON that the payload may have, counted before it is parsed.
- * @returns The credential, or the sentence that says why the JWS carries none.
+ * @returns The credential.
+ * @throws `LimitError` when the payload is over a limit of its levels or tokens.
+ * @throws `DataError` when the JWS carries no credential.
  */
-export function credentialInJws(jws: string, maxTokens: number): Carried {
-  const payload = readJwsPayload(jws, maxTokens);
-  return "reason" in payload ? payload : readCarried(carriedCredential(payload.value));
+export function credentialInJws(jws: string, maxTokens: number): AnyVerifiableCredential {
+  const carried = readCarried(carriedCredential(readJwsPayload(jws, maxTokens)));
+  if ("reason" in carried) throw new DataError(carried.reason);
+  return carried.value;
 }

@@ -1,3 +1,4 @@
+import { DataError, LimitError } from "@interopkit/core";
 import { type AccessRefusal, buildStatusInfoResponse, type HttpResponse } from "@interopkit/core/http";
 import type { StatusCodeMinorValue } from "../model/index.js";
 
@@ -66,6 +67,12 @@ export const invalidData = (description: string): HttpResponse => failure(422, d
 
 /** The answer for a body above a limit, of its bytes or of what it holds: 413. */
 export const tooLarge = (description: string): HttpResponse => failure(413, description, "unknown");
+
+/** The answer for a body whose JSON a parse refused: 413 when it is over a limit of its levels or tokens, else 400. */
+export const unreadableJson = (error: unknown): HttpResponse =>
+  error instanceof LimitError
+    ? tooLarge(error.message)
+    : unreadable(error instanceof DataError ? error.message : "The body is not JSON.");
 
 /** The answer for a body of a media type that the operation does not take: 415. */
 export const unsupportedType = (found: string | undefined, accepted: readonly string[]): HttpResponse =>

@@ -1,6 +1,6 @@
 import { DataError, requestService, ServiceError } from "@interopkit/core";
-import { checkRemoteUrl, isRecord } from "@interopkit/core/checks";
-import { parseJsonText } from "../json-text.js";
+import { checkRemoteUrl, isRecord, parseJsonText } from "@interopkit/core/checks";
+import { jsonRefusals } from "../json-text.js";
 import type { Context } from "./context.js";
 import { fetchOf } from "./options.js";
 
@@ -81,7 +81,12 @@ export async function fetchDocumentV2(url: unknown, what: string, context: Conte
   } catch {
     return { failed: `${what} at ${url} is not UTF-8.` };
   }
-  const parsed = parseJsonText(text, { maxDepth: jwt.maxDepth, maxTokens: jwt.maxTokens }, `${what} at ${url}`);
-  if ("reason" in parsed) return { failed: parsed.reason };
-  return isRecord(parsed.value) ? { document: parsed.value } : { failed: `${what} at ${url} is not a JSON object.` };
+  const limits = { maxDepth: jwt.maxDepth, maxTokens: jwt.maxTokens };
+  let value: unknown;
+  try {
+    value = parseJsonText(text, limits, jsonRefusals(`${what} at ${url}`, limits));
+  } catch (error) {
+    return { failed: error instanceof DataError ? error.message : `${what} at ${url} is not JSON.` };
+  }
+  return isRecord(value) ? { document: value } : { failed: `${what} at ${url} is not a JSON object.` };
 }

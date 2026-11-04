@@ -1,15 +1,15 @@
-import { DataError } from "@interopkit/core";
-import { isRecord, MAX_JSON_DEPTH } from "@interopkit/core/checks";
+import { DataError, LimitError } from "@interopkit/core";
+import { isRecord, MAX_JSON_DEPTH, parseJsonText } from "@interopkit/core/checks";
 import { type HttpRequest, type HttpResponse, readText } from "@interopkit/core/http";
 import * as v from "valibot";
-import { parseJsonText } from "../json-text.js";
+import { jsonRefusals } from "../json-text.js";
 import { credentialInJws } from "../jwt/internal.js";
 import type { AnyVerifiableCredential, CredentialApi, CredentialKind, VerificationResult } from "../model/index.js";
 import { readCredential } from "../read/index.js";
 import { jws, verifiedKindOf } from "../read/internal.js";
 import { bodyTypeOf } from "./body.js";
 import type { ProviderSettings } from "./options.js";
-import { invalidData, tooLarge, unreadable } from "./status.js";
+import { invalidData, tooLarge, unreadable, unreadableJson } from "./status.js";
 import type { ReceivedCredential } from "./store.js";
 
 /** The media type of a credential signed as a VC-JWT, sent as its compact JWS (OB 6.2.3.1). */
@@ -89,42 +89,53 @@ async function verificationFault(received: string | object, settings: ProviderSe
   return result.verified ? undefined : `The credential does not verify: ${faultOf(result)}.`;
 }
 
-/** Reads the credential of the body: a compact JWS for `text/plain`, a JSON object for the JSON types. */
-function credentialOfBody(
-  request: HttpRequest,
-  type: string,
-  settings: ProviderSettings,
-):
+/** What the body of a request gave: the credential as it was sent and as it was read, with its text, or the answer that refuses it. */
+type BodyCredential =
   | {
       readonly received: string | Readonly<Record<string, unknown>>;
       readonly credential: AnyVerifiableCredential;
       readonly text: string;
     }
-  | { readonly refusal: HttpResponse } {
-  const body = textOf(request);
-  if ("refusal" in body) return body;
-  const { text } = body;
-  if (type === JWS_TYPE) {
-    if (!v.is(jws, text)) {
-      return {
-        refusal: unreadable("The body of text/plain must be a compact JWS: three parts of base64url characters."),
-      };
-    }
-    const carried = credentialInJws(text, settings.maxTokens);
-    if ("value" in carried) return { received: text, credential: carried.value, text };
-    return { refusal: carried.exceeded === undefined ? invalidData(carried.reason) : tooLarge(carried.reason) };
+  | { readonly refusal: HttpResponse };
+
+/** Reads the credential of a body of `text/plain`: a compact JWS. */
+function credentialOfJws(text: string, settings: ProviderSettings): BodyCredential {
+  if (!v.is(jws, text)) {
+    return {
+      refusal: unreadable("The body of text/plain must be a compact JWS: three parts of base64url characters."),
+    };
   }
-  // The tokens and the levels are counted on the text that was decoded once, before the parser builds anything.
-  const parsed = parseJsonText(text, { maxDepth: MAX_JSON_DEPTH, maxTokens: settings.maxTokens }, "The body");
-  if ("reason" in parsed)
-    return { refusal: parsed.exceeded === undefined ? unreadable(parsed.reason) : tooLarge(parsed.reason) };
-  const json = parsed.value;
+  try {
+    return { received: text, credential: credentialInJws(text, settings.maxTokens), text };
+  } catch (error) {
+    if (error instanceof LimitError) return { refusal: tooLarge(error.message) };
+    return { refusal: invalidData(error instanceof DataError ? error.message : "The body is not a credential.") };
+  }
+}
+
+/** Reads the credential of a body of a JSON type: a JSON object. */
+function credentialOfJson(text: string, settings: ProviderSettings): BodyCredential {
+  // The levels and the tokens are counted on the text that was decoded once, before the parser builds anything.
+  const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens: settings.maxTokens };
+  let json: unknown;
+  try {
+    json = parseJsonText(text, limits, jsonRefusals("The body", limits));
+  } catch (error) {
+    return { refusal: unreadableJson(error) };
+  }
   if (!isRecord(json)) return { refusal: invalidData("The body must be a credential as a JSON object.") };
   try {
     return { received: json, credential: readCredential(json, { kind: KINDS[settings.api] }), text };
   } catch (error) {
     return { refusal: invalidData(error instanceof DataError ? error.message : "The body is not a credential.") };
   }
+}
+
+/** Reads the credential of the body: a compact JWS for `text/plain`, a JSON object for the JSON types. */
+function credentialOfBody(request: HttpRequest, type: string, settings: ProviderSettings): BodyCredential {
+  const body = textOf(request);
+  if ("refusal" in body) return body;
+  return type === JWS_TYPE ? credentialOfJws(body.text, settings) : credentialOfJson(body.text, settings);
 }
 
 /**

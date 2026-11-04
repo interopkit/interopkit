@@ -5,9 +5,11 @@ import {
   checkPositiveInteger,
   checkRecord,
   isRecord,
+  MAX_JSON_DEPTH,
   MAX_JSON_TOKENS,
+  parseJsonText,
 } from "@interopkit/core/checks";
-import { parseJsonText, refusalError } from "../json-text.js";
+import { jsonRefusals } from "../json-text.js";
 import type { CredentialV1p1, IssuableCredential } from "../model/index.js";
 
 /** The types of a refresh service: `1EdTechCredentialRefresh` of Open Badges 9.1, and `ImsCredentialRefresh` that CLR 8.1 writes. */
@@ -15,7 +17,6 @@ const REFRESH_TYPES: readonly string[] = ["1EdTechCredentialRefresh", "ImsCreden
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_BYTES = 1_048_576;
-const MAX_DEPTH = 64;
 
 /** The options of `refreshCredential`. */
 export interface RefreshOptions extends CallOptions {
@@ -94,8 +95,9 @@ export async function refreshCredential(
     }
     return body;
   }
-  const parsed = parseJsonText(body, { maxDepth: MAX_DEPTH, maxTokens }, "The refreshed credential");
-  if ("reason" in parsed) throw refusalError(parsed);
+  const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens };
   // A text that starts with a brace and parses is an object.
-  return parsed.value as Readonly<Record<string, unknown>>;
+  return parseJsonText(body, limits, jsonRefusals("The refreshed credential", limits)) as Readonly<
+    Record<string, unknown>
+  >;
 }

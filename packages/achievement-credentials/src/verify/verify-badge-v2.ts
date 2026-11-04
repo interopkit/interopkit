@@ -53,11 +53,17 @@ export function badgeV2InputOf(prepared: Prepared, context: Context): BadgeV2Inp
     if (isBadgeAssertionV2(value) && isRecord(value.assertion)) return objectInput(value.assertion);
     return isDocumentV2(value) ? objectInput(value) : undefined;
   }
-  const payload = readJwsPayload(prepared.jws, context.settings.jwt.maxTokens);
-  if (!("value" in payload) || !isDocumentV2(payload.value)) return undefined;
-  return verificationOf(payload.value) === "hosted"
+  let payload: Readonly<Record<string, unknown>>;
+  try {
+    payload = readJwsPayload(prepared.jws, context.settings.jwt.maxTokens);
+  } catch {
+    // A payload that is no JSON object is no badge of 2.0, and the verification of 3.0 says what is wrong with it.
+    return undefined;
+  }
+  if (!isDocumentV2(payload)) return undefined;
+  return verificationOf(payload) === "hosted"
     ? { reason: "The assertion in the JWS says that it is hosted: a hosted badge is verified at its address." }
-    : { verification: "signed", jws: prepared.jws, assertion: payload.value };
+    : { verification: "signed", jws: prepared.jws, assertion: payload };
 }
 
 /** What reading the documents of a badge gave: the badge, or the checks that say why there is none. */

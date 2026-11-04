@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import type { Issue } from "@interopkit/core/checks";
 import { createIssueSink } from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
@@ -352,9 +352,8 @@ describe("the badges that a script writes with jwcrypto", () => {
 
   it.each(signed.map((badge) => [badge.name, badge] as const))("reads the payload of %s", (_name, badge) => {
     const payload = readJwsPayload(badge.input as string, 1_000_000);
-    expect(payload).toStrictEqual({ value: badge.payload });
-    if (!("value" in payload)) return;
-    const read = readHosted(payload.value);
+    expect(payload).toStrictEqual(badge.payload);
+    const read = readHosted(payload as Json);
     expect(read.assertion.verification.type).toStrictEqual(["SignedBadge"]);
     expect(matchesIdentifier(read.assertion.recipient, fixture.recipient)).toBe(true);
   });
@@ -453,44 +452,43 @@ describe("readJwsPayload", () => {
   const jws = (payload: string) => `${encode('{"alg":"RS256"}')}.${payload}.c2ln`;
 
   it("reads the payload as a JSON object without checking the signature", () => {
-    expect(readJwsPayload(jws(encode('{"id":"urn:uuid:1"}')), 10)).toStrictEqual({ value: { id: "urn:uuid:1" } });
+    expect(readJwsPayload(jws(encode('{"id":"urn:uuid:1"}')), 10)).toStrictEqual({ id: "urn:uuid:1" });
   });
 
   it("refuses a JWS that is not compact, a detached payload, and base64url that is not canonical", () => {
-    expect(readJwsPayload("a.b", 10)).toStrictEqual({
-      reason: "The JWS is not a compact JWS of three parts of base64url characters.",
-    });
-    expect(readJwsPayload(jws(""), 10)).toStrictEqual({
-      reason: "The JWS has a detached payload, which holds no assertion.",
-    });
+    expect(() => readJwsPayload("a.b", 10)).toThrow(
+      new DataError("The JWS is not a compact JWS of three parts of base64url characters."),
+    );
+    expect(() => readJwsPayload(jws(""), 10)).toThrow(
+      new DataError("The JWS has a detached payload, which holds no assertion."),
+    );
     // "e30" is the canonical "{}", and "e31" holds a bit that no byte has.
-    expect(readJwsPayload(jws("e31"), 10)).toStrictEqual({
-      reason: "The payload of the JWS is not canonical base64url without padding.",
-    });
-    expect(readJwsPayload(jws("e"), 10)).toStrictEqual({
-      reason: "The payload of the JWS is not canonical base64url without padding.",
-    });
+    expect(() => readJwsPayload(jws("e31"), 10)).toThrow(
+      new DataError("The payload of the JWS is not canonical base64url without padding."),
+    );
+    expect(() => readJwsPayload(jws("e"), 10)).toThrow(
+      new DataError("The payload of the JWS is not canonical base64url without padding."),
+    );
   });
 
   it("refuses a payload that is not UTF-8, not JSON or not an object", () => {
-    expect(readJwsPayload(jws(Buffer.from([0xff, 0xfe]).toString("base64url")), 10)).toStrictEqual({
-      reason: "The payload of the JWS is not UTF-8.",
-    });
-    expect(readJwsPayload(jws(encode("{")), 10)).toStrictEqual({ reason: "The payload of the JWS is not JSON." });
-    expect(readJwsPayload(jws(encode("[1]")), 10)).toStrictEqual({
-      reason: "The payload of the JWS is not a JSON object.",
-    });
+    expect(() => readJwsPayload(jws(Buffer.from([0xff, 0xfe]).toString("base64url")), 10)).toThrow(
+      new DataError("The payload of the JWS is not UTF-8."),
+    );
+    expect(() => readJwsPayload(jws(encode("{")), 10)).toThrow(new DataError("The payload of the JWS is not JSON."));
+    expect(() => readJwsPayload(jws(encode("[1]")), 10)).toThrow(
+      new DataError("The payload of the JWS is not a JSON object."),
+    );
   });
 
-  it("counts the tokens and the levels of the payload before it parses it", () => {
-    expect(readJwsPayload(jws(encode('{"a":[1,2]}')), 9)).toStrictEqual({ value: { a: [1, 2] } });
-    expect(readJwsPayload(jws(encode('{"a":[1,2,3]}')), 9)).toStrictEqual({
-      reason: "The payload of the JWS has more than the 9 tokens of JSON that it may have.",
-      exceeded: { limit: "maxTokens", maximum: 9 },
-    });
-    expect(readJwsPayload(jws(encode(`{"a":${"[".repeat(64)}${"]".repeat(64)}}`)), 1000)).toStrictEqual({
-      reason: "The payload of the JWS nests more than 64 levels.",
-      exceeded: { limit: "maxDepth", maximum: 64 },
-    });
+  it("counts the levels and the tokens of the payload before it parses it, and refuses one over both for its levels", () => {
+    expect(readJwsPayload(jws(encode('{"a":[1,2]}')), 9)).toStrictEqual({ a: [1, 2] });
+    expect(() => readJwsPayload(jws(encode('{"a":[1,2,3]}')), 9)).toThrow(
+      new LimitError("The payload of the JWS has more than the 9 tokens of JSON that it may have.", "maxTokens", 9),
+    );
+    const deep = `{"a":${"[".repeat(64)}${"]".repeat(64)}}`;
+    const nests = new LimitError("The payload of the JWS nests more than 64 levels.", "maxDepth", 64);
+    expect(() => readJwsPayload(jws(encode(deep)), 1000)).toThrow(nests);
+    expect(() => readJwsPayload(jws(encode(deep)), 9)).toThrow(nests);
   });
 });

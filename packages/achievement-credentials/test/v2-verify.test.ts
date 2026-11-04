@@ -428,6 +428,17 @@ describe("signatures of 2.0 assertions that the issuer's documents do not back",
     });
   });
 
+  it("fails a JWS whose header is not JSON, which names no algorithm", async () => {
+    const { jws, documents } = await signedBadge();
+    const [, payload, signature] = jws.split(".");
+    const changed = [Buffer.from("{alg}").toString("base64url"), payload, signature].join(".");
+    expect(failing(await verifyCredential(changed, optionsOf(documents).options))).toMatchObject({
+      check: "proof",
+      outcome: "failed",
+      detail: expect.stringContaining("names no algorithm"),
+    });
+  });
+
   it("fails a JWS whose header is longer than 16,384 characters, before it fetches a key", async () => {
     const { jws, documents } = await signedBadge();
     const [, payload, signature] = jws.split(".");

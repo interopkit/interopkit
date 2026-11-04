@@ -1,6 +1,6 @@
 import { callService, type Fetch, ServiceError } from "@interopkit/core";
-import { isRecord } from "@interopkit/core/checks";
-import { parseJsonText } from "../json-text.js";
+import { isRecord, parseJsonText } from "@interopkit/core/checks";
+import { jsonRefusals } from "../json-text.js";
 import { KEY_RELATIONSHIPS, type KeyRelationship, type VerificationKey } from "../model/index.js";
 import { publicJwk, thumbprintOf } from "./jwk.js";
 import { jwkOfMultibase } from "./multibase.js";
@@ -35,9 +35,16 @@ const ACCEPT = "application/json, application/did+json;q=0.9, application/ld+jso
 
 /** Parses the text of a document, or returns `undefined` when it is not a JSON object within the limits of levels and tokens. */
 function parseDocument(text: string, maxTokens: number): Readonly<Record<string, unknown>> | undefined {
-  // The tokens and the levels are counted before the parser builds anything.
-  const parsed = parseJsonText(text, { maxDepth: MAX_DOCUMENT_DEPTH, maxTokens }, "The document");
-  return "value" in parsed && isRecord(parsed.value) ? parsed.value : undefined;
+  // The levels and the tokens are counted before the parser builds anything.
+  const limits = { maxDepth: MAX_DOCUMENT_DEPTH, maxTokens };
+  let value: unknown;
+  try {
+    value = parseJsonText(text, limits, jsonRefusals("The document", limits));
+  } catch {
+    // The text is not JSON within the limits.
+    return undefined;
+  }
+  return isRecord(value) ? value : undefined;
 }
 
 /** Returns the address of a document with no fragment, or `undefined` when it is not an HTTPS address that names a host and no user. */

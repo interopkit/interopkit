@@ -66,7 +66,7 @@ const CASES: readonly {
     title: "refuses the payload of a JWS of four million empty arrays by its tokens, without parsing it",
     name: "v2Payload",
     heapMiB: 80,
-    outcome: '"exceeded":{"limit":"maxTokens","maximum":1000000}',
+    outcome: "LimitError: The payload of the JWS has more than the 1000000 tokens of JSON",
   },
   {
     title: "verifies a CLR of 600 credentials whose refresh services each answer a credential of 600,000 characters",

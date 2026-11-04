@@ -1,4 +1,4 @@
-import { ServiceError } from "@interopkit/core";
+import { DataError, ServiceError } from "@interopkit/core";
 import { textWithinLimits } from "../json-text.js";
 import { inspectJwt } from "../jwt/internal.js";
 import { verifyIssuerKey } from "../keys/index.js";
@@ -32,9 +32,11 @@ function readObject(
   value: Readonly<Record<string, unknown>>,
   context: Context,
 ): { readonly credential: AnyVerifiableCredential } | { readonly reason: string } {
-  const { maxInputBytes, maxDepth, maxTokens } = context.settings.jwt;
-  const text = textWithinLimits(value, { maxCharacters: maxInputBytes, maxDepth, maxTokens }, "The credential");
-  if ("reason" in text) return text;
+  try {
+    textWithinLimits(value, context.settings.jwt, "The credential");
+  } catch (error) {
+    return { reason: error instanceof DataError ? error.message : "The credential is not JSON." };
+  }
   const read = credentialOrReason(value, "The credential");
   return "reason" in read ? read : { credential: read.value };
 }
