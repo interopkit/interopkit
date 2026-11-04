@@ -8,6 +8,7 @@
   },
   "include": [
     "scripts",
+    "validation/1edtech-validator",
     "validation/adl-lrs",
     "validation/catapult",
     "validation/containers",

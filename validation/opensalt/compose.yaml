@@ -1,6 +1,6 @@
 # OpenSALT (MIT) as a CASE counterparty: the web application and its database, from the images the project publishes, pinned
-# by digest. The images exist for linux/amd64 only; on an arm64 host the container runtime emulates it. Every secret comes from
-# the environment that run.ts sets for one run, and nothing here is reachable from outside the host.
+# by digest. The images exist for linux/amd64 only; on an arm64 host the container runtime emulates it. Every secret and the
+# name of the project come from the environment that run.ts sets for one run, and nothing here is reachable from outside the host.
 name: interopkit-opensalt
 
 services:
@@ -13,6 +13,14 @@ services:
       MYSQL_DATABASE: opensalt
       MYSQL_USER: opensalt
       MYSQL_PASSWORD: ${OPENSALT_DB_PASSWORD:?run.ts sets the database passwords}
+    # The check of the image, which marks the database unhealthy after three tries 30 s apart: an emulated start can take longer.
+    # A failure during the start period does not count, and 60 tries 5 s apart end the wait at 330 s at most.
+    healthcheck:
+      test: ["CMD", "docker-healthcheck"]
+      interval: 5s
+      timeout: 10s
+      start_period: 30s
+      retries: 60
 
   web:
     image: opensalt/opensalt:web-4.x@sha256:79f1b2efa04768ddb716d857b1b18d7cfe290d3e8b1604ef44b5aa64dcc19c35

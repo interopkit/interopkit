@@ -9,7 +9,7 @@ and editor, which `pnpm opensalt` starts in containers and runs the client and p
 [w3c-suites](w3c-suites/README.md) holds the interoperability suites of the W3C, which `pnpm w3c-suites` runs against the VC-API service of
 the credentials example, and [1edtech-validator](1edtech-validator/README.md) the public validator of 1EdTech, which `pnpm validator`
 builds and starts in a container and runs the credentials of that example through.
-[pylti1p3](pylti1p3/README.md) is a tool built on PyLTI1p3 that `pnpm pylti1p3` starts in a container, as a counterparty of the platform role of `tool-integration`, and [moodle](moodle/README.md) is Moodle, which `pnpm moodle` starts in containers as a counterparty of both roles; `containers/` holds what the runners of the LTI counterparties share: the commands of Docker and the certificates that the platform serves over `https`.
+[pylti1p3](pylti1p3/README.md) is a tool built on PyLTI1p3 that `pnpm pylti1p3` starts in a container, as a counterparty of the platform role of `tool-integration`, and [moodle](moodle/README.md) is Moodle, which `pnpm moodle` starts in containers as a counterparty of both roles; `containers/` holds what the runners of the counterparties in containers share: the commands of Docker, the waits, the name of a run (`CONTAINER_NAME` or `COMPOSE_PROJECT_NAME`, else `interopkit-<counterparty>-<8 hex digits>`) and the certificates that the platform serves over `https`.
 
 ```mermaid
 flowchart LR

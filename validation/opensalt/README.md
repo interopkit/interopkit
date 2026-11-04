@@ -20,7 +20,7 @@ flowchart LR
 
 | File           | Holds                                                                                                                      |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `compose.yaml` | The web application and its database, from the images the project publishes, pinned by digest                             |
+| `compose.yaml` | The web application and its database, from the images the project publishes, pinned by digest, and the check of the database's health |
 | `run.ts`       | Starts the containers with secrets made for the run, migrates, makes a user, runs the flows, and always removes everything |
 | `session.ts`   | Signs in with the login form and imports a framework the way the editor of OpenSALT does                                   |
 
@@ -56,7 +56,9 @@ between runs.
 
 | Setting       | Value                                                                                                                                          |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Project       | `CONTAINER_NAME` or `COMPOSE_PROJECT_NAME` when it is set, so that the unit that runs it names its own (`CONTAINER_NAME=my-unit pnpm opensalt`), and else `interopkit-opensalt-<8 hex digits>`; no other container is stopped or removed |
 | Port          | A free port on 127.0.0.1, chosen for the run (`OPENSALT_PORT`); the application is not reachable from other hosts                              |
+| Database      | `compose.yaml` checks it every 5 s, after 30 s of grace, up to 60 failures, and `docker compose up --wait` waits for it at most 360 s; the check of the image gives up after three tries 30 s apart, which an emulated start can exceed |
 | Secrets       | The database passwords, the application secret (also the key of the update hub, which must hold 256 bits) and the password of the user are random for each run, and exist only in the environment of the processes and the containers |
 | User          | A user of the role `SUPER_USER` in a group of its own, made with the commands of the application                                              |
 | Cleanup       | `docker compose down --volumes --remove-orphans` runs when the flows pass, when they fail and when the start fails                              |

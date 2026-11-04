@@ -39,7 +39,7 @@ pnpm validator
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Source      | The commit in `validator.lock.json`; the archive must have its SHA-256, or the build stops before it unpacks anything                                |
 | Images      | `maven@sha256:1a352420f7aba21f5ad08df31bab55f74c013fb491f1ae8ab1dd7ff9ed698584` builds and runs it, pinned by digest                                   |
-| Container   | `ik-credentials-validator-<8 hex digits>`, chosen for the run, with `--cpus=2` and a port on 127.0.0.1; no other container is stopped or removed      |
+| Container   | `CONTAINER_NAME` or `COMPOSE_PROJECT_NAME` when it is set, so that the unit that runs it names its own (`CONTAINER_NAME=my-unit pnpm validator`), and else `interopkit-validator-<8 hex digits>`, with `--cpus=2` and a port on 127.0.0.1; no other container is stopped, waited for or removed |
 | Cleanup     | `docker stop`, `docker wait` and `docker rm` of that container run when the test passes, when it fails and when the start fails                       |
 | Tests       | The Vitest project `example-achievement-credentials-validator`; `pnpm test` leaves it out                                                              |
 

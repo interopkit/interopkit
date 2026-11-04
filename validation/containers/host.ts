@@ -1,10 +1,38 @@
 import { type ChildProcess, spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { createServer } from "node:net";
 import { resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
 /** The root of the repository, where the runners start their programs. */
 const ROOT = resolve(import.meta.dirname, "../..");
+
+/** The characters of a name that Docker accepts for a container and Compose for a project: lowercase letters, digits, `-` and `_`. */
+const RUN_NAME = /^[a-z0-9][a-z0-9_-]*$/u;
+
+/**
+ * Names the containers of one run. The caller names its unit with `CONTAINER_NAME`, or with `COMPOSE_PROJECT_NAME`, which
+ * Compose reads as well, so that two units that run counterparties on a shared machine never touch each other's containers;
+ * without either, the name is `interopkit-<kind>-` and 8 random hexadecimal digits.
+ *
+ * @param kind - The counterparty, such as `moodle`.
+ * @param env - The environment to read, the one of this process by default.
+ * @returns A name valid for a container and for a Compose project.
+ * @throws `Error` when a variable holds a name that Docker or Compose refuses.
+ */
+export function runName(kind: string, env: Readonly<Record<string, string | undefined>> = process.env): string {
+  for (const variable of ["CONTAINER_NAME", "COMPOSE_PROJECT_NAME"]) {
+    const named = env[variable];
+    if (named === undefined || named === "") continue;
+    if (!RUN_NAME.test(named)) {
+      throw new Error(
+        `${variable} must name a container and a Compose project with lowercase letters, digits, - and _, such as my-unit, found ${JSON.stringify(named)}.`,
+      );
+    }
+    return named;
+  }
+  return `interopkit-${kind}-${randomBytes(4).toString("hex")}`;
+}
 
 /** Runs a program with the environment of this process and `env`, and resolves with its exit code and what it printed. */
 export function execute(

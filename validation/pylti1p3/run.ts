@@ -1,6 +1,5 @@
-import { randomBytes } from "node:crypto";
 import { createCertificates } from "../containers/certificates.ts";
-import { docker, execute, freePort, removeContainer, until } from "../containers/host.ts";
+import { docker, execute, freePort, removeContainer, runName, until } from "../containers/host.ts";
 
 /** The image of Python 3.13 on Debian, pinned by digest: the tag `3.13-slim` names it today, and the digest always does. */
 const IMAGE = "python:3.13-slim@sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1";
@@ -18,7 +17,7 @@ const READY_TRY_MS = 2000;
  * tests, and stops, waits for and removes that container, and no other, whatever happens.
  */
 async function main(): Promise<number> {
-  const name = `ik-lev-pylti-${randomBytes(4).toString("hex")}`;
+  const name = runName("pylti1p3");
   const [toolPort, platformPort] = [await freePort(), await freePort()];
   const { authority, certificate, key } = await createCertificates([PLATFORM_NAME]);
   const toolUrl = `http://127.0.0.1:${toolPort}`;

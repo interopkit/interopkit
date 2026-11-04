@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { createCertificates } from "../containers/certificates.ts";
-import { execute, freePort, removeContainer } from "../containers/host.ts";
+import { execute, freePort, removeContainer, runName } from "../containers/host.ts";
 
 const ROOT = resolve(import.meta.dirname, "../..");
 const COMPOSE_FILE = join(import.meta.dirname, "compose.yaml");
@@ -31,8 +31,12 @@ async function must(
   return output;
 }
 
-/** Makes the folder of the source of Moodle at the pinned commit, with the PHP packages that it needs, unless it exists. */
-async function prepareSource(): Promise<string> {
+/**
+ * Makes the folder of the source of Moodle at the pinned commit, with the PHP packages that it needs, unless it exists.
+ *
+ * @param run - The name of this run, which names the container that installs the packages.
+ */
+async function prepareSource(run: string): Promise<string> {
   const source = join(CACHE, MOODLE_COMMIT);
   if (existsSync(join(source, "vendor/autoload.php"))) return source;
   await rm(source, { recursive: true, force: true });
@@ -44,7 +48,7 @@ async function prepareSource(): Promise<string> {
   const head = (await must("git", ["-C", source, "rev-parse", "HEAD"])).trim();
   if (head !== MOODLE_COMMIT) throw new Error(`The source of Moodle is at ${head}, not at ${MOODLE_COMMIT}.`);
   // The packages are the ones that composer.lock pins; the requirements of the platform are those of the image of Moodle, not of this one.
-  const name = `ik-lev-composer-${randomBytes(4).toString("hex")}`;
+  const name = `${run}-composer`;
   try {
     await must("docker", [
       ...["run", "--name", name, "--cpus=2", "--volume", `${source}:/app`, "--workdir", "/app", COMPOSER],
@@ -57,15 +61,15 @@ async function prepareSource(): Promise<string> {
 }
 
 /**
- * Starts Moodle and its database in containers of a project of this run, with 2 CPUs each and its port on loopback only; installs
+ * Starts Moodle and its database in containers of a project with the name of this run, with 2 CPUs each and its port on loopback only; installs
  * Moodle; runs the flows of a platform and of a tool against it, with the platform and the tool in the process of the tests over
  * `https` with a certificate authority that the run made and Moodle trusts; and removes the containers, their network and their
  * volumes, and no others, whatever happens.
  */
 async function main(): Promise<number> {
-  const id = randomBytes(4).toString("hex");
+  const run = runName("moodle");
   const secret = () => randomBytes(18).toString("hex");
-  const runFolder = join(CACHE, `run-${id}`);
+  const runFolder = join(CACHE, `run-${run}`);
   const [httpPort, publicPort, toolPort, platformPort] = [
     await freePort(),
     await freePort(),
@@ -74,7 +78,7 @@ async function main(): Promise<number> {
   ];
   const adminPassword = `Admin-${secret()}!`;
   const { authority, certificate, key } = await createCertificates([TOOL_HOST, PLATFORM_HOST]);
-  const source = await prepareSource();
+  const source = await prepareSource(run);
   await mkdir(runFolder, { recursive: true });
   const authorityFile = join(runFolder, "authority.pem");
   await writeFile(authorityFile, authority);
@@ -82,7 +86,7 @@ async function main(): Promise<number> {
   await must("cp", [join(import.meta.dirname, "config.php"), join(source, "config.php")]);
 
   const compose = {
-    COMPOSE_PROJECT_NAME: `ik-lev-moodle-${id}`,
+    COMPOSE_PROJECT_NAME: run,
     MOODLE_DB_ROOT_PASSWORD: secret(),
     MOODLE_DB_PASSWORD: secret(),
     MOODLE_HTTP_PORT: String(httpPort),

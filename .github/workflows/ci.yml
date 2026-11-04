@@ -178,14 +178,15 @@ jobs:
             browsers: any(packages.filter(hasTest(/\.browser\.test\.ts$/))),
             bench: any(packages.filter((dir) => members.get(dir).scripts?.bench)),
             runtimes: everything || examples.length > 0 || reached.has("compat"),
-            opensalt: everything || reached.has("examples/competency-frameworks") || validation.has("opensalt"),
+            // The helpers of the containers are shared by every runner of a counterparty in a container.
+            opensalt: everything || reached.has("examples/competency-frameworks") || validation.has("opensalt") || validation.has("containers"),
             adl_lrs: everything || reached.has("examples/learning-records") || validation.has("adl-lrs"),
-            sql_lrs: everything || reached.has("examples/learning-records") || validation.has("sql-lrs"),
+            sql_lrs: everything || reached.has("examples/learning-records") || validation.has("sql-lrs") || validation.has("containers"),
             w3c_suites: everything || reached.has("examples/achievement-credentials") || validation.has("w3c-suites"),
-            validator: everything || reached.has("examples/achievement-credentials") || validation.has("1edtech-validator"),
-            // The flows of the tool that PyLTI1p3 runs, against the platform role; the helpers of the containers are shared.
+            validator: everything || reached.has("examples/achievement-credentials") || validation.has("1edtech-validator") || validation.has("containers"),
+            // The flows of the tool that PyLTI1p3 runs, against the platform role.
             pylti1p3: everything || reached.has("packages/tool-integration") || validation.has("pylti1p3") || validation.has("containers"),
-            // Moodle in both roles against the roles of the package; the helpers of the containers are shared.
+            // Moodle in both roles against the roles of the package.
             moodle: everything || reached.has("packages/tool-integration") || validation.has("moodle") || validation.has("containers"),
             // Both suites of CATAPULT, against the LMS and the units of the cmi5 example.
             catapult: everything || reached.has("examples/course-launch") || validation.has("catapult"),
