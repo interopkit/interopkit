@@ -13,7 +13,7 @@ flowchart LR
   check --> read["readText, readJson,<br/>readQuery, readForm, readOffsetPage"]
   read --> handler["A handler of a package"]
   decision["readAccessDecision<br/>the host's decision"] --> handler
-  handler --> build["buildJsonResponse, negotiate,<br/>buildPageLinks, buildStatusInfoResponse"]
+  handler --> build["buildJsonResponse,<br/>buildPageLinks, buildStatusInfoResponse"]
   build --> response["HttpResponse"]
   response -->|"status, headers, body"| framework
 ```
@@ -21,7 +21,7 @@ flowchart LR
 ## Quick start
 
 ```ts
-import { buildJsonResponse, negotiate, readForm, readJson } from "@interopkit/core/http";
+import { buildJsonResponse, readForm, readJson } from "@interopkit/core/http";
 
 const form = {
   method: "POST",
@@ -39,7 +39,6 @@ const statement = {
 };
 readJson(statement); // => { verb: { id: "https://example.com/completed" } }
 
-negotiate("text/plain;q=0.9, application/json", ["application/json", "text/plain"]); // => "application/json"
 buildJsonResponse(404, { error: "not_found" }); // => { status: 404, headers: { "content-type": "application/json;charset=UTF-8" }, body: '{"error":"not_found"}' }
 ```
 
@@ -71,7 +70,6 @@ that has no body, such as 204, takes `null`.
 | `readForm(request, options)`                | Reads the parameters of an `application/x-www-form-urlencoded` body into a map         |
 | `readBearerToken(request)`                    | Returns the token of an `Authorization` header of the bearer scheme (RFC 6750 section 2.1): the scheme in any case, one or more spaces, a b64token; `undefined` for no header or another scheme or form |
 | `buildJsonResponse(status, body, options?)` | Builds an answer with a JSON body                                                      |
-| `negotiate(accept, offered)`                | Chooses a media type from the `Accept` header                                          |
 | `readOffsetPage(parameters, sizes)`         | Reads the `limit` and `offset` of a query into the page it asks for                    |
 | `buildPageLinks(url, page, extent)`        | Builds the `Link` header of a page: first, prev, next, and last when the total is known |
 | `buildStatusInfoResponse(status, description, options)` | Builds the answer of a failure of a 1EdTech service, with its `imsx_StatusInfo` |
@@ -149,26 +147,6 @@ JSON.parse(String(busy.body)); // => { imsx_codeMajor: "failure", imsx_severity:
 | `imsx_StatusInfo`       | `imsx_codeMajor` `failure`, the severity, the description, and a detail of `TargetEndSystem` with the code when there is one  |
 | A decision of the port  | Read with `readAccessDecision(value, label, { grant })`, so that another shape is a `DataError` that names its path; the grant reads what an allowed decision carries, such as an owner |
 
-## Choosing a media type
-
-`negotiate` follows RFC 9110 section 12.5.1.
-
-| Step                                 | Rule                                                                                                                                 |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| The weight of an offered type        | The `q` of the most specific range that names it: `type/subtype`, then `type/*`, then `*/*`. A type that no range names has weight 0 |
-| The choice                           | The highest weight; the first of the offered types wins a tie                                                                        |
-| No `Accept` header, or none accepted | The first offered type: an error still has to be answered in some format                                                             |
-| A range that is malformed            | It accepts nothing: not `type/subtype`, `*/subtype`, or a weight that is not `0` to `1` with up to three decimals                    |
-| Parameters of a range                | Ignored, except `q`, and the extensions after it. `text/plain;charset=utf-8` counts as `text/plain`                                  |
-
-```ts
-import { negotiate } from "@interopkit/core/http";
-
-const ranges = "text/*;q=0.3, text/plain;q=0.7, */*;q=0.5";
-negotiate(ranges, ["text/html", "image/jpeg"]); // => "image/jpeg"
-negotiate(ranges, ["text/html", "image/jpeg", "text/plain"]); // => "text/plain"
-```
-
 ## Errors
 
 | Error       | When                                                                                                                                                               | What to do                                                       |
@@ -179,7 +157,6 @@ negotiate(ranges, ["text/html", "image/jpeg", "text/plain"]); // => "text/plain"
 | `DataError` | `readJson`: the body is not JSON; its `cause` is the `SyntaxError` of the parse                                                                                   | Answer 400                                                       |
 | `DataError` | `readJson`: an option is not a positive integer                                                                                                                    | Fix the option                                                   |
 | `DataError` | `readQuery`, `readForm`: a parameter occurs twice, or a form has another media type                                                                                | Answer 400, or 415 for the media type                            |
-| `DataError` | `negotiate`: `accept` is not a string, or `offered` is not a list of at least one `type/subtype` without parameters                                                | Fix the call                                                     |
 | `DataError` | `readOffsetPage`: `limit` is not a whole number of at least 1, or `offset` one of at least 0, in digits                                                            | Answer 400 with the message, which names the parameter           |
 | `DataError` | `readOffsetPage`, `buildPageLinks`, `buildStatusInfoResponse`: an argument of another type, a status outside 400 to 599, an empty description                          | Fix the call                                                     |
 | `DataError` | `readAccessDecision`: the port answered another shape: a status other than 401, 403 or 429, a delay that is not whole, an allowed decision without its grant           | Fix the port: a broken contract is a bug of the host             |
@@ -202,7 +179,6 @@ hold a token.
 | Routing, sessions, authentication                         | They belong to the host. A handler takes a request and gives an answer                        |
 | Cookies                                                   | Only `tool-integration` reads them, so the reader stays there                                 |
 | Multipart bodies, other character sets, compressed bodies | The host decodes them before it builds the request, or the package that needs them reads them |
-| A 406 answer                                              | `negotiate` always chooses a type, since an error has to be answered in some format           |
 
 ## Differences from the references
 

@@ -1,6 +1,3 @@
-import { checkArray, checkString, describe } from "../checks.js";
-import { DataError } from "../errors.js";
-
 /** A media range of an `Accept` header with its weight. */
 interface MediaRange {
   readonly type: string;
@@ -9,7 +6,6 @@ interface MediaRange {
 }
 
 const TOKEN = /^[a-z0-9!#$%&'*+.^_`|~-]+$/u;
-const OFFERED = /^[a-z0-9!#$%&'+.^_`|~-]+\/[a-z0-9!#$%&'+.^_`|~-]+$/iu;
 /** RFC 9110 section 12.4.2: `0` or `1` with up to three digits, and nothing above 1. */
 const QUALITY = /^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/u;
 const WILDCARD = "*";
@@ -66,24 +62,12 @@ function weight(ranges: readonly MediaRange[], offered: string): number {
  * types, the first offered type is the choice, because an error still has to be answered in some format.
  *
  * @param accept - The `Accept` header of the request, or `undefined` when it has none.
- * @param offered - The media types the answer can have, such as `application/json`, with the preferred one first.
+ * @param offered - The media types the answer can have, such as `application/json`, with the preferred one first: at least one.
  * @returns One of the offered types, as it was given.
- * @throws `DataError` when `accept` is not a string or `offered` is not a list of at least one `type/subtype`.
  */
-export function negotiate(accept: string | undefined, offered: readonly string[]): string {
-  if (accept !== undefined) checkString(accept, "The Accept header");
-  checkArray(offered, "The offered media types must be an array");
-  for (const type of offered) {
-    if (typeof type !== "string" || !OFFERED.test(type)) {
-      throw new DataError(
-        `Each offered media type must be a type/subtype without parameters, found ${describe(type)}.`,
-      );
-    }
-  }
-  const [first] = offered;
-  if (first === undefined) throw new DataError("The offered media types must name at least one type, found none.");
+export function negotiate(accept: string | undefined, offered: readonly [string, ...string[]]): string {
   const ranges = (accept ?? "").split(",").flatMap((entry) => readRange(entry) ?? []);
-  let chosen = first;
+  let chosen = offered[0];
   let chosenWeight = 0;
   for (const type of offered) {
     const candidate = weight(ranges, type);

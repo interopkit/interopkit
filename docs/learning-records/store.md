@@ -418,7 +418,16 @@ mirror against it. `target` finds any Statement by its id in lower case, a voide
 | `DataError`: `The decision of access is invalid at <path>: <sentence>.`          | `access` answered with something that is no decision                                                                     | Answer `{ allowed, ... }` as `Access` says                                 |
 | `DataError`: `The answer of DocumentStore.get is invalid at <path>: <sentence>.` | A store broke its contract                                                                                               | Fix the store                                                              |
 
-A refusal is written as plain text, JSON `{ "message": "..." }` or HTML, as `Accept` prefers, and as plain text when it prefers none or prefers them alike.
+A refusal is written as plain text, JSON `{ "message": "..." }` or HTML, as `Accept` prefers by RFC 9110 section 12.5.1, and as
+plain text when it prefers none or prefers them alike:
+
+| Step                                 | Rule                                                                                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| The weight of a type                 | The `q` of the most specific range that names it: `type/subtype`, then `type/*`, then `*/*`. A type that no range names has weight 0 |
+| The choice                           | The highest weight; plain text, then JSON, then HTML win a tie                                                                       |
+| No `Accept` header, or none accepted | Plain text: an error still has to be answered in some format                                                                         |
+| A range that is malformed            | It accepts nothing: not `type/subtype`, `*/subtype`, or a weight that is not `0` to `1` with up to three decimals                    |
+| Parameters of a range                | Ignored, except `q`, and the extensions after it. `text/plain;charset=utf-8` counts as `text/plain`                                  |
 
 ## Not included
 
@@ -428,6 +437,7 @@ A refusal is written as plain text, JSON `{ "message": "..." }` or HTML, as `Acc
 | A database, an index, an account, a rate limit        | The host's: the ports and `access` are where they plug in             |
 | Deleting a Statement                                  | The standard asks that Statements are not deleted; voiding is the way |
 | A time later than the clock                           | The standard says an LRS shall not reject it                          |
+| A 406 answer                                          | A refusal is always written in one of its three types, since an error has to be answered in some format |
 | The versions 0.9 and 0.95                             | Earlier than 1.0.0, which 1.0.3 asks an LRS to refuse (Communication 3.3) |
 
 ## Differences from the references

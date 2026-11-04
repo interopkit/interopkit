@@ -2,7 +2,6 @@ import fc from "fast-check";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import {
-  buildFindings,
   buildIssues,
   checkAbortSignal,
   checkArray,
@@ -37,7 +36,6 @@ import {
   positiveIntegerSchema,
   positiveSchema,
   readCallOptions,
-  remoteUrlSchema,
   strictRecord,
 } from "../src/checks.js";
 import { DataError } from "../src/index.js";
@@ -295,34 +293,6 @@ describe("checkRemoteUrl", () => {
       new DataError("The line item must be a string, found 5."),
     );
   });
-
-  it("accepts with its schema what it accepts, and refuses with its schema what it refuses", () => {
-    expect(parseWith(remoteUrlSchema, "https://lms.example.edu/", "The value")).toBe("https://lms.example.edu/");
-    expect(() => parseWith(remoteUrlSchema, "https://0x7f.1/", "The value")).toThrow(
-      new DataError(
-        'The value is invalid: expected an https URL that names a public host, found "https://0x7f.1/", which names its host by an IP address.',
-      ),
-    );
-    expect(() => parseWith(remoteUrlSchema, JSON.parse("null"), "The value")).toThrow(DataError);
-    fc.assert(
-      fc.property(
-        fc.webUrl({ validSchemes: ["https", "http"], withQueryParameters: true }),
-        fc.string(),
-        (url, text) => {
-          for (const value of [url, text]) {
-            let thrown = false;
-            try {
-              checkRemoteUrl(value, "The value");
-            } catch {
-              thrown = true;
-            }
-            expect(v.safeParse(remoteUrlSchema, value).success).toBe(!thrown);
-          }
-        },
-      ),
-      { seed: 20_261_102, numRuns: 300 },
-    );
-  });
 });
 
 describe("checkNonNegativeInteger", () => {
@@ -470,12 +440,20 @@ const findingsSchema = strictRecord({
   pair: v.optional(v.tupleWithRest([v.string()], v.number())),
 });
 
-/** The findings of a value that the schema above reads. */
-function findingsOfValue(value: unknown) {
-  return buildFindings(v.safeParse(findingsSchema, value).issues ?? []);
+/** The issues of a parse as `buildIssues` gives them, without the severity, which is `error` for each. */
+function findingsOf(issues: readonly v.BaseIssue<unknown>[]) {
+  return buildIssues(issues).map(({ severity, ...finding }) => {
+    expect(severity).toBe("error");
+    return finding;
+  });
 }
 
-describe("buildFindings", () => {
+/** The findings of a value that the schema above reads. */
+function findingsOfValue(value: unknown) {
+  return findingsOf(v.safeParse(findingsSchema, value).issues ?? []);
+}
+
+describe("buildIssues", () => {
   it.each([
     ["a value that is not an object", null, "", "wrong-type", "expected an object, found null."],
     ["an array where an object is", [], "", "wrong-type", "expected an object, found an array."],
@@ -542,7 +520,7 @@ describe("buildFindings", () => {
   });
 });
 
-describe("buildFindings for a variant", () => {
+describe("buildIssues for a variant", () => {
   const schema = v.pipe(
     guardSchema(isRecord, "an object"),
     v.variant(
@@ -553,7 +531,7 @@ describe("buildFindings for a variant", () => {
   );
 
   it("gives an invalid value, at the discriminator, for a kind that no option has", () => {
-    expect(buildFindings(v.safeParse(schema, { kind: "c" }).issues ?? [])).toStrictEqual([
+    expect(findingsOf(v.safeParse(schema, { kind: "c" }).issues ?? [])).toStrictEqual([
       { path: "kind", rule: "invalid-value", message: 'expected "a" or "b", found "c".' },
     ]);
   });
@@ -614,7 +592,7 @@ describe("strictRecord", () => {
 
   it("reports one unknown property of an object", () => {
     expect(
-      buildFindings(v.safeParse(schema, { id: "a", first: 1, second: 2 }).issues ?? []).map(({ path }) => path),
+      findingsOf(v.safeParse(schema, { id: "a", first: 1, second: 2 }).issues ?? []).map(({ path }) => path),
     ).toStrictEqual(["first"]);
   });
 });
@@ -637,7 +615,7 @@ describe("openRecord", () => {
 
   it("refuses a property it does not know that is not JSON, and says which", () => {
     const issues = v.safeParse(schema, { id: "a", extra: { at: () => 1 } }).issues ?? [];
-    expect(buildFindings(issues)).toStrictEqual([
+    expect(findingsOf(issues)).toStrictEqual([
       { path: "extra", rule: "invalid-value", message: "extra.at is a function, which JSON cannot hold." },
     ]);
   });
@@ -715,7 +693,7 @@ describe("jsonObjectSchema", () => {
 
   it("refuses an object that holds what JSON cannot, with a finding that says where", () => {
     const issues = v.safeParse(jsonObjectSchema, { list: [{ at: () => 1 }] }).issues ?? [];
-    expect(buildFindings(issues)).toStrictEqual([
+    expect(findingsOf(issues)).toStrictEqual([
       { path: "", rule: "invalid-value", message: "list[0].at is a function, which JSON cannot hold." },
     ]);
   });
@@ -730,7 +708,7 @@ describe("jsonValueSchema", () => {
 
   it("refuses a value that JSON cannot hold, with a finding that says where", () => {
     const issues = v.safeParse(jsonValueSchema, [Number.NaN]).issues ?? [];
-    expect(buildFindings(issues).map(({ rule }) => rule)).toStrictEqual(["invalid-value"]);
+    expect(findingsOf(issues).map(({ rule }) => rule)).toStrictEqual(["invalid-value"]);
   });
 });
 

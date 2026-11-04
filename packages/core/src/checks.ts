@@ -677,16 +677,6 @@ export const httpsUrlSchema = v.pipe(
   v.check(isHttpsUrl, (issue) => `expected an absolute https URL, found ${issue.received}`),
 );
 
-/** An `https` URL that names a public host, as `checkRemoteUrl` checks it: for a URL that a message or a document gives. */
-export const remoteUrlSchema: Schema<string> = v.pipe(
-  v.string(),
-  v.check(
-    (text) => remoteUrlProblem(text) === undefined,
-    (issue) =>
-      `expected an https URL that names a public host, found ${issue.received}, which ${remoteUrlProblem(String(issue.input))}`,
-  ),
-);
-
 /** A string of at least one character, such as an identifier. */
 export const nonEmptyStringSchema = v.pipe(v.string(), v.nonEmpty());
 
@@ -740,7 +730,8 @@ function ruleOf(issue: v.BaseIssue<unknown>): string {
 }
 
 /**
- * Turns the issues of a parse into findings, each with its path, its rule and a sentence that does not repeat the path.
+ * Turns the issues of a parse into findings that are all errors, each with its path, its rule and a sentence that does not
+ * repeat the path, for a reader or a validator that returns them as data.
  *
  * @remarks
  * The rule is one of `missing-property`, `unknown-property`, `wrong-type` (a value of another JSON type, or a number that is
@@ -748,24 +739,15 @@ function ruleOf(issue: v.BaseIssue<unknown>): string {
  * outside a vocabulary, or one that a schema refuses) and `too-few-entries` (a list that is shorter than the least).
  *
  * @param issues - The issues of `v.safeParse` with no `abortEarly`.
- * @returns A finding for each issue, in their order.
+ * @returns An error for each issue, in their order.
  */
-export function buildFindings(issues: readonly v.BaseIssue<unknown>[]): Finding[] {
+export function buildIssues(issues: readonly v.BaseIssue<unknown>[]): Issue[] {
   return issues.map((issue) => ({
     path: formatIssuePath(issue.path),
     rule: ruleOf(issue),
     message: `${detailOf(issue).text}.`,
+    severity: "error",
   }));
-}
-
-/**
- * Turns the issues of a parse into issues that are all errors: {@link buildFindings} with the severity that a reader keeps.
- *
- * @param issues - The issues of `v.safeParse` with no `abortEarly`.
- * @returns An error for each issue, in their order.
- */
-export function buildIssues(issues: readonly v.BaseIssue<unknown>[]): Issue[] {
-  return buildFindings(issues).map((finding) => ({ ...finding, severity: "error" }));
 }
 
 /** The sentences of the errors that {@link parseJsonText} throws, each in the words of the reader that calls it. */

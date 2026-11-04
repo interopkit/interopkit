@@ -9,7 +9,6 @@ import {
   buildStatusInfoResponse,
   checkHttpRequest,
   type HttpRequest,
-  negotiate,
   type ReadJsonOptions,
   readAccessDecision,
   readBearerToken,
@@ -477,118 +476,6 @@ describe("buildJsonResponse", () => {
     expect(buildJsonResponse(200, 1, { headers: { "content-type": "text/plain" } }).headers).toStrictEqual({
       "content-type": "text/plain",
     });
-  });
-});
-
-describe("negotiate", () => {
-  const offered = ["application/json", "text/plain"];
-
-  it("chooses the first offered type when there is no Accept header, or it is empty", () => {
-    expect(negotiate(undefined, offered)).toBe("application/json");
-    expect(negotiate("", offered)).toBe("application/json");
-    expect(negotiate("  ", offered)).toBe("application/json");
-  });
-
-  it("chooses the type that the header names", () => {
-    expect(negotiate("text/plain", offered)).toBe("text/plain");
-    expect(negotiate("text/html, text/plain", offered)).toBe("text/plain");
-    expect(negotiate("application/json", offered)).toBe("application/json");
-  });
-
-  it("chooses by weight, and gives a tie to the first offered type", () => {
-    expect(negotiate("application/json;q=0.5, text/plain;q=0.8", offered)).toBe("text/plain");
-    expect(negotiate("application/json;q=0.8, text/plain;q=0.5", offered)).toBe("application/json");
-    expect(negotiate("text/plain, application/json", offered)).toBe("application/json");
-    expect(negotiate("text/plain, application/json", ["text/plain", "application/json"])).toBe("text/plain");
-  });
-
-  it("lets a more specific range decide the weight of a type, as RFC 9110 says", () => {
-    const ranges = "text/*;q=0.3, text/plain;q=0.7, */*;q=0.5";
-    expect(negotiate(ranges, ["text/html", "image/jpeg"])).toBe("image/jpeg");
-    expect(negotiate(ranges, ["text/html", "image/jpeg", "text/plain"])).toBe("text/plain");
-    expect(negotiate("*/*, text/plain;q=0", ["text/plain", "application/json"])).toBe("application/json");
-    expect(negotiate("text/*;q=0, text/plain", ["text/html", "text/plain"])).toBe("text/plain");
-  });
-
-  it("follows the worked examples of the Accept header in RFC 9110", () => {
-    const accept = "text/plain; q=0.5, text/html, text/x-dvi; q=0.8, text/x-c";
-    expect(negotiate(accept, ["text/plain", "text/x-dvi", "text/x-c", "text/html"])).toBe("text/x-c");
-    expect(negotiate(accept, ["text/plain", "text/x-dvi"])).toBe("text/x-dvi");
-    expect(negotiate(accept, ["text/plain"])).toBe("text/plain");
-    expect(negotiate("audio/*; q=0.2, audio/basic", ["audio/mpeg", "audio/basic"])).toBe("audio/basic");
-    expect(negotiate("audio/*; q=0.2, audio/basic;q=0.1", ["audio/basic", "audio/mpeg"])).toBe("audio/mpeg");
-  });
-
-  it("matches wildcards, ignores case and spaces, and returns the type as it was offered", () => {
-    expect(negotiate("*/*", ["Text/Plain"])).toBe("Text/Plain");
-    expect(negotiate("TEXT/*;Q=0.9", ["application/json", "Text/Plain"])).toBe("Text/Plain");
-    expect(negotiate("  text/plain  ;  q=0.9 ,  application/json  ;q=0.1", offered)).toBe("text/plain");
-  });
-
-  it("ignores parameters other than the weight, and the extensions after it", () => {
-    expect(negotiate("text/plain;charset=utf-8;q=0.9, application/json;q=0.5", offered)).toBe("text/plain");
-    expect(negotiate("text/plain;q=0.9;ext=1, application/json;q=0.95", offered)).toBe("application/json");
-  });
-
-  it("falls back to the first offered type when the header accepts none of them", () => {
-    expect(negotiate("image/png", offered)).toBe("application/json");
-    expect(negotiate("application/json;q=0, text/plain;q=0", offered)).toBe("application/json");
-    expect(negotiate("text/plain;q=0", ["text/plain", "text/html"])).toBe("text/plain");
-  });
-
-  it("lets an entry that is not a media range, or has an invalid weight, accept nothing", () => {
-    expect(negotiate("garbage, text/plain", offered)).toBe("text/plain");
-    expect(negotiate("text, /plain, a/b/c, */json, text/plain", offered)).toBe("text/plain");
-    expect(negotiate("text/plain;q=1.5, application/json;q=0.1", offered)).toBe("application/json");
-    expect(negotiate("text/plain;q=abc, application/json;q=0.1", offered)).toBe("application/json");
-    expect(negotiate("text/plain;q=0.1234, application/json;q=0.1", offered)).toBe("application/json");
-    expect(negotiate("text/plain;q=, application/json;q=0.1", offered)).toBe("application/json");
-  });
-
-  it("refuses arguments of other types", () => {
-    const cases: readonly [string, () => unknown][] = [
-      ["The Accept header must be a string, found 5.", () => negotiate(JSON.parse("5"), offered)],
-      ["The Accept header must be a string, found null.", () => negotiate(JSON.parse("null"), offered)],
-      ["The offered media types must be an array, found null.", () => negotiate("*/*", JSON.parse("null"))],
-      ["The offered media types must name at least one type, found none.", () => negotiate("*/*", [])],
-      [
-        'Each offered media type must be a type/subtype without parameters, found "text/plain;q=1".',
-        () => negotiate("*/*", ["text/plain;q=1"]),
-      ],
-      [
-        'Each offered media type must be a type/subtype without parameters, found "*/*".',
-        () => negotiate("*/*", ["*/*"]),
-      ],
-      [
-        "Each offered media type must be a type/subtype without parameters, found 5.",
-        () => negotiate("*/*", JSON.parse("[5]")),
-      ],
-    ];
-    for (const [message, call] of cases) expect(call, message).toThrow(new DataError(message));
-  });
-
-  it("returns one of the offered types for any header and any offered types", () => {
-    const type = fc.stringMatching(/^[a-z]{1,6}\/[a-z]{1,6}$/u);
-    fc.assert(
-      fc.property(fc.string({ maxLength: 120 }), fc.array(type, { minLength: 1, maxLength: 4 }), (accept, types) => {
-        expect(types).toContain(negotiate(accept, types));
-      }),
-      FUZZ,
-    );
-  });
-
-  it("chooses the first of the types with the highest weight, for any weights", () => {
-    const weights = fc.array(fc.integer({ min: 0, max: 1000 }), { minLength: 1, maxLength: 5 });
-    fc.assert(
-      fc.property(weights, (values) => {
-        const types = values.map((_value, index) => `text/t${index}`);
-        const accept = values.map((value, index) => `text/t${index};q=${(value / 1000).toFixed(3)}`).join(", ");
-        const best = Math.max(...values);
-        const expected = best === 0 ? "text/t0" : `text/t${values.indexOf(best)}`;
-        expect(negotiate(accept, types)).toBe(expected);
-      }),
-      FUZZ,
-    );
   });
 });
 

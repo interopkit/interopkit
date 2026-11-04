@@ -1,4 +1,5 @@
-import { buildJsonResponse, type HttpResponse, negotiate } from "@interopkit/core/http";
+import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
+import { negotiate } from "./negotiate.js";
 
 /** Builds the answer of a refused request. */
 export type Refuse = (status: number, message: string, headers?: Readonly<Record<string, string>>) => HttpResponse;

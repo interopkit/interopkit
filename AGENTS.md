@@ -81,15 +81,15 @@ Use these words with these meanings in code, comments and docs.
 | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
 | `packages/core/`                     | The shared foundation                                                                               |
 | `packages/core/src/errors.ts`        | `InteropkitError`, `DataError`, `LimitError`, `ServiceError`                                        |
-| `packages/core/src/checks.ts`        | Checks of one value and the valibot side, `buildFindings`, `buildIssues` and `parseJsonText`, which `@interopkit/core/checks` exports |
+| `packages/core/src/checks.ts`        | Checks of one value and the valibot side, `buildIssues` and `parseJsonText`, which `@interopkit/core/checks` exports |
 | `packages/core/src/formats.ts`       | `isDate`, `isDateTime`, `findInstant`, `isUuid`, `isAbsoluteUri` and their schemas; `checks.ts` exports them, and `parseDateTime`, which throws where `findInstant` returns `undefined` |
 | `packages/core/src/json.ts`          | `JsonValue`, `copyJson`, `MAX_JSON_DEPTH`, the counts of depth and tokens, `endOfJsonString`; `checks.ts` exports them |
 | `packages/core/src/findings.ts`      | `Finding`, `Issue`, `IssueSink`, `createIssueSink`, `safeParseBounded`, `DEFAULT_MAX_FINDINGS`; `checks.ts` exports them |
 | `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                  |
 | `packages/core/src/call-options.ts`  | `CallOptions`, the `signal` of every call that waits on I/O                                         |
 | `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `requestWithCredential`, `clientOptionsEntries`, `DEFAULT_TIMEOUT_MS` |
-| `packages/core/src/answer-headers.ts` | `readTotalCount`, `hasNextLink`, `hasNextPage`, `readRetryAfterSeconds`, `findLinkTarget`: the paging and retry headers of an answer |
-| `packages/core/src/answer.ts`        | `readAnswerJson`, `readAnswer`, `readStatusDetail`, `readStatusInfo`: the JSON, the data and the status of the answer of a service, for a client |
+| `packages/core/src/answer-headers.ts` | `hasNextPage`, `readRetryAfterSeconds`, `findLinkTarget`: the paging and retry headers of an answer |
+| `packages/core/src/answer.ts`        | `readAnswerJson`, `readAnswer`, `readStatusInfo`: the JSON, the data and the status of the answer of a service, for a client |
 | `packages/core/src/http/`            | The request and answer types and their helpers, which `@interopkit/core/http` exports               |
 | `packages/core/src/signer/`          | `Signer`, `createCryptoKeySigner`, `signCompactJws`                                                   |
 | `packages/core/src/random.ts`        | `Random`, `SYSTEM_RANDOM`                                                                           |
@@ -338,7 +338,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - A vocabulary is a `const` tuple, its type is derived from it and its schema is `v.picklist` of it.
 - A finding is a `Finding` of `core` (`path`, `rule`, `message`), and a validator lists an `Issue` of `core`, a finding with its
   `severity`. The `message` reads
-  after the path and does not hold it; the rules are those that `buildFindings` names and those that a table of the guide lists.
+  after the path and does not hold it; the rules are those that `buildIssues` names and those that a table of the guide lists.
 - A reader and a validator that list findings take `maxFindings` (default 1,000, `DEFAULT_MAX_FINDINGS`): they parse with
   `safeParseBounded`, never `v.safeParse`, and fill a `createIssueSink` of `core/checks`, whose last finding says that the list
   stopped; a reader counts errors alone. The checks that follow the schema yield their findings one at a time, so that a full
@@ -372,7 +372,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
   client whose requests carry the host's credential makes them through `requestWithCredential`, takes `clientOptionsEntries` in
   the schema of its options, checks its base address with `checkBaseUrl` and the options of each call with `readCallOptions`, which refuses a property but `signal` and those that the call names,
   and adds only its own headers. A
-  client reads the JSON of an answer with `readAnswerJson`, its data with `readAnswer`, a refusal with `readStatusInfo` (`readStatusDetail` with the reader of a package) and the
+  client reads the JSON of an answer with `readAnswerJson`, its data with `readAnswer`, a refusal with `readStatusInfo` and the
   paging of a list with `hasNextPage`. Times are written with `formatDateTime` and read with `parseDateTime` of `core/checks`.
 - A URL that a message or a document gives, which a server fetches or sends a token to, passes `checkRemoteUrl` of `core/checks`
   in `tool-integration`, or an origin that the host lists; a URL that the host configures passes `checkHttpsUrl`.

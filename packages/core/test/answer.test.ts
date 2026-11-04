@@ -6,7 +6,6 @@ import {
   LimitError,
   readAnswer,
   readAnswerJson,
-  readStatusDetail,
   readStatusInfo,
   ServiceError,
   type ServiceResponse,
@@ -179,44 +178,6 @@ describe("the reading of the data of an answer", () => {
   });
 });
 
-describe("the status of a refusal", () => {
-  const status = { imsx_codeMajor: "failure", imsx_severity: "error" };
-  const asStatus = (json: unknown) => {
-    if (typeof json !== "object" || json === null || !("imsx_codeMajor" in json)) throw new DataError("not a status");
-    return json;
-  };
-
-  it("reads the status in the body with the reader that it is given, and the seconds of Retry-After", () => {
-    const error = new ServiceError("refused", 429, JSON.stringify(status), { headers: { "retry-after": "120" } });
-    expect(readStatusDetail(error, asStatus)).toStrictEqual({ info: status, retryAfterSeconds: 120 });
-  });
-
-  it("leaves out a body that is not JSON or that the reader refuses, and a Retry-After that gives a date", () => {
-    const html = new ServiceError("refused", 502, "<html>Bad gateway</html>", {
-      headers: { "retry-after": "Wed, 21 Oct 2026 07:28:00 GMT" },
-    });
-    expect(readStatusDetail(html, asStatus)).toStrictEqual({});
-    expect(readStatusDetail(new ServiceError("refused", 400, "{}"), asStatus)).toStrictEqual({});
-  });
-
-  it("does not parse a body that has more tokens than a status can have", () => {
-    const body = `[${"[],".repeat(400_000)}[]]`;
-    const parse = vi.spyOn(JSON, "parse");
-    try {
-      expect(readStatusDetail(new ServiceError("refused", 400, body), asStatus)).toStrictEqual({});
-      expect(parse).not.toHaveBeenCalled();
-    } finally {
-      parse.mockRestore();
-    }
-  });
-
-  it("refuses what is not a ServiceError", () => {
-    for (const error of [null, new Error("x"), "x", {}]) {
-      expect(() => readStatusDetail(error as never, asStatus)).toThrow(DataError);
-    }
-  });
-});
-
 describe("readStatusInfo", () => {
   const busy = {
     imsx_codeMajor: "failure",
@@ -268,6 +229,17 @@ describe("readStatusInfo", () => {
   it("gives nothing for a Retry-After that is a date, a negative number or text", () => {
     for (const value of ["Wed, 21 Oct 2026 07:28:00 GMT", "-5", "1e3", "soon", "", "9999999999999999"]) {
       expect(readStatusInfo(refused("{}", { "retry-after": value }))).toStrictEqual({});
+    }
+  });
+
+  it("does not parse a body that has more tokens than a status can have", () => {
+    const body = `[${"[],".repeat(400_000)}[]]`;
+    const parse = vi.spyOn(JSON, "parse");
+    try {
+      expect(readStatusInfo(refused(body))).toStrictEqual({});
+      expect(parse).not.toHaveBeenCalled();
+    } finally {
+      parse.mockRestore();
     }
   });
 

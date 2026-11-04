@@ -1,13 +1,6 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
-import {
-  buildFindings,
-  buildIssues,
-  createIssueSink,
-  DEFAULT_MAX_FINDINGS,
-  type Issue,
-  safeParseBounded,
-} from "../src/checks.js";
+import { buildIssues, createIssueSink, DEFAULT_MAX_FINDINGS, type Issue, safeParseBounded } from "../src/checks.js";
 
 const issue = (path: string, severity: Issue["severity"] = "error"): Issue => ({
   path,
@@ -107,15 +100,15 @@ describe("safeParseBounded", () => {
     const parsed = safeParseBounded(schema, value, 12);
     expect(full.issues).toHaveLength(12);
     expect(parsed.success).toBe(false);
-    expect(buildFindings(parsed.issues)).toStrictEqual(buildFindings(full.issues ?? []));
+    expect(buildIssues(parsed.issues)).toStrictEqual(buildIssues(full.issues ?? []));
   });
 
   it("stops at the first issue beyond the limit and reads no further", () => {
     const parsed = safeParseBounded(schema, wrong(100_000), 10);
     // Each entry has three missing properties, so the issue beyond the limit is the second of the fourth entry.
     expect(parsed.issues).toHaveLength(11);
-    expect(buildFindings(parsed.issues)).toStrictEqual(
-      buildFindings(v.safeParse(schema, wrong(4)).issues?.slice(0, 11) ?? []),
+    expect(buildIssues(parsed.issues)).toStrictEqual(
+      buildIssues(v.safeParse(schema, wrong(4)).issues?.slice(0, 11) ?? []),
     );
   });
 
@@ -141,13 +134,13 @@ describe("safeParseBounded", () => {
 });
 
 describe("buildIssues", () => {
-  it("gives the findings of the issues of a parse, each an error", () => {
+  it("gives a finding for each issue of a parse, each an error", () => {
     const parsed = v.safeParse(v.object({ id: v.string(), count: v.number() }), { id: 1, extra: true });
     const issues = buildIssues(parsed.issues ?? []);
-    expect(issues).toStrictEqual(
-      buildFindings(parsed.issues ?? []).map((finding) => ({ ...finding, severity: "error" })),
-    );
-    expect(issues.length).toBeGreaterThan(1);
+    expect(issues.map(({ path, rule }) => `${path} ${rule}`)).toStrictEqual([
+      "id wrong-type",
+      "count missing-property",
+    ]);
     expect(new Set(issues.map(({ severity }) => severity))).toStrictEqual(new Set(["error"]));
   });
 });

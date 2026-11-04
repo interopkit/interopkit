@@ -1,52 +1,50 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import {
-  DataError,
-  findLinkTarget,
-  hasNextLink,
-  hasNextPage,
-  readRetryAfterSeconds,
-  readTotalCount,
-  ServiceError,
-} from "../src/index.js";
+import { DataError, findLinkTarget, hasNextPage, readRetryAfterSeconds, ServiceError } from "../src/index.js";
 
 /** The seed and the number of runs of every property, fixed so that a failure repeats. */
 const RUNS = { seed: 20_241_106, numRuns: 400 };
+
+/** Whether a Link header alone says that a page follows: the page is short and no count is given, so only the link decides. */
+const hasNextLink = (link?: string) => hasNextPage(link === undefined ? {} : { link }, 0, 0, 1);
+
+/** Whether a page follows a page at the given offset with a count of `X-Total-Count`, where the page and a Link header say more. */
+const countSaysNext = (count: string, offset: number) =>
+  hasNextPage({ "x-total-count": count, link: '<https://x.example/a>; rel="next"' }, offset, 1, 1);
 
 describe("the paging headers", () => {
   it("find a next page in the Link header of the binding's example", () => {
     const link =
       '<https://imsglobal.org/ims/case/v1p0/CFDocuments?limit=10&offset=20>; rel="next", <https://imsglobal.org/ims/case/v1p0/CFDocuments?limit=3&offset=500>; rel="last", <https://imsglobal.org/ims/case/v1p0/CFDocuments?limit=10&offset=0>; rel="first", <https://imsglobal.org/ims/case/v1p0/CFDocuments?limit=10&offset=0>; rel="prev"';
-    expect(hasNextLink({ link })).toBe(true);
-    expect(hasNextLink({ link: link.replace('rel="next"', 'rel="last"') })).toBe(false);
+    expect(hasNextLink(link)).toBe(true);
+    expect(hasNextLink(link.replace('rel="next"', 'rel="last"'))).toBe(false);
   });
 
   it("read the relation quoted or not, in any case, among several, and with commas and semicolons in the address", () => {
-    expect(hasNextLink({ link: "<https://x.example/a>; rel=next" })).toBe(true);
-    expect(hasNextLink({ link: '<https://x.example/a>; REL="NEXT"' })).toBe(true);
-    expect(hasNextLink({ link: '<https://x.example/a>; rel="prev next"' })).toBe(true);
-    expect(hasNextLink({ link: '<https://x.example/a?fields=a,b;rel=next>; rel="first"' })).toBe(false);
-    expect(hasNextLink({ link: '<https://x.example/a;rel=next;b=c>; rel="first"' })).toBe(false);
-    expect(hasNextLink({ link: '<https://x.example/a>; title="x"; rel="next"' })).toBe(true);
-    expect(hasNextLink({ link: '<https://x.example/a>; rel="nexus"' })).toBe(false);
-    expect(hasNextLink({ link: '<https://x.example/a>; rel="first", <https://x.example/b>; rel="next"' })).toBe(true);
+    expect(hasNextLink("<https://x.example/a>; rel=next")).toBe(true);
+    expect(hasNextLink('<https://x.example/a>; REL="NEXT"')).toBe(true);
+    expect(hasNextLink('<https://x.example/a>; rel="prev next"')).toBe(true);
+    expect(hasNextLink('<https://x.example/a?fields=a,b;rel=next>; rel="first"')).toBe(false);
+    expect(hasNextLink('<https://x.example/a;rel=next;b=c>; rel="first"')).toBe(false);
+    expect(hasNextLink('<https://x.example/a>; title="x"; rel="next"')).toBe(true);
+    expect(hasNextLink('<https://x.example/a>; rel="nexus"')).toBe(false);
+    expect(hasNextLink('<https://x.example/a>; rel="first", <https://x.example/b>; rel="next"')).toBe(true);
   });
 
   it("find nothing without a Link header, and no next in a value that is not a link", () => {
-    expect(hasNextLink({})).toBeUndefined();
-    expect(hasNextLink({ link: "" })).toBe(false);
-    expect(hasNextLink({ link: "rel=next" })).toBe(false);
-    expect(hasNextLink({ link: '<https://x.example/a>; title="x"' })).toBe(false);
+    expect(hasNextLink()).toBe(false);
+    expect(hasNextLink("")).toBe(false);
+    expect(hasNextLink("rel=next")).toBe(false);
+    expect(hasNextLink('<https://x.example/a>; title="x"')).toBe(false);
   });
 
-  it("read the count of a collection when it is a number and give nothing otherwise", () => {
-    expect(readTotalCount({ "x-total-count": "503" })).toBe(503);
-    expect(readTotalCount({ "x-total-count": " 12 " })).toBe(12);
-    expect(readTotalCount({ "x-total-count": "0" })).toBe(0);
+  it("read the count of a collection when it is a number and leave the decision to the rest otherwise", () => {
+    expect([countSaysNext("503", 502), countSaysNext("503", 503)]).toStrictEqual([true, false]);
+    expect([countSaysNext(" 12 ", 11), countSaysNext(" 12 ", 12)]).toStrictEqual([true, false]);
+    expect(countSaysNext("0", 0)).toBe(false);
     for (const value of ["", "-1", "1.5", "abc", "12 13", "1e3", "9999999999999999"]) {
-      expect(readTotalCount({ "x-total-count": value })).toBeUndefined();
+      expect(countSaysNext(value, Number.POSITIVE_INFINITY), value).toBe(true);
     }
-    expect(readTotalCount({})).toBeUndefined();
   });
 
   it("say whether a page follows by the count first, then by the Link header, then by a page as long as the request", () => {
@@ -149,17 +147,16 @@ describe("the retry header", () => {
   it("reads the headers of a ServiceError as the call gave them", () => {
     const error = new ServiceError("Busy.", 429, "", { headers: { "retry-after": "12", "x-total-count": "3" } });
     expect(readRetryAfterSeconds(error.headers)).toBe(12);
-    expect(readTotalCount(error.headers)).toBe(3);
+    expect([hasNextPage(error.headers, 2, 1, 1), hasNextPage(error.headers, 3, 1, 1)]).toStrictEqual([true, false]);
   });
 });
 
 describe("the readers of the headers on any text", () => {
-  it("give a count or nothing, and a flag or nothing", () => {
+  it("give a flag, whatever the count and the link say", () => {
     fc.assert(
-      fc.property(fc.string(), (text) => {
-        const count = readTotalCount({ "x-total-count": text });
-        expect(count === undefined || (Number.isSafeInteger(count) && count >= 0)).toBe(true);
-        expect([true, false]).toContain(hasNextLink({ link: text }));
+      fc.property(fc.string(), fc.string(), fc.nat(), (count, link, offset) => {
+        expect([true, false]).toContain(hasNextPage({ "x-total-count": count, link }, offset, 0, 1));
+        expect([true, false]).toContain(hasNextLink(link));
       }),
       RUNS,
     );
@@ -175,9 +172,9 @@ describe("the readers of the headers on any text", () => {
         address,
         (others, place, next) => {
           const values = others.map(([target, rel]) => `<${target}>; rel="${rel}"`);
-          expect(hasNextLink({ link: values.join(", ") })).toBe(false);
+          expect(hasNextLink(values.join(", "))).toBe(false);
           values.splice(Math.min(place, values.length), 0, `<${next}>; rel="next"`);
-          expect(hasNextLink({ link: values.join(", ") })).toBe(true);
+          expect(hasNextLink(values.join(", "))).toBe(true);
         },
       ),
       RUNS,

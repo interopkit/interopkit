@@ -92,53 +92,6 @@ export function readAnswer<TValue>(what: string, standard: string, read: () => T
   }
 }
 
-/** What a server said when it refused a request: the status in the body of its answer, and how long it asks a client to wait. */
-export interface StatusDetail<TInfo> {
-  /**
-   * The status in the body of the answer, as the reader of the caller reads it.
-   *
-   * @defaultValue none: the body is not JSON, or not a status that the reader accepts
-   */
-  readonly info?: TInfo;
-  /**
-   * The seconds that `Retry-After` asks the client to wait.
-   *
-   * @defaultValue none: the header is absent, or gives a date
-   */
-  readonly retryAfterSeconds?: number;
-}
-
-/**
- * Reads what a server said in the answer that made a call fail: the status in its body, such as an `imsx_StatusInfo` of a REST
- * binding of 1EdTech, and how long it asks the client to wait.
- *
- * @remarks
- * A body that is not JSON, or that the reader refuses, such as the page of a proxy, gives no `info`: it is an answer without
- * detail and not a fault of the caller. A body of more than 1,000,000 tokens of JSON is no status and is not parsed.
- * `Retry-After` is read when it is a number of seconds; the form that gives a date needs a clock, so the header stays in
- * `error.headers["retry-after"]` for a caller that wants it.
- *
- * @param error - The error that a call to the service threw.
- * @param readInfo - Reads the parsed body as the status of the service, and throws when it is not one.
- * @returns The status and the delay, each left out when the answer does not give it.
- * @throws `DataError` when the error is not a `ServiceError`.
- */
-export function readStatusDetail<TInfo>(error: ServiceError, readInfo: (json: unknown) => TInfo): StatusDetail<TInfo> {
-  if (!(error instanceof ServiceError)) throw new DataError("The error must be a ServiceError.");
-  const detail: { info?: TInfo; retryAfterSeconds?: number } = {};
-  // A body of more tokens than a status can have is not one, and is not parsed.
-  if (!hasMoreTokensThan(error.body, MAX_JSON_TOKENS)) {
-    try {
-      detail.info = readInfo(JSON.parse(error.body));
-    } catch {
-      // A body that is not JSON, or not a status, is an answer without detail and not a fault of the caller.
-    }
-  }
-  const seconds = readRetryAfterSeconds(error.headers);
-  if (seconds !== undefined) detail.retryAfterSeconds = seconds;
-  return detail;
-}
-
 /** The outcomes of a request as a whole that the services of 1EdTech name in an `imsx_StatusInfo`. */
 const STATUS_CODES_MAJOR = ["failure", "processing", "success", "unsupported"] as const;
 
@@ -177,6 +130,22 @@ export interface StatusInfo {
   readonly imsx_codeMinor?: StatusCodeMinor;
 }
 
+/** What a service of 1EdTech said when it refused a request: its `imsx_StatusInfo`, and how long it asks a client to wait. */
+export interface StatusDetail {
+  /**
+   * The `imsx_StatusInfo` in the body of the answer.
+   *
+   * @defaultValue none: the body is not JSON, or not a status
+   */
+  readonly info?: StatusInfo;
+  /**
+   * The seconds that `Retry-After` asks the client to wait.
+   *
+   * @defaultValue none: the header is absent, or gives a date
+   */
+  readonly retryAfterSeconds?: number;
+}
+
 const statusInfoSchema: Schema<StatusInfo> = strictRecord({
   imsx_codeMajor: v.picklist(STATUS_CODES_MAJOR),
   imsx_severity: v.picklist(STATUS_SEVERITIES),
@@ -197,9 +166,11 @@ const statusInfoSchema: Schema<StatusInfo> = strictRecord({
  *
  * @remarks
  * The REST bindings of CASE, Open Badges and CLR answer an error with an `imsx_StatusInfo` that names the cause in
- * `imsx_codeMinor`, such as `invalid_filter_field` or `server_busy`. A body that is not one, such as the page of a proxy, gives no
- * `info`; see {@link readStatusDetail}. The client retries nothing itself: without a `Retry-After`, Open Badges recommends two more
- * attempts 30 minutes apart, and then telling the user.
+ * `imsx_codeMinor`, such as `invalid_filter_field` or `server_busy`. A body that is not JSON, or not a status, such as the page of
+ * a proxy, gives no `info`: it is an answer without detail and not a fault of the caller. A body of more than 1,000,000 tokens of
+ * JSON is no status and is not parsed. `Retry-After` is read when it is a number of seconds; the form that gives a date needs a
+ * clock, so the header stays in `error.headers["retry-after"]` for a caller that wants it. The client retries nothing itself:
+ * without a `Retry-After`, Open Badges recommends two more attempts 30 minutes apart, and then telling the user.
  *
  * @param error - The error that a call of the client threw.
  * @returns The status and the delay, each left out when the answer does not give it.
@@ -207,6 +178,18 @@ const statusInfoSchema: Schema<StatusInfo> = strictRecord({
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#retry-behavior | Open Badges 3.0, Retry Behavior}
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1, REST binding 2.4}
  */
-export function readStatusInfo(error: ServiceError): StatusDetail<StatusInfo> {
-  return readStatusDetail(error, (json) => parseWith(statusInfoSchema, json, "The status"));
+export function readStatusInfo(error: ServiceError): StatusDetail {
+  if (!(error instanceof ServiceError)) throw new DataError("The error must be a ServiceError.");
+  const detail: { info?: StatusInfo; retryAfterSeconds?: number } = {};
+  // A body of more tokens than a status can have is not one, and is not parsed.
+  if (!hasMoreTokensThan(error.body, MAX_JSON_TOKENS)) {
+    try {
+      detail.info = parseWith(statusInfoSchema, JSON.parse(error.body), "The status");
+    } catch {
+      // A body that is not JSON, or not a status, is an answer without detail and not a fault of the caller.
+    }
+  }
+  const seconds = readRetryAfterSeconds(error.headers);
+  if (seconds !== undefined) detail.retryAfterSeconds = seconds;
+  return detail;
 }

@@ -10,14 +10,13 @@ export {
   type ReadAnswerJsonOptions,
   readAnswer,
   readAnswerJson,
-  readStatusDetail,
   readStatusInfo,
   type StatusCodeMinor,
   type StatusCodeMinorField,
   type StatusDetail,
   type StatusInfo,
 } from "./answer.js";
-export { findLinkTarget, hasNextLink, hasNextPage, readRetryAfterSeconds, readTotalCount } from "./answer-headers.js";
+export { findLinkTarget, hasNextPage, readRetryAfterSeconds } from "./answer-headers.js";
 export type { CallOptions } from "./call-options.js";
 export { callPort, type PortOutcome } from "./call-port.js";
 export { type Clock, checkClock, readClock, SYSTEM_CLOCK } from "./clock.js";

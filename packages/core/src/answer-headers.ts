@@ -11,12 +11,9 @@ const RELATION = /;\s*rel\s*=\s*(?:"([^"]*)"|([^\s;,"]+))/iu;
 
 /**
  * Reads the count of a collection from `X-Total-Count`, which the REST bindings of CASE and Open Badges ask a server to send
- * when it knows the total.
- *
- * @param headers - The headers of the answer by name in lower case, as `ServiceResponse` and `ServiceError` give them.
- * @returns The count, or `undefined` when the header is absent or is not a count of at most 15 digits.
+ * when it knows the total: `undefined` when the header is absent or is not a count of at most 15 digits.
  */
-export function readTotalCount(headers: Readonly<Record<string, string>>): number | undefined {
+function readTotalCount(headers: Readonly<Record<string, string>>): number | undefined {
   const text = headers["x-total-count"]?.trim();
   return text !== undefined && WHOLE_NUMBER.test(text) ? Number(text) : undefined;
 }
@@ -34,18 +31,11 @@ function targetsOf(link: string, relation: string): string[] {
 }
 
 /**
- * Tells whether a `Link` header points to a next page.
- *
- * @remarks
- * The relation is read quoted or not, in any case, and among several (`rel="prev next"`). An address with commas or semicolons
- * in it does not end a value early. Only whether a next page exists is answered: `findLinkTarget` gives the address, and only on
- * the origin of the request.
- *
- * @param headers - The headers of the answer by name in lower case.
- * @returns `undefined` when there is no `Link` header, otherwise whether one of its values has the relation `next`.
- * @see {@link https://www.rfc-editor.org/rfc/rfc8288 | RFC 8288, Web Linking}
+ * Tells whether a `Link` header points to a next page: `undefined` when there is none, otherwise whether one of its values has
+ * the relation `next`, quoted or not, in any case, and among several (`rel="prev next"`). An address with commas or semicolons in
+ * it does not end a value early.
  */
-export function hasNextLink(headers: Readonly<Record<string, string>>): boolean | undefined {
+function hasNextLink(headers: Readonly<Record<string, string>>): boolean | undefined {
   const link = headers.link;
   return link === undefined ? undefined : targetsOf(link, "next").length > 0;
 }
@@ -55,15 +45,18 @@ export function hasNextLink(headers: Readonly<Record<string, string>>): boolean 
  * bindings of CASE and Open Badges do.
  *
  * @remarks
- * `X-Total-Count` decides when it is a count: more follow while the offset is below it. Without it, the `Link` header decides
- * by a value with the relation `next`. Without either, more may follow when the page is as long as the request asked for, so a
- * short page ends the list.
+ * `X-Total-Count` decides when it is a count of at most 15 digits: more follow while the offset is below it. Without it, the
+ * `Link` header decides by a value with the relation `next`, quoted or not, in any case, and among several (`rel="prev next"`);
+ * an address with commas or semicolons in it does not end a value early. Without either, more may follow when the page is as
+ * long as the request asked for, so a short page ends the list. Only whether a next page exists is answered: `findLinkTarget`
+ * gives the address, and only on the origin of the request.
  *
  * @param headers - The headers of the answer by name in lower case.
  * @param offset - The offset after the page: the items of the pages so far.
  * @param received - The items of the page.
  * @param limit - The items that the request asked for.
  * @returns Whether a next page may hold more items.
+ * @see {@link https://www.rfc-editor.org/rfc/rfc8288 | RFC 8288, Web Linking}
  */
 export function hasNextPage(
   headers: Readonly<Record<string, string>>,

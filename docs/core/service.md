@@ -123,56 +123,51 @@ answer repeats joined by a comma and a space, and the body as a `Uint8Array`, em
 ## The headers of an answer
 
 The REST bindings of CASE and Open Badges page a collection with `X-Total-Count` and `Link`, and ask a client to read
-`Retry-After` when a server is busy. Three functions read them from the `headers` of a `ServiceResponse` or a `ServiceError`,
-which hold them by name in lower case; a fourth gives the address of a link:
+`Retry-After` when a server is busy. Two functions read them from the `headers` of a `ServiceResponse` or a `ServiceError`,
+which hold them by name in lower case; a third gives the address of a link:
 
 | Function                  | Reads                          | Gives                                                                                                              |
 | ------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `readTotalCount(headers)`   | `X-Total-Count`                | The count, or `undefined` when the header is absent or is not a whole number of at most 15 digits                  |
-| `hasNextLink(headers)`    | `Link` (RFC 8288)              | `undefined` without the header, else whether a value has the relation `next`, quoted or not, in any case, among several |
 | `readRetryAfterSeconds(headers)` | `Retry-After` (RFC 9110)    | The seconds, or `undefined` when it is absent, gives a date (that needs a clock) or is not a whole number           |
-| `hasNextPage(headers, offset, received, limit)` | `X-Total-Count`, then `Link` | Whether a list paged by `limit` and `offset` has more after a page: while `offset` is below the count, else when a `Link` value has the relation `next`, else when the page holds the `limit` that the request asked for |
+| `hasNextPage(headers, offset, received, limit)` | `X-Total-Count`, then `Link` (RFC 8288) | Whether a list paged by `limit` and `offset` has more after a page: while `offset` is below the count, when it is a whole number of at most 15 digits; else when a `Link` value has the relation `next`, quoted or not, in any case, among several; else when the page holds the `limit` that the request asked for |
 | `findLinkTarget(headers, relation, requestUrl)` | `Link` (RFC 8288) | The address of the first value with the relation, resolved against `requestUrl`, when it is `https` on the origin of `requestUrl` and has no user information; else `undefined` |
 
 ```ts
-import { findLinkTarget, hasNextLink, readRetryAfterSeconds, readTotalCount } from "@interopkit/core";
+import { findLinkTarget, hasNextPage, readRetryAfterSeconds } from "@interopkit/core";
 
 const headers = {
   "x-total-count": "503",
   link: '<https://x.example/items?limit=10&offset=20>; rel="next", <https://evil.example/items>; rel="last"',
   "retry-after": "30",
 };
-readTotalCount(headers); // => 503
-hasNextLink(headers); // => true
+hasNextPage(headers, 20, 10, 10); // => true
+hasNextPage(headers, 503, 3, 10); // => false
 readRetryAfterSeconds(headers); // => 30
 findLinkTarget(headers, "next", "https://x.example/items?limit=10"); // => "https://x.example/items?limit=10&offset=20"
 findLinkTarget(headers, "last", "https://x.example/items?limit=10"); // => undefined
 ```
 
-A client that followed any address in a header could be led anywhere, with its bearer token. `hasNextLink` answers only
+A client that followed any address in a header could be led anywhere, with its bearer token. `hasNextPage` answers only
 whether a next page exists, for a client that builds each request from its own base. `findLinkTarget` serves a binding whose next
 page is an opaque address, such as the paging of LTI Advantage: it gives the address only on the origin that answered.
 
 ## The body of an answer
 
-A client reads what a server it does not control answers with four functions, which name the service in every sentence:
+A client reads what a server it does not control answers with three functions, which name the service in every sentence:
 
 | Function                                 | Gives                                                                                                     |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `readAnswerJson(response, what, options)` | The JSON of the body: UTF-8 text whose levels (`maxDepth`, 64) and tokens (`maxTokens`, 1,000,000) are counted in one reading before it is parsed; a text over both is refused for its depth |
 | `readAnswer(what, standard, read)`       | What `read` returns; whatever it throws becomes a `DataError`, whose `cause` is what was thrown: `<what> answered with data that is not valid <standard>: <reason>`. A `LimitError` stays one, with its `limit` and `maximum`: `<what> answered with data over a limit: <reason>` |
-| `readStatusInfo(error)`                  | `readStatusDetail` with the `imsx_StatusInfo` that the REST bindings of CASE, Open Badges and CLR answer an error with: `info` is the status with its `imsx_codeMajor`, `imsx_severity`, `imsx_description` and the details of `imsx_codeMinor`, whose codes are text; left out when the body is no such status |
-| `readStatusDetail(error, readInfo)`      | What a server said when it refused: `info`, the body as `readInfo` reads it, left out when the body is not JSON, has more than 1,000,000 tokens or is refused by `readInfo`; and `retryAfterSeconds`, `Retry-After` in seconds |
+| `readStatusInfo(error)`                  | What a service of 1EdTech said when it refused: `info`, the `imsx_StatusInfo` that the REST bindings of CASE, Open Badges and CLR answer an error with, with its `imsx_codeMajor`, `imsx_severity`, `imsx_description` and the details of `imsx_codeMinor`, whose codes are text, left out when the body is not JSON, has more than 1,000,000 tokens or is no such status; and `retryAfterSeconds`, `Retry-After` in seconds |
 
 ```ts
-import { readAnswer, readAnswerJson, readStatusDetail, readStatusInfo, ServiceError } from "@interopkit/core";
+import { readAnswer, readAnswerJson, readStatusInfo, ServiceError } from "@interopkit/core";
 
 const what = "The service at https://x.example/items";
 const answer = { status: 200, headers: {}, body: new TextEncoder().encode('{"items":[1,2]}') };
 const json = readAnswerJson(answer, what, { maxTokens: 100 });
 readAnswer(what, "CASE", () => json.items.length); // => 2
-const refusal = new ServiceError("refused", 429, '{"code":"busy"}', { headers: { "retry-after": "30" } });
-readStatusDetail(refusal, (body) => body.code); // => { info: "busy", retryAfterSeconds: 30 }
 const status = { imsx_codeMajor: "failure", imsx_severity: "error" };
 const slow = new ServiceError("refused", 429, JSON.stringify(status), { headers: { "retry-after": "30" } });
 readStatusInfo(slow); // => { info: { imsx_codeMajor: "failure", imsx_severity: "error" }, retryAfterSeconds: 30 }
