@@ -49,14 +49,8 @@ export {
   type ServedKind,
   SORT_ORDERS,
   type SortOrder,
-  STATUS_CODES_MAJOR,
   STATUS_CODES_MINOR,
-  STATUS_SEVERITIES,
-  type StatusCodeMajor,
-  type StatusCodeMinor,
-  type StatusCodeMinorField,
   type StatusCodeMinorValue,
-  type StatusSeverity,
   type TargetType,
 } from "./model/index.js";
 export {

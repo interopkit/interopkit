@@ -1,4 +1,5 @@
 // cspell:ignore anyachievementcredential anyendorsementcredential anyclrcredential statusinfo servicedescriptiondocument clrcredential multikey
+import { STATUS_CODES_MAJOR, STATUS_SEVERITIES } from "@interopkit/core";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { mutate, mutations } from "../../../scripts/json-mutation.js";
@@ -11,9 +12,7 @@ import {
   IDENTIFIER_TYPES,
   RESULT_STATUS_TYPES,
   RESULT_TYPES,
-  STATUS_CODES_MAJOR,
   STATUS_CODES_MINOR,
-  STATUS_SEVERITIES,
   validateCredential,
   validateEntity,
 } from "../src/index.js";

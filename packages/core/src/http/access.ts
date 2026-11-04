@@ -71,17 +71,17 @@ export interface ReadAccessDecisionOptions<TGrant extends object> {
   readonly grant: Schema<TGrant>;
 }
 
+/** The schema of a refusal: its reason, and the message, challenge and delay that go with it. */
+export const refusalSchema = v.object({
+  allowed: v.literal(false),
+  reason: v.picklist(ACCESS_REFUSAL_REASONS),
+  message: v.optional(v.string()),
+  challenge: v.optional(v.string()),
+  retryAfterSeconds: v.optional(nonNegativeIntegerSchema),
+});
+
 /** The schema of a decision: allowed, with anything more that a grant reads, or refused with a status and a delay. */
-const decisionSchema = v.variant("allowed", [
-  v.looseObject({ allowed: v.literal(true) }),
-  v.object({
-    allowed: v.literal(false),
-    reason: v.picklist(ACCESS_REFUSAL_REASONS),
-    message: v.optional(v.string()),
-    challenge: v.optional(v.string()),
-    retryAfterSeconds: v.optional(nonNegativeIntegerSchema),
-  }),
-]);
+const decisionSchema = v.variant("allowed", [v.looseObject({ allowed: v.literal(true) }), refusalSchema]);
 
 /**
  * Reads the decision that a host's port, such as `authorize`, gave about a request: `{ allowed: true }`, or an `AccessRefusal`

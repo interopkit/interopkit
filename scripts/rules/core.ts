@@ -656,4 +656,25 @@ export const CORE_RULES: readonly Rule[] = [
     replace: "",
     test: "packages/core/test/formats.test.ts",
   },
+  {
+    rule: "A refusal of 401 carries the challenge of the host, or of a bearer token.",
+    file: "packages/core/src/http/status-info.ts",
+    find: 'headers: { "www-authenticate": challenge ?? "Bearer" },',
+    replace: "headers: {},",
+    test: "packages/core/test/http.test.ts",
+  },
+  {
+    rule: "A refusal of 429 tells the client how long to wait when the host says.",
+    file: "packages/core/src/http/status-info.ts",
+    find: 'headers: retryAfterSeconds === undefined ? {} : { "retry-after": String(retryAfterSeconds) },',
+    replace: "headers: {},",
+    test: "packages/core/test/http.test.ts",
+  },
+  {
+    rule: "A refusal of 403 carries the headers that the service adds to it.",
+    file: "packages/core/src/http/status-info.ts",
+    find: "headers: forbiddenHeaders,",
+    replace: "headers: {},",
+    test: "packages/core/test/http.test.ts",
+  },
 ];

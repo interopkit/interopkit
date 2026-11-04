@@ -73,6 +73,7 @@ that has no body, such as 204, takes `null`.
 | `readOffsetPage(parameters, sizes)`         | Reads the `limit` and `offset` of a query into the page it asks for                    |
 | `buildPageLinks(url, page, extent)`        | Builds the `Link` header of a page: first, prev, next, and last when the total is known |
 | `buildStatusInfoResponse(status, description, options)` | Builds the answer of a failure of a 1EdTech service, with its `imsx_StatusInfo` |
+| `buildRefusalResponse(refusal, codes, options)` | Builds the answer to a request that a host's `authorize` refuses: 401, 403 or 429 with the code that the service gives the reason |
 | `readAccessDecision(value, label, options)` | Reads what a host's `authorize` port decided: allowed, with what it grants, or refused  |
 
 | Type           | Fields                                                                                                                                       |
@@ -100,6 +101,7 @@ that has no body, such as 204, takes `null`.
 | `buildStatusInfoResponse` `options.minor` | none                      |        |              | The code of the detail, from the vocabulary of the specification    |
 | `buildStatusInfoResponse` `options.severity` | `"error"`              |        |              | `"error"`, or `"status"` where the specification pairs the code with it |
 | `buildStatusInfoResponse` `options.headers` | none                    |        |              | More headers, such as `Retry-After` or `Allow`                      |
+| `buildRefusalResponse` `options.forbiddenHeaders` | none              |        |              | More headers of a 403, such as the `WWW-Authenticate` challenge of RFC 6750 that names a scope |
 
 `readText` and `readQuery` set no limit, nor does `readForm` without `maxBytes`: the host caps the size of a body before it
 builds the request, as the handlers of the packages document. A handler that reads a form passes its own limit, so that a
@@ -144,7 +146,8 @@ JSON.parse(String(busy.body)); // => { imsx_codeMajor: "failure", imsx_severity:
 | `Link` addresses        | The URL of the request with `limit` and `offset` set, so that the other parameters stay                                       |
 | `Link` relations        | `first` always; `prev` when the offset is above 0; `next` when items follow; `last` when the total is known (Open Badges 6.4) |
 | The last page           | Starts at the last multiple of `limit` below the total; for an empty list, the first page                                     |
-| `imsx_StatusInfo`       | `imsx_codeMajor` `failure`, the severity, the description, and a detail of `TargetEndSystem` with the code when there is one  |
+| `imsx_StatusInfo`       | `imsx_codeMajor` `failure`, the severity, the description, and a detail of `TargetEndSystem` with the code when there is one; `StatusInfo<TMinor>`, `STATUS_CODES_MAJOR` and `STATUS_SEVERITIES` of `@interopkit/core` are its one definition, which each service types with its own codes |
+| A refusal of the port   | `buildRefusalResponse(refusal, codes)` answers it with 401, 403 or 429, the code that the service gives the reason, `WWW-Authenticate` on a 401 (`Bearer` unless the refusal has a challenge) and `Retry-After` on a 429 when the refusal gives the seconds |
 | A decision of the port  | Read with `readAccessDecision(value, label, { grant })`, so that another shape is a `DataError` that names its path; the grant reads what an allowed decision carries, such as an owner |
 
 ## Errors

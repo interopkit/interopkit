@@ -6,6 +6,7 @@ import {
   basePathSchema,
   buildJsonResponse,
   buildPageLinks,
+  buildRefusalResponse,
   buildStatusInfoResponse,
   checkHttpRequest,
   type HttpRequest,
@@ -646,6 +647,54 @@ describe("buildStatusInfoResponse", () => {
     expect(() => buildStatusInfoResponse(500, "x", JSON.parse('{"severity":"warning"}'))).toThrow(DataError);
     expect(() => buildStatusInfoResponse(500, "x", JSON.parse('{"headers":{"allow":5}}'))).toThrow(DataError);
     expect(() => buildStatusInfoResponse(500, "x", JSON.parse("null"))).toThrow(DataError);
+  });
+});
+
+describe("buildRefusalResponse", () => {
+  const codes = { unauthenticated: "unauthorised_request", forbidden: "forbidden", "too-many-requests": "server_busy" };
+  const refuse = (refusal: object, options?: object) =>
+    buildRefusalResponse({ allowed: false, ...refusal } as never, codes, options);
+  const minorOf = (response: { body: unknown }) =>
+    JSON.parse(String(response.body)).imsx_codeMinor.imsx_codeMinorField[0].imsx_codeMinorFieldValue;
+
+  it("answers each reason with its status and the code that the service gives it", () => {
+    const unauthenticated = refuse({ reason: "unauthenticated" });
+    expect([
+      unauthenticated.status,
+      minorOf(unauthenticated),
+      unauthenticated.headers["www-authenticate"],
+    ]).toStrictEqual([401, "unauthorised_request", "Bearer"]);
+    const forbidden = refuse({ reason: "forbidden" });
+    expect([forbidden.status, minorOf(forbidden)]).toStrictEqual([403, "forbidden"]);
+    expect(forbidden.headers).toStrictEqual({ "content-type": "application/json;charset=UTF-8" });
+    const busy = refuse({ reason: "too-many-requests", retryAfterSeconds: 30 });
+    expect([busy.status, minorOf(busy), busy.headers["retry-after"]]).toStrictEqual([429, "server_busy", "30"]);
+    expect(refuse({ reason: "too-many-requests" }).headers["retry-after"]).toBeUndefined();
+  });
+
+  it("sends the message and the challenge of the host, and the headers that the service adds to a 403", () => {
+    const said = refuse({
+      reason: "unauthenticated",
+      message: "Token expired.",
+      challenge: 'Bearer error="invalid_token"',
+    });
+    expect(JSON.parse(String(said.body)).imsx_description).toBe("Token expired.");
+    expect(said.headers["www-authenticate"]).toBe('Bearer error="invalid_token"');
+    const scoped = refuse({ reason: "forbidden" }, { forbiddenHeaders: { "www-authenticate": 'Bearer scope="a"' } });
+    expect(scoped.headers["www-authenticate"]).toBe('Bearer scope="a"');
+    const other = refuse({ reason: "unauthenticated" }, { forbiddenHeaders: { "www-authenticate": "x" } });
+    expect(other.headers["www-authenticate"]).toBe("Bearer");
+  });
+
+  it("refuses a refusal, codes and options of the wrong type, and an option it does not take", () => {
+    const refusal = { allowed: false, reason: "forbidden" } as const;
+    expect(() => buildRefusalResponse(JSON.parse('{"allowed":true}'), codes)).toThrow(DataError);
+    expect(() => buildRefusalResponse(JSON.parse('{"allowed":false,"reason":"gone"}'), codes)).toThrow(DataError);
+    expect(() => buildRefusalResponse(refusal, JSON.parse('{"forbidden":"forbidden"}'))).toThrow(DataError);
+    expect(() => buildRefusalResponse(refusal, { ...codes, busy: "server_busy" } as never)).toThrow(DataError);
+    expect(() => buildRefusalResponse(refusal, codes, JSON.parse('{"forbiddenHeaders":{"a":5}}'))).toThrow(DataError);
+    expect(() => buildRefusalResponse(refusal, codes, JSON.parse('{"headers":{}}'))).toThrow(DataError);
+    expect(() => buildRefusalResponse({ ...refusal, message: "" }, codes)).toThrow(DataError);
   });
 });
 

@@ -1,3 +1,4 @@
+import { STATUS_CODES_MAJOR, STATUS_SEVERITIES } from "@interopkit/core";
 import fc from "fast-check";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
@@ -8,9 +9,7 @@ import {
   type CaseVersion,
   convertCaseVersion,
   ENTITY_KINDS,
-  STATUS_CODES_MAJOR,
   STATUS_CODES_MINOR,
-  STATUS_SEVERITIES,
 } from "../src/index.js";
 import { ASSOCIATION_TYPES_1_0 } from "../src/model/internal.js";
 import { SCHEMAS } from "../src/read/internal.js";

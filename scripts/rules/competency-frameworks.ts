@@ -208,13 +208,6 @@ export const COMPETENCY_FRAMEWORKS_RULES: readonly Rule[] = [
     test: "packages/competency-frameworks/test/query.test.ts",
   },
   {
-    rule: "A 401 carries the challenge of the host, or of a bearer token.",
-    file: "packages/competency-frameworks/src/provider/status.ts",
-    find: '"www-authenticate": challenge ?? "Bearer",',
-    replace: "",
-    test: "packages/competency-frameworks/test/ports.test.ts",
-  },
-  {
     rule: "A filter of more than 2,048 characters is refused.",
     file: "packages/competency-frameworks/src/provider/filter-text.ts",
     find: "if (text.length > MAX_FILTER_LENGTH) {",

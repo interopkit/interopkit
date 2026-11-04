@@ -4,20 +4,25 @@
  * @module
  */
 
+import {
+  STATUS_CODES_MAJOR,
+  STATUS_SEVERITIES,
+  type StatusCodeMinor,
+  type StatusCodeMinorField,
+} from "@interopkit/core";
 import { openRecord, type Schema, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type {
   GetOpenBadgeCredentialsResponse,
-  ImsxCodeMinor,
-  ImsxCodeMinorField,
   ImsxStatusInfo,
   OpenApiComponents,
   OpenApiInfo,
   OpenApiOAuth2SecurityScheme,
   OpenApiSecuritySchemes,
   ServiceDescriptionDocument,
+  StatusCodeMinorValue,
 } from "../model/index.js";
-import { STATUS_CODES_MAJOR, STATUS_CODES_MINOR, STATUS_SEVERITIES } from "../model/index.js";
+import { STATUS_CODES_MINOR } from "../model/index.js";
 import { achievementCredentialSchema } from "./credential-schemas.js";
 import { jws, many, ref, text } from "./primitives.js";
 
@@ -33,14 +38,14 @@ export const imsxStatusInfoSchema: Schema<ImsxStatusInfo> = strictRecord({
   imsx_codeMinor: v.optional(ref(() => imsxCodeMinorSchema)),
 });
 
-export const imsxCodeMinorSchema: Schema<ImsxCodeMinor> = strictRecord({
+export const imsxCodeMinorSchema: Schema<StatusCodeMinor<StatusCodeMinorValue>> = strictRecord({
   imsx_codeMinorField: many(
     ref(() => imsxCodeMinorFieldSchema),
     1,
   ),
 });
 
-export const imsxCodeMinorFieldSchema: Schema<ImsxCodeMinorField> = strictRecord({
+export const imsxCodeMinorFieldSchema: Schema<StatusCodeMinorField<StatusCodeMinorValue>> = strictRecord({
   imsx_codeMinorFieldName: text,
   imsx_codeMinorFieldValue: v.picklist(STATUS_CODES_MINOR),
 });

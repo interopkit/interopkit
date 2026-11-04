@@ -1,6 +1,19 @@
 import { DataError, LimitError } from "@interopkit/core";
-import { type AccessRefusal, buildStatusInfoResponse, type HttpResponse } from "@interopkit/core/http";
+import {
+  type AccessRefusal,
+  buildRefusalResponse,
+  buildStatusInfoResponse,
+  type HttpResponse,
+  type RefusalCodes,
+} from "@interopkit/core/http";
 import type { StatusCodeMinorValue } from "../model/index.js";
+
+/** The code of OB B.3.6 for each reason that a host refuses a request. */
+const REFUSAL_CODES: RefusalCodes<StatusCodeMinorValue> = {
+  unauthenticated: "unauthorizedrequest",
+  forbidden: "forbidden",
+  "too-many-requests": "server_busy",
+};
 
 /**
  * Builds the answer of a failed request: the HTTP status and an `imsx_StatusInfo` with the code of OB B.3.6 that goes with it,
@@ -33,23 +46,9 @@ export const notAllowed = (method: string, allowed: readonly string[]): HttpResp
  * `too-many-requests`, with `Retry-After` when the host gives the seconds.
  */
 export function refused(refusal: AccessRefusal, scope: string): HttpResponse {
-  const { reason, message, challenge, retryAfterSeconds } = refusal;
-  if (reason === "unauthenticated") {
-    return failure(401, message ?? "The request was not authorized.", "unauthorizedrequest", {
-      "www-authenticate": challenge ?? "Bearer",
-    });
-  }
-  if (reason === "forbidden") {
-    return failure(403, message ?? "The request is not allowed.", "forbidden", {
-      "www-authenticate": `Bearer error="insufficient_scope", scope="${scope}"`,
-    });
-  }
-  return failure(
-    429,
-    message ?? "The server is receiving too many requests: retry at a later time.",
-    "server_busy",
-    retryAfterSeconds === undefined ? {} : { "retry-after": String(retryAfterSeconds) },
-  );
+  return buildRefusalResponse(refusal, REFUSAL_CODES, {
+    forbiddenHeaders: { "www-authenticate": `Bearer error="insufficient_scope", scope="${scope}"` },
+  });
 }
 
 /** The answer for a port that failed: 500, with nothing of the failure in it. */

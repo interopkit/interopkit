@@ -4,8 +4,9 @@
  * @module
  */
 
+import type { StatusInfo } from "@interopkit/core";
 import type { AchievementCredential } from "./credentials.js";
-import type { StatusCodeMajor, StatusCodeMinorValue, StatusSeverity } from "./vocabularies.js";
+import type { StatusCodeMinorValue } from "./vocabularies.js";
 
 /** The APIs that exchange credentials: the Open Badges API (`"badges"`) and the CLR Standard API (`"clr"`). */
 export const CREDENTIAL_APIS = ["badges", "clr"] as const;
@@ -23,33 +24,11 @@ export interface GetOpenBadgeCredentialsResponse {
   readonly compactJwsString?: readonly string[];
 }
 
-/** The status that an API returns with an answer that is not a success (OB B.3.1). */
-export interface ImsxStatusInfo {
-  /** The code major value (from the corresponding enumerated vocabulary). */
-  readonly imsx_codeMajor: StatusCodeMajor;
-  /** The severity value (from the corresponding enumerated vocabulary). */
-  readonly imsx_severity: StatusSeverity;
-  /** A human readable description supplied by the entity creating the status code information. */
-  readonly imsx_description?: string;
-  /** The details of the outcome. */
-  readonly imsx_codeMinor?: ImsxCodeMinor;
-}
-
 /**
- * This is the container for the set of code minor status codes reported in the responses from the Service Provider.
+ * The status that an API returns with an answer that is not a success (OB B.3.1): the `imsx_StatusInfo` of `@interopkit/core`
+ * with the codes of OB B.3.6.
  */
-export interface ImsxCodeMinor {
-  /** The details. */
-  readonly imsx_codeMinorField: readonly ImsxCodeMinorField[];
-}
-
-/** This is the container for a single code minor status code. */
-export interface ImsxCodeMinorField {
-  /** This should contain the identity of the system that has produced the code minor status code report. */
-  readonly imsx_codeMinorFieldName: string;
-  /** The code minor status code (this is a value from the corresponding enumerated vocabulary). */
-  readonly imsx_codeMinorFieldValue: StatusCodeMinorValue;
-}
+export type ImsxStatusInfo = StatusInfo<StatusCodeMinorValue>;
 
 /** The OpenAPI document that describes an API and where clients register (OB B.4.1). */
 export interface ServiceDescriptionDocument {

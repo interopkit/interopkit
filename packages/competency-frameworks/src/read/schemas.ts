@@ -1,3 +1,4 @@
+import { STATUS_CODES_MAJOR, STATUS_SEVERITIES } from "@interopkit/core";
 import {
   absoluteUriSchema,
   dateSchema,
@@ -18,9 +19,7 @@ import {
   type CasePackage,
   type CaseVersion,
   type ExtensionTerm,
-  STATUS_CODES_MAJOR,
   STATUS_CODES_MINOR,
-  STATUS_SEVERITIES,
   type TargetType,
 } from "../model/index.js";
 import { ASSOCIATION_TYPES_1_0, INFORMATION_MODEL_UUID } from "../model/internal.js";

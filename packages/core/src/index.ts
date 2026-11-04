@@ -11,6 +11,8 @@ export {
   readAnswer,
   readAnswerJson,
   readStatusInfo,
+  STATUS_CODES_MAJOR,
+  STATUS_SEVERITIES,
   type StatusCodeMinor,
   type StatusCodeMinorField,
   type StatusDetail,

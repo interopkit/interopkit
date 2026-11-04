@@ -1,5 +1,18 @@
-import { type AccessRefusal, buildStatusInfoResponse, type HttpResponse } from "@interopkit/core/http";
+import {
+  type AccessRefusal,
+  buildRefusalResponse,
+  buildStatusInfoResponse,
+  type HttpResponse,
+  type RefusalCodes,
+} from "@interopkit/core/http";
 import type { StatusCodeMinorValue } from "../model/index.js";
+
+/** The code of the binding for each reason that a host refuses a request. */
+const REFUSAL_CODES: RefusalCodes<StatusCodeMinorValue> = {
+  unauthenticated: "unauthorised_request",
+  forbidden: "forbidden",
+  "too-many-requests": "server_busy",
+};
 
 /**
  * Builds the answer of a failed request: the HTTP status and an `imsx_StatusInfo` with `failure` and `error`, as the REST
@@ -30,21 +43,7 @@ export const invalidUuid = (): HttpResponse => failure(404, "Invalid UUID", "inv
  * `unauthenticated`, with its challenge or that of a bearer token; 403 for `forbidden`; or 429 for `too-many-requests`, with the
  * statement that the binding gives and `Retry-After` when known.
  */
-export function refused(refusal: AccessRefusal): HttpResponse {
-  const { reason, message, challenge, retryAfterSeconds } = refusal;
-  if (reason === "unauthenticated") {
-    return failure(401, message ?? "The request was not authorized.", "unauthorised_request", {
-      "www-authenticate": challenge ?? "Bearer",
-    });
-  }
-  if (reason === "forbidden") return failure(403, message ?? "The request is not allowed.", "forbidden");
-  return failure(
-    429,
-    message ?? "The provider is busy: retry at a later time.",
-    "server_busy",
-    retryAfterSeconds === undefined ? {} : { "retry-after": String(retryAfterSeconds) },
-  );
-}
+export const refused = (refusal: AccessRefusal): HttpResponse => buildRefusalResponse(refusal, REFUSAL_CODES);
 
 /** The answer for a port that failed: 500, with nothing of the failure in it. */
 export const internalError = (): HttpResponse =>

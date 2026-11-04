@@ -46,13 +46,6 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/provider.test.ts",
   },
   {
-    rule: "A 401 of the credentials API carries the challenge of the host, or of a bearer token.",
-    file: "packages/achievement-credentials/src/provider/status.ts",
-    find: '"www-authenticate": challenge ?? "Bearer",',
-    replace: "",
-    test: "packages/achievement-credentials/test/provider.test.ts",
-  },
-  {
     rule: "A 403 names the scope that the token lacks, as RFC 6750 says.",
     file: "packages/achievement-credentials/src/provider/status.ts",
     find: '"www-authenticate": `Bearer error="insufficient_scope", scope="${scope}"`',

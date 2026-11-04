@@ -21,4 +21,10 @@ export { buildPageLinks, type ListExtent, type OffsetPage, type PageSizes, readO
 export { type ReadFormOptions, readForm, readQuery } from "./parameters.js";
 export { checkHttpRequest, type HttpRequest } from "./request.js";
 export { buildJsonResponse, type HttpResponse, type JsonResponseOptions } from "./response.js";
-export { buildStatusInfoResponse, type StatusInfoOptions } from "./status-info.js";
+export {
+  buildRefusalResponse,
+  buildStatusInfoResponse,
+  type RefusalCodes,
+  type RefusalResponseOptions,
+  type StatusInfoOptions,
+} from "./status-info.js";

@@ -45,14 +45,8 @@ export {
 export type { CFAssociationSet, CFConceptSet, CFDocumentSet, CFItemTypeSet, CFSubjectSet } from "./sets.js";
 export {
   type ImsxStatusInfo,
-  STATUS_CODES_MAJOR,
   STATUS_CODES_MINOR,
-  STATUS_SEVERITIES,
-  type StatusCodeMajor,
-  type StatusCodeMinor,
-  type StatusCodeMinorField,
   type StatusCodeMinorValue,
-  type StatusSeverity,
 } from "./status-info.js";
 export {
   ASSOCIATION_TYPES,

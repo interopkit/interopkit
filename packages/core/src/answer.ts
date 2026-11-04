@@ -93,33 +93,43 @@ export function readAnswer<TValue>(what: string, standard: string, read: () => T
 }
 
 /** The outcomes of a request as a whole that the services of 1EdTech name in an `imsx_StatusInfo`. */
-const STATUS_CODES_MAJOR = ["failure", "processing", "success", "unsupported"] as const;
+export const STATUS_CODES_MAJOR = ["failure", "processing", "success", "unsupported"] as const;
 
 /** How serious an outcome is, in the words of the services of 1EdTech. */
-const STATUS_SEVERITIES = ["error", "status", "warning"] as const;
+export const STATUS_SEVERITIES = ["error", "status", "warning"] as const;
 
-/** One detail of a status: the system that gave it, and its code. */
-export interface StatusCodeMinorField {
+/**
+ * One detail of a status: the system that gave it, and its code.
+ *
+ * @typeParam TMinor - The codes of the service, such as the union of its `STATUS_CODES_MINOR`.
+ */
+export interface StatusCodeMinorField<TMinor extends string = string> {
   /** The identity of the system that produced the code, such as `TargetEndSystem`. */
   readonly imsx_codeMinorFieldName: string;
   /** The code, from the vocabulary of the service, such as `server_busy`. */
-  readonly imsx_codeMinorFieldValue: string;
+  readonly imsx_codeMinorFieldValue: TMinor;
 }
 
-/** The details of a status: at least one. */
-export interface StatusCodeMinor {
+/**
+ * The details of a status: at least one.
+ *
+ * @typeParam TMinor - The codes of the service.
+ */
+export interface StatusCodeMinor<TMinor extends string = string> {
   /** The details, each with the system that gave it and its code. */
-  readonly imsx_codeMinorField: readonly StatusCodeMinorField[];
+  readonly imsx_codeMinorField: readonly StatusCodeMinorField<TMinor>[];
 }
 
 /**
  * The status that a service of 1EdTech returns with an answer that is not a success: the `imsx_StatusInfo` of its REST binding.
  *
  * @remarks
- * CASE, Open Badges and CLR share it. The codes of the details are those of each service, so they are text here and the
- * package of the service types them as its vocabulary.
+ * CASE, Open Badges and CLR share it. The codes of the details are those of each service, so they are text unless a package
+ * of a service types them as its vocabulary with `TMinor`.
+ *
+ * @typeParam TMinor - The codes of the service, such as the union of its `STATUS_CODES_MINOR`.
  */
-export interface StatusInfo {
+export interface StatusInfo<TMinor extends string = string> {
   /** The outcome of the request as a whole. */
   readonly imsx_codeMajor: (typeof STATUS_CODES_MAJOR)[number];
   /** How serious the outcome is. */
@@ -127,7 +137,7 @@ export interface StatusInfo {
   /** A description of the outcome, for people. */
   readonly imsx_description?: string;
   /** The details of the outcome, at least one. */
-  readonly imsx_codeMinor?: StatusCodeMinor;
+  readonly imsx_codeMinor?: StatusCodeMinor<TMinor>;
 }
 
 /** What a service of 1EdTech said when it refused a request: its `imsx_StatusInfo`, and how long it asks a client to wait. */

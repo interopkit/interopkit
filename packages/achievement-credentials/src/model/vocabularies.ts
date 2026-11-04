@@ -132,18 +132,6 @@ export const ASSOCIATION_TYPES = [
 /** A term of `ASSOCIATION_TYPES`. */
 export type AssociationType = (typeof ASSOCIATION_TYPES)[number];
 
-/** The outcomes of a request as a whole (OB B.3.2). */
-export const STATUS_CODES_MAJOR = ["failure", "processing", "success", "unsupported"] as const;
-
-/** A term of `STATUS_CODES_MAJOR`. */
-export type StatusCodeMajor = (typeof STATUS_CODES_MAJOR)[number];
-
-/** How serious an outcome is (OB B.3.3). */
-export const STATUS_SEVERITIES = ["error", "status", "warning"] as const;
-
-/** A term of `STATUS_SEVERITIES`. */
-export type StatusSeverity = (typeof STATUS_SEVERITIES)[number];
-
 /** The details that an API gives for a field of a request (OB B.3.6). */
 export const STATUS_CODES_MINOR = [
   "forbidden",
