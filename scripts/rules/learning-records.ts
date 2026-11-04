@@ -733,8 +733,8 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
     test: "packages/learning-records/test/store-documents.test.ts",
   },
   {
-    rule: "A write that loses a race is tried again, within the tries.",
-    file: "packages/learning-records/src/store/documents/write.ts",
+    rule: "A write or removal that loses a race is tried again, within the tries.",
+    file: "packages/learning-records/src/store/documents/races.ts",
     find: "attempts < MAX_WRITE_TRIES",
     replace: "attempts < 1",
     test: "packages/learning-records/test/store-documents.test.ts",
@@ -761,10 +761,10 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
     test: "packages/learning-records/test/store-documents.test.ts",
   },
   {
-    rule: "A removal that loses a race is tried again, within the tries.",
+    rule: "A removal that the store did not make is judged again.",
     file: "packages/learning-records/src/store/documents/remove.ts",
-    find: "attempts < MAX_WRITE_TRIES",
-    replace: "attempts < 1",
+    find: 'return outcome.value === "deleted" ? GONE : undefined;',
+    replace: "return GONE;",
     test: "packages/learning-records/test/store-documents.test.ts",
   },
   {
