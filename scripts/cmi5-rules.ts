@@ -596,6 +596,13 @@ export const ACCEPTANCES: readonly { readonly text: string; readonly fixture: (s
       set(1, "result", { extensions: { [PROGRESS_EXTENSION]: 50 } }),
     ),
   },
+  {
+    text: "An actor whose home page differs from that of the launch only by the case of its host, which xAPI folds (4.1.6.1).",
+    fixture: set(1, "actor", {
+      objectType: "Agent",
+      account: { homePage: "https://LMS.example.org", name: "learner-1" },
+    }),
+  },
   { text: "A session without a terminated statement, which the LMS abandons.", fixture: drop(4) },
   {
     text: "A satisfied statement is the LMS's, and a statement of it without the category of cmi5 is allowed.",

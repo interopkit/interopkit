@@ -539,7 +539,7 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
   {
     rule: "A credential that reads its own Statements reads no other.",
     file: "packages/learning-records/src/store/query.ts",
-    find: "(authority === undefined || (statement.authority !== undefined && sameActor(statement.authority, authority))) &&",
+    find: "(authority === undefined || (statement.authority !== undefined && sameIdentity(statement.authority, authority))) &&",
     replace: "",
     test: "packages/learning-records/test/store-query.test.ts",
   },

@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { mutate, mutations } from "../../../scripts/json-mutation.js";
 import { equivalenceKey } from "../src/compare/internal.js";
-import { isSameStatement, type Statement } from "../src/index.js";
+import { type Actor, isSameActor, isSameStatement, type Statement } from "../src/index.js";
 import { copyOf } from "./fixture.js";
 import { fullStatement, minimalStatement, subStatementStatement, uuid } from "./full-statement.js";
 
@@ -13,6 +13,66 @@ function changed(change: (statement: Record<string, any>) => void): Statement {
   change(statement);
   return statement as unknown as Statement;
 }
+
+describe("isSameActor", () => {
+  const account = { homePage: "https://lms.example.org", name: "learner-1" };
+
+  it.each<[string, Actor, Actor]>([
+    ["the same account", { account }, { objectType: "Agent", account, name: "Learner" }],
+    [
+      "an account whose home page has another case in the scheme and the host",
+      { account },
+      { account: { ...account, homePage: "HTTPS://LMS.Example.org" } },
+    ],
+    ["an email address in another case", { mbox: "mailto:A@example.org" }, { mbox: "mailto:a@example.org" }],
+    [
+      "a hash in another case",
+      { mbox_sha1sum: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
+      { mbox_sha1sum: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+    ],
+    ["an OpenID in another host case", { openid: "https://ID.example.org/a" }, { openid: "https://id.example.org/a" }],
+    ["an Agent and an identified Group of one identifier", { account }, { objectType: "Group", account }],
+    [
+      "anonymous Groups of the same members in another order",
+      { objectType: "Group", member: [{ account }, { mbox: "mailto:a@example.org" }] },
+      { objectType: "Group", member: [{ mbox: "mailto:a@example.org" }, { account }] },
+    ],
+  ])("holds %s to be the same Actor", (_name, a, b) => {
+    expect(isSameActor(a, b)).toBe(true);
+    expect(isSameActor(b, a)).toBe(true);
+  });
+
+  it.each<[string, Actor, Actor]>([
+    ["another account name", { account }, { account: { ...account, name: "learner-2" } }],
+    [
+      "another path of the home page",
+      { account },
+      { account: { ...account, homePage: "https://lms.example.org/other" } },
+    ],
+    ["the case of the name of an account", { account }, { account: { ...account, name: "Learner-1" } }],
+    ["another kind of identifier", { mbox: "mailto:a@example.org" }, { account }],
+    [
+      "anonymous Groups of other members",
+      { objectType: "Group", member: [{ account }] },
+      { objectType: "Group", member: [{ mbox: "mailto:a@example.org" }] },
+    ],
+    ["an anonymous Group and an Agent", { objectType: "Group", member: [{ account }] }, { account }],
+  ])("holds %s to be another Actor", (_name, a, b) => {
+    expect(isSameActor(a, b)).toBe(false);
+    expect(isSameActor(b, a)).toBe(false);
+  });
+
+  it.each([
+    ["an address that is not a number", { mbox: 5 }],
+    ["an account without a name", { account: { homePage: "https://lms.example.org" } }],
+    ["a group whose members are not a list", { objectType: "Group", member: "a" }],
+    ["text", "mailto:a@example.org"],
+    ["nothing", undefined],
+  ])("refuses %s, as an LRS reads an Actor", (_name, value) => {
+    expect(() => isSameActor(value as Actor, { mbox: "mailto:a@example.org" })).toThrow(DataError);
+    expect(() => isSameActor({ mbox: "mailto:a@example.org" }, value as Actor)).toThrow(DataError);
+  });
+});
 
 describe("isSameStatement", () => {
   it.each([

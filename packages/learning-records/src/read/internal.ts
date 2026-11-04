@@ -14,6 +14,7 @@ export { patternProblem } from "./response-pattern.js";
 export {
   aboutSchema,
   activitySchema,
+  actorSchema,
   attachmentDataSchema,
   bytesSchema,
   languageMapSchema,

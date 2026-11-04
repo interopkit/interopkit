@@ -1,8 +1,8 @@
 import { DataError } from "@interopkit/core";
 import { isUuid, nonEmptyStringSchema, parseWith, strictRecord } from "@interopkit/core/checks";
-import type { Agent } from "@interopkit/learning-records";
+import { type Agent, isSameActor } from "@interopkit/learning-records";
 import * as v from "valibot";
-import { checkXapiPart, sameActor } from "../rules/internal.js";
+import { checkXapiPart } from "../rules/internal.js";
 import { derivedId } from "./lms-statements.js";
 import { type LmsOptions, type LmsSettings, newIdOf, readLmsOptions, signalOf } from "./options.js";
 import type { ImportedCourse, Registration } from "./records.js";
@@ -64,7 +64,7 @@ export async function registrationOf(settings: LmsSettings, id: string): Promise
 
 /** Returns a registration that the store holds already, when it is the same learner in the same course. */
 function sameRegistration(held: Registration, courseId: string, actor: Agent): Registration {
-  if (held.course !== courseId || !sameActor(held.actor, actor)) {
+  if (held.course !== courseId || !isSameActor(held.actor, actor)) {
     throw new DataError(`The registration ${held.id} exists already, for another learner or another course.`);
   }
   return held;

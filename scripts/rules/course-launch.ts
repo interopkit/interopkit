@@ -166,7 +166,7 @@ export const COURSE_LAUNCH_RULES: readonly Rule[] = [
   {
     rule: "A statement is about the learner of the launch.",
     file: "packages/course-launch/src/rules/judge-statement.ts",
-    find: "if (!sameActor(statement.actor, facts.actor)) {",
+    find: 'if (statement.actor.objectType === "Group" || !isSameActor(statement.actor, facts.actor)) {',
     replace: "if (false) {",
     test: "packages/course-launch/test/rules.test.ts",
   },
@@ -257,7 +257,7 @@ export const COURSE_LAUNCH_RULES: readonly Rule[] = [
   {
     rule: "A unit reads and writes the documents of its learner only.",
     file: "packages/course-launch/src/lms/au-access.ts",
-    find: "if (agent !== undefined && !sameActor(agent, session.actor)) {",
+    find: "if (agent !== undefined && !isSameActor(agent, session.actor)) {",
     replace: "if (false) {",
     test: "packages/course-launch/test/lms-access.test.ts",
   },

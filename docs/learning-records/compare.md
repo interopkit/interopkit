@@ -3,6 +3,8 @@
 `isSameStatement` tells whether two Statements are the same Statement by the rules of immutability. An LRS needs it when it meets
 an id it holds already: the same Statement is a resend (204), another is a conflict (409). `convertStatementVersion` gives a Statement
 in the form of 1.0.3, which the route of 1.0.3 answers and compares a resend with: [the versions guide](versions.md) says how.
+`isSameActor` tells whether two Agents or Groups are the same Actor by their identifier, which an LRS needs for the authority of a
+query and an LMS for the learner of a launch.
 
 ```mermaid
 flowchart TD
@@ -56,11 +58,20 @@ a hash, a UUID and a language tag. The path, the query and the fragment of an IR
 the same when its years, months and days are, and its time is the same to 0.01 second whatever units write it (`PT1H`, `PT60M`
 and `PT3600.004S`); a day is not 24 hours.
 
+## The same Actor
+
+Two Agents or Groups are the same Actor when they have the same identifier (4.1.6.1): `mbox`, `mbox_sha1sum`, `openid` or
+`account`, in this order of precedence. The case of an email address and of a hash is folded, and so is the case of the scheme and
+the host of an `openid` or of the `homePage` of an account; the name of an account, and the `name` and `objectType` of an Actor,
+are not compared. Two anonymous Groups are the same when their members are, in any order. An Agent and a Group of one identifier
+are the same Actor.
+
 ## Errors
 
-| Error                                             | When                                     | What to do                                               |
-| ------------------------------------------------- | ---------------------------------------- | -------------------------------------------------------- |
-| `The statement is invalid at <path>: <sentence>.` | Either Statement breaks a rule of an LRS | Read it first with `readStatement` and answer the sender |
+| Error                                                          | When                                                     | What to do                                                       |
+| -------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------- |
+| `The statement is invalid at <path>: <sentence>.`              | Either Statement breaks a rule of an LRS                 | Read it first with `readStatement` and answer the sender         |
+| `The first Actor` or `The second Actor` with `<path>: <sentence>` | `isSameActor` met a value that is not an Agent or a Group | Pass an Actor as `readStatement` reads it                        |
 
 ## Not included
 

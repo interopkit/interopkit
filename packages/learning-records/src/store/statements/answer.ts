@@ -3,7 +3,7 @@ import { isLanguageTag } from "@interopkit/core/checks";
 import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
 import { writeMultipart } from "../../attachments/index.js";
 import { convertStatementVersion } from "../../compare/index.js";
-import { sameActor } from "../../compare/internal.js";
+import { sameIdentity } from "../../compare/internal.js";
 import { formatStatement } from "../../format/index.js";
 import type { ActivityDefinition, Actor, Statement, StatementFormat, StatementResult } from "../../model/index.js";
 import { attachmentHeadersOf } from "../../read/internal.js";
@@ -106,7 +106,7 @@ function ownAuthority(context: Context): Actor | undefined {
 
 /** Tells whether a Statement is one that a credential that reads its own Statements may read: its `authority` is the credential's. */
 function isOwn(statement: Statement, own: Actor): boolean {
-  return statement.authority !== undefined && sameActor(statement.authority, own);
+  return statement.authority !== undefined && sameIdentity(statement.authority, own);
 }
 
 /** Answers a request for one Statement: the Statement, or 404 when the LRS has none of that kind. */

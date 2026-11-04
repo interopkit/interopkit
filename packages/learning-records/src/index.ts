@@ -15,7 +15,7 @@ export {
   type StatementInput,
   type VoidingInput,
 } from "./build/index.js";
-export { convertStatementVersion, isSameStatement } from "./compare/index.js";
+export { convertStatementVersion, isSameActor, isSameStatement } from "./compare/index.js";
 export { type FormatOptions, formatStatement } from "./format/index.js";
 export {
   type About,

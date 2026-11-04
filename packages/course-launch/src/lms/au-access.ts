@@ -1,12 +1,11 @@
 import { type CallOptions, readClock } from "@interopkit/core";
 import { hasMoreTokensThan, isRecord, isUuid } from "@interopkit/core/checks";
 import { type HttpRequest, readQuery } from "@interopkit/core/http";
-import type { Actor } from "@interopkit/learning-records";
+import { type Actor, isSameActor } from "@interopkit/learning-records";
 import type { Access, LrsAction, LrsOptions } from "@interopkit/learning-records/store";
 import { readBasicAuthorization } from "@interopkit/learning-records/store";
 import { LAUNCH_DATA_STATE_ID, LEARNER_PREFERENCES_PROFILE_ID } from "../model/index.js";
 import { readLearnerPreferences } from "../rules/index.js";
-import { sameActor } from "../rules/internal.js";
 import { type LmsSettings, signalOf, withRetries } from "./options.js";
 import type { Session } from "./records.js";
 import { hashOf, sameHash } from "./secrets.js";
@@ -68,7 +67,7 @@ function agentOf(query: ReadonlyMap<string, string>): Actor | undefined {
 /** Says why a request names another learner or another registration than its session, or `undefined` when it names neither. */
 function scopeProblem(query: ReadonlyMap<string, string>, session: Session): string | undefined {
   const agent = agentOf(query);
-  if (agent !== undefined && !sameActor(agent, session.actor)) {
+  if (agent !== undefined && !isSameActor(agent, session.actor)) {
     return "The agent of the request is not the learner of the session (11.0).";
   }
   const registration = query.get("registration");

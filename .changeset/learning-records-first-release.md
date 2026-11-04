@@ -13,7 +13,7 @@ names a property twice; a text over a limit of its size throws `JsonLimitError`.
 Statement of an event with the time in UTC, and checks it against the rules of a provider; `buildVoidingStatement` makes the one that
 voids another; `deriveStatementId` gives an event an id that a resend repeats; `formatDuration`, `parseDuration`,
 `formatTimestamp` and `mboxSha1sum` write and read the durations, times and hashes of the standard. `isSameStatement` compares two
-Statements by the rules of immutability, `findStatementTime` reads the time of a Statement of either version, and `formatStatement` returns a Statement as `ids`, `exact` or `canonical`.
+Statements by the rules of immutability, `isSameActor` compares two Agents or Groups by their identifier, `findStatementTime` reads the time of a Statement of either version, and `formatStatement` returns a Statement as `ids`, `exact` or `canonical`.
 `@interopkit/learning-records/attachments` writes and reads the `multipart/mixed` message of Statements and Attachment data, matched
 by SHA-2 hash and read within limits of parts and bytes, and `@interopkit/learning-records/signing` signs a Statement over a
 `Signer` of `@interopkit/core` with RS256, RS384 or RS512 and verifies the signature against the key of the caller or the leaf of

@@ -19,6 +19,7 @@ describe("the public API", () => {
         "formatStatement",
         "INTERACTION_TYPES",
         "isDuration",
+        "isSameActor",
         "isSameStatement",
         "mboxSha1sum",
         "parseDuration",

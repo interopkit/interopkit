@@ -14,7 +14,7 @@ flowchart BT
   model["model<br/>types, vocabularies, durations, times, formats"]
   read["read<br/>schemas, rules, readers, text of a request"]
   build["build<br/>Statements, ids, hashes"]
-  compare["compare<br/>isSameStatement, convertStatementVersion"]
+  compare["compare<br/>isSameStatement, isSameActor, convertStatementVersion"]
   format["format<br/>ids, exact, canonical"]
   attachments["attachments<br/>hash, multipart message"]
   signing["signing<br/>signStatement, verifyStatementSignature"]

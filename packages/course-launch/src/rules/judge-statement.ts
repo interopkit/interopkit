@@ -1,9 +1,9 @@
 import { type Issue, isSameJson } from "@interopkit/core/checks";
 import {
   type Activity,
-  type Actor,
   type Context,
   findStatementTime,
+  isSameActor,
   type Statement,
   VERB_VOIDED,
 } from "@interopkit/learning-records";
@@ -35,18 +35,6 @@ const MAX_PROGRESS = 100;
 /** A time of xAPI in UTC: `Z`, or an offset of zero in a form that ISO 8601 writes. */
 const UTC = /(?:[Zz]|\+00(?::?00)?)$/u;
 
-/** Tells whether two Actors are the same person by the identifier of xAPI that they carry. */
-export function sameActor(left: Actor, right: Actor): boolean {
-  return (
-    (left.objectType ?? "Agent") === (right.objectType ?? "Agent") &&
-    left.mbox === right.mbox &&
-    left.mbox_sha1sum === right.mbox_sha1sum &&
-    left.openid === right.openid &&
-    left.account?.homePage === right.account?.homePage &&
-    left.account?.name === right.account?.name
-  );
-}
-
 /** The findings of one statement, as it builds them. */
 class Findings {
   readonly list: Issue[] = [];
@@ -72,7 +60,7 @@ function judgeIdentity(statement: Statement, facts: SessionFacts, found: Finding
   } else if (!UTC.test(statement.timestamp)) {
     found.error("timestamp", "timestamp-utc", `${JSON.stringify(statement.timestamp)} is not in UTC (9.7).`);
   }
-  if (!sameActor(statement.actor, facts.actor)) {
+  if (statement.actor.objectType === "Group" || !isSameActor(statement.actor, facts.actor)) {
     found.error(
       "actor",
       "actor",

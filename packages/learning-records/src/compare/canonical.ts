@@ -55,10 +55,10 @@ export function identityKey(actor: Actor): string | undefined {
 }
 
 /**
- * Tells whether two Agents or Groups are the same: the same identifier, or for two anonymous Groups the same members, in any
- * order. An LRS writes an OAuth consumer and its user as an anonymous Group of the two.
+ * Tells whether two Agents or Groups have the same identity: the same identifier, or for two anonymous Groups the same members,
+ * in any order. An LRS writes an OAuth consumer and its user as an anonymous Group of the two.
  */
-export function sameActor(a: Actor, b: Actor): boolean {
+export function sameIdentity(a: Actor, b: Actor): boolean {
   const key = identityKey(a);
   if (key !== undefined || identityKey(b) !== undefined) return key === identityKey(b);
   const members = (actor: Actor) =>

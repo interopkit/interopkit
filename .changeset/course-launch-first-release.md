@@ -22,7 +22,7 @@ reader takes back, the same bytes for the same course. `readLaunchUrl`, `readLau
 `readLearnerPreferences` read what a launch gives an assignable unit, and `writeLearnerPreferences` writes the preferences of a
 learner. `classifyStatement` tells a statement that cmi5 defines from one it allows and one it does not, and
 `validateSessionStatements` judges the statements of a session against its launch data and its registration: the rules of xAPI
-1.0.3, then the id, the time in UTC, the actor, the registration, the session id and the context template of each statement, its
+1.0.3, then the id, the time in UTC, the actor by `isSameActor` of `@interopkit/learning-records`, the registration, the session id and the context template of each statement, its
 place between initialized and terminated, ordered by the time that `findStatementTime` of `@interopkit/learning-records` reads, so that a time with a space before the clock or an offset of `±hhmm` beside colons, which xAPI 1.0.3 refuses, is no time, and for a statement that cmi5 defines its verb, object, result, score, mastery score
 and launch mode. The examples of the specification and the course packages of CATAPULT are read, and the 305 requirements of
 CATAPULT are mapped to the package.

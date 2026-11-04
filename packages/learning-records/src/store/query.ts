@@ -1,5 +1,5 @@
 import { checkFunction, checkRecord, findInstant } from "@interopkit/core/checks";
-import { identityKey, iriKey, sameActor } from "../compare/internal.js";
+import { identityKey, iriKey, sameIdentity } from "../compare/internal.js";
 import type {
   Activity,
   Actor,
@@ -196,7 +196,7 @@ export function matchesStatementQuery(
   // Read as unknown, so that the check does not narrow the type of the options that are read above.
   if (options !== undefined) checkRecord(options as unknown, "The options must be an object");
   return (
-    (authority === undefined || (statement.authority !== undefined && sameActor(statement.authority, authority))) &&
+    (authority === undefined || (statement.authority !== undefined && sameIdentity(statement.authority, authority))) &&
     isInTime(statement, query) &&
     conditionsOf(query).every((condition) => meets(statement, condition, target))
   );
