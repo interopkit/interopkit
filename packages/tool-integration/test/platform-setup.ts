@@ -177,14 +177,14 @@ export function setup(overrides: { readonly tools?: readonly ToolRegistration[] 
       },
       launches,
     },
-    requests: { config, clock, client: lookup, launches, once, jwks },
+    requests: { config, clock, registration: lookup, launches, once, jwks },
   });
 }
 
 /** The options of `readDeepLinkingResponse`, as a host takes them from its options for `handlePlatformRequest`. */
 export function toolMessageOptions(ctx: Setup, change: Partial<ToolMessageOptions> = {}): ToolMessageOptions {
-  const { config: platform, clock, client, jwks, once } = ctx.requests;
-  return { config: platform, clock, client, jwks, once, ...change };
+  const { config: platform, clock, registration, jwks, once } = ctx.requests;
+  return { config: platform, clock, registration, jwks, once, ...change };
 }
 
 /** Sends a request to the platform's handler. */

@@ -75,7 +75,7 @@ export interface LtiLaunchOptions<TOther extends string = never> extends ToolOpt
    *
    * @defaultValue none, and then the migration claim is never verified
    */
-  readonly legacySecret?: (consumerKey: string, options?: CallOptions) => Promise<string | undefined>;
+  readonly migrationSecret?: (consumerKey: string, options?: CallOptions) => Promise<string | undefined>;
 }
 
 /**
@@ -120,8 +120,8 @@ export function checkLaunchOptions(options: unknown): asserts options is LtiLaun
   if (options.versions !== undefined) checkStrings(options.versions, "versions");
   if (options.otherMessageTypes !== undefined) checkStrings(options.otherMessageTypes, "otherMessageTypes");
   if (options.maxFormBytes !== undefined) checkPositiveInteger(options.maxFormBytes, "The option maxFormBytes");
-  if (options.legacySecret !== undefined) {
-    checkFunction(options.legacySecret, "The option legacySecret must be a function");
+  if (options.migrationSecret !== undefined) {
+    checkFunction(options.migrationSecret, "The option migrationSecret must be a function");
   }
 }
 

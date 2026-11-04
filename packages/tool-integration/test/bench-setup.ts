@@ -151,7 +151,7 @@ export async function createPair(
   const requests: PlatformRequestOptions = {
     config,
     clock: CLOCK,
-    client: lookup,
+    registration: lookup,
     launches,
     once: async () => true,
     jwks: createJwksCache({ fetch: async () => new Response("", { status: 404 }), clock: CLOCK }),

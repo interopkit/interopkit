@@ -169,7 +169,7 @@ line item this way, as Submission Review 1.0 section 2.5 asks.
 
 A request to a route needs a bearer token of `/token`. The checks, in order: the route (404) and the method (405 with `Allow`);
 a token that this platform sealed and that has not expired (401 with `WWW-Authenticate: Bearer`); the tool and the deployment of
-the token, looked up with `client` again, so that a removed tool loses access at once (401); and one of the scopes of the method,
+the token, looked up with `registration` again, so that a removed tool loses access at once (401); and one of the scopes of the method,
 among those of the token that the registration still grants, so that a narrowed tool loses them within the hour of its token (403
 `insufficient_scope`). The store receives the caller (`clientId`, and `deploymentId` when the assertion named one) and the
 `signal`, and answers `undefined` (or `false`) for what is not the caller's, which is 404, so that existence does not leak.
@@ -206,7 +206,7 @@ millisecond; the store keeps it unless a strictly later one is kept, and an equa
 | Port or call                    | Fails                                                                    | Hangs                          | Called again                                                                                    |
 | ------------------------------- | ------------------------------------------------------------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------- |
 | `GradebookStore`                | 500 with nothing of the cause; `undefined` or `false`: 404               | `signal`                       | GET is safe. A repeated POST of a line item makes a second one, so a tool queries by `resourceId` and `tag` first. `keepScore` is atomic, and `older` still answers 204 |
-| `client`, on a service call     | 500; `undefined`: 401                                                     | `signal`                       | On every call; a host may cache                                                                 |
+| `registration`, on a service call | 500; `undefined`: 401                                                     | `signal`                       | On every call; a host may cache                                                                 |
 | The client's `fetch`            | `ServiceError`; a 404 of a line item is `undefined` or `false`; a 401 drops the token | `timeoutMs`        | GETs are safe; a score needs a later timestamp                                                  |
 | The token cache                 | A failed token request is not kept                                       | Its own deadline               | Shared by concurrent callers of a scope                                                         |
 | `TokenStore`                    | The call rejects with its error; a token that it fails to put is not kept, and the next call asks again; a value that is not a token with an expiry is a `DataError` | A signal that aborts after `timeoutMs` | `get` and `put` once for each token a client obtains; `delete` after a 401, which may drop a newer token of another process at the cost of one token request |

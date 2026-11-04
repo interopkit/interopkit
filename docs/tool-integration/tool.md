@@ -241,7 +241,7 @@ expires.
 | The claims of the message type have the shape of the specifications                                                             | `claim-missing`, `claim-invalid`                  |
 | `deployment_id` is the login's `lti_deployment_id`, when the initiation named one                                               | `deployment-mismatch`                             |
 | `target_link_uri` is the login's                                                                                                | `target-mismatch`                                 |
-| With `legacySecret`: the secret of the `lti1p1` claim's consumer key is looked up and `oauth_consumer_key_sign` checked against it | The lookup's rejection                         |
+| With `migrationSecret`: the secret of the `lti1p1` claim's consumer key is looked up and `oauth_consumer_key_sign` checked against it | The lookup's rejection                         |
 | The store deletes the login                                                                                                     | `state-reused`                                    |
 
 A host answers with the `status` of an `LtiError`, which the table of errors below gives, and with 400 for a `DataError`.
@@ -262,12 +262,12 @@ An `LtiMessage` is a union by `messageType`; [Messages and vocabularies](model.m
 | `custom`                             | The custom properties of the link, a record of strings by name                                                           |
 | `services`                           | The service claims: `grades` has `scopes`, `lineitems` and `lineitem`, `roster` the `contextMembershipsUrl`, `groups` the group URLs and `preferences` the host and the activities; a service the platform does not offer is absent  |
 | `claims`                             | Every claim of the token as JSON, vendor claims among them                                                               |
-| `migration`                          | The `lti1p1` claim, with `verified` true only when `legacySecret` gave the secret that signs its consumer key            |
+| `migration`                          | The `lti1p1` claim, with `verified` true only when `migrationSecret` gave the secret that signs its consumer key            |
 | `resourceLink`                       | `LtiResourceLinkRequest`: `id`, `title`, `description`                                                                   |
 | `settings`                           | `LtiDeepLinkingRequest`: the ten settings of Deep Linking 4.4.1, `returnUrl`, `acceptTypes` and `data` among them        |
 
 **The LTI 1.1 migration claim.** A platform that moved from LTI 1.1 signs the `oauth_consumer_key` of the integration with the
-shared secret of 1.1 (`oauth_consumer_key_sign`, the Migration Guide). With `legacySecret`, `handleLaunch` asks the host for that
+shared secret of 1.1 (`oauth_consumer_key_sign`, the Migration Guide). With `migrationSecret`, `handleLaunch` asks the host for that
 secret by consumer key and sets `migration.verified`; the host maps the 1.1 `user_id` and `context_id` to its records only when it
 is `true`. The secret is used for one HMAC and kept nowhere.
 
@@ -399,7 +399,7 @@ read no other clock.
 | `versions`     | `["1.3.0"]`                                         | `handleLaunch`: the values of the `version` claim that it accepts |
 | `otherMessageTypes` | none                                           | `handleLaunch`: message types beyond the five modeled ones, returned as an `OtherMessage` with every claim, such as those of a specification that the package does not implement |
 | `maxFormBytes` | 65,536                                              | `handleLaunch`: the most bytes of the posted form              |
-| `legacySecret` | none: the migration claim is never verified         | `handleLaunch`: returns the LTI 1.1 secret of a consumer key, or `undefined` |
+| `migrationSecret` | none: the migration claim is never verified         | `handleLaunch`: returns the LTI 1.1 secret of a consumer key, or `undefined` |
 | `signal`       | none                                                | Ends this caller's wait (see Signals)                       |
 
 | Limit                                   | Value        |
@@ -427,7 +427,7 @@ read no other clock.
 | `LtiStore.delete`                  | `handleLaunch` rejects after validation, and the platform may post again until the login expires                                          | The same                                                                             | Atomic: of two calls one gets `true`, and the other is `state-reused`. An unfinished login expires at `expiresAt` |
 | The key set                        | Fresh keys are unaffected. Past `ttlSeconds` the call rejects with `ServiceError`: launches fail closed, and stale keys are never used | Shared work: it runs to `timeoutMs`; one caller's abort ends only that caller's wait | An unknown `kid` fetches once, at most every `refreshSeconds`, then `key-unknown`. Callers share one fetch        |
 | The call to the platform (`fetch`) | `ServiceError` with the status, or 0 when there was no answer                                                                          | `timeoutMs`, then `ServiceError` with status 0                                       | A token request is safe: a new `jti`. A score needs a later timestamp                                             |
-| `legacySecret`                     | `handleLaunch` rejects with its error, and the login stays                                                                                | It receives the `signal` and bounds itself                                           | Once per launch with a migration claim                                                                            |
+| `migrationSecret`                     | `handleLaunch` rejects with its error, and the login stays                                                                                | It receives the `signal` and bounds itself                                           | Once per launch with a migration claim                                                                            |
 | The `signer`                       | The call rejects with its error; nothing half-signed is sent                                                                           | It receives the `signal`                                                             | An ECDSA signature differs from call to call; each verifies                                                       |
 
 ## Signals
@@ -437,7 +437,7 @@ read no other clock.
 | `handleLogin`, before `put`                       | Rejects with `signal.reason`; nothing is saved. After `put`, an orphan record expires                                       |
 | `handleLaunch`, before `store.delete`             | Rejects with `signal.reason`; the login stays, and the platform may post again. After `delete` starts, the launch completes |
 | `buildDeepLinkingResponse`, in the registration lookup or the signer | Rejects with `signal.reason`                                                                                |
-| `handleLaunch`, in `legacySecret`                 | Rejects with `signal.reason`; the login stays                                                                               |
+| `handleLaunch`, in `migrationSecret`                 | Rejects with `signal.reason`; the login stays                                                                               |
 | A call of the service client                   | Rejects with `signal.reason`; a token request it shares runs on. A score in flight is in doubt: resend with a later timestamp |
 | A key set fetch                                | One caller's abort ends that caller's wait. The fetch runs on for the others, to `timeoutMs`                                |
 
@@ -459,7 +459,7 @@ read no other clock.
 | The claims of a launch: `sub`, roles, names, e-mail, custom | The platform's `id_token`          | The `LtiMessage` that `handleLaunch` returns to the host               | No                                     |
 | `state` and `nonce` of a login                              | `handleLogin`                         | The host's `LtiStore`, and the browser (the cookie or the storage) | Only in the store, until used or 600 s |
 | The client assertion                                        | Signed by the tool's `signer`      | The platform's token endpoint                                      | No                                     |
-| The LTI 1.1 secret of a consumer key                        | `legacySecret`                     | One HMAC of the migration claim                                    | No                                     |
+| The LTI 1.1 secret of a consumer key                        | `migrationSecret`                     | One HMAC of the migration claim                                    | No                                     |
 | The access token                                            | The platform's token endpoint      | The services of the platform, in the `Authorization` header, and the host's `TokenStore` when given | In the memory of the client, until near its expiry |
 | A score                                                     | The host                           | The platform's score service                                       | No                                     |
 | The answer of a service that failed                         | The platform                       | `ServiceError.body`, to the host: treat it as untrusted text       | No                                     |

@@ -122,7 +122,7 @@ export async function setupPlatform(clock: Clock, side: ToolSide, fetch: Fetch):
     requests: {
       config,
       clock,
-      client: tools,
+      registration: tools,
       launches,
       once,
       jwks,
@@ -135,7 +135,7 @@ export async function setupPlatform(clock: Clock, side: ToolSide, fetch: Fetch):
         registrations: registrations.store,
       },
     },
-    toolMessage: { config, clock, client: tools, jwks, once },
+    toolMessage: { config, clock, registration: tools, jwks, once },
     endpoints: buildPlatformEndpoints(config),
     gradebook,
     attempts,

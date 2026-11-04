@@ -1167,7 +1167,7 @@ describe("the storage page and the routes", () => {
     await expect(handlePlatformRequest(JSON.parse("null"), ctx.requests)).rejects.toThrow(DataError);
     const cases: unknown[] = [
       null,
-      { ...ctx.requests, client: undefined },
+      { ...ctx.requests, registration: undefined },
       { ...ctx.requests, once: "yes" },
       { ...ctx.requests, jwks: {} },
       { ...ctx.requests, maxBodyBytes: "65536" },

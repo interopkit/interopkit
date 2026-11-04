@@ -508,7 +508,7 @@ platform's key, to the tool's client and deployment, and to one use.
   configuration must name a public host. `registerTool` sends the token only to a registration endpoint on the issuer's origin or on
   one of `registrationOrigins`, and refuses an answer whose `registration_client_uri` is elsewhere. The host activates the platform's
   record only after its own review.
-- **LTI 1.1 secrets.** `legacySecret` gives the secret of a consumer key for one HMAC of the migration claim; the package keeps it
+- **LTI 1.1 secrets.** `migrationSecret` gives the secret of a consumer key for one HMAC of the migration claim; the package keeps it
   nowhere. Trust the 1.1 identifiers of a launch only when `migration.verified` is `true`.
 - **Service tokens.** `createServiceClient` keeps one access token for each scope in memory until it is about to expire, asks for
   the narrowest scope that a call needs, and sends the token only to a URL on the registration's `serviceOrigins`, or, without

@@ -121,14 +121,14 @@ an expiry (`deepLinkingLifetimeSeconds`, 86,400), into the `data` claim of the r
 held to are those the platform sent.
 
 The host's route at the return URL passes the request to `readDeepLinkingResponse(request, options)`. The options are the platform
-(`config`, `clock`), the lookup of the tool (`client`), the cache of key sets (`jwks`), the single-use ledger (`once`) and the limits.
+(`config`, `clock`), the lookup of the tool (`registration`), the cache of key sets (`jwks`), the single-use ledger (`once`) and the limits.
 
 The checks, in order:
 
 | Check                                    | Refused with, a reason of `LtiError`                                                                         |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | A POST of a form with the parameter `JWT`, within `maxFormBytes` | `request-invalid`; a `LimitError` (`maxFormBytes`) above the limit, which the host answers with 413 |
-| The tool that `iss` names, looked up with `client` | `token-malformed`, `client-unknown`                                                                  |
+| The tool that `iss` names, looked up with `registration` | `token-malformed`, `client-unknown`                                                                  |
 | An algorithm of the tool's registration, a key of its key set, the signature | `algorithm-unsupported`, `key-unknown`, `signature-invalid`                       |
 | `aud` as the platform's issuer alone; `azp`, when present, as the same | `audience-mismatch`, `audience-untrusted`, `authorized-party-mismatch`                       |
 | `exp`, `iat` and `nonce` present; not expired; not issued in the future; expiring within an hour | `claim-missing`, `claim-invalid`, `token-expired`, `issued-in-future`, `assertion-lifetime`  |
@@ -153,7 +153,7 @@ markup that the package renders.
 | ----------------- | ----------- | ---------------------------------------------------------------------------------------------- |
 | `config`          | required    | The platform                                                                                   |
 | `clock`           | `SYSTEM_CLOCK` | The time                                                                                    |
-| `client`          | required    | Looks up a tool by its client identifier; `undefined` is `client-unknown`                      |
+| `registration`    | required    | Looks up a tool by its client identifier; `undefined` is `client-unknown`                      |
 | `jwks`            | required    | The cache of the tools' key sets, from `createJwksCache`                                       |
 | `once`            | required    | Records an identifier until a time; `false` when it was used. Atomic across processes          |
 | `maxFormBytes`    | 1,048,576   | The most bytes of the form, measured before it is decoded                                      |
@@ -177,7 +177,7 @@ markup that the package renders.
 
 | Port                  | Fails                                                                    | Hangs                 | Called again                                            |
 | --------------------- | ------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------- |
-| `client`              | `readDeepLinkingResponse` rejects with its error; `undefined` is `client-unknown` | `signal`      | On every response; a host may cache                     |
+| `registration`        | `readDeepLinkingResponse` rejects with its error; `undefined` is `client-unknown` | `signal`      | On every response; a host may cache                     |
 | `once`                | Rejects with its error; the nonce is not spent. Not a boolean: `DataError` | `signal`            | `false` is `nonce-replayed`: the tool sends a new response |
 | The tool's key set    | `ServiceError`; a failed fetch is not kept. A set that is not a JWK Set is `key-unknown` | The cache's deadline  | Shared by concurrent callers                            |
 | The tool's `registration` | `buildDeepLinkingResponse` rejects; `undefined` is `platform-unknown`   | `signal`              | Pure; a host may cache                                  |

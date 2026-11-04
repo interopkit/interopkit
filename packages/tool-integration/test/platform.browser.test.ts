@@ -82,7 +82,7 @@ function platform(path: string): { login: PlatformLoginOptions; requests: Platfo
   const requests: PlatformRequestOptions = {
     config,
     clock,
-    client: async () => tool,
+    registration: async () => tool,
     launches,
     once: async () => true,
     jwks: createJwksCache({ fetch: () => Promise.reject(new Error("No key set is fetched.")), clock }),

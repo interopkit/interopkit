@@ -98,7 +98,7 @@ export interface PlatformRequestOptions extends PlatformOptions, CallOptions {
    * Looks up the registration of a tool by its client identifier, or returns `undefined` when there is none. It is called on
    * every authentication request and token request, so that a removed tool loses access at once.
    */
-  readonly client: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
+  readonly registration: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
   /** Where the platform keeps the messages of the logins in progress. */
   readonly launches: LaunchStore;
   /**
@@ -203,7 +203,7 @@ export interface ToolMessageOptions extends PlatformOptions, CallOptions {
    * Looks up the registration of a tool by its client identifier, or returns `undefined` when there is none. It is called for
    * each message, so that a removed tool is refused at once.
    */
-  readonly client: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
+  readonly registration: (clientId: string, options?: CallOptions) => Promise<ToolRegistration | undefined>;
   /** The cache of the key sets of tools, from `createJwksCache`. */
   readonly jwks: JwksCache;
   /**
@@ -302,7 +302,7 @@ const loginOptionsSchema = strictRecord({
 const requestOptionsSchema = strictRecord({
   config: configSchema,
   clock: v.optional(methodsSchema<Clock>("now")),
-  client: functionSchema<PlatformRequestOptions["client"]>(),
+  registration: functionSchema<PlatformRequestOptions["registration"]>(),
   launches: launchStoreSchema,
   once: functionSchema<PlatformRequestOptions["once"]>(),
   jwks: methodsSchema<JwksCache>("keySet"),
@@ -438,7 +438,7 @@ export function readRequestOptions(options: unknown): PlatformSettings {
 const toolMessageOptionsSchema = strictRecord({
   config: configSchema,
   clock: v.optional(methodsSchema<Clock>("now")),
-  client: functionSchema<ToolMessageOptions["client"]>(),
+  registration: functionSchema<ToolMessageOptions["registration"]>(),
   jwks: methodsSchema<JwksCache>("keySet"),
   once: functionSchema<ToolMessageOptions["once"]>(),
   maxFormBytes: v.optional(positiveIntegerSchema),

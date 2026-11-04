@@ -278,7 +278,7 @@ export async function createReferencePlatform(settings: ReferencePlatformOptions
   const options: PlatformRequestOptions = {
     config,
     clock: CLOCK,
-    client,
+    registration: client,
     launches,
     once,
     jwks,
@@ -294,7 +294,7 @@ export async function createReferencePlatform(settings: ReferencePlatformOptions
     roster,
     groups,
     options,
-    toolMessage: { config, clock: CLOCK, client, jwks, once },
+    toolMessage: { config, clock: CLOCK, registration: client, jwks, once },
     handle,
     login: async (message) => {
       const { url } = await prepareToolLaunch(message, {

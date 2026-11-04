@@ -110,8 +110,8 @@ function postOf(page: Awaited<ReturnType<typeof buildDeepLinkingResponse>>, url:
 
 /** What the platform needs to read a message of its tool, from the options of its handler. */
 function readOptions(pair: Pair): ToolMessageOptions {
-  const { config, clock, client, jwks, once } = pair.requests;
-  return { config, clock, client, jwks, once };
+  const { config, clock, registration, jwks, once } = pair.requests;
+  return { config, clock, registration, jwks, once };
 }
 
 /** Signs the claims of a JWT again with jose, under the header that the package wrote. */

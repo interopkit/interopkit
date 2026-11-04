@@ -193,7 +193,7 @@ export async function readToolToken(request: HttpRequest, settings: ToolMessageS
   const jwt = readMessage(request, settings);
   const clientId = issuerOf(jwt, MESSAGE_OWNER, settings.maxTokens);
   signal?.throwIfAborted();
-  const registration = toolFrom(await settings.client(clientId, { signal }), clientId);
+  const registration = toolFrom(await settings.registration(clientId, { signal }), clientId);
   const claims = await verifyToolJwt(
     jwt,
     registration,

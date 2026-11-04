@@ -225,7 +225,7 @@ describe("the LTI 1.1 migration claim", () => {
     const options: Options = {
       ...ctx.options,
       signal,
-      legacySecret: (key: string, call?: CallOptions) => {
+      migrationSecret: (key: string, call?: CallOptions) => {
         seen.push({ key, signal: call?.signal });
         return answer(key) as Promise<string | undefined>;
       },
@@ -271,7 +271,7 @@ describe("the LTI 1.1 migration claim", () => {
     const odd = migrating(async () => 5);
     const { request: second } = await cookieLogin(odd.ctx, { amend: signed(SECRET) });
     await expect(handleLaunch(second, odd.options)).rejects.toStrictEqual(
-      new DataError("The option legacySecret must resolve with a string or undefined, found 5."),
+      new DataError("The option migrationSecret must resolve with a string or undefined, found 5."),
     );
   });
 });
@@ -286,7 +286,7 @@ describe("the options of handleLaunch that this unit adds", () => {
       ['An entry of the option otherMessageTypes must be a non-empty string, found "".', { otherMessageTypes: [""] }],
       ["The option maxFormBytes must be a positive integer, found 0.", { maxFormBytes: 0 }],
       ['The option maxFormBytes must be a positive integer, found "65536".', { maxFormBytes: "65536" }],
-      ['The option legacySecret must be a function, found "secret".', { legacySecret: "secret" }],
+      ['The option migrationSecret must be a function, found "secret".', { migrationSecret: "secret" }],
     ];
     for (const [message, more] of cases) {
       const options = JSON.parse(JSON.stringify(more));

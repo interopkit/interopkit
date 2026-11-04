@@ -45,7 +45,7 @@ export interface ReceivedStartAssessment extends StartAssessmentMessage {
  * `client-unknown`, `signature-invalid`, `nonce-replayed` and the others of `verifyJwt`), `message-type-unsupported`,
  * `deployment-unknown`, `version-unsupported`, `claim-missing`, `claim-invalid` and `session-data-invalid`.
  * @throws `DataError` when the request or an option has the wrong type, or a port breaks its contract.
- * @throws The error of `options.client` and `options.once`, a `ServiceError` when the key set of the tool cannot be fetched, and
+ * @throws The error of `options.registration` and `options.once`, a `ServiceError` when the key set of the tool cannot be fetched, and
  * the `reason` of `options.signal` when it aborts.
  */
 export async function readStartAssessment(

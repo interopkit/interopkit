@@ -583,7 +583,7 @@ describe("readDeepLinkingResponse and the ports of the host", () => {
     const form = await responseTo(ctx, await sealedData(ctx), []);
     const lookup = new Error("cause: the registry is down");
     await expect(
-      readDeepLinkingResponse(form, toolMessageOptions(ctx, { client: () => Promise.reject(lookup) })),
+      readDeepLinkingResponse(form, toolMessageOptions(ctx, { registration: () => Promise.reject(lookup) })),
     ).rejects.toBe(lookup);
     const ledger = new Error("cause: the ledger is down");
     await expect(
@@ -597,10 +597,13 @@ describe("readDeepLinkingResponse and the ports of the host", () => {
     const form = await responseTo(ctx, await sealedData(ctx), []);
     const broken = (value: string) => JSON.parse(value);
     await expect(
-      readDeepLinkingResponse(form, toolMessageOptions(ctx, { client: async () => broken('{"clientId":"x"}') })),
+      readDeepLinkingResponse(form, toolMessageOptions(ctx, { registration: async () => broken('{"clientId":"x"}') })),
     ).rejects.toThrow(DataError);
     await expect(
-      readDeepLinkingResponse(form, toolMessageOptions(ctx, { client: async () => ctx.tools.get(OTHER_CLIENT_ID) })),
+      readDeepLinkingResponse(
+        form,
+        toolMessageOptions(ctx, { registration: async () => ctx.tools.get(OTHER_CLIENT_ID) }),
+      ),
     ).rejects.toThrow("returned the registration of");
     await expect(
       readDeepLinkingResponse(form, toolMessageOptions(ctx, { once: async () => broken('"yes"') })),
@@ -620,7 +623,7 @@ describe("readDeepLinkingResponse and the ports of the host", () => {
       seen.push(call?.signal);
       return ctx.requests.once(id, expiresAt);
     };
-    await readDeepLinkingResponse(form, toolMessageOptions(ctx, { client, once, signal }));
+    await readDeepLinkingResponse(form, toolMessageOptions(ctx, { registration: client, once, signal }));
     expect(seen).toEqual([signal, signal]);
     const reason = new Error("The user left.");
     const aborted = toolMessageOptions(ctx, { signal: AbortSignal.abort(reason) });
@@ -648,7 +651,7 @@ describe("the arguments of readDeepLinkingResponse", () => {
     const bad: Partial<Record<keyof ToolMessageOptions, unknown>>[] = [
       { config: parse("{}") },
       { clock: parse("{}") },
-      { client: parse('"x"') },
+      { registration: parse('"x"') },
       { jwks: parse("{}") },
       { once: parse("{}") },
       { maxFormBytes: parse('"5"') },

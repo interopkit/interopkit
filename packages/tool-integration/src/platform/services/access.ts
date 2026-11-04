@@ -41,7 +41,7 @@ export async function authorizeService(
   if (access === undefined) return invalidToken("The access token is not one that this platform issued.");
   if (toSeconds(readClock(settings.clock)) >= access.exp) return invalidToken("The access token has expired.");
   const { signal } = settings;
-  const asked = await callPort(() => settings.client(access.client, { signal }), { signal });
+  const asked = await callPort(() => settings.registration(access.client, { signal }), { signal });
   if (asked === undefined) return serverError();
   const registration = readToolRegistration(asked.value, access.client);
   const { deployment } = access;

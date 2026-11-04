@@ -107,7 +107,7 @@ describe("the authentication request when a port of the host fails", () => {
   it("answers 500 when the lookup of the tool fails, and takes nothing", async () => {
     const ctx = setup();
     const page = await authorize(ctx, undefined, {
-      requests: { client: () => Promise.reject(new Error("cause: the database is down")) },
+      requests: { registration: () => Promise.reject(new Error("cause: the database is down")) },
     });
     expect(isServerError(page)).toBe(true);
     expect(ctx.kept.size).toBe(1);
@@ -229,7 +229,7 @@ describe("the token endpoint when a port of the host fails", () => {
   it("answers 500 when the lookup of the tool or once fails, and issues no token", async () => {
     const ctx = setup();
     expect(
-      isServerError(await handle(ctx, await tokenOf(ctx), { client: () => Promise.reject(new Error("cause")) })),
+      isServerError(await handle(ctx, await tokenOf(ctx), { registration: () => Promise.reject(new Error("cause")) })),
     ).toBe(true);
     expect(
       isServerError(await handle(ctx, await tokenOf(ctx), { once: () => Promise.reject(new Error("cause")) })),
@@ -243,7 +243,7 @@ describe("the token endpoint when a port of the host fails", () => {
       "once must resolve with a boolean",
     );
     await expect(
-      handle(ctx, await tokenOf(ctx), { client: async () => toolRegistration({ clientId: "other" }) }),
+      handle(ctx, await tokenOf(ctx), { registration: async () => toolRegistration({ clientId: "other" }) }),
     ).rejects.toThrow(DataError);
   });
 });

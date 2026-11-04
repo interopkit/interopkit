@@ -24,7 +24,7 @@ sequenceDiagram
   H-->>P: the frame
   P->>T: frames open the login URL
   T->>K: authentication request (/authorize)
-  K->>H: client(clientId), checkLaunch(launch)
+  K->>H: registration(clientId), checkLaunch(launch)
   K->>S: take(id), once
   K-->>T: page that posts the id_token
   T->>K: key set (/jwks), token (/token)
@@ -43,7 +43,7 @@ sequenceDiagram
 
 Handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md). The host owns the
 routes, the sessions and the stores: `check` confirms that a message is the caller's, `launches` keeps the messages, `once` records
-single-use identifiers, and `client` and `registration` look up the tools. The [example](../../examples/tool-integration/README.md)
+single-use identifiers, and `registration` looks up the tools. The [example](../../examples/tool-integration/README.md)
 launches a tool from a platform built on these functions.
 
 ## Quick start
@@ -104,7 +104,7 @@ kept.size; // => 1
 const options = {
   config,
   clock,
-  client: async () => tool,
+  registration: async () => tool,
   launches,
   once: async () => true,
   jwks: createJwksCache({ fetch, clock }),
@@ -151,7 +151,7 @@ A path that names nothing is 404, and a method that a route does not serve is 40
 
 ## Tools
 
-A `ToolRegistration` is the host's record of one tool. The host's `registration` and `client` return it by client identifier, on
+A `ToolRegistration` is the host's record of one tool. The host's `registration` returns it by client identifier, on
 every login, authentication request and token request, so that a removed or changed tool is followed at once.
 
 | Property       | Meaning                                                                                                                                   |
@@ -238,7 +238,7 @@ Both are compact JWS with `alg: HS256`, signed with `hintKey`, and signed and no
 
 `/authorize` takes a GET or a form POST. Until the tool and its redirect URI are known, a failure is answered to the browser,
 since nothing says where else it may go: 405 for another method, 413 for a body above `maxBodyBytes`, 400 for a parameter given
-twice, a missing or unknown `client_id` or a `redirect_uri` that is not one of the tool's, and 500 when `client` rejects. After
+twice, a missing or unknown `client_id` or a `redirect_uri` that is not one of the tool's, and 500 when `registration` rejects. After
 that, a refusal is the authentication error response of Security Framework 5.1.1.5: the page posts `error`,
 `error_description` and `state` to the redirect URI, under the status of the refusal.
 
@@ -286,7 +286,7 @@ The token grants the scopes that the request asks for, the registration grants a
 offers its scopes when the host gives its store), and `invalid_scope` answers only when none remains. It is sealed with the hint key, holds the client, the deployment of the
 assertion, the scopes and the expiry, and lasts 3,600 seconds. A refusal is an OAuth error with status 400 (`invalid_request`,
 `unsupported_grant_type`, `invalid_scope`, `invalid_client`, also for a tool whose key set is not a JWK Set), and 500 when
-`client` or `once` rejects or the tool's key set cannot be fetched.
+`registration` or `once` rejects or the tool's key set cannot be fetched.
 
 ## The messages of tools
 
@@ -298,7 +298,7 @@ audience and as the authorized party when the token names one, and requires an `
 single-use identifier here, recorded in `once` until the token stops verifying. The `data` claim of the response must be the data
 that the platform sealed into the request, for that tool and deployment and not expired, and the host places the items only when
 its own session is of the `subject` that it returns. The [Deep Linking
-guide](deep-linking.md) has the checks and the options (`config`, `clock`, `client`, `jwks`, `once`, `maxFormBytes`, `maxTokens` and
+guide](deep-linking.md) has the checks and the options (`config`, `clock`, `registration`, `jwks`, `once`, `maxFormBytes`, `maxTokens` and
 `maxContentItems`). `readStartAssessment(request, options)` takes the same options and checks the token the same way; the
 `session_data` must be the data that the platform sealed into the Start Proctoring message, for that tool, deployment, resource link
 and attempt and not expired, and the host starts the attempt only when its own session is of the `subject` that it returns
@@ -322,10 +322,9 @@ the origin that asked.
 | ------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------- |
 | `config`                              | required               | The platform                                                                             |
 | `clock`                               | `SYSTEM_CLOCK`         | The time                                                                                 |
-| `registration(clientId, options)`     | required for the login | Looks up a tool                                                                          |
+| `registration(clientId, options)`     | required               | Looks up a tool                                                          |
 | `check(message, options)`             | required for the login | Confirms that the message is the caller's, and throws otherwise                          |
 | `launches`                            | required               | The `LaunchStore`: `put` and `take`, atomic across processes                             |
-| `client(clientId, options)`           | required for requests  | Looks up a tool                                                                          |
 | `once(id, expiresAt, options)`        | required for requests  | Records an identifier until a time; `false` when it was used. Atomic across processes    |
 | `jwks`                                | required for requests  | The cache of the tools' key sets, from `createJwksCache`                                 |
 | `checkLaunch(launch, options)`        | none                   | A last check of `{ clientId, deploymentId, principal, request }` before the message is taken: the cookies of `request` tell whose browser it is, so one set of options serves every request |
@@ -366,7 +365,7 @@ in the registration needs no fetch.
 | ------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------- |
 | `check`, `registration`  | The login rejects; nothing is kept or signed                              | `signal` reaches it                                                | Each login                                                  | Read-only calls of the host's session |
 | `launches.put`           | The login rejects; no URL, nothing signed                                 | `signal` reaches it                                                | Each login has a new identifier                             | Nothing                               |
-| `client`                 | 500; `undefined`: 400 to the browser, `invalid_client` at `/token`; `readDeepLinkingResponse` rejects with its error, and `undefined` is `client-unknown` | `signal`                                                           | On every request; a host may cache                          | Nothing                               |
+| `registration`           | 500; `undefined`: 400 to the browser, `invalid_client` at `/token`; `readDeepLinkingResponse` rejects with its error, and `undefined` is `client-unknown` | `signal`                                                           | On every request; a host may cache                          | Nothing                               |
 | `checkLaunch`            | 500, the message stays; `false`: `access_denied`, the message stays       | `signal`; the message stays                                        | Each authentication request                                 | Read-only calls                       |
 | `launches.take`          | 500; `undefined`: `login_required`                                        | `signal`; after `take` an abort fails closed and the tool starts again | Atomic: of two, one gets the message                    | Nothing                               |
 | `substitution.resolve`, `migrationSecret` | 500, nothing signed; the launch is spent                 | `signal`                                                           | Each launch                                                 | Read-only calls                       |

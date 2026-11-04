@@ -88,7 +88,7 @@ async function findTool(
     );
   }
   const { signal } = settings;
-  const asked = await callPort(() => settings.client(clientId, { signal }), { signal });
+  const asked = await callPort(() => settings.registration(clientId, { signal }), { signal });
   return asked === undefined ? FAILED : toolFrom(asked.value, clientId);
 }
 

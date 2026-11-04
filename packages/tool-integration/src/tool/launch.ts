@@ -73,11 +73,13 @@ async function withMigration<TMessage extends LtiMessage<string>>(
   options: LtiLaunchOptions<string>,
 ): Promise<TMessage> {
   const { migration } = launch;
-  if (migration === undefined || options.legacySecret === undefined) return launch;
-  const secret = await options.legacySecret(migration.oauthConsumerKey, callOptionsOf(options));
+  if (migration === undefined || options.migrationSecret === undefined) return launch;
+  const secret = await options.migrationSecret(migration.oauthConsumerKey, callOptionsOf(options));
   if (secret === undefined) return launch;
   if (typeof secret !== "string") {
-    throw new DataError(`The option legacySecret must resolve with a string or undefined, found ${describe(secret)}.`);
+    throw new DataError(
+      `The option migrationSecret must resolve with a string or undefined, found ${describe(secret)}.`,
+    );
   }
   return { ...launch, migration: { ...migration, verified: await verifyMigration(launch, secret) } };
 }
@@ -145,7 +147,7 @@ function checkVerification(
  * authorized party and the times (Security Framework section 5.1.3); the `nonce` equals the login's; the LTI claims of the
  * message type, with a version of `versions` and a deployment of the registration (LTI 1.3 Core section 5, Deep Linking 2.0
  * section 4.4, Submission Review 1.0 section 2, Proctoring Services 1.0 section 4); the deployment and the
- * `target_link_uri` of the login. With `legacySecret` the migration claim is then verified. The login is deleted last, so a
+ * `target_link_uri` of the login. With `migrationSecret` the migration claim is then verified. The login is deleted last, so a
  * launch completes once.
  *
  * The state cookie binds the launch whenever the browser kept it. When it did not and the login had `lti_storage_target`, as
@@ -165,7 +167,7 @@ function checkVerification(
  * `nonce-mismatch`, `message-type-unsupported`, `version-unsupported`, `deployment-unknown`, `deployment-mismatch`,
  * `target-mismatch`, `claim-missing` or `claim-invalid`.
  * @throws `ServiceError` when the platform's key set cannot be fetched.
- * @throws The rejection of `options.legacySecret`, and `DataError` when it resolves with something that is not a string.
+ * @throws The rejection of `options.migrationSecret`, and `DataError` when it resolves with something that is not a string.
  * @throws The `reason` of `options.signal` when it aborts before the login is deleted: the login stays.
  */
 export async function handleLaunch<TOther extends string = never>(

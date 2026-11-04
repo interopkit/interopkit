@@ -301,7 +301,7 @@ async function address(request: HttpRequest, settings: PlatformSettings): Promis
   const clientId = parameters.get("client_id") ?? "";
   if (clientId === "") return refusal(400, "invalid_request", "The authentication request must have a client_id.");
   const { signal } = settings;
-  const asked = await callPort(() => settings.client(clientId, { signal }), { signal });
+  const asked = await callPort(() => settings.registration(clientId, { signal }), { signal });
   if (asked === undefined) return serverError();
   const registration = readToolRegistration(asked.value, clientId);
   if (registration === undefined) {
