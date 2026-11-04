@@ -14,6 +14,7 @@ import {
 import type { HttpRequest } from "@interopkit/core/http";
 import * as v from "valibot";
 import type { JwksCache, MessageSupported } from "../protocol/index.js";
+import { functionSchema } from "../protocol/internal.js";
 import { checkPlatformConfig, type PlatformConfig } from "./config.js";
 import type { MessageInput } from "./messages/input.js";
 import type {
@@ -253,8 +254,6 @@ const DEFAULT_SESSION_DATA_LIFETIME_SECONDS = 3600;
 /** How long the data of a Deep Linking request is valid, in seconds: a day for the person who picks the content. */
 const DEFAULT_DEEP_LINKING_LIFETIME_SECONDS = 86_400;
 
-const isFunction = <T>(value: unknown): value is T => typeof value === "function";
-
 /**
  * The schema of a store whose methods are the capabilities that it has: every required method, each optional one that it gives,
  * and at least one method in all.
@@ -282,7 +281,6 @@ function storeSchema<TStore extends object>(
     expected,
   );
 }
-const functionSchema = <T>() => guardSchema(isFunction<T>, "a function");
 // `checkPlatformConfig` throws a `DataError` that names what is wrong with the configuration.
 const configSchema = v.custom<PlatformConfig>((config) => {
   checkPlatformConfig(config);

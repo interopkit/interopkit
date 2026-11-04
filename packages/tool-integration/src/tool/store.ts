@@ -2,7 +2,6 @@ import type { CallOptions } from "@interopkit/core";
 import {
   httpsUrlSchema,
   looseRecord,
-  methodsSchema,
   nonEmptyStringSchema,
   nonNegativeIntegerSchema,
   parseWith,
@@ -42,15 +41,6 @@ export interface LtiStore {
   get(state: string, options?: CallOptions): Promise<LoginRecord | undefined>;
   /** Deletes the record under a `state` and returns whether there was one. A concurrent second call returns `false`. */
   delete(state: string, options?: CallOptions): Promise<boolean>;
-}
-
-/**
- * Checks a store, as a host passes it from JavaScript.
- *
- * @throws `DataError` when it is not an object with the functions `put`, `get` and `delete`.
- */
-export function checkLtiStore(value: unknown): asserts value is LtiStore {
-  parseWith(methodsSchema<LtiStore>("put", "get", "delete"), value, "The option store");
 }
 
 const loginRecordSchema = looseRecord({

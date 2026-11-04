@@ -276,11 +276,19 @@ describe("the options of handleLaunch that this unit adds", () => {
   it("are refused when they have other types", async () => {
     const ctx = setup();
     const post = request({ method: "POST", url: "https://tool.example.com/lti/launch" });
-    const cases: readonly [string, Partial<Record<keyof Options, unknown>>][] = [
-      ['An entry of the option otherMessageTypes must be a non-empty string, found "".', { otherMessageTypes: [""] }],
-      ["The option maxFormBytes must be a positive integer, found 0.", { maxFormBytes: 0 }],
-      ['The option maxFormBytes must be a positive integer, found "65536".', { maxFormBytes: "65536" }],
-      ['The option migrationSecret must be a function, found "secret".', { migrationSecret: "secret" }],
+    const cases: readonly [string, Record<string, unknown>][] = [
+      [
+        "The options is invalid at otherMessageTypes[0]: expected a length of at least 1, found 0.",
+        { otherMessageTypes: [""] },
+      ],
+      ["The options is invalid at maxFormBytes: expected a value of at least 1, found 0.", { maxFormBytes: 0 }],
+      ['The options is invalid at maxFormBytes: expected a number, found "65536".', { maxFormBytes: "65536" }],
+      [
+        'The options is invalid at migrationSecret: expected a function, found "secret".',
+        { migrationSecret: "secret" },
+      ],
+      ['The options is invalid: unexpected property "versions".', { versions: "1.3.0" }],
+      ['The options is invalid: unexpected property "legacySecret".', { legacySecret: "secret" }],
     ];
     for (const [message, more] of cases) {
       const options = JSON.parse(JSON.stringify(more));

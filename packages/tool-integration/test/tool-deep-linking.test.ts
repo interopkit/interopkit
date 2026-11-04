@@ -385,8 +385,11 @@ describe("buildDeepLinkingResponse", () => {
       new DataError("The message of a Deep Linking response must be a string, found 5."),
     );
     await expect(buildDeepLinkingResponse(launch, { items: [] }, parse("null"))).rejects.toThrow(
-      new DataError("The options must be an object, found null."),
+      new DataError("The options is invalid: expected an object, found null."),
     );
+    await expect(
+      buildDeepLinkingResponse(launch, { items: [] }, { ...ctx.options, misspelled: true } as never),
+    ).rejects.toThrow(new DataError('The options is invalid: unexpected property "misspelled".'));
     const settings = launch.settings as unknown as Record<string, unknown>;
     const changes: readonly [string, Record<string, unknown>][] = [
       ["The settings of the launch must be an object, found 5.", { settings: parse("5") }],

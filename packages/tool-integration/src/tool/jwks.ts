@@ -1,5 +1,6 @@
-import { checkNonNegativeInteger, checkRecord } from "@interopkit/core/checks";
+import { nonNegativeIntegerSchema, parseWith, strictRecord } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
+import * as v from "valibot";
 import type { KeySet } from "../protocol/index.js";
 import { checkKeySet, keySetResponse } from "../protocol/internal.js";
 
@@ -17,6 +18,8 @@ export interface ServeToolJwksOptions {
    */
   readonly maxAgeSeconds?: number;
 }
+
+const optionsSchema = strictRecord({ maxAgeSeconds: v.optional(nonNegativeIntegerSchema) });
 
 /**
  * Answers a request for the tool's key set (Security Framework section 6.3, RFC 7517 section 5): the public keys of the key
@@ -36,8 +39,6 @@ export interface ServeToolJwksOptions {
 export function serveToolJwks(request: HttpRequest, keys: KeySet, options: ServeToolJwksOptions = {}): HttpResponse {
   checkHttpRequest(request);
   checkKeySet(keys);
-  checkRecord(options, "The options must be an object");
-  const { maxAgeSeconds = DEFAULT_MAX_AGE_SECONDS } = options;
-  checkNonNegativeInteger(maxAgeSeconds, "The option maxAgeSeconds");
+  const { maxAgeSeconds = DEFAULT_MAX_AGE_SECONDS } = parseWith(optionsSchema, options, "The options");
   return keySetResponse(request, keys, maxAgeSeconds);
 }

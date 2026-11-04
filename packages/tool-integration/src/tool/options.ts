@@ -1,18 +1,19 @@
-import { type CallOptions, type Clock, checkClock } from "@interopkit/core";
+import type { CallOptions, Clock, Fetch } from "@interopkit/core";
 import {
-  checkAbortSignal,
-  checkArray,
-  checkFunction,
-  checkNonEmptyString,
-  checkPositiveInteger,
-  checkRecord,
+  abortSignalSchema,
   describe,
+  methodsSchema,
+  nonEmptyStringSchema,
+  parseWith,
+  positiveIntegerSchema,
+  strictRecord,
 } from "@interopkit/core/checks";
+import * as v from "valibot";
 import { LtiError } from "../errors.js";
 import type { LtiDeployment } from "../protocol/index.js";
-import { callOptionsOf, checkJwksCache, type JwksCache } from "../protocol/internal.js";
+import { callOptionsOf, functionSchema, type JwksCache } from "../protocol/internal.js";
 import { checkPlatformRegistration, type PlatformRegistration } from "./registration.js";
-import { checkLtiStore, type LtiStore } from "./store.js";
+import type { LtiStore } from "./store.js";
 
 /** What every function of the tool role needs: where its registrations are, and the time. */
 export interface ToolOptions extends CallOptions {
@@ -72,50 +73,54 @@ export interface LtiLaunchOptions<TOther extends string = never> extends ToolOpt
   readonly migrationSecret?: (consumerKey: string, options?: CallOptions) => Promise<string | undefined>;
 }
 
+const storeSchema = methodsSchema<LtiStore>("put", "get", "delete");
+const jwksSchema = methodsSchema<JwksCache>("keySet");
+
+/**
+ * The options that every function of the tool role reads: a host keeps one object of them for its calls, and each function
+ * requires what it needs, so that a property that no function of the role takes is refused and a shared object is not.
+ */
+export const toolOptionsEntries = {
+  registration: functionSchema<ToolOptions["registration"]>(),
+  clock: v.optional(methodsSchema<Clock>("now")),
+  signal: v.optional(abortSignalSchema),
+  store: v.optional(storeSchema),
+  jwks: v.optional(jwksSchema),
+  fetch: v.optional(functionSchema<Fetch>()),
+  otherMessageTypes: v.optional(v.array(nonEmptyStringSchema)),
+  maxFormBytes: v.optional(positiveIntegerSchema),
+  migrationSecret: v.optional(functionSchema<NonNullable<LtiLaunchOptions["migrationSecret"]>>()),
+};
+
+const toolOptionsSchema = strictRecord(toolOptionsEntries);
+const loginOptionsSchema = strictRecord({ ...toolOptionsEntries, store: storeSchema });
+const launchOptionsSchema = strictRecord({ ...toolOptionsEntries, store: storeSchema, jwks: jwksSchema });
+
 /**
  * Checks the options that every function needs.
  *
- * @throws `DataError` when they are not an object with a function `registration` and a `clock`.
+ * @throws `DataError` that names the option and what it must be.
  */
 export function checkToolOptions(options: unknown): asserts options is ToolOptions {
-  checkRecord(options, "The options must be an object");
-  checkFunction(options.registration, "The option registration must be a function");
-  checkClock(options.clock);
-  if (options.signal !== undefined) checkAbortSignal(options.signal, "The option signal");
+  parseWith(toolOptionsSchema, options, "The options");
 }
 
 /**
  * Checks the options of `handleLogin`.
  *
- * @throws `DataError` when they are not.
+ * @throws `DataError` that names the option and what it must be.
  */
 export function checkLoginOptions(options: unknown): asserts options is LtiLoginOptions {
-  checkRecord(options, "The options must be an object");
-  checkToolOptions(options);
-  checkLtiStore(options.store);
-}
-
-/** Checks a list of non-empty strings that an option holds. */
-function checkStrings(value: unknown, name: string): void {
-  checkArray(value, `The option ${name} must be an array`);
-  for (const item of value) checkNonEmptyString(item, `An entry of the option ${name}`);
+  parseWith(loginOptionsSchema, options, "The options");
 }
 
 /**
  * Checks the options of `handleLaunch`.
  *
- * @throws `DataError` when they are not.
+ * @throws `DataError` that names the option and what it must be.
  */
 export function checkLaunchOptions(options: unknown): asserts options is LtiLaunchOptions<string> {
-  checkRecord(options, "The options must be an object");
-  checkToolOptions(options);
-  checkLtiStore(options.store);
-  checkJwksCache(options.jwks);
-  if (options.otherMessageTypes !== undefined) checkStrings(options.otherMessageTypes, "otherMessageTypes");
-  if (options.maxFormBytes !== undefined) checkPositiveInteger(options.maxFormBytes, "The option maxFormBytes");
-  if (options.migrationSecret !== undefined) {
-    checkFunction(options.migrationSecret, "The option migrationSecret must be a function");
-  }
+  parseWith(launchOptionsSchema, options, "The options");
 }
 
 /**

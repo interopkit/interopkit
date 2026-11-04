@@ -159,7 +159,7 @@ describe("the option signal", () => {
     const ctx = setup();
     const options = { ...ctx.options, signal: JSON.parse('{"aborted":false}') };
     await expect(handleLogin(ctx.platform.initiation(), options)).rejects.toStrictEqual(
-      new DataError("The option signal must be an AbortSignal, found an object."),
+      new DataError("The options is invalid at signal: expected an AbortSignal, found an object."),
     );
   });
 });

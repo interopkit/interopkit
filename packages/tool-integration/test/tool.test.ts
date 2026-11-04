@@ -685,17 +685,17 @@ describe("handleLaunch", () => {
           'The header names of the request must be in lower case, found "Cookie".',
           () => handleLaunch({ ...post, headers: { Cookie: "a=b" } }, ctx.options),
         ],
-        ["The options must be an object, found null.", () => handleLaunch(post, JSON.parse("null"))],
+        ["The options is invalid: expected an object, found null.", () => handleLaunch(post, JSON.parse("null"))],
         [
-          "The option registration must be a function, found null.",
+          "The options is invalid at registration: expected a function, found null.",
           () => handleLaunch(post, { ...ctx.options, registration: JSON.parse("null") }),
         ],
         [
-          "The option store is invalid: expected an object with the functions put, get and delete, found null.",
+          "The options is invalid at store: expected an object with the functions put, get and delete, found null.",
           () => handleLaunch(post, { ...ctx.options, store: JSON.parse("null") }),
         ],
         [
-          "The option store is invalid: expected an object with the functions put, get and delete, found an object.",
+          "The options is invalid at store: expected an object with the functions put, get and delete, found an object.",
           () =>
             handleLaunch(post, {
               ...ctx.options,
@@ -703,7 +703,7 @@ describe("handleLaunch", () => {
             }),
         ],
         [
-          "The option jwks must be an object, found null.",
+          "The options is invalid at jwks: expected an object with the function keySet, found null.",
           () => handleLaunch(post, { ...ctx.options, jwks: JSON.parse("null") }),
         ],
       ];
@@ -1122,17 +1122,21 @@ describe("handleLogin", () => {
         "The method of the request must be a string, found 5.",
         () => handleLogin({ ...initiation, method: JSON.parse("5") }, ctx.options),
       ],
-      ["The options must be an object, found null.", () => handleLogin(initiation, JSON.parse("null"))],
+      ["The options is invalid: expected an object, found null.", () => handleLogin(initiation, JSON.parse("null"))],
       [
-        'The option registration must be a function, found "r".',
+        'The options is invalid: unexpected property "misspelled".',
+        () => handleLogin(initiation, { ...ctx.options, misspelled: true } as never),
+      ],
+      [
+        'The options is invalid at registration: expected a function, found "r".',
         () => handleLogin(initiation, { ...ctx.options, registration: JSON.parse('"r"') }),
       ],
       [
-        "The option clock must be an object, found 5.",
+        "The options is invalid at clock: expected an object with the function now, found 5.",
         () => handleLogin(initiation, { ...ctx.options, clock: JSON.parse("5") }),
       ],
       [
-        "The option store is invalid: expected an object with the functions put, get and delete, found null.",
+        "The options is invalid at store: expected an object with the functions put, get and delete, found null.",
         () =>
           handleLogin(initiation, {
             registration: ctx.options.registration,

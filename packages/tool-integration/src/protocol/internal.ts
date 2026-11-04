@@ -5,7 +5,7 @@
  */
 
 export { checkAllowList } from "./allow-list.js";
-export { callOptionsOf } from "./call-options.js";
+export { callOptionsOf, functionSchema } from "./call-options.js";
 export {
   CLAIM,
   type Claims,
@@ -60,7 +60,7 @@ export {
   writeGroupSetContainer,
 } from "./groups/index.js";
 export { escapeHtml, pagePolicy, scriptSource } from "./html.js";
-export { checkJwksCache, type JwksCache } from "./jwks.js";
+export type { JwksCache } from "./jwks.js";
 export { hasCanonicalParts, unverifiedClaims, verifyJwt } from "./jwt.js";
 export { checkKeySet, checkLtiSigner, keySetResponse } from "./key-set.js";
 export { isVerifyKey } from "./keys.js";

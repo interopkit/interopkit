@@ -1,14 +1,15 @@
-import { DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
+import { clientOptionsEntries, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
 import {
-  checkArray,
-  checkFunction,
-  checkNonEmptyString,
-  checkPositiveInteger,
-  checkRecord,
   MAX_JSON_TOKENS,
+  methodsSchema,
+  nonEmptyStringSchema,
+  parseWith,
+  positiveIntegerSchema,
+  strictRecord,
 } from "@interopkit/core/checks";
-import { checkToolOptions, type ToolOptions } from "../options.js";
-import { checkTokenStore, type TokenStore } from "./token-store.js";
+import * as v from "valibot";
+import { type ToolOptions, toolOptionsEntries } from "../options.js";
+import type { TokenStore } from "./token-store.js";
 
 /** The most bytes of an answer of a service by default: a page of a hundred line items, results or members is far less. */
 const DEFAULT_MAX_BYTES = 1_048_576;
@@ -84,18 +85,14 @@ export interface ServiceClientSettings {
   readonly refreshSkewSeconds: number;
 }
 
-/** Checks the options of `createServiceClient`, as a host passes them from JavaScript. */
-function checkServiceClientOptions(options: unknown): asserts options is ServiceClientOptions {
-  checkRecord(options, "The options must be an object");
-  checkToolOptions(options);
-  checkFunction(options.fetch, "The option fetch must be a function");
-  checkArray(options.scopes, "The option scopes must be an array");
-  for (const scope of options.scopes) checkNonEmptyString(scope, "A scope of the option scopes");
-  for (const name of ["timeoutMs", "maxBytes", "maxTokens", "pageLimit", "refreshSkewSeconds"]) {
-    if (options[name] !== undefined) checkPositiveInteger(options[name], `The option ${name}`);
-  }
-  if (options.tokens !== undefined) checkTokenStore(options.tokens);
-}
+const optionsSchema = strictRecord({
+  ...toolOptionsEntries,
+  ...clientOptionsEntries,
+  scopes: v.array(nonEmptyStringSchema),
+  pageLimit: v.optional(positiveIntegerSchema),
+  refreshSkewSeconds: v.optional(positiveIntegerSchema),
+  tokens: v.optional(methodsSchema<TokenStore>("get", "put", "delete")),
+});
 
 /**
  * Checks the options of `createServiceClient` and fills in their defaults.
@@ -103,14 +100,14 @@ function checkServiceClientOptions(options: unknown): asserts options is Service
  * @throws `DataError` when they are not.
  */
 export function readServiceClientOptions(options: unknown): ServiceClientSettings {
-  checkServiceClientOptions(options);
+  const read = parseWith(optionsSchema, options, "The options");
   return {
-    options,
-    offered: [...options.scopes],
-    timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    maxBytes: options.maxBytes ?? DEFAULT_MAX_BYTES,
-    maxTokens: options.maxTokens ?? MAX_JSON_TOKENS,
-    pageLimit: options.pageLimit ?? DEFAULT_PAGE_LIMIT,
-    refreshSkewSeconds: options.refreshSkewSeconds ?? DEFAULT_REFRESH_SKEW_SECONDS,
+    options: read,
+    offered: read.scopes,
+    timeoutMs: read.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    maxBytes: read.maxBytes ?? DEFAULT_MAX_BYTES,
+    maxTokens: read.maxTokens ?? MAX_JSON_TOKENS,
+    pageLimit: read.pageLimit ?? DEFAULT_PAGE_LIMIT,
+    refreshSkewSeconds: read.refreshSkewSeconds ?? DEFAULT_REFRESH_SKEW_SECONDS,
   };
 }

@@ -287,24 +287,28 @@ describe("createJwksCache", () => {
     );
     const options = { fetch, clock };
     const bad: readonly [string, () => unknown][] = [
-      ["The options must be an object, found null.", () => createJwksCache(JSON.parse("null"))],
+      ["The options is invalid: expected an object, found null.", () => createJwksCache(JSON.parse("null"))],
       [
-        'The option fetch must be a function, found "f".',
+        'The options is invalid at fetch: expected a function, found "f".',
         () => createJwksCache({ ...options, fetch: JSON.parse('"f"') }),
       ],
-      ["The option clock must be an object, found null.", () => createJwksCache({ fetch, clock: JSON.parse("null") })],
       [
-        "The option ttlSeconds must be a positive integer, found 0.",
+        "The options is invalid at clock: expected an object with the function now, found null.",
+        () => createJwksCache({ fetch, clock: JSON.parse("null") }),
+      ],
+      [
+        "The options is invalid at ttlSeconds: expected a value of at least 1, found 0.",
         () => createJwksCache({ ...options, ttlSeconds: 0 }),
       ],
       [
-        'The option refreshSeconds must be a positive integer, found "1".',
+        'The options is invalid at refreshSeconds: expected a number, found "1".',
         () => createJwksCache({ ...options, refreshSeconds: JSON.parse('"1"') }),
       ],
       [
-        "The option timeoutMs must be a positive integer, found null.",
+        "The options is invalid at timeoutMs: expected a number, found null.",
         () => createJwksCache({ ...options, timeoutMs: JSON.parse("null") }),
       ],
+      ['The options is invalid: unexpected property "ttl".', () => createJwksCache({ ...options, ttl: 60 } as never)],
     ];
     for (const [message, call] of bad) expect(call, message).toThrow(new DataError(message));
   });

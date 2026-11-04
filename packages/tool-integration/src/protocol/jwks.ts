@@ -2,15 +2,23 @@ import {
   type CallOptions,
   type Clock,
   callService,
-  checkClock,
   createKeyedCache,
   DataError,
   DEFAULT_TIMEOUT_MS,
   type Fetch,
   LimitError,
 } from "@interopkit/core";
-import { checkFunction, checkHttpsUrl, checkPositiveInteger, checkRecord, isRecord } from "@interopkit/core/checks";
+import {
+  checkHttpsUrl,
+  isRecord,
+  methodsSchema,
+  parseWith,
+  positiveIntegerSchema,
+  strictRecord,
+} from "@interopkit/core/checks";
 import { createLocalJWKSet, errors, type JSONWebKeySet, type JWTVerifyGetKey } from "jose";
+import * as v from "valibot";
+import { functionSchema } from "./call-options.js";
 
 const MILLISECONDS_PER_SECOND = 1000;
 const DEFAULT_TTL_SECONDS = 3600;
@@ -74,6 +82,14 @@ export interface JwksCache {
   keySet(url: string, options?: CallOptions): JWTVerifyGetKey;
 }
 
+const optionsSchema = strictRecord({
+  fetch: functionSchema<Fetch>(),
+  clock: v.optional(methodsSchema<Clock>("now")),
+  ttlSeconds: v.optional(positiveIntegerSchema),
+  refreshSeconds: v.optional(positiveIntegerSchema),
+  timeoutMs: v.optional(positiveIntegerSchema),
+});
+
 /** Tells whether a value has the list of keys of a JWK Set, whose members jose then checks. */
 function hasKeys(value: unknown): value is JSONWebKeySet {
   return isRecord(value) && Array.isArray(value.keys);
@@ -125,14 +141,13 @@ function readKeySet(text: string, url: string): JWTVerifyGetKey {
  * @see {@link https://www.rfc-editor.org/rfc/rfc7517#section-5 | RFC 7517, section 5}
  */
 export function createJwksCache(options: JwksCacheOptions): JwksCache {
-  checkRecord(options, "The options must be an object");
-  const { fetch, clock, ttlSeconds = DEFAULT_TTL_SECONDS, refreshSeconds = DEFAULT_REFRESH_SECONDS } = options;
-  const { timeoutMs = DEFAULT_TIMEOUT_MS } = options;
-  checkFunction(fetch, "The option fetch must be a function");
-  checkClock(clock);
-  checkPositiveInteger(ttlSeconds, "The option ttlSeconds");
-  checkPositiveInteger(refreshSeconds, "The option refreshSeconds");
-  checkPositiveInteger(timeoutMs, "The option timeoutMs");
+  const {
+    fetch,
+    clock,
+    ttlSeconds = DEFAULT_TTL_SECONDS,
+    refreshSeconds = DEFAULT_REFRESH_SECONDS,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  } = parseWith(optionsSchema, options, "The options");
   const refreshAfter = refreshSeconds * MILLISECONDS_PER_SECOND;
   const sets = createKeyedCache<JWTVerifyGetKey>({
     clock,
@@ -166,14 +181,4 @@ export function createJwksCache(options: JwksCacheOptions): JwksCache {
       };
     },
   };
-}
-
-/**
- * Checks a cache, as a host passes it from JavaScript.
- *
- * @throws `DataError` when it is not an object with a function `keySet`.
- */
-export function checkJwksCache(value: unknown): asserts value is JwksCache {
-  checkRecord(value, "The option jwks must be an object");
-  checkFunction(value.keySet, "The function keySet of the option jwks must be a function");
 }

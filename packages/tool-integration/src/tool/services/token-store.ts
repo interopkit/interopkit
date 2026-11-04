@@ -1,11 +1,5 @@
 import { type CallOptions, type Clock, readClock } from "@interopkit/core";
-import {
-  looseRecord,
-  methodsSchema,
-  nonEmptyStringSchema,
-  nonNegativeIntegerSchema,
-  parseWith,
-} from "@interopkit/core/checks";
+import { looseRecord, nonEmptyStringSchema, nonNegativeIntegerSchema, parseWith } from "@interopkit/core/checks";
 import type { AccessToken } from "@interopkit/core/oauth";
 import * as v from "valibot";
 import type { LtiDeployment } from "../../protocol/index.js";
@@ -27,15 +21,6 @@ export interface TokenStore {
   put(key: string, token: AccessToken, options?: CallOptions): Promise<void>;
   /** Drops the token under a key, which the platform answered 401 to, so that the next call asks for a new one. */
   delete(key: string, options?: CallOptions): Promise<void>;
-}
-
-/**
- * Checks a store, as a host passes it from JavaScript.
- *
- * @throws `DataError` when it is not an object with the functions `get`, `put` and `delete`.
- */
-export function checkTokenStore(value: unknown): asserts value is TokenStore {
-  parseWith(methodsSchema<TokenStore>("get", "put", "delete"), value, "The option tokens");
 }
 
 /** A token as the store returns it: only a token that the client gave it, which has an expiry. */

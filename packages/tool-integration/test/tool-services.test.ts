@@ -492,6 +492,7 @@ describe("createServiceClient with input of other types", () => {
       [launch, { ...options, pageLimit: 0 }],
       [launch, { ...options, tokens: JSON.parse("null") }],
       [launch, { ...options, tokens: { get: async () => undefined } }],
+      [launch, { ...options, timeoutMS: 1000 }],
     ];
     for (const [deployment, change] of cases) {
       expect(() => createServiceClient(deployment as never, change as never)).toThrow(DataError);

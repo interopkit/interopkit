@@ -87,10 +87,13 @@ describe("serveToolJwks", () => {
       new DataError("The key set must be an object, found null."),
     );
     expect(() => serveToolJwks(request({ url: URL_OF_SET }), keys, JSON.parse("null"))).toThrow(
-      new DataError("The options must be an object, found null."),
+      new DataError("The options is invalid: expected an object, found null."),
     );
     expect(() => serveToolJwks(request({ url: URL_OF_SET }), keys, { maxAgeSeconds: JSON.parse('"60"') })).toThrow(
-      new DataError('The option maxAgeSeconds must be a non-negative integer, found "60".'),
+      new DataError('The options is invalid at maxAgeSeconds: expected a number, found "60".'),
+    );
+    expect(() => serveToolJwks(request({ url: URL_OF_SET }), keys, { maxAge: 60 } as never)).toThrow(
+      new DataError('The options is invalid: unexpected property "maxAge".'),
     );
   });
 });

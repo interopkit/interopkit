@@ -389,6 +389,9 @@ read no other clock.
 
 ## Options
 
+One object holds the options of every function of the tool role, and each function requires what it needs. A property that no
+function of the role takes, such as a misspelled option, is refused with a `DataError`.
+
 | Option         | Default                                             | Meaning                                                     |
 | -------------- | --------------------------------------------------- | ----------------------------------------------------------- |
 | `registration` | required                                            | Looks up the registration of a platform (see Registrations) |
