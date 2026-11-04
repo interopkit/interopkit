@@ -1,15 +1,18 @@
-import { type CallOptions, type Clock, checkClock, DataError, type Fetch, SYSTEM_CLOCK } from "@interopkit/core";
+import { type CallOptions, type Clock, DataError, type Fetch, SYSTEM_CLOCK } from "@interopkit/core";
 import {
-  checkAbortSignal,
-  checkArray,
-  checkFunction,
   checkNonEmptyString,
   checkPositiveInteger,
   checkRecord,
   describe,
+  methodsSchema,
+  nonEmptyStringSchema,
+  parseWith,
+  strictRecord,
 } from "@interopkit/core/checks";
+import * as v from "valibot";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
-import { readTrustSettings, type TrustSettings } from "../option-checks.js";
+import { readTrustSettings, type TrustOptions, type TrustSettings } from "../option-checks.js";
+import { optionsOf, REQUIRED_OPTIONS } from "../option-schemas.js";
 import type { StatusList } from "./bitstring.js";
 import type { StatusListCache } from "./status-list-cache.js";
 
@@ -168,25 +171,56 @@ export interface StatusSettings extends TrustSettings {
 }
 
 /**
- * Checks the options of a status check as a host passes them from JavaScript, and fills in the defaults: those of every
- * verification, `statusLists` and `statusIssuers`.
- *
- * @param options - The options, which the caller has checked to be an object.
- * @throws `DataError` when an option is not valid.
+ * The schemas of the options of a status check, to spread into the `strictRecord` of the options of a function that checks one.
+ * The `fetch` is optional here: `verifyCredentialStatus` requires it, and `verifyCredential` does not.
  */
-export function readStatusSettings(options: Readonly<Record<string, unknown>>): StatusSettings {
-  const { statusLists, statusIssuers = [] } = options;
-  if (statusLists !== undefined) {
-    checkRecord(statusLists, "The option statusLists must be an object");
-    checkFunction(statusLists.get, "The function get of the option statusLists must be a function");
-  }
-  checkArray(statusIssuers, "The option statusIssuers must be an array");
-  for (const issuer of statusIssuers) checkNonEmptyString(issuer, "An issuer of the option statusIssuers");
+export const statusOptionEntries = {
+  keys: REQUIRED_OPTIONS.keys,
+  statusLists: v.optional(methodsSchema<StatusListCache>("get")),
+  statusIssuers: v.optional(v.array(nonEmptyStringSchema)),
+  ...optionsOf(
+    "fetch",
+    "clock",
+    "contexts",
+    "timeoutMs",
+    "maxBytes",
+    "maxTokens",
+    "maxInputBytes",
+    "maxDepth",
+    "maxJsonLdTokens",
+    "algorithms",
+    "clockSkewSeconds",
+    "allowUnboundKeys",
+    "legacyProofs",
+    "suites",
+    "signal",
+  ),
+};
+
+/** The options of a status check that a function has parsed with its schema. */
+export type StatusOptions = TrustOptions & {
+  readonly statusLists?: StatusListCache | undefined;
+  readonly statusIssuers?: readonly string[] | undefined;
+};
+
+/**
+ * Fills in the defaults of the options of a status check: those of every verification, `statusLists` and `statusIssuers`.
+ *
+ * @param options - The options, parsed by the schema of the function that reads them.
+ */
+export function readStatusSettings(options: StatusOptions): StatusSettings {
   return {
     ...readTrustSettings(options),
-    statusLists: statusLists as StatusListCache | undefined,
-    statusIssuers: statusIssuers as readonly string[],
+    statusLists: options.statusLists,
+    statusIssuers: options.statusIssuers ?? [],
   };
+}
+
+const statusOptionsSchema = strictRecord({ ...statusOptionEntries, fetch: REQUIRED_OPTIONS.fetch });
+
+/** Checks the options of `verifyCredentialStatus` as a host passes them from JavaScript, and fills in the defaults. */
+export function statusSettings(options: unknown): StatusSettings {
+  return readStatusSettings(parseWith(statusOptionsSchema, options, "The options of verifyCredentialStatus"));
 }
 
 /** The checked options of the issue of a list credential: a Data Integrity proof comes with the loader of contexts. */
@@ -195,15 +229,19 @@ export type IssueSettings = {
   readonly signal: AbortSignal | undefined;
 } & ({ readonly proof: "jwt" } | { readonly proof: "data-integrity"; readonly contexts: ContextLoader });
 
+const issueOptionsSchema = strictRecord({
+  proof: v.optional(v.picklist(["jwt", "data-integrity"])),
+  ...optionsOf("contexts", "clock", "signal"),
+});
+
 /** Checks the options of `issueStatusListCredential` as a host passes them from JavaScript. */
 export function issueSettings(options: unknown): IssueSettings {
-  checkRecord(options, "The options of issueStatusListCredential must be an object");
-  const { proof = "jwt", contexts, clock, signal } = options;
-  if (proof !== "jwt" && proof !== "data-integrity") {
-    throw new DataError(`The option proof must be jwt or data-integrity, found ${describe(proof)}.`);
-  }
-  checkClock(clock);
-  if (signal !== undefined) checkAbortSignal(signal, "The option signal");
+  const {
+    proof = "jwt",
+    contexts,
+    clock,
+    signal,
+  } = parseWith(issueOptionsSchema, options, "The options of issueStatusListCredential");
   const given = clock ?? SYSTEM_CLOCK;
   if (proof === "jwt") return { proof, clock: given, signal };
   if (contexts === undefined) {
@@ -211,8 +249,7 @@ export function issueSettings(options: unknown): IssueSettings {
       "The option contexts is required for a Data Integrity proof: it loads the contexts of the credential.",
     );
   }
-  checkFunction(contexts, "The option contexts must be a function");
-  return { proof, contexts: contexts as ContextLoader, clock: given, signal };
+  return { proof, contexts, clock: given, signal };
 }
 
 /** Checks the input of `issueStatusListCredential`. */

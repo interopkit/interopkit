@@ -1,5 +1,5 @@
-import { type CallOptions, callPort, DataError } from "@interopkit/core";
-import { checkAbortSignal, checkFunction, checkRecord } from "@interopkit/core/checks";
+import { type CallOptions, callPort, clientOptionsEntries, DataError } from "@interopkit/core";
+import { guardSchema, parseWith, strictRecord } from "@interopkit/core/checks";
 import { buildJsonResponse, checkHttpRequest, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 
 /** The options of `handleRefreshRequest`. */
@@ -13,6 +13,11 @@ export interface RefreshHandlerOptions extends CallOptions {
     options?: CallOptions,
   ) => Promise<string | Readonly<Record<string, unknown>> | undefined>;
 }
+
+const optionsSchema = strictRecord({
+  refresh: guardSchema((value): value is RefreshHandlerOptions["refresh"] => typeof value === "function", "a function"),
+  signal: clientOptionsEntries.signal,
+});
 
 /** Reads the identifier of the credential from a request: the last segment of the path, decoded. */
 function idOf(request: HttpRequest): string | undefined {
@@ -46,14 +51,11 @@ export async function handleRefreshRequest(
   options: RefreshHandlerOptions,
 ): Promise<HttpResponse> {
   checkHttpRequest(request);
-  checkRecord(options, "The options of handleRefreshRequest must be an object");
-  checkFunction(options.refresh, "The option refresh must be a function");
-  if (options.signal !== undefined) checkAbortSignal(options.signal, "The option signal");
-  options.signal?.throwIfAborted();
+  const { refresh, signal } = parseWith(optionsSchema, options, "The options of handleRefreshRequest");
+  signal?.throwIfAborted();
   if (request.method !== "GET") return { status: 405, headers: { allow: "GET" }, body: "" };
   const id = idOf(request);
   if (id === undefined) return { status: 400, headers: {}, body: "" };
-  const { refresh, signal } = options;
   // The port gets the signal and should stop, but the wait ends when the signal aborts whether the port does or not.
   const asked = await callPort(() => refresh(id, signal === undefined ? undefined : { signal }), { signal });
   if (asked === undefined) return { status: 500, headers: {}, body: "" };

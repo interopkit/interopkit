@@ -1,5 +1,5 @@
-import { type CallOptions, callService, DataError, type Fetch } from "@interopkit/core";
-import { checkRecord, isRecord, MAX_JSON_DEPTH, parseJsonText } from "@interopkit/core/checks";
+import { type CallOptions, callService, clientOptionsEntries, DataError, type Fetch } from "@interopkit/core";
+import { checkRecord, isRecord, MAX_JSON_DEPTH, parseJsonText, parseWith, strictRecord } from "@interopkit/core/checks";
 import { isCompactJws } from "../compact-jws.js";
 import { jsonRefusals } from "../json-text.js";
 import type { CredentialV1p1, IssuableCredential } from "../model/index.js";
@@ -7,6 +7,8 @@ import { type FetchSettings, fetchOf, readFetchSettings } from "../option-checks
 
 /** The types of a refresh service: `1EdTechCredentialRefresh` of Open Badges 9.1, and `ImsCredentialRefresh` that CLR 8.1 writes. */
 const REFRESH_TYPES: readonly string[] = ["1EdTechCredentialRefresh", "ImsCredentialRefresh"];
+
+const optionsSchema = strictRecord(clientOptionsEntries);
 
 /** The options of `refreshCredential`. */
 export interface RefreshOptions extends CallOptions {
@@ -55,9 +57,7 @@ export async function refreshCredential(
   options: RefreshOptions,
 ): Promise<string | Readonly<Record<string, unknown>> | undefined> {
   checkRecord(credential, "The credential must be an object");
-  checkRecord(options, "The options of refreshCredential must be an object");
-  const settings = readFetchSettings(options);
-  if (settings.fetch === undefined) throw new DataError("The option fetch must be a function, found undefined.");
+  const settings = readFetchSettings(parseWith(optionsSchema, options, "The options of refreshCredential"));
   return await refreshCredentialWith(credential, settings);
 }
 

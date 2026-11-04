@@ -317,9 +317,7 @@ describe("verifying an eddsa-rdfc-2022 proof", () => {
     await expect(verifyProof(JSON.parse("null"), read)).rejects.toBeInstanceOf(DataError);
     await expect(verifyProof(credential, JSON.parse("null"))).rejects.toBeInstanceOf(DataError);
     const { contexts: _contexts, ...unloaded } = read;
-    await expect(verifyProof(credential, unloaded as never)).rejects.toThrow(
-      "The option contexts must be a function, found undefined.",
-    );
+    await expect(verifyProof(credential, unloaded as never)).rejects.toThrow('missing the property "contexts"');
     const bad: Record<string, string> = {
       clockSkewSeconds: '{"clockSkewSeconds":-1}',
       maxInputBytes: '{"maxInputBytes":0}',

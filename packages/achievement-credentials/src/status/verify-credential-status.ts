@@ -7,7 +7,7 @@ import { fetchOf } from "../option-checks.js";
 import { credentialOrReason } from "../read/internal.js";
 import { isSet, MIN_LIST_LENGTH } from "./bitstring.js";
 import { decodeList } from "./encoded-list.js";
-import { readStatusSettings, type StatusCheckOptions, type StatusSettings } from "./options.js";
+import { type StatusCheckOptions, type StatusSettings, statusSettings } from "./options.js";
 
 /** The `type` of the status entry of Bitstring Status List (3.1). */
 const ENTRY_TYPE = "BitstringStatusListEntry";
@@ -373,9 +373,7 @@ export async function verifyCredentialStatus(
   credential: IssuableCredential | CredentialV1p1,
   options: StatusCheckOptions,
 ): Promise<VerificationCheck> {
-  checkRecord(options, "The options of verifyCredentialStatus must be an object");
-  const settings = readStatusSettings(options);
-  if (settings.fetch === undefined) throw new DataError("The option fetch must be a function, found undefined.");
+  const settings = statusSettings(options);
   checkRecord(credential, "The credential must be an object");
   return await verifyCredentialStatusWith(credential, settings);
 }

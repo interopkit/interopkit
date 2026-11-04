@@ -119,8 +119,10 @@ package does not export: the schemas of `read`, which the tests compare with the
 the public JWK, the thumbprint and the binding of `keys`, the credential that a JWS carries, the readers of a proof, the status
 check and the refresh with the settings that a verification has checked, and what the provider checks before it loads the
 verifier. Files directly in `src/` serve several modules: the text of JSON under its limits, base64url, the form of a compact
-JWS, and the settings of a verification (`TrustSettings` of `option-checks.ts`), which each public function checks once from
-its options with their defaults and hands to the functions it calls. The
+JWS, the schemas of the options that several functions take (`option-schemas.ts`), and the settings of a verification
+(`TrustSettings` of `option-checks.ts`), which each public function reads once from its options with their defaults and hands
+to the functions it calls. Every public function declares the options it takes in one strict schema, which refuses every other
+option, of the right type or not. The
 cache of shared loads behind the key resolver and the status lists is `createKeyedCache` of `@interopkit/core`. `pnpm check:standards` and Biome keep modules from
 importing by a deep path or against the layers.
 

@@ -1,10 +1,16 @@
-import { type CallOptions, type Clock, DataError, type Fetch } from "@interopkit/core";
-import { checkNonEmptyString, checkPositiveInteger, checkRecord, describe, isRecord } from "@interopkit/core/checks";
+import type { CallOptions, Clock, Fetch } from "@interopkit/core";
+import {
+  nonEmptyStringSchema,
+  parseWith,
+  positiveIntegerSchema,
+  type Schema,
+  strictRecord,
+} from "@interopkit/core/checks";
+import * as v from "valibot";
 import type { KnownIdentity } from "../issue/index.js";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
-import { checkFlag } from "../option-checks.js";
 import type { StatusListCache } from "../status/index.js";
-import { readStatusSettings, type StatusSettings } from "../status/internal.js";
+import { readStatusSettings, type StatusSettings, statusOptionEntries } from "../status/internal.js";
 
 /** The recipient that a verifier knows, to be matched with the subject of a credential. */
 export interface KnownRecipient {
@@ -166,43 +172,32 @@ export interface VerifySettings extends StatusSettings {
   readonly maxNestedCredentials: number;
 }
 
-/** Checks the known recipient as a host passes it from JavaScript. */
-function checkRecipient(recipient: unknown): KnownRecipient {
-  checkRecord(recipient, "The option recipient must be an object");
-  const { id, identifier } = recipient;
-  if (id === undefined && identifier === undefined) {
-    throw new DataError("The option recipient must have an id or an identifier.");
-  }
-  if (id !== undefined) checkNonEmptyString(id, "The id of the option recipient");
-  if (identifier !== undefined) {
-    checkRecord(identifier, "The identifier of the option recipient must be an object");
-    checkNonEmptyString(identifier.type, "The type of the identifier of the option recipient");
-    checkNonEmptyString(identifier.value, "The value of the identifier of the option recipient");
-  }
-  return {
-    ...(typeof id === "string" ? { id } : {}),
-    ...(isRecord(identifier) ? { identifier: { type: String(identifier.type), value: String(identifier.value) } } : {}),
-  };
-}
+const recipientSchema: Schema<KnownRecipient> = v.pipe(
+  strictRecord({
+    id: v.optional(nonEmptyStringSchema),
+    identifier: v.optional(strictRecord({ type: nonEmptyStringSchema, value: nonEmptyStringSchema })),
+  }),
+  v.check(({ id, identifier }) => id !== undefined || identifier !== undefined, "expected an id or an identifier"),
+);
+
+const optionsSchema = strictRecord({
+  ...statusOptionEntries,
+  recipient: v.optional(recipientSchema),
+  refresh: v.optional(v.boolean()),
+  unavailable: v.optional(v.picklist(["fail", "warn"])),
+  maxEndorsements: v.optional(positiveIntegerSchema),
+  maxNestedCredentials: v.optional(positiveIntegerSchema),
+});
 
 /** Checks the options of `verifyCredential` as a host passes them from JavaScript, and fills in the defaults. */
 export function verifySettings(options: unknown): VerifySettings {
-  checkRecord(options, "The options of verifyCredential must be an object");
-  const { recipient, refresh = true, unavailable = "fail" } = options;
-  const { maxEndorsements = DEFAULT_MAX_ENDORSEMENTS, maxNestedCredentials = DEFAULT_MAX_NESTED_CREDENTIALS } = options;
-  const settings = readStatusSettings(options);
-  checkFlag(refresh, "The option refresh");
-  if (unavailable !== "fail" && unavailable !== "warn") {
-    throw new DataError(`The option unavailable must be "fail" or "warn", found ${describe(unavailable)}.`);
-  }
-  checkPositiveInteger(maxEndorsements, "The option maxEndorsements");
-  checkPositiveInteger(maxNestedCredentials, "The option maxNestedCredentials");
+  const read = parseWith(optionsSchema, options, "The options of verifyCredential");
   return {
-    ...settings,
-    recipient: recipient === undefined ? undefined : checkRecipient(recipient),
-    refresh,
-    unavailable,
-    maxEndorsements,
-    maxNestedCredentials,
+    ...readStatusSettings(read),
+    recipient: read.recipient,
+    refresh: read.refresh ?? true,
+    unavailable: read.unavailable ?? "fail",
+    maxEndorsements: read.maxEndorsements ?? DEFAULT_MAX_ENDORSEMENTS,
+    maxNestedCredentials: read.maxNestedCredentials ?? DEFAULT_MAX_NESTED_CREDENTIALS,
   };
 }

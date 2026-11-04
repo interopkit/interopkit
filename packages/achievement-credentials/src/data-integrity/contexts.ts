@@ -22,7 +22,7 @@ import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
 import * as v from "valibot";
 import { jsonRefusals } from "../json-text.js";
 import type { ContextLoader } from "../model/index.js";
-import { optionsOf } from "../option-checks.js";
+import { optionsOf } from "../option-schemas.js";
 import { canonicalJson } from "./canonical-json.js";
 
 /**

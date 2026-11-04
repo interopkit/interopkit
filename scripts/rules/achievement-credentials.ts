@@ -104,8 +104,8 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
     rule: "The wait for what an issuer publishes ends when the signal aborts, whatever the resolver does.",
     file: "packages/achievement-credentials/src/keys/verify-issuer-key.ts",
-    find: "await raceAbort(options.keys.issuerKeys(issuer, call), { signal: options.signal });",
-    replace: "await options.keys.issuerKeys(issuer, call);",
+    find: "await raceAbort(keys.issuerKeys(issuer, call), { signal });",
+    replace: "await keys.issuerKeys(issuer, call);",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {

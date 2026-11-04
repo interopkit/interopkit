@@ -1,23 +1,16 @@
+import { type CallOptions, type Clock, createKeyedCache, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
 import {
-  type CallOptions,
-  type Clock,
-  checkClock,
-  createKeyedCache,
-  DataError,
-  DEFAULT_TIMEOUT_MS,
-  type Fetch,
-} from "@interopkit/core";
-import {
-  checkArray,
-  checkFunction,
   checkNonEmptyString,
-  checkPositiveInteger,
-  checkRecord,
-  describe,
+  guardSchema,
   MAX_JSON_TOKENS,
+  parseWith,
+  positiveIntegerSchema,
   readCallOptions,
+  strictRecord,
 } from "@interopkit/core/checks";
+import * as v from "valibot";
 import { KEY_RELATIONSHIPS, type KeyResolver, type VerificationKey } from "../model/index.js";
+import { optionsOf } from "../option-schemas.js";
 import { type DidResolver, didKeyResolver, didWebResolver } from "./did.js";
 import { decodeDidJwk, isDidJwk } from "./did-jwk.js";
 import { type DocumentSettings, documentUrl, fetchDocument, isAbsent, keysOfDocument } from "./documents.js";
@@ -26,7 +19,7 @@ import { type DocumentSettings, documentUrl, fetchDocument, isAbsent, keysOfDocu
 export type DidMethod = "key" | "web";
 
 /** The DID methods that a resolver reads itself. */
-const DID_METHODS: readonly DidMethod[] = ["key", "web"];
+const DID_METHODS = ["key", "web"] as const satisfies readonly DidMethod[];
 
 /** What `createKeyResolver` needs. */
 export interface KeyResolverOptions {
@@ -107,25 +100,14 @@ function publishesNoSet(status: number): boolean {
   return status >= 300 && status < 500;
 }
 
-/** Checks the options as a host passes them from JavaScript. */
-function checkOptions(options: unknown): asserts options is KeyResolverOptions {
-  checkRecord(options, "The options of createKeyResolver must be an object");
-  checkClock(options.clock);
-  if (options.fetch !== undefined) checkFunction(options.fetch, "The option fetch must be a function");
-  if (options.resolve !== undefined) checkFunction(options.resolve, "The option resolve must be a function");
-  if (options.methods !== undefined) {
-    checkArray(options.methods, "The option methods must be an array");
-    for (const method of options.methods) {
-      if (!(DID_METHODS as readonly unknown[]).includes(method)) {
-        throw new DataError(`The option methods must list ${DID_METHODS.join(" and ")}, found ${describe(method)}.`);
-      }
-    }
-  }
-  if (options.ttlSeconds !== undefined) checkPositiveInteger(options.ttlSeconds, "The option ttlSeconds");
-  if (options.timeoutMs !== undefined) checkPositiveInteger(options.timeoutMs, "The option timeoutMs");
-  if (options.maxBytes !== undefined) checkPositiveInteger(options.maxBytes, "The option maxBytes");
-  if (options.maxTokens !== undefined) checkPositiveInteger(options.maxTokens, "The option maxTokens");
-}
+const optionsSchema = strictRecord({
+  methods: v.optional(v.array(v.picklist(DID_METHODS))),
+  resolve: v.optional(
+    guardSchema((value): value is KeyResolver["resolve"] => typeof value === "function", "a function"),
+  ),
+  ttlSeconds: v.optional(positiveIntegerSchema),
+  ...optionsOf("clock", "fetch", "timeoutMs", "maxBytes", "maxTokens"),
+});
 
 /** Splits a DID URL into the DID and the fragment, or returns `undefined` for a value that is not a DID URL of one method. */
 function splitDid(reference: string): { readonly did: string; readonly method: string } | undefined {
@@ -151,17 +133,17 @@ function splitDid(reference: string): { readonly did: string; readonly method: s
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/impl/ | Open Badges 3.0 Implementation Guide, 3.1.12}
  */
 export function createKeyResolver(options: KeyResolverOptions): KeyResolver {
-  checkOptions(options);
-  const { clock, fetch, resolve: otherMethods, ttlSeconds = DEFAULT_TTL_SECONDS } = options;
-  const methods = options.methods ?? DID_METHODS;
+  const checked = parseWith(optionsSchema, options, "The options of createKeyResolver");
+  const { clock, fetch, resolve: otherMethods, ttlSeconds = DEFAULT_TTL_SECONDS } = checked;
+  const methods: readonly DidMethod[] = checked.methods ?? DID_METHODS;
   const settings: DocumentSettings | undefined =
     fetch === undefined
       ? undefined
       : {
           fetch,
-          timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-          maxBytes: options.maxBytes ?? DEFAULT_MAX_BYTES,
-          maxTokens: options.maxTokens ?? MAX_JSON_TOKENS,
+          timeoutMs: checked.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+          maxBytes: checked.maxBytes ?? DEFAULT_MAX_BYTES,
+          maxTokens: checked.maxTokens ?? MAX_JSON_TOKENS,
         };
   const resolvers = new Map<string, DidResolver>();
   if (methods.includes("key")) resolvers.set("key", didKeyResolver());

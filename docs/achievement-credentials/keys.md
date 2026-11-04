@@ -151,7 +151,7 @@ resolves to: the resolver does not check where a request goes.
 
 | Case                                                                                     | Result                                                                                           |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| An option has the wrong type; a reference, an issuer or a key that is not what its type says | `DataError` that names it, such as `The option ttlSeconds must be a positive integer, found 0.` |
+| An option has the wrong type or is not one that `createKeyResolver` takes; a reference, an issuer or a key that is not what its type says | `DataError` that names it, such as `The options of createKeyResolver is invalid at ttlSeconds: expected a value of at least 1, found 0.` |
 | A fetch fails, is answered with a redirect or another status than 2xx, 404 or 410, or is too large | `ServiceError` with `status`; `verifyIssuerKey` turns it into `unavailable`, `resolve` lets it pass |
 | A document answers 404 or 410, is not a JSON object or holds no key                       | No key: `resolve` returns `undefined`, `issuerKeys` returns what the other document holds           |
 | The signal aborts                                                                         | The `reason` of the signal; a load that others wait for goes on                                   |

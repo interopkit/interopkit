@@ -1,5 +1,7 @@
-import { type CallOptions, type Clock, checkClock, createKeyedCache, readClock } from "@interopkit/core";
-import { checkPositiveInteger, checkRecord, isRecord } from "@interopkit/core/checks";
+import { type CallOptions, type Clock, createKeyedCache, readClock } from "@interopkit/core";
+import { isRecord, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
+import * as v from "valibot";
+import { optionsOf } from "../option-schemas.js";
 
 /**
  * Status list credentials, and the revocation lists of the 1EdTech Revocation List Status Method, kept across verifications by
@@ -56,6 +58,8 @@ function ttlOf(document: object): number {
   return typeof ttl === "number" && Number.isSafeInteger(ttl) && ttl > 0 ? ttl : DEFAULT_TTL_MILLISECONDS;
 }
 
+const optionsSchema = strictRecord({ maxEntries: v.optional(positiveIntegerSchema), ...optionsOf("clock") });
+
 /**
  * Makes a cache of status list credentials, so that a list is fetched once for the verifications that need it, and again when
  * it expires.
@@ -66,10 +70,11 @@ function ttlOf(document: object): number {
  * @see {@link https://www.w3.org/TR/vc-bitstring-status-list/#bitstringstatuslistcredential | Bitstring Status List, ttl}
  */
 export function createStatusListCache(options: StatusListCacheOptions): StatusListCache {
-  checkRecord(options, "The options of createStatusListCache must be an object");
-  checkClock(options.clock);
-  const { clock, maxEntries = DEFAULT_MAX_ENTRIES } = options;
-  checkPositiveInteger(maxEntries, "The option maxEntries");
+  const { clock, maxEntries = DEFAULT_MAX_ENTRIES } = parseWith(
+    optionsSchema,
+    options,
+    "The options of createStatusListCache",
+  );
   const kept = createKeyedCache<object>({
     clock,
     maxEntries,

@@ -6,5 +6,5 @@
  */
 export { isSet } from "./bitstring.js";
 export { decodeList, encodeList } from "./encoded-list.js";
-export { readStatusSettings, type StatusSettings } from "./options.js";
+export { readStatusSettings, type StatusSettings, statusOptionEntries } from "./options.js";
 export { verifyCredentialStatusWith } from "./verify-credential-status.js";

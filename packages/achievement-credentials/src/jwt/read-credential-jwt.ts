@@ -1,11 +1,12 @@
 import { DataError, raceAbort, readClock, ServiceError } from "@interopkit/core";
-import { checkRecord, describe, isRecord, parseJsonText } from "@interopkit/core/checks";
+import { describe, isRecord, parseJsonText, parseWith, strictRecord } from "@interopkit/core/checks";
 import { compactVerify, importJWK } from "jose";
 import { decodeBase64url } from "../base64url.js";
 import { type JsonLimits, jsonRefusals } from "../json-text.js";
 import { bindKey, publicJwk, thumbprintOf, thumbprintUri } from "../keys/internal.js";
 import type { AnyVerifiableCredential, ProofResult, VerificationKey } from "../model/index.js";
 import { readTrustSettings, type TrustSettings } from "../option-checks.js";
+import { optionsOf, REQUIRED_OPTIONS } from "../option-schemas.js";
 import { carriedCredential, readCarried } from "./carried-credential.js";
 import { dateTimeOf, disagreement, valuesOf } from "./claims.js";
 import type { JwtReadOptions } from "./options.js";
@@ -195,6 +196,20 @@ export async function inspectJwt(jws: string, settings: TrustSettings): Promise<
   return "check" in payload ? { valid: false, ...payload } : { valid: true, key: verified.value, ...payload.value };
 }
 
+const optionsSchema = strictRecord({
+  keys: REQUIRED_OPTIONS.keys,
+  ...optionsOf(
+    "clock",
+    "algorithms",
+    "clockSkewSeconds",
+    "allowUnboundKeys",
+    "maxInputBytes",
+    "maxDepth",
+    "maxTokens",
+    "signal",
+  ),
+});
+
 /**
  * Reads a credential from a compact JWS: verifies the signature with the key that the header names, checks the claims against
  * the credential, and checks that the key belongs to the issuer.
@@ -221,8 +236,7 @@ export async function inspectJwt(jws: string, settings: TrustSettings): Promise<
  * @see {@link https://www.w3.org/TR/vc-jose-cose/ | Securing Verifiable Credentials using JOSE and COSE}
  */
 export async function readCredentialJwt(jws: string, options: JwtReadOptions): Promise<ProofResult> {
-  checkRecord(options, "The options of readCredentialJwt must be an object");
-  const settings = readTrustSettings(options);
+  const settings = readTrustSettings(parseWith(optionsSchema, options, "The options of readCredentialJwt"));
   if (typeof jws !== "string") throw new DataError(`The JWS must be a string, found ${describe(jws)}.`);
   return await readCredentialJwtWith(jws, settings);
 }

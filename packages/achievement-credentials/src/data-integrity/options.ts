@@ -1,21 +1,16 @@
-import { type CallOptions, type Clock, checkClock, DataError, SYSTEM_CLOCK } from "@interopkit/core";
-import {
-  checkAbortSignal,
-  checkArray,
-  checkFunction,
-  checkPositiveInteger,
-  checkRecord,
-  describe,
-} from "@interopkit/core/checks";
+import { type CallOptions, type Clock, SYSTEM_CLOCK } from "@interopkit/core";
+import { parseWith, strictRecord } from "@interopkit/core/checks";
+import * as v from "valibot";
 import { DEFAULT_MAX_JSON_LD_TOKENS } from "../json-text.js";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "../model/index.js";
 import { readTrustSettings, type TrustSettings } from "../option-checks.js";
+import { optionsOf, REQUIRED_OPTIONS } from "../option-schemas.js";
 
 /** A cryptosuite that `addProof` signs with: `eddsa-rdfc-2022` or `ecdsa-sd-2023`. */
 export type SigningCryptosuite = "eddsa-rdfc-2022" | "ecdsa-sd-2023";
 
 /** The cryptosuites that `addProof` signs with. */
-const SIGNING_CRYPTOSUITES: readonly SigningCryptosuite[] = ["eddsa-rdfc-2022", "ecdsa-sd-2023"];
+const SIGNING_CRYPTOSUITES = ["eddsa-rdfc-2022", "ecdsa-sd-2023"] as const satisfies readonly SigningCryptosuite[];
 
 /** The options of `addProof`. */
 export interface ProofOptions extends CallOptions {
@@ -141,41 +136,35 @@ export interface ProofSettings {
   readonly signal: AbortSignal | undefined;
 }
 
+/** A list of JSON Pointers: each is empty or starts with `/` (RFC 6901). */
+const pointersSchema = v.array(
+  v.pipe(
+    v.string(),
+    v.check(
+      (pointer) => pointer === "" || pointer.startsWith("/"),
+      "expected a JSON Pointer, which is empty or starts with /",
+    ),
+  ),
+);
+
+const proofOptionsSchema = strictRecord({
+  cryptosuite: v.optional(v.picklist(SIGNING_CRYPTOSUITES)),
+  mandatoryPointers: v.optional(pointersSchema),
+  contexts: REQUIRED_OPTIONS.contexts,
+  ...optionsOf("clock", "maxJsonLdTokens", "signal"),
+});
+
 /** Checks the options of `addProof` as a host passes them from JavaScript. */
 export function proofSettings(options: unknown): ProofSettings {
-  checkRecord(options, "The options of addProof must be an object");
-  const { cryptosuite = "eddsa-rdfc-2022", mandatoryPointers, contexts, clock, signal } = options;
-  const { maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS } = options;
-  if (!SIGNING_CRYPTOSUITES.find((name) => name === cryptosuite)) {
-    throw new DataError(
-      `The option cryptosuite must be ${SIGNING_CRYPTOSUITES.join(" or ")}, found ${describe(cryptosuite)}.`,
-    );
-  }
-  if (mandatoryPointers !== undefined) checkPointers(mandatoryPointers, "The option mandatoryPointers");
-  checkFunction(contexts, "The option contexts must be a function");
-  checkClock(clock);
-  checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
-  if (signal !== undefined) checkAbortSignal(signal, "The option signal");
+  const read = parseWith(proofOptionsSchema, options, "The options of addProof");
   return {
-    cryptosuite: cryptosuite as SigningCryptosuite,
-    mandatoryPointers: mandatoryPointers as readonly string[] | undefined,
-    contexts: contexts as ContextLoader,
-    clock: clock ?? SYSTEM_CLOCK,
-    maxJsonLdTokens,
-    signal,
+    cryptosuite: read.cryptosuite ?? "eddsa-rdfc-2022",
+    mandatoryPointers: read.mandatoryPointers,
+    contexts: read.contexts,
+    clock: read.clock ?? SYSTEM_CLOCK,
+    maxJsonLdTokens: read.maxJsonLdTokens ?? DEFAULT_MAX_JSON_LD_TOKENS,
+    signal: read.signal,
   };
-}
-
-/** Checks a list of JSON Pointers. */
-function checkPointers(value: unknown, label: string): asserts value is readonly string[] {
-  checkArray(value, `${label} must be an array`);
-  for (const pointer of value) {
-    if (typeof pointer !== "string" || !(pointer === "" || pointer.startsWith("/"))) {
-      throw new DataError(
-        `${label} must list JSON Pointers, which are empty or start with /, found ${describe(pointer)}.`,
-      );
-    }
-  }
 }
 
 /** The options of a disclosure, checked. */
@@ -186,25 +175,45 @@ export interface DisclosureSettings {
   readonly signal: AbortSignal | undefined;
 }
 
+const disclosureOptionsSchema = strictRecord({
+  selectivePointers: pointersSchema,
+  contexts: REQUIRED_OPTIONS.contexts,
+  ...optionsOf("maxJsonLdTokens", "signal"),
+});
+
 /** Checks the options of `deriveDisclosure` as a host passes them from JavaScript. */
 export function disclosureSettings(options: unknown): DisclosureSettings {
-  checkRecord(options, "The options of deriveDisclosure must be an object");
-  const { selectivePointers, contexts, signal, maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS } = options;
-  checkPointers(selectivePointers, "The option selectivePointers");
-  checkFunction(contexts, "The option contexts must be a function");
-  checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
-  if (signal !== undefined) checkAbortSignal(signal, "The option signal");
-  return { selectivePointers, contexts: contexts as ContextLoader, maxJsonLdTokens, signal };
+  const read = parseWith(disclosureOptionsSchema, options, "The options of deriveDisclosure");
+  return {
+    selectivePointers: read.selectivePointers,
+    contexts: read.contexts,
+    maxJsonLdTokens: read.maxJsonLdTokens ?? DEFAULT_MAX_JSON_LD_TOKENS,
+    signal: read.signal,
+  };
 }
 
 /** The settings of a verification of a proof: those of every verification, with the loader of contexts that it needs. */
 export type ProofCheckSettings = TrustSettings & { readonly contexts: ContextLoader };
 
+const verifyOptionsSchema = strictRecord({
+  keys: REQUIRED_OPTIONS.keys,
+  contexts: REQUIRED_OPTIONS.contexts,
+  ...optionsOf(
+    "clock",
+    "clockSkewSeconds",
+    "allowUnboundKeys",
+    "legacyProofs",
+    "suites",
+    "maxInputBytes",
+    "maxDepth",
+    "maxTokens",
+    "maxJsonLdTokens",
+    "signal",
+  ),
+});
+
 /** Checks the options of `verifyProof` as a host passes them from JavaScript, and fills in the defaults. */
 export function verifySettings(options: unknown): ProofCheckSettings {
-  checkRecord(options, "The options of verifyProof must be an object");
-  const settings = readTrustSettings(options);
-  const { contexts } = settings;
-  if (contexts === undefined) throw new DataError("The option contexts must be a function, found undefined.");
-  return { ...settings, contexts };
+  const read = parseWith(verifyOptionsSchema, options, "The options of verifyProof");
+  return { ...readTrustSettings(read), contexts: read.contexts };
 }

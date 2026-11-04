@@ -138,7 +138,7 @@ describe("the index that a credential gets", () => {
     expect(() => allocateStatusIndex(JSON.parse("[]"), { length: 4, random: fixed(0.5) })).toThrow(DataError);
     expect(() => allocateStatusIndex(new Set(), { length: 4, random: JSON.parse("null") })).toThrow(DataError);
     expect(() => allocateStatusIndex(new Set(), { length: 4, random: (() => 0.5) as never })).toThrow(
-      "an object with a uniform method",
+      "an object with the function uniform",
     );
     expect(() => allocateStatusIndex(new Set(), { length: 4, random: fixed(1) })).toThrow("from 0 up to 1");
     expect(() => allocateStatusIndex(new Set(), { length: 4, random: fixed(Number.NaN) })).toThrow(DataError);
@@ -636,7 +636,7 @@ describe("checking the status of a credential", () => {
     await expect(verifyCredentialStatus(credential, JSON.parse("null"))).rejects.toBeInstanceOf(DataError);
     const { fetch: _fetch, ...withoutFetch } = w.options;
     await expect(verifyCredentialStatus(credential, withoutFetch as never)).rejects.toThrow(
-      "The option fetch must be a function, found undefined.",
+      'missing the property "fetch"',
     );
     for (const extra of [
       { fetch: 5 },
@@ -675,7 +675,7 @@ describe("checking the status of a credential", () => {
     const credential = unnamed as unknown as IssuableCredential;
     expect(await verifyCredentialStatus(credential, w.options)).toMatchObject({ outcome: "skipped" });
     await expect(verifyCredentialStatus(credential, { ...w.options, algorithms: ["HS256"] })).rejects.toThrow(
-      "The option algorithms must list",
+      "is invalid at algorithms[0]",
     );
   });
 });

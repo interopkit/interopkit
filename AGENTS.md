@@ -352,7 +352,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - Entry points validate their input deeply and throw `DataError` with a full sentence that says what is wrong and what is
   expected, e.g. `The option timeoutMs must be a positive integer, found 0.` Input may come from plain JavaScript or JSON, so
   every argument is checked once, where the public function reads it, with a check of `@interopkit/core/checks`. An option's
-  label is `The option <name>`. Inner functions trust their callers. JSON and objects that a host passes in are read with a
+  label is `The option <name>`. The options of a public function are one `strictRecord` that names each option it takes, so that an
+  option it does not take is refused whatever its type. Inner functions trust their callers. JSON and objects that a host passes in are read with a
   valibot schema named `<name>Schema` and `parseWith`, which names the path of the first issue.
 - A class of a JSON-LD specification that anyone may extend is read with `openRecord` of `core/checks`, a closed one with
   `strictRecord`; a list that the compacted form writes as its only member is read into a list with `many`, so that the model

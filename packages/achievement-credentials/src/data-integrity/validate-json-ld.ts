@@ -1,8 +1,9 @@
 import jsonld from "@interop/jsonld";
 import type { CallOptions } from "@interopkit/core";
-import { checkAbortSignal, checkFunction, checkPositiveInteger, checkRecord, isRecord } from "@interopkit/core/checks";
+import { checkRecord, isRecord, parseWith, strictRecord } from "@interopkit/core/checks";
 import { DEFAULT_MAX_JSON_LD_TOKENS, textWithinLimits } from "../json-text.js";
 import type { ContextLoader, IssuableCredential, JsonLdIssue } from "../model/index.js";
+import { optionsOf, REQUIRED_OPTIONS } from "../option-schemas.js";
 import { documentLoaderOf, failOperation } from "./document-loader.js";
 
 /** The most events that are collected, so that a credential of ten thousand unknown terms costs no more than this. */
@@ -39,6 +40,8 @@ function pathOf(value: unknown, term: string, path = ""): string | undefined {
   return undefined;
 }
 
+const optionsSchema = strictRecord({ contexts: REQUIRED_OPTIONS.contexts, ...optionsOf("maxJsonLdTokens", "signal") });
+
 /**
  * Lists what JSON-LD processing in safe mode would drop or refuse in a credential: a property that no context defines, a
  * relative `id` or `type`, a value of a type that its term does not allow.
@@ -61,16 +64,16 @@ export async function validateJsonLd(
   options: { readonly contexts: ContextLoader; readonly maxJsonLdTokens?: number } & CallOptions,
 ): Promise<readonly JsonLdIssue[]> {
   checkRecord(credential, "The credential must be an object");
-  checkRecord(options, "The options of validateJsonLd must be an object");
-  const { contexts, signal, maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS } = options;
-  checkFunction(contexts, "The option contexts must be a function");
-  checkPositiveInteger(maxJsonLdTokens, "The option maxJsonLdTokens");
-  if (signal !== undefined) checkAbortSignal(signal, "The option signal");
+  const {
+    contexts,
+    signal,
+    maxJsonLdTokens = DEFAULT_MAX_JSON_LD_TOKENS,
+  } = parseWith(optionsSchema, options, "The options of validateJsonLd");
   signal?.throwIfAborted();
   textWithinLimits(credential, { tokensOption: "maxJsonLdTokens", maxTokens: maxJsonLdTokens }, "The credential");
   const issues: JsonLdIssue[] = [];
   const document = structuredClone(credential);
-  const load = documentLoaderOf(contexts as ContextLoader, signal);
+  const load = documentLoaderOf(contexts, signal);
   // With an event handler the processor goes on after a context that failed to load, so the first failure is kept and thrown.
   let failure: unknown;
   const documentLoader = async (url: string) => {

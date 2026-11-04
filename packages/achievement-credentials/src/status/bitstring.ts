@@ -1,11 +1,15 @@
 import { DataError, type Random } from "@interopkit/core";
 import {
   checkNonNegativeInteger,
-  checkPositiveInteger,
   checkRecord,
   describe,
-  isRecord,
+  guardSchema,
+  methodsSchema,
+  parseWith,
+  positiveIntegerSchema,
+  strictRecord,
 } from "@interopkit/core/checks";
+import * as v from "valibot";
 
 /** The fewest entries that a status list has (Bitstring Status List 2.1, privacy): a smaller list narrows who a bit may be. */
 export const MIN_LIST_LENGTH = 131_072;
@@ -33,15 +37,26 @@ export interface CreateStatusListOptions {
   readonly length?: number;
 }
 
-/** Checks that a number is a length that a list may have: a multiple of 8, at least the least and at most the most. */
-function checkLength(length: unknown, label: string): asserts length is number {
-  checkPositiveInteger(length, label);
-  if (length < MIN_LIST_LENGTH || length > MAX_INFLATED_BYTES * BITS_PER_BYTE || length % BITS_PER_BYTE !== 0) {
-    throw new DataError(
-      `${label} must be a multiple of 8 from ${MIN_LIST_LENGTH} to ${MAX_INFLATED_BYTES * BITS_PER_BYTE}, found ${length}.`,
-    );
-  }
+const MAX_LIST_LENGTH = MAX_INFLATED_BYTES * BITS_PER_BYTE;
+const LENGTH_RULE = `a multiple of 8 from ${MIN_LIST_LENGTH} to ${MAX_LIST_LENGTH}`;
+
+/** Tells whether a value is a length that a list may have: a multiple of 8, at least the least and at most the most. */
+function isLength(length: unknown): length is number {
+  return (
+    typeof length === "number" &&
+    Number.isSafeInteger(length) &&
+    length >= MIN_LIST_LENGTH &&
+    length <= MAX_LIST_LENGTH &&
+    length % BITS_PER_BYTE === 0
+  );
 }
+
+/** Checks that a number is a length that a list may have. */
+function checkLength(length: unknown, label: string): asserts length is number {
+  if (!isLength(length)) throw new DataError(`${label} must be ${LENGTH_RULE}, found ${describe(length)}.`);
+}
+
+const createOptionsSchema = strictRecord({ length: v.optional(guardSchema(isLength, LENGTH_RULE)) });
 
 /**
  * Creates a status list with no entry set.
@@ -51,9 +66,7 @@ function checkLength(length: unknown, label: string): asserts length is number {
  * @throws `DataError` when the length is not a multiple of 8 between 131,072 and 134,217,728.
  */
 export function createStatusList(options: CreateStatusListOptions = {}): StatusList {
-  checkRecord(options, "The options of createStatusList must be an object");
-  const { length = MIN_LIST_LENGTH } = options;
-  checkLength(length, "The option length");
+  const { length = MIN_LIST_LENGTH } = parseWith(createOptionsSchema, options, "The options of createStatusList");
   return { length, bits: new Uint8Array(length / BITS_PER_BYTE) };
 }
 
@@ -92,6 +105,11 @@ export function setCredentialStatus(list: StatusList, index: number, set: boolea
   return { length: list.length, bits };
 }
 
+const allocateOptionsSchema = strictRecord({
+  length: positiveIntegerSchema,
+  random: methodsSchema<Random>("uniform"),
+});
+
 /** The options of `allocateStatusIndex`. */
 export interface AllocateOptions {
   /** The number of entries of the list. */
@@ -113,22 +131,16 @@ export interface AllocateOptions {
  * @throws `DataError` when the list is full, an argument is not valid, or `random.uniform` does not return a number in [0, 1).
  */
 export function allocateStatusIndex(used: ReadonlySet<number>, options: AllocateOptions): number {
-  checkRecord(options, "The options of allocateStatusIndex must be an object");
-  checkPositiveInteger(options.length, "The option length");
+  const { length, random } = parseWith(allocateOptionsSchema, options, "The options of allocateStatusIndex");
   if (!(used instanceof Set)) throw new DataError(`The used indexes must be a Set, found ${describe(used)}.`);
-  if (!isRecord(options.random) || typeof options.random.uniform !== "function") {
-    throw new DataError("The option random must be an object with a uniform method.");
-  }
   for (const index of used) {
-    if (!Number.isInteger(index) || index < 0 || index >= options.length) {
-      throw new DataError(
-        `The used indexes must be integers from 0 to ${options.length - 1}, found ${describe(index)}.`,
-      );
+    if (!Number.isInteger(index) || index < 0 || index >= length) {
+      throw new DataError(`The used indexes must be integers from 0 to ${length - 1}, found ${describe(index)}.`);
     }
   }
-  const free = options.length - used.size;
-  if (free <= 0) throw new DataError(`The list of ${options.length} entries has no free index.`);
-  const draw = options.random.uniform();
+  const free = length - used.size;
+  if (free <= 0) throw new DataError(`The list of ${length} entries has no free index.`);
+  const draw = random.uniform();
   if (typeof draw !== "number" || !(draw >= 0 && draw < 1)) {
     throw new DataError(`The option random must draw a number from 0 up to 1, found ${describe(draw)}.`);
   }

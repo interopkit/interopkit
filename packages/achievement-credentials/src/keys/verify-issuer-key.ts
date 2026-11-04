@@ -1,6 +1,7 @@
 import { type CallOptions, raceAbort, ServiceError } from "@interopkit/core";
-import { checkAbortSignal, checkNonEmptyString, checkRecord } from "@interopkit/core/checks";
+import { checkNonEmptyString, checkRecord, methodsSchema, parseWith, strictRecord } from "@interopkit/core/checks";
 import type { KeyResolver, VerificationCheck, VerificationKey } from "../model/index.js";
+import { optionsOf } from "../option-schemas.js";
 import { thumbprintOf } from "./jwk.js";
 
 /** The options of `verifyIssuerKey`. */
@@ -8,6 +9,8 @@ export interface VerifyIssuerKeyOptions extends CallOptions {
   /** Reads what the issuer publishes. */
   readonly keys: KeyResolver;
 }
+
+const optionsSchema = strictRecord({ keys: methodsSchema<KeyResolver>("issuerKeys"), ...optionsOf("signal") });
 
 const issuerCheck = (outcome: VerificationCheck["outcome"], detail: string): VerificationCheck => ({
   check: "issuer",
@@ -66,16 +69,14 @@ export async function verifyIssuerKey(
 ): Promise<VerificationCheck> {
   checkRecord(key, "The key must be an object");
   checkNonEmptyString(issuer, "The issuer");
-  checkRecord(options, "The options of verifyIssuerKey must be an object");
-  checkRecord(options.keys, "The option keys must be a key resolver");
-  if (options.signal !== undefined) checkAbortSignal(options.signal, "The option signal");
+  const { keys, signal } = parseWith(optionsSchema, options, "The options of verifyIssuerKey");
   const contradiction = selfContradiction(key, issuer);
   if (contradiction !== undefined) return contradiction;
   let published: readonly VerificationKey[];
   try {
     // A resolver is the host's port and may ignore the signal it is given: the wait ends at the signal either way.
-    const call = options.signal === undefined ? undefined : { signal: options.signal };
-    published = await raceAbort(options.keys.issuerKeys(issuer, call), { signal: options.signal });
+    const call = signal === undefined ? undefined : { signal };
+    published = await raceAbort(keys.issuerKeys(issuer, call), { signal });
   } catch (error) {
     if (error instanceof ServiceError) {
       return issuerCheck("unavailable", `The keys of the issuer ${issuer} could not be read: ${error.message}`);

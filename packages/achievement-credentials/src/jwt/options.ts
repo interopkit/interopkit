@@ -1,9 +1,10 @@
 import type { CallOptions, Clock } from "@interopkit/core";
 import { DataError } from "@interopkit/core";
-import { checkAbortSignal, checkNonEmptyString, checkRecord, isRecord } from "@interopkit/core/checks";
+import { guardSchema, isRecord, nonEmptyStringSchema, parseWith, strictRecord } from "@interopkit/core/checks";
+import * as v from "valibot";
 import { publicJwk } from "../keys/internal.js";
 import type { KeyResolver } from "../model/index.js";
-import { checkFlag } from "../option-checks.js";
+import { optionsOf } from "../option-schemas.js";
 
 /** The options of `readCredentialJwt`. */
 export interface JwtReadOptions extends CallOptions {
@@ -90,23 +91,32 @@ export interface SignSettings {
   readonly signal: AbortSignal | undefined;
 }
 
+const signOptionsSchema = strictRecord({
+  kid: v.optional(nonEmptyStringSchema),
+  jwk: v.optional(
+    guardSchema(
+      (value): value is JsonWebKey => isRecord(value) && publicJwk(value) !== undefined,
+      "a public RSA, EC or Ed25519 key without private members such as d: a JWT that names a private key would publish it",
+    ),
+  ),
+  typ: v.optional(v.boolean()),
+  signNested: v.optional(v.boolean()),
+  ...optionsOf("signal"),
+});
+
 /** Checks the options of a signature as a host passes them from JavaScript, and builds the header. */
 export function signSettings(options: unknown): SignSettings {
-  checkRecord(options, "The options of signCredentialJwt must be an object");
-  const { kid, jwk, typ = true, signNested = false, signal } = options;
+  const {
+    kid,
+    jwk,
+    typ = true,
+    signNested = false,
+    signal,
+  } = parseWith(signOptionsSchema, options, "The options of signCredentialJwt");
   if ((kid === undefined) === (jwk === undefined)) {
     throw new DataError(
       "The options of signCredentialJwt must give exactly one of kid and jwk, the key that verifies the JWT.",
     );
   }
-  if (kid !== undefined) checkNonEmptyString(kid, "The option kid");
-  if (jwk !== undefined && !(isRecord(jwk) && publicJwk(jwk) !== undefined)) {
-    throw new DataError(
-      "The option jwk must be a public RSA, EC or Ed25519 key without private members such as d: a JWT that names a private key would publish it.",
-    );
-  }
-  checkFlag(typ, "The option typ");
-  checkFlag(signNested, "The option signNested");
-  if (signal !== undefined) checkAbortSignal(signal, "The option signal");
   return { header: { ...(typ ? { typ: "JWT" } : {}), ...(kid === undefined ? { jwk } : { kid }) }, signNested, signal };
 }
