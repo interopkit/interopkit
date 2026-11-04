@@ -116,6 +116,7 @@ jobs:
           const MEMBER_SCRIPTS = new Map([
             ["scripts/cmi5-requirements.ts", "packages/course-launch"],
             ["scripts/cmi5-rules.ts", "packages/course-launch"],
+            ["scripts/xapi-profile-rules.ts", "packages/learning-records"],
           ]);
 
           // The files that a test of scripts reads besides the scripts: every manifest, whose dependencies it holds to exact

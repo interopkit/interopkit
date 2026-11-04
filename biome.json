@@ -1416,7 +1416,9 @@
                       "**/client",
                       "**/client/**",
                       "**/store",
-                      "**/store/**"
+                      "**/store/**",
+                      "**/profiles",
+                      "**/profiles/**"
                     ],
                     "message": "model/ holds the types, the terms and the data types and imports no module that builds on it."
                   }
@@ -1451,7 +1453,9 @@
                       "**/client",
                       "**/client/**",
                       "**/store",
-                      "**/store/**"
+                      "**/store/**",
+                      "**/profiles",
+                      "**/profiles/**"
                     ],
                     "message": "read/ builds on model/ and @interopkit/core only: the other modules build on it."
                   }
@@ -1664,6 +1668,41 @@
                   {
                     "group": ["**/build", "**/build/**", "**/client", "**/client/**"],
                     "message": "store/ builds on model/, read/, compare/, format/, attachments/, signing/ and @interopkit/core only."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/learning-records/src/profiles/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/build",
+                      "**/build/**",
+                      "**/compare",
+                      "**/compare/**",
+                      "**/format",
+                      "**/format/**",
+                      "**/attachments",
+                      "**/attachments/**",
+                      "**/signing",
+                      "**/signing/**",
+                      "**/client",
+                      "**/client/**",
+                      "**/store",
+                      "**/store/**"
+                    ],
+                    "message": "profiles/ builds on model/, read/ and @interopkit/core only: a host that judges Statements against a profile loads no client, LRS or signature."
                   }
                 ]
               }

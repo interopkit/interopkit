@@ -102,7 +102,7 @@ const extensions = v.pipe(
 );
 
 /** The map from a language tag to a string (4.2.7). A key such as `__proto__` is data here, and is not a language tag. */
-const languageMap: Schema<LanguageMap> = v.pipe(
+export const languageMapSchema: Schema<LanguageMap> = v.pipe(
   mapSchema(text),
   v.transform((entries): LanguageMap => Object.fromEntries(entries)),
   keysAre<LanguageMap>(isLanguageTag, "a language tag of RFC 5646 as the key"),
@@ -167,14 +167,14 @@ const actor = v.pipe(
   ),
 );
 
-const verb = strictRecord({ id: iri, display: v.optional(languageMap) });
+const verb = strictRecord({ id: iri, display: v.optional(languageMapSchema) });
 
-const interactionComponent = strictRecord({ id: text, description: v.optional(languageMap) });
+const interactionComponent = strictRecord({ id: text, description: v.optional(languageMapSchema) });
 const componentList = v.optional(v.array(interactionComponent));
 
 const activityDefinition = strictRecord({
-  name: v.optional(languageMap),
-  description: v.optional(languageMap),
+  name: v.optional(languageMapSchema),
+  description: v.optional(languageMapSchema),
   type: v.optional(iri),
   moreInfo: v.optional(iri),
   extensions: v.optional(extensions),
@@ -268,8 +268,8 @@ type Forms = (typeof FORMS)[XapiVersion];
 
 const attachment = strictRecord({
   usageType: iri,
-  display: languageMap,
-  description: v.optional(languageMap),
+  display: languageMapSchema,
+  description: v.optional(languageMapSchema),
   contentType: mediaTypeSchema,
   length: v.pipe(v.number(), v.safeInteger(), v.minValue(0)),
   sha2,

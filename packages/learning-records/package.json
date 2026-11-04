@@ -1,14 +1,15 @@
 {
   "name": "@interopkit/learning-records",
   "version": "0.0.0",
-  "description": "xAPI 2.0 and 1.0.3 learning records: the model of a Statement, readers and validators for the rules of an LRS and of a Learning Record Provider, builders, signatures, a client of an LRS and the handler of its requests.",
+  "description": "xAPI 2.0 and 1.0.3 learning records: the model of a Statement, readers and validators for the rules of an LRS and of a Learning Record Provider, builders, signatures, a client of an LRS, the handler of its requests, and xAPI Profiles 1.0 with the validation of Statements against them.",
   "keywords": [
     "interopkit",
     "learning-records",
     "xapi",
     "experience-api",
     "learning-record-store",
-    "statements"
+    "statements",
+    "xapi-profiles"
   ],
   "author": "Fariz Wakan",
   "license": "Apache-2.0",
@@ -33,6 +34,10 @@
     "./client": {
       "types": "./dist/client/index.d.ts",
       "default": "./dist/client/index.js"
+    },
+    "./profiles": {
+      "types": "./dist/profiles/index.d.ts",
+      "default": "./dist/profiles/index.js"
     },
     "./signing": {
       "types": "./dist/signing/index.d.ts",

@@ -25,6 +25,7 @@ import {
   httpsUrlSchema,
   isRecord,
   jsonObjectSchema,
+  jsonValueSchema,
   looseRecord,
   mapSchema,
   methodsSchema,
@@ -664,6 +665,19 @@ describe("jsonObjectSchema", () => {
     expect(buildFindings(issues)).toStrictEqual([
       { path: "", rule: "invalid-value", message: "list[0].at is a function, which JSON cannot hold." },
     ]);
+  });
+});
+
+describe("jsonValueSchema", () => {
+  it.each([null, "x", 5, true, [1, { b: null }], { a: [] }])("reads %j into a copy", (value) => {
+    const result = v.safeParse(jsonValueSchema, value);
+    expect(result.output).toStrictEqual(value);
+    if (typeof value === "object" && value !== null) expect(result.output).not.toBe(value);
+  });
+
+  it("refuses a value that JSON cannot hold, with a finding that says where", () => {
+    const issues = v.safeParse(jsonValueSchema, [Number.NaN]).issues ?? [];
+    expect(buildFindings(issues).map(({ rule }) => rule)).toStrictEqual(["invalid-value"]);
   });
 });
 

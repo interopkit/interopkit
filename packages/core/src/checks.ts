@@ -8,7 +8,7 @@ import * as v from "valibot";
 import { DataError, LimitError } from "./errors.js";
 import { FINDINGS_STOPPED_RULE, type Finding, type Issue } from "./findings.js";
 import { findInstant } from "./formats.js";
-import { copyJson, findExceededJsonLimit, type JsonObject, nestsDeeperThan } from "./json.js";
+import { copyJson, findExceededJsonLimit, type JsonObject, type JsonValue, nestsDeeperThan } from "./json.js";
 
 export {
   type BoundedParse,
@@ -566,20 +566,36 @@ export function openRecord<const TEntries extends v.ObjectEntries>(entries: TEnt
   );
 }
 
+/** The transformation that copies what a parse read, or adds the issue that says where it is not JSON. */
+function copiedAsJson<TInput, TOutput>(
+  copy: (value: TInput) => { readonly value: TOutput } | { readonly problem: string },
+) {
+  return v.rawTransform<TInput, TOutput>(({ dataset, addIssue, NEVER }) => {
+    const result = copy(dataset.value);
+    if ("problem" in result) {
+      addIssue({ message: result.problem });
+      return NEVER;
+    }
+    return result.value;
+  });
+}
+
 /**
  * The schema of an object that must be JSON, such as the proprietary data of an entity: the result is a copy, which
  * `copyJson` makes, so that it shares nothing with the input.
  */
 export const jsonObjectSchema: Schema<JsonObject> = v.pipe(
   recordSchema,
-  v.rawTransform(({ dataset, addIssue, NEVER }) => {
-    const result = copyJson(dataset.value, "");
-    if ("problem" in result) {
-      addIssue({ message: result.problem });
-      return NEVER;
-    }
-    return result.value;
-  }),
+  copiedAsJson((value: Readonly<Record<string, unknown>>) => copyJson(value, "")),
+);
+
+/**
+ * The schema of any value that must be JSON, such as a value that a rule compares: the result is a copy, which `copyJson`
+ * makes, so that it shares nothing with the input.
+ */
+export const jsonValueSchema: Schema<JsonValue> = v.pipe(
+  v.unknown(),
+  copiedAsJson((value: unknown) => copyJson(value, "")),
 );
 
 /**

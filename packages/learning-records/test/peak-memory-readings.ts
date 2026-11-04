@@ -1,6 +1,7 @@
 import type { Reading } from "../../../scripts/peak-memory-child.js";
 import { hashAttachment, readMultipart } from "../src/attachments/index.js";
 import { parseStatementJson, validateStatements } from "../src/index.js";
+import { validateProfile } from "../src/profiles/index.js";
 import { verifyStatementSignature } from "../src/signing/index.js";
 import { handleLrsRequest, readBasicAuthorization } from "../src/store/index.js";
 import { minimalStatement, uuid } from "./full-statement.js";
@@ -88,6 +89,41 @@ function hostileForm(): Uint8Array {
   return body;
 }
 
+/** The verbs of the largest profile: with their properties, near the million tokens that a profile's text may have. */
+const PROFILE_VERBS = 26_500;
+
+const PROFILE = "https://example.org/profiles/load";
+const VERSION = `${PROFILE}/v1`;
+
+/** The metadata of a profile of the readings, with its concepts, templates and Patterns. */
+function profileOf(parts: Record<string, unknown>): Record<string, unknown> {
+  return {
+    "@context": "https://w3id.org/xapi/profiles/context",
+    id: PROFILE,
+    type: "Profile",
+    conformsTo: "https://w3id.org/xapi/profiles#1.0",
+    prefLabel: { en: "Load" },
+    definition: { en: "A profile at the limits." },
+    versions: [{ id: VERSION, generatedAtTime: "2024-01-01T00:00:00Z" }],
+    author: { type: "Organization", name: "Example" },
+    ...parts,
+  };
+}
+
+/** The text of a profile of verbs, each broader than the next, near the million tokens that a profile's text may have. */
+function largestProfile(): string {
+  const verb = (index: number) => `${PROFILE}/verbs/${index}`;
+  const concepts = Array.from({ length: PROFILE_VERBS }, (_, index) => ({
+    id: verb(index),
+    type: "Verb",
+    inScheme: VERSION,
+    prefLabel: { en: `verb ${index}` },
+    definition: { en: "A verb." },
+    ...(index === 0 ? {} : { narrower: [verb(index - 1)] }),
+  }));
+  return JSON.stringify(profileOf({ concepts }));
+}
+
 /** The readings of the package, by name. */
 export const READINGS = {
   /** A Basic header of 10 MiB that holds no colon. */
@@ -145,6 +181,11 @@ export const READINGS = {
       });
       return `status ${(await handleLrsRequest(request, optionsOf(memory()))).status}`;
     },
+  },
+  /** The text of a profile near the most tokens, each of its verbs narrower than the next. */
+  profile: {
+    input: largestProfile,
+    read: (text: string) => `${validateProfile(text).length} findings`,
   },
   /** A form of the alternate request syntax of 10 MiB written as `+`. */
   alternateSpaces: {

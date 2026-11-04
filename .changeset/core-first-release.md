@@ -46,3 +46,6 @@ reading before it is parsed; `readAnswer` runs a reader on the data of an answer
 data is not valid; `readStatusDetail` reads the status in the body of a refusal with the reader of a package, and its
 `Retry-After`, and `readStatusInfo` reads it as the `imsx_StatusInfo` of the REST bindings of CASE, Open Badges and CLR; `hasNextPage` tells from `X-Total-Count`, `Link` and the size of a page whether a list paged by `limit` and
 `offset` goes on. The clients of `competency-frameworks` and `achievement-credentials` read their answers with them.
+
+`jsonValueSchema` and `jsonObjectSchema` of `@interopkit/core/checks` read any value of JSON, and an object of JSON, into a copy
+that shares nothing with the input, and refuse what JSON cannot hold with a finding that says where.

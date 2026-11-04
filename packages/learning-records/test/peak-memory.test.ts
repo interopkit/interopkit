@@ -64,6 +64,12 @@ const CASES: readonly {
     heapMiB: 64,
     outcome: "status 400",
   },
+  {
+    title: "reads and judges the text of a profile near the most tokens, of verbs each narrower than the next",
+    name: "profile",
+    heapMiB: 80,
+    outcome: "0 findings",
+  },
 ];
 
 let bundle: Bundle;

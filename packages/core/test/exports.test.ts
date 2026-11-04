@@ -80,6 +80,7 @@ describe("the public API", () => {
         "isUuid",
         "describeIssue",
         "jsonObjectSchema",
+        "jsonValueSchema",
         "languageTagSchema",
         "looseRecord",
         "mapSchema",

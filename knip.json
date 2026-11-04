@@ -29,6 +29,7 @@
         "src/index.ts",
         "src/attachments/index.ts",
         "src/client/index.ts",
+        "src/profiles/index.ts",
         "src/signing/index.ts",
         "src/store/index.ts"
       ]

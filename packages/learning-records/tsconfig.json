@@ -10,6 +10,7 @@
       "@interopkit/core/http": ["../core/src/http/index.ts"],
       "@interopkit/learning-records": ["./src/index.ts"],
       "@interopkit/learning-records/attachments": ["./src/attachments/index.ts"],
+      "@interopkit/learning-records/profiles": ["./src/profiles/index.ts"],
       "@interopkit/learning-records/signing": ["./src/signing/index.ts"],
       "@interopkit/learning-records/store": ["./src/store/index.ts"]
     }

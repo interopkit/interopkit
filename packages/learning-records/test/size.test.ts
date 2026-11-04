@@ -48,6 +48,10 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
       "valibot",
     ],
   },
+  "@interopkit/learning-records/profiles": {
+    gzip: 30_000,
+    holds: ["@interopkit/core", "learning-records/model", "learning-records/read", "valibot"],
+  },
   "@interopkit/learning-records/signing": {
     gzip: 32_000,
     holds: [
