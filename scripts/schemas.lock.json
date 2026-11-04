@@ -352,12 +352,12 @@
   {
     "url": "https://standards.1edtech.org/lti/specifications/core/lti-spec",
     "file": "lti-core-portal.html",
-    "sha256": "c7c08a50ce15e139b8a5a86b1138bca3480f55f2443f90723525df1439ca38ff"
+    "sha256": "af986920eec5c5b68280af36137be9aa003608e88aca02ac761fd876e7782d19"
   },
   {
     "url": "https://standards.1edtech.org/lti/specifications/services/assignments_grades/assignment-grade-services-spec",
     "file": "lti-ags-portal.html",
-    "sha256": "d696e9be38ef94a437c3a898fccae4bbe5d4f6962e2c94eb976cffe9d9b9fb03"
+    "sha256": "01cd4bc64ca5d7f2c7350b72f9be1b2d8a12640475a94a8bca22ced521138abc"
   },
   {
     "url": "https://www.imsglobal.org/sites/default/files/specs/lti/1p3/openapi/openapi_full_0.yaml",
