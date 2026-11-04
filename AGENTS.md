@@ -9,7 +9,7 @@ implements, in JavaScript and TypeScript, in one repository:
 `@interopkit/core` is the shared foundation, `@interopkit/tool-integration` implements LTI 1.3 in both roles, and
 `@interopkit/learning-analytics` implements Caliper Analytics 1.2 and reads 1.1, `@interopkit/competency-frameworks` implements the
 CASE model, its readers, what a consumer asks of a framework, and a client and a provider of the REST binding,
-`@interopkit/learning-records` implements the xAPI Statement of 2.0 and 1.0.3 and its readers, the message of its Attachments, its signature, a client of an LRS, the handler of its requests, and the model, reader and validator of xAPI Profiles 1.0,
+`@interopkit/learning-records` implements the xAPI Statement of 2.0 and 1.0.3 and its readers, the message of its Attachments, its signature, a client of an LRS, the handler of its requests, and xAPI Profiles 1.0 with the validation of Statements against them,
 `@interopkit/selective-disclosure` implements the `ecdsa-sd-2023` cryptosuite, and `@interopkit/achievement-credentials`
 implements the model and the readers of Open Badges 3.0 and CLR 2.0, its builders and comparisons, baking in images, the client and the provider of the Open Badges and CLR APIs, the keys that verify them, their JWT and Data Integrity proofs, their status lists, their refresh and their verification, and it reads and verifies Open Badges 2.0.
 `@interopkit/course-launch` implements cmi5: its vocabularies, the course structure with its reader, validator and writer,
@@ -101,7 +101,7 @@ Use these words with these meanings in code, comments and docs.
 | `packages/tool-integration/`         | LTI 1.3: `errors.ts`, `protocol/` (`claims/`, `message/`, one folder for each service body), `tool/`, `platform/` |
 | `packages/learning-analytics/`       | Caliper 1.2, and 1.1 read: `model/`, `v1p1/`, `read/`, `validate/`, `build/`, `send/`, `endpoint/`  |
 | `packages/competency-frameworks/`    | CASE 1.1 and 1.0: `model/`, `read/`, `version/`, `graph/`, `client/`, `provider/`                   |
-| `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/`; xAPI Profiles 1.0: `profiles/` (the model, the reader and the rules of a profile, and the JSONPath of its rules) |
+| `packages/learning-records/`         | xAPI 2.0 and 1.0.3: `model/`, `read/`, `build/`, `compare/`, `format/`, `attachments/`, `signing/`, `client/`, `store/`; xAPI Profiles 1.0: `profiles/` (the model, the reader and the rules of a profile, the JSONPath of its rules, and the matching of Statements against its templates and Patterns) |
 | `packages/selective-disclosure/`     | `ecdsa-sd-2023`: `proof-value/`, `keys/`, `document/`, `base/`, `derive/`, `verify/`                |
 | `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading and verification of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/`, `verify/`, `provider/` |
 | `packages/course-launch/`            | cmi5: `model/`, `structure/` (the course structure, its schema enforced by the reader), `package/` (ZIP and XML packages through zip.js), `rules/` (the launch URL, the launch data, the preferences and the rules of a session), `lms/` (registrations, launches, the fetch URL, the rules of cmi5 on the host's LRS, satisfaction, abandoned sessions and waivers), `au/` (the runtime of an assignable unit) |
@@ -182,7 +182,7 @@ A package at 0.0.0 takes `major` in its first changeset, so that it is released 
 
 - interopkit owns the messages between a platform and a tool, the gradebook protocol, the Caliper event model, sensor and
   endpoint, the CASE model with its readers, the questions a consumer asks of a framework, the client of its REST binding,
-  the handlers of a CASE provider, the xAPI Statement of 2.0 and 1.0.3 with its readers, the message of its Attachments, its signature, the client of an LRS and the handler of its requests, and xAPI Profiles with their reader and validator. It does not own what a launched tool shows, what a
+  the handlers of a CASE provider, the xAPI Statement of 2.0 and 1.0.3 with its readers, the message of its Attachments, its signature, the client of an LRS and the handler of its requests, and xAPI Profiles with the matching of Statements against their templates and Patterns. It does not own what a launched tool shows, what a
   score means, which delivery event becomes which Caliper or xAPI event, QTI content, or databases, servers, sessions and accounts. Those belong to the tool, to
   assesskit and measurekit, to the adapter of each product and to the host.
 - `achievement-credentials` owns the model of Open Badges 3.0 and CLR 2.0 with its readers, its builders, the comparison of
@@ -237,7 +237,7 @@ A package at 0.0.0 takes `major` in its first changeset, so that it is released 
 |  | `signing/` | `model/`, `read/`, `compare/`, `attachments/` |  |  |
 |  | `client/` | `model/`, `read/`, `compare/`, `attachments/` |  |  |
 |  | `store/` | every folder but `build/` and `client/` |  |  |
-|  | `profiles/` | `model/`, `read/` | every other folder | A host that reads profiles loads no client, LRS or signature |
+|  | `profiles/` | `model/`, `read/` | every other folder | A host that judges Statements against a profile loads no client, LRS or signature |
 | `learning-analytics` | `model/` | no other module |  |  |
 |  | `v1p1/` | `model/` alone |  |  |
 |  | `read/` | `model/`, `v1p1/` |  |  |

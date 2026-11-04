@@ -70,6 +70,13 @@ const CASES: readonly {
     heapMiB: 80,
     outcome: "0 findings",
   },
+  {
+    title:
+      "matches the most Statements of a registration against a primary Pattern that reaches the most Patterns, each tried at every Statement",
+    name: "patterns",
+    heapMiB: 64,
+    outcome: "10000 Statements, success",
+  },
 ];
 
 let bundle: Bundle;

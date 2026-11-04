@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { BAD_STRINGS, mutate, mutations } from "../../../scripts/json-mutation.js";
 import { soundProfile } from "../../../scripts/xapi-profile-rules.js";
-import { readProfile, validateProfile } from "../src/profiles/index.js";
+import { createProfileValidator, readProfile, validateProfile } from "../src/profiles/index.js";
 import { parseJsonPath, selectJsonPath } from "../src/profiles/internal.js";
 import { anything, RUNS, returnsOrRefuses } from "./fuzz.js";
 
@@ -54,6 +54,23 @@ describe("the reader and the validator of profiles on any value", () => {
         if (findings.some(({ severity }) => severity === "error"))
           expect(() => readProfile(changed)).toThrow(DataError);
         else expect(readProfile(changed)).toStrictEqual(readProfile(JSON.parse(JSON.stringify(changed))));
+      }),
+      RUNS,
+    );
+  });
+
+  it("make a validator of a changed profile, or refuse it, and judge Statements of any kind with a verdict or a refusal", () => {
+    fc.assert(
+      fc.property(PROFILE, mutations, anything, (profile, mutation, statement) => {
+        let validator: ReturnType<typeof createProfileValidator>;
+        try {
+          validator = createProfileValidator(mutate(profile, mutation, STRINGS));
+        } catch (caught) {
+          expect(caught).toBeInstanceOf(DataError);
+          return;
+        }
+        returnsOrRefuses(() => validator.validateStatement(statement));
+        returnsOrRefuses(() => validator.validateStatements([statement]));
       }),
       RUNS,
     );

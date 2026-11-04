@@ -33,5 +33,48 @@
       "lts/pkg/src/",
       "requirements/requirements.json"
     ]
+  },
+  "xapi-authored-profiles": {
+    "repository": "adlnet/xapi-authored-profiles",
+    "commit": "4e8b1df4e00bc892ec7800d67b64a46eb9268e88",
+    "sha256": "ef4f7646dbca7350170ac19621d75510630fcdf91184c5b3e99779b07b675d9a",
+    "include": [
+      "Profile_Server_Profiles/",
+      "acrossx/",
+      "activity-streams/",
+      "adb/",
+      "adl/",
+      "audio/",
+      "cmi5/",
+      "competency_assertion/learnercompetencyassertion.json",
+      "dod-isd/",
+      "flashcards/",
+      "gblxapi/",
+      "open-badges/",
+      "pdf-annotator/",
+      "scorm/",
+      "seriousgames/",
+      "starter-template.jsonld",
+      "tincan/",
+      "video/",
+      "virtual-patient/"
+    ]
+  },
+  "project-pan": {
+    "repository": "yetanalytics/project-pan",
+    "commit": "4aaef10da44126972bf50da4991b1bf7d839e2df",
+    "sha256": "b85c7a964ef163947e5e33b9ff4ae5cc7b2c5fbc09ed32f0c739bf5201cde4d7",
+    "include": [
+      "dev-resources/sample_profiles/"
+    ]
+  },
+  "project-persephone": {
+    "repository": "yetanalytics/project-persephone",
+    "commit": "92a3f78afc61c1c50eff349fc2d03e4fdbb5f054",
+    "sha256": "c9f21a1f589dfcf8b3e73e321e63e5aa3507ea7bc8382bdd10e06160d7baec74",
+    "include": [
+      "test-resources/sample_profiles/",
+      "test-resources/sample_statements/"
+    ]
   }
 }

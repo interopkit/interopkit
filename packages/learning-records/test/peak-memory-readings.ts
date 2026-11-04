@@ -1,7 +1,7 @@
 import type { Reading } from "../../../scripts/peak-memory-child.js";
 import { hashAttachment, readMultipart } from "../src/attachments/index.js";
 import { parseStatementJson, validateStatements } from "../src/index.js";
-import { validateProfile } from "../src/profiles/index.js";
+import { createProfileValidator, validateProfile } from "../src/profiles/index.js";
 import { verifyStatementSignature } from "../src/signing/index.js";
 import { handleLrsRequest, readBasicAuthorization } from "../src/store/index.js";
 import { minimalStatement, uuid } from "./full-statement.js";
@@ -92,6 +92,12 @@ function hostileForm(): Uint8Array {
 /** The verbs of the largest profile: with their properties, near the million tokens that a profile's text may have. */
 const PROFILE_VERBS = 26_500;
 
+/** The Patterns that the primary Pattern of the widest matching reaches: the most that a validator takes. */
+const MATCHED_PATTERNS = 1000;
+
+/** The Statements of the widest matching: the most that `validateStatements` takes by default. */
+const MATCHED_STATEMENTS = 10_000;
+
 const PROFILE = "https://example.org/profiles/load";
 const VERSION = `${PROFILE}/v1`;
 
@@ -122,6 +128,51 @@ function largestProfile(): string {
     ...(index === 0 ? {} : { narrower: [verb(index - 1)] }),
   }));
   return JSON.stringify(profileOf({ concepts }));
+}
+
+/**
+ * A profile whose primary Pattern reaches the most Patterns, each tried at every Statement, and the most Statements, all of one
+ * registration: a `zeroOrMore` of an `alternates` of 998 sequences, which each fail at their first template, and of the template
+ * that every Statement matches.
+ */
+function widestMatching(): { readonly profile: Record<string, unknown>; readonly statements: readonly unknown[] } {
+  const template = (index: number) => ({
+    id: `${PROFILE}/templates/${index}`,
+    type: "StatementTemplate",
+    inScheme: VERSION,
+    prefLabel: { en: `template ${index}` },
+    definition: { en: "A template." },
+    verb: `${PROFILE}/verbs/${index}`,
+  });
+  const sequences = Array.from({ length: MATCHED_PATTERNS - 2 }, (_, index) => ({
+    id: `${PROFILE}/patterns/sequence-${index}`,
+    type: "Pattern",
+    sequence: [`${PROFILE}/templates/1`, `${PROFILE}/templates/2`],
+  }));
+  const patterns = [
+    {
+      id: `${PROFILE}/patterns/all`,
+      type: "Pattern",
+      primary: true,
+      prefLabel: { en: "All" },
+      definition: { en: "All." },
+      zeroOrMore: `${PROFILE}/patterns/any`,
+    },
+    {
+      id: `${PROFILE}/patterns/any`,
+      type: "Pattern",
+      alternates: [...sequences.map(({ id }) => id), `${PROFILE}/templates/0`],
+    },
+    ...sequences,
+  ];
+  const statements = Array.from({ length: MATCHED_STATEMENTS }, (_, index) => ({
+    ...minimalStatement(),
+    id: uuid(index + 1),
+    verb: { id: `${PROFILE}/verbs/0` },
+    context: { registration: uuid(0), contextActivities: { category: [{ id: VERSION }] } },
+    timestamp: new Date(Date.UTC(2024, 0, 1) + index * 1000).toISOString(),
+  }));
+  return { profile: profileOf({ templates: [template(0), template(1), template(2)], patterns }), statements };
 }
 
 /** The readings of the package, by name. */
@@ -186,6 +237,14 @@ export const READINGS = {
   profile: {
     input: largestProfile,
     read: (text: string) => `${validateProfile(text).length} findings`,
+  },
+  /** The widest matching of the Statements of a registration against the primary Pattern of a profile. */
+  patterns: {
+    input: widestMatching,
+    read: ({ profile, statements }: ReturnType<typeof widestMatching>) => {
+      const [verdict] = createProfileValidator(profile).validateStatements(statements).registrations;
+      return `${verdict?.statements.length} Statements, ${verdict?.outcome}`;
+    },
   },
   /** A form of the alternate request syntax of 10 MiB written as `+`. */
   alternateSpaces: {

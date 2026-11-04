@@ -60,6 +60,12 @@ export const RATIOS = {
   getAgainstStringify: 8,
   /** `matchesStatementQuery` over the batch, as a multiple of the validator of Learning Locker on it. */
   matchAgainstLearningLocker: 0.5,
+  /** `validateProfile` of the text of a profile of 907 concepts, as a multiple of `JSON.parse` of the text. */
+  validateProfileAgainstParse: 50,
+  /** `validateStatement` of a validator of a profile on each Statement of a relay, as a multiple of `readStatement` of each. */
+  templatesAgainstRead: 6,
+  /** `validateStatements` of a validator of a profile on the relay, as a multiple of `readStatement` of each Statement. */
+  patternsAgainstRead: 8,
 } as const;
 
 /**
