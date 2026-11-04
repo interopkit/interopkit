@@ -7,10 +7,8 @@ import {
   type Statement,
 } from "@interopkit/learning-records";
 import { CMI5_ACTIVITY_TYPES, CMI5_CATEGORIES, CMI5_EXTENSIONS, CMI5_VERBS, type LaunchData } from "../model/index.js";
+import { XAPI_VERSION } from "../model/internal.js";
 import type { ImportedAu, ImportedCourse, Session } from "./records.js";
-
-/** The version of xAPI that cmi5 names, whose rules the statements of the LMS follow. */
-const XAPI_VERSION = { version: "1.0.3" } as const;
 
 /** Makes a UUID of version 5 under the namespace of the course, from the parts that name a statement or a session. */
 export function derivedId(course: ImportedCourse, ...parts: readonly string[]): string {

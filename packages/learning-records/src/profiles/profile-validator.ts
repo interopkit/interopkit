@@ -14,8 +14,8 @@ import {
 } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type { Statement } from "../model/index.js";
-import { error, item, readEitherVersion } from "../read/internal.js";
-import type { ExtensionConceptType } from "./concepts.js";
+import { error, inBatch, item, readEitherVersion } from "../read/internal.js";
+import { EXTENSION_CONCEPT_TYPES, type ExtensionConceptType } from "./concepts.js";
 import {
   judgeStatement,
   namesVersion,
@@ -186,18 +186,17 @@ function templatesOf(profile: Profile, references: ProfileReferences): readonly 
   return templates;
 }
 
+/** Tells whether the type of a concept is that of an extension. */
+const isExtensionType = (type: string): type is ExtensionConceptType =>
+  (EXTENSION_CONCEPT_TYPES as readonly string[]).includes(type);
+
 /** Lists the extensions that the profile and the other profiles define, with their types. */
 function extensionsOf(profile: Profile, others: readonly Profile[]): ReadonlyMap<string, ExtensionConceptType> {
   const extensions = new Map<string, ExtensionConceptType>();
   for (const source of [profile, ...others]) {
     for (const concept of source.concepts ?? []) {
       const { type } = concept;
-      if (
-        (type === "ContextExtension" || type === "ResultExtension" || type === "ActivityExtension") &&
-        !extensions.has(concept.id)
-      ) {
-        extensions.set(concept.id, type);
-      }
+      if (isExtensionType(type) && !extensions.has(concept.id)) extensions.set(concept.id, type);
     }
   }
   return extensions;
@@ -210,11 +209,6 @@ interface Prepared {
   readonly maxFindings: number;
   readonly maxStatements: number;
   readonly hostStatement: StatementLookup;
-}
-
-/** Writes the path of a finding about the Statement at a place of the list. */
-function inList(index: number, path: string): string {
-  return path === "" ? item("", index) : `${item("", index)}.${path}`;
 }
 
 /** Describes the outcomes of the primary Patterns for the message of a series that follows none. */
@@ -287,7 +281,7 @@ function validateList(prepared: Prepared, statements: unknown): StatementsVerdic
     selected.push({ index, statement });
     const judgement = judgeStatement(judge, statement, lookup);
     judged.set(index, judgement);
-    sink.add(judgement.issues.map((issue) => ({ ...issue, path: inList(index, issue.path) })));
+    sink.add(judgement.issues.map((issue) => ({ ...issue, path: inBatch(index, issue.path) })));
     if (judgement.outcome === "unmatched") {
       const message = "expected a Statement that names the profile to match one of its Statement Templates.";
       sink.add([error(item("", index), "template-unmatched", message)]);

@@ -28,6 +28,7 @@ import {
   LEARNER_PREFERENCES_PROFILE_ID,
   type LearnerPreferences,
 } from "../model/index.js";
+import { MAX_PROGRESS, XAPI_VERSION } from "../model/internal.js";
 import { writeLearnerPreferences } from "../rules/index.js";
 import { isAuVerb, judgeStatement, type SessionProgress } from "../rules/internal.js";
 import type { AuResume, AuSettings } from "./options.js";
@@ -159,14 +160,8 @@ interface SessionParts {
   readonly token: string;
 }
 
-/** The version of xAPI that cmi5 names, whose rules the statements of the unit follow. */
-const XAPI_VERSION = { version: "1.0.3" } as const;
-
 /** The verb of the statement that carries the progress of the learner, from the registry of ADL. */
 const PROGRESSED: Verb = { id: "http://adlnet.gov/expapi/verbs/progressed", display: { "en-US": "progressed" } };
-
-/** The most that `progress` may say, a percentage (9.5.5.1). */
-const MAX_PROGRESS = 100;
 
 /** The statuses with which an LMS refuses a request of a unit: an ended token, and a request that cmi5 refuses. */
 const REFUSED_STATUSES: ReadonlySet<number> = new Set([401, 403]);

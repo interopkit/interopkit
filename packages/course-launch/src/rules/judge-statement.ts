@@ -8,6 +8,7 @@ import {
   VERB_VOIDED,
 } from "@interopkit/learning-records";
 import { CMI5_CATEGORIES, CMI5_EXTENSIONS, type Cmi5Verb } from "../model/index.js";
+import { MAX_PROGRESS } from "../model/internal.js";
 import { categoryIdsOf, classifyStatement, cmi5VerbOf, isAuVerb } from "./classify.js";
 import type { SessionFacts, SessionProgress } from "./session.js";
 
@@ -28,9 +29,6 @@ const SUCCESS: Partial<Record<Cmi5Verb, boolean>> = { passed: true, failed: fals
 
 /** The value that `completion` must have for each verb, and none for the others (9.5.3). */
 const COMPLETION: Partial<Record<Cmi5Verb, boolean>> = { completed: true };
-
-/** The most that the `progress` extension may say, a percentage (9.5.5.1). */
-const MAX_PROGRESS = 100;
 
 /** A time of xAPI in UTC: `Z`, or an offset of zero in a form that ISO 8601 writes. */
 const UTC = /(?:[Zz]|\+00(?::?00)?)$/u;

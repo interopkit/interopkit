@@ -9,7 +9,7 @@ export { authoritySchema, identifiedAgentSchema } from "./identified.js";
 export { inspectStatement } from "./inspect.js";
 export { item, member } from "./path.js";
 export { singleActivityIssues } from "./provider.js";
-export { inspectBatch, readEitherVersion } from "./read-statement.js";
+export { inBatch, inspectBatch, readEitherVersion } from "./read-statement.js";
 export { patternProblem } from "./response-pattern.js";
 export {
   aboutSchema,

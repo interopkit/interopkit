@@ -85,7 +85,7 @@ export function readEitherVersion(value: unknown): Statement {
 }
 
 /** Writes the path of a finding about the Statement at an index of a batch. */
-function inBatch(index: number, path: string): string {
+export function inBatch(index: number, path: string): string {
   return path === "" ? item("", index) : `${item("", index)}.${path}`;
 }
 
