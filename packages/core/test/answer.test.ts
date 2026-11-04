@@ -115,6 +115,20 @@ describe("the reading of the data of an answer", () => {
     ).toThrow(new DataError("The CASE provider at b answered with data that is not valid CASE: no such property"));
   });
 
+  it("keeps what the reader threw as the cause", () => {
+    const thrown = new TypeError("no such property");
+    let error: unknown;
+    try {
+      readAnswer(WHAT, "CASE", () => {
+        throw thrown;
+      });
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toBeInstanceOf(DataError);
+    expect((error as DataError).cause).toBe(thrown);
+  });
+
   it("gives what the reader returns", () => {
     expect(readAnswer(WHAT, "CASE", () => 5)).toBe(5);
   });

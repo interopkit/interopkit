@@ -7,7 +7,6 @@ import {
   buildVoidingStatement,
   deriveStatementId,
   formatDuration,
-  formatTimestamp,
   isDuration,
   mboxSha1sum,
   parseDuration,
@@ -34,7 +33,6 @@ describe("the builders and the data types on any value", () => {
         returnsOrRefuses(() => deriveStatementId(value as string, other as string));
         returnsOrRefuses(() => mboxSha1sum(value as string));
         returnsOrRefuses(() => formatDuration(value as number));
-        returnsOrRefuses(() => formatTimestamp(value as number));
       }),
       RUNS,
     );

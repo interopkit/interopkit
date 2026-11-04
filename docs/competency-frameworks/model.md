@@ -23,7 +23,7 @@ flowchart TD
 
 | Module    | Holds                                                                                                                                                                                                 |
 | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `model`   | The types of the classes and sets, `CaseIssue`, `ASSOCIATION_TYPES`, `ENTITY_KINDS`, `CaseVersion`, `CASE_VERSIONS`, the query types `CaseQuery`, `CaseFilter` and `CaseCondition`, `OpenApiDocument` |
+| `model`   | The types of the classes and sets, `ASSOCIATION_TYPES`, `ENTITY_KINDS`, `CaseVersion`, `CASE_VERSIONS`, the query types `CaseQuery`, `CaseFilter` and `CaseCondition`, `OpenApiDocument` |
 | `read`    | `readPackage`, `readEntity`, `validatePackage`, `validateEntity`, `ReadOptions`                                                                                                                       |
 | `version` | `convertCaseVersion`, `VersionedValue`, `Converted`                                                                                                                                                        |
 
@@ -99,9 +99,9 @@ take: parsed text, or a value that is already in the model.
 | Function                            | Result                                                                                                                       |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `readPackage`, `readEntity`         | The copy, when the value has no error. A warning is not reported. Otherwise a `DataError`: see Errors                        |
-| `validatePackage`, `validateEntity` | A list of `CaseIssue`, the errors and the warnings, at most `maxFindings`. Those of the shape come in the order of the package and those of the rules rule by rule. An empty list means that the value is sound |
+| `validatePackage`, `validateEntity` | A list of `Issue` of `@interopkit/core/checks`, the errors and the warnings, at most `maxFindings`. Those of the shape come in the order of the package and those of the rules rule by rule. An empty list means that the value is sound |
 
-A finding is a `CaseIssue`: its `path` as code writes it (`CFItems[3].humanCodingScheme`; the empty string is the value as a
+A finding is an `Issue` of `@interopkit/core/checks`: its `path` as code writes it (`CFItems[3].humanCodingScheme`; the empty string is the value as a
 whole), its `rule`, a `message` that is a sentence that reads after the path and does not repeat it, and its `severity`. An
 error means that the data breaks the specification or cannot be used without a guess. A warning means that it is usable and
 departs from what the specification or its guide asks for. Where a user can act, the message says what to do.

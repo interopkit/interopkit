@@ -1,6 +1,6 @@
-import { type CallOptions, DataError, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
+import { type CallOptions, clientOptionsEntries, DataError, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
 import {
-  checkHttpsUrl,
+  checkBaseUrl,
   describe,
   guardSchema,
   MAX_JSON_TOKENS,
@@ -86,30 +86,20 @@ const ENDS_WITH_API_PATH = /\/ims\/(?:ob\/v3p0|clr\/v2p0)\/*$/u;
  * path of an API.
  */
 export function apiRoot(baseUrl: unknown, api: CredentialApi, label: string): string {
-  checkHttpsUrl(baseUrl, label);
+  checkBaseUrl(baseUrl, label);
   const url = new URL(baseUrl);
-  if (url.username !== "" || url.password !== "" || url.search !== "" || url.hash !== "") {
-    throw new DataError(`${label} must have no credentials, query or fragment, found ${describe(baseUrl)}.`);
-  }
   if (ENDS_WITH_API_PATH.test(url.pathname)) {
     throw new DataError(`${label} must be the address before ${API_PATHS[api]}, found ${describe(baseUrl)}.`);
   }
   return `${url.origin}${url.pathname.replace(/\/+$/u, "")}${API_PATHS[api]}`;
 }
 
-/** A function, which the host passes in. */
-const functionSchema = <TFunction>(guard: (value: unknown) => value is TFunction) => guardSchema(guard, "a function");
-
 const configSchema = strictRecord({
   api: v.picklist(CREDENTIAL_APIS),
   baseUrl: v.string(),
-  fetch: functionSchema((value): value is Fetch => typeof value === "function"),
-  token: functionSchema((value): value is CredentialsClientOptions["token"] => typeof value === "function"),
-  timeoutMs: v.optional(positiveIntegerSchema),
-  maxBytes: v.optional(positiveIntegerSchema),
-  maxTokens: v.optional(positiveIntegerSchema),
+  token: guardSchema((value): value is CredentialsClientOptions["token"] => typeof value === "function", "a function"),
+  ...clientOptionsEntries,
   pageSize: v.optional(positiveIntegerSchema),
-  signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
 });
 
 /**

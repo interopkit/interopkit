@@ -17,7 +17,7 @@ when the host asks it to verify, and `model` imports nothing of the family.
 ```mermaid
 flowchart BT
   core["@interopkit/core<br/>DataError, checks"]
-  model["model<br/>types, vocabularies, contexts, CredentialIssue"]
+  model["model<br/>types, vocabularies, contexts"]
   read["read<br/>schemas, findings, rules of the subject"]
   issue["issue<br/>builders, identity hash, CASE alignment"]
   compare["compare<br/>equality, newer, summary"]
@@ -74,7 +74,7 @@ flowchart BT
 | Module    | Files                                                                                            | Holds                                                                                                                          |
 | --------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
 | `model`   | `credentials.ts`, `credentials-v1p1.ts`, `clr.ts`, `api.ts`, `keys.ts`, `open-badges-v2.ts`      | The types of every class, by the part of the specifications that defines it, and the classes of Open Badges 2.0               |
-|           | `vocabularies.ts`, `context.ts`, `kinds.ts`, `issue.ts`                                          | The vocabularies as tuples with their types, `CONTEXTS`, `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CredentialIssue`                 |
+|           | `vocabularies.ts`, `context.ts`, `kinds.ts`                                                     | The vocabularies as tuples with their types, `CONTEXTS`, `CREDENTIAL_KINDS`, `ENTITY_KINDS`                                    |
 | `read`    | `credential-schemas.ts`, `v1p1-schemas.ts`, `clr-schemas.ts`, `api-schemas.ts`, `key-schemas.ts` | The valibot schema of each class, built once, typed by the interface of the class                                              |
 |           | `primitives.ts`                                                                                  | The parts the schemas share: a list that may be one member, the `type` of a class, an extensible term, contexts                |
 |           | `registry.ts`, `kinds.ts`, `inspect.ts`, `rules.ts`, `options.ts`                                | Which schema reads which kind, the kind that a `type` names, the parse and its findings, the rules beyond the schemas, the check of the options |

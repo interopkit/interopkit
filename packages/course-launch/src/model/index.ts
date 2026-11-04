@@ -2,7 +2,6 @@ export type {
   AssignableUnit,
   Block,
   Course,
-  CourseIssue,
   CourseStructure,
   ExtensionElement,
   LangString,

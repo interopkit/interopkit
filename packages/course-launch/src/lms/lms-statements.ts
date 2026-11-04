@@ -1,9 +1,9 @@
+import { formatDateTime } from "@interopkit/core/checks";
 import {
   type Agent,
   buildStatement,
   deriveStatementId,
   formatDuration,
-  formatTimestamp,
   type Statement,
 } from "@interopkit/learning-records";
 import { CMI5_ACTIVITY_TYPES, CMI5_CATEGORIES, CMI5_EXTENSIONS, CMI5_VERBS, type LaunchData } from "../model/index.js";
@@ -62,7 +62,7 @@ export function launchedStatement(
           ...(launchData.masteryScore === undefined ? {} : { [CMI5_EXTENSIONS.masteryScore]: launchData.masteryScore }),
         },
       }),
-      timestamp: formatTimestamp(session.launchedAt),
+      timestamp: formatDateTime(session.launchedAt),
     },
     XAPI_VERSION,
   );
@@ -83,7 +83,7 @@ export function abandonedStatement(course: ImportedCourse, au: ImportedAu, sessi
       object: { objectType: "Activity", id: au.lmsId },
       result: { duration: formatDuration(last - session.launchedAt) },
       context: contextOf(session.registration, au.publisherId, session.id),
-      timestamp: formatTimestamp(endedAt),
+      timestamp: formatDateTime(endedAt),
     },
     XAPI_VERSION,
   );
@@ -109,7 +109,7 @@ export function waivedStatement(
       object: { objectType: "Activity", id: au.lmsId },
       result: { success: true, completion: true, extensions: { [CMI5_EXTENSIONS.reason]: reason } },
       context: contextOf(registration.id, au.publisherId, session, { moveOn: true }),
-      timestamp: formatTimestamp(time),
+      timestamp: formatDateTime(time),
     },
     XAPI_VERSION,
   );
@@ -144,7 +144,7 @@ export function satisfiedStatement(
         definition: { type: CMI5_ACTIVITY_TYPES[target.kind] },
       },
       context: contextOf(registration.id, target.publisherId, session),
-      timestamp: formatTimestamp(time),
+      timestamp: formatDateTime(time),
     },
     XAPI_VERSION,
   );

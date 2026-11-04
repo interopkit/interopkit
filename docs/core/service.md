@@ -1,8 +1,10 @@
 # Service calls
 
 `requestService` makes one HTTP request for a library and returns the status, the headers and the body of the answer as
-bytes; `callService` returns the body of a successful answer as text. The libraries use them for every call to a key set, a
-token endpoint, a grade service and a Caliper endpoint, and a host can use them for its own calls with the same limits.
+bytes; `callService` returns the body of a successful answer as text, and `requestWithCredential` asks the host for the
+`Authorization` header of the request first. The libraries use them for every call to a key set, a token endpoint, a grade
+service, a Caliper endpoint and the REST services of CASE, Open Badges and xAPI, and a host can use them for its own calls with
+the same limits.
 
 ```mermaid
 flowchart TD
@@ -53,6 +55,38 @@ const answer = await requestService(
 ```
 
 In a host, `fetch` is the global one: `{ fetch: globalThis.fetch, timeoutMs: DEFAULT_TIMEOUT_MS }`.
+
+## A request with a credential
+
+`requestWithCredential(service, what, url, init, options)` is `requestService` for a client whose requests carry a token. Its
+`service.authorization` returns the value of the `Authorization` header, such as `Bearer abc`, or `undefined` to send none. It is
+asked before every request, so that it can return a token that was refreshed, and it receives the signals of the call joined;
+the wait for it ends when one of them aborts, whether the host's function stops or not. A value that is empty, is not text, or
+holds a line break, which would end the header, is a `DataError` before any request. The clients of CASE, Open Badges and xAPI
+make every request through it, and each adds only its own headers.
+
+```ts
+import { DEFAULT_TIMEOUT_MS, requestWithCredential } from "@interopkit/core";
+
+const sent = [];
+const fetch = async (url, init) => {
+  sent.push(init.headers);
+  return new Response("{}");
+};
+const answer = await requestWithCredential(
+  { fetch, timeoutMs: DEFAULT_TIMEOUT_MS, authorization: async () => "Bearer abc" },
+  "The service at https://service.example/items",
+  "https://service.example/items",
+  { method: "GET", headers: { accept: "application/json" } },
+);
+answer.status; // => 200
+sent; // => [{ accept: "application/json", authorization: "Bearer abc" }]
+```
+
+`clientOptionsEntries` holds the valibot schemas of the options that every such client takes, `fetch`, `timeoutMs`, `maxBytes`,
+`maxTokens` and `signal`, for a client to spread into the `strictRecord` of its options beside its own; the defaults of
+`maxBytes` and `maxTokens` are the client's. `checkBaseUrl` of [checks](checks.md) checks the address that the paths of its
+endpoints follow.
 
 ## Arguments
 
@@ -126,7 +160,7 @@ A client reads what a server it does not control answers with three functions, w
 | Function                                 | Gives                                                                                                     |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `readAnswerJson(response, what, options)` | The JSON of the body: UTF-8 text whose levels (`maxDepth`, 64) and tokens (`maxTokens`, 1,000,000) are counted in one reading before it is parsed; a text over both is refused for its depth |
-| `readAnswer(what, standard, read)`       | What `read` returns; whatever it throws becomes a `DataError`: `<what> answered with data that is not valid <standard>: <reason>` |
+| `readAnswer(what, standard, read)`       | What `read` returns; whatever it throws becomes a `DataError`, whose `cause` is what was thrown: `<what> answered with data that is not valid <standard>: <reason>` |
 | `readStatusDetail(error, readInfo)`      | What a server said when it refused: `info`, the body as `readInfo` reads it, left out when the body is not JSON, has more than 1,000,000 tokens or is refused by `readInfo`; and `retryAfterSeconds`, `Retry-After` in seconds |
 
 ```ts
@@ -166,6 +200,7 @@ readStatusDetail(refusal, (body) => body.code); // => { info: "busy", retryAfter
 | Error                          | When                                                                                                                                                                                                                                                                                       | What to do                                                                                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DataError`                    | `fetch` is not a function, `timeoutMs` or `maxBytes` is not a positive integer, a signal is not an `AbortSignal`, the method is not one of the five, a `GET` or `HEAD` has a body, the body is not text or bytes, or `expect` is not a list of statuses from 100 to 599 without a redirect | Fix the arguments                                                                                                                             |
+| `DataError`                    | `authorization` is not a function, or returns something other than a non-empty header value without line breaks or `undefined`: `The option authorization must return a non-empty header value without line breaks, or undefined.` | Return the header value, such as `Bearer` and the token, or `undefined` |
 | `ServiceError`, status 0       | The service did not answer within `timeoutMs`, or `fetch` rejected                                                                                                                                                                                                                         | Check the address and the network, or raise `timeoutMs`; the message names the service and the reason                                         |
 | `ServiceError`, status 3xx     | The service redirected                                                                                                                                                                                                                                                                     | Use the address it redirects to; the call follows none                                                                                        |
 | `ServiceError`, other status   | The service answered with a status that `expect` does not list; `body` holds what it said                                                                                                                                                                                                  | Act on the status: 401 and 403 mean a bad credential or scope, 5xx mean a retry later, and `error.headers["retry-after"]` says when for a 429 |

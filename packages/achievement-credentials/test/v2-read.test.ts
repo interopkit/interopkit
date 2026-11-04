@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { DataError } from "@interopkit/core";
+import type { Issue } from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
 import {
   type Json,
@@ -16,7 +17,6 @@ import {
   type AnyCredential,
   type BadgeAssertionV2,
   CONTEXTS,
-  type CredentialIssue,
   matchesIdentifier,
   readCredential,
   summarizeCredential,
@@ -70,7 +70,7 @@ const SOUND: Readonly<Record<RuleDocument, () => Json>> = {
 
 /** The findings of a document of a rule, as `path rule severity`, from the reader of its kind. */
 function findingsOf(document: RuleDocument, value: Json): readonly string[] {
-  let findings: readonly CredentialIssue[];
+  let findings: readonly Issue[];
   if (document === "assertion") {
     findings = validateCredential(value);
   } else {

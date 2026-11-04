@@ -430,7 +430,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The envelope carries the time of this send, in the form of Caliper.",
     file: "packages/learning-analytics/src/send/send-caliper.ts",
-    find: 'sendTime: formatDateTime(sendTime, "The option sendTime"),',
+    find: "sendTime: formatDateTime(sendTime),",
     replace: "sendTime: String(sendTime),",
     test: "packages/learning-analytics/test/send.test.ts",
   },
@@ -2512,11 +2512,11 @@ export const RULES: readonly Rule[] = [
     test: "packages/competency-frameworks/test/graph.test.ts",
   },
   {
-    rule: "The address of an entity refuses a base with credentials, a query or a fragment.",
-    file: "packages/competency-frameworks/src/model/internal.ts",
-    find: 'url.username !== "" || url.password !== "" || url.search !== "" || url.hash !== ""',
+    rule: "The address of a service refuses a base with credentials, a query or a fragment.",
+    file: "packages/core/src/checks.ts",
+    find: 'url.username !== "" || url.password !== "" || value.includes("?") || value.includes("#")',
     replace: "false",
-    test: "packages/competency-frameworks/test/graph.test.ts",
+    test: "packages/core/test/checks.test.ts",
   },
   {
     rule: "The address of an entity refuses a base that already ends with the path of a version.",
@@ -2541,10 +2541,10 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A header value that could end the header is refused before the request.",
-    file: "packages/competency-frameworks/src/client/client.ts",
-    find: " || HEADER_BREAK.test(authorization)",
+    file: "packages/core/src/service.ts",
+    find: " || HEADER_BREAK.test(value)",
     replace: "",
-    test: "packages/competency-frameworks/test/client.test.ts",
+    test: "packages/core/test/service.test.ts",
   },
   {
     rule: "A 404 answer for one entity is no entity and not an error.",
@@ -3572,10 +3572,17 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A credential with a line break is refused, so that it cannot start another header.",
-    file: "packages/learning-records/src/client/request.ts",
+    file: "packages/core/src/service.ts",
     find: "const HEADER_BREAK = /[\\r\\n\\0]/u;",
     replace: "const HEADER_BREAK = /[\\0]/u;",
     test: "packages/learning-records/test/client.test.ts",
+  },
+  {
+    rule: "An entity tag with a line break is refused before it reaches a header.",
+    file: "packages/learning-records/src/client/request.ts",
+    find: "const HEADER_BREAK = /[\\r\\n\\0]/u;",
+    replace: "const HEADER_BREAK = /[\\0]/u;",
+    test: "packages/learning-records/test/client-documents.test.ts",
   },
   {
     rule: "The answers of an LRS are read without a property given twice.",
@@ -3601,8 +3608,8 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A Statement is checked with the rules of a provider before it is sent.",
     file: "packages/learning-records/src/client/statements.ts",
-    find: 'const { attachments, role = "provider", signal } = readCallOptions(sendOptionsSchema, options);\n  const read',
-    replace: 'const { attachments, role = "lrs", signal } = readCallOptions(sendOptionsSchema, options);\n  const read',
+    find: 'const { attachments, role = "provider", signal } = readOptions(sendOptionsSchema, options);\n  const read',
+    replace: 'const { attachments, role = "lrs", signal } = readOptions(sendOptionsSchema, options);\n  const read',
     test: "packages/learning-records/test/client-statements.test.ts",
   },
   {
@@ -4316,7 +4323,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "A built Statement carries the time in UTC with milliseconds.",
     file: "packages/learning-records/src/build/build-statement.ts",
-    find: 'typeof timestamp === "string" && isDateTime(timestamp) ? formatTimestamp(timestamp) : timestamp',
+    find: 'typeof timestamp === "string" && isDateTime(timestamp) ? formatDateTime(parseDateTime(timestamp)) : timestamp',
     replace: "timestamp",
     test: "packages/learning-records/test/build.test.ts",
   },
@@ -4406,10 +4413,10 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "A time is written in UTC and refused outside the years 0000 to 9999.",
-    file: "packages/learning-records/src/model/timestamp.ts",
-    find: "milliseconds > LATEST",
+    file: "packages/core/src/checks.ts",
+    find: "at > LATEST_DATE_TIME",
     replace: "false",
-    test: "packages/learning-records/test/model.test.ts",
+    test: "packages/core/test/formats.test.ts",
   },
   {
     rule: "Two durations are the same when the time is the same to 0.01 second.",
@@ -4595,12 +4602,12 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "The wait of a call of the Open Badges client for the token of the host ends when the call or the client aborts.",
-    file: "packages/achievement-credentials/src/client/request.ts",
-    find: `const token = await raceAbort(
-    Promise.resolve(settings.token(either === undefined ? undefined : { signal: either })),
+    file: "packages/core/src/service.ts",
+    find: `const value = await raceAbort(
+    Promise.resolve(service.authorization(either === undefined ? undefined : { signal: either })),
     { signal: either },
   );`,
-    replace: "const token = await settings.token(either === undefined ? undefined : { signal: either });",
+    replace: "const value = await service.authorization(either === undefined ? undefined : { signal: either });",
     test: "packages/achievement-credentials/test/client.test.ts",
   },
   {
@@ -4696,12 +4703,12 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "The wait of a call of the CASE client for the credential of the host ends when the call or the client aborts.",
-    file: "packages/competency-frameworks/src/client/client.ts",
-    find: `: await raceAbort(
-          Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
-          { signal: either },
-        );`,
-    replace: ": await settings.authorization(either === undefined ? undefined : { signal: either });",
+    file: "packages/core/src/service.ts",
+    find: `const value = await raceAbort(
+    Promise.resolve(service.authorization(either === undefined ? undefined : { signal: either })),
+    { signal: either },
+  );`,
+    replace: "const value = await service.authorization(either === undefined ? undefined : { signal: either });",
     test: "packages/competency-frameworks/test/client.test.ts",
   },
   {
@@ -4784,7 +4791,7 @@ export const RULES: readonly Rule[] = [
   {
     rule: "The form of 1.0.3 writes its times as ISO 8601.",
     file: "packages/learning-records/src/compare/convert-statement-version.ts",
-    find: "return isIsoTimestamp(time) ? time : formatTimestamp(time);",
+    find: "return isIsoTimestamp(time) ? time : formatDateTime(parseDateTime(time));",
     replace: "return time;",
     test: "packages/learning-records/test/v1-version.test.ts",
   },
@@ -5042,12 +5049,12 @@ export const RULES: readonly Rule[] = [
   },
   {
     rule: "The wait of a call for the credential of the host ends when the call or the client aborts.",
-    file: "packages/learning-records/src/client/request.ts",
-    find: `: await raceAbort(
-          Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
-          { signal: either },
-        );`,
-    replace: ": await settings.authorization(either === undefined ? undefined : { signal: either });",
+    file: "packages/core/src/service.ts",
+    find: `const value = await raceAbort(
+    Promise.resolve(service.authorization(either === undefined ? undefined : { signal: either })),
+    { signal: either },
+  );`,
+    replace: "const value = await service.authorization(either === undefined ? undefined : { signal: either });",
     test: "packages/learning-records/test/client.test.ts",
   },
   {

@@ -1,6 +1,6 @@
 import { callPort, DataError, readClock } from "@interopkit/core";
-import { describeRefusal, isUuid } from "@interopkit/core/checks";
-import { type AttachmentData, formatTimestamp, type Statement, type StatementIssue } from "../../model/index.js";
+import { describeRefusal, formatDateTime, type Issue, isUuid } from "@interopkit/core/checks";
+import type { AttachmentData, Statement } from "../../model/index.js";
 import { mediaTypeOf, STATEMENT_VERSIONS, VERSION_PATTERNS } from "../../model/internal.js";
 import { attachmentHeadersOf, inspectBatch, issueSink } from "../../read/internal.js";
 import { SIGNATURE_USAGE_TYPE } from "../../signing/index.js";
@@ -185,7 +185,7 @@ async function acceptable(statements: readonly Statement[], context: Context): P
     { signal },
   );
   if (asked === undefined) return refused(500, "The LRS could not check the Statements.");
-  const errors = asked.value.filter((issue: StatementIssue) => issue.severity === "error");
+  const errors = asked.value.filter((issue: Issue) => issue.severity === "error");
   return errors.length === 0
     ? { value: undefined }
     : refused(context.settings.acceptStatus, describeRefusal("The batch of Statements", errors, "accept"));
@@ -237,7 +237,7 @@ export async function prepare(
   if (errors.length > 0) return refused(400, describeRefusal("The batch of Statements", errors, "validateStatements"));
   const refusal = checkIdentity(read, single);
   if (refusal !== undefined) return refusal;
-  const stored = formatTimestamp(readClock(context.settings.clock));
+  const stored = formatDateTime(readClock(context.settings.clock));
   const identified = read.map((statement, index) =>
     index === 0 && single !== undefined ? { ...statement, id: single.id } : statement,
   );

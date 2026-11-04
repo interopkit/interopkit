@@ -3,6 +3,7 @@ import {
   abortSignalSchema,
   DEFAULT_MAX_FINDINGS,
   guardSchema,
+  type Issue,
   jsonObjectSchema,
   MAX_JSON_TOKENS,
   methodsSchema,
@@ -12,7 +13,7 @@ import {
 } from "@interopkit/core/checks";
 import { basePathSchema, type HttpRequest } from "@interopkit/core/http";
 import * as v from "valibot";
-import { type About, type Statement, type StatementIssue, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
+import { type About, type Statement, XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 import type { Access, ActivityStore, AgentStore, DocumentStore, StatementStore } from "./ports.js";
 
 /** The limits of an LRS. */
@@ -149,7 +150,7 @@ export interface LrsOptions extends CallOptions {
     statements: readonly Statement[],
     access: Extract<Access, { readonly allowed: true }>,
     options?: CallOptions,
-  ) => Promise<readonly StatementIssue[]>;
+  ) => Promise<readonly Issue[]>;
   /**
    * The status of a refusal by `accept`: 400, or 403 for a profile that refuses a Statement the standard takes, as cmi5 does.
    *

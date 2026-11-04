@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
-import { describeRefusal } from "@interopkit/core/checks";
-import { type StatementIssue, validateStatement } from "@interopkit/learning-records";
+import { describeRefusal, type Issue } from "@interopkit/core/checks";
+import { validateStatement } from "@interopkit/learning-records";
 import { CMI5_VERBS } from "../model/index.js";
 
 /** A Statement that holds a part to judge, valid in everything else, so that the rules of xAPI judge the part alone. */
@@ -16,7 +16,7 @@ const HOLDER = {
  *
  * @returns The errors, with paths in the part.
  */
-function partErrors(part: "actor" | "context", value: unknown): StatementIssue[] {
+function partErrors(part: "actor" | "context", value: unknown): Issue[] {
   const statement = { ...HOLDER, [part]: value };
   return validateStatement(statement, { role: "lrs", version: "1.0.3" })
     .filter(({ severity }) => severity === "error")

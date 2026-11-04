@@ -15,13 +15,14 @@ import {
   isDateTime,
   isRecord,
   parseWith,
+  readCallOptions,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type { AnyVerifiableCredential, Profile } from "../model/index.js";
 import { readCredential, readEntity } from "../read/index.js";
 import { jws } from "../read/internal.js";
 import { type CredentialsClientOptions, type Settings, settingsOf } from "./config.js";
-import { type Body, type Call, send, signalOf } from "./request.js";
+import { type Body, type Call, send } from "./request.js";
 
 /** The calls to an Open Badges or CLR resource server: the credentials and the profile of the user whose token the host holds. */
 export interface CredentialsClient {
@@ -201,10 +202,10 @@ export function createCredentialsClient(options: CredentialsClientOptions): Cred
   return {
     listCredentials(options) {
       const since = sinceOf(options);
-      return pagesOfCredentials(settings, since, signalOf(options));
+      return pagesOfCredentials(settings, since, readCallOptions(options).signal);
     },
     async upsertCredential(credential, options) {
-      const signal = signalOf(options);
+      const { signal } = readCallOptions(options);
       const body = credentialBody(settings, credential);
       const accept = body.type === "text/plain" ? "text/plain" : "application/vc+ld+json, application/json";
       const url = `${settings.root}/credentials`;
@@ -218,13 +219,13 @@ export function createCredentialsClient(options: CredentialsClientOptions): Cred
       }
     },
     async getProfile(options) {
-      const signal = signalOf(options);
+      const { signal } = readCallOptions(options);
       const call: Call = { method: "GET", url: profileUrl, accept: "application/json", expect: [200, 404] };
       const response = await send(settings, call, signal);
       return response.status === 404 ? undefined : profileOf(response, profileUrl);
     },
     async putProfile(value, options) {
-      const signal = signalOf(options);
+      const { signal } = readCallOptions(options);
       const copy = copyJson(value, "The profile");
       if ("problem" in copy) throw new DataError(`${copy.problem}.`);
       readEntity("Profile", copy.value);

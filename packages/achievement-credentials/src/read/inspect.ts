@@ -5,6 +5,7 @@ import {
   DEFAULT_MAX_FINDINGS,
   describeRefusal,
   type FindingSink,
+  type Issue,
   isRecord,
   type Schema,
   safeParseBounded,
@@ -14,7 +15,6 @@ import {
   type AnyVerifiableCredential,
   type ClrCredentialJwtPayload,
   CONTEXTS,
-  type CredentialIssue,
   type CredentialKind,
   type Entity,
   type EntityKind,
@@ -35,7 +35,7 @@ import {
  * Makes the list of findings of a call that stops at a limit. A reader keeps the errors alone, because it does not report
  * warnings, and a warning does not count toward the limit.
  */
-export function issueSink(maxFindings: number, errorsOnly: boolean): FindingSink<CredentialIssue> {
+export function issueSink(maxFindings: number, errorsOnly: boolean): FindingSink<Issue> {
   return createFindingSink(
     maxFindings,
     (finding) => ({ ...finding, severity: "error" }),
@@ -50,7 +50,7 @@ function isV1p1(value: unknown): boolean {
 }
 
 /** Turns the issues of a parse into findings that are all errors. */
-function toIssues(issues: readonly v.BaseIssue<unknown>[]): CredentialIssue[] {
+function toIssues(issues: readonly v.BaseIssue<unknown>[]): Issue[] {
   return buildFindings(issues).map((finding) => ({ ...finding, severity: "error" }));
 }
 
@@ -63,7 +63,7 @@ function toIssues(issues: readonly v.BaseIssue<unknown>[]): CredentialIssue[] {
 export function parseJson<TOutput>(
   schema: Schema<TOutput>,
   value: unknown,
-  sink: FindingSink<CredentialIssue>,
+  sink: FindingSink<Issue>,
 ): TOutput | undefined {
   const copy = copyJson(value, "");
   if ("problem" in copy) {
@@ -81,7 +81,7 @@ export function parseJson<TOutput>(
 export function parseInto<TOutput>(
   schema: Schema<TOutput>,
   value: unknown,
-  sink: FindingSink<CredentialIssue>,
+  sink: FindingSink<Issue>,
 ): TOutput | undefined {
   const result = safeParseBounded(schema, value, sink.room);
   if (result.success) return result.output;
@@ -93,7 +93,7 @@ export function parseInto<TOutput>(
 export function inspectCredential(
   value: unknown,
   kind: CredentialKind | undefined,
-  sink: FindingSink<CredentialIssue>,
+  sink: FindingSink<Issue>,
 ): AnyVerifiableCredential | undefined {
   const schemas = CREDENTIAL_SCHEMAS[kind ?? kindOfType(isRecord(value) ? value.type : undefined)];
   const schema: Schema<AnyVerifiableCredential> = isV1p1(value) ? schemas.v1p1 : schemas.v2;
@@ -103,11 +103,7 @@ export function inspectCredential(
 }
 
 /** Reads an object of a class, and judges it when its shape is right. */
-export function inspectEntity(
-  kind: EntityKind,
-  value: unknown,
-  sink: FindingSink<CredentialIssue>,
-): Entity | undefined {
+export function inspectEntity(kind: EntityKind, value: unknown, sink: FindingSink<Issue>): Entity | undefined {
   const entity = parseJson(ENTITY_SCHEMAS[kind], value, sink);
   if (entity !== undefined) sink.add(ruleIssues(entity));
   return entity;
@@ -117,7 +113,7 @@ export function inspectEntity(
  * Reads the payload of a CLR that is signed as a JWT, and judges it when its shape is right. Its nested credentials are
  * compact JWS, which CLR 7.2.4.1 asks for.
  */
-function inspectClrPayload(value: unknown, sink: FindingSink<CredentialIssue>): ClrCredentialJwtPayload | undefined {
+function inspectClrPayload(value: unknown, sink: FindingSink<Issue>): ClrCredentialJwtPayload | undefined {
   const payload = parseJson(clrCredentialJwtPayloadSchema, value, sink);
   if (payload !== undefined) sink.add(ruleIssues(payload));
   return payload;
@@ -150,7 +146,7 @@ export function credentialOrReason(
  * wants identified or to say something, the results and the criteria of its achievement, the validity period and the related
  * resources. An achievement on its own is judged for its criteria.
  */
-export function* ruleIssues(value: AnyVerifiableCredential | Entity): Generator<CredentialIssue> {
+export function* ruleIssues(value: AnyVerifiableCredential | Entity): Generator<Issue> {
   if ("verifiableCredential" in value) {
     yield* subjectIssues(value, "");
     return;

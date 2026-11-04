@@ -1,5 +1,16 @@
+import * as v from "valibot";
 import type { CallOptions } from "./call-options.js";
-import { checkAbortSignal, checkArray, checkFunction, checkPositiveInteger, checkRecord, describe } from "./checks.js";
+import {
+  abortSignalSchema,
+  checkAbortSignal,
+  checkArray,
+  checkFunction,
+  checkPositiveInteger,
+  checkRecord,
+  describe,
+  guardSchema,
+  positiveIntegerSchema,
+} from "./checks.js";
 import { DataError, ServiceError } from "./errors.js";
 import { raceAbort } from "./race-abort.js";
 
@@ -45,6 +56,23 @@ export interface ServiceCall extends CallOptions {
   readonly timeoutMs: number;
 }
 
+/**
+ * The schemas of the options that every client of a service takes: the `fetch`, the deadline, the limits of an answer and the
+ * signal. A client spreads them into the `strictRecord` of its options, beside its own.
+ */
+export const clientOptionsEntries = {
+  /** The `fetch` that makes the requests. */
+  fetch: guardSchema((value): value is Fetch => typeof value === "function", "a function"),
+  /** The most time in milliseconds of one request, a positive integer. */
+  timeoutMs: v.optional(positiveIntegerSchema),
+  /** The most bytes of one answer, a positive integer. */
+  maxBytes: v.optional(positiveIntegerSchema),
+  /** The most tokens of JSON in one answer, a positive integer. */
+  maxTokens: v.optional(positiveIntegerSchema),
+  /** The signal that ends the waits of the client. */
+  signal: v.optional(abortSignalSchema),
+};
+
 /** The request of a call: its method, its headers and, for a method that has one, its body. */
 export interface ServiceInit {
   /** The method. A `GET` or `HEAD` request has no body. */
@@ -67,6 +95,17 @@ export interface ServiceResponse {
   readonly headers: Readonly<Record<string, string>>;
   /** The body over an `ArrayBuffer`, which a web `Response` accepts; empty for `HEAD` and for a status that has none. */
   readonly body: Uint8Array<ArrayBuffer>;
+}
+
+/** What a call to a service needs when its requests carry a credential of the host: a `ServiceCall` and the credential. */
+export interface CredentialServiceCall extends ServiceCall {
+  /**
+   * Returns the value of the `Authorization` header of a request, such as `Bearer abc`, or `undefined` to send none. It is
+   * called before every request, so that it can return a token that was refreshed, and it receives the `signal` of the call.
+   *
+   * @defaultValue none: requests carry no credential
+   */
+  readonly authorization?: (options?: CallOptions) => Promise<string | undefined>;
 }
 
 /** What one request may ask for beyond the `service` it is made through. */
@@ -257,11 +296,84 @@ export async function requestService(
   init: ServiceInit,
   options: RequestOptions = {},
 ): Promise<ServiceResponse> {
+  return exchange(service, what, url, init, options, callersOf(service, init, options));
+}
+
+/** Checks the arguments of a call, and returns the signals of its caller, when none of them has aborted. */
+function callersOf(service: ServiceCall, init: ServiceInit, options: RequestOptions): AbortSignal[] {
   checkServiceCall(service);
   checkInit(init);
   checkRequestOptions(options);
   const callers = [service.signal, options.signal].filter((signal) => signal !== undefined);
   for (const signal of callers) signal.throwIfAborted();
+  return callers;
+}
+
+/** Characters that a header value must not hold: they would end the header and start another. */
+const HEADER_BREAK = /[\r\n\0]/u;
+
+/**
+ * Makes one request to a service with the credential that the host's `authorization` gives for it, and returns its status,
+ * headers and body: `requestService` for a client whose requests carry a token.
+ *
+ * @remarks
+ * `service.authorization` is asked before the request, with the signals of the caller joined, and the wait for it ends when one
+ * of them aborts, whether the host's function stops or not. Its value is the `authorization` header of the request, and
+ * `undefined` sends none. Everything else is as for `requestService`.
+ *
+ * @param service - The `fetch`, the time the call may take, the signal that ends the caller's wait and the credential.
+ * @param what - Names the service in the error messages, such as `The LRS at https://lrs.example.org/xapi/statements`.
+ * @param url - The address of the request.
+ * @param init - The method, the headers other than `Authorization`, and the body of the request.
+ * @param options - The size limit, the statuses to return as values, and a signal that joins `service.signal`.
+ * @returns The status, the headers by name in lower case, and the body of the answer.
+ * @throws `DataError` when an argument is not valid, or `authorization` returns something other than a non-empty header value
+ * without line breaks, or `undefined`.
+ * @throws `ServiceError` as `requestService` does.
+ * @throws The `reason` of a signal when it aborts, before or during the call.
+ */
+export async function requestWithCredential(
+  service: CredentialServiceCall,
+  what: string,
+  url: string,
+  init: ServiceInit,
+  options: RequestOptions = {},
+): Promise<ServiceResponse> {
+  const callers = callersOf(service, init, options);
+  if (service.authorization !== undefined) {
+    checkFunction(service.authorization, "The option authorization must be a function");
+  }
+  const authorization = await credentialOf(service, callers);
+  const headers = authorization === undefined ? init.headers : { ...init.headers, authorization };
+  return exchange(service, what, url, { ...init, headers }, options, callers);
+}
+
+/** Asks the host for the value of the `Authorization` header of a request, and checks that it can be one. */
+async function credentialOf(service: CredentialServiceCall, callers: AbortSignal[]): Promise<string | undefined> {
+  if (service.authorization === undefined) return undefined;
+  const either = callers.length === 0 ? undefined : AbortSignal.any(callers);
+  // The host's function gets the signal and should stop, but the wait of the caller ends when it aborts whether the function does or not.
+  const value = await raceAbort(
+    Promise.resolve(service.authorization(either === undefined ? undefined : { signal: either })),
+    { signal: either },
+  );
+  if (value !== undefined && (typeof value !== "string" || value === "" || HEADER_BREAK.test(value))) {
+    throw new DataError(
+      "The option authorization must return a non-empty header value without line breaks, or undefined.",
+    );
+  }
+  return value;
+}
+
+/** Makes the request of a call whose arguments are checked, and reads its answer. */
+async function exchange(
+  service: ServiceCall,
+  what: string,
+  url: string,
+  init: ServiceInit,
+  options: RequestOptions,
+  callers: readonly AbortSignal[],
+): Promise<ServiceResponse> {
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
   const deadline = AbortSignal.timeout(service.timeoutMs);
   const signal = AbortSignal.any([...callers, deadline]);

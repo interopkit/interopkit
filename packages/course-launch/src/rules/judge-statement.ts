@@ -1,19 +1,12 @@
-import { isDateTime, parseDateTime } from "@interopkit/core/checks";
-import {
-  type Activity,
-  type Actor,
-  type Context,
-  type Statement,
-  type StatementIssue,
-  VERB_VOIDED,
-} from "@interopkit/learning-records";
+import { type Issue, isDateTime, parseDateTime } from "@interopkit/core/checks";
+import { type Activity, type Actor, type Context, type Statement, VERB_VOIDED } from "@interopkit/learning-records";
 import { CMI5_CATEGORIES, CMI5_EXTENSIONS, type Cmi5Verb } from "../model/index.js";
 import { categoryIdsOf, classifyStatement, cmi5VerbOf } from "./classify.js";
 import type { SessionFacts, SessionProgress } from "./session.js";
 
 /** What judging one statement gives: its findings, with paths in the statement, and the session after it. */
 export interface Judgement {
-  readonly findings: readonly StatementIssue[];
+  readonly findings: readonly Issue[];
   readonly next: SessionProgress;
 }
 
@@ -84,7 +77,7 @@ export function sameActor(left: Actor, right: Actor): boolean {
 
 /** The findings of one statement, as it builds them. */
 class Findings {
-  readonly list: StatementIssue[] = [];
+  readonly list: Issue[] = [];
 
   error(path: string, rule: string, message: string): void {
     this.list.push({ path, rule, message, severity: "error" });

@@ -332,7 +332,7 @@ describe("getStatement", () => {
     expect(lrs.requests).toHaveLength(0);
   });
 
-  it("does not hide an error of the reader that is not about the answer", async () => {
+  it("keeps an error of the reader that is not about the answer as the cause of the DataError", async () => {
     vi.resetModules();
     vi.doMock("../src/read/index.js", async (importOriginal) => ({
       ...(await importOriginal<typeof import("../src/read/index.js")>()),
@@ -346,7 +346,8 @@ describe("getStatement", () => {
         endpoint: "https://lrs.example.org/xapi/",
         fetch: fakeLrs(() => ({ body: statementOf(1) })).fetch,
       });
-      await expect(client.getStatement(uuid(1))).rejects.toThrow(new TypeError("a defect of the reader"));
+      const defect = { cause: new TypeError("a defect of the reader") };
+      await expect(client.getStatement(uuid(1))).rejects.toMatchObject({ name: "DataError", ...defect });
       const paged = createLrsClient({
         endpoint: "https://lrs.example.org/xapi/",
         fetch: fakeLrs(() => ({
@@ -354,7 +355,7 @@ describe("getStatement", () => {
           body: { statements: [statementOf(1)] },
         })).fetch,
       });
-      await expect(collect(paged.queryStatements({}))).rejects.toThrow(new TypeError("a defect of the reader"));
+      await expect(collect(paged.queryStatements({}))).rejects.toMatchObject({ name: "DataError", ...defect });
     } finally {
       vi.doUnmock("../src/read/index.js");
       vi.resetModules();

@@ -1,4 +1,5 @@
-import type { CaseIssue, CasePackage } from "../src/index.js";
+import type { Issue } from "@interopkit/core/checks";
+import type { CasePackage } from "../src/index.js";
 import { id, uri } from "./full-package.js";
 
 /** Returns a copy of JSON, which a test may change. */
@@ -20,6 +21,6 @@ export function minimalPackage(): CasePackage {
 }
 
 /** Reduces findings to the parts that a test states: where, which rule and how serious. */
-export function summary(issues: readonly CaseIssue[]): { path: string; rule: string; severity: string }[] {
+export function summary(issues: readonly Issue[]): { path: string; rule: string; severity: string }[] {
   return issues.map(({ path, rule, severity }) => ({ path, rule, severity }));
 }

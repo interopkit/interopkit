@@ -7,6 +7,7 @@ import {
   DEFAULT_TIMEOUT_MS,
   type Fetch,
   requestService,
+  requestWithCredential,
   ServiceError,
   type ServiceInit,
 } from "../src/index.js";
@@ -934,5 +935,113 @@ describe("callService with the options of a request", () => {
     await expect(callService({ fetch, timeoutMs: DEFAULT_TIMEOUT_MS }, WHAT, URL_OF_SERVICE, GET)).resolves.toBe(
       "a\ufffdb",
     );
+  });
+});
+
+describe("requestWithCredential", () => {
+  /** A `fetch` that answers 200 and keeps the headers of each request. */
+  function recording(): { readonly fetch: Fetch; readonly headers: Readonly<Record<string, string>>[] } {
+    const headers: Readonly<Record<string, string>>[] = [];
+    const fetch: Fetch = (_url, init) => {
+      headers.push(init.headers);
+      return Promise.resolve(new Response("ok"));
+    };
+    return { fetch, headers };
+  }
+
+  it("sends the value that authorization returns as the authorization header, and none for undefined", async () => {
+    const { fetch, headers } = recording();
+    const service = { fetch, timeoutMs: DEFAULT_TIMEOUT_MS };
+    await requestWithCredential({ ...service, authorization: async () => "Bearer abc" }, WHAT, URL_OF_SERVICE, GET);
+    await requestWithCredential({ ...service, authorization: async () => undefined }, WHAT, URL_OF_SERVICE, GET);
+    await requestWithCredential(service, WHAT, URL_OF_SERVICE, GET);
+    expect(headers).toStrictEqual([
+      { accept: "application/json", authorization: "Bearer abc" },
+      { accept: "application/json" },
+      { accept: "application/json" },
+    ]);
+  });
+
+  it("asks for the credential before every request, with the signals of the call joined", async () => {
+    const { fetch } = recording();
+    const asked: (AbortSignal | undefined)[] = [];
+    const client = new AbortController();
+    const call = new AbortController();
+    const authorization = async (options?: { readonly signal?: AbortSignal }) => {
+      asked.push(options?.signal);
+      return "Bearer abc";
+    };
+    const service = { fetch, timeoutMs: DEFAULT_TIMEOUT_MS, signal: client.signal, authorization };
+    await requestWithCredential(service, WHAT, URL_OF_SERVICE, GET, { signal: call.signal });
+    await requestWithCredential({ fetch, timeoutMs: DEFAULT_TIMEOUT_MS, authorization }, WHAT, URL_OF_SERVICE, GET);
+    expect(asked).toHaveLength(2);
+    expect(asked[1]).toBeUndefined();
+    call.abort(new Error("The call ended."));
+    expect(asked[0]?.aborted).toBe(true);
+    expect(client.signal.aborted).toBe(false);
+  });
+
+  it("refuses a value that cannot be a header, before any request", async () => {
+    for (const value of ["Bearer a\r\nX-Injected: 1", "Bearer a\nb", "a\0b", "", 5, null]) {
+      const { fetch, headers } = recording();
+      const authorization = async () => value as string;
+      const error = await failureOf(
+        requestWithCredential({ fetch, timeoutMs: DEFAULT_TIMEOUT_MS, authorization }, WHAT, URL_OF_SERVICE, GET),
+      );
+      expect(error, JSON.stringify(value)).toStrictEqual(
+        new DataError(
+          "The option authorization must return a non-empty header value without line breaks, or undefined.",
+        ),
+      );
+      expect(headers).toHaveLength(0);
+    }
+  });
+
+  it("ends the wait for a credential that never comes when the call aborts, and makes no request", async () => {
+    const { fetch, headers } = recording();
+    const controller = new AbortController();
+    const reason = new Error("The candidate left the item.");
+    const call = requestWithCredential(
+      { fetch, timeoutMs: DEFAULT_TIMEOUT_MS, authorization: () => new Promise<string>(() => undefined) },
+      WHAT,
+      URL_OF_SERVICE,
+      GET,
+      { signal: controller.signal },
+    );
+    controller.abort(reason);
+    expect(await failureOf(call)).toBe(reason);
+    expect(headers).toHaveLength(0);
+  });
+
+  it("asks for no credential when the call is aborted before it starts", async () => {
+    let asked = 0;
+    const reason = new Error("The candidate left the item.");
+    const authorization = async () => {
+      asked += 1;
+      return "Bearer abc";
+    };
+    const error = await failureOf(
+      requestWithCredential(
+        { fetch: recording().fetch, timeoutMs: DEFAULT_TIMEOUT_MS, signal: AbortSignal.abort(reason), authorization },
+        WHAT,
+        URL_OF_SERVICE,
+        GET,
+      ),
+    );
+    expect(error).toBe(reason);
+    expect(asked).toBe(0);
+  });
+
+  it("refuses an authorization that is not a function, and the arguments that requestService refuses", async () => {
+    const service = { fetch: recording().fetch, timeoutMs: DEFAULT_TIMEOUT_MS };
+    await expect(
+      requestWithCredential({ ...service, authorization: JSON.parse('"Bearer abc"') }, WHAT, URL_OF_SERVICE, GET),
+    ).rejects.toStrictEqual(new DataError('The option authorization must be a function, found "Bearer abc".'));
+    await expect(requestWithCredential(JSON.parse("null"), WHAT, URL_OF_SERVICE, GET)).rejects.toBeInstanceOf(
+      DataError,
+    );
+    await expect(
+      requestWithCredential(service, WHAT, URL_OF_SERVICE, GET, JSON.parse('{"maxBytes":"5"}')),
+    ).rejects.toBeInstanceOf(DataError);
   });
 });

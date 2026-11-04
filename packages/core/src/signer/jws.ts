@@ -1,5 +1,5 @@
 import type { CallOptions } from "../call-options.js";
-import { checkAbortSignal, checkRecord, describe, isRecord } from "../checks.js";
+import { checkRecord, describe, isRecord, readCallOptions } from "../checks.js";
 import { DataError } from "../errors.js";
 import { raceAbort } from "../race-abort.js";
 import { JWS_ALGORITHMS } from "./algorithms.js";
@@ -66,7 +66,7 @@ export async function signCompactJws(
 ): Promise<string> {
   checkSigner(signer, "The signer");
   checkHeader(header, signer);
-  if (options?.signal !== undefined) checkAbortSignal(options.signal, "The option signal");
+  const callOptions = readCallOptions(options);
   if (!(payload instanceof Uint8Array)) {
     throw new DataError(`The payload must be a Uint8Array, found ${describe(payload)}.`);
   }
@@ -83,9 +83,9 @@ export async function signCompactJws(
   } catch {
     throw new DataError("The header must be plain data that JSON can hold.");
   }
-  options?.signal?.throwIfAborted();
+  callOptions.signal?.throwIfAborted();
   const signingInput = `${encodeBase64Url(encoder.encode(protectedHeader))}.${encodeBase64Url(payload)}`;
-  const signature = await raceAbort(signer.sign(encoder.encode(signingInput), options), options);
+  const signature = await raceAbort(signer.sign(encoder.encode(signingInput), callOptions), callOptions);
   checkSignature(signature, signer.algorithm);
   return `${signingInput}.${encodeBase64Url(signature)}`;
 }

@@ -1,13 +1,13 @@
 # Building Statements
 
 A Learning Record Provider makes a Statement of an event with `buildStatement`, gives it an id that a resend repeats with
-`deriveStatementId`, and voids it with `buildVoidingStatement`. `formatDuration` and `formatTimestamp` write the two values that a
-provider is most often wrong about, and `mboxSha1sum` hides an email address behind its hash.
+`deriveStatementId`, and voids it with `buildVoidingStatement`. `formatDuration`, and `formatDateTime` of `@interopkit/core/checks`,
+write the two values that a provider is most often wrong about, and `mboxSha1sum` hides an email address behind its hash.
 
 ```mermaid
 flowchart LR
   event["An event<br/>who, what, when, with what result"] --> id["deriveStatementId<br/>the same event, the same id"]
-  event --> data["formatDuration, formatTimestamp, mboxSha1sum"]
+  event --> data["formatDuration, formatDateTime, mboxSha1sum"]
   id --> build["buildStatement<br/>copy, time in UTC, version,<br/>rules of a provider"]
   data --> build
   build -->|"errors"| error["DataError<br/>every error and its path"]
@@ -18,12 +18,12 @@ flowchart LR
 ## Quick start
 
 ```ts
+import { formatDateTime } from "@interopkit/core/checks";
 import {
   buildStatement,
   buildVoidingStatement,
   deriveStatementId,
   formatDuration,
-  formatTimestamp,
   mboxSha1sum,
 } from "@interopkit/learning-records";
 
@@ -44,7 +44,7 @@ statement.timestamp; // => "2024-06-13T18:46:03.250Z"
 statement.result?.duration; // => "PT1H30M32.15S"
 statement.version; // => "2.0.0"
 statement.actor.mbox_sha1sum?.length; // => 40
-formatTimestamp(1_718_304_363_250); // => "2024-06-13T18:46:03.250Z"
+formatDateTime(1_718_304_363_250); // => "2024-06-13T18:46:03.250Z"
 
 const voiding = buildVoidingStatement(id, {
   id: deriveStatementId(NAMESPACE, "learner-1/course-1/attempt-1/void"),
@@ -64,7 +64,7 @@ voiding.object; // => { objectType: "StatementRef", id }
 | `formatDuration(milliseconds)`       | Writes a length of time as an ISO 8601 duration of hours, minutes and seconds, cut at 0.01 second: `PT1H30M32.15S`                                               | `DataError` for anything but a whole number from 0    |
 | `parseDuration(text)`                | Reads a duration of ISO 8601 4.4.3.2 into years, months, days, hours, minutes and seconds                                                                       | `DataError` for text that is not a duration           |
 | `isDuration(text)`                   | Tells whether `parseDuration` reads the text                                                                                                                     | none                                                  |
-| `formatTimestamp(at)`                | Writes epoch milliseconds, or an RFC 3339 time with any offset, as a Timestamp in UTC with milliseconds                                                          | `DataError` for a time outside the years 0000 to 9999 |
+| `formatDateTime(at)` of `@interopkit/core/checks` | Writes whole epoch milliseconds as a Timestamp in UTC with milliseconds; `buildStatement` writes a `timestamp` with any offset so | `DataError` for a time outside the years 0000 to 9999 |
 | `mboxSha1sum(mailto)`                | Returns the SHA-1 of a `mailto` IRI as 40 hexadecimal digits, for `mbox_sha1sum`                                                                                 | `DataError` for text that is not a `mailto` IRI       |
 
 ## What `buildStatement` takes
@@ -101,7 +101,7 @@ None are set here. The functions take values that are in memory, and the host li
 | `The duration must be an ISO 8601 duration such as PT1H30M, found "1H".`                                | The text given to `parseDuration` is not a duration          | Pass `PT1H30M`, or ask `isDuration` first           |
 | `The namespace must be a UUID, found "x".`                                                              | `deriveStatementId` got a namespace that is not a UUID       | Make a UUID once and keep it                        |
 | `The mailto IRI must be "mailto:" and one email address, found "x".`                                    | `mboxSha1sum` got something else                             | Pass `mailto:` and the address                      |
-| `The time must be epoch milliseconds or an RFC 3339 date and time, in the years 0000 to 9999, found x.` | `formatTimestamp` got another value                          | Pass milliseconds, or a time with an offset         |
+| `The time must be whole epoch milliseconds in the years 0000 to 9999, found x.`                         | `formatDateTime` got another value                           | Pass whole milliseconds                             |
 | `The duration in milliseconds must be a non-negative integer, found x.`                                 | `formatDuration` got a fraction, a negative or another value | Round the milliseconds first                        |
 
 ## Not included

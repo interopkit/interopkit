@@ -1,11 +1,10 @@
-import { DataError } from "@interopkit/core";
-import { absoluteUriSchema, parseWith } from "@interopkit/core/checks";
+import { DataError, readAnswer } from "@interopkit/core";
+import { absoluteUriSchema, parseWith, readCallOptions } from "@interopkit/core/checks";
 import { iriKey } from "../compare/internal.js";
 import type { About, Activity, Agent, Person } from "../model/index.js";
 import { aboutSchema, activitySchema, identifiedAgentSchema, personSchema } from "../read/internal.js";
 import type { Settings } from "./config.js";
-import { callOptionsSchema, readCallOptions } from "./options.js";
-import { jsonOf, readAnswer, send, urlOf } from "./request.js";
+import { jsonOf, STANDARD, send, urlOf, whatOf } from "./request.js";
 
 /** Fetches one resource that answers with JSON and reads the answer. */
 async function fetchJson<TValue>(
@@ -15,10 +14,10 @@ async function fetchJson<TValue>(
   options: unknown,
   read: (json: unknown) => TValue,
 ): Promise<TValue> {
-  const { signal } = readCallOptions(callOptionsSchema, options);
+  const { signal } = readCallOptions(options);
   const url = urlOf(settings, path, parameters);
   const response = await send(settings, signal, url, { method: "GET", headers: { accept: "application/json" } }, [200]);
-  return readAnswer(url, () => read(jsonOf(response, settings)));
+  return readAnswer(whatOf(url), STANDARD, () => read(jsonOf(response, settings)));
 }
 
 /** Fetches the Activity with an id, as the LRS describes it. */

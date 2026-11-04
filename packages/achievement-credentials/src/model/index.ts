@@ -64,7 +64,6 @@ export type {
   ProfileV1p1,
   VerifiableCredentialV1p1,
 } from "./credentials-v1p1.js";
-export type { CredentialIssue } from "./issue.js";
 export type { JWK, JWKS, Multikey } from "./keys.js";
 export {
   type AnyCredential,

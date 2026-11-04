@@ -1,5 +1,5 @@
-import { type CallOptions, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
-import { guardSchema, parseWith, strictRecord } from "@interopkit/core/checks";
+import { type CallOptions, clientOptionsEntries, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
+import { guardSchema, parseWith, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { CASE_VERSIONS, type CaseVersion } from "../model/index.js";
 import { serviceRoot } from "../model/internal.js";
@@ -76,11 +76,8 @@ export interface Settings {
   readonly signal: AbortSignal | undefined;
 }
 
-const positiveInteger = v.pipe(v.number(), v.safeInteger(), v.minValue(1));
-
 const configSchema = strictRecord({
   baseUrl: v.string(),
-  fetch: guardSchema((value): value is Fetch => typeof value === "function", "a function"),
   version: v.optional(v.picklist(CASE_VERSIONS)),
   authorization: v.optional(
     guardSchema(
@@ -88,11 +85,8 @@ const configSchema = strictRecord({
       "a function",
     ),
   ),
-  timeoutMs: v.optional(positiveInteger),
-  maxBytes: v.optional(positiveInteger),
-  maxTokens: v.optional(positiveInteger),
-  pageSize: v.optional(positiveInteger),
-  signal: v.optional(guardSchema((value): value is AbortSignal => value instanceof AbortSignal, "an AbortSignal")),
+  ...clientOptionsEntries,
+  pageSize: v.optional(positiveIntegerSchema),
 });
 
 /**

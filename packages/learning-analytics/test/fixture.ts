@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Fetch } from "@interopkit/core";
-import { type AssessmentEvent, buildEvent, type CaliperEvent, formatDateTime, mintUrn } from "../src/index.js";
+import { formatDateTime } from "@interopkit/core/checks";
+import { type AssessmentEvent, buildEvent, type CaliperEvent, mintUrn } from "../src/index.js";
 
 /** The names and the UUIDs that Python's `uuid.uuid5` computed (`validation/caliper_ids.py`). */
 interface IdFixture {
@@ -53,9 +54,9 @@ export function startedInput(): Omit<AssessmentEvent, "@context"> {
       type: "Attempt",
       assignee: ACTOR,
       assignable: ASSESSMENT,
-      startedAtTime: formatDateTime(EVENT_TIME, "The time"),
+      startedAtTime: formatDateTime(EVENT_TIME),
     },
-    eventTime: formatDateTime(EVENT_TIME, "The time"),
+    eventTime: formatDateTime(EVENT_TIME),
     edApp: APPLICATION,
   };
 }

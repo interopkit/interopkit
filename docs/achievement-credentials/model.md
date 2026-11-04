@@ -26,7 +26,7 @@ flowchart TD
 
 | Module    | Holds                                                                                                                                    |
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `model`   | The types of the classes, the vocabularies as tuples with their types, `CONTEXTS`, `CREDENTIAL_KINDS`, `ENTITY_KINDS`, `CredentialIssue` |
+| `model`   | The types of the classes, the vocabularies as tuples with their types, `CONTEXTS`, `CREDENTIAL_KINDS`, `ENTITY_KINDS` |
 | `read`    | `readCredential`, `readEntity`, `validateCredential`, `validateEntity`, `ReadOptions`                                                    |
 | `issue`   | The builders, the identity hash and the CASE alignment: see [Building credentials and comparing them](issue.md)                          |
 | `compare` | `isSameCredential`, `selectNewerCredential`, `summarizeCredential`: see the same guide                                                             |
@@ -107,14 +107,14 @@ parsed text, or a value that is already in the model.
 | Function                                | Result                                                                                                                    |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `readCredential`, `readEntity`          | The copy, when the value has no error. A warning is not reported. Otherwise a `DataError`: see Errors                     |
-| `validateCredential`, `validateEntity`  | A list of `CredentialIssue`, the errors and the warnings, in the order of the value. An empty list means that it is sound |
+| `validateCredential`, `validateEntity`  | A list of `Issue` of `@interopkit/core/checks`, the errors and the warnings, in the order of the value. An empty list means that it is sound |
 
 The result is the data model and not the text that was read. A list that the compacted form of JSON-LD writes as its only member
 (`type`, `evidence`, `proof`, `credentialSchema`, `termsOfUse`, `alignment`, `identifier`, `result` and the other lists) is a list
 in the result, so a credential that is read and written again has the same meaning and may differ in bytes. Read the original text
 to check a signature.
 
-A finding is a `CredentialIssue`: its `path` as code writes it (`credentialSubject.achievement.name`; the empty string is the
+A finding is an `Issue` of `@interopkit/core/checks`: its `path` as code writes it (`credentialSubject.achievement.name`; the empty string is the
 value as a whole), its `rule`, a `message` that is a sentence that reads after the path and does not repeat it, and its
 `severity`. An error means that the data breaks the specification or cannot be used without a guess. A warning means that it is
 usable and departs from what the specification asks for.

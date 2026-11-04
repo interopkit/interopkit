@@ -1,4 +1,5 @@
-import type { Statement, StatementIssue, SubStatement } from "../model/index.js";
+import type { Issue } from "@interopkit/core/checks";
+import type { Statement, SubStatement } from "../model/index.js";
 import { VERB_VOIDED } from "../model/index.js";
 import { error, warning } from "./finding.js";
 import { member } from "./path.js";
@@ -11,7 +12,7 @@ const VARIANT_DIGIT = 19;
 const RFC_4122_VARIANT = /[89abAB]/u;
 
 /** Judges a UUID: it should be of variant 2 of RFC 4122 (4.2.7). */
-function variantIssues(uuid: string | undefined, path: string): StatementIssue[] {
+function variantIssues(uuid: string | undefined, path: string): Issue[] {
   if (uuid === undefined || RFC_4122_VARIANT.test(uuid.charAt(VARIANT_DIGIT))) return [];
   return [
     warning(
@@ -26,7 +27,7 @@ function variantIssues(uuid: string | undefined, path: string): StatementIssue[]
 const AUTHORITY_MEMBERS = 2;
 
 /** Judges the authority of a Statement: an Agent, or an anonymous Group of exactly two Agents, as an OAuth consumer and its user are written. */
-function authorityIssues(statement: Statement, path: string): StatementIssue[] {
+function authorityIssues(statement: Statement, path: string): Issue[] {
   const { authority } = statement;
   if (authority?.objectType !== "Group") return [];
   const identified = [authority.mbox, authority.mbox_sha1sum, authority.openid, authority.account].some(
@@ -46,7 +47,7 @@ function authorityIssues(statement: Statement, path: string): StatementIssue[] {
  * Judges the `revision` and `platform` of a context: they describe an Activity, so a Statement whose Object is another kind
  * does not have them.
  */
-function contextIssues(statement: Statement | SubStatement, path: string): StatementIssue[] {
+function contextIssues(statement: Statement | SubStatement, path: string): Issue[] {
   const { context } = statement;
   if (objectKind(statement.object) === "Activity") return [];
   return (["revision", "platform"] as const).flatMap((name) =>
@@ -67,8 +68,8 @@ function contextIssues(statement: Statement | SubStatement, path: string): State
  * Reference as its Object (4.2.5), the `revision` and `platform` of a context go with an Activity, the authority is an Agent or
  * an anonymous Group of two Agents, and the UUIDs should be of variant 2 (4.2.7).
  */
-export function relationIssues(statement: Statement | SubStatement, path: string): StatementIssue[] {
-  const issues: StatementIssue[] = [];
+export function relationIssues(statement: Statement | SubStatement, path: string): Issue[] {
+  const issues: Issue[] = [];
   if (statement.verb.id === VERB_VOIDED && statement.object.objectType !== "StatementRef") {
     issues.push(
       error(

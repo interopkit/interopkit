@@ -1,11 +1,11 @@
 import { DataError, ServiceError } from "@interopkit/core";
+import { formatDateTime } from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
 import { type CaliperEndpointOptions, handleCaliperRequest, type ReceivedEnvelope } from "../src/endpoint/index.js";
 import {
   buildEntity,
   buildEvent,
   CALIPER_CONTEXT,
-  formatDateTime,
   mintUrn,
   pingEndpoint,
   readEntity,
@@ -27,7 +27,7 @@ const SENDER = { endpoint: "https://lrs.example/caliper", token: "token-123", se
 
 /** An event that follows every rule of its profile, with an identifier from the parts that name it. */
 function startedEvent() {
-  const at = formatDateTime(1_479_204_900_000, "The time of the event");
+  const at = formatDateTime(1_479_204_900_000);
   return buildEvent({
     id: mintUrn(["event", "attempt-1", "started"]),
     type: "AssessmentEvent",

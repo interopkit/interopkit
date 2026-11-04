@@ -18,7 +18,8 @@ flowchart LR
 ## Quick start
 
 ```ts
-import { buildEvent, formatDateTime, mintUrn, sendCaliper } from "@interopkit/learning-analytics";
+import { formatDateTime } from "@interopkit/core/checks";
+import { buildEvent, mintUrn, sendCaliper } from "@interopkit/learning-analytics";
 
 const event = buildEvent({
   id: mintUrn(["event", "session-1", 1]),
@@ -27,7 +28,7 @@ const event = buildEvent({
   actor: { id: "urn:uuid:3f0c8a8e-7b8e-4b6a-9c1d-2a4f6e8b0c1d", type: "Person" },
   action: "NavigatedTo",
   object: { id: "https://exam.example/tests/42/items/3", type: "AssessmentItem" },
-  eventTime: formatDateTime(1_700_000_000_000, "The time of the event"),
+  eventTime: formatDateTime(1_700_000_000_000),
   edApp: "https://exam.example",
 });
 
@@ -109,7 +110,7 @@ sequenceDiagram
 | Bytes of the answer    | 65,536                                                                                                                                  | No          |
 | Redirects              | None followed; any 3xx is an error                                                                                                      | No          |
 | Events and describes in an envelope | At least 1. No greatest number: `maxPayloadBytes` limits the bytes, which the endpoint announces                           | Per call    |
-| Times                  | `1970-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z` for `formatDateTime`; the form `YYYY-MM-DDTHH:mm:ss.SSSZ` for a time in an entity |             |
+| Times                  | `0000-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z`, in whole milliseconds, for `sendTime` and `formatDateTime`; the form `YYYY-MM-DDTHH:mm:ss.SSSZ` for a time in an entity |             |
 | Parts of an identifier | At least one; strings and finite numbers                                                                                                | No          |
 
 ## Asking the endpoint

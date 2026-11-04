@@ -17,7 +17,6 @@ export {
   type Cmi5Verb,
   COURSE_STRUCTURE_NAMESPACE,
   type Course,
-  type CourseIssue,
   type CourseStructure,
   type ExtensionElement,
   LAUNCH_DATA_STATE_ID,

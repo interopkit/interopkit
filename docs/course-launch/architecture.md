@@ -14,7 +14,7 @@ the client of `@interopkit/learning-records`, and `lms` and `au` never import ea
 ```mermaid
 flowchart BT
   core["@interopkit/core<br/>DataError, checks, findings"]
-  model["model<br/>vocabularies, CourseStructure, CourseIssue"]
+  model["model<br/>vocabularies, CourseStructure"]
   structure["structure<br/>readCourseStructure, validateCourseStructure,<br/>writeCourseStructure"]
   package["package<br/>readCoursePackage, writeCoursePackage"]
   saxes["saxes<br/>XML with namespaces"]
@@ -49,7 +49,7 @@ flowchart BT
 | Module      | Files                                                                    | Holds                                                                                                                       |
 | ----------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | `model`     | `vocabularies.ts`                                                        | `moveOn`, `launchMethod` and the launch modes as tuples with their types; the IRIs of the verbs, categories, extensions and activity types; the ids of the State and of the preferences |
-|             | `course-structure.ts`                                                    | `CourseStructure`, `Course`, `Objective`, `AssignableUnit`, `Block`, `LangString`, `ExtensionElement`, `CourseIssue`         |
+|             | `course-structure.ts`                                                    | `CourseStructure`, `Course`, `Objective`, `AssignableUnit`, `Block`, `LangString`, `ExtensionElement`                        |
 | `structure` | `schema.ts`                                                              | The elements of `CourseStructure.xsd`: what each holds, in which order, and its attributes                                  |
 |             | `inspect.ts`                                                             | The walk of the parser: the model and the findings of one structure, within its limits                                      |
 |             | `values.ts`, `launch-url.ts`                                             | The white space of XML, `xs:language`, the mastery score, and the rules of the URL of an assignable unit                    |

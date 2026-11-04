@@ -1,5 +1,6 @@
 import { readClock } from "@interopkit/core";
-import type { Statement, StatementIssue } from "@interopkit/learning-records";
+import type { Issue } from "@interopkit/core/checks";
+import type { Statement } from "@interopkit/learning-records";
 import type { StatementStore } from "@interopkit/learning-records/store";
 import { classifyStatement } from "../rules/index.js";
 import { cmi5VerbOf, judgeStatement, type SessionProgress, sessionOrder, timeOf } from "../rules/internal.js";
@@ -98,7 +99,7 @@ async function judgeAndReserve(
   statements: readonly Statement[],
   sessionId: string,
   held: StatementStore,
-): Promise<readonly StatementIssue[] | "conflict"> {
+): Promise<readonly Issue[] | "conflict"> {
   const { store } = settings;
   const session = await store.session(sessionId, signalOf(settings));
   if (session === undefined || session.state !== "active") {
@@ -122,7 +123,7 @@ async function judgeAndReserve(
   };
   let progress = progressBefore(session, before, batch);
   const order = inOrder(statements);
-  const findings: StatementIssue[] = [];
+  const findings: Issue[] = [];
   for (const { statement, index } of order) {
     const judged = judgeStatement(statement, facts, progress);
     findings.push(...judged.findings.map((finding) => ({ ...finding, path: `[${index}].${finding.path}` })));
@@ -168,6 +169,6 @@ export async function acceptStatements(
   statements: readonly Statement[],
   session: string,
   held: StatementStore,
-): Promise<readonly StatementIssue[]> {
+): Promise<readonly Issue[]> {
   return withRetries(settings, "judged statements", () => judgeAndReserve(settings, statements, session, held));
 }

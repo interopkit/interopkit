@@ -74,7 +74,8 @@ export function readAnswerJson(response: ServiceResponse, what: string, options:
  *
  * @remarks
  * Whatever the reader throws is the fault of the answer that it was given, so any error, and not only a `DataError`, becomes a
- * `DataError` whose sentence names the service, the standard and the reader's reason.
+ * `DataError` whose sentence names the service, the standard and the reader's reason, and whose `cause` is what the reader
+ * threw.
  *
  * @param what - Names the service in the sentence, such as `The CASE provider at https://example.org/...`.
  * @param standard - Names the standard that the data must follow, such as `CASE` or `Open Badges`.
@@ -87,7 +88,7 @@ export function readAnswer<TValue>(what: string, standard: string, read: () => T
     return read();
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    throw new DataError(`${what} answered with data that is not valid ${standard}: ${reason}`);
+    throw new DataError(`${what} answered with data that is not valid ${standard}: ${reason}`, { cause: error });
   }
 }
 

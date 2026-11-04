@@ -13,7 +13,6 @@ export {
   type CaseEntityKind,
   type CaseEntityMap,
   type CaseFilter,
-  type CaseIssue,
   type CasePackage,
   type CaseQuery,
   type CaseVersion,

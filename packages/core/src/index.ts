@@ -23,13 +23,16 @@ export { createKeyedCache, type KeyedCache, type KeyedCacheOptions } from "./key
 export { raceAbort } from "./race-abort.js";
 export { type Random, SYSTEM_RANDOM } from "./random.js";
 export {
+  type CredentialServiceCall,
   callService,
+  clientOptionsEntries,
   DEFAULT_MAX_BYTES,
   DEFAULT_TIMEOUT_MS,
   type Fetch,
   type HttpMethod,
   type RequestOptions,
   requestService,
+  requestWithCredential,
   type ServiceCall,
   type ServiceInit,
   type ServiceResponse,

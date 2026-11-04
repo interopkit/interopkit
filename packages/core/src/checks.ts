@@ -16,6 +16,7 @@ export {
   DEFAULT_MAX_FINDINGS,
   type Finding,
   type FindingSink,
+  type Issue,
   safeParseBounded,
 } from "./findings.js";
 export {
@@ -78,6 +79,28 @@ export function parseDateTime(text: string): number {
   return instant;
 }
 
+/** The first millisecond that RFC 3339 writes with a year of four digits: 0000-01-01T00:00:00.000Z. */
+const EARLIEST_DATE_TIME = -62_167_219_200_000;
+
+/** The last millisecond that RFC 3339 writes with a year of four digits: 9999-12-31T23:59:59.999Z. */
+const LATEST_DATE_TIME = 253_402_300_799_999;
+
+/**
+ * Writes an instant as a date and time of RFC 3339 in UTC with millisecond precision, such as `2024-06-13T18:46:03.250Z`: the
+ * form that Caliper requires of every time, and that xAPI asks a provider to write a Timestamp in.
+ *
+ * @param at - Whole milliseconds since 1970-01-01T00:00:00Z, in the years 0000 to 9999.
+ * @returns The date and time.
+ * @throws `DataError` when it is not an integer in that range.
+ * @see {@link https://www.rfc-editor.org/rfc/rfc3339 | RFC 3339}
+ */
+export function formatDateTime(at: number): string {
+  if (typeof at !== "number" || !Number.isSafeInteger(at) || at < EARLIEST_DATE_TIME || at > LATEST_DATE_TIME) {
+    throw new DataError(`The time must be whole epoch milliseconds in the years 0000 to 9999, found ${describe(at)}.`);
+  }
+  return new Date(at).toISOString();
+}
+
 /** Returns whether a value is an object that is neither `null` nor an array. */
 export function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -113,6 +136,28 @@ export function checkArray(value: unknown, message: string): asserts value is re
 function firstHole(values: readonly unknown[]): number {
   for (let index = 0; index < values.length; index++) if (!(index in values)) return index;
   return -1;
+}
+
+/**
+ * Reads the options of a call that waits on I/O, which may be left out, and returns its `signal`.
+ *
+ * @remarks
+ * Only `signal` is read: the options of a call that extend `CallOptions` with more pass, and their other properties are the
+ * caller's to check.
+ *
+ * @param options - The options, as a host passes them from JavaScript.
+ * @returns The `CallOptions` of `@interopkit/core`: a new object, with the `signal` when they have one.
+ * @throws `DataError` when they are given and are not an object, or `signal` is not an `AbortSignal`.
+ */
+export function readCallOptions(options: unknown): {
+  /** Ends the caller's wait. */
+  readonly signal?: AbortSignal;
+} {
+  if (options === undefined) return {};
+  checkRecord(options, "The options of a call must be an object");
+  if (options.signal === undefined) return {};
+  checkAbortSignal(options.signal, "The option signal");
+  return { signal: options.signal };
 }
 
 /**
@@ -190,6 +235,25 @@ function isHttpsUrl(text: string): boolean {
 export function checkHttpsUrl(value: unknown, label: string): asserts value is string {
   checkString(value, label);
   if (!isHttpsUrl(value)) throw new DataError(`${label} must be an absolute https URL, found ${describe(value)}.`);
+}
+
+/**
+ * Checks that a value is the address of a service that a host configures, which the paths of its endpoints follow: an absolute
+ * `https` URL with no credentials, query or fragment.
+ *
+ * @remarks
+ * A `?` or a `#` with nothing after it is refused too, though `URL` drops it, so that the address is the text that the host gave.
+ *
+ * @param value - The value.
+ * @param label - Names the value in the error message, such as `The option baseUrl`.
+ * @throws `DataError` when it is not.
+ */
+export function checkBaseUrl(value: unknown, label: string): asserts value is string {
+  checkHttpsUrl(value, label);
+  const url = new URL(value);
+  if (url.username !== "" || url.password !== "" || value.includes("?") || value.includes("#")) {
+    throw new DataError(`${label} must have no credentials, query or fragment, found ${describe(value)}.`);
+  }
 }
 
 /** An IPv4 address as the URL parser writes every form of one, such as `2130706433` and `0x7f.1`: four decimal numbers. */

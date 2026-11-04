@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
-import { describeRefusal } from "@interopkit/core/checks";
-import type { CaseEntityKind, CaseEntityMap, CaseIssue } from "../model/index.js";
+import { describeRefusal, type Issue } from "@interopkit/core/checks";
+import type { CaseEntityKind, CaseEntityMap } from "../model/index.js";
 import { inspectEntity, issueSink } from "./inspect.js";
 import { type ReadOptions, readKind, readSettings } from "./options.js";
 
@@ -50,7 +50,7 @@ export function readEntity<TKind extends CaseEntityKind>(
  * `"1.0"` or `"1.1"` and a `maxFindings` that is a positive integer.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1}
  */
-export function validateEntity(kind: CaseEntityKind, value: unknown, options?: ReadOptions): readonly CaseIssue[] {
+export function validateEntity(kind: CaseEntityKind, value: unknown, options?: ReadOptions): readonly Issue[] {
   const checkedKind = readKind(kind);
   const { version, maxFindings } = readSettings(options);
   const sink = issueSink(maxFindings, false);

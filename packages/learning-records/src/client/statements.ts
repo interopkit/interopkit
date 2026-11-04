@@ -1,4 +1,4 @@
-import { type CallOptions, DataError, type ServiceResponse } from "@interopkit/core";
+import { type CallOptions, DataError, readAnswer, type ServiceResponse } from "@interopkit/core";
 import {
   checkString,
   DEFAULT_MAX_FINDINGS,
@@ -31,9 +31,9 @@ import {
   readEitherVersion,
 } from "../read/internal.js";
 import type { Settings } from "./config.js";
-import { readCallOptions, signalEntry } from "./options.js";
+import { readOptions, signalEntry } from "./options.js";
 import { readQuery } from "./query.js";
-import { jsonOf, readAnswer, send, urlOf } from "./request.js";
+import { jsonOf, STANDARD, send, urlOf, whatOf } from "./request.js";
 
 /** The most parts of one multipart answer: a page of Statements and their Attachments, bounded in memory by `maxBytes`. */
 const MAX_PAGE_PARTS = 10_000;
@@ -173,7 +173,7 @@ export async function sendStatement(
   statement: Statement,
   options: unknown,
 ): Promise<"stored" | "conflict"> {
-  const { attachments, role = "provider", signal } = readCallOptions(sendOptionsSchema, options);
+  const { attachments, role = "provider", signal } = readOptions(sendOptionsSchema, options);
   const read = readStatement(statement, { role, version: settings.version });
   if (read.id === undefined) {
     throw new DataError(
@@ -225,7 +225,7 @@ export async function sendStatements(
   statements: readonly Statement[],
   options: unknown,
 ): Promise<readonly string[]> {
-  const { attachments, role = "provider", signal } = readCallOptions(sendOptionsSchema, options);
+  const { attachments, role = "provider", signal } = readOptions(sendOptionsSchema, options);
   const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
   const batch = inspectBatch(statements, { role, version: settings.version }, sink);
   const errors = sink.list();
@@ -239,7 +239,7 @@ export async function sendStatements(
     { method: "POST", headers: { "content-type": contentType }, body },
     [200, 204],
   );
-  return readAnswer(url, () => storedIds(response, batch, settings));
+  return readAnswer(whatOf(url), STANDARD, () => storedIds(response, batch, settings));
 }
 
 /** The JSON of an answer and the data of the Attachments: a multipart message gives both, and JSON gives no data. */
@@ -266,7 +266,7 @@ export async function getStatement(
   id: string,
   options: unknown,
 ): Promise<Statement | StatementWithAttachments | undefined> {
-  const { format, voided, attachments, languages, signal } = readCallOptions(getOptionsSchema, options);
+  const { format, voided, attachments, languages, signal } = readOptions(getOptionsSchema, options);
   const parameters = new URLSearchParams({
     [voided === true ? "voidedStatementId" : "statementId"]: parseWith(uuidSchema, id, "The statement id"),
   });
@@ -277,7 +277,7 @@ export async function getStatement(
   const headers = { accept, ...languageHeader(languages) };
   const response = await send(settings, signal, url, { method: "GET", headers }, [200, 404]);
   if (response.status === 404) return undefined;
-  return readAnswer(url, () => {
+  return readAnswer(whatOf(url), STANDARD, () => {
     const body = readBody(response, settings);
     const statement = readAnswered(body.json, settings.version);
     // The case of a UUID does not make it another UUID.
@@ -349,7 +349,7 @@ async function* pagesOf(settings: Settings, first: string, request: PageRequest)
   for (let url: string | undefined = first; url !== undefined; ) {
     followed.add(url);
     const response = await send(settings, signal, url, { method: "GET", headers }, [200]);
-    const page: StatementPage = readAnswer(url, () => readPage(response, settings));
+    const page: StatementPage = readAnswer(whatOf(url), STANDARD, () => readPage(response, settings));
     yield page;
     url = page.more === undefined ? undefined : nextUrl(settings, url, page.more, followed);
   }
@@ -361,7 +361,7 @@ export function queryStatements(
   query: StatementQuery,
   options: unknown,
 ): AsyncIterable<StatementPage> {
-  const { languages, signal } = readCallOptions(readOptionsSchema, options);
+  const { languages, signal } = readOptions(readOptionsSchema, options);
   const { parameters, attachments } = readQuery(query);
   const headers = { accept: attachments ? ACCEPT_WITH_DATA : "application/json", ...languageHeader(languages) };
   return pagesOf(settings, urlOf(settings, "statements", parameters), { headers, signal });
@@ -372,7 +372,7 @@ export function queryStatements(
  * whether the answer holds the data of Attachments, so the request takes either form.
  */
 export function moreStatements(settings: Settings, more: string, options: unknown): AsyncIterable<StatementPage> {
-  const { languages, signal } = readCallOptions(readOptionsSchema, options);
+  const { languages, signal } = readOptions(readOptionsSchema, options);
   checkString(more, "The address of the page");
   const first = nextUrl(settings, settings.root, more, new Set());
   return pagesOf(settings, first, { headers: { accept: ACCEPT_WITH_DATA, ...languageHeader(languages) }, signal });

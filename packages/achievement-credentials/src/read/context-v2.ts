@@ -1,5 +1,5 @@
-import { isRecord, type JsonValue } from "@interopkit/core/checks";
-import { CONTEXTS, type CredentialIssue } from "../model/index.js";
+import { type Issue, isRecord, type JsonValue } from "@interopkit/core/checks";
+import { CONTEXTS } from "../model/index.js";
 
 /**
  * The terms of the context of Open Badges 2.0 (`https://w3id.org/openbadges/v2`), in its order. The reader takes a document
@@ -136,7 +136,7 @@ export interface ReplacedAliases {
   /** The document. An object that names a context of its own is the object of the input, and every other one is new. */
   readonly value: JsonValue;
   /** A finding for each property held under an alias and its term, each name that no term defines, and each redefined term. */
-  readonly issues: readonly CredentialIssue[];
+  readonly issues: readonly Issue[];
 }
 
 /**
@@ -158,7 +158,7 @@ function isKnownName(name: string): boolean {
  * Finds the terms of Open Badges 2.0 that a context in a list redefines after the context of 2.0: a processor reads such a term by
  * the later context, and the reader, which reads by the fixed table, would read it otherwise.
  */
-function* redefinitions(context: JsonValue, path: string): Generator<CredentialIssue> {
+function* redefinitions(context: JsonValue, path: string): Generator<Issue> {
   if (!Array.isArray(context)) return;
   const start = context.indexOf(CONTEXTS.openBadgesV2);
   for (const [index, entry] of context.entries()) {
@@ -175,7 +175,7 @@ function* redefinitions(context: JsonValue, path: string): Generator<CredentialI
 }
 
 /** Writes a value with the aliases replaced, and adds the findings of its terms. */
-function replaceIn(node: JsonValue, path: string, issues: CredentialIssue[]): JsonValue {
+function replaceIn(node: JsonValue, path: string, issues: Issue[]): JsonValue {
   if (Array.isArray(node)) return node.map((item, index) => replaceIn(item, `${path}[${index}]`, issues));
   if (!isRecord(node)) return node;
   const context = node["@context"];
@@ -192,7 +192,7 @@ function replaceMember(
   name: string,
   member: JsonValue,
   path: string,
-  issues: CredentialIssue[],
+  issues: Issue[],
 ): [string, JsonValue] {
   if (name === "type") return [name, Array.isArray(member) ? member.map(classTerm) : classTerm(member)];
   // A keyword, such as `@context` or `@language`, holds no terms of the document.
@@ -236,6 +236,6 @@ function replaceMember(
  * @returns The document and the findings.
  */
 export function replaceAliasesV2(value: JsonValue, path: string): ReplacedAliases {
-  const issues: CredentialIssue[] = [];
+  const issues: Issue[] = [];
   return { value: replaceIn(value, path, issues), issues };
 }

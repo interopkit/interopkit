@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
-import { createFindingSink, describeRefusal, type FindingSink } from "@interopkit/core/checks";
-import type { CourseIssue, CourseStructure } from "../model/index.js";
+import { createFindingSink, describeRefusal, type FindingSink, type Issue } from "@interopkit/core/checks";
+import type { CourseStructure } from "../model/index.js";
 import { inspectCourseStructure } from "./inspect.js";
 import { type CourseReadOptions, type CourseReadSettings, readCourseReadOptions } from "./options.js";
 
@@ -8,7 +8,7 @@ import { type CourseReadOptions, type CourseReadSettings, readCourseReadOptions 
  * Makes the list of findings of a call that stops at a limit. A reader keeps the errors alone, because it does not report
  * warnings, and a warning does not count toward the limit.
  */
-function courseIssueSink(maxFindings: number, errorsOnly: boolean): FindingSink<CourseIssue> {
+function courseIssueSink(maxFindings: number, errorsOnly: boolean): FindingSink<Issue> {
   return createFindingSink(
     maxFindings,
     (finding) => ({ ...finding, severity: "error" }),
@@ -70,7 +70,7 @@ export function readCourseStructure(xml: string | Uint8Array, options?: CourseRe
  * a limit, and when an option is not valid.
  * @see {@link https://github.com/AICC/CMI-5_Spec_Current/blob/quartz/cmi5_spec.md#course_structure_data_model | cmi5, 13.0 Course Structure Data Requirements}
  */
-export function validateCourseStructure(xml: string | Uint8Array, options?: CourseReadOptions): readonly CourseIssue[] {
+export function validateCourseStructure(xml: string | Uint8Array, options?: CourseReadOptions): readonly Issue[] {
   const settings = readCourseReadOptions(options);
   const sink = courseIssueSink(settings.maxFindings, false);
   inspectCourseStructure(xml, settings, sink);

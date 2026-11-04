@@ -39,7 +39,7 @@ findings.map(({ severity, path, rule }) => `${severity} ${path} ${rule}`); // =>
 
 | Function                          | Takes                                         | Returns                                        |
 | --------------------------------- | --------------------------------------------- | ---------------------------------------------- |
-| `validateEvent(value, options?)`  | An event: parsed text, or an event of the model | The findings, `readonly CaliperFinding[]`    |
+| `validateEvent(value, options?)`  | An event: parsed text, or an event of the model | The findings, `readonly Issue[]` (`@interopkit/core/checks`) |
 | `validateEntity(value, options?)` | An entity describe, with its `@context`       | The findings                                   |
 
 A finding has a `path` (where, as code writes it: `generated.count`), a `rule` (a kebab-case label to branch on), a `message`

@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
-import { describeRefusal, type FindingSink } from "@interopkit/core/checks";
-import type { AnyCredential, AnyVerifiableCredential, CredentialIssue, CredentialKind } from "../model/index.js";
+import { describeRefusal, type FindingSink, type Issue } from "@interopkit/core/checks";
+import type { AnyCredential, AnyVerifiableCredential, CredentialKind } from "../model/index.js";
 import { inspectCredential, issueSink } from "./inspect.js";
 import {
   DOCUMENT_PLACES,
@@ -18,7 +18,7 @@ import { type ReadOptions, readSettings } from "./options.js";
 function inspectAny(
   value: unknown,
   kind: CredentialKind | undefined,
-  sink: FindingSink<CredentialIssue>,
+  sink: FindingSink<Issue>,
 ): AnyCredential | undefined {
   if (kind === undefined && isDocumentV2(value)) return inspectBadgeV2(value, {}, DOCUMENT_PLACES, sink);
   if (kind === undefined && isBadgeAssertionV2(value)) return inspectBadgeAssertionV2(value, sink);
@@ -86,7 +86,7 @@ export function readCredential(value: unknown, options?: ReadOptions): AnyCreden
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/ | CLR 2.0}
  * @see {@link https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html | Open Badges 2.0}
  */
-export function validateCredential(value: unknown, options?: ReadOptions): readonly CredentialIssue[] {
+export function validateCredential(value: unknown, options?: ReadOptions): readonly Issue[] {
   const { kind, maxFindings } = readSettings(options);
   const sink = issueSink(maxFindings, false);
   inspectAny(value, kind, sink);

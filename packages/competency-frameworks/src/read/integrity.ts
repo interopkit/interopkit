@@ -1,4 +1,5 @@
-import type { CaseEntity, CaseIssue, CasePackage, CFPckgAssociation, CFRubric, LinkURI } from "../model/index.js";
+import type { Issue } from "@interopkit/core/checks";
+import type { CaseEntity, CasePackage, CFPckgAssociation, CFRubric, LinkURI } from "../model/index.js";
 import { INFORMATION_MODEL_UUID, identifierKey, isCaseNode } from "../model/internal.js";
 
 /** An identifier of an entity, and where it is. */
@@ -18,7 +19,7 @@ function pathOf({ within, index }: Identified): string {
 /** The URIs of the entities of one class that a package holds, by the identifier in lower case. */
 type Targets = ReadonlyMap<string, string>;
 
-function issue(path: string, rule: string, severity: CaseIssue["severity"], message: string): CaseIssue {
+function issue(path: string, rule: string, severity: Issue["severity"], message: string): Issue {
   return { path, rule, message, severity };
 }
 
@@ -72,7 +73,7 @@ function identifiersOfAnyEntity(entity: CaseEntity): Identified[] {
 }
 
 /** Finds the identifiers that two entities share, and the identifiers that are not of the form of the Information Model. */
-function* identifierIssues(identified: readonly Identified[]): Generator<CaseIssue> {
+function* identifierIssues(identified: readonly Identified[]): Generator<Issue> {
   const first = new Map<string, Identified>();
   for (const entry of identified) {
     const { identifier } = entry;
@@ -129,7 +130,7 @@ function packageTargets(pkg: CasePackage): PackageTargets {
 }
 
 /** Checks that a link points to an entity of the package, with the same URI. */
-function* linkIssues(link: LinkURI | undefined, path: string, targets: Targets, what: string): Generator<CaseIssue> {
+function* linkIssues(link: LinkURI | undefined, path: string, targets: Targets, what: string): Generator<Issue> {
   if (link === undefined) return;
   const uri = targets.get(identifierKey(link.identifier));
   if (uri === undefined) {
@@ -155,12 +156,12 @@ function* linksIssues(
   path: string,
   targets: Targets,
   what: string,
-): Generator<CaseIssue> {
+): Generator<Issue> {
   for (const [at, link] of (links ?? []).entries()) yield* linkIssues(link, `${path}[${at}]`, targets, what);
 }
 
 /** Checks the nodes of an association: a node that names the package's own document or item agrees with it in URI. */
-function* nodeIssues(association: CFPckgAssociation, at: number, nodes: Targets): Generator<CaseIssue> {
+function* nodeIssues(association: CFPckgAssociation, at: number, nodes: Targets): Generator<Issue> {
   let local = 0;
   for (const side of ["originNodeURI", "destinationNodeURI"] as const) {
     const node = association[side];
@@ -228,7 +229,7 @@ function loopText(stack: readonly Frame[], start: number): string {
  * Finds the `isChildOf` associations that close a loop, by a walk that keeps its own stack so that a long chain cannot overflow.
  * Each node on the stack keeps its place there, so that an association that closes a loop costs the same however long it is.
  */
-function* cycleIssues(edges: ReadonlyMap<string, readonly ChildEdge[]>): Generator<CaseIssue> {
+function* cycleIssues(edges: ReadonlyMap<string, readonly ChildEdge[]>): Generator<Issue> {
   // The place on the stack of a node that the walk is in, or "done" for a node whose parents are all walked.
   const state = new Map<string, number | "done">();
   for (const start of edges.keys()) {
@@ -284,7 +285,7 @@ function reachedFromDocument(pkg: CasePackage, edges: ReadonlyMap<string, readon
 }
 
 /** Finds the items that no chain of `isChildOf` associations leads from to the document, which the items are components of. */
-function* outsideTreeIssues(pkg: CasePackage, edges: ReadonlyMap<string, readonly ChildEdge[]>): Generator<CaseIssue> {
+function* outsideTreeIssues(pkg: CasePackage, edges: ReadonlyMap<string, readonly ChildEdge[]>): Generator<Issue> {
   const reached = reachedFromDocument(pkg, edges);
   for (const [at, item] of (pkg.CFItems ?? []).entries()) {
     if (reached.has(identifierKey(item.identifier))) continue;
@@ -298,7 +299,7 @@ function* outsideTreeIssues(pkg: CasePackage, edges: ReadonlyMap<string, readonl
 }
 
 /** Checks the links of the document and of each item against the definitions of the package. */
-function* definitionLinkIssues(pkg: CasePackage, targets: PackageTargets): Generator<CaseIssue> {
+function* definitionLinkIssues(pkg: CasePackage, targets: PackageTargets): Generator<Issue> {
   const { CFDocument: document } = pkg;
   yield* linksIssues(document.subjectURI, "CFDocument.subjectURI", targets.subjects, "subject");
   yield* linkIssues(document.licenseURI, "CFDocument.licenseURI", targets.licenses, "license");
@@ -315,7 +316,7 @@ function* definitionLinkIssues(pkg: CasePackage, targets: PackageTargets): Gener
 }
 
 /** Checks the links of the associations: their groupings, their nodes, and the tree that `isChildOf` makes. */
-function* associationIssues(pkg: CasePackage, targets: PackageTargets): Generator<CaseIssue> {
+function* associationIssues(pkg: CasePackage, targets: PackageTargets): Generator<Issue> {
   const associations = pkg.CFAssociations ?? [];
   for (const [at, association] of associations.entries()) {
     if (association.CFAssociationGroupingURI !== undefined) {
@@ -334,7 +335,7 @@ function* associationIssues(pkg: CasePackage, targets: PackageTargets): Generato
 }
 
 /** Says that a criterion or a level names another parent than the one that holds it. */
-function* parentIssues(path: string, claimed: string | undefined, parent: string, what: string): Generator<CaseIssue> {
+function* parentIssues(path: string, claimed: string | undefined, parent: string, what: string): Generator<Issue> {
   if (claimed === undefined || identifierKey(claimed) === identifierKey(parent)) return;
   yield issue(
     path,
@@ -345,7 +346,7 @@ function* parentIssues(path: string, claimed: string | undefined, parent: string
 }
 
 /** Checks that each criterion and level of the rubrics names its parent, and that a criterion's item is in the package. */
-function* rubricIssues(pkg: CasePackage, targets: PackageTargets): Generator<CaseIssue> {
+function* rubricIssues(pkg: CasePackage, targets: PackageTargets): Generator<Issue> {
   for (const [at, rubric] of (pkg.CFRubrics ?? []).entries()) {
     for (const [index, criterion] of (rubric.CFRubricCriteria ?? []).entries()) {
       const path = `CFRubrics[${at}].CFRubricCriteria[${index}]`;
@@ -370,7 +371,7 @@ function* rubricIssues(pkg: CasePackage, targets: PackageTargets): Generator<Cas
  * @returns The findings, one at a time, so that a list that stops at its limit stops the check; in no order that a caller may
  * rely on.
  */
-export function* packageIssues(pkg: CasePackage): Generator<CaseIssue> {
+export function* packageIssues(pkg: CasePackage): Generator<Issue> {
   const targets = packageTargets(pkg);
   yield* identifierIssues(identifiersOfPackage(pkg));
   yield* definitionLinkIssues(pkg, targets);
@@ -384,6 +385,6 @@ export function* packageIssues(pkg: CasePackage): Generator<CaseIssue> {
  * @param entity - The entity.
  * @returns The findings, one at a time.
  */
-export function entityIssues(entity: CaseEntity): Generator<CaseIssue> {
+export function entityIssues(entity: CaseEntity): Generator<Issue> {
   return identifierIssues(identifiersOfAnyEntity(entity));
 }

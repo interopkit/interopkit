@@ -21,7 +21,7 @@ flowchart TD
   each --> defined{"Defined by cmi5?"}
   defined -->|"yes"| verb["Verb, actor account, object, result,<br/>score and mastery, session and<br/>registration, launch mode"]
   defined -->|"no"| allowed["Allowed: no moveOn category"]
-  verb --> findings["StatementIssue[]"]
+  verb --> findings["Issue[]"]
   allowed --> findings
 ```
 
@@ -84,7 +84,7 @@ CATAPULT's player writes `masteryScore: null` and `entitlementKey: {}` into the 
 
 ## Rules
 
-Each finding is a `StatementIssue` of `@interopkit/learning-records`: the `path` in the list (`[3].result.score.scaled`), a
+Each finding is an `Issue` of `@interopkit/core/checks`: the `path` in the list (`[3].result.score.scaled`), a
 `rule`, a `message` and a `severity`. The rules of xAPI 1.0.3 come first, with their own rules, and a statement with an error
 of xAPI is not judged by these. `scripts/cmi5-rules.ts` holds a session that breaks each sentence, which the tests judge.
 

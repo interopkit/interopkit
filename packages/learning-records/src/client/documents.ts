@@ -1,5 +1,5 @@
-import { type CallOptions, DataError, type ServiceResponse } from "@interopkit/core";
-import { dateTimeSchema, jsonObjectSchema, parseWith, strictRecord } from "@interopkit/core/checks";
+import { type CallOptions, DataError, readAnswer, type ServiceResponse } from "@interopkit/core";
+import { dateTimeSchema, jsonObjectSchema, parseWith, readCallOptions, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type {
   DocumentScope,
@@ -11,8 +11,8 @@ import type {
 } from "../model/index.js";
 import { bytesSchema, mediaTypeSchema, scopeSchema, stateScopeSchema, targetSchema } from "../read/internal.js";
 import type { Settings } from "./config.js";
-import { callOptionsSchema, readCallOptions, signalEntry } from "./options.js";
-import { isHeaderValue, jsonOf, readAnswer, send, urlOf } from "./request.js";
+import { readOptions, signalEntry } from "./options.js";
+import { isHeaderValue, jsonOf, STANDARD, send, urlOf, whatOf } from "./request.js";
 
 /** What happened to a write: it was made, the precondition failed, or the LRS found a conflict with the current document. */
 export type WriteOutcome = "written" | "precondition-failed" | "conflict";
@@ -141,12 +141,12 @@ export async function getDocument(
   target: DocumentTarget,
   options: unknown,
 ): Promise<LrsDocument | undefined> {
-  const { signal } = readCallOptions(callOptionsSchema, options);
+  const { signal } = readCallOptions(options);
   const checked = parseWith(targetSchema, target, "The target");
   const url = urlOf(settings, PATHS[checked.resource], parametersOf(checked));
   const response = await send(settings, signal, url, { method: "GET", headers: { accept: "*/*" } }, [200, 404]);
   if (response.status === 404) return undefined;
-  return readAnswer(url, () => documentOf(response));
+  return readAnswer(whatOf(url), STANDARD, () => documentOf(response));
 }
 
 /** Stores the answer of a write as a value. */
@@ -163,7 +163,7 @@ async function write(
   document: { readonly contentType: string; readonly body: Uint8Array<ArrayBuffer> },
   options: unknown,
 ): Promise<WriteOutcome> {
-  const { precondition, signal } = readCallOptions(writeOptionsSchema, options);
+  const { precondition, signal } = readOptions(writeOptionsSchema, options);
   requirePrecondition(settings, method, target.resource, precondition !== undefined);
   const url = urlOf(settings, PATHS[target.resource], parametersOf(target));
   const headers = { "content-type": document.contentType, ...conditionOf(precondition) };
@@ -202,7 +202,7 @@ export async function deleteDocument(
   options: unknown,
 ): Promise<WriteOutcome> {
   const checked = parseWith(targetSchema, target, "The target");
-  const { precondition, signal } = readCallOptions(deleteOptionsSchema, options);
+  const { precondition, signal } = readOptions(deleteOptionsSchema, options);
   requirePrecondition(settings, "DELETE", checked.resource, precondition !== undefined);
   const url = urlOf(settings, PATHS[checked.resource], parametersOf(checked));
   const response = await send(
@@ -221,18 +221,20 @@ export async function listDocumentIds(
   scope: DocumentScope,
   options: unknown,
 ): Promise<readonly string[]> {
-  const { since, signal } = readCallOptions(listOptionsSchema, options);
+  const { since, signal } = readOptions(listOptionsSchema, options);
   const checked = parseWith(scopeSchema, scope, "The scope");
   const parameters = parametersOf(checked);
   if (since !== undefined) parameters.set("since", since);
   const url = urlOf(settings, PATHS[checked.resource], parameters);
   const response = await send(settings, signal, url, { method: "GET", headers: { accept: "application/json" } }, [200]);
-  return readAnswer(url, () => parseWith(v.array(v.string()), jsonOf(response, settings), "The answer"));
+  return readAnswer(whatOf(url), STANDARD, () =>
+    parseWith(v.array(v.string()), jsonOf(response, settings), "The answer"),
+  );
 }
 
 /** Removes every state of an Agent in an Activity. */
 export async function deleteStates(settings: Settings, scope: StateScope, options: unknown): Promise<void> {
-  const { signal } = readCallOptions(callOptionsSchema, options);
+  const { signal } = readCallOptions(options);
   const checked = parseWith(stateScopeSchema, scope, "The scope");
   const url = urlOf(settings, PATHS.state, parametersOf(checked));
   await send(settings, signal, url, { method: "DELETE" }, [204]);

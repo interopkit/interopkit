@@ -1,19 +1,13 @@
 import { DataError } from "@interopkit/core";
-import { describe } from "@interopkit/core/checks";
-import {
-  type Context,
-  formatTimestamp,
-  type Statement,
-  type StatementObject,
-  type SubStatement,
-} from "../model/index.js";
+import { describe, formatDateTime, parseDateTime } from "@interopkit/core/checks";
+import type { Context, Statement, StatementObject, SubStatement } from "../model/index.js";
 import { isIsoTimestamp, STATEMENT_VERSIONS, VERSION_PATTERNS } from "../model/internal.js";
 import { readEitherVersion } from "../read/internal.js";
 
 /** Writes a time as a Timestamp of 1.0.3: as it is when ISO 8601 takes it, and otherwise in UTC, such as `2024-06-13T18:46:03.250Z`. */
 function isoTime(time: string): string {
   // RFC 3339 takes a `t` between the date and the time, a `z`, and `-00:00`, which ISO 8601 does not.
-  return isIsoTimestamp(time) ? time : formatTimestamp(time);
+  return isIsoTimestamp(time) ? time : formatDateTime(parseDateTime(time));
 }
 
 /** The context without `contextAgents` and `contextGroups`, which 1.0.3 does not have; no context when nothing else is left. */

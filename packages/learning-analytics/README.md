@@ -13,7 +13,7 @@ flowchart LR
     model["model: 76 entity and 25 event types,<br/>vocabularies, contexts"]
     read["readEntity, readEvent"]
     validate["validateEvent, validateEntity:<br/>the rules of the profiles"]
-    build["buildEvent, buildEntity, mintUrn,<br/>formatDateTime, checkIri"]
+    build["buildEvent, buildEntity, mintUrn,<br/>checkIri"]
     send["sendCaliper, pingEndpoint"]
     endpointNode["handleCaliperRequest,<br/>readEnvelope"]
   end
@@ -46,9 +46,9 @@ npm install @interopkit/learning-analytics
 | Subpath                          | Exports                                                                                                                                       |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@interopkit/learning-analytics` | `readEntity`, `readEvent`, `ReadOptions`: an entity describe or an event from outside, of Caliper 1.2 or, with `version: "1.1"`, of 1.1, checked against its class and returned as a copy |
-|                                  | `validateEvent`, `validateEntity`, `CaliperFinding`, `ValidateOptions`: what is wrong with a value, and where it departs from the rules of its profile, as findings |
+|                                  | `validateEvent`, `validateEntity`, `ValidateOptions`: what is wrong with a value, and where it departs from the rules of its profile, as findings |
 |                                  | `buildEvent`, `buildEntity`, `BuildOptions`: a checked event or entity with its `@context`; `buildEvent` also checks the rules of the event's profile |
-|                                  | `mintUrn`: the identifier of an event from the parts that identify it. `formatDateTime`: epoch milliseconds as Caliper writes a time. `checkIri` |
+|                                  | `mintUrn`: the identifier of an event from the parts that identify it. `checkIri`. A time is written by `formatDateTime` of `@interopkit/core/checks` |
 |                                  | `sendCaliper`, `pingEndpoint`, `SendCaliperOptions`, `CaliperSender`, `PingResult`, `DEFAULT_CALIPER_TIMEOUT_MS`: the sensor, which sends events and entity describes and asks an endpoint for its configuration |
 |                                  | `EndpointConfiguration`: what an endpoint says of itself (section 6.2)                                                                        |
 | `@interopkit/learning-analytics/endpoint` | `handleCaliperRequest`, `CaliperEndpointOptions`: answers a POST of an envelope of 1.2 or 1.1 in a fixed order of checks (405, 401, 415, 413, 400, 422) and a GET with its configuration |
@@ -57,7 +57,8 @@ npm install @interopkit/learning-analytics
 |                                  | `CALIPER_CONTEXT`, `CALIPER_1_1_CONTEXT`, `LIBRARY_PROFILE_CONTEXT`, `CALIPER_VERSIONS`, `CaliperVersion`, and the vocabularies `ACTIONS`, `PROFILES`, `ROLES`, `STATUSES`, `LTI_MESSAGE_TYPES`, `SYSTEM_IDENTIFIER_TYPES`, `METRICS`, `ENTITY_TYPES`, `EVENT_TYPES` and the ranges `AGENT_TYPES`, `ORGANIZATION_TYPES`, `COURSE_OFFERING_TYPES`, `DIGITAL_RESOURCE_TYPES`, `QUESTION_TYPES`, `SCALE_TYPES` |
 
 ```ts
-import { buildEvent, formatDateTime, mintUrn, sendCaliper } from "@interopkit/learning-analytics";
+import { formatDateTime } from "@interopkit/core/checks";
+import { buildEvent, mintUrn, sendCaliper } from "@interopkit/learning-analytics";
 
 const event = buildEvent({
   id: mintUrn(["event", "session-1", 1]),
@@ -66,7 +67,7 @@ const event = buildEvent({
   actor: { id: "urn:uuid:3f0c8a8e-7b8e-4b6a-9c1d-2a4f6e8b0c1d", type: "Person" },
   action: "Started",
   object: { id: "https://exam.example/tests/42", type: "Assessment" },
-  eventTime: formatDateTime(1_700_000_000_000, "The time of the event"),
+  eventTime: formatDateTime(1_700_000_000_000),
   edApp: "https://exam.example",
 });
 event.id; // => "urn:uuid:017072c6-a4a4-5227-a083-38da34a6f364"

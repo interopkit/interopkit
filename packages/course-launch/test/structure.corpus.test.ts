@@ -1,9 +1,10 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { Issue } from "@interopkit/core/checks";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { createXsdOracle } from "../../../scripts/xsd-oracle.js";
-import { type CourseIssue, readCourseStructure, validateCourseStructure, writeCourseStructure } from "../src/index.js";
+import { readCourseStructure, validateCourseStructure, writeCourseStructure } from "../src/index.js";
 import { catapult, courseStructureXsd } from "./cmi5-corpus.js";
 import { COURSE_STRUCTURES, RUNS } from "./course-arbitrary.js";
 
@@ -110,7 +111,7 @@ const STRICTER_RULES: ReadonlySet<string> = new Set([
  * reference without `idref`, and an element or an attribute in `launchParameters` or `entitlementKey`, which the schema leaves
  * untyped and cmi5 types as text.
  */
-function isStricterRule({ rule, path, message }: CourseIssue): boolean {
+function isStricterRule({ rule, path, message }: Issue): boolean {
   if (STRICTER_RULES.has(rule)) return true;
   if (rule === "missing-attribute") return message === "has no attribute idref.";
   if (rule === "unexpected-element" && isAfterExtension(path, message)) return true;

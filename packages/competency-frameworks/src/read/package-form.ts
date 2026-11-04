@@ -1,5 +1,4 @@
-import { isRecord } from "@interopkit/core/checks";
-import type { CaseIssue } from "../model/index.js";
+import { type Issue, isRecord } from "@interopkit/core/checks";
 import { identifierKey } from "../model/internal.js";
 
 /** The rule of a link to its document or its package that an entity in the form of a package carries, which the form lacks. */
@@ -17,7 +16,7 @@ function identifierOf(entity: unknown): string | undefined {
 }
 
 /** Says that a link names another document than the one of the package. */
-function* mismatch(link: unknown, path: string, document: string | undefined): Generator<CaseIssue> {
+function* mismatch(link: unknown, path: string, document: string | undefined): Generator<Issue> {
   const named = identifierOf(link);
   if (document === undefined || named === undefined || identifierKey(named) === identifierKey(document)) return;
   yield {
@@ -29,7 +28,7 @@ function* mismatch(link: unknown, path: string, document: string | undefined): G
 }
 
 /** Warns once for a list whose entities carry `CFDocumentURI`, and for each such link that names another document. */
-function* listIssues(list: unknown, path: string, what: string, document: string | undefined): Generator<CaseIssue> {
+function* listIssues(list: unknown, path: string, what: string, document: string | undefined): Generator<Issue> {
   if (!Array.isArray(list)) return;
   const linked: [number, unknown][] = [];
   for (const [at, entity] of list.entries()) {
@@ -56,7 +55,7 @@ function* listIssues(list: unknown, path: string, what: string, document: string
  * @returns One finding for each list whose entities carry the link, and one for each link that names another document than the
  * document of the package.
  */
-export function* packageFormIssues(value: unknown): Generator<CaseIssue> {
+export function* packageFormIssues(value: unknown): Generator<Issue> {
   const document = memberOf(value, "CFDocument");
   const documentIdentifier = identifierOf(document);
   const packageLink = memberOf(document, "CFPackageURI");

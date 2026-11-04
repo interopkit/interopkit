@@ -1,5 +1,5 @@
 import type { CallOptions } from "./call-options.js";
-import { checkAbortSignal, checkFunction, checkPositiveInteger, checkRecord } from "./checks.js";
+import { checkFunction, checkPositiveInteger, checkRecord, readCallOptions } from "./checks.js";
 import { type Clock, checkClock, readClock } from "./clock.js";
 import { raceAbort } from "./race-abort.js";
 
@@ -91,9 +91,9 @@ export function createKeyedCache<TValue>(options: KeyedCacheOptions<TValue>): Ke
   };
 
   return {
-    async get(key, load, callOptions, reloadAfter) {
-      if (callOptions?.signal !== undefined) checkAbortSignal(callOptions.signal, "The option signal");
-      callOptions?.signal?.throwIfAborted();
+    async get(key, load, options, reloadAfter) {
+      const callOptions = readCallOptions(options);
+      callOptions.signal?.throwIfAborted();
       const entry = kept.get(key);
       if (entry !== undefined) {
         const now = readClock(clock);

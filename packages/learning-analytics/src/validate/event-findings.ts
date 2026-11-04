@@ -1,8 +1,8 @@
-import { isRecord } from "@interopkit/core/checks";
+import { type Issue, isRecord } from "@interopkit/core/checks";
 import type { CaliperEvent } from "../model/index.js";
 import { advisedOfEvent } from "./advised-properties.js";
 import { CERTIFICATION_ROWS } from "./certification-rows.js";
-import { type CaliperFinding, error, warning } from "./finding.js";
+import { error, warning } from "./finding.js";
 import { isNamed, type ProfileEntry } from "./profile-entry.js";
 import { classOf, judge, namesOf } from "./profile-fit.js";
 import { SPECIFICATION_ROWS } from "./specification-rows.js";
@@ -21,7 +21,7 @@ function* recommendedClass(
   entity: unknown,
   property: "generated" | "target",
   rule: string,
-): Generator<CaliperFinding> {
+): Generator<Issue> {
   const named = rows.flatMap((row) => row[property]);
   const type = classOf(entity);
   if (type === undefined || !rows.every((row) => row[property].length > 0) || isNamed(type, named)) return;
@@ -33,7 +33,7 @@ function* recommendedClass(
 }
 
 /** What a table recommends beyond the entries that an event fits: the generated entity and the target. */
-function* recommendations(rows: readonly ProfileEntry[], event: CaliperEvent): Generator<CaliperFinding> {
+function* recommendations(rows: readonly ProfileEntry[], event: CaliperEvent): Generator<Issue> {
   if (event.generated === undefined) {
     if (rows.every((row) => row.advised)) {
       const named = namesOf(rows.flatMap((row) => row.generated));
@@ -53,7 +53,7 @@ function* recommendations(rows: readonly ProfileEntry[], event: CaliperEvent): G
  * Judges an event against the tables of its profile: the specification's first, and the certification guide's when the
  * specification's does not fit. What neither allows is an error; what only the guide allows is a warning.
  */
-function* tableFindings(event: CaliperEvent): Generator<CaliperFinding> {
+function* tableFindings(event: CaliperEvent): Generator<Issue> {
   const strict = judge(SPECIFICATION_ROWS, event);
   if (strict.fits) {
     yield* recommendations(strict.rows, event);
@@ -73,7 +73,7 @@ function* tableFindings(event: CaliperEvent): Generator<CaliperFinding> {
  * The generic event is for what the profiles do not model: an interaction that a profile's table names is a warning, since the
  * event of that profile says more.
  */
-function* generalFindings(event: CaliperEvent): Generator<CaliperFinding> {
+function* generalFindings(event: CaliperEvent): Generator<Issue> {
   if (event.type !== "Event" || (event.profile !== undefined && event.profile !== "GeneralProfile")) return;
   const actor = classOf(event.actor);
   const object = classOf(event.object);
@@ -96,7 +96,7 @@ function* generalFindings(event: CaliperEvent): Generator<CaliperFinding> {
  * A media event places the action in the media: the location that it gives as its target has the time of the action. The shape
  * allows no other class as the target of a media event.
  */
-function* mediaFindings(event: CaliperEvent): Generator<CaliperFinding> {
+function* mediaFindings(event: CaliperEvent): Generator<Issue> {
   const { target } = event;
   if (event.type !== "MediaEvent" || !isRecord(target)) return;
   if (!("currentTime" in target)) {
@@ -112,7 +112,7 @@ function* mediaFindings(event: CaliperEvent): Generator<CaliperFinding> {
  * Lists what the profile rules find in an event whose shape is right: the profile, the tables of the specification and of the
  * certification guide, the recommendations of the profile and its requirement of a location in the media.
  */
-export function* eventFindings(event: CaliperEvent): Generator<CaliperFinding> {
+export function* eventFindings(event: CaliperEvent): Generator<Issue> {
   if (event.profile === undefined) {
     yield warning(
       "profile",

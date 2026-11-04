@@ -1,12 +1,6 @@
+import type { Issue } from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
-import {
-  type CaliperFinding,
-  EVENT_TYPES,
-  readEntity,
-  readEvent,
-  validateEntity,
-  validateEvent,
-} from "../src/index.js";
+import { EVENT_TYPES, readEntity, readEvent, validateEntity, validateEvent } from "../src/index.js";
 import { fixtures } from "./caliper-oracle.js";
 
 /** A document of a fixture with the name of its file, and its place in the envelope that holds it. */
@@ -30,9 +24,9 @@ function documents(prefix: string, negative = false): Document[] {
 }
 
 const isEvent = (value: Record<string, unknown>): boolean => EVENT_TYPES.some((type) => type === value.type);
-const judge = (value: Record<string, unknown>): readonly CaliperFinding[] =>
+const judge = (value: Record<string, unknown>): readonly Issue[] =>
   isEvent(value) ? validateEvent(value) : validateEntity(value);
-const errorsOf = (findings: readonly CaliperFinding[]) => findings.filter(({ severity }) => severity === "error");
+const errorsOf = (findings: readonly Issue[]) => findings.filter(({ severity }) => severity === "error");
 
 /**
  * The fixtures that mark an event with the General Profile although it is a NavigationEvent, which section 3.15 allows the

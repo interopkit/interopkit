@@ -8,6 +8,7 @@ import {
   nonEmptyStringSchema,
   parseWith,
   positiveIntegerSchema,
+  readCallOptions,
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
@@ -132,6 +133,6 @@ export function readAuOptions(options: unknown): AuSettings {
 
 /** The signal of a call: its own, or that of the options of the session. */
 export function signalOf(settings: AuSettings, options: CallOptions | undefined): CallOptions {
-  const signal = options?.signal ?? settings.signal;
+  const signal = readCallOptions(options).signal ?? settings.signal;
   return signal === undefined ? {} : { signal };
 }

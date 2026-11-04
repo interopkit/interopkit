@@ -1,3 +1,4 @@
+import { formatDateTime } from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
 import {
   ACTIONS,
@@ -5,7 +6,6 @@ import {
   type CaliperEvent,
   ENTITY_TYPES,
   EVENT_TYPES,
-  formatDateTime,
   LTI_MESSAGE_TYPES,
   METRICS,
   mintUrn,
@@ -241,7 +241,7 @@ describe("the check against the published context", () => {
   it("finds an envelope with a custom property, a missing version and no events", () => {
     const envelope = {
       sensor: "https://exam.example/sensors/1",
-      sendTime: formatDateTime(1_700_000_000_000, "The time"),
+      sendTime: formatDateTime(1_700_000_000_000),
       dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p2",
     };
     expect(envelopeProblems({ ...envelope, data: [], extra: 1 })).toStrictEqual([

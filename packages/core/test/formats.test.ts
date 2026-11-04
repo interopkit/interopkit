@@ -1,9 +1,11 @@
+import fc from "fast-check";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import {
   absoluteUriSchema,
   dateSchema,
   dateTimeSchema,
+  formatDateTime,
   isAbsoluteUri,
   isDate,
   isDateTime,
@@ -32,6 +34,67 @@ describe("isDate", () => {
     ["", false],
   ])("reads %j as a date that exists: %s", (text, expected) => {
     expect(isDate(text)).toBe(expected);
+  });
+});
+
+/** The last millisecond that RFC 3339 writes with a year of four digits. */
+const LATEST = 253_402_300_799_999;
+
+describe("formatDateTime", () => {
+  it("knows the first and the last instant of the years 0000 to 9999", () => {
+    expect(new Date(LATEST).toISOString()).toBe("9999-12-31T23:59:59.999Z");
+    expect(new Date(-62_167_219_200_000).toISOString()).toBe("0000-01-01T00:00:00.000Z");
+  });
+
+  it.each([
+    [0, "1970-01-01T00:00:00.000Z"],
+    [1_700_000_000_123, "2023-11-14T22:13:20.123Z"],
+    [1_718_304_363_250, "2024-06-13T18:46:03.250Z"],
+    [-62_167_219_200_000, "0000-01-01T00:00:00.000Z"],
+    [LATEST, "9999-12-31T23:59:59.999Z"],
+  ])("writes %j as %s, in UTC with millisecond precision", (at, expected) => {
+    expect(formatDateTime(at)).toBe(expected);
+  });
+
+  it.each([1.5, -0.5, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, LATEST + 1, -62_167_219_200_001])(
+    "refuses %j, which is no whole millisecond of the years 0000 to 9999",
+    (at) => {
+      expect(() => formatDateTime(at)).toThrow(
+        `The time must be whole epoch milliseconds in the years 0000 to 9999, found ${String(at)}.`,
+      );
+    },
+  );
+
+  it("refuses input of other types, as JavaScript and JSON pass it", () => {
+    for (const bad of JSON.parse('["5", null, [], {}, true]') as unknown[]) {
+      expect(() => formatDateTime(bad as number), String(bad)).toThrow(DataError);
+    }
+    expect(() => formatDateTime(JSON.parse('"5"') as number)).toThrow('found "5".');
+    expect(() => formatDateTime(Object.create(null) as number)).toThrow("found an object.");
+  });
+
+  it("writes a time or throws a DataError, for any value", () => {
+    fc.assert(
+      fc.property(fc.anything(), (value) => {
+        try {
+          expect(formatDateTime(value as number)).toMatch(/Z$/u);
+        } catch (error) {
+          expect(error).toBeInstanceOf(DataError);
+        }
+      }),
+      { numRuns: 300, seed: 20_261_104 },
+    );
+  });
+
+  it("writes a time that reads back as the same instant, for any instant of the range", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -62_167_219_200_000, max: LATEST }), (at) => {
+        const text = formatDateTime(at);
+        expect(text).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u);
+        expect(parseDateTime(text)).toBe(at);
+      }),
+      { numRuns: 300, seed: 20_261_104 },
+    );
   });
 });
 

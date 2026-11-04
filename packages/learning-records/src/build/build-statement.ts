@@ -3,7 +3,10 @@ import {
   checkProperties,
   checkRecord,
   DEFAULT_MAX_FINDINGS,
+  formatDateTime,
+  type Issue,
   isDateTime,
+  parseDateTime,
   parseWith,
   strictRecord,
 } from "@interopkit/core/checks";
@@ -12,10 +15,8 @@ import {
   type Actor,
   type Attachment,
   type Context,
-  formatTimestamp,
   type Result,
   type Statement,
-  type StatementIssue,
   type StatementObject,
   type Verb,
   XAPI_VERSIONS,
@@ -87,14 +88,14 @@ export function versionOf(options: unknown): XapiVersion {
 }
 
 /** Writes the sentence of the `DataError` for a Statement that cannot be built: every error, each with its path. */
-function sentenceOf(errors: readonly StatementIssue[]): string {
+function sentenceOf(errors: readonly Issue[]): string {
   const list = errors.map(({ path, message }) => `At ${path}: ${message}`);
   return `The statement is invalid. ${list.join(" ")}`;
 }
 
 /** Returns the time in UTC when it is a time, and what was given otherwise, for the reader to refuse with its sentence. */
 function inUtc(timestamp: unknown): unknown {
-  return typeof timestamp === "string" && isDateTime(timestamp) ? formatTimestamp(timestamp) : timestamp;
+  return typeof timestamp === "string" && isDateTime(timestamp) ? formatDateTime(parseDateTime(timestamp)) : timestamp;
 }
 
 /**

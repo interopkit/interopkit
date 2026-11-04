@@ -3,6 +3,7 @@ import {
   DEFAULT_MAX_FINDINGS,
   describeRefusal,
   type FindingSink,
+  type Issue,
   isRecord,
   nonEmptyStringSchema,
   parseWith,
@@ -19,7 +20,6 @@ import {
 } from "../model/index.js";
 import { time } from "../read/internal.js";
 import { DEPRECATED_IN_1_1 } from "../v1p1/index.js";
-import type { CaliperFinding } from "../validate/index.js";
 import { findingSink, inspectEntity, inspectEvent } from "../validate/internal.js";
 import type { CaliperEndpointOptions } from "./options.js";
 import { versionsSchema } from "./options.js";
@@ -69,7 +69,7 @@ function isEvent(item: unknown): boolean {
 }
 
 /** Writes a path inside the item that has the index: `data[2]`, `data[2].actor` and `data[2]["@context"]`. */
-function placed(index: number): (finding: CaliperFinding) => CaliperFinding {
+function placed(index: number): (finding: Issue) => Issue {
   const base = `data[${index}]`;
   return (finding) => {
     const { path } = finding;
@@ -84,7 +84,7 @@ function placed(index: number): (finding: CaliperFinding) => CaliperFinding {
  */
 function readItems(
   items: readonly unknown[],
-  sink: FindingSink<CaliperFinding>,
+  sink: FindingSink<Issue>,
   version: CaliperVersion,
   parsed: boolean,
 ): (CaliperEvent | EntityDocument)[] {

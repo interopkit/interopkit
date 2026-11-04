@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
-import { describeRefusal } from "@interopkit/core/checks";
-import type { CredentialIssue, Entity, EntityByKind, EntityKind } from "../model/index.js";
+import { describeRefusal, type Issue } from "@interopkit/core/checks";
+import type { Entity, EntityByKind, EntityKind } from "../model/index.js";
 import { inspectEntity, issueSink } from "./inspect.js";
 import { type EntityReadOptions, readEntityKind, readEntityLimit } from "./options.js";
 
@@ -50,11 +50,7 @@ export function readEntity(kind: EntityKind, value: unknown, options?: EntityRea
  * that is a positive integer.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/ | Open Badges 3.0}
  */
-export function validateEntity(
-  kind: EntityKind,
-  value: unknown,
-  options?: EntityReadOptions,
-): readonly CredentialIssue[] {
+export function validateEntity(kind: EntityKind, value: unknown, options?: EntityReadOptions): readonly Issue[] {
   const checkedKind = readEntityKind(kind);
   const sink = issueSink(readEntityLimit(options), false);
   inspectEntity(checkedKind, value, sink);

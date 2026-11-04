@@ -1,4 +1,3 @@
-import type { Finding } from "@interopkit/core/checks";
 import type { LaunchMethod, MoveOn } from "./vocabularies.js";
 
 /**
@@ -147,10 +146,4 @@ export interface CourseStructure {
   readonly children: readonly (AssignableUnit | Block)[];
   /** The extensions of the structure as a whole. */
   readonly extensions: readonly ExtensionElement[];
-}
-
-/** A finding about a course structure: where in the model, which rule, what is wrong, and its severity. */
-export interface CourseIssue extends Finding {
-  /** An error makes the structure non-conforming; a warning does not. */
-  readonly severity: "error" | "warning";
 }

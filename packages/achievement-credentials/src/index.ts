@@ -70,7 +70,6 @@ export {
   CREDENTIAL_APIS,
   CREDENTIAL_KINDS,
   type CredentialApi,
-  type CredentialIssue,
   type CredentialKind,
   type CredentialSchema,
   type CredentialStatus,

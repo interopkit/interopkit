@@ -30,22 +30,22 @@ describe("createLrsClient: the configuration", () => {
   });
 
   it.each([
-    "http://lrs.example.org/xapi/",
-    "https://lrs.example.org/xapi",
-    "https://lrs.example.org",
-    "lrs.example.org/xapi/",
-    "https://lrs.example.org/xapi/?a=1",
-    "https://lrs.example.org/xapi/#x",
-    "https://user:secret@lrs.example.org/xapi/",
-    "https://user@lrs.example.org/xapi/",
-    "https://lrs.example.org/xapi/?",
-    "https://lrs.example.org/xapi/?next=/",
-    "https://lrs.example.org/xapi/#/",
-    "",
-  ])("refuses the endpoint %j", (endpoint) => {
+    ["http://lrs.example.org/xapi/", "be an absolute https URL"],
+    ["lrs.example.org/xapi/", "be an absolute https URL"],
+    ["", "be an absolute https URL"],
+    ["https://lrs.example.org/xapi", "end in a slash, such as https://lrs.example.org/xapi/"],
+    ["https://lrs.example.org", "end in a slash, such as https://lrs.example.org/xapi/"],
+    ["https://lrs.example.org/xapi/?a=1", "have no credentials, query or fragment"],
+    ["https://lrs.example.org/xapi/#x", "have no credentials, query or fragment"],
+    ["https://user:secret@lrs.example.org/xapi/", "have no credentials, query or fragment"],
+    ["https://user@lrs.example.org/xapi/", "have no credentials, query or fragment"],
+    ["https://lrs.example.org/xapi/?", "have no credentials, query or fragment"],
+    ["https://lrs.example.org/xapi/?next=/", "have no credentials, query or fragment"],
+    ["https://lrs.example.org/xapi/#/", "have no credentials, query or fragment"],
+  ])("refuses the endpoint %j", (endpoint, problem) => {
     expect(() => createLrsClient({ endpoint, fetch: lrs.fetch })).toThrow(DataError);
     expect(() => createLrsClient({ endpoint, fetch: lrs.fetch })).toThrow(
-      "The option endpoint must be an https address that ends in a slash, such as https://lrs.example.org/xapi/",
+      `The option endpoint must ${problem}, found ${JSON.stringify(endpoint)}.`,
     );
   });
 

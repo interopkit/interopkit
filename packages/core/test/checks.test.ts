@@ -5,6 +5,7 @@ import {
   buildFindings,
   checkAbortSignal,
   checkArray,
+  checkBaseUrl,
   checkFunction,
   checkHttpsUrl,
   checkNonEmptyString,
@@ -33,6 +34,7 @@ import {
   parseWith,
   positiveIntegerSchema,
   positiveSchema,
+  readCallOptions,
   remoteUrlSchema,
   strictRecord,
 } from "../src/checks.js";
@@ -159,6 +161,66 @@ describe("checkHttpsUrl", () => {
       'The option endpoint must be an absolute https URL, found "http://platform.example/".',
     );
     expect(() => checkHttpsUrl(5, "The option endpoint")).toThrow("The option endpoint must be a string, found 5.");
+  });
+});
+
+describe("checkBaseUrl", () => {
+  it("accepts an absolute https URL with a path", () => {
+    for (const value of ["https://lrs.example.org/xapi/", "https://badges.example.org", "https://a.example:8443/p"]) {
+      expect(() => checkBaseUrl(value, "The option baseUrl"), value).not.toThrow();
+    }
+  });
+
+  it("refuses credentials, a query and a fragment, empty ones included, and names the value", () => {
+    for (const value of [
+      "https://user:secret@lrs.example.org/",
+      "https://user@lrs.example.org/",
+      "https://lrs.example.org/?x=1",
+      "https://lrs.example.org/?",
+      "https://lrs.example.org/#top",
+      "https://lrs.example.org/#",
+    ]) {
+      expect(() => checkBaseUrl(value, "The option baseUrl"), value).toThrow(
+        `The option baseUrl must have no credentials, query or fragment, found ${JSON.stringify(value)}.`,
+      );
+    }
+  });
+
+  it("refuses what checkHttpsUrl refuses", () => {
+    expect(() => checkBaseUrl("http://lrs.example.org/", "The option baseUrl")).toThrow(
+      'The option baseUrl must be an absolute https URL, found "http://lrs.example.org/".',
+    );
+    expect(() => checkBaseUrl(JSON.parse("null"), "The option baseUrl")).toThrow(
+      "The option baseUrl must be a string, found null.",
+    );
+  });
+});
+
+describe("readCallOptions", () => {
+  it("returns a new object with the signal, and an empty one when there is none", () => {
+    const { signal } = new AbortController();
+    const options = { signal };
+    expect(readCallOptions(options)).toStrictEqual({ signal });
+    expect(readCallOptions(options)).not.toBe(options);
+    expect(readCallOptions(undefined)).toStrictEqual({});
+    expect(readCallOptions({})).toStrictEqual({});
+    expect(readCallOptions({ signal: undefined })).toStrictEqual({});
+  });
+
+  it("reads only the signal of options that extend the options of a call", () => {
+    const { signal } = new AbortController();
+    expect(readCallOptions({ signal, timeoutMs: 5, since: "2024-06-13T00:00:00Z" })).toStrictEqual({ signal });
+  });
+
+  it("refuses options that are not an object, and a signal that is not an AbortSignal", () => {
+    for (const value of JSON.parse('[null, 5, "x", []]') as unknown[]) {
+      expect(() => readCallOptions(value), JSON.stringify(value)).toThrow(
+        `The options of a call must be an object, found ${describeValue(value)}.`,
+      );
+    }
+    expect(() => readCallOptions(JSON.parse('{"signal":{"aborted":false}}'))).toThrow(
+      new DataError("The option signal must be an AbortSignal, found an object."),
+    );
   });
 });
 

@@ -1,4 +1,5 @@
-import type { CredentialIssue, IdentityObjectV2, ProfileV2, RevocationListV2 } from "../model/index.js";
+import type { Issue } from "@interopkit/core/checks";
+import type { IdentityObjectV2, ProfileV2, RevocationListV2 } from "../model/index.js";
 import { isUrlV2, parseDateTimeV2 } from "./formats-v2.js";
 import type { AssertionDocumentV2, BadgeClassDocumentV2 } from "./open-badges-v2-schemas.js";
 
@@ -20,7 +21,7 @@ function at(place: string, path: string): string {
  * @param identity - The recipient, as the schema read it.
  * @param place - Where the recipient is.
  */
-function identityIssuesV2(identity: IdentityObjectV2, place: string): CredentialIssue[] {
+function identityIssuesV2(identity: IdentityObjectV2, place: string): Issue[] {
   const path = at(place, "identity");
   const looksHashed = IDENTITY_HASH.test(identity.identity);
   if (identity.hashed && !looksHashed) {
@@ -63,7 +64,7 @@ function identityIssuesV2(identity: IdentityObjectV2, place: string): Credential
  * @param assertion - The assertion, as the schema read it.
  * @param place - Where the assertion is.
  */
-export function assertionIssuesV2(assertion: AssertionDocumentV2, place: string): CredentialIssue[] {
+export function assertionIssuesV2(assertion: AssertionDocumentV2, place: string): Issue[] {
   const issues = identityIssuesV2(assertion.recipient, at(place, "recipient"));
   const expires = assertion.expires === undefined ? undefined : parseDateTimeV2(assertion.expires);
   const issued = parseDateTimeV2(assertion.issuedOn);
@@ -84,7 +85,7 @@ export function assertionIssuesV2(assertion: AssertionDocumentV2, place: string)
  * @param badge - The BadgeClass, as the schema read it.
  * @param place - Where the BadgeClass is.
  */
-export function badgeClassIssuesV2(badge: BadgeClassDocumentV2, place: string): CredentialIssue[] {
+export function badgeClassIssuesV2(badge: BadgeClassDocumentV2, place: string): Issue[] {
   const { criteria } = badge;
   if (typeof criteria === "string" || criteria.id !== undefined || criteria.narrative !== undefined) return [];
   return [
@@ -104,7 +105,7 @@ export function badgeClassIssuesV2(badge: BadgeClassDocumentV2, place: string): 
  * @param issuer - The profile, as the schema read it.
  * @param place - Where the profile is.
  */
-export function issuerIssuesV2(issuer: ProfileV2, place: string): CredentialIssue[] {
+export function issuerIssuesV2(issuer: ProfileV2, place: string): Issue[] {
   if (isUrlV2(issuer.id)) return [];
   return [
     {
@@ -123,8 +124,8 @@ export function issuerIssuesV2(issuer: ProfileV2, place: string): CredentialIssu
  * @param list - The revocation list, as the schema read it.
  * @param place - Where the list is.
  */
-export function revocationListIssuesV2(list: RevocationListV2, place: string): CredentialIssue[] {
-  const issues: CredentialIssue[] = [];
+export function revocationListIssuesV2(list: RevocationListV2, place: string): Issue[] {
+  const issues: Issue[] = [];
   for (const [index, entry] of list.revokedAssertions.entries()) {
     if (typeof entry === "string" || entry.id !== undefined || entry.uid !== undefined) continue;
     issues.push({

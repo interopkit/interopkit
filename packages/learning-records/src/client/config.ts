@@ -1,13 +1,5 @@
-import { type CallOptions, DataError, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
-import {
-  abortSignalSchema,
-  describe,
-  guardSchema,
-  MAX_JSON_TOKENS,
-  parseWith,
-  positiveIntegerSchema,
-  strictRecord,
-} from "@interopkit/core/checks";
+import { type CallOptions, clientOptionsEntries, DataError, DEFAULT_TIMEOUT_MS, type Fetch } from "@interopkit/core";
+import { checkBaseUrl, describe, guardSchema, MAX_JSON_TOKENS, parseWith, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { XAPI_VERSIONS, type XapiVersion } from "../model/index.js";
 
@@ -73,7 +65,6 @@ export interface Settings {
 
 const configSchema = strictRecord({
   endpoint: v.string(),
-  fetch: guardSchema((value): value is Fetch => typeof value === "function", "a function"),
   version: v.optional(v.picklist(XAPI_VERSIONS)),
   authorization: v.optional(
     guardSchema(
@@ -81,28 +72,18 @@ const configSchema = strictRecord({
       "a function",
     ),
   ),
-  timeoutMs: v.optional(positiveIntegerSchema),
-  maxBytes: v.optional(positiveIntegerSchema),
-  maxTokens: v.optional(positiveIntegerSchema),
-  signal: v.optional(abortSignalSchema),
+  ...clientOptionsEntries,
 });
 
 /** Reads the address of the LRS: HTTPS, ending in a slash, with no credentials, query or fragment. */
 function rootOf(endpoint: string): URL {
-  const problem = `The option endpoint must be an https address that ends in a slash, such as https://lrs.example.org/xapi/, found ${describe(endpoint)}.`;
-  let root: URL;
-  try {
-    root = new URL(endpoint);
-  } catch {
-    throw new DataError(problem);
+  checkBaseUrl(endpoint, "The option endpoint");
+  if (!endpoint.endsWith("/")) {
+    throw new DataError(
+      `The option endpoint must end in a slash, such as https://lrs.example.org/xapi/, found ${describe(endpoint)}.`,
+    );
   }
-  if (root.protocol !== "https:" || root.username !== "" || root.password !== "" || !endpoint.endsWith("/")) {
-    throw new DataError(problem);
-  }
-  if (root.search !== "" || root.hash !== "" || endpoint.includes("?") || endpoint.includes("#")) {
-    throw new DataError(problem);
-  }
-  return root;
+  return new URL(endpoint);
 }
 
 /**

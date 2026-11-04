@@ -45,6 +45,8 @@ option. Inner functions trust their callers.
 | `checkNonNegativeInteger(value, label)` | A safe integer from 0                         | `<label> must be a non-negative integer, found <value>.` |
 | `checkPositiveInteger(value, label)`    | A safe integer from 1                         | `<label> must be a positive integer, found <value>.`     |
 | `checkAbortSignal(value, label)`        | An `AbortSignal`                              | `<label> must be an AbortSignal, found <value>.`         |
+| `checkBaseUrl(value, label)`            | An absolute `https` URL with no credentials, query or fragment, the address of a service that the paths of its endpoints follow | `<label> must have no credentials, query or fragment, found <value>.` |
+| `readCallOptions(options)`              | The options of a call that waits on I/O, or `undefined`; it reads only `signal` and returns a new `CallOptions` | `The options of a call must be an object, found <value>.` |
 
 `checkHttpsUrl` is for a URL that the host configures. `checkRemoteUrl` is for a URL that a message or a document gives, which
 a server then fetches or sends a token to. It reads the host after URL parsing and refuses:
@@ -95,8 +97,9 @@ The `Schema<TOutput>` type is a valibot schema of unknown input.
 
 A reader that returns what is wrong as data, and not as an exception, returns findings: `Finding` is `{ path, rule, message }`.
 `path` is where the fault is, as `formatIssuePath` writes it. `message` is a sentence that reads after the path and does not repeat it.
-A package adds fields to its own finding, such as a `severity`, by extending `Finding`. `buildFindings(issues)` makes the findings of a
-parse and owns the rule names:
+An `Issue` is a finding with its `severity`, `error` or `warning`, which every validator of the packages lists: an error breaks a
+requirement of the standard, or leaves data that cannot be used without a guess; a warning departs from a recommendation. The guide of
+the model of each standard says which rules are which. `buildFindings(issues)` makes the findings of a parse and owns the rule names:
 
 | `rule`             | When                                                                                                                           |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -141,6 +144,7 @@ tokens and not with the bytes: a text of 16 MiB written `[{},{},...]` takes 700 
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `isDate(text)`          | A date `YYYY-MM-DD` that exists: the days of each month and the leap years are known                                                                                                    |
 | `parseDateTime(text)`   | A date and time of RFC 3339 section 5.6 into epoch milliseconds, or a `DataError`: `T` and `Z` of either case, an offset `Z` or `+hh:mm` to 23:59, a fraction that keeps three digits, and a leap second at 23:59 |
+| `formatDateTime(at)`    | Whole epoch milliseconds of the years 0000 to 9999 as `YYYY-MM-DDTHH:mm:ss.SSSZ`, the form that Caliper requires and that xAPI asks a provider to write, or a `DataError`: `The time must be whole epoch milliseconds in the years 0000 to 9999, found 1.5.` |
 | `isDateTime(text)`      | Whether `parseDateTime` reads it, for a reader that judges the text and does not throw                                                                                                                                                       |
 | `isUuid(text)`          | A UUID as 8-4-4-4-12 hexadecimal digits of either case, which is the `uuid` of valibot                                                                                                 |
 | `isAbsoluteUri(text)`   | A URI that has a scheme and no white space, which `URL` parses                                                                                                                         |

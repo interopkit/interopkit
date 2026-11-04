@@ -5,7 +5,7 @@
  *
  * @module @interopkit/learning-analytics
  */
-export { type BuildOptions, buildEntity, buildEvent, checkIri, formatDateTime, mintUrn } from "./build/index.js";
+export { type BuildOptions, buildEntity, buildEvent, checkIri, mintUrn } from "./build/index.js";
 export * from "./model/index.js";
 export { type ReadOptions, readEntity, readEvent } from "./read/index.js";
 export {
@@ -16,4 +16,4 @@ export {
   type SendCaliperOptions,
   sendCaliper,
 } from "./send/index.js";
-export { type CaliperFinding, type ValidateOptions, validateEntity, validateEvent } from "./validate/index.js";
+export { type ValidateOptions, validateEntity, validateEvent } from "./validate/index.js";

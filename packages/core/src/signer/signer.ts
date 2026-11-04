@@ -1,5 +1,5 @@
 import type { CallOptions } from "../call-options.js";
-import { checkAbortSignal, checkFunction, checkNonEmptyString, checkRecord, describe, isRecord } from "../checks.js";
+import { checkFunction, checkNonEmptyString, checkRecord, describe, isRecord, readCallOptions } from "../checks.js";
 import { DataError } from "../errors.js";
 import { raceAbort } from "../race-abort.js";
 import { JWS_ALGORITHMS, type KeySpec } from "./algorithms.js";
@@ -91,9 +91,9 @@ export function createCryptoKeySigner(key: CryptoKey, options: CryptoKeySignerOp
   return {
     algorithm,
     ...(keyId === undefined ? {} : { keyId }),
-    async sign(data, callOptions) {
-      if (callOptions?.signal !== undefined) checkAbortSignal(callOptions.signal, "The option signal");
-      callOptions?.signal?.throwIfAborted();
+    async sign(data, options) {
+      const callOptions = readCallOptions(options);
+      callOptions.signal?.throwIfAborted();
       // A copy: Web Crypto takes bytes over an ArrayBuffer, and a caller's bytes may lie over another kind of buffer.
       const signature = await raceAbort(crypto.subtle.sign(spec.params, key, new Uint8Array(data)), callOptions);
       return new Uint8Array(signature);

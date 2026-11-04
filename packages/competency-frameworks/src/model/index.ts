@@ -22,7 +22,6 @@ export type {
   CFRubricCriterionLevel,
   CFSubject,
 } from "./entities.js";
-export type { CaseIssue } from "./issue.js";
 export type { Extensions } from "./json.js";
 export {
   type CaseEntity,

@@ -1,10 +1,5 @@
-import type {
-  Activity,
-  ActivityDefinition,
-  InteractionComponent,
-  InteractionType,
-  StatementIssue,
-} from "../model/index.js";
+import type { Issue } from "@interopkit/core/checks";
+import type { Activity, ActivityDefinition, InteractionComponent, InteractionType } from "../model/index.js";
 import { COMPONENT_LISTS, type ComponentList } from "../model/internal.js";
 import { error, warning } from "./finding.js";
 import type { RuleSet } from "./options.js";
@@ -31,11 +26,7 @@ const LISTS_OF_TYPE: Readonly<Record<InteractionType, readonly ComponentList[]>>
  * for an interaction and need not (1.0.3 Data 2.4.4.1), so for an LRS a repeated id is a warning in either version, and for a
  * provider of 1.0.3 an error.
  */
-function* componentIssues(
-  components: readonly InteractionComponent[],
-  path: string,
-  rules: RuleSet,
-): Generator<StatementIssue> {
+function* componentIssues(components: readonly InteractionComponent[], path: string, rules: RuleSet): Generator<Issue> {
   const repeated = rules.version === "1.0.3" && rules.role === "provider" ? error : warning;
   const seen = new Set<string>();
   for (const [index, component] of components.entries()) {
@@ -64,7 +55,7 @@ function* listIssues(
   type: InteractionType,
   path: string,
   rules: RuleSet,
-): Generator<StatementIssue> {
+): Generator<Issue> {
   const allowed = LISTS_OF_TYPE[type];
   for (const name of COMPONENT_LISTS) {
     const list = definition[name];
@@ -86,7 +77,7 @@ function* listIssues(
  * (4.2.4.2), so it is a warning for an LRS and an error for a provider, which shall not add properties (5.2.1). A response
  * pattern that does not have the form of its type is a warning, since an LRS does not validate patterns (4.2.2.3).
  */
-export function* interactionIssues(activity: Activity, path: string, rules: RuleSet): Generator<StatementIssue> {
+export function* interactionIssues(activity: Activity, path: string, rules: RuleSet): Generator<Issue> {
   const { definition } = activity;
   if (definition === undefined) return;
   const base = member(path, "definition");

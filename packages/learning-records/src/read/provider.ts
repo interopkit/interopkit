@@ -1,5 +1,5 @@
-import { isDateTime, isRecord } from "@interopkit/core/checks";
-import type { Result, Statement, StatementIssue, SubStatement, XapiVersion } from "../model/index.js";
+import { type Issue, isDateTime, isRecord } from "@interopkit/core/checks";
+import type { Result, Statement, SubStatement, XapiVersion } from "../model/index.js";
 import {
   hasFinerThanCentiseconds,
   hasMillisecondPrecision,
@@ -14,7 +14,7 @@ import { item, member } from "./path.js";
  * Judges a time of a Statement of 1.0.3: ISO 8601 allows forms that RFC 3339 does not, such as the basic format, and a
  * Timestamp should be expressed as RFC 3339 (Data 4.5), which the provider rules hold as a requirement.
  */
-function rfc3339Issues(timestamp: string, path: string): StatementIssue[] {
+function rfc3339Issues(timestamp: string, path: string): Issue[] {
   if (isDateTime(timestamp)) return [];
   return [
     error(
@@ -29,10 +29,10 @@ function rfc3339Issues(timestamp: string, path: string): StatementIssue[] {
  * Judges a time of a Statement: a provider of 2.0 writes UTC (5.2.7), and should write at least milliseconds; a provider of
  * 1.0.3 writes RFC 3339.
  */
-function timeIssues(timestamp: string | undefined, path: string, version: XapiVersion): StatementIssue[] {
+function timeIssues(timestamp: string | undefined, path: string, version: XapiVersion): Issue[] {
   if (timestamp === undefined) return [];
   if (version === "1.0.3") return rfc3339Issues(timestamp, path);
-  const issues: StatementIssue[] = [];
+  const issues: Issue[] = [];
   if (!isUtc(timestamp)) {
     issues.push(
       error(
@@ -55,11 +55,7 @@ function timeIssues(timestamp: string | undefined, path: string, version: XapiVe
 }
 
 /** Judges the time of a Statement or a SubStatement as the provider rules of a version ask. */
-export function providerTimeIssues(
-  statement: Statement | SubStatement,
-  path: string,
-  version: XapiVersion,
-): StatementIssue[] {
+export function providerTimeIssues(statement: Statement | SubStatement, path: string, version: XapiVersion): Issue[] {
   return timeIssues(statement.timestamp, member(path, "timestamp"), version);
 }
 
@@ -68,9 +64,9 @@ export function providerTimeIssues(
  * and no `stored`, no `authority` and no `version` unless it is the version of the rules, 2.0.0 or 1.0.0; the time that it
  * does send is in the form of its version.
  */
-export function providerStatementIssues(statement: Statement, version: XapiVersion): StatementIssue[] {
+export function providerStatementIssues(statement: Statement, version: XapiVersion): Issue[] {
   const expected = STATEMENT_VERSIONS[version];
-  const issues: StatementIssue[] = [];
+  const issues: Issue[] = [];
   if (statement.id === undefined) {
     issues.push(
       warning(
@@ -100,7 +96,7 @@ export function providerStatementIssues(statement: Statement, version: XapiVersi
 }
 
 /** Judges the duration of a Result: a provider should write no more than 0.01 second of precision (5.2.7). */
-export function providerResultIssues(result: Result, path: string): StatementIssue[] {
+export function providerResultIssues(result: Result, path: string): Issue[] {
   const parts = result.duration === undefined ? undefined : splitDuration(result.duration);
   if (parts === undefined || !hasFinerThanCentiseconds(parts)) return [];
   return [
@@ -113,7 +109,7 @@ export function providerResultIssues(result: Result, path: string): StatementIss
 }
 
 /** Lists the properties of a value of JSON whose value is an empty object, leaving the values of extensions alone. */
-function* emptyObjects(value: unknown, path: string): Generator<StatementIssue> {
+function* emptyObjects(value: unknown, path: string): Generator<Issue> {
   if (Array.isArray(value)) {
     for (const [index, entry] of value.entries()) yield* emptyObjects(entry, item(path, index));
   } else if (isRecord(value)) {
@@ -132,7 +128,7 @@ function* emptyObjects(value: unknown, path: string): Generator<StatementIssue> 
  * Judges a Statement for properties whose value is an empty object, which a provider of 2.0 should leave out (5.2.4.1) and a
  * Statement of 1.0.3 should not include (Data 2.2).
  */
-export function emptyObjectIssues(statement: Statement): Iterable<StatementIssue> {
+export function emptyObjectIssues(statement: Statement): Iterable<Issue> {
   // Most Statements have none, and the walk that finds them writes the path of each member that it passes.
   return holdsEmptyObject(statement) ? emptyObjects(statement, "") : [];
 }
@@ -155,7 +151,7 @@ function holdsEmptyObject(value: unknown): boolean {
  *
  * @param input - A Statement or a SubStatement that has passed the schema.
  */
-export function* singleActivityIssues(input: unknown, path: string): Generator<StatementIssue> {
+export function* singleActivityIssues(input: unknown, path: string): Generator<Issue> {
   if (!isRecord(input)) return;
   const base = member(member(path, "context"), "contextActivities");
   const activities = isRecord(input.context) ? input.context.contextActivities : undefined;

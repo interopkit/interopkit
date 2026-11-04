@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import * as core from "@interopkit/core";
+import * as checks from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
 import { guidesWithSamples, runGuideSamples, typecheckGuideSamples } from "../../../scripts/guide-samples.js";
 import * as attachments from "../src/attachments/index.js";
@@ -10,6 +11,7 @@ import * as store from "../src/store/index.js";
 
 const modules = {
   "@interopkit/core": core,
+  "@interopkit/core/checks": checks,
   "@interopkit/learning-records": root,
   "@interopkit/learning-records/attachments": attachments,
   "@interopkit/learning-records/client": client,

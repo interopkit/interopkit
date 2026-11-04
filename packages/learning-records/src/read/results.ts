@@ -1,4 +1,5 @@
-import type { Result, StatementIssue } from "../model/index.js";
+import type { Issue } from "@interopkit/core/checks";
+import type { Result } from "../model/index.js";
 import { error } from "./finding.js";
 import { member } from "./path.js";
 
@@ -6,7 +7,7 @@ import { member } from "./path.js";
 const SCALED_RANGE = [-1, 1] as const;
 
 /** Makes the finding of a number outside the range that its property allows. */
-function outOfRange(path: string, expected: string, found: number): StatementIssue {
+function outOfRange(path: string, expected: string, found: number): Issue {
   return error(path, "out-of-range", `expected ${expected}, found ${found}.`);
 }
 
@@ -14,13 +15,13 @@ function outOfRange(path: string, expected: string, found: number): StatementIss
  * Judges the score of a Result: `scaled` is from -1 to 1, `raw` is from `min` to `max` when they are present, and `min` is
  * less than `max` (4.2.2.4).
  */
-export function resultIssues(result: Result, path: string): StatementIssue[] {
+export function resultIssues(result: Result, path: string): Issue[] {
   const { score } = result;
   if (score === undefined) return [];
   const { scaled, raw, min, max } = score;
   const base = member(path, "score");
   const [least, greatest] = SCALED_RANGE;
-  const issues: StatementIssue[] = [];
+  const issues: Issue[] = [];
   if (scaled !== undefined && (scaled < least || scaled > greatest)) {
     issues.push(outOfRange(member(base, "scaled"), `a number from ${least} to ${greatest}`, scaled));
   }

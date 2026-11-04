@@ -1,5 +1,5 @@
 import { type CallOptions, DataError, readClock, ServiceError } from "@interopkit/core";
-import { checkRecord, isUuid } from "@interopkit/core/checks";
+import { checkRecord, formatDateTime, isUuid } from "@interopkit/core/checks";
 import {
   type Attachment,
   buildStatement,
@@ -8,7 +8,6 @@ import {
   type DocumentTarget,
   type Extensions,
   formatDuration,
-  formatTimestamp,
   type LrsDocument,
   type LrsDocumentInput,
   type Result,
@@ -249,7 +248,7 @@ export function createAuSession(parts: SessionParts): AuSession {
         object: { objectType: "Activity", id: launch.activityId },
         ...(result === undefined ? {} : { result }),
         context: contextOf([CMI5_CATEGORIES.cmi5, ...(judged ? [CMI5_CATEGORIES.moveOn] : [])], extensions),
-        timestamp: formatTimestamp(now()),
+        timestamp: formatDateTime(now()),
       },
       XAPI_VERSION,
     );
@@ -344,7 +343,7 @@ export function createAuSession(parts: SessionParts): AuSession {
             object: { objectType: "Activity", id: launch.activityId },
             result: { extensions: { [CMI5_EXTENSIONS.progress]: percent } },
             context: contextOf([], {}),
-            timestamp: formatTimestamp(now()),
+            timestamp: formatDateTime(now()),
           },
           XAPI_VERSION,
         );
@@ -366,7 +365,7 @@ export function createAuSession(parts: SessionParts): AuSession {
             ...(input.result === undefined ? {} : { result: input.result }),
             context: contextOf([], {}, input.context),
             ...(input.attachments === undefined ? {} : { attachments: input.attachments }),
-            timestamp: formatTimestamp(now()),
+            timestamp: formatDateTime(now()),
           },
           XAPI_VERSION,
         );

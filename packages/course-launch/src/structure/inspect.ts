@@ -1,12 +1,11 @@
 import { DataError } from "@interopkit/core";
-import { type FindingSink, isAbsoluteUri } from "@interopkit/core/checks";
+import { type FindingSink, type Issue, isAbsoluteUri } from "@interopkit/core/checks";
 import { SaxesParser, type SaxesTagNS } from "saxes";
 import {
   type AssignableUnit,
   type Block,
   COURSE_STRUCTURE_NAMESPACE,
   type Course,
-  type CourseIssue,
   type CourseStructure,
   type ExtensionElement,
   LAUNCH_METHODS,
@@ -146,13 +145,13 @@ class StructureWalk {
   private readonly text: string;
   private readonly encoding: StructureEncoding | undefined;
   private readonly settings: CourseReadSettings;
-  private readonly sink: FindingSink<CourseIssue>;
+  private readonly sink: FindingSink<Issue>;
 
   constructor(
     text: string,
     encoding: StructureEncoding | undefined,
     settings: CourseReadSettings,
-    sink: FindingSink<CourseIssue>,
+    sink: FindingSink<Issue>,
   ) {
     this.text = text;
     this.encoding = encoding;
@@ -653,7 +652,7 @@ class StructureWalk {
 export function inspectCourseStructure(
   input: unknown,
   settings: CourseReadSettings,
-  sink: FindingSink<CourseIssue>,
+  sink: FindingSink<Issue>,
 ): CourseStructure | undefined {
   const { text, encoding } = decodeStructure(input, settings.maxBytes);
   return new StructureWalk(text, encoding, settings, sink).run();

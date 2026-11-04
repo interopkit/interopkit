@@ -1,6 +1,7 @@
 import {
   copyJson,
   type FindingSink,
+  type Issue,
   isRecord,
   type JsonValue,
   type Schema,
@@ -9,7 +10,6 @@ import {
 import * as v from "valibot";
 import type {
   BadgeAssertionV2,
-  CredentialIssue,
   CryptographicKeyV2,
   EndorsementV2,
   ProfileV2,
@@ -75,10 +75,10 @@ function at(place: string, path: string): string {
  */
 function readDocument<TDocument>(
   schema: Schema<TDocument>,
-  rules: (document: TDocument, place: string) => CredentialIssue[],
+  rules: (document: TDocument, place: string) => Issue[],
   value: unknown,
   place: string,
-  sink: FindingSink<CredentialIssue>,
+  sink: FindingSink<Issue>,
 ): ReadDocument<TDocument> {
   const copy = copyJson(value, place);
   if ("problem" in copy) {
@@ -96,10 +96,10 @@ function readDocument<TDocument>(
  */
 function readPrepared<TDocument>(
   schema: Schema<TDocument>,
-  rules: (document: TDocument, place: string) => CredentialIssue[],
+  rules: (document: TDocument, place: string) => Issue[],
   copy: JsonValue,
   place: string,
-  sink: FindingSink<CredentialIssue>,
+  sink: FindingSink<Issue>,
 ): ReadDocument<TDocument> {
   const document = parseInto(
     schema,
@@ -111,7 +111,7 @@ function readPrepared<TDocument>(
 }
 
 /** The finding of a document that the assertion names by its IRI and that is neither embedded nor given. */
-function notEmbedded(path: string, what: string): CredentialIssue {
+function notEmbedded(path: string, what: string): Issue {
   return {
     path,
     rule: "not-embedded",
@@ -121,7 +121,7 @@ function notEmbedded(path: string, what: string): CredentialIssue {
 }
 
 /** The finding of a document that is embedded and given apart as well. */
-function givenTwice(path: string, what: string): CredentialIssue {
+function givenTwice(path: string, what: string): Issue {
   return {
     path,
     rule: "unlinked-document",
@@ -131,7 +131,7 @@ function givenTwice(path: string, what: string): CredentialIssue {
 }
 
 /** The finding of a document whose `id` is not the IRI that names it. */
-function otherDocument(path: string, id: string, named: string, what: string): CredentialIssue {
+function otherDocument(path: string, id: string, named: string, what: string): Issue {
   return {
     path,
     rule: "unlinked-document",
@@ -154,7 +154,7 @@ function linkedDocument(
   given: unknown,
   path: string,
   what: string,
-  sink: FindingSink<CredentialIssue>,
+  sink: FindingSink<Issue>,
 ): Linked | undefined {
   const named = isRecord(holder) ? holder[property] : undefined;
   if (isRecord(named)) {
@@ -172,10 +172,10 @@ function linkedDocument(
 /** Reads a document that another names: an embedded one as part of the copy of that one, a given one from the start. */
 function readLinked<TDocument>(
   schema: Schema<TDocument>,
-  rules: (document: TDocument, place: string) => CredentialIssue[],
+  rules: (document: TDocument, place: string) => Issue[],
   linked: Linked,
   place: string,
-  sink: FindingSink<CredentialIssue>,
+  sink: FindingSink<Issue>,
 ): ReadDocument<TDocument> {
   return "embedded" in linked
     ? readPrepared(schema, rules, linked.embedded, place, sink)
@@ -200,7 +200,7 @@ export function inspectBadgeV2(
   assertion: unknown,
   linked: LinkedDocumentsV2,
   places: PlacesV2,
-  sink: FindingSink<CredentialIssue>,
+  sink: FindingSink<Issue>,
 ): BadgeAssertionV2 | undefined {
   const read = readDocument(assertionV2Schema, assertionIssuesV2, assertion, places.assertion, sink);
   const badgeValue = linkedDocument(
@@ -248,10 +248,7 @@ const badgeAssertionV2Schema = strictRecord({
  * @param sink - Receives the findings.
  * @returns The badge, when each document has the shape of its class.
  */
-export function inspectBadgeAssertionV2(
-  value: unknown,
-  sink: FindingSink<CredentialIssue>,
-): BadgeAssertionV2 | undefined {
+export function inspectBadgeAssertionV2(value: unknown, sink: FindingSink<Issue>): BadgeAssertionV2 | undefined {
   const parts = parseInto(badgeAssertionV2Schema, value, sink);
   if (parts === undefined) return undefined;
   return inspectBadgeV2(parts.assertion, { badge: parts.badge, issuer: parts.issuer }, MODEL_PLACES, sink);
@@ -281,7 +278,7 @@ interface DocumentsV2 {
 const DOCUMENT_CLASSES: {
   readonly [TKind in keyof DocumentsV2]: {
     readonly schema: Schema<DocumentsV2[TKind]>;
-    readonly rules: (document: DocumentsV2[TKind], place: string) => CredentialIssue[];
+    readonly rules: (document: DocumentsV2[TKind], place: string) => Issue[];
   };
 } = {
   assertion: { schema: assertionV2Schema, rules: assertionIssuesV2 },
@@ -305,7 +302,7 @@ const DOCUMENT_CLASSES: {
 export function inspectDocumentV2<TKind extends keyof DocumentsV2>(
   kind: TKind,
   value: unknown,
-  sink: FindingSink<CredentialIssue>,
+  sink: FindingSink<Issue>,
 ): DocumentsV2[TKind] | undefined {
   const { schema, rules } = DOCUMENT_CLASSES[kind];
   return readDocument(schema, rules, value, "", sink).document;

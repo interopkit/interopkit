@@ -1,13 +1,14 @@
 import {
   createFindingSink,
   DEFAULT_MAX_FINDINGS,
+  type Issue,
   isAbsoluteUri,
   isUuid,
   parseWith,
   positiveIntegerSchema,
   strictRecord,
 } from "@interopkit/core/checks";
-import { type Agent, type Statement, type StatementIssue, validateStatements } from "@interopkit/learning-records";
+import { type Agent, type Statement, validateStatements } from "@interopkit/learning-records";
 import * as v from "valibot";
 import { judgeStatement, timeOf } from "./judge-statement.js";
 import { readLaunchDataAs } from "./launch-documents.js";
@@ -83,14 +84,14 @@ export function validateSessionStatements(
   statements: readonly Statement[],
   session: SessionFacts,
   options?: { readonly maxFindings?: number },
-): readonly StatementIssue[] {
+): readonly Issue[] {
   const { maxFindings = DEFAULT_MAX_FINDINGS } = parseWith(
     optionsSchema,
     options === undefined ? {} : options,
     "The options object",
   );
   const facts = readFacts(session);
-  const sink = createFindingSink<StatementIssue>(maxFindings, (finding) => ({ ...finding, severity: "error" }));
+  const sink = createFindingSink<Issue>(maxFindings, (finding) => ({ ...finding, severity: "error" }));
   const xapi = validateStatements(statements, { role: "lrs", version: "1.0.3", maxFindings });
   sink.add(xapi);
   if (!Array.isArray(statements)) return sink.list();

@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
-import { describeRefusal } from "@interopkit/core/checks";
-import type { CaseIssue, CasePackage } from "../model/index.js";
+import { describeRefusal, type Issue } from "@interopkit/core/checks";
+import type { CasePackage } from "../model/index.js";
 import { inspectPackage, issueSink } from "./inspect.js";
 import { type ReadOptions, readSettings } from "./options.js";
 
@@ -46,7 +46,7 @@ export function readPackage(value: unknown, options?: ReadOptions): CasePackage 
  * a positive integer.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1}
  */
-export function validatePackage(value: unknown, options?: ReadOptions): readonly CaseIssue[] {
+export function validatePackage(value: unknown, options?: ReadOptions): readonly Issue[] {
   const { version, maxFindings } = readSettings(options);
   const sink = issueSink(maxFindings, false);
   inspectPackage(value, version, sink);

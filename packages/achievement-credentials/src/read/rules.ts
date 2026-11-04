@@ -1,5 +1,5 @@
-import { isAbsoluteUri, isDateTime, isRecord, parseDateTime } from "@interopkit/core/checks";
-import type { CredentialIssue, IdentityObject } from "../model/index.js";
+import { type Issue, isAbsoluteUri, isDateTime, isRecord, parseDateTime } from "@interopkit/core/checks";
+import type { IdentityObject } from "../model/index.js";
 
 /** The form of an `IdentityHash` that the specification names: `sha256$` and 64 hexadecimal digits, or `md5$` and 32 (OB B.7). */
 const IDENTITY_HASH = /^(?:sha256\$[0-9a-fA-F]{64}|md5\$[0-9a-fA-F]{32})$/u;
@@ -17,8 +17,8 @@ interface Identified {
  * @param subject - The subject, as the schemas read it.
  * @param path - Where the subject is.
  */
-export function subjectIssues(subject: Identified, path: string): CredentialIssue[] {
-  const issues: CredentialIssue[] = [];
+export function subjectIssues(subject: Identified, path: string): Issue[] {
+  const issues: Issue[] = [];
   const at = (name: string) => (path === "" ? name : `${path}.${name}`);
   if (subject.id === undefined && (subject.identifier === undefined || subject.identifier.length === 0)) {
     issues.push({
@@ -48,7 +48,7 @@ export function subjectIssues(subject: Identified, path: string): CredentialIssu
  *
  * @param credential - The credential, as the schemas read it.
  */
-export function periodIssues(credential: object): CredentialIssue[] {
+export function periodIssues(credential: object): Issue[] {
   const [begins, ends] = "validFrom" in credential ? ["validFrom", "validUntil"] : ["issuanceDate", "expirationDate"];
   const [from, until] = [Reflect.get(credential, begins ?? ""), Reflect.get(credential, ends ?? "")];
   if (typeof from !== "string" || typeof until !== "string") return [];
@@ -69,7 +69,7 @@ export function periodIssues(credential: object): CredentialIssue[] {
  *
  * @param subject - The subject, as the schemas read it.
  */
-export function emptySubjectIssues(subject: object): CredentialIssue[] {
+export function emptySubjectIssues(subject: object): Issue[] {
   return Object.keys(subject).length > 0
     ? []
     : [
@@ -102,7 +102,7 @@ function idsOf(values: readonly unknown[]): ReadonlySet<unknown> {
  * @param subject - The subject, as the schemas read it.
  * @param path - Where the subject is.
  */
-export function* resultIssues(subject: object, path: string): Generator<CredentialIssue> {
+export function* resultIssues(subject: object, path: string): Generator<Issue> {
   const achievement: unknown = Reflect.get(subject, "achievement");
   const descriptions = isRecord(achievement) ? listOf(achievement.resultDescription).filter(isRecord) : [];
   for (const [index, result] of listOf(Reflect.get(subject, "result")).entries()) {
@@ -147,7 +147,7 @@ export function* resultIssues(subject: object, path: string): Generator<Credenti
  * @param achievement - The achievement, as the schemas read it.
  * @param path - Where the achievement is.
  */
-export function* criteriaIssues(achievement: unknown, path: string): Generator<CredentialIssue> {
+export function* criteriaIssues(achievement: unknown, path: string): Generator<Issue> {
   const criteria = isRecord(achievement) ? achievement.criteria : undefined;
   if (!isRecord(criteria) || criteria.id !== undefined || criteria.narrative !== undefined) return;
   yield {
@@ -159,12 +159,12 @@ export function* criteriaIssues(achievement: unknown, path: string): Generator<C
 }
 
 /** Makes an error of a related resource. */
-function relatedError(path: string, rule: string, message: string): CredentialIssue {
+function relatedError(path: string, rule: string, message: string): Issue {
   return { path, rule, message, severity: "error" };
 }
 
 /** Judges one related resource: an object with an `id` that is an absolute URI and not that of another, and a digest. */
-function* relatedEntryIssues(entry: unknown, at: string, seen: Set<string>): Generator<CredentialIssue> {
+function* relatedEntryIssues(entry: unknown, at: string, seen: Set<string>): Generator<Issue> {
   if (!isRecord(entry)) {
     yield relatedError(at, "related-resource-form", "is not an object with the id and the digest of a resource.");
     return;
@@ -192,7 +192,7 @@ function* relatedEntryIssues(entry: unknown, at: string, seen: Set<string>): Gen
  *
  * @param credential - The credential, as the schemas read it.
  */
-export function* relatedResourceIssues(credential: object): Generator<CredentialIssue> {
+export function* relatedResourceIssues(credential: object): Generator<Issue> {
   const related: unknown = Reflect.get(credential, "relatedResource");
   if (related === undefined || "issuanceDate" in credential) return;
   const entries = listOf(related);

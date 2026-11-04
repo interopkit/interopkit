@@ -1,6 +1,12 @@
 import { DataError } from "@interopkit/core";
-import { buildFindings, copyJson, DEFAULT_MAX_FINDINGS, type Schema, safeParseBounded } from "@interopkit/core/checks";
-import type { CredentialIssue } from "../model/index.js";
+import {
+  buildFindings,
+  copyJson,
+  DEFAULT_MAX_FINDINGS,
+  type Issue,
+  type Schema,
+  safeParseBounded,
+} from "@interopkit/core/checks";
 import { issueSink, parseJson } from "../read/internal.js";
 import { refuseWith } from "./refusal.js";
 
@@ -34,7 +40,7 @@ export function finish<TValue>(
   schema: Schema<TValue>,
   written: unknown,
   label: string,
-  judge: (value: TValue) => Iterable<CredentialIssue> = () => [],
+  judge: (value: TValue) => Iterable<Issue> = () => [],
 ): TValue {
   const sink = issueSink(DEFAULT_MAX_FINDINGS, true);
   const value = parseJson(schema, written, sink);

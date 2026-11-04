@@ -1,4 +1,4 @@
-import { DataError, type HttpMethod, raceAbort, requestService, type ServiceResponse } from "@interopkit/core";
+import { DataError, type HttpMethod, requestWithCredential, type ServiceResponse } from "@interopkit/core";
 import { readStatementJson } from "../read/index.js";
 import type { Settings } from "./config.js";
 
@@ -24,63 +24,36 @@ export function urlOf(settings: Settings, path: string, parameters?: URLSearchPa
 }
 
 /** Names the LRS in the messages about one of its answers. */
-function whatOf(url: string): string {
+export function whatOf(url: string): string {
   return `The LRS at ${url}`;
 }
+
+/** The name of the standard in a sentence about an answer that does not follow it. */
+export const STANDARD = "xAPI";
 
 /**
  * Makes one request with the version header and the credential of the host, and returns the answers that `expect` lists.
  * Every other status is a `ServiceError` with its status, headers and body.
  */
-export async function send(
+export function send(
   settings: Settings,
   signal: AbortSignal | undefined,
   url: string,
   request: Request,
   expect: readonly number[],
 ): Promise<ServiceResponse> {
-  const waiting = [settings.signal, signal].filter((each) => each !== undefined);
-  const either = waiting.length === 0 ? undefined : AbortSignal.any(waiting);
-  // The host's function gets the signal and should stop, but the wait of the caller ends when it aborts whether the function does or not.
-  const authorization =
-    settings.authorization === undefined
-      ? undefined
-      : await raceAbort(
-          Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
-          { signal: either },
-        );
-  if (authorization !== undefined && (typeof authorization !== "string" || !isHeaderValue(authorization))) {
-    throw new DataError(
-      "The option authorization must return a non-empty header value without line breaks, or undefined.",
-    );
-  }
-  const { fetch, timeoutMs, maxBytes } = settings;
-  return requestService(
-    { fetch, timeoutMs, signal: settings.signal },
+  const { fetch, timeoutMs, maxBytes, authorization } = settings;
+  return requestWithCredential(
+    { fetch, timeoutMs, signal: settings.signal, ...(authorization === undefined ? {} : { authorization }) },
     whatOf(url),
     url,
     {
       method: request.method,
-      headers: {
-        accept: "application/json",
-        "x-experience-api-version": settings.version,
-        ...(authorization === undefined ? {} : { authorization }),
-        ...request.headers,
-      },
+      headers: { accept: "application/json", "x-experience-api-version": settings.version, ...request.headers },
       ...(request.body === undefined ? {} : { body: request.body }),
     },
     { maxBytes, expect, ...(signal === undefined ? {} : { signal }) },
   );
-}
-
-/** Runs a reader on an answer, and says whose answer it was when the data is not valid xAPI. */
-export function readAnswer<TValue>(url: string, read: () => TValue): TValue {
-  try {
-    return read();
-  } catch (error) {
-    if (!(error instanceof DataError)) throw error;
-    throw new DataError(`${whatOf(url)} answered with data that is not valid xAPI: ${error.message}`);
-  }
 }
 
 /** Reads the body of an answer as JSON, without a property given twice. */

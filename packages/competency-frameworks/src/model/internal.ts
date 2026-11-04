@@ -4,7 +4,7 @@
  * @module
  */
 import { DataError } from "@interopkit/core";
-import { checkHttpsUrl, checkNonEmptyString, describe } from "@interopkit/core/checks";
+import { checkBaseUrl, checkNonEmptyString, describe } from "@interopkit/core/checks";
 import type { LinkGenURI } from "./links.js";
 import { ASSOCIATION_TYPES, type CaseVersion } from "./terms.js";
 
@@ -50,11 +50,8 @@ const ENDS_WITH_SERVICE_PATH = /\/ims\/case\/v1p[01]\/*$/u;
  * the path of a version.
  */
 export function serviceRoot(baseUrl: unknown, version: CaseVersion, label: string): string {
-  checkHttpsUrl(baseUrl, label);
+  checkBaseUrl(baseUrl, label);
   const url = new URL(baseUrl);
-  if (url.username !== "" || url.password !== "" || url.search !== "" || url.hash !== "") {
-    throw new DataError(`${label} must have no credentials, query or fragment, found ${describe(baseUrl)}.`);
-  }
   if (ENDS_WITH_SERVICE_PATH.test(url.pathname)) {
     throw new DataError(`${label} must be the address before ${SERVICE_PATHS[version]}, found ${describe(baseUrl)}.`);
   }

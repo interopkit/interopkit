@@ -10,6 +10,19 @@ export interface Finding {
   readonly message: string;
 }
 
+/**
+ * A finding with its severity, which the validators of the standards list: where the fault is, which rule it breaks, what is
+ * wrong, and how serious it is.
+ *
+ * @remarks
+ * An `error` means that the data breaks a requirement of the standard, or cannot be used without a guess; a `warning` means that
+ * it is usable and departs from a recommendation. The guide of the model of each standard says which rules are which.
+ */
+export interface Issue extends Finding {
+  /** Whether the data breaks a requirement (`error`) or departs from a recommendation (`warning`). */
+  readonly severity: "error" | "warning";
+}
+
 /** The most findings that a reader or a validator lists unless the caller says otherwise. */
 export const DEFAULT_MAX_FINDINGS = 1_000;
 

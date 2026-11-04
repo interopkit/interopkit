@@ -1,4 +1,4 @@
-import type { CaliperFinding } from "./finding.js";
+import type { Issue } from "@interopkit/core/checks";
 import { findingSink } from "./finding.js";
 import { inspectEvent } from "./inspect.js";
 import { readValidateOptions, type ValidateOptions } from "./options.js";
@@ -25,7 +25,7 @@ import { readValidateOptions, type ValidateOptions } from "./options.js";
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2#profiles-0 | Caliper Analytics 1.2, Profiles}
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2/cert | Caliper Analytics 1.2 Conformance and Certification Guide}
  */
-export function validateEvent(value: unknown, options?: ValidateOptions): readonly CaliperFinding[] {
+export function validateEvent(value: unknown, options?: ValidateOptions): readonly Issue[] {
   const { version, maxFindings } = readValidateOptions(options);
   const sink = findingSink(maxFindings);
   inspectEvent(value, sink, version);

@@ -16,7 +16,6 @@ describe("the public API", () => {
         "deriveStatementId",
         "formatDuration",
         "formatStatement",
-        "formatTimestamp",
         "INTERACTION_TYPES",
         "isDuration",
         "isSameStatement",

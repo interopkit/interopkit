@@ -1,5 +1,5 @@
+import type { Issue } from "@interopkit/core/checks";
 import type { CALIPER_1_1_CONTEXT, CALIPER_CONTEXT, CaliperEvent, EntityDocument } from "../model/index.js";
-import type { CaliperFinding } from "../validate/index.js";
 
 /** An envelope that an endpoint read: who sent it, what it says of itself, the events and entities that read, and the findings. */
 export interface ReceivedEnvelope {
@@ -21,5 +21,5 @@ export interface ReceivedEnvelope {
    * items that were left out, and the warnings and errors of the profiles of those that read. At most `maxFindings`, and a last
    * one with the rule `findings-stopped` when the list stopped there.
    */
-  readonly findings: readonly CaliperFinding[];
+  readonly findings: readonly Issue[];
 }

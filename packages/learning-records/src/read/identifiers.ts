@@ -1,4 +1,5 @@
-import type { Actor, StatementIssue } from "../model/index.js";
+import type { Issue } from "@interopkit/core/checks";
+import type { Actor } from "../model/index.js";
 import { error } from "./finding.js";
 import { member } from "./path.js";
 
@@ -14,7 +15,7 @@ function listOf(names: readonly string[]): string {
  * Judges the identifiers of an Agent or a Group: an LRS shall reject an Actor with more than one (4.2.4.2), and an Agent
  * needs one (4.2.2.1). A Group with none is anonymous and needs its members.
  */
-export function identifierIssues(actor: Actor, path: string): StatementIssue[] {
+export function identifierIssues(actor: Actor, path: string): Issue[] {
   const present = IDENTIFIERS.filter((name) => actor[name] !== undefined);
   const needs = `needs exactly one of ${listOf(IDENTIFIERS)}`;
   if (present.length > 1) return [error(path, "identifier-count", `${needs}, found ${listOf(present)}.`)];

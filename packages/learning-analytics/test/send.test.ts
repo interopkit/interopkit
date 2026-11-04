@@ -385,7 +385,8 @@ describe("sendCaliper: input of other types", () => {
       ["a time limit of 0", events, { ...given, timeoutMs: 0 }],
       ["a time limit as text", events, { ...given, timeoutMs: "10" }],
       ["a time limit of null", events, { ...given, timeoutMs: fromJson("null") }],
-      ["a send time before 1970", events, { ...given, sendTime: -1 }],
+      ["a send time before the year 0000", events, { ...given, sendTime: -62_167_219_200_001 }],
+      ["a send time with a fraction of a millisecond", events, { ...given, sendTime: 1.5 }],
       ["a send time as text", events, { ...given, sendTime: "now" }],
       ["no send time", events, { ...given, sendTime: undefined }],
       ["no events", [], given],
@@ -415,8 +416,8 @@ describe("sendCaliper: input of other types", () => {
     await expect(sendCaliper(sample(), { ...options(), timeoutMs: 0 })).rejects.toThrow(
       "The option timeoutMs must be a positive integer, found 0.",
     );
-    await expect(sendCaliper(sample(), { ...options(), sendTime: -1 })).rejects.toThrow(
-      "The option sendTime must be epoch milliseconds from 1970 to the end of the year 9999, found -1.",
+    await expect(sendCaliper(sample(), { ...options(), sendTime: 1.5 })).rejects.toThrow(
+      "The time must be whole epoch milliseconds in the years 0000 to 9999, found 1.5.",
     );
   });
 

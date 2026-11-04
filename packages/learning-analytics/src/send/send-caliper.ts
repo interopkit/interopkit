@@ -1,8 +1,14 @@
 // biome-ignore-all lint/style/useNamingConvention: The names of HTTP headers are those of their specifications.
 
 import { type CallOptions, callService, DataError } from "@interopkit/core";
-import { checkArray, checkNonEmptyString, checkPositiveInteger, checkRecord, describe } from "@interopkit/core/checks";
-import { formatDateTime } from "../build/index.js";
+import {
+  checkArray,
+  checkNonEmptyString,
+  checkPositiveInteger,
+  checkRecord,
+  describe,
+  formatDateTime,
+} from "@interopkit/core/checks";
 import { CALIPER_CONTEXT, type CaliperEvent, type EntityDocument, LIBRARY_PROFILE_CONTEXT } from "../model/index.js";
 import { bearerHeaders, type CaliperSender, checkSender, DEFAULT_CALIPER_TIMEOUT_MS } from "./sender.js";
 
@@ -88,7 +94,7 @@ export async function sendCaliper(
   const { endpoint, token, sensor, sendTime, fetch, signal, timeoutMs = DEFAULT_CALIPER_TIMEOUT_MS } = options;
   const body = envelopeText({
     sensor,
-    sendTime: formatDateTime(sendTime, "The option sendTime"),
+    sendTime: formatDateTime(sendTime),
     dataVersion: CALIPER_CONTEXT,
     data,
   });

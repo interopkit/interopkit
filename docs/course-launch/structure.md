@@ -13,7 +13,7 @@ flowchart TD
   parse -->|"not well-formed, a DOCTYPE,<br/>another root"| stop["One last finding"]
   parse --> schema["The schema: the order and number of elements,<br/>attributes, enumerations, decimals, languages"]
   schema --> cmi5["cmi5: IRIs, unique ids, objective references,<br/>the URL of each assignable unit"]
-  cmi5 --> findings["CourseIssue[]"]
+  cmi5 --> findings["Issue[]"]
   findings -->|"validateCourseStructure"| list["Every finding, up to maxFindings"]
   findings -->|"readCourseStructure"| model["CourseStructure, or a DataError<br/>that names the first error"]
   model -->|"writeCourseStructure"| xml["cmi5.xml, read again before it is returned"]
@@ -66,7 +66,7 @@ schema compares as written. Text keeps its inner line breaks and a no-break spac
 
 ## Rules
 
-Each finding is a `CourseIssue`: the `path` in the model (`children[0].children[2].url`, `course.title[0].lang`), a `rule`, a
+Each finding is an `Issue` of `@interopkit/core/checks`: the `path` in the model (`children[0].children[2].url`, `course.title[0].lang`), a `rule`, a
 `message` that reads after the path, and a `severity`, `error` for every rule below.
 
 | Rule                   | A structure breaks it when                                                                                                       | From                    |

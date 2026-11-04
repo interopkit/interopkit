@@ -1,4 +1,5 @@
-import { buildEvent, type CaliperEvent, formatDateTime, mintUrn } from "@interopkit/learning-analytics";
+import { formatDateTime } from "@interopkit/core/checks";
+import { buildEvent, type CaliperEvent, mintUrn } from "@interopkit/learning-analytics";
 import type { AttemptRecord } from "./attempt.ts";
 
 /**
@@ -16,7 +17,7 @@ export function attemptEvents(attempt: AttemptRecord, edApp: string): readonly C
   const attemptId = mintUrn(["attempt", attempt.id]);
   const person = { id: attempt.learner, type: "Person" } as const;
   const assessment = { id: attempt.assessment, type: "Assessment" } as const;
-  const started = formatDateTime(attempt.startedAt, "The start of the attempt");
+  const started = formatDateTime(attempt.startedAt);
   const events: CaliperEvent[] = [
     buildEvent({
       id: mintUrn(["event", attempt.id, "started"]),
@@ -37,7 +38,7 @@ export function attemptEvents(attempt: AttemptRecord, edApp: string): readonly C
     }),
   ];
   if (attempt.submittedAt !== undefined) {
-    const submitted = formatDateTime(attempt.submittedAt, "The submission of the attempt");
+    const submitted = formatDateTime(attempt.submittedAt);
     events.push(
       buildEvent({
         id: mintUrn(["event", attempt.id, "submitted"]),
@@ -61,7 +62,7 @@ export function attemptEvents(attempt: AttemptRecord, edApp: string): readonly C
   }
   if (attempt.grade !== undefined) {
     const { given, maximum, scoredBy, at } = attempt.grade;
-    const graded = formatDateTime(at, "The time of the grade");
+    const graded = formatDateTime(at);
     events.push(
       buildEvent({
         id: mintUrn(["event", attempt.id, "graded"]),

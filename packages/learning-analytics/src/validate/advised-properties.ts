@@ -1,6 +1,6 @@
-import { isRecord } from "@interopkit/core/checks";
+import { type Issue, isRecord } from "@interopkit/core/checks";
 import type { CaliperEvent } from "../model/index.js";
-import { type CaliperFinding, warning } from "./finding.js";
+import { warning } from "./finding.js";
 import { isNamed } from "./profile-entry.js";
 
 /**
@@ -35,7 +35,7 @@ export function* missingProperties(
   path: string,
   properties: readonly string[],
   label: string,
-): Generator<CaliperFinding> {
+): Generator<Issue> {
   for (const name of properties) {
     if (!(name in entity)) {
       yield warning(
@@ -48,7 +48,7 @@ export function* missingProperties(
 }
 
 /** Lists the advised properties of the entities that an event gives as objects: its generated entity and the session of a timeout. */
-export function* advisedOfEvent(event: CaliperEvent): Generator<CaliperFinding> {
+export function* advisedOfEvent(event: CaliperEvent): Generator<Issue> {
   const { generated, object } = event;
   if (isRecord(generated)) {
     const properties = GENERATED_ADVISED.get(String(generated.type));

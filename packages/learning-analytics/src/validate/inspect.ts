@@ -1,13 +1,13 @@
-import { buildFindings, copyJson, type FindingSink, safeParseBounded } from "@interopkit/core/checks";
+import { buildFindings, copyJson, type FindingSink, type Issue, safeParseBounded } from "@interopkit/core/checks";
 import type * as v from "valibot";
 import type { CaliperEvent, CaliperVersion, EntityDocument } from "../model/index.js";
 import { SCHEMA_SETS } from "../read/internal.js";
 import { ADVISED, articled, missingProperties } from "./advised-properties.js";
 import { eventFindings } from "./event-findings.js";
-import { type CaliperFinding, error } from "./finding.js";
+import { error } from "./finding.js";
 
 /** Turns the issues of a parse into findings that are all errors. */
-function shapeFindings(issues: readonly v.BaseIssue<unknown>[]): CaliperFinding[] {
+function shapeFindings(issues: readonly v.BaseIssue<unknown>[]): Issue[] {
   return buildFindings(issues).map((finding) => ({ ...finding, severity: "error" }));
 }
 
@@ -15,11 +15,7 @@ function shapeFindings(issues: readonly v.BaseIssue<unknown>[]): CaliperFinding[
  * Copies a value that must be JSON, which also limits how deep it nests, and says in a finding where it is not. A value that
  * `JSON.parse` made of a request within the depth of `MAX_JSON_DEPTH` is JSON that nothing else holds, so it is read as it is.
  */
-function copyOf(
-  value: unknown,
-  sink: FindingSink<CaliperFinding>,
-  parsed: boolean,
-): { readonly value: unknown } | undefined {
+function copyOf(value: unknown, sink: FindingSink<Issue>, parsed: boolean): { readonly value: unknown } | undefined {
   if (parsed) return { value };
   const copy = copyJson(value, "");
   if (!("problem" in copy)) return { value: copy.value };
@@ -36,7 +32,7 @@ function copyOf(
  */
 export function inspectEvent(
   value: unknown,
-  sink: FindingSink<CaliperFinding>,
+  sink: FindingSink<Issue>,
   version: CaliperVersion,
   parsed = false,
 ): CaliperEvent | undefined {
@@ -59,7 +55,7 @@ export function inspectEvent(
  */
 export function inspectEntity(
   value: unknown,
-  sink: FindingSink<CaliperFinding>,
+  sink: FindingSink<Issue>,
   version: CaliperVersion,
   parsed = false,
 ): EntityDocument | undefined {

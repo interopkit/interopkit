@@ -2,13 +2,12 @@ import {
   type CallOptions,
   DataError,
   hasNextPage,
-  raceAbort,
   readAnswer,
   readAnswerJson,
-  requestService,
+  requestWithCredential,
   type ServiceResponse,
 } from "@interopkit/core";
-import { checkAbortSignal, checkRecord, describe, isRecord, MAX_JSON_DEPTH, parseWith } from "@interopkit/core/checks";
+import { describe, isRecord, MAX_JSON_DEPTH, parseWith, readCallOptions } from "@interopkit/core/checks";
 import type {
   CasePackage,
   CaseQuery,
@@ -108,17 +107,6 @@ export interface CaseClient {
 /** The name of the file that a provider publishes for discovery, below the path of the version (REST binding 2.5). */
 const DISCOVERY_PATH = `discovery/${DISCOVERY_FILE}`;
 
-/** Characters that a header value must not hold: they would end the header and start another. */
-const HEADER_BREAK = /[\r\n\0]/u;
-
-/** Checks the options of one call and returns the signal that ends it. */
-function signalOf(options: unknown): AbortSignal | undefined {
-  if (options === undefined) return undefined;
-  checkRecord(options, "The options of a call must be an object");
-  if (options.signal !== undefined) checkAbortSignal(options.signal, "The option signal");
-  return options.signal;
-}
-
 /**
  * The most levels of an answer. The readers bound each extension to 64 levels below the object that holds it, so an answer that
  * they accept may nest deeper than 64, and none nests deeper than twice that.
@@ -129,40 +117,18 @@ const MAX_ANSWER_DEPTH = 2 * MAX_JSON_DEPTH;
 const STANDARD = "CASE";
 
 /** Makes one GET request with the credential of the host, and returns the answers that `expect` lists. */
-async function get(
+function get(
   settings: Settings,
   url: string,
   expect: readonly number[],
   signal: AbortSignal | undefined,
 ): Promise<ServiceResponse> {
-  const waiting = [settings.signal, signal].filter((each) => each !== undefined);
-  const either = waiting.length === 0 ? undefined : AbortSignal.any(waiting);
-  // The host's function gets the signal and should stop, but the wait of the caller ends when it aborts whether the function does or not.
-  const authorization =
-    settings.authorization === undefined
-      ? undefined
-      : await raceAbort(
-          Promise.resolve(settings.authorization(either === undefined ? undefined : { signal: either })),
-          { signal: either },
-        );
-  if (
-    authorization !== undefined &&
-    (typeof authorization !== "string" || authorization === "" || HEADER_BREAK.test(authorization))
-  ) {
-    throw new DataError(
-      "The option authorization must return a non-empty header value without line breaks, or undefined.",
-    );
-  }
-  const { fetch, timeoutMs, maxBytes } = settings;
-  return requestService(
-    { fetch, timeoutMs, signal: settings.signal },
+  const { fetch, timeoutMs, maxBytes, authorization } = settings;
+  return requestWithCredential(
+    { fetch, timeoutMs, signal: settings.signal, ...(authorization === undefined ? {} : { authorization }) },
     `The CASE provider at ${url}`,
     url,
-    {
-      method: "GET",
-      headers:
-        authorization === undefined ? { accept: "application/json" } : { accept: "application/json", authorization },
-    },
+    { method: "GET", headers: { accept: "application/json" } },
     { maxBytes, expect, ...(signal === undefined ? {} : { signal }) },
   );
 }
@@ -170,7 +136,7 @@ async function get(
 /** Creates the call that fetches one entity from the endpoint of a collection, and reads it with `read`. */
 function endpoint<TValue>(settings: Settings, collection: string, read: (json: unknown) => TValue) {
   return async (id: string, options?: CallOptions): Promise<TValue | undefined> => {
-    const signal = signalOf(options);
+    const { signal } = readCallOptions(options);
     checkEndpointIdentifier(id, "The identifier");
     const url = endpointUrl(settings.root, collection, id);
     const response = await get(settings, url, [200, 404], signal);
@@ -281,7 +247,7 @@ export function createCaseClient(options: CaseClientOptions): CaseClient {
   ): AsyncIterable<CFDocument>;
   function documents(query?: CaseQuery, options?: CallOptions): AsyncIterable<CFDocument | SelectedDocument>;
   function documents(query?: CaseQuery, options?: CallOptions): AsyncIterable<CFDocument | SelectedDocument> {
-    const signal = signalOf(options);
+    const { signal } = readCallOptions(options);
     // The first page's parameters are written now, so that a query that is not valid fails before the iteration starts.
     queryString(query, { limit: settings.pageSize, offset: 0 });
     return pagesOfDocuments(settings, withIdentifier(query), signal);
@@ -303,7 +269,7 @@ export function createCaseClient(options: CaseClientOptions): CaseClient {
     itemType: endpoint(settings, "CFItemTypes", (json) => readEntity("CFItemTypeSet", json, as)),
     rubric: endpoint(settings, "CFRubrics", (json) => readEntity("CFRubric", json, as)),
     async discovery(options) {
-      const signal = signalOf(options);
+      const { signal } = readCallOptions(options);
       if (settings.version !== "1.1") {
         throw new DataError('CASE 1.0 defines no discovery file: create the client with the option version "1.1".');
       }

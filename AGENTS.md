@@ -62,7 +62,7 @@ Use these words with these meanings in code, comments and docs.
 | endpoint     | The service that receives the envelopes                                                                                         |
 | deadline     | The time a call to a service may take, `timeoutMs`                                                                              |
 | framework    | A CASE competency framework, held as a package: one document with its items, associations, definitions and rubrics              |
-| finding      | A `CaseIssue`, `CredentialIssue`, `StatementIssue` or `CaliperFinding` of a reader or a validator: where, which rule, what is wrong, and its severity
+| finding      | An `Issue` of `core/checks` that a reader or a validator lists: where, which rule, what is wrong, and its severity
 | Statement    | An xAPI Statement, with a capital S: an Actor, a verb and an Object, with a result and a context when there are any
 | LRS          | The Learning Record Store: the service that receives Statements and shall reject those that break the rules
 | LRP          | A Learning Record Provider: the system that makes Statements and sends them to an LRS
@@ -84,10 +84,10 @@ Use these words with these meanings in code, comments and docs.
 | `packages/core/src/checks.ts`        | Checks of one value and the valibot side, which `@interopkit/core/checks` exports                   |
 | `packages/core/src/formats.ts`       | `isDate`, `isDateTime`, `findInstant`, `isUuid`, `isAbsoluteUri` and their schemas; `checks.ts` exports them, and `parseDateTime`, which throws where `findInstant` returns `undefined` |
 | `packages/core/src/json.ts`          | `JsonValue`, `copyJson`, `MAX_JSON_DEPTH`, the counts of depth and tokens; `checks.ts` exports them |
-| `packages/core/src/findings.ts`      | `Finding`, `createFindingSink`, `safeParseBounded`, `DEFAULT_MAX_FINDINGS`; `checks.ts` exports them |
+| `packages/core/src/findings.ts`      | `Finding`, `Issue`, `createFindingSink`, `safeParseBounded`, `DEFAULT_MAX_FINDINGS`; `checks.ts` exports them |
 | `packages/core/src/clock.ts`         | `Clock`, `SYSTEM_CLOCK`, `readClock`, `checkClock`                                                  |
 | `packages/core/src/call-options.ts`  | `CallOptions`, the `signal` of every call that waits on I/O                                         |
-| `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `DEFAULT_TIMEOUT_MS`                       |
+| `packages/core/src/service.ts`       | `Fetch`, `ServiceCall`, `requestService`, `callService`, `requestWithCredential`, `clientOptionsEntries`, `DEFAULT_TIMEOUT_MS` |
 | `packages/core/src/answer-headers.ts` | `readTotalCount`, `hasNextLink`, `hasNextPage`, `readRetryAfterSeconds`, `findLinkTarget`: the paging and retry headers of an answer |
 | `packages/core/src/answer.ts`        | `readAnswerJson`, `readAnswer`, `readStatusDetail`: the JSON, the data and the status of the answer of a service, for a client |
 | `packages/core/src/http/`            | The request and answer types and their helpers, which `@interopkit/core/http` exports               |
@@ -287,7 +287,8 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - The names of the properties of a specification (`CFItems`, `imsx_codeMajor`) are kept as it writes them: the folders and
   files that define them are listed in the `useNamingConvention` override of `biome.json`.
 - A vocabulary is a `const` tuple, its type is derived from it and its schema is `v.picklist` of it.
-- A finding is a `Finding` of `core` (`path`, `rule`, `message`), extended by a package for its own fields. The `message` reads
+- A finding is a `Finding` of `core` (`path`, `rule`, `message`), and a validator lists an `Issue` of `core`, a finding with its
+  `severity`. The `message` reads
   after the path and does not hold it; the rules are those that `buildFindings` names and those that a table of the guide lists.
 - A reader and a validator that list findings take `maxFindings` (default 1,000, `DEFAULT_MAX_FINDINGS`): they parse with
   `safeParseBounded`, never `v.safeParse`, and fill a `createFindingSink` of `core/checks`, whose last finding says that the list
@@ -315,8 +316,11 @@ Where the code departs from `STANDARDS.md`, with the reason.
   signal.
 - Every call to a service goes through `requestService`, or `callService`, which decodes its text: `redirect` is `"manual"`,
   any 3xx is an error, an answer has at most `maxBytes`, 65,536 by default, and every wait is raced against the deadline. A
+  client whose requests carry the host's credential makes them through `requestWithCredential`, takes `clientOptionsEntries` in
+  the schema of its options, checks its base address with `checkBaseUrl` and the options of each call with `readCallOptions`,
+  and adds only its own headers. A
   client reads the JSON of an answer with `readAnswerJson`, its data with `readAnswer`, a refusal with `readStatusDetail` and the
-  paging of a list with `hasNextPage`.
+  paging of a list with `hasNextPage`. Times are written with `formatDateTime` and read with `parseDateTime` of `core/checks`.
 - A URL that a message or a document gives, which a server fetches or sends a token to, passes `checkRemoteUrl` of `core/checks`
   in `tool-integration`, or an origin that the host lists; a URL that the host configures passes `checkHttpsUrl`.
 - A handler takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, checks the request with

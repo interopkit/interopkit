@@ -127,8 +127,8 @@ describe("about", () => {
 
   it("refuses options that are not valid", async () => {
     const lrs = fakeLrs(() => ({ body: { version: ["2.0.0"] } }));
-    await expect(clientOf(lrs).about(fromJson('{"since":"x"}'))).rejects.toThrow(
-      'The options object is invalid: unexpected property "since".',
+    await expect(clientOf(lrs).about(fromJson('{"signal":5}'))).rejects.toThrow(
+      "The option signal must be an AbortSignal, found 5.",
     );
     await expect(clientOf(lrs).about(fromJson("null"))).rejects.toThrow(DataError);
     expect(lrs.requests).toHaveLength(0);

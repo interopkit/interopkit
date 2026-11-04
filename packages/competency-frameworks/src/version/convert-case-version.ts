@@ -3,13 +3,14 @@ import {
   checkArray,
   checkRecord,
   copyJson,
+  type Issue,
   isAbsoluteUri,
   isRecord,
   MAX_JSON_DEPTH,
   parseWith,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
-import type { CaseEntity, CaseIssue, CasePackage, CFAssociation, CFAssociationSet } from "../model/index.js";
+import type { CaseEntity, CasePackage, CFAssociation, CFAssociationSet } from "../model/index.js";
 import { ASSOCIATION_TYPES_1_0, INFORMATION_MODEL_UUID } from "../model/internal.js";
 
 /** A value in the form of CASE 1.0, and what the conversion left out of it. */
@@ -17,7 +18,7 @@ export interface VersionedValue<TValue> {
   /** The value in the form of 1.0. It shares nothing with the input. */
   readonly value: TValue;
   /** What 1.0 cannot hold and the conversion left out, and what 1.0 would refuse, as warnings. An empty list means that nothing was lost. */
-  readonly dropped: readonly CaseIssue[];
+  readonly dropped: readonly Issue[];
 }
 
 /**
@@ -69,7 +70,7 @@ const URI_MEMBERS: ReadonlySet<string> = new Set(["uri", "officialSourceURL"]);
 
 const versionSchema = v.literal("1.0");
 
-function warning(path: string, rule: string, message: string): CaseIssue {
+function warning(path: string, rule: string, message: string): Issue {
   return { path, rule, message, severity: "warning" };
 }
 
@@ -126,7 +127,7 @@ function isPlain(value: unknown): boolean {
 }
 
 /** Reports an identifier or a URI that 1.0 would refuse, and leaves it as it is. */
-function reportForms(name: string, value: unknown, parent: string, dropped: CaseIssue[]): void {
+function reportForms(name: string, value: unknown, parent: string, dropped: Issue[]): void {
   if (typeof value === "string" && IDENTIFIER_MEMBERS.has(name) && !INFORMATION_MODEL_UUID.test(value)) {
     dropped.push(
       warning(
@@ -148,7 +149,7 @@ function reportForms(name: string, value: unknown, parent: string, dropped: Case
 }
 
 /** Reports the forms of a link, or of each link of a list. */
-function reportLinkForms(value: unknown, path: string, dropped: CaseIssue[]): void {
+function reportLinkForms(value: unknown, path: string, dropped: Issue[]): void {
   const links = Array.isArray(value) ? value : [value];
   for (const [index, link] of links.entries()) {
     if (!isRecord(link)) continue;
@@ -158,7 +159,7 @@ function reportLinkForms(value: unknown, path: string, dropped: CaseIssue[]): vo
 }
 
 /** Copies a node of an association without its `targetType`, which 1.0 has no property for. */
-function convertNode(node: unknown, path: string, dropped: CaseIssue[]): unknown {
+function convertNode(node: unknown, path: string, dropped: Issue[]): unknown {
   if (!isRecord(node)) checkRecord(node, `${path} must be an object`);
   const { targetType: _targetType, ...rest } = node;
   reportForms("uri", rest.uri, path, dropped);
@@ -189,7 +190,7 @@ function whyNotIn10(association: Dictionary): { readonly rule: string; readonly 
 }
 
 /** Converts the properties of an object of the model, and the objects that it holds. */
-function convertObject(entity: Dictionary, path: string, dropped: CaseIssue[], depth: number): Record<string, unknown> {
+function convertObject(entity: Dictionary, path: string, dropped: Issue[], depth: number): Record<string, unknown> {
   checkDepth(depth, path);
   const members: [string, unknown][] = [];
   // The path of a member is written only where it is used: in a warning, in an error, and for what the member holds.
@@ -230,7 +231,7 @@ function convertObject(entity: Dictionary, path: string, dropped: CaseIssue[], d
 function convertAssociation(
   association: Dictionary,
   path: string,
-  dropped: CaseIssue[],
+  dropped: Issue[],
   depth: number,
 ): Record<string, unknown> | undefined {
   const why = whyNotIn10(association);
@@ -242,12 +243,7 @@ function convertAssociation(
 }
 
 /** Converts the associations of a package or of an item, leaving out those that have no form in 1.0. */
-function convertAssociations(
-  value: unknown,
-  path: string,
-  dropped: CaseIssue[],
-  depth: number,
-): Record<string, unknown>[] {
+function convertAssociations(value: unknown, path: string, dropped: Issue[], depth: number): Record<string, unknown>[] {
   checkArray(value, `${path} must be an array`);
   const kept: Record<string, unknown>[] = [];
   for (const [index, each] of value.entries()) {
@@ -294,7 +290,7 @@ export function convertCaseVersion(
 export function convertCaseVersion(value: unknown, version: unknown): VersionedValue<unknown> {
   parseWith(versionSchema, version, "The version");
   checkRecord(value, "The value must be an object");
-  const dropped: CaseIssue[] = [];
+  const dropped: Issue[] = [];
   const converted =
     "associationType" in value ? convertAssociation(value, "", dropped, 0) : convertObject(value, "", dropped, 0);
   if (

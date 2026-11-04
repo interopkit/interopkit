@@ -1,5 +1,5 @@
-import type { FindingSink } from "@interopkit/core/checks";
-import type { Statement, StatementIssue } from "../model/index.js";
+import type { FindingSink, Issue } from "@interopkit/core/checks";
+import type { Statement } from "../model/index.js";
 import { VERSION_PATTERNS } from "../model/internal.js";
 import { error } from "./finding.js";
 import { identifierIssues } from "./identifiers.js";
@@ -20,7 +20,7 @@ import { isSubStatement, walkStatement } from "./walk.js";
  * Judges the `version` of a Statement for an LRS of 1.0.3, which rejects a version that does not start with `1.0` (1.0.3 Data
  * 2.4.10). An LRS of 2.0 should not reject a Statement for its version (4.2.4.2), and a provider has rules of its own.
  */
-function versionIssues(statement: Statement): StatementIssue[] {
+function versionIssues(statement: Statement): Issue[] {
   const { version } = statement;
   if (version === undefined || VERSION_PATTERNS["1.0.3"].test(version)) return [];
   return [error("version", "invalid-value", `expected 1.0 or 1.0.x, found ${JSON.stringify(version)}.`)];
@@ -36,12 +36,7 @@ function versionIssues(statement: Statement): StatementIssue[] {
  * @param input - The Statement as it was given, for the rules that the reading changes: a single Activity of a context becomes a list.
  * @param sink - Takes the findings.
  */
-export function judgeRules(
-  statement: Statement,
-  rules: RuleSet,
-  input: unknown,
-  sink: FindingSink<StatementIssue>,
-): void {
+export function judgeRules(statement: Statement, rules: RuleSet, input: unknown, sink: FindingSink<Issue>): void {
   const { role, version } = rules;
   const provider = role === "provider";
   walkStatement(statement, {

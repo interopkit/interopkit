@@ -1,11 +1,10 @@
 import { DataError } from "@interopkit/core";
-import { isDateTime, parseDateTime } from "@interopkit/core/checks";
+import { formatDateTime, isDateTime, parseDateTime } from "@interopkit/core/checks";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   CONTEXT_ACTIVITY_TYPES,
   formatDuration,
-  formatTimestamp,
   INTERACTION_TYPES,
   isDuration,
   parseDuration,
@@ -337,54 +336,14 @@ describe("durationKey", () => {
   });
 });
 
-describe("formatTimestamp", () => {
-  it.each([
-    [0, "1970-01-01T00:00:00.000Z"],
-    [1_718_304_363_250, "2024-06-13T18:46:03.250Z"],
-    [-62_167_219_200_000, "0000-01-01T00:00:00.000Z"],
-    [253_402_300_799_999, "9999-12-31T23:59:59.999Z"],
-    ["2024-06-13T18:46:03Z", "2024-06-13T18:46:03.000Z"],
-    ["2024-06-13T20:46:03.25+02:00", "2024-06-13T18:46:03.250Z"],
-    ["2024-06-13T13:16:03.2509-05:30", "2024-06-13T18:46:03.250Z"],
-    ["2024-06-13t18:46:03z", "2024-06-13T18:46:03.000Z"],
-    ["2016-12-31T23:59:60Z", "2017-01-01T00:00:00.000Z"],
-    ["0000-01-01T00:00:00Z", "0000-01-01T00:00:00.000Z"],
-  ])("writes %j as %s", (at, expected) => {
-    expect(formatTimestamp(at)).toBe(expected);
-  });
-
-  it.each([
-    "2024-06-13",
-    "2024-06-13T18:46:03",
-    "2024-02-30T10:00:00Z",
-    "yesterday",
-    "",
-    "9999-12-31T23:59:59-23:59",
-    "0000-01-01T00:00:00+23:59",
-    1.5,
-    Number.NaN,
-    Number.POSITIVE_INFINITY,
-    253_402_300_800_000,
-    -62_167_219_200_001,
-    null,
-    undefined,
-    {},
-    [],
-  ])("refuses %j, which is not a time in the years 0000 to 9999", (at) => {
-    expect(() => formatTimestamp(at as number)).toThrow(DataError);
-    expect(() => formatTimestamp(at as number)).toThrow(
-      /^The time must be epoch milliseconds or an RFC 3339 date and time/,
-    );
-  });
-
+describe("the Timestamp that a provider writes", () => {
   it("writes a time that reads back to the same instant, in UTC with milliseconds, for any instant", () => {
     fc.assert(
       fc.property(fc.integer({ min: -62_167_219_200_000, max: 253_402_300_799_999 }), (milliseconds) => {
-        const text = formatTimestamp(milliseconds);
+        const text = formatDateTime(milliseconds);
         expect(isDateTime(text)).toBe(true);
         expect(parseDateTime(text)).toBe(milliseconds);
         expect(isUtc(text) && hasMillisecondPrecision(text)).toBe(true);
-        expect(formatTimestamp(text)).toBe(text);
       }),
       { seed: 20_241_102, numRuns: 300 },
     );

@@ -8,7 +8,6 @@ import {
   type Fetch,
 } from "@interopkit/core";
 import {
-  checkAbortSignal,
   checkArray,
   checkFunction,
   checkNonEmptyString,
@@ -16,6 +15,7 @@ import {
   checkRecord,
   describe,
   MAX_JSON_TOKENS,
+  readCallOptions,
 } from "@interopkit/core/checks";
 import { KEY_RELATIONSHIPS, type KeyResolver, type VerificationKey } from "../model/index.js";
 import { type DidResolver, didKeyResolver, didWebResolver } from "./did.js";
@@ -127,13 +127,6 @@ function checkOptions(options: unknown): asserts options is KeyResolverOptions {
   if (options.maxTokens !== undefined) checkPositiveInteger(options.maxTokens, "The option maxTokens");
 }
 
-/** Checks the options of a call. */
-function checkCallOptions(options: unknown): void {
-  if (options === undefined) return;
-  checkRecord(options, "The options of a call must be an object");
-  if (options.signal !== undefined) checkAbortSignal(options.signal, "The option signal");
-}
-
 /** Splits a DID URL into the DID and the fragment, or returns `undefined` for a value that is not a DID URL of one method. */
 function splitDid(reference: string): { readonly did: string; readonly method: string } | undefined {
   const match = /^(did:([a-z0-9]+):[^#?/]+)(?:#.*)?$/u.exec(reference);
@@ -215,9 +208,9 @@ export function createKeyResolver(options: KeyResolverOptions): KeyResolver {
   };
 
   return {
-    async resolve(verificationMethod, callOptions) {
+    async resolve(verificationMethod, options) {
       checkNonEmptyString(verificationMethod, "The verification method");
-      checkCallOptions(callOptions);
+      const callOptions = readCallOptions(options);
       const base = baseOf(verificationMethod);
       if (base === undefined) {
         const parts = splitDid(verificationMethod);
@@ -232,9 +225,9 @@ export function createKeyResolver(options: KeyResolverOptions): KeyResolver {
       return find(await keysAt(base, callOptions)) ?? find(await keysAt(base, callOptions, true));
     },
 
-    async issuerKeys(issuer, callOptions) {
+    async issuerKeys(issuer, options) {
       checkNonEmptyString(issuer, "The issuer");
-      checkCallOptions(callOptions);
+      const callOptions = readCallOptions(options);
       if (isDidJwk(issuer)) {
         const publicKeyJwk = decodeDidJwk(issuer);
         return publicKeyJwk === undefined

@@ -1,7 +1,7 @@
 # Building events
 
 `buildEvent` writes the `@context` of an event and checks every property of it, `mintUrn` gives it an identifier that stays the
-same when the event is reported again, and `formatDateTime` writes its times. The classes that an event refers to are those of
+same when the event is reported again, and `formatDateTime` of `@interopkit/core/checks` writes its times. The classes that an event refers to are those of
 the [model](./model.md).
 
 ```mermaid
@@ -94,13 +94,13 @@ dereference (Caliper 1.2 section 4.2 says an IRI should be one).
 
 ## Times
 
-`formatDateTime(at, label)` writes epoch milliseconds as Caliper requires: `YYYY-MM-DDTHH:mm:ss.SSSZ`, in UTC, with
-milliseconds. A fraction of a millisecond is cut. `label` names the time in the error message.
+`formatDateTime(at)` of `@interopkit/core/checks` writes epoch milliseconds as Caliper requires: `YYYY-MM-DDTHH:mm:ss.SSSZ`, in
+UTC, with milliseconds. The same function writes the Timestamps of xAPI, so one host writes the times of both standards alike.
 
-| Input                                       | Result                                                                |
-| ------------------------------------------- | --------------------------------------------------------------------- |
-| `0` to `253402300799999`                    | The time, from `1970-01-01T00:00:00.000Z` to the end of the year 9999 |
-| Anything else, including `NaN` and a string | `DataError`                                                           |
+| Input                                                       | Result                                                                      |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Whole milliseconds from `-62167219200000` to `253402300799999` | The time, from `0000-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z` |
+| Anything else, a fraction of a millisecond, `NaN` and a string included | `DataError`                                                      |
 
 `checkIri(value, label)` throws `DataError` unless the value is an absolute IRI, which Caliper requires of every entity
 (section 4.2), in the form that the readers take as the `id` of an entity: a scheme, no white space, and a text that `URL`
@@ -113,7 +113,7 @@ parses. A host can use it on the parties it passes in, and `buildEvent` takes wh
 | `DataError` | The input is not an event: `The event is invalid at action: expected an action of Caliper, found "Graded".`, an entity of a class the property does not take, a relative IRI, a time not in the form, an input with an `@context` | Fix the input. Nothing was built                                       |
 | `DataError` | The event breaks a rule of its profile: `The event is invalid at profile: expected a profile that has GradeEvent, found AssessmentProfile; GradeEvent is in GradingProfile.` The message counts the other errors | Fix the event, or call `validateEvent` to see every finding |
 | `DataError` | The options are not an object with a list of contexts: `The options is invalid at contexts: ...`                                                                                | Give `contexts` as a list of addresses and objects                     |
-| `DataError` | A part of an identifier is not a string or a finite number, or a time is not epoch milliseconds in range                                                                         | Fix the argument                                                       |
+| `DataError` | A part of an identifier is not a string or a finite number: `The parts of an identifier ...`; a time is not whole epoch milliseconds in range: `The time must be whole epoch milliseconds in the years 0000 to 9999, found 1.5.` | Fix the argument                                                       |
 
 What is not built yet is in [supported](./supported.md).
 
