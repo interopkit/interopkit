@@ -142,19 +142,25 @@ function firstHole(values: readonly unknown[]): number {
  * Reads the options of a call that waits on I/O, which may be left out, and returns its `signal`.
  *
  * @remarks
- * Only `signal` is read: the options of a call that extend `CallOptions` with more pass, and their other properties are the
- * caller's to check.
+ * A property other than `signal` is refused, so that a misspelled option is not dropped without a word. The options of a call
+ * that extend `CallOptions` with more name their own properties in `own`, and the caller checks their values.
  *
  * @param options - The options, as a host passes them from JavaScript.
+ * @param own - The names of the other properties that the options of this call may have.
  * @returns The `CallOptions` of `@interopkit/core`: a new object, with the `signal` when they have one.
- * @throws `DataError` when they are given and are not an object, or `signal` is not an `AbortSignal`.
+ * @throws `DataError` when they are given and are not an object, have a property that is neither `signal` nor in `own`, or
+ * `signal` is not an `AbortSignal`.
  */
-export function readCallOptions(options: unknown): {
+export function readCallOptions(
+  options: unknown,
+  own: readonly string[] = [],
+): {
   /** Ends the caller's wait. */
   readonly signal?: AbortSignal;
 } {
   if (options === undefined) return {};
   checkRecord(options, "The options of a call must be an object");
+  checkProperties(options, "The options of a call", ["signal", ...own]);
   if (options.signal === undefined) return {};
   checkAbortSignal(options.signal, "The option signal");
   return { signal: options.signal };

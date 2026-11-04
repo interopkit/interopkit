@@ -264,6 +264,16 @@ describe("the deadline and the signals", () => {
     expect(provider.requests).toHaveLength(0);
   });
 
+  it("refuses an option that a call does not have, such as a misspelled signal, before any request", async () => {
+    const provider = fakeProvider(() => ({ status: 404 }));
+    const client = clientOf(provider);
+    const misspelled = JSON.parse('{"signals":{}}');
+    expect(await failureOf(client.item(id(7), misspelled))).toBeInstanceOf(DataError);
+    expect(await failureOf(client.discovery(misspelled))).toBeInstanceOf(DataError);
+    expect(() => client.documents(undefined, misspelled)).toThrow(DataError);
+    expect(provider.requests).toHaveLength(0);
+  });
+
   it("refuses options that are not an object and a signal that is not one", async () => {
     const client = clientOf(fakeProvider(() => ({ status: 404 })));
     expect(await failureOf(client.item(id(7), fromJson("null")))).toBeInstanceOf(DataError);

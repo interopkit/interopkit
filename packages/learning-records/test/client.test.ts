@@ -199,6 +199,16 @@ describe("the requests of the client", () => {
     expect(await calling).toStrictEqual(new Error("gave up"));
   });
 
+  it("refuses an option that a call does not have, such as a misspelled signal, before any request", async () => {
+    let requests = 0;
+    const answering = fakeLrs(() => {
+      requests += 1;
+      return { body: "{}" };
+    });
+    expect(await failureOf(clientOf(answering).about(fromJson('{"signals":{}}')))).toBeInstanceOf(DataError);
+    expect(requests).toBe(0);
+  });
+
   it("refuses an answer over maxBytes with a ServiceError", async () => {
     const big = fakeLrs(() => ({ body: JSON.stringify({ version: ["2.0.0"], extensions: { a: "x".repeat(200) } }) }));
     const failure = await failureOf(clientOf(big, { maxBytes: 100 }).about());

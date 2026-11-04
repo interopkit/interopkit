@@ -202,7 +202,7 @@ export function createCredentialsClient(options: CredentialsClientOptions): Cred
   return {
     listCredentials(options) {
       const since = sinceOf(options);
-      return pagesOfCredentials(settings, since, readCallOptions(options).signal);
+      return pagesOfCredentials(settings, since, readCallOptions(options, ["since"]).signal);
     },
     async upsertCredential(credential, options) {
       const { signal } = readCallOptions(options);

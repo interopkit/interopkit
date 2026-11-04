@@ -442,6 +442,16 @@ describe("listCredentials", () => {
     expect(readStatusInfo(error as ServiceError)).toStrictEqual({ info: status, retryAfterSeconds: 120 });
   });
 
+  it("refuses an option that a call does not have, such as a misspelled signal, before any request", async () => {
+    const { fetch, requests } = fakeServer(() => json({}));
+    const client = clientOf(fetch);
+    const misspelled = { signals: new AbortController().signal } as never;
+    await expect(client.getProfile(misspelled)).rejects.toThrow(DataError);
+    await expect(client.upsertCredential("a.b.c", misspelled)).rejects.toThrow(DataError);
+    expect(() => client.listCredentials(misspelled)).toThrow(DataError);
+    expect(requests).toHaveLength(0);
+  });
+
   it("refuses options that are not valid before any request", async () => {
     const { fetch, requests } = fakeServer(() => json({}));
     const client = clientOf(fetch);

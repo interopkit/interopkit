@@ -46,7 +46,7 @@ option. Inner functions trust their callers.
 | `checkPositiveInteger(value, label)`    | A safe integer from 1                         | `<label> must be a positive integer, found <value>.`     |
 | `checkAbortSignal(value, label)`        | An `AbortSignal`                              | `<label> must be an AbortSignal, found <value>.`         |
 | `checkBaseUrl(value, label)`            | An absolute `https` URL with no credentials, query or fragment, the address of a service that the paths of its endpoints follow | `<label> must have no credentials, query or fragment, found <value>.` |
-| `readCallOptions(options)`              | The options of a call that waits on I/O, or `undefined`; it reads only `signal` and returns a new `CallOptions` | `The options of a call must be an object, found <value>.` |
+| `readCallOptions(options, own?)`        | The options of a call that waits on I/O, or `undefined`; it returns a new `CallOptions` with the `signal`, and refuses a property that is neither `signal` nor named in `own` | `The options of a call must be an object, found <value>.`; `The options of a call has the property "signal", found "<name>".` |
 
 `checkHttpsUrl` is for a URL that the host configures. `checkRemoteUrl` is for a URL that a message or a document gives, which
 a server then fetches or sends a token to. It reads the host after URL parsing and refuses:

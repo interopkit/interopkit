@@ -437,6 +437,15 @@ describe("deleteStates", () => {
     }
   });
 
+  it("refuses an option that the call does not have, such as a misspelled signal, before any request", async () => {
+    const lrs = fakeLrs(() => ({ status: 204 }));
+    const failure = await failureOf(
+      clientOf(lrs).deleteStates({ resource: "state", activityId: ACTIVITY, agent: AGENT }, fromJson('{"signals":{}}')),
+    );
+    expect(failure).toBeInstanceOf(DataError);
+    expect(lrs.requests).toHaveLength(0);
+  });
+
   it("accepts the signal of the call", async () => {
     const lrs = fakeLrs(() => ({ status: 204 }));
     await clientOf(lrs).deleteStates(

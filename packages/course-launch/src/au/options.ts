@@ -131,8 +131,12 @@ export function readAuOptions(options: unknown): AuSettings {
   };
 }
 
-/** The signal of a call: its own, or that of the options of the session. */
-export function signalOf(settings: AuSettings, options: CallOptions | undefined): CallOptions {
-  const signal = readCallOptions(options).signal ?? settings.signal;
+/** The signal of a call: its own, or that of the options of the session. `own` names the other options the call may have. */
+export function signalOf(
+  settings: AuSettings,
+  options: CallOptions | undefined,
+  own: readonly string[] = [],
+): CallOptions {
+  const signal = readCallOptions(options, own).signal ?? settings.signal;
   return signal === undefined ? {} : { signal };
 }

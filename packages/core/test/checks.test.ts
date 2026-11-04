@@ -207,9 +207,21 @@ describe("readCallOptions", () => {
     expect(readCallOptions({ signal: undefined })).toStrictEqual({});
   });
 
-  it("reads only the signal of options that extend the options of a call", () => {
+  it("reads the signal of options that extend the options of a call and name their own properties", () => {
     const { signal } = new AbortController();
-    expect(readCallOptions({ signal, timeoutMs: 5, since: "2024-06-13T00:00:00Z" })).toStrictEqual({ signal });
+    expect(readCallOptions({ signal, since: "2024-06-13T00:00:00Z" }, ["since", "limit"])).toStrictEqual({ signal });
+    expect(readCallOptions({ limit: 5 }, ["since", "limit"])).toStrictEqual({});
+  });
+
+  it("refuses a property that is neither the signal nor one that the call names, such as a misspelled signal", () => {
+    const { signal } = new AbortController();
+    expect(() => readCallOptions({ signals: signal })).toThrow(
+      new DataError('The options of a call has the property "signal", found "signals".'),
+    );
+    expect(() => readCallOptions({ signal, timeoutMs: 5 })).toThrow('found "timeoutMs"');
+    expect(() => readCallOptions({ since: "x" }, ["limit"])).toThrow(
+      new DataError('The options of a call has the properties "signal" and "limit", found "since".'),
+    );
   });
 
   it("refuses options that are not an object, and a signal that is not an AbortSignal", () => {

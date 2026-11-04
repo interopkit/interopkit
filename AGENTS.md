@@ -323,7 +323,7 @@ Where the code departs from `STANDARDS.md`, with the reason.
 - Every call to a service goes through `requestService`, or `callService`, which decodes its text: `redirect` is `"manual"`,
   any 3xx is an error, an answer has at most `maxBytes`, 65,536 by default, and every wait is raced against the deadline. A
   client whose requests carry the host's credential makes them through `requestWithCredential`, takes `clientOptionsEntries` in
-  the schema of its options, checks its base address with `checkBaseUrl` and the options of each call with `readCallOptions`,
+  the schema of its options, checks its base address with `checkBaseUrl` and the options of each call with `readCallOptions`, which refuses a property but `signal` and those that the call names,
   and adds only its own headers. A
   client reads the JSON of an answer with `readAnswerJson`, its data with `readAnswer`, a refusal with `readStatusDetail` and the
   paging of a list with `hasNextPage`. Times are written with `formatDateTime` and read with `parseDateTime` of `core/checks`.

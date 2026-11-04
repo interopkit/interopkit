@@ -53,6 +53,9 @@ export interface PriorOutcome {
   };
 }
 
+/** The names of the options of an outcome beyond those of any call. */
+const OUTCOME_OPTIONS: readonly string[] = ["durationMs"];
+
 /** What a completed, passed or failed statement may carry beyond what the session gives it. */
 export interface OutcomeOptions extends CallOptions {
   /**
@@ -255,7 +258,13 @@ export function createAuSession(parts: SessionParts): AuSession {
   };
 
   /** Judges a statement by the rules of the session, sends it when they allow it, and says what came of it. */
-  const record = async (key: string, build: () => Statement, options: CallOptions | undefined): Promise<Recorded> => {
+  const record = async (
+    key: string,
+    build: () => Statement,
+    options: CallOptions | undefined,
+    own: readonly string[] = [],
+  ): Promise<Recorded> => {
+    const call = signalOf(settings, options, own);
     if (ended) return "skipped";
     const statement = pending.get(key) ?? build();
     const judged = judgeStatement(statement, facts, progress);
@@ -266,7 +275,7 @@ export function createAuSession(parts: SessionParts): AuSession {
     pending.set(key, statement);
     let outcome: "stored" | "conflict";
     try {
-      outcome = await client.sendStatement(statement, signalOf(settings, options));
+      outcome = await client.sendStatement(statement, call);
     } catch (error) {
       if (!(error instanceof ServiceError && REFUSED_STATUSES.has(error.status))) throw error;
       pending.delete(key);
@@ -298,6 +307,7 @@ export function createAuSession(parts: SessionParts): AuSession {
           true,
         ),
       options,
+      OUTCOME_OPTIONS,
     );
 
   return {
@@ -317,7 +327,12 @@ export function createAuSession(parts: SessionParts): AuSession {
     },
     initialize: (options) => record("initialized", () => defined("initialized"), options),
     complete: (options) =>
-      record("completed", () => defined("completed", { completion: true, duration: durationOf(options) }), options),
+      record(
+        "completed",
+        () => defined("completed", { completion: true, duration: durationOf(options) }),
+        options,
+        OUTCOME_OPTIONS,
+      ),
     pass: (score, options) => judgedBy("passed", score, options),
     fail: (score, options) => judgedBy("failed", score, options),
     judge: (score, options) => {

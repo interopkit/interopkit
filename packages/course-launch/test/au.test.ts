@@ -50,6 +50,21 @@ describe("a session of the runtime", () => {
     );
   });
 
+  it("takes the duration as an option of the statements of an outcome, and no call takes an option it does not have", async () => {
+    const launch = await launchFor();
+    const session = await startUnit(launch);
+    await session.initialize();
+    await session.complete({ durationMs: 5000 });
+    expect(launch.host.lrs.held().at(-1)?.result).toMatchObject({ duration: "PT5S" });
+    const misspelled = JSON.parse('{"signals":{}}');
+    const unknown = JSON.parse('{"durationMs":5000}');
+    await expect(session.progress(10, misspelled)).rejects.toThrow(DataError);
+    await expect(session.progress(10, unknown)).rejects.toThrow(DataError);
+    await expect(session.pass({ scaled: 0.9 }, misspelled)).rejects.toThrow(DataError);
+    expect(() => session.state.get("progress", unknown)).toThrow(DataError);
+    expect(launch.host.lrs.held().at(-1)?.verb.id).not.toContain("progressed");
+  });
+
   it("skips what the rules or the launch mode forbid, without a request", async () => {
     const launch = await launchFor();
     const session = await startUnit(launch);
