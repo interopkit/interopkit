@@ -222,20 +222,6 @@ readStatusInfo(slow); // => { info: { imsx_codeMajor: "failure", imsx_severity: 
 | The body                          | A stream                                  | Bytes, read whole                                                       |
 | A `fetch` that ignores its signal | The caller waits                          | The call ends at the deadline                                           |
 
-## Speed and memory
-
-`pnpm bench` times the build that ships against the platform API that a function wraps, the least work of the same kind, in
-three rounds that alternate which runs first; the gate is the ratio of the fastest samples, five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit, which holds on any machine. Each worst input runs in a Node.js process of its own
-whose heap is bounded (`test/peak-memory.test.ts`): the heap of a case is twice the least in which it ends on Node.js 22 and 24,
-rounded up to 16 MiB.
-
-| Benchmark or worst input | Reference or reading | Ratio or least heap | Budget or heap |
-| --- | --- | ---: | ---: |
-| `requestService` of an answer of 1 MiB in chunks of 16 KiB | `Response.arrayBuffer` of the same answer | 0.94–1.15 | 6   |
-| An answer without end, read to a limit of 1 MiB | `serviceEndless` | 8 MiB | 16 MiB |
-
-The call reads the chunks up to `maxBytes`, cancels the rest and joins what it read once.
-
 ## Data flows
 
 | Data                           | Comes from  | Goes to                                                             | Kept by the package |

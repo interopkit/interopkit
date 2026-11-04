@@ -1,7 +1,6 @@
-import { readdirSync } from "node:fs";
 import * as checks from "@interopkit/core/checks";
 import { describe, expect, it } from "vitest";
-import { runGuideSamples } from "../../../scripts/guide-samples.js";
+import { guidesWithSamples, runGuideSamples } from "../../../scripts/guide-samples.js";
 import * as endpoint from "../src/endpoint/index.js";
 import * as root from "../src/index.js";
 
@@ -11,7 +10,7 @@ const modules = {
   "@interopkit/learning-analytics/endpoint": endpoint,
 };
 const GUIDES = new URL("../../../docs/learning-analytics/", import.meta.url);
-const guides = readdirSync(GUIDES).filter((name) => name.endsWith(".md"));
+const guides = guidesWithSamples(GUIDES);
 
 describe("the samples of the documentation", () => {
   it("run in the README of the package and show their results", async () => {

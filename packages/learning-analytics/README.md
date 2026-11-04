@@ -107,7 +107,8 @@ the [model](https://github.com/interopkit/interopkit/blob/main/docs/learning-ana
 [Caliper 1.1](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/versions.md), what is
 [supported](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/supported.md) and what is not,
 the places where the [specifications disagree](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/spec-gaps.md),
-and the [evidence](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/evidence.md) that it does what it says.
+the [evidence](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/evidence.md) that it does what it says, and its
+[performance](https://github.com/interopkit/interopkit/blob/main/docs/learning-analytics/performance.md): speed, size and peak memory.
 A complete sensor, which sends again after a failure, and an endpoint that receives both versions are in the
 [example](https://github.com/interopkit/interopkit/tree/main/examples/learning-analytics#readme).
 

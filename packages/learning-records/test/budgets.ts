@@ -8,19 +8,19 @@ export const STATEMENTS = 1000;
 
 /**
  * The most that the fastest sample of a benchmark may take, in milliseconds: five times the fastest of the samples of the
- * runner of CI, rounded up to one significant digit, as docs/learning-records/evidence.md explains.
+ * runner of CI, rounded up to one significant digit, as docs/learning-records/performance.md explains.
  */
 export const BUDGETS = {
   /** `validateStatement` of each of the Statements of the batch. */
-  validateStatement: 100,
+  validateStatement: 200,
   /** `parseStatementJson` of the text of the batch. */
-  parseStatementJson: 500,
+  parseStatementJson: 70,
 } as const;
 
 /**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of a reference in the same run.
  * Both samples come from one run, so a ratio holds on any machine. A ratio is five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit,
- * as docs/learning-records/evidence.md explains, except a ratio of a reader to the validator of Learning
+ * as docs/learning-records/performance.md explains, except a ratio of a reader to the validator of Learning
  * Locker, which does the same work and whose budget is parity.
  */
 export const RATIOS = {

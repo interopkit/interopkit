@@ -53,9 +53,10 @@ const body = await callService(
 
 A call that fails rejects with a `ServiceError` whose `status` is the HTTP status, or 0 when the service did not answer.
 
-Each entry point bundled alone, minified with its dependencies, takes after gzip: `@interopkit/core` 6.4 KB, `/checks` 6.8 KB,
-`/http` 7.0 KB, each with valibot, and `/oauth` 14.7 KB with oauth4webapi; `test/size.test.ts` holds each to its budget and to
-the modules it lists. The guides give the speed of the hot paths and the peak memory of the readers. They say more: [service calls](https://github.com/interopkit/interopkit/blob/main/docs/core/service.md),
+Each entry point bundled alone, minified with its dependencies, takes after gzip: `@interopkit/core` 11.7 KB with valibot and jose,
+`/checks` 7.5 KB and `/http` 7.7 KB, each with valibot, and `/oauth` 15.3 KB with oauth4webapi; `test/size.test.ts` holds each to
+its budget and to the modules it lists. [Performance](https://github.com/interopkit/interopkit/blob/main/docs/core/performance.md)
+gives the speed of the hot paths, the sizes and the peak memory of the readers. The guides say more: [service calls](https://github.com/interopkit/interopkit/blob/main/docs/core/service.md),
 [requests and answers](https://github.com/interopkit/interopkit/blob/main/docs/core/http.md),
 [signing](https://github.com/interopkit/interopkit/blob/main/docs/core/signer.md),
 [OAuth clients](https://github.com/interopkit/interopkit/blob/main/docs/core/oauth.md),

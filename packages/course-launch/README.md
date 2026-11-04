@@ -89,7 +89,8 @@ unit?.kind === "au" ? [unit.moveOn, unit.masteryScore] : undefined;
 | [Rules of a session](../../docs/course-launch/rules.md)  | The launch URL, the launch data, the preferences, and the rules of the statements of a session |
 | [Assignable unit](../../docs/course-launch/au.md)        | The runtime of a unit: its start, its statements, a reload, and what it skips and what the LMS refuses |
 | [LMS](../../docs/course-launch/lms.md)                   | Registrations, launches, the fetch URL, the rules of cmi5 on the host's LRS, satisfaction, abandoned sessions and waivers |
-| [Evidence](../../docs/course-launch/evidence.md)         | The requirement map, CATAPULT's suites, the counterparties, speed, size and peak memory |
+| [Evidence](../../docs/course-launch/evidence.md)         | The requirement map, CATAPULT's suites and the other counterparties and oracles         |
+| [Performance](../../docs/course-launch/performance.md)   | Speed against libxml2, saxes and zip.js, the size of each entry point and the peak memory |
 | [Comparators](../../docs/course-launch/comparators.md)   | The other implementations of cmi5 and how their capabilities map to the package         |
 | [Supported](../../docs/course-launch/supported.md)       | What of cmi5 the package covers, and what it leaves out                                 |
 | [Spec gaps](../../docs/course-launch/spec-gaps.md)       | Where the specification, its schema and CATAPULT differ, and the reading taken          |

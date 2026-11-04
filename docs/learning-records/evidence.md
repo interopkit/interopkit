@@ -1,9 +1,8 @@
 # Evidence for learning-records
 
 What shows that the package does what it says: the rules of both versions, the conformance suites of ADL, SQL LRS and the
-validator of Learning Locker as oracles, an example LRS with a platform and a dashboard, the speed of every hot path, the size of
-each entry point, the peak memory of every reader, and four runtimes.
-Each layer answers a question that the one before cannot.
+validator of Learning Locker as oracles, an example LRS with a platform and a dashboard, and four runtimes. Each layer answers a question that the one before cannot.
+The speed, the size and the peak memory are in [performance](performance.md).
 
 ```mermaid
 flowchart LR
@@ -13,9 +12,6 @@ flowchart LR
   rules --> locker["The validator of Learning Locker<br/>verdicts on 1.0.3<br/>pnpm test"]
   example --> sql
   example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
-  rules --> speed["1,000 Statements against<br/>Learning Locker, node:crypto, jose<br/>pnpm bench"]
-  rules --> size["Each entry point alone<br/>pnpm test"]
-  rules --> memory["Peak memory of each reader<br/>pnpm test"]
 ```
 
 | Layer        | Question                                                                          | Where                                                                   | Runs           |
@@ -26,9 +22,6 @@ flowchart LR
 | Oracle       | Does another LRS take and refuse the same Statements as the reader?               | `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts`         | `pnpm sql-lrs` |
 | Oracle       | Does the validator of Learning Locker judge the Statements of 1.0.3 alike?        | `packages/learning-records/test/v1-rules.test.ts`                       | `pnpm test`    |
 | Counterparty | Does the client work against another LRS, in both versions, with what it answers? | `examples/learning-records/test/sqllrs.corpus.test.ts`                  | `pnpm sql-lrs` |
-| Speed        | How long does each hot path take, against Learning Locker, node:crypto and jose?  | `packages/learning-records/test/*.bench.ts`                             | `pnpm bench`   |
-| Size         | Does each entry point hold only what it uses, within its budget?                  | `packages/learning-records/test/size.test.ts`                           | `pnpm test`    |
-| Memory       | Does each reader of untrusted input stay under its budget on its worst input?     | `packages/learning-records/test/peak-memory.test.ts`                       | `pnpm test`    |
 | Runtimes     | Does the example give the same results everywhere?                                | `compat/`                                                               | `pnpm compat`  |
 
 ## The example
@@ -80,85 +73,6 @@ pin what SQL LRS does as a server that the package must live with:
 and the 19 others are pinned in the test and in [spec-gaps](spec-gaps.md) with the text of 1.0.3: it reads a Statement by its own
 schema and leaves out checks that the text asks for, and it refuses a single Activity in `contextActivities`, which the text
 allows.
-
-## Speed
-
-`pnpm bench` times the build that ships on 1,000 Statements of 771 KB that xAPI 1.0.3 and 2.0 both take, against a reference in
-the same run: the validator of Learning Locker for the work on each Statement, `JSON.parse` and `JSON.stringify` for a text,
-node:crypto for a hash and jose for a signature. The ratios are the fastest samples of seven runs on a laptop at a load of 10 to
-28, and the times of `validateStatement` and `parseStatementJson` are those of the runners of CI.
-
-| Benchmark | Reference | Ratio | Budget |
-| --- | --- | ---: | ---: |
-| `validateStatement` of the batch, 19 to 34 ms on CI | the validator of Learning Locker, 40 to 62 ms on CI | 0.36–0.57 | 1 |
-| `readStatement` of the batch | the same | 0.34–0.59 | 1 |
-| `validateStatements` of the batch | the same | 0.36–0.57 | 1 |
-| `parseStatementJson` of its text | `JSON.parse` of the text | 2.57–3.48 | 20  |
-| `buildStatement` of the batch | the validator of Learning Locker | 0.51–0.80 | 4   |
-| `convertStatementVersion`, `formatStatement` | the same | 0.38–0.69 | 4, 4 |
-| `isSameStatement` of each and its copy | the same | 1.65–2.63 | 20 |
-| `matchesStatementQuery` over the batch | the same | 0.05–0.10 | 0.5  |
-| `handleLrsRequest`, a POST of the batch | the same | 0.78–1.27 | 7 |
-| `handleLrsRequest`, a GET of 100 | `JSON.stringify` of the page | 1.17–1.49 | 8   |
-| `mboxSha1sum` of 1,000 addresses | the SHA-1 of node:crypto | 1.42–2.23 | 20  |
-| `deriveStatementId` of 1,000 names | the same | 4.44–7.79 | 40 |
-| `hashAttachment` of 1 MiB, 3.8 to 7.2 ms | the SHA-256 of node:crypto, 0.33 to 0.39 ms | 10.2–14.4 | 80  |
-| `readMultipart` of 99 Statements with 6.2 MiB of data | the parser of the package and the SHA-256 of node:crypto | 8.9–10.9 | 60 |
-| `writeMultipart` of the same | their JSON, the SHA-256 of node:crypto and a copy | 6.7–12.5  | 70 |
-| `signStatement`, RSA of 2,048 bits | the `CompactSign` of jose | 1.06–1.34 | 7   |
-| `verifyStatementSignature` | the `compactVerify` of jose | 2.95–4.68 | 30  |
-
-A ratio of a reader to the validator of Learning Locker, which does the same work, is parity or better, as the design asks; another
-ratio is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit. A time on CI is five times its fastest sample:
-
-| Budget | Value | How it was set |
-| --- | --- | --- |
-| `validateStatement` of the batch, in milliseconds | 100 | Five times the fastest of five samples of the runners of CI, 18.84, rounded up to one significant digit |
-| `parseStatementJson` of the batch, in milliseconds | 500 | Five times the fastest of five samples of the runners of CI, 94.46, rounded up to one significant digit. The samples were taken before the scan, which reads about four times faster; the ratio is the budget that holds it |
-
-`JSON.parse` judges the syntax first, so the search for a repeated name is a scan of the strings and the brackets that keeps the
-names of the open objects and builds nothing else; a parser that builds a syntax tree took 16 to 18 times `JSON.parse`. A test
-checks the scan against such a parser on 2,000 generated texts. The rules of a provider look for an empty object before they walk
-a Statement to write the paths of its members, which takes 0.79 of the time of the build before, alternated in one process, with
-the same findings for every rule of both tables in both roles and versions.
-
-The gaps have causes outside the code of the package. The hashes are those of `@noble/hashes` in JavaScript, because
-`hashAttachment`, `readMultipart` and `writeMultipart` answer at once and the digest of Web Crypto is asynchronous and has no
-SHA-224; the hash is most of the time of a message. `deriveStatementId` is the name-based UUID of `uuid`. `isSameStatement` reads both
-Statements and writes their canonical text; a text written without `JSON.stringify` gained 5 percent and was not kept.
-
-## Size
-
-`size.test.ts` bundles each entry point alone with `scripts/entry-size.ts`: esbuild, minified, with every dependency inside. It
-fails above the budget after gzip, or when an entry point holds a module that its budget does not list.
-
-| Entry point | Bytes | Gzip | Budget | Holds, besides `@interopkit/core`, `model`, `read` and valibot |
-| --- | ---: | ---: | ---: | --- |
-| `@interopkit/learning-records` | 55,936 | 19,413 | 24,500 | `build`, `compare`, `format`, `@noble/hashes`, uuid |
-| `@interopkit/learning-records/attachments` | 61,989 | 22,607 | 28,500 | `@noble/hashes`, the multipart parser of Remix |
-| `@interopkit/learning-records/client` | 80,723 | 28,544 | 36,000 | `attachments`, `compare`, `@noble/hashes`, the multipart parser |
-| `@interopkit/learning-records/signing` | 71,983 | 25,213 | 32,000 | `attachments`, `compare`, `@noble/hashes`, jose |
-| `@interopkit/learning-records/store` | 134,125 | 45,073 | 56,500 | `attachments`, `compare`, `format`, `signing`, `@noble/hashes`, jose, the multipart parser |
-
-No entry point holds the client or the store but its own, and the root holds no multipart parser and no jose.
-
-## Memory
-
-Each reader of untrusted input runs on its worst input within its limits in a Node.js process of its own whose heap is
-bounded (`test/peak-memory.test.ts`, with the readings in `test/peak-memory-readings.ts`): what the reading keeps alive at once
-must fit, whenever V8 collects, so a regression fails and the load of a machine cannot. The heap of a case is twice the least in
-which the reading ends on Node.js 22 and 24, rounded up to 16 MiB; `node scripts/peak-memory.ts learning-records` prints the least, in steps
-of 8 MiB.
-
-| Reader | Worst input | Least heap | Heap of the test |
-| --- | --- | ---: | ---: |
-| `parseStatementJson` | A million tokens of distinct names, the most that the search for a repeat keeps | 40 MiB | 80 MiB |
-| `validateStatements` | A Statement whose context holds a million wrong Activities | 16 MiB | 32 MiB |
-| `readMultipart` | The most parts and bytes that the limits take, 10 MiB | 8 MiB | 16 MiB |
-| `handleLrsRequest`, a POST | 1,000 Statements of 1.9 MB near a million tokens | 24 MiB | 48 MiB |
-| `verifyStatementSignature` | A JWS of 10 MiB whose payload is near a million tokens of distinct names | 88 MiB | 176 MiB |
-| `readBasicAuthorization` | A header of 10 MiB | 16 MiB | 32 MiB |
-| The alternate request syntax | A form of a million and a half names, and a form of 10 MiB of `+` | 8 and 32 MiB | 16 and 64 MiB |
 
 ## Runtimes
 

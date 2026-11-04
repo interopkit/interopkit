@@ -102,8 +102,9 @@ signals; the [roster guide](https://github.com/interopkit/interopkit/blob/main/d
 
 [The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/evidence.md) shows what the package
 was checked against: the examples and vocabularies of the specifications, tokens that another library signs, tools of other authors
-(`@lti-tool/core`, `lti-core` and PyLTI1p3) that launch from the platform role and use its services, the speed of the launch and of
-the pages of the services, and four runtimes.
+(`@lti-tool/core`, `lti-core` and PyLTI1p3) that launch from the platform role and use its services, Moodle in both roles, and
+four runtimes. [Performance](https://github.com/interopkit/interopkit/blob/main/docs/tool-integration/performance.md) gives the speed of the launch and of the pages of the
+services, the size of each entry point and the peak memory of each reader.
 
 ## License
 

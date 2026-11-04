@@ -23,7 +23,7 @@ export const HEAVY_BENCH_OPTIONS: BenchOptions = { time: 0, iterations: 3, warmu
  * The budgets of the benchmarks. The time is the most that the fastest sample of a function may take, in milliseconds: five
  * times its fastest sample on the runner of CI, rounded up to one significant digit. The ratio is the most that it may take
  * as a multiple of the fastest sample of a reference in the same run, so it holds on any machine: five times the highest
- * ratio measured on the runner and on a laptop, rounded up to one significant digit, as docs/course-launch/evidence.md
+ * ratio measured on the runner and on a laptop, rounded up to one significant digit, as docs/course-launch/performance.md
  * explains.
  */
 export const BUDGETS = {

@@ -4,7 +4,7 @@ import { type EntrySize, entryPoints, entrySize } from "../../../scripts/entry-s
 /**
  * The budget of the entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the most
  * bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it holds, so
- * that an import which pulls another module into the entry point fails until the list says so. docs/selective-disclosure/proofs.md
+ * that an import which pulls another module into the entry point fails until the list says so. docs/selective-disclosure/performance.md
  * lists the size. A budget changes only with the reason in the commit that changes it.
  */
 const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>> = {

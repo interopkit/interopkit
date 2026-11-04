@@ -104,19 +104,6 @@ Neither function limits the size of a payload: the host bounds what it signs.
 | `DataError`                | `signCompactJws`: the signature is not a `Uint8Array`, or an ES256, ES384, ES512 or ES256K signature has the wrong length                             | Convert DER to the fixed-length R and S in the signer     |
 | The `reason` of the signal | The caller aborted                                                                                                                                    | Nothing: the caller ended the wait                        |
 
-## Speed
-
-`pnpm bench` times the build that ships against the platform API that a function wraps, the least work of the same kind, in
-three rounds that alternate which runs first; the gate is the ratio of the fastest samples, five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit, which holds on any machine.
-
-| Benchmark | Reference | Ratio | Budget |
-| --- | --- | ---: | ---: |
-| `signCompactJws` of a payload of 2 KB with EdDSA | `crypto.subtle.sign` of its signing input | 1.15–1.21 | 7   |
-
-The parts of the JWS are written as base64url by a table, in time linear in the input: built from the bytes as the arguments of
-`String.fromCharCode` and encoded with `btoa`, they take longer than the signature, and `signCompactJws` of 2 KB 58 µs where it
-takes 32.
-
 ## Data flows
 
 | Data            | Comes from | Goes to                                | Kept by the package |

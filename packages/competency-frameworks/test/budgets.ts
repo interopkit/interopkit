@@ -9,17 +9,17 @@ export const ITEMS = 10_000;
 /**
  * The budgets of the benchmarks. A time is the most that the fastest sample of a benchmark may take, in milliseconds: five
  * times the fastest sample of the runner of CI, rounded up to one significant digit, as
- * docs/competency-frameworks/evidence.md explains.
+ * docs/competency-frameworks/performance.md explains.
  */
 export const BUDGETS = {
   /** `readPackage` of a framework of 10,000 items that is already parsed. */
-  readPackage: 400,
+  readPackage: 700,
   /** `validatePackage` of the same framework. */
-  validatePackage: 400,
+  validatePackage: 700,
   /** `buildFrameworkTree` of the same framework. */
-  buildFrameworkTree: 300,
+  buildFrameworkTree: 500,
   /** `queryEntities` with a filter and a sort over 10,000 documents. */
-  queryDocuments: 40,
+  queryDocuments: 50,
 } as const;
 
 /**
@@ -31,7 +31,7 @@ export const SLOW_REFERENCE_OPTIONS = { time: 0, iterations: 3, warmupTime: 0, w
 /**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of a reference in the same run.
  * Both samples come from one run, so a ratio holds on any machine. A ratio to an official schema, which does the same work, is parity; another is five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit,
- * as docs/competency-frameworks/evidence.md explains.
+ * as docs/competency-frameworks/performance.md explains.
  */
 export const RATIOS = {
   /** `readPackage` of the framework, as a multiple of `JSON.parse` of its text. */

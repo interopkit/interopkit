@@ -1,7 +1,7 @@
 # Evidence
 
-What shows that `@interopkit/course-launch` does what cmi5 asks, and how fast and how small it is. Every check runs from a
-pinned source: cmi5 Quartz at `0ff5b30` of `AICC/CMI-5_Spec_Current`, and CATAPULT at `806c0ba` (v1.0.8), whose archive
+What shows that `@interopkit/course-launch` does what cmi5 asks; [performance](performance.md) says how fast and how small it is.
+Every check runs from a pinned source: cmi5 Quartz at `0ff5b30` of `AICC/CMI-5_Spec_Current`, and CATAPULT at `806c0ba` (v1.0.8), whose archive
 `scripts/corpus.lock.json` and `validation/catapult/suite.lock.json` pin by its SHA-256.
 
 ```mermaid
@@ -48,52 +48,3 @@ the steps.
 | `@xapi/cmi5` 1.4.0 | The AU library of xapijs, in the process of the tests of `examples/course-launch` | A whole session against the example LMS, satisfied, and a second fetch refused |
 | Runtimes | `pnpm compat` | The example's package, LMS and units give the same outcomes on Node.js 22, Deno 2.9, Bun 1.4 and workerd |
 | Mutation rules | `scripts/rules/course-launch.ts` | Every rule of the LMS and of the runtime that keeps a request from being forged, replayed or redirected fails its test when removed |
-
-## Speed
-
-Each benchmark is timed in turns with its reference by `scripts/bench-rounds.ts` (`test/budgets.ts`). The ratio of the fastest samples holds
-on any machine: its budget is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit. The time is five times the fastest sample of the runner, rounded up to one significant digit.
-
-| Benchmark | Reference | Ratio | Budget | Fastest on the runner | Time budget |
-| --- | --- | ---: | ---: | ---: | ---: |
-| `readCourseStructure` of LMS suite 101 (1,001 units) | libxml2 validating it | 3.35–4.85 | 30  | 54.1–97.2 ms | 300 ms |
-| The same | saxes parsing it alone | 1.76–1.92 | 10  | 64.3–96.8 ms | 400 ms |
-| `readCoursePackage` of a ZIP64 archive of 66,001 entries | zip.js listing its entries | 0.70–0.79 | 4   | 999.0–1410.6 ms | 5000 ms |
-| The LMS judging the seven statements of a session | `validateStatements` of them | 0.83–1.24 | 7   | 0.10–0.17 ms | 0.5 ms |
-| The LMS judging 1,000 allowed statements of one request | `validateStatements` of them | 0.32–0.47 | 3    | 7.1–14.6 ms | 40 ms |
-| `prepareLaunch` over stores in memory and the LRS in the same process | none | n/a | n/a | 1.6–2.4 ms | 9 ms |
-
-The reader does not reach parity with libxml2: saxes, a parser in JavaScript, takes 2.0 times libxml2 in WebAssembly to parse
-the text alone, and the reader also builds the model and checks the rules of cmi5 that the schema leaves out.
-
-## Size
-
-`test/size.test.ts` bundles each entry point alone with esbuild, every dependency inside, and fails above its budget: 1.25 times
-the size measured, rounded up to the next 500 bytes.
-
-| Entry point | Minified | Gzip | Budget |
-| --- | --- | --- | --- |
-| `@interopkit/course-launch` | 105,122 | 32,463 | 41,000 |
-| `@interopkit/course-launch/package` | 209,957 | 73,934 | 92,500 |
-| `@interopkit/course-launch/lms` | 132,033 | 41,067 | 51,500 |
-| `@interopkit/course-launch/au` | 106,731 | 36,757 | 46,000 |
-
-The LMS loads no ZIP code and the runtime of a unit no LMS, LRS or reader of a structure.
-
-## Peak memory
-
-Each reader of untrusted input runs on its worst input in a Node.js process of its own whose heap is bounded
-(`test/peak-memory.test.ts`, with the readings in `test/peak-memory-readings.ts`): what the reading keeps alive at once must fit, whenever V8 collects, so the test holds on a loaded
-machine. The heap of each test is twice the least in which it ended on Node.js 22 and 24, rounded up to 16 MiB; the least
-counts the input and the code of the process, and `node scripts/peak-memory.ts course-launch` prints it, in steps of 8 MiB.
-
-| Reader | Worst input | Least heap | Heap of the test |
-| --- | --- | --- | --- |
-| The access of the LMS | A preferences document of 10 MiB, refused after 4,096 bytes | 16 MiB | 32 MiB |
-| The LMS judging a batch | 1,000 statements of a unit near 10 MiB | 32 MiB | 80 MiB |
-| The runtime reading the fetch URL | 65,536 bytes of tokens, refused before it is parsed | 16 MiB | 32 MiB |
-| The runtime reading the launch data | 1 MiB of values | 24 MiB | 48 MiB |
-| The runtime reading the preferences | 1 MiB, over the limit of 4,096 bytes | 16 MiB | 32 MiB |
-| The runtime reading what the registration holds | An answer over 1 MiB | 16 MiB | 32 MiB |
-
-The readers of a structure and of a package are in the [structure](structure.md) and [package](package.md) guides.

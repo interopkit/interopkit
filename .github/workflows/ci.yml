@@ -384,8 +384,8 @@ jobs:
   # The hot paths of competency-frameworks on a framework of 10,000 items against the official schemas of CASE and the JSON, of
   # learning-records on 1,000 Statements against the validator of Learning Locker, node:crypto and jose, and of learning-analytics
   # on 1,000 events and entities against the draft 4 schemas of caliper-spec, each against the budgets of its test/budgets.ts and
-  # its docs/<package>/evidence.md; the launch, the authorization and the pages of the services of tool-integration against jose
-  # and JSON.parse; the three roles of ecdsa-sd-2023 against Digital Bazaar's suite (docs/selective-disclosure/proofs.md); the
+  # its docs/<package>/performance.md; the launch, the authorization and the pages of the services of tool-integration against jose
+  # and JSON.parse; the three roles of ecdsa-sd-2023 against Digital Bazaar's suite (docs/selective-disclosure/performance.md); the
   # proofs, the readers, the images, the status lists, the handlers and the verification of achievement-credentials against the
   # libraries of docs/achievement-credentials/comparators.md, in turns with each; and the cache, the readers of a body, the call
   # to a service and the signing of core against the platform APIs that they wrap. It builds first.

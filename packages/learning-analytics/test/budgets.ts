@@ -18,7 +18,7 @@ export const EVENTS = 1000;
  * times its fastest sample on the runner of CI, rounded up to one significant digit. The ratio is the most that it may take
  * as a multiple of the fastest sample of a reference in the same run, so it holds on any machine: five times the highest
  * ratio measured on the runner and on a laptop, rounded up to one significant digit, and parity for a draft 4 validator,
- * which does the same work, as docs/learning-analytics/evidence.md explains.
+ * which does the same work, as docs/learning-analytics/performance.md explains.
  */
 export const BUDGETS = {
   /** `readEnvelope` of an envelope of 1.2, as a multiple of `JSON.parse` of its text. */

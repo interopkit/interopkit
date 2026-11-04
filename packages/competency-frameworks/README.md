@@ -126,7 +126,8 @@ why, and the differences from the references.
 
 [The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/evidence.md) shows what the
 package was checked against: the official schemas, real frameworks of public providers, an example provider and consumer,
-OpenSALT, the speed of every hot path, the size of each entry point, the peak memory of each reader and four runtimes.
+OpenSALT and four runtimes. [Performance](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/performance.md) gives the speed of every hot
+path, the size of each entry point and the peak memory of each reader.
 
 ## License
 

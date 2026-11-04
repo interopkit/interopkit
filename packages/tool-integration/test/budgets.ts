@@ -10,7 +10,7 @@ export const PAGE_SIZE = 1000;
 /**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of a reference in the same run:
  * five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit, as
- * docs/tool-integration/evidence.md explains. Both samples come from one run, so a ratio holds on any machine.
+ * docs/tool-integration/performance.md explains. Both samples come from one run, so a ratio holds on any machine.
  */
 export const RATIOS = {
   /** `handleLaunch` with an RS256 `id_token`, as a multiple of `jwtVerify` of jose on the same token. Measured 2.37 to 3.20. */

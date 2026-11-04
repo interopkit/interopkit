@@ -1,8 +1,8 @@
 # Evidence for learning-analytics
 
 What shows that the package does what it says: the tables of the specifications, the published contexts, schemas and fixtures of
-`caliper-spec`, the rules of the profiles, a sensor and an endpoint that run against each other, the speed of every hot path, the
-size of each entry point, the peak memory of every reader, three engines of browsers and four runtimes. Each layer answers a question that the one before cannot. Caliper has no public
+`caliper-spec`, the rules of the profiles, a sensor and an endpoint that run against each other, three engines of browsers and four runtimes. Each layer answers a
+question that the one before cannot. The speed, the size and the peak memory are in [performance](performance.md). Caliper has no public
 conformance suite for an endpoint and no open sensor or endpoint of 1.2 to run against, so the oracles are the 1EdTech documents.
 
 ```mermaid
@@ -15,9 +15,6 @@ flowchart LR
   roundtrip --> example["Example: a sensor, an endpoint,<br/>an older sensor<br/>pnpm test"]
   example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
   roundtrip --> browsers["The sensor in Chromium,<br/>Firefox and WebKit<br/>pnpm test:browser"]
-  model --> speed["1,000 events and entities<br/>against the schemas<br/>pnpm bench"]
-  model --> size["Each entry point alone<br/>pnpm test"]
-  model --> memory["Peak memory of each reader<br/>pnpm test"]
   model --> rules["Mutation rules<br/>pnpm check:rules"]
 ```
 
@@ -31,10 +28,7 @@ flowchart LR
 | Profiles      | Does `validateEvent` agree with every row of the tables of section 3 and of the certification guide? | `profiles.spec`, `profiles.corpus`, `validate` tests, `scripts/caliper-rules.ts`                                      | `pnpm test:spec`      |
 | Endpoint      | Does it answer each status in the order of its checks, and cost an unauthorized caller no parsing?   | `endpoint.test.ts`                                                                                                     | `pnpm test`           |
 | Round trip    | Does what a sensor sends reach `accept` equal, in 1.2 and in 1.1?                                    | `endpoint.test.ts`, `roundtrip.corpus.test.ts`, `versions.corpus.test.ts`, `examples/learning-analytics/test`          | `pnpm test`, `pnpm test:corpus` |
-| Memory        | Does each reader of untrusted input stay under its budget on its worst input?                        | `packages/learning-analytics/test/peak-memory.test.ts` | `pnpm test`     |
 | Rules         | Does a test fail when a rule that keeps the endpoint safe is removed from the code?                  | `scripts/rules/learning-analytics.ts`                                                                                  | `pnpm check:rules`    |
-| Speed         | How long do reading, judging, building, sending and receiving take, against the schemas and the JSON? | `read.bench.ts`, `build.bench.ts`, `endpoint.bench.ts` in `packages/learning-analytics/test/`                        | `pnpm bench`          |
-| Size          | Does each entry point hold only what it uses, within its budget?                                    | `packages/learning-analytics/test/size.test.ts`                                                                        | `pnpm test`           |
 | Runtimes      | Does the example give the same results everywhere?                                                   | `compat/`                                                                                                              | `pnpm compat`         |
 | Browsers      | Does the path of a sensor run in the engines of the browsers, with the `uuid` built for them?        | `sensor.browser.test.ts`                                                                                               | `pnpm test:browser`   |
 
@@ -98,67 +92,6 @@ scenario show:
 | An envelope of 1.1 with a describe and an event is received into the same shape as one of 1.2                        | `endpoint.test.ts`             |
 | An unknown token is 401, and an endpoint that reads 1.2 alone answers 422 to the envelope of 1.1                     | `endpoint.test.ts`             |
 | An item that does not read is left out, and its findings carry the path inside the envelope                          | `endpoint.test.ts`             |
-
-## Speed
-
-`pnpm bench` times the build that ships on 1,000 events and on 1,000 entity describes of the fixtures of `caliper-spec` that the
-draft 4 schemas take (an envelope of 1.2 has 1,469,236 bytes), against those schemas and `JSON.parse` in the same run. The table
-gives the range of the fastest ratios of the eight latest green runs of the runner of CI and of one run on a laptop, and the
-fastest samples of the runner; the budget of a ratio is between two samples of one run, so it holds on any machine, and the budget
-of a time holds for the class of the runner.
-
-| Benchmark                                   | Fastest on the runner | Time budget | Reference                                 | Ratio          | Budget |
-| ------------------------------------------- | --------------------: | ----------: | ----------------------------------------- | -------------: | -----: |
-| `readEnvelope` of 1.2 | 41.4–65.4 ms | 300 ms | the draft 4 schemas, 318–460 ms | 0.038–0.042 | 1 |
-| `readEnvelope` of 1.2 | 41.4–65.4 ms | 300 ms | `JSON.parse` of the text, 2.0–2.3 ms | 5.99–8.28 | 50 |
-| `validateEvent` over the events | 41.2–64.7 ms | 300 ms | the draft 4 schemas | 0.033–0.043 | 1 |
-| `readEntity` over 1,000 entities of 71 classes | 12.2–21.9 ms | 70 ms | the draft 4 schemas, 76–118 ms | 0.048–0.063 | 1 |
-| `validateEntity` over the same | 15.2–25.8 ms | 80 ms | the draft 4 schemas | 0.059–0.075 | 1 |
-| `readEnvelope` of 1.1 | 43.0–57.1 ms | 300 ms | `schema_1_1`, 4.9–6.9 s | 0.002–0.003 | 1 |
-| `readEnvelope` of 1.1 | 43.0–57.1 ms | 300 ms | `JSON.parse` of the text | 5.89–8.52 | 50 |
-| `buildEvent` of 1,000 events | 36.5–61.1 ms | 200 ms | the draft 4 schemas over what it builds | 0.032–0.040 | 1 |
-| `buildEntity` of 1,000 entities | 14.6–23.1 ms | 80 ms | the same | 0.050–0.057 | 1 |
-| `sendCaliper` of the envelope | 5.7–10.6 ms | 30 ms | `JSON.stringify` of the envelope | 0.75–1.87 | 10  |
-| `handleCaliperRequest` of the envelope | 45.5–65.3 ms | 300 ms | `JSON.parse` of the text, 2.1 ms | 6.29–8.56 | 50 |
-| `handleCaliperRequest` of the envelope | 45.5–65.3 ms | 300 ms | the draft 4 schemas | 0.038–0.046 | 1 |
-
-A ratio to a schema is parity or better, as the design asks; a ratio to the JSON is five times the highest ratio measured on the runner and on a laptop, rounded up to one significant digit, and a time is five times the fastest sample of the runner, rounded up to one
-significant digit. The schemas of 1.1 try the `oneOf` of every class at each level, so one `Message` event takes about 90 ms.
-The reader of a time reads the fields of `YYYY-MM-DDTHH:mm:ss.SSSZ` by their places and the days of the month, and the endpoint
-reads the items that `JSON.parse` made of the body without copying them again: against the build before, alternated in one
-process, `readEnvelope` takes 0.71 to 0.78 of its time, `handleCaliperRequest` 0.65 to 0.70, `buildEvent` 0.70 to 0.95,
-`readEntity` 0.82 to 0.92, and every fixture of `caliper-spec`, in both versions, reads to the same value and the same findings.
-What remains is the schemas of valibot, the copy of a host's value, and the counts of the text in `@interopkit/core`.
-
-## Size
-
-`size.test.ts` bundles each entry point alone with `scripts/entry-size.ts`: esbuild, minified, with every dependency inside. It
-fails above the budget after gzip, or when an entry point holds a module that its budget does not list.
-
-| Entry point                               | Bytes  | Gzip   | Budget | Holds, besides `@interopkit/core` and valibot              |
-| ----------------------------------------- | -----: | -----: | -----: | ---------------------------------------------------------- |
-| `@interopkit/learning-analytics`          | 69,388 | 20,415 | 26,000 | `build`, `model`, `read`, `send`, `v1p1`, `validate`, uuid |
-| `@interopkit/learning-analytics/endpoint` | 64,996 | 18,248 | 23,000 | `model`, `read`, `v1p1`, `validate`; no sensor and no builder |
-
-## Memory
-
-Each reader of untrusted input runs on its worst input within its limits in a Node.js process of its own whose heap is
-bounded (`test/peak-memory.test.ts`, with the readings in `test/peak-memory-readings.ts`): what the reading keeps alive at once
-must fit, whenever V8 collects, so a regression fails and the load of a machine cannot. The heap of a case is twice the least in
-which the reading ends on Node.js 22 and 24, rounded up to 16 MiB; `node scripts/peak-memory.ts learning-analytics` prints the least, in steps
-of 8 MiB. A reading that kept an issue for each wrong value would pass the heap by far.
-
-| Reader                                     | Worst input                                                | Least heap | Heap of the test |
-| ------------------------------------------ | ---------------------------------------------------------- | ---------: | ---------------: |
-| `readEvent`, `readEntity`, `validateEvent` | An object that holds a list of a million wrong values      | 32 MiB     | 64 MiB           |
-| The same, as Caliper 1.1                   | The same list                                              | 32 MiB     | 64 MiB           |
-| `readEnvelope`                             | An envelope whose event holds the same list                | 32 MiB     | 64 MiB           |
-| `handleCaliperRequest`                     | An envelope of 1 MiB of events, of 1.2 and of 1.1          | 16 MiB     | 32 MiB           |
-| `handleCaliperRequest`                     | An event whose extensions have as many distinct keys as 1 MiB holds, the costliest body for its bytes | 24 MiB | 48 MiB |
-
-The copy of a host's value is most of what the million values cost: `copyJson` of
-`@interopkit/core` copies the list and names the place of a value only when it is not JSON. The endpoint reads what it parsed
-without that copy.
 
 ## Runtimes
 

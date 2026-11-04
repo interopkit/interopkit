@@ -8,7 +8,7 @@ const SHARED = ["@interopkit/core", "jose", "tool-integration/errors", "tool-int
  * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the most
  * bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it holds, so
  * that an import which pulls another module into an entry point fails until the list says so: the platform never holds the tool,
- * nor the tool the platform. docs/tool-integration/evidence.md lists the sizes. A budget changes only with the reason in the
+ * nor the tool the platform. docs/tool-integration/performance.md lists the sizes. A budget changes only with the reason in the
  * commit that changes it.
  */
 const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>> = {

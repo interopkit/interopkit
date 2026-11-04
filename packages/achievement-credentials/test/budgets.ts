@@ -12,7 +12,7 @@ const BENCH_OPTIONS = { time: 1000, iterations: 20, warmupTime: 200, warmupItera
 /**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of its reference in the same
  * run: five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit, as
- * docs/achievement-credentials/evidence.md explains. A reference is a library that does the same work where one is
+ * docs/achievement-credentials/performance.md explains. A reference is a library that does the same work where one is
  * installable, and otherwise the least work of the same kind (`JSON.parse`, `JSON.stringify`, saxes). Both samples come from
  * one run, so a ratio holds on any machine.
  */
