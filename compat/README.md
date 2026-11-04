@@ -3,7 +3,7 @@
 The packages claim to run in any JavaScript runtime that has the web standards. `pnpm compat:runtimes` shows it: it bundles the
 scenarios of the six examples and a set of calls to a real server, and runs the bundle on Node.js, Deno, Bun and workerd, the
 runtime of Cloudflare Workers. The bundle holds the packages as they ship, built with `pnpm build`, and the examples
-that use them.
+that use them. The check fails when a file of a package that is not in its `dist`, a source for instance, enters a bundle.
 
 ```mermaid
 flowchart LR
@@ -28,7 +28,7 @@ flowchart LR
 | `run.ts`       | The entry of Node.js, Deno and Bun: it prints the results as JSON                                                         |
 | `worker.ts`    | The entry of workerd: a worker that answers with the results as JSON                                                      |
 | `worker.capnp` | The configuration of workerd: the worker, its compatibility date, the socket, and the outbound network the worker may use |
-| `check.ts`     | Bundles, starts the server, runs each runtime and compares the results                                                    |
+| `check.ts`     | Bundles and checks what entered the bundles, starts the server, runs each runtime and compares the results               |
 
 ## What is checked
 
@@ -41,6 +41,7 @@ flowchart LR
 | The cmi5 example                      | A course package written and read through zip.js, an LMS that registers, launches, judges, satisfies, abandons and waives, and units that start, reload and play their sessions give the same outcomes on each runtime |
 | The tool-integration example          | Web Crypto signs and verifies ES256, RS256 and HMAC the same on each runtime: the login, the launch with its substituted custom properties, the token, the line item, the score and the results of the grade services, the members, groups and record of needs of the roster services, the Deep Linking response that the tool signs and the platform reads, the Start Assessment message of a proctored attempt and the pause of the Assessment Control Service, the Submission Review request with the result that it reads, the End Assessment message, the registration of a second tool through Dynamic Registration, and the refusal of a second use of a launch |
 | `callService` with the global `fetch` | `redirect: "manual"` is accepted and a 302 is an error; a 503 is an error with its body; an answer over 65,536 bytes is refused; a server that never answers ends at the deadline, and a signal ends the wait with its reason |
+| The packages as they ship             | Both bundles hold files of the `dist` of the packages and none of their sources: the metafile of esbuild lists every input, and a path of `packages/` outside a `dist/` fails the check before a runtime runs |
 | The same results                      | Each runtime gives the results that Node.js gives, and Node.js gives what the packages promise                                                                                                                                |
 
 The bundle of workerd uses no module of Node.js, and the worker runs without the `nodejs_compat` flag of workerd. The Data
@@ -48,6 +49,10 @@ Integrity libraries that `achievement-credentials` adopts ship two builds: one t
 Node.js, which Node.js, Deno and Bun provide, and one for browsers that uses Web Crypto alone. esbuild bundles the first for
 `run.js` (platform `node`) and the second for `worker.js` (platform `browser`), so the worker meets no module that it does not
 have. Deno runs with `--allow-env`, because the Node.js build of `undici` reads an environment variable when it loads.
+
+The `tsconfig.json` of compat and those of the examples map each package to its sources, for the type check, and esbuild
+applies the `paths` of a `tsconfig.json` to a bundle. The bundles are built with `tsconfigRaw: {}`, which leaves esbuild no
+`tsconfig.json`, so that a package resolves through its `exports` to its `dist`, as it does for a host.
 
 ## Running it
 

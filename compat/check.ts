@@ -5,8 +5,10 @@ import { createRequire } from "node:module";
 import { connect, createServer as createSocketServer } from "node:net";
 import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import { build } from "esbuild";
+import { build, type Metafile } from "esbuild";
 
+/** The root of the repository: the metafile of a bundle names its inputs by their path from it. */
+const ROOT = join(import.meta.dirname, "..");
 const DIST = join(import.meta.dirname, ".dist");
 /** The workerd program: the package of that name exports the path of the binary for the platform. */
 const WORKERD = (createRequire(import.meta.url)("workerd") as { readonly default: string }).default;
@@ -28,15 +30,42 @@ const SIZE_OVER_LIMIT = 70_000;
 
 type Results = Readonly<Record<string, unknown>>;
 
-/** The options that both bundles share: one ES module, and the examples start themselves when they are the main module. */
+/**
+ * The options that both bundles share: one ES module, and the examples start themselves when they are the main module. The
+ * `tsconfig.json` of compat and those of the examples map the packages to their sources, for the type check, and esbuild
+ * applies such `paths` to a bundle. `tsconfigRaw` replaces every `tsconfig.json` with none, so that a package resolves through
+ * its `exports` to its `dist`, as it does for a host.
+ */
 const SHARED = {
+  absWorkingDir: ROOT,
   outdir: DIST,
   bundle: true,
   format: "esm",
   target: "es2022",
   define: { "import.meta.main": "false" },
+  tsconfigRaw: {},
+  metafile: true,
   logLevel: "warning",
 } as const;
+
+/** A file of a package that is not in its `dist`, such as a source, and a file that is. */
+const NOT_SHIPPED = /^packages\/[^/]+\/(?!dist\/)/;
+const SHIPPED = /^packages\/[^/]+\/dist\//;
+
+/**
+ * Throws when a bundle holds a file of a package that the package does not ship, or holds none that it ships, so that the
+ * pattern above could not tell the one from the other.
+ */
+function assertShipped(name: string, { inputs }: Metafile): void {
+  const files = Object.keys(inputs);
+  const unshipped = files.filter((file) => NOT_SHIPPED.test(file));
+  if (unshipped.length > 0) {
+    throw new Error(`${name} holds ${unshipped.length} files that the packages do not ship, such as ${unshipped[0]}.`);
+  }
+  if (!files.some((file) => SHIPPED.test(file))) {
+    throw new Error(`${name} holds no file of the dist of a package, so this check cannot tell what the bundle holds.`);
+  }
+}
 
 /**
  * Bundles the entries into one file each, which every runtime then runs as it is: the packages as they ship, no more. The
@@ -44,14 +73,20 @@ const SHARED = {
  * `node:` modules they all provide. A Worker has no `node:crypto`, so workerd runs the second, which uses Web Crypto alone.
  */
 async function bundle(): Promise<void> {
-  await build({
+  const run = await build({
     ...SHARED,
     entryPoints: { run: join(import.meta.dirname, "run.ts") },
     platform: "node",
     // A library of CommonJS that requires a module of Node.js needs a `require` in a module of ES.
     banner: { js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' },
   });
-  await build({ ...SHARED, entryPoints: { worker: join(import.meta.dirname, "worker.ts") }, platform: "browser" });
+  const worker = await build({
+    ...SHARED,
+    entryPoints: { worker: join(import.meta.dirname, "worker.ts") },
+    platform: "browser",
+  });
+  assertShipped("run.js", run.metafile);
+  assertShipped("worker.js", worker.metafile);
 }
 
 /** Starts the server of the check: it answers the paths that the checks of the service call ask for. */
