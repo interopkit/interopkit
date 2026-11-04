@@ -35,17 +35,21 @@ const timestampSchema = v.pipe(
   ),
 );
 
-const versionSchema: Schema<ProfileVersion> = openRecord({
+const versionEntries = {
   id: iri,
   wasRevisionOf: v.optional(iris),
   generatedAtTime: timestampSchema,
-});
+};
 
-const authorSchema: Schema<ProfileAuthor> = openRecord({
+const versionSchema: Schema<ProfileVersion> = openRecord(versionEntries);
+
+const authorEntries = {
   type: v.picklist(["Organization", "Person"]),
   name: text,
   url: v.optional(iri),
-});
+};
+
+const authorSchema: Schema<ProfileAuthor> = openRecord(authorEntries);
 
 /** The properties of every concept. */
 const conceptEntries = { id: iri, inScheme: iri, deprecated: flag };
@@ -60,7 +64,7 @@ const shapedEntries = {
   inlineSchema: v.optional(text),
 };
 
-const vocabularyConceptSchema: Schema<VocabularyConcept> = openRecord({
+const vocabularyEntries = {
   ...conceptEntries,
   type: v.picklist(VOCABULARY_CONCEPT_TYPES),
   prefLabel: languageMapSchema,
@@ -72,20 +76,26 @@ const vocabularyConceptSchema: Schema<VocabularyConcept> = openRecord({
   related: v.optional(iris),
   relatedMatch: v.optional(iris),
   exactMatch: v.optional(iris),
-});
+};
 
-const extensionConceptSchema: Schema<ExtensionConcept> = openRecord({
+const vocabularyConceptSchema: Schema<VocabularyConcept> = openRecord(vocabularyEntries);
+
+const extensionEntries = {
   ...shapedEntries,
   type: v.picklist(EXTENSION_CONCEPT_TYPES),
   recommendedActivityTypes: v.optional(iris),
   recommendedVerbs: v.optional(iris),
-});
+};
 
-const documentResourceSchema: Schema<DocumentResourceConcept> = openRecord({
+const extensionConceptSchema: Schema<ExtensionConcept> = openRecord(extensionEntries);
+
+const documentEntries = {
   ...shapedEntries,
   type: v.picklist(DOCUMENT_RESOURCE_TYPES),
   contentType: mediaTypeSchema,
-});
+};
+
+const documentResourceSchema: Schema<DocumentResourceConcept> = openRecord(documentEntries);
 
 /**
  * The Activity Definition of an Activity concept: its `@context`, and the other properties carried as JSON, which the rules
@@ -93,19 +103,31 @@ const documentResourceSchema: Schema<DocumentResourceConcept> = openRecord({
  */
 const activityDefinitionSchema: Schema<ProfileActivityDefinition> = openRecord({ "@context": contextSchema });
 
-const activityConceptSchema: Schema<ActivityConcept> = openRecord({
+const activityEntries = {
   ...conceptEntries,
   type: v.literal("Activity"),
   activityDefinition: activityDefinitionSchema,
-});
+};
+
+const activityConceptSchema: Schema<ActivityConcept> = openRecord(activityEntries);
+
+/** The four kinds of concept: the table of properties that the specification lists for them, their types and their schema. */
+const CONCEPT_KINDS = [
+  ["vocabulary", VOCABULARY_CONCEPT_TYPES, vocabularyConceptSchema],
+  ["extension", EXTENSION_CONCEPT_TYPES, extensionConceptSchema],
+  ["document", DOCUMENT_RESOURCE_TYPES, documentResourceSchema],
+  ["activity", ["Activity"], activityConceptSchema],
+] as const;
+
+/** The table of properties of each type of concept, by the type. */
+export const CONCEPT_TABLES: ReadonlyMap<string, string> = new Map(
+  CONCEPT_KINDS.flatMap(([table, types]) => types.map((type) => [type, table] as const)),
+);
 
 /** The schema of each type of concept. */
-const CONCEPT_SCHEMAS: ReadonlyMap<string, Schema<Concept>> = new Map<string, Schema<Concept>>([
-  ...VOCABULARY_CONCEPT_TYPES.map((type) => [type, vocabularyConceptSchema] as const),
-  ...EXTENSION_CONCEPT_TYPES.map((type) => [type, extensionConceptSchema] as const),
-  ...DOCUMENT_RESOURCE_TYPES.map((type) => [type, documentResourceSchema] as const),
-  ["Activity", activityConceptSchema],
-]);
+const CONCEPT_SCHEMAS: ReadonlyMap<string, Schema<Concept>> = new Map<string, Schema<Concept>>(
+  CONCEPT_KINDS.flatMap(([, types, schema]) => types.map((type) => [type, schema] as const)),
+);
 
 /** Refuses a concept whose type is none of the specification's, by the type alone: what passes it is not reached. */
 const unknownConceptSchema = v.pipe(openRecord({ type: v.picklist([...CONCEPT_SCHEMAS.keys()]) }), v.never());
@@ -116,7 +138,7 @@ const conceptSchema: Schema<Concept> = v.lazy((input) => {
   return CONCEPT_SCHEMAS.get(type) ?? unknownConceptSchema;
 });
 
-const ruleSchema: Schema<StatementTemplateRule> = openRecord({
+const ruleEntries = {
   location: text,
   selector: v.optional(text),
   presence: v.optional(v.picklist(RULE_PRESENCES)),
@@ -124,9 +146,11 @@ const ruleSchema: Schema<StatementTemplateRule> = openRecord({
   all: v.optional(v.array(jsonValueSchema)),
   none: v.optional(v.array(jsonValueSchema)),
   scopeNote: v.optional(languageMapSchema),
-});
+};
 
-const templateSchema: Schema<StatementTemplate> = openRecord({
+const ruleSchema: Schema<StatementTemplateRule> = openRecord(ruleEntries);
+
+const templateEntries = {
   id: iri,
   type: v.literal("StatementTemplate"),
   inScheme: iri,
@@ -143,9 +167,11 @@ const templateSchema: Schema<StatementTemplate> = openRecord({
   objectStatementRefTemplate: v.optional(iris),
   contextStatementRefTemplate: v.optional(iris),
   rules: v.optional(v.array(ruleSchema)),
-});
+};
 
-const patternSchema: Schema<Pattern> = openRecord({
+const templateSchema: Schema<StatementTemplate> = openRecord(templateEntries);
+
+const patternEntries = {
   id: iri,
   type: v.literal("Pattern"),
   primary: flag,
@@ -158,13 +184,11 @@ const patternSchema: Schema<Pattern> = openRecord({
   oneOrMore: v.optional(iri),
   sequence: v.optional(iris),
   zeroOrMore: v.optional(iri),
-});
+};
 
-/**
- * Reads a profile into the model: every object, its properties, their types and their forms. The rules between objects and
- * properties are in the other files of the module.
- */
-export const profileSchema: Schema<Profile> = openRecord({
+const patternSchema: Schema<Pattern> = openRecord(patternEntries);
+
+const profileEntries = {
   "@context": contextSchema,
   id: iri,
   type: v.literal("Profile"),
@@ -177,4 +201,24 @@ export const profileSchema: Schema<Profile> = openRecord({
   concepts: v.optional(v.array(conceptSchema)),
   templates: v.optional(v.array(templateSchema)),
   patterns: v.optional(v.array(patternSchema)),
-});
+};
+
+/**
+ * Reads a profile into the model: every object, its properties, their types and their forms. The rules between objects and
+ * properties are in the other files of the module.
+ */
+export const profileSchema: Schema<Profile> = openRecord(profileEntries);
+
+/** The entries of the schema of each object of a profile, by table: their names are the properties that the specification lists. */
+export const TABLE_ENTRIES = {
+  profile: profileEntries,
+  version: versionEntries,
+  author: authorEntries,
+  vocabulary: vocabularyEntries,
+  extension: extensionEntries,
+  document: documentEntries,
+  activity: activityEntries,
+  template: templateEntries,
+  rule: ruleEntries,
+  pattern: patternEntries,
+} as const;

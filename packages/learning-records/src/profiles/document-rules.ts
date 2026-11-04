@@ -1,97 +1,14 @@
 import { describe, type Issue, isRecord } from "@interopkit/core/checks";
 import { error, item, member, warning } from "../read/internal.js";
-import { DOCUMENT_RESOURCE_TYPES, EXTENSION_CONCEPT_TYPES, VOCABULARY_CONCEPT_TYPES } from "./concepts.js";
+import { CONCEPT_TABLES, TABLE_ENTRIES } from "./schemas.js";
 
 /** The objects of a profile whose properties the tables of the specification list. */
 type Kind = "profile" | "version" | "author" | "concept" | "template" | "rule" | "pattern" | "data";
 
-/** The properties of every concept, whatever its type. */
-const CONCEPT = ["id", "type", "inScheme", "deprecated"] as const;
-
-/** The properties that the specification lists for each object, and for each type of concept. */
-const PROPERTIES: Readonly<Record<string, readonly string[]>> = {
-  profile: [
-    "@context",
-    "id",
-    "type",
-    "conformsTo",
-    "prefLabel",
-    "definition",
-    "seeAlso",
-    "versions",
-    "author",
-    "concepts",
-    "templates",
-    "patterns",
-  ],
-  version: ["id", "wasRevisionOf", "generatedAtTime"],
-  author: ["type", "name", "url"],
-  vocabulary: [
-    ...CONCEPT,
-    "prefLabel",
-    "definition",
-    "broader",
-    "broadMatch",
-    "narrower",
-    "narrowMatch",
-    "related",
-    "relatedMatch",
-    "exactMatch",
-  ],
-  extension: [
-    ...CONCEPT,
-    "prefLabel",
-    "definition",
-    "recommendedActivityTypes",
-    "recommendedVerbs",
-    "context",
-    "schema",
-    "inlineSchema",
-  ],
-  document: [...CONCEPT, "prefLabel", "definition", "contentType", "context", "schema", "inlineSchema"],
-  activity: [...CONCEPT, "activityDefinition"],
-  template: [
-    "id",
-    "type",
-    "inScheme",
-    "prefLabel",
-    "definition",
-    "deprecated",
-    "verb",
-    "objectActivityType",
-    "contextGroupingActivityType",
-    "contextParentActivityType",
-    "contextOtherActivityType",
-    "contextCategoryActivityType",
-    "attachmentUsageType",
-    "objectStatementRefTemplate",
-    "contextStatementRefTemplate",
-    "rules",
-  ],
-  rule: ["location", "selector", "presence", "any", "all", "none", "scopeNote"],
-  pattern: [
-    "id",
-    "type",
-    "primary",
-    "inScheme",
-    "prefLabel",
-    "definition",
-    "deprecated",
-    "alternates",
-    "optional",
-    "oneOrMore",
-    "sequence",
-    "zeroOrMore",
-  ],
-};
-
-/** The table of properties of each type of concept. */
-const CONCEPT_TABLES: ReadonlyMap<string, string> = new Map([
-  ...VOCABULARY_CONCEPT_TYPES.map((type) => [type, "vocabulary"] as const),
-  ...EXTENSION_CONCEPT_TYPES.map((type) => [type, "extension"] as const),
-  ...DOCUMENT_RESOURCE_TYPES.map((type) => [type, "document"] as const),
-  ["Activity", "activity"],
-]);
+/** The properties that the specification lists for each object, and for each type of concept: the entries of its schema. */
+const PROPERTIES: Readonly<Record<string, readonly string[]>> = Object.fromEntries(
+  Object.entries(TABLE_ENTRIES).map(([table, entries]) => [table, Object.keys(entries)]),
+);
 
 /** The objects that the properties of an object hold, by the kind of the object. */
 const CHILDREN: Readonly<Partial<Record<Kind, Readonly<Record<string, Kind>>>>> = {
