@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: The names of HTTP headers are those of their specifications.
 
 import { clientOptionsEntries, type Fetch } from "@interopkit/core";
-import { httpsUrlSchema, isAbsoluteUri, positiveIntegerSchema } from "@interopkit/core/checks";
+import { httpsUrlSchema, isAbsoluteUri, positiveIntegerSchema, strictRecord } from "@interopkit/core/checks";
 import * as v from "valibot";
 
 // The credential of the Bearer scheme is a b64token (RFC 6750 section 2.1). It goes into a header, so a character outside
@@ -42,9 +42,9 @@ export const iriSchema = v.pipe(
 
 /**
  * The options that the calls of a sensor read: a host keeps one object of them for `sendCaliper` and `pingEndpoint`, so that a
- * property that neither takes is refused and a shared object is not. `sendCaliper` requires `sensor` and `sendTime`.
+ * property that neither takes is refused and a shared object is not.
  */
-export const senderEntries = {
+const senderEntries = {
   endpoint: httpsUrlSchema,
   token: v.optional(
     v.pipe(
@@ -63,6 +63,12 @@ export const senderEntries = {
   maxPayloadBytes: v.optional(positiveIntegerSchema),
   signal: clientOptionsEntries.signal,
 };
+
+/** The options of `pingEndpoint`. */
+export const pingOptionsSchema = strictRecord(senderEntries);
+
+/** The options of `sendCaliper`, which requires a sensor. */
+export const sendOptionsSchema = strictRecord({ ...senderEntries, sensor: iriSchema });
 
 /** The header that carries the bearer token, and none when the sender has no token. */
 export function bearerHeaders(token: string | undefined): Readonly<Record<string, string>> {

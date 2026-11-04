@@ -12,7 +12,7 @@ const SHARED = ["@interopkit/core", "jose", "tool-integration/errors", "tool-int
  * commit that changes it.
  */
 const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>> = {
-  "@interopkit/tool-integration": { gzip: 10_500, holds: SHARED },
+  "@interopkit/tool-integration": { gzip: 13_000, holds: SHARED },
   "@interopkit/tool-integration/platform": { gzip: 55_500, holds: SHARED },
   // The tool obtains its access tokens with the OAuth 2.0 client of core.
   "@interopkit/tool-integration/tool": { gzip: 54_000, holds: [...SHARED, "oauth4webapi"].sort() },

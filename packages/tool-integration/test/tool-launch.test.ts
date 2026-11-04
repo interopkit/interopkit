@@ -133,7 +133,7 @@ describe("the size of the form of a launch", () => {
 });
 
 describe("the version and the message types that a launch accepts", () => {
-  it("accepts the version 1.3.0 of LTI and refuses any other", async () => {
+  it("accepts the version of LTI 1.3 and refuses any other", async () => {
     const ctx = setup();
     const { request: post } = await cookieLogin(ctx, { claims: { [`${CLAIM}version`]: "1.3.1" } });
     await expect(handleLaunch(post, ctx.options)).rejects.toMatchObject({ reason: "version-unsupported" });

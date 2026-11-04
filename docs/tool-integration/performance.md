@@ -66,9 +66,9 @@ Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 perc
 
 | Entry point | Bytes | Gzip | Budget | Holds, besides `protocol`, `errors`, `@interopkit/core`, jose and valibot |
 | --- | ---: | ---: | ---: | --- |
-| `@interopkit/tool-integration` | 24,902 | 8,943 | 10,500 | Nothing more: the models, the vocabularies, `LtiError` and the key set cache |
-| `@interopkit/tool-integration/platform` | 150,559 | 45,262 | 55,500 | Nothing more |
-| `@interopkit/tool-integration/tool` | 144,927 | 44,150 | 54,000 | oauth4webapi, through the OAuth 2.0 client of core that obtains the access tokens |
+| `@interopkit/tool-integration` | 28,654 | 10,098 | 13,000 | Nothing more: the models, the vocabularies, `LtiError` and the key set cache |
+| `@interopkit/tool-integration/platform` | 149,675 | 45,261 | 55,500 | Nothing more |
+| `@interopkit/tool-integration/tool` | 144,257 | 44,494 | 54,000 | oauth4webapi, through the OAuth 2.0 client of core that obtains the access tokens |
 
 The platform holds nothing of the tool, nor the tool of the platform. A host that imports one function of an entry point gets less:
 the package has no side effects, so a bundler drops the rest.

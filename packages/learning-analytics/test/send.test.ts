@@ -6,7 +6,7 @@ import fc from "fast-check";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import { CALIPER_CONTEXT, type CaliperEvent, readEntity, sendCaliper } from "../src/index.js";
-import { iriSchema } from "../src/send/sender.js";
+import { iriSchema } from "../src/send/internal.js";
 import { eventAt, fakeEndpoint, fromJson, SENDER } from "./fixture.js";
 
 const sample = (): readonly CaliperEvent[] => [eventAt(0), eventAt(1)];

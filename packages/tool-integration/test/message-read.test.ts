@@ -324,7 +324,7 @@ describe("readMessage of the claims every message has", () => {
     }
   });
 
-  it("accepts the version 1.3.0 and refuses any other", () => {
+  it("accepts the version of LTI 1.3 and refuses any other", () => {
     const claims = claimsOf("LtiResourceLinkRequest", { ...RESOURCE_LINK, [`${CORE}version`]: "1.3.1" });
     expect(() => readMessage(claims, options)).toThrow(expect.objectContaining({ reason: "version-unsupported" }));
   });

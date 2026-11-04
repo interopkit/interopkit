@@ -1,8 +1,8 @@
 import { type CallOptions, DEFAULT_TIMEOUT_MS, readAnswerJson, requestService } from "@interopkit/core";
-import { parseWith, readCallOptions, strictRecord } from "@interopkit/core/checks";
+import { parseWith, readCallOptions } from "@interopkit/core/checks";
 import type { EndpointConfiguration } from "../model/index.js";
 import { endpointConfigurationSchema } from "./configuration.js";
-import { bearerHeaders, type CaliperSender, senderEntries } from "./sender.js";
+import { bearerHeaders, type CaliperSender, pingOptionsSchema } from "./sender.js";
 
 /** What a ping found: the endpoint answered with its configuration, refused the token, or is not serving. */
 export type PingResult =
@@ -31,8 +31,6 @@ const HIGHEST_STATUS = 599;
 const FIRST_REDIRECT = 300;
 const FIRST_CLIENT_ERROR = 400;
 
-const optionsSchema = strictRecord(senderEntries);
-
 /** The statuses that a ping returns as values: every one a service answers with but a redirect, which no call follows. */
 const PING_STATUSES: readonly number[] = Array.from(
   { length: HIGHEST_STATUS - LOWEST_STATUS + 1 },
@@ -60,7 +58,7 @@ const PING_STATUSES: readonly number[] = Array.from(
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2#configuration-information | Caliper Analytics 1.2, Configuration Information}
  */
 export async function pingEndpoint(sender: Omit<CaliperSender, "sensor">, options?: CallOptions): Promise<PingResult> {
-  parseWith(optionsSchema, sender, "The options");
+  parseWith(pingOptionsSchema, sender, "The options");
   const { signal } = readCallOptions(options);
   const { endpoint, token, fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = sender;
   const what = `The Caliper endpoint at ${endpoint}`;

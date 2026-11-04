@@ -6,15 +6,15 @@ export const LEARNING_ANALYTICS_RULES: readonly Rule[] = [
   {
     rule: "The endpoint of the sensor must be https, so that the bearer token never travels in the clear.",
     file: "packages/learning-analytics/src/send/sender.ts",
-    find: 'checkHttpsUrl(value.endpoint, "The option endpoint");',
-    replace: "",
+    find: "endpoint: httpsUrlSchema,",
+    replace: "endpoint: v.string(),",
     test: "packages/learning-analytics/test/send.test.ts",
   },
   {
     rule: "The bearer token must have the form of RFC 6750, so that it cannot carry a line break into a header.",
     file: "packages/learning-analytics/src/send/sender.ts",
-    find: "if (!BEARER_TOKEN.test(value.token)) {",
-    replace: "if (false) {",
+    find: "(token) => BEARER_TOKEN.test(token),",
+    replace: "() => true,",
     test: "packages/learning-analytics/test/send.test.ts",
   },
   {
@@ -274,8 +274,8 @@ export const LEARNING_ANALYTICS_RULES: readonly Rule[] = [
   {
     rule: "The principal of an envelope is the one that authorize named, and never the sensor that the envelope names.",
     file: "packages/learning-analytics/src/endpoint/receive.ts",
-    find: "assembleEnvelope(fields, principal, settings.maxFindings, version, true)",
-    replace: "assembleEnvelope(fields, fields.sensor, settings.maxFindings, version, true)",
+    find: "accept({ principal, ...envelope }, { signal })",
+    replace: "accept({ principal: envelope.sensor, ...envelope }, { signal })",
     test: "packages/learning-analytics/test/endpoint.test.ts",
   },
   {
@@ -288,8 +288,8 @@ export const LEARNING_ANALYTICS_RULES: readonly Rule[] = [
   {
     rule: "The endpoint reads an envelope as the version of its dataVersion.",
     file: "packages/learning-analytics/src/endpoint/receive.ts",
-    find: "assembleEnvelope(fields, principal, settings.maxFindings, version, true)",
-    replace: 'assembleEnvelope(fields, principal, settings.maxFindings, "1.2", true)',
+    find: "assembleEnvelope(fields, settings.maxFindings, version, true)",
+    replace: 'assembleEnvelope(fields, settings.maxFindings, "1.2", true)',
     test: "packages/learning-analytics/test/versions.test.ts",
   },
   {
@@ -470,8 +470,8 @@ export const LEARNING_ANALYTICS_RULES: readonly Rule[] = [
   {
     rule: "readEnvelope copies the items of a host's envelope, and finds an item that JSON cannot hold.",
     file: "packages/learning-analytics/src/endpoint/envelope.ts",
-    find: "assembleEnvelope(fields, who, settings.maxFindings, version, false)",
-    replace: "assembleEnvelope(fields, who, settings.maxFindings, version, true)",
+    find: "assembleEnvelope(fields, settings.maxFindings, version, false)",
+    replace: "assembleEnvelope(fields, settings.maxFindings, version, true)",
     test: "packages/learning-analytics/test/endpoint.test.ts",
   },
   {
@@ -532,10 +532,24 @@ export const LEARNING_ANALYTICS_RULES: readonly Rule[] = [
   },
   {
     rule: "The sensor of an envelope is an absolute IRI.",
-    file: "packages/learning-analytics/src/send/send-caliper.ts",
-    find: "const optionsSchema = strictRecord({ ...senderEntries, sensor: iriSchema });",
-    replace: "const optionsSchema = strictRecord(senderEntries);",
+    file: "packages/learning-analytics/src/send/sender.ts",
+    find: "sensor: iriSchema",
+    replace: "sensor: v.string()",
     test: "packages/learning-analytics/test/send.test.ts",
+  },
+  {
+    rule: "A misspelled option of sendCaliper is refused.",
+    file: "packages/learning-analytics/src/send/sender.ts",
+    find: "export const sendOptionsSchema = strictRecord({ ...senderEntries, sensor: iriSchema });",
+    replace: "export const sendOptionsSchema = v.looseObject({ ...senderEntries, sensor: iriSchema });",
+    test: "packages/learning-analytics/test/send.test.ts",
+  },
+  {
+    rule: "A misspelled option of pingEndpoint is refused.",
+    file: "packages/learning-analytics/src/send/sender.ts",
+    find: "export const pingOptionsSchema = strictRecord(senderEntries);",
+    replace: "export const pingOptionsSchema = v.looseObject(senderEntries);",
+    test: "packages/learning-analytics/test/ping.test.ts",
   },
   {
     rule: "The IRI of a sensor is one that the readers take as the id of an entity.",

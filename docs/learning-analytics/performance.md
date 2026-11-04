@@ -49,8 +49,8 @@ Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 perc
 
 | Entry point                               | Bytes  | Gzip   | Budget | Holds, besides `@interopkit/core` and valibot              |
 | ----------------------------------------- | -----: | -----: | -----: | ---------------------------------------------------------- |
-| `@interopkit/learning-analytics`          | 70,822 | 21,158 | 26,000 | `build`, `model`, `read`, `send`, `v1p1`, `validate`, uuid |
-| `@interopkit/learning-analytics/endpoint` | 65,964 | 18,795 | 23,000 | `model`, `read`, `v1p1`, `validate`; no sensor and no builder |
+| `@interopkit/learning-analytics`          | 72,038 | 21,501 | 26,000 | `build`, `model`, `read`, `send`, `v1p1`, `validate`, uuid |
+| `@interopkit/learning-analytics/endpoint` | 65,769 | 18,693 | 23,000 | `model`, `read`, `v1p1`, `validate`; no sensor and no builder |
 
 ## Memory
 

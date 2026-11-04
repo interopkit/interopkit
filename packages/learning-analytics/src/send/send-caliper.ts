@@ -8,10 +8,9 @@ import {
   describe,
   formatDateTime,
   parseWith,
-  strictRecord,
 } from "@interopkit/core/checks";
 import { CALIPER_CONTEXT, type CaliperEvent, type EntityDocument, LIBRARY_PROFILE_CONTEXT } from "../model/index.js";
-import { bearerHeaders, type CaliperSender, iriSchema, senderEntries } from "./sender.js";
+import { bearerHeaders, type CaliperSender, sendOptionsSchema } from "./sender.js";
 
 /** The options of {@link sendCaliper}: the sender, when it sends, how much it sends, and the signal that ends the caller's wait. */
 export interface SendCaliperOptions extends CaliperSender, CallOptions {
@@ -25,8 +24,6 @@ export interface SendCaliperOptions extends CaliperSender, CallOptions {
    */
   readonly maxPayloadBytes?: number;
 }
-
-const optionsSchema = strictRecord({ ...senderEntries, sensor: iriSchema });
 
 /** Checks the events and entity describes to send: at least one, each with the Caliper context and an identifier. */
 function checkData(data: unknown): asserts data is readonly (CaliperEvent | EntityDocument)[] {
@@ -90,7 +87,7 @@ export async function sendCaliper(
   data: readonly (CaliperEvent | EntityDocument)[],
   options: SendCaliperOptions,
 ): Promise<void> {
-  parseWith(optionsSchema, options, "The options");
+  parseWith(sendOptionsSchema, options, "The options");
   checkData(data);
   const { endpoint, token, sensor, sendTime, fetch, signal, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
   const body = envelopeText({
