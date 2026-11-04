@@ -106,11 +106,11 @@ Use these words with these meanings in code, comments and docs.
 | `packages/achievement-credentials/`  | Open Badges 3.0 and CLR 2.0, and the reading and verification of Open Badges 2.0: `model/`, `read/`, `issue/`, `compare/`, `baking/`, `client/`, `keys/`, `jwt/`, `data-integrity/`, `status/`, `refresh/`, `verify/`, `provider/` |
 | `packages/course-launch/`            | cmi5: `model/`, `structure/` (the course structure, its schema enforced by the reader), `package/` (ZIP and XML packages through zip.js), `rules/` (the launch URL, the launch data, the preferences and the rules of a session), `lms/` (registrations, launches, the fetch URL, the rules of cmi5 on the host's LRS, satisfaction, abandoned sessions and waivers), `au/` (the runtime of an assignable unit) |
 | `packages/<name>/test/`              | `<module>.test.ts` per module; `.fuzz`, `.corpus`, `.spec` or `.browser` before `.test.ts`; `*.bench.ts` |
-| `docs/<package>/`                    | The guides of each package, one per module; TypeDoc publishes them with the API reference           |
+| `docs/<package>/`                    | The guides of each package, one per module, with its `supported.md`, `comparators.md`, `spec-gaps.md`, `evidence.md` and `performance.md`; TypeDoc publishes them with the API reference |
 | `examples/<package>/`                | Runnable examples, each a package of its own; the `test/` of an example runs it                     |
 | `compat/`                            | The scenarios of the examples on each runtime                                                       |
 | `scripts/`                           | The standards, duplication and mutation checks (`scripts/rules/<package>.ts` holds the rules of each package), the harness of the peak-memory tests, pinned downloads, and the oracle and generators that tests share |
-| `validation/`                        | Python scripts that write fixtures, the containers of counterparties (`validation/opensalt/`, `validation/sql-lrs/`, `validation/1edtech-validator/`), the ADL suite (`validation/adl-lrs/`), the W3C suites (`validation/w3c-suites/`), PyLTI1p3 (`validation/pylti1p3/`), Moodle (`validation/moodle/`), CATAPULT (`validation/catapult/`), and what the runners of the LTI counterparties share (`validation/containers/`) |
+| `validation/`                        | Python scripts that write fixtures, the containers of counterparties (`validation/opensalt/`, `validation/sql-lrs/`, `validation/1edtech-validator/`), the ADL suite (`validation/adl-lrs/`), the W3C suites (`validation/w3c-suites/`), PyLTI1p3 (`validation/pylti1p3/`), Moodle (`validation/moodle/`), CATAPULT (`validation/catapult/`), and what the runners of the counterparties in containers share (`validation/containers/`) |
 | `biome/`                             | Biome GritQL plugins                                                                                |
 
 ## Commands
@@ -126,7 +126,7 @@ Use these words with these meanings in code, comments and docs.
 | `pnpm test`                                         | Vitest, offline, from the sources; `pnpm test:coverage` adds the coverage floor of each package                                                                                                                                                                                                                                                                                                                                              |
 | `pnpm test:references`                              | The libraries of other authors that play the tool against the platform role of `tool-integration` (`@lti-tool/core`, `lti-core`), in the process of the tests; `pnpm test` leaves them out |
 | `pnpm test:browser`                                 | The browser tests in Chromium, Firefox and WebKit; run `pnpm exec playwright install` first. The Firefox of Playwright does not start on some macOS versions (it did not on macOS 27): run the suite in the container `mcr.microsoft.com/playwright` of the pinned Playwright release, with `--cpus=2` and `--ipc=host`, from a copy of the repository (`pnpm install` installs the git hooks only in a git clone, and skips them in a copy) |
-| `pnpm bench`                                        | Builds, then times the hot paths of `competency-frameworks`, `learning-records` and `learning-analytics` (readers, validators, builders, hashes, signatures, conversions, the client and the handlers) and of `tool-integration` (the launch against jose, `@lti-tool/core` and `lti-core`, the authorization, the key set cache, the clients and the handlers of the services, the token endpoint and the messages of Deep Linking and proctoring, against jose, `JSON.parse`, `JSON.stringify` and `callService`), the three roles of `selective-disclosure`, the proofs, JWTs, status lists, readers, images, handlers and verification of `achievement-credentials`, and the keyed cache, the readers of a body, the call to a service and the signing of `core` with `vitest bench` against the budgets of `test/budgets.ts`, one package at a time; fails above a budget. The roles of `selective-disclosure` are timed against Digital Bazaar's suite; those of `achievement-credentials` against Digital Bazaar's `vc` and its suites, `@interop/verifier-core`, `@interop/vc-bitstring-status-list`, `did-jwt-vc` and the official schema of CLR, over the contexts that `pnpm schemas` downloads, in turns through `scripts/bench-rounds.ts`, and those of `core` against the platform APIs that they wrap; the readers of `learning-analytics` against the draft 4 schemas that `pnpm corpus` downloads, those of `competency-frameworks` against the official schemas that `pnpm schemas` downloads, and those of `learning-records` against the validator of Learning Locker; the readers of `course-launch` against libxml2, saxes and zip.js, and its LMS against `validateStatements` |
+| `pnpm bench`                                        | Builds, then times the hot paths of each package one at a time with `vitest bench` against the budgets of its `test/budgets.ts`, each against its reference, in turns where a reference does the same work (`scripts/bench-rounds.ts`); fails above a budget. The references of each package and their ratios are in `docs/<package>/performance.md` |
 | `node scripts/peak-memory.ts <package> [name...]`     | Prints, for each reading of `packages/<package>/test/peak-memory-readings.ts` or the ones named, the least heap in which it ends on the Node.js that runs it, in steps of 8 MiB, with the rise of the peak and the outcome; run it on Node.js 22 and 24 to choose the heap of a case (`pnpm test` runs the cases) |
 | `pnpm opensalt`                                     | Starts OpenSALT in containers of a project with the name of the run (Docker with Compose; the images are linux/amd64, so an arm64 host emulates them), waits for the database's health for at most 360 s, runs the flows of `examples/competency-frameworks` against it, and removes the containers and their data whatever happens                                                                                                                                                                                                  |
 | `pnpm adl-lrs`                                      | Runs the ADL conformance suites of xAPI 2.0 and 1.0.3 at their pinned commits against the example LRS, which it starts for each on the loopback address with random credentials; it builds the packages first, and fails on a failed test or on a suite of another size |
@@ -144,7 +144,7 @@ Use these words with these meanings in code, comments and docs.
 | `pnpm check:tarballs`                               | Builds, packs every package, installs the tarballs into a scratch project, imports every subpath in Node.js and type-checks them with `bundler` and `node16` resolution |
 | `pnpm check:licenses`                               | Every production dependency has an allowed license                                                                                                                                                                                                                                                                                                                                                                                           |
 | `pnpm check:audit`                                  | `pnpm audit --prod` at any severity and `pnpm audit` at high severity                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `pnpm compat`                                       | The scenarios of the examples on Node.js, Deno, Bun and workerd, the Data Integrity libraries bundled as their Node.js build for the first three and as their browser build for workerd; it builds the packages first, and needs Deno and Bun installed or the runtimes named: `pnpm compat node workerd`                                                                                                                                                                                                                                                                           |
+| `pnpm compat:runtimes`                              | The scenarios of the examples on Node.js, Deno, Bun and workerd, the Data Integrity libraries bundled as their Node.js build for the first three and as their browser build for workerd; it builds the packages first, and needs Deno and Bun installed or the runtimes named: `pnpm compat:runtimes node workerd`                                                                                                                                                                                                                                                                           |
 | `pnpm docs:api`                                     | Builds, then TypeDoc into `docs/api`, which reads the packages through their `dist`; fails on undocumented exports                                                                                                                                                                                                                                                                                                                           |
 | `pnpm corpus`, `pnpm schemas`, `pnpm spec-examples`, `pnpm caliper-tables` | Download the pinned repositories, files, specification examples and the tables of the Caliper pages that tests read into `.cache/`, through `scripts/download.ts`, which aborts a download that brings no byte for 30 s and tries one that fails or stalls three times in all, and keep what holds its pinned hash, so that CI caches each by the hash of its lock (a page of a living site, such as the open portal of 1EdTech, names an `extract` in `schemas.lock.json`: its hash is that of the text of its specification, with the navigation, the scripts and the attributes of its tags taken off, and that text is the file the tests read); `pnpm corpus:pin`, `pnpm schemas:pin`, `pnpm spec-examples:pin` and `pnpm caliper-tables:pin` write new hashes. `pnpm test:corpus` runs after `pnpm schemas`, `pnpm corpus` and `pnpm caliper-tables`, and `pnpm test:spec` after `pnpm spec-examples`, `pnpm caliper-tables` and `pnpm schemas`                                                                                                                                     |
 
@@ -207,19 +207,50 @@ A package at 0.0.0 takes `major` in its first changeset, so that it is released 
 
 ## Dependencies
 
-- A package imports only what its row in the diagram above allows. Biome enforces the rows for `core`, and for the
-  folders of `tool-integration`: `protocol/` imports neither `tool/` nor `platform/`, and `tool/` and `platform/` never
-  import each other; inside `protocol/`, `claims/` imports no other folder, and `message/` and each service folder (`grades/`, `roster/`, `groups/`, `content-items/`, `registration/`, `proctoring/`, `preferences/`) build on `claims/` alone and never import each other. In `competency-frameworks`, `model/` imports no other module, and `read/`, `version/` and `graph/`
-  never import each other; `client/` builds on `read/`, `provider/` on `read/` and `version/`, and none of them imports
-  either. In `selective-disclosure`, `proof-value/`, `keys/` and `document/` import none of the other folders, and
-  `base/`, `derive/` and `verify/` import those three and never each other. In `achievement-credentials`, `model/`
-  imports no other module, `read/` builds on `model/` only, `issue/`, `compare/`, `baking/` and `client/` build on `model/` and `read/`
-  and never import each other, `keys/` builds on `model/` only, and `jwt/` and `data-integrity/` build on `model/`, `read/` and `keys/` and never import each other, `status/` builds on those and `jwt/` and imports `data-integrity/` only dynamically (a test keeps
-  a verifier of JWTs free of JSON-LD), and `refresh/` imports `model/` and `core` only, and `verify/` builds on all of them but `baking/` and `client/` and imports `data-integrity/` only dynamically, and `provider/` imports `model/`, `read/`, `jwt/` and the `internal.ts` of `verify/` and loads the `index.ts` of `verify/` only dynamically, so that a provider that does not verify never loads the verifier; no other module imports `verify/`. In `learning-records`, `model/` imports no other module,
-  `read/` imports only `model/`, and `build/`, `compare/` and `format/` import `model/` and `read/` and never each other;
-  `attachments/` imports `model/` and `read/`, `signing/` imports those, `compare/` and `attachments/`, and `client/` imports
-  `model/`, `read/`, `compare/` and `attachments/`, and `store/` imports all of them but `build/` and `client/`. In `learning-analytics`, `model/`
-  imports no other module, `v1p1/` builds on `model/` alone, `read/` on both, `validate/` on those and `read/`, `build/` on `model/`, `read/` and `validate/`, `send/` on `model/` and `build/`, and `endpoint/` on `model/`, `v1p1/`, `read/` and `validate/`; `send/` and `endpoint/` never import each other, and `build/` and `send/` never import `v1p1/`, since 1.1 is read and never written. In `course-launch`, `model/` imports no other module, `structure/` imports `model/` alone and never zip.js, so that a host that reads a structure from elsewhere never loads the ZIP code, `package/` builds on both, and `rules/` imports `model/` and `learning-records` alone; `structure/` and `rules/` never import each other, and `package/` imports no rule; `lms/` builds on `model/`, `structure/`, `rules/` and the client and the LRS of `learning-records`, and never imports `package/`; `au/` builds on `model/`, `rules/` and the client of `learning-records` alone, and `lms/` and `au/` never import each other. Imports never form cycles.
+- A package imports only what its row in the diagram above allows, and a module only what its row below allows; imports never
+  form cycles. Biome enforces the rows (`noRestrictedImports` in `biome.json`):
+
+| Package | Module | Imports | Never imports | Note |
+| --- | --- | --- | --- | --- |
+| `tool-integration` | `protocol/` | `core` | `tool/`, `platform/` |  |
+|  | `protocol/claims/` | nothing else of the package | every other folder |  |
+|  | `protocol/message/` and each service folder: `grades/`, `roster/`, `groups/`, `content-items/`, `registration/`, `proctoring/`, `preferences/` | `claims/` | each other |  |
+|  | `tool/`, `platform/` | `protocol/` | each other |  |
+| `competency-frameworks` | `model/` | no other module |  |  |
+|  | `read/`, `version/`, `graph/` | `model/` | each other |  |
+|  | `client/` | `read/` | `provider/` |  |
+|  | `provider/` | `read/`, `version/` | `client/` |  |
+| `selective-disclosure` | `proof-value/`, `keys/`, `document/` | none of the other folders |  |  |
+|  | `base/`, `derive/`, `verify/` | those three | each other |  |
+| `achievement-credentials` | `model/` | no other module |  |  |
+|  | `read/`, `keys/` | `model/` only |  |  |
+|  | `issue/`, `compare/`, `baking/`, `client/` | `model/`, `read/` | each other |  |
+|  | `jwt/`, `data-integrity/` | `model/`, `read/`, `keys/` | each other |  |
+|  | `status/` | `model/`, `read/`, `keys/`, `jwt/` |  | `data-integrity/` only dynamically: a test keeps a verifier of JWTs free of JSON-LD |
+|  | `refresh/` | `model/` and `core` only |  |  |
+|  | `verify/` | every folder but `baking/` and `client/` |  | `data-integrity/` only dynamically; no other module imports `verify/` |
+|  | `provider/` | `model/`, `read/`, `jwt/`, the `internal.ts` of `verify/` |  | The `index.ts` of `verify/` only dynamically, so that a provider that does not verify never loads the verifier |
+| `learning-records` | `model/` | no other module |  |  |
+|  | `read/` | `model/` only |  |  |
+|  | `build/`, `compare/`, `format/` | `model/`, `read/` | each other |  |
+|  | `attachments/` | `model/`, `read/` |  |  |
+|  | `signing/` | `model/`, `read/`, `compare/`, `attachments/` |  |  |
+|  | `client/` | `model/`, `read/`, `compare/`, `attachments/` |  |  |
+|  | `store/` | every folder but `build/` and `client/` |  |  |
+| `learning-analytics` | `model/` | no other module |  |  |
+|  | `v1p1/` | `model/` alone |  |  |
+|  | `read/` | `model/`, `v1p1/` |  |  |
+|  | `validate/` | `model/`, `v1p1/`, `read/` |  |  |
+|  | `build/` | `model/`, `read/`, `validate/` | `v1p1/`: 1.1 is read and never written |  |
+|  | `send/` | `model/`, `build/` | `endpoint/`, `v1p1/` |  |
+|  | `endpoint/` | `model/`, `v1p1/`, `read/`, `validate/` | `send/` |  |
+| `course-launch` | `model/` | no other module |  |  |
+|  | `structure/` | `model/` alone | zip.js, so that a host that reads a structure from elsewhere never loads the ZIP code; `rules/` |  |
+|  | `package/` | `model/`, `structure/` | any rule |  |
+|  | `rules/` | `model/`, `learning-records` alone | `structure/` |  |
+|  | `lms/` | `model/`, `structure/`, `rules/`, the client and the LRS of `learning-records` | `package/`, `au/` |  |
+|  | `au/` | `model/`, `rules/`, the client of `learning-records` alone | `lms/` |  |
+
 - A module imports another module of its package only through that module's `index.ts` (its public API) or its `internal.ts`
   (what the package's other modules and its tests share and the package does not export), never by a deep file path. A file
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
@@ -408,7 +439,13 @@ listed here with its reason. A file is written `<package>/<path below src>`, and
   renders the diagrams, and the Mermaid plugin of TypeDoc renders them on the docs site (`typedoc.json` pins the version of
   Mermaid that the site loads).
 - Each guide has the diagram, a quick start that runs, the options with their defaults, the limits with their values, the
-  errors with what to do about them, what is not included and why, and the differences from the references.
+  errors with what to do about them, what is not included and why, and the differences from the references. The guide of a
+  module has the sections `## Quick start`, `## Errors`, `## Not included` and `## Differences from the references`, with
+  "None" and the reason where there is nothing to say, and every page writes what it leaves out as a table that opens with
+  `| Not included | Why |`; `pnpm check:standards` fails on a guide without them. The README of a package has the sections
+  `## Quick start`, `## API`, `## Supported`, `## Documentation` and `## License`, and the root README `## Which package`,
+  `## Documentation`, `## Development`, `## Layout` and `## License`, in that order. Speed, size and memory are in
+  `docs/<package>/performance.md`, and what shows that a package is right is in `evidence.md`.
 - Each document has one purpose: `README.md` for users, `docs/<package>/` for guides, `CONTRIBUTING.md` for the contribution
   process, `AGENTS.md` for conventions, `SECURITY.md` for deployment security.
 

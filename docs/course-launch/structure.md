@@ -144,7 +144,7 @@ for the million texts.
 
 ## Not included
 
-| What                                                                                       | Why                                                                                                         |
+| Not included                                                                               | Why                                                                                                         |
 | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
 | Validating an extension against its own schema (13.1.5)                                    | Nothing in a package says where the schema of an extension is; the schema of cmi5 processes extensions `lax` |
 | Keeping attributes of other namespaces, and extensions of titles, descriptions and lists of objectives | The model keeps the extensions of the structure, the course, blocks and assignable units, as 13.1.5 names them; an LMS may ignore every extension |

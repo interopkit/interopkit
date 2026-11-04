@@ -7,8 +7,10 @@ import {
   checkErrorNames,
   checkFamilies,
   checkFileNames,
+  checkGuideSections,
   checkHistory,
   checkPackageNames,
+  checkReadmeSections,
   checkSectionSigns,
   checkStandards,
   checkTestTitles,
@@ -120,6 +122,92 @@ describe("diagrams", () => {
       "CONTRIBUTING.md",
       "packages/a/README.md",
       "docs/a/guide.md",
+    ]);
+  });
+});
+
+describe("guide sections", () => {
+  const complete = [
+    "# Guide",
+    "## Quick start",
+    "## Errors",
+    "## Not included",
+    "",
+    "| Not included  | Why |",
+    "| ------------- | --- |",
+    "| Retries       | The caller decides |",
+    "",
+    "## Differences from the references",
+  ].join("\n");
+
+  it("accepts the guide of a module that has every section, and the pages that are not guides of a module", () => {
+    const files = repository({
+      "docs/a/guide.md": complete,
+      "docs/a/evidence.md": "# Evidence\n",
+      "docs/a/performance.md": "# Performance\n",
+      "docs/a/supported.md": "# Supported\n",
+      "docs/a/architecture.md": "# Architecture\n",
+      "docs/a/comparators.md": "# Comparators\n",
+      "docs/a/spec-gaps.md": "# Spec gaps\n",
+    });
+    expect(checkGuideSections(files)).toStrictEqual([]);
+  });
+
+  it("names each section that the guide of a module lacks, and ignores a heading inside a fence", () => {
+    const files = repository({
+      "docs/a/guide.md": [
+        "# Guide",
+        "## Quick start",
+        "```md",
+        "## Errors",
+        "```",
+        "## Not included",
+        "| Not included | Why |",
+      ].join("\n"),
+    });
+    expect(
+      checkGuideSections(files).map(({ rule, message }) => [rule, message.match(/"## ([^"]+)"/)?.[1]]),
+    ).toStrictEqual([
+      ["guide-sections", "Errors"],
+      ["guide-sections", "Differences from the references"],
+    ]);
+  });
+
+  it("reports a table of what is not included whose header differs, on any page, and a section with no table", () => {
+    const files = repository({
+      "docs/a/guide.md": `${complete.replace("| Not included  | Why |", "| What | Reason |")}\n`,
+      "docs/a/evidence.md": "# Evidence\n\n## Not included\n\nNothing.\n",
+    });
+    expect(checkGuideSections(files).map(({ file, line, rule }) => [file, line, rule])).toStrictEqual([
+      ["docs/a/guide.md", 4, "not-included"],
+      ["docs/a/evidence.md", 3, "not-included"],
+    ]);
+  });
+});
+
+describe("README sections", () => {
+  const root = "# A\n## Which package\n## Documentation\n## Development\n## Layout\n## License\n";
+  const pkg = "# A\n## Quick start\n## API\n## Supported\n## Documentation\n## License\n";
+
+  it("accepts the sections of the root and of a package in their order, with others between them", () => {
+    const files = repository({
+      "README.md": root,
+      "packages/a/README.md": pkg.replace("## API", "## Install\n## API"),
+      "examples/a/README.md": "# Example\n",
+    });
+    expect(checkReadmeSections(files)).toStrictEqual([]);
+  });
+
+  it("names the section that is missing or out of order", () => {
+    const files = repository({
+      "README.md": root.replace("## Layout\n", ""),
+      "packages/a/README.md": "# A\n## API\n## Quick start\n## Supported\n## Documentation\n## License\n",
+    });
+    expect(
+      checkReadmeSections(files).map(({ file, message }) => [file, message.match(/; "([^"]+)" is/)?.[1]]),
+    ).toStrictEqual([
+      ["README.md", "Layout"],
+      ["packages/a/README.md", "API"],
     ]);
   });
 });
@@ -283,7 +371,7 @@ describe("console", () => {
 describe("all checks", () => {
   it("reports nothing for a repository that holds the standards", () => {
     const files = repository({
-      "README.md": `# A\n\n${DIAGRAM}`,
+      "README.md": `# A\n\n${DIAGRAM}\n## Which package\n## Documentation\n## Development\n## Layout\n## License\n`,
       "packages/a/src/index.ts": "export const A = 1;\n",
       "packages/a/test/a.test.ts": 'it("returns one", () => {});\n',
     });

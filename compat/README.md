@@ -1,6 +1,6 @@
 # Runtimes
 
-The packages claim to run in any JavaScript runtime that has the web standards. `pnpm compat` shows it: it bundles the
+The packages claim to run in any JavaScript runtime that has the web standards. `pnpm compat:runtimes` shows it: it bundles the
 scenarios of the six examples and a set of calls to a real server, and runs the bundle on Node.js, Deno, Bun and workerd, the
 runtime of Cloudflare Workers. The bundle holds the packages as they ship, built with `pnpm build`, and the examples
 that use them.
@@ -55,8 +55,8 @@ Node.js 22.18 or later runs `check.ts`. Deno and Bun are programs of their own, 
 argument it runs all four and fails when one is missing.
 
 ```sh
-pnpm compat                # builds, then runs node, deno, bun and workerd
-pnpm compat node workerd   # only these (node always runs, as the reference)
+pnpm compat:runtimes                # builds, then runs node, deno, bun and workerd
+pnpm compat:runtimes node workerd   # only these (node always runs, as the reference)
 ```
 
 | Runtime | Pinned in                          | Version      |

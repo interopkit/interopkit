@@ -37,7 +37,7 @@ The Caliper Analytics Connector is a specification for members and is not read; 
 | `ims-caliper` | An identifier for an event that has none, a random UUID | Has | `mintUrn` makes it from what identifies the event, so that a resend keeps it |
 | `ims-caliper` | An envelope of events and entities, mixed | Has | `sendCaliper` ([sending events](send.md)) |
 | `ims-caliper` | An `Authorization` header and a time limit for the request | Has | `token` and `timeoutMs` |
-| `ims-caliper` | A build for browsers | Has | ESM on web standards alone: `pnpm test:browser` runs the path of a sensor in Chromium, Firefox and WebKit, and `pnpm compat` the example on workerd, Deno and Bun |
+| `ims-caliper` | A build for browsers | Has | ESM on web standards alone: `pnpm test:browser` runs the path of a sensor in Chromium, Firefox and WebKit, and `pnpm compat:runtimes` the example on workerd, Deno and Bun |
 | `ims-caliper` | The time of sending from the clock | Excluded | The library reads no clock; the host passes `sendTime` |
 | `ims-caliper` | Several endpoints registered with a sensor, sent to in turn | Excluded | The library keeps nothing between calls; a host calls `sendCaliper` once for each endpoint |
 | `ims-caliper` | Writing the context of 1.1 | Excluded | 1.2 supersedes it; 1.1 is read and never written |

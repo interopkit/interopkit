@@ -172,3 +172,19 @@ The library stores nothing, logs nothing and sends nothing but the request. The 
 chooses: give an opaque identifier that the host keeps in its own records, such as `urn:uuid:` and a UUID, and never an
 email address, a name or an identifier that another service knows. The identifiers of events are UUIDs of the parts that the
 host gives, so do not put a secret in the parts.
+
+## Not included
+
+| Not included                                 | Why                                                                                                                  |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Splitting an envelope that is too large      | The host decides how to batch: `sendCaliper` refuses an envelope above `maxPayloadBytes` and sends nothing            |
+| Retries and a queue of events                | Nothing is kept between calls; the host decides whether and when to send again, and the same events give the same identifiers |
+| Several endpoints registered with a sensor   | A host calls `sendCaliper` once for each endpoint                                                                    |
+| Following a redirect                         | Any 3xx is an error: a redirect could lead from HTTPS to another scheme                                              |
+
+## Differences from the references
+
+| Reference               | Difference                                                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ims-caliper`           | Reads the clock for the time of sending and keeps several endpoints in a sensor; `sendCaliper` takes `sendTime` from the host and keeps nothing between calls                                  |
+| `@timeback/caliper`     | A client of one vendor's API, with a queue of jobs and the listing of what a server stored; `sendCaliper` sends the four properties of section 5.2 and no other, and Caliper defines no reading of what an endpoint keeps. Its tokens come from `requestClientCredentialsToken` and `createTokenCache` of `@interopkit/core/oauth` |

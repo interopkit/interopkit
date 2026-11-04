@@ -120,7 +120,7 @@ A value that is not an event is not an error of the call: it is a finding.
 
 ## Not included
 
-| What                                                                                            | Why                                                                                                                                              |
+| Not included                                                                                    | Why                                                                                                                                              |
 | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Which rows a sensor must send to be certified (the `Required` of the certification guide)       | It is a property of the events that a sensor sends in all, which the certification service checks, and not of one event                           |
 | That the actor of a grade is a `SoftwareApplication` when the grading is automatic              | The data does not say how it was graded                                                                                                           |

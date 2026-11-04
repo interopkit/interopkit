@@ -46,5 +46,5 @@ the steps.
 | The reader against libxml2 | `CourseStructure.xsd` through `scripts/xsd-oracle.ts`, on the Spec's examples, CATAPULT's packages and generated structures with one change each | The same verdict, or a stricter one that [spec gaps](spec-gaps.md) names |
 | The rules table | `scripts/cmi5-rules.ts`, one entry per sentence of 6.3, 7.1, 9, 10.2.2 and 11 | `validateSessionStatements` finds each finding, the LMS refuses each statement listed, and the runtime skips the same |
 | `@xapi/cmi5` 1.4.0 | The AU library of xapijs, in the process of the tests of `examples/course-launch` | A whole session against the example LMS, satisfied, and a second fetch refused |
-| Runtimes | `pnpm compat` | The example's package, LMS and units give the same outcomes on Node.js 22, Deno 2.9, Bun 1.4 and workerd |
+| Runtimes | `pnpm compat:runtimes` | The example's package, LMS and units give the same outcomes on Node.js 22, Deno 2.9, Bun 1.4 and workerd |
 | Mutation rules | `scripts/rules/course-launch.ts` | Every rule of the LMS and of the runtime that keeps a request from being forged, replayed or redirected fails its test when removed |

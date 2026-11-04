@@ -13,7 +13,7 @@ flowchart LR
   schemas["Draft 4 schemas, 1.2 and 1.1<br/>pnpm test:corpus"] --> model
   model --> roundtrip["Sensor to endpoint in process<br/>pnpm test, pnpm test:corpus"]
   roundtrip --> example["Example: a sensor, an endpoint,<br/>an older sensor<br/>pnpm test"]
-  example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
+  example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat:runtimes"]
   roundtrip --> browsers["The sensor in Chromium,<br/>Firefox and WebKit<br/>pnpm test:browser"]
   model --> rules["Mutation rules<br/>pnpm check:rules"]
 ```
@@ -29,7 +29,7 @@ flowchart LR
 | Endpoint      | Does it answer each status in the order of its checks, and cost an unauthorized caller no parsing?   | `endpoint.test.ts`                                                                                                     | `pnpm test`           |
 | Round trip    | Does what a sensor sends reach `accept` equal, in 1.2 and in 1.1?                                    | `endpoint.test.ts`, `roundtrip.corpus.test.ts`, `versions.corpus.test.ts`, `examples/learning-analytics/test`          | `pnpm test`, `pnpm test:corpus` |
 | Rules         | Does a test fail when a rule that keeps the endpoint safe is removed from the code?                  | `scripts/rules/learning-analytics.ts`                                                                                  | `pnpm check:rules`    |
-| Runtimes      | Does the example give the same results everywhere?                                                   | `compat/`                                                                                                              | `pnpm compat`         |
+| Runtimes      | Does the example give the same results everywhere?                                                   | `compat/`                                                                                                              | `pnpm compat:runtimes`         |
 | Browsers      | Does the path of a sensor run in the engines of the browsers, with the `uuid` built for them?        | `sensor.browser.test.ts`                                                                                               | `pnpm test:browser`   |
 
 The model that the tables, the contexts and the fixtures are compared with has these counts, and a test fails when a table prints a
@@ -95,7 +95,7 @@ scenario show:
 
 ## Runtimes
 
-`pnpm compat` bundles the scenario with the packages as they ship and runs it on Node.js, Deno, Bun and workerd. The example uses web
+`pnpm compat:runtimes` bundles the scenario with the packages as they ship and runs it on Node.js, Deno, Bun and workerd. The example uses web
 standards alone, and its results are the same on each: the sends and their identifiers, what the endpoint holds and read of each
 envelope, the versions it announces and its two refusals.
 
@@ -105,9 +105,9 @@ what the readers read back, `sendCaliper` posts to an endpoint that the page hol
 `Response`, a redirect is refused and a call that is never answered ends at its time limit, and a value of 100,000 levels is
 refused without exhausting the stack of the engine.
 
-## What is not shown
+## Not included
 
-| What                                       | Why                                                                                                                              |
+| Not included                               | Why                                                                                                                              |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | Certification of a sensor                  | 1EdTech certifies sensors per profile for members. The tables of the guide are read, and the docs say "implements"              |
 | An open Caliper 1.2 endpoint or sensor     | None exists. The collector in `CaliperBootcamp` validates with the same schemas and needs Neo4j, so it would add no evidence      |

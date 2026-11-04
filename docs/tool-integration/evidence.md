@@ -14,7 +14,7 @@ flowchart LR
   py --> moodle["Moodle in containers,<br/>both roles<br/>pnpm moodle"]
   moodle --> hand["saLTIre and the reference tool<br/>by hand before a release"]
   trip --> rules["Mutation rules<br/>pnpm check:rules"]
-  trip --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
+  trip --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat:runtimes"]
 ```
 
 | Layer              | Question                                                                                              | Where                                                                                           | Runs                    |
@@ -27,7 +27,7 @@ flowchart LR
 | Moodle             | Does Moodle launch a tool built on the package, and does it use a platform built on the package, with registration, launch, services and Deep Linking? | `validation/moodle/`, `packages/tool-integration/test/moodle.corpus.test.ts` | `pnpm moodle` |
 | Online testers     | Do the testers that 1EdTech and saLTIre host pass the platform and the tool?                           | The log below                                                                                   | By hand before a release |
 | Mutation rules     | Does the test of each rule that keeps a request from being forged, replayed or redirected fail without it? | `scripts/rules/tool-integration.ts`                                                        | `pnpm check:rules`      |
-| Runtimes           | Does the example give the same results on each runtime?                                               | `compat/`                                                                                       | `pnpm compat`           |
+| Runtimes           | Does the example give the same results on each runtime?                                               | `compat/`                                                                                       | `pnpm compat:runtimes`           |
 
 ## Tools in the process of the tests
 
@@ -125,7 +125,7 @@ What a run checks, beyond the flows that the counterparties above already pass:
 
 ## Runtimes
 
-`pnpm compat` bundles the scenario of the example with the packages as they ship and runs it on Node.js, Deno, Bun and workerd.
+`pnpm compat:runtimes` bundles the scenario of the example with the packages as they ship and runs it on Node.js, Deno, Bun and workerd.
 The scenario launches a resource link, a Deep Linking request, a Start Proctoring message, a Submission Review request and an End
 Assessment message; grades, reads the roster and the groups, pauses a proctored attempt, and registers a second tool through
 Dynamic Registration. Web Crypto signs and verifies ES256 and RS256 and seals with HMAC alike on the four runtimes, and the

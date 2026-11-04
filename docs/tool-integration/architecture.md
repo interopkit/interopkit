@@ -61,7 +61,7 @@ The candidates stay useful as counterparties in tests.
 
 ## Not included
 
-| What                                             | Reason                   |
+| Not included                                     | Why                      |
 | ------------------------------------------------ | ------------------------ |
 | A server, routes, sessions, a database           | The host's               |
 | A UI for Deep Linking                            | The host's               |

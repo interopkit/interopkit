@@ -379,7 +379,7 @@ jobs:
         with:
           bun-version: 1.4.3
       - run: pnpm install --frozen-lockfile
-      - run: pnpm compat
+      - run: pnpm compat:runtimes
 
   # The hot paths of competency-frameworks on a framework of 10,000 items against the official schemas of CASE and the JSON, of
   # learning-records on 1,000 Statements against the validator of Learning Locker, node:crypto and jose, and of learning-analytics

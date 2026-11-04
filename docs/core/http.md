@@ -196,7 +196,7 @@ hold a token.
 
 ## Not included
 
-| What                                                      | Reason                                                                                        |
+| Not included                                              | Why                                                                                           |
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | Adapters for web frameworks                               | A host builds the request in a few lines from its own framework                               |
 | Routing, sessions, authentication                         | They belong to the host. A handler takes a request and gives an answer                        |

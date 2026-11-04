@@ -207,8 +207,8 @@ registration and to waivers.
 
 ## Not included
 
-| What | Why |
-| --- | --- |
+| Not included | Why |
+|--------------| --- |
 | Opening windows, frames, the redirect to `returnURL`, hosting the files of a package | The page and the server are the host's: `prepareLaunch` returns the window that the unit asks for |
 | Abandoning a session after a time without statements | The host's schedule calls `abandonSession`; a token ends at `maxSessionSeconds` |
 | Voiding conflicting statements (6.3, a SHOULD) | Every statement that conflicts is refused on arrival, so none is stored |

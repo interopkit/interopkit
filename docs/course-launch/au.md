@@ -126,8 +126,8 @@ initialize by default.
 
 ## Not included
 
-| What | Why |
-| --- | --- |
+| Not included | Why |
+|--------------| --- |
 | Opening windows, redirecting to the return URL, unloading, audio | The page's: `terminate` returns the address, and `preferences.audioPreference` says on or off |
 | Keeping `resume` across a reload | The page's storage |
 | One helper for each type of interaction | xAPI's, not cmi5's: `send` takes any allowed statement of the model of `@interopkit/learning-records` |

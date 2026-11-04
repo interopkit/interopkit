@@ -141,7 +141,7 @@ of xAPI is not judged by these. `scripts/cmi5-rules.ts` holds a session that bre
 
 ## Not included
 
-| What                                                                             | Why                                                                                          |
+| Not included                                                                     | Why                                                                                          |
 | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Judging the statements of the LMS: launched, abandoned, waived, satisfied         | They are the LMS's own; `validateSessionStatements` judges what an assignable unit sends     |
 | Voiding a statement that conflicts (6.3, a MUST for statements not rejected)      | A judgement finds every conflict, so an LMS rejects them on receipt and stores none           |

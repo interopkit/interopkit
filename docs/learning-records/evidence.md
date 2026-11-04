@@ -11,7 +11,7 @@ flowchart LR
   rules --> sql["SQL LRS in a container<br/>verdicts and flows<br/>pnpm sql-lrs"]
   rules --> locker["The validator of Learning Locker<br/>verdicts on 1.0.3<br/>pnpm test"]
   example --> sql
-  example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
+  example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat:runtimes"]
 ```
 
 | Layer        | Question                                                                          | Where                                                                   | Runs           |
@@ -22,7 +22,7 @@ flowchart LR
 | Oracle       | Does another LRS take and refuse the same Statements as the reader?               | `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts`         | `pnpm sql-lrs` |
 | Oracle       | Does the validator of Learning Locker judge the Statements of 1.0.3 alike?        | `packages/learning-records/test/v1-rules.test.ts`                       | `pnpm test`    |
 | Counterparty | Does the client work against another LRS, in both versions, with what it answers? | `examples/learning-records/test/sqllrs.corpus.test.ts`                  | `pnpm sql-lrs` |
-| Runtimes     | Does the example give the same results everywhere?                                | `compat/`                                                               | `pnpm compat`  |
+| Runtimes     | Does the example give the same results everywhere?                                | `compat/`                                                               | `pnpm compat:runtimes`  |
 
 ## The example
 
@@ -76,6 +76,6 @@ allows.
 
 ## Runtimes
 
-`pnpm compat` bundles the scenario with the packages as they ship and runs it on Node.js, Deno, Bun and workerd. The example uses
+`pnpm compat:runtimes` bundles the scenario with the packages as they ship and runs it on Node.js, Deno, Bun and workerd. The example uses
 web standards alone, a constant-time comparison included, and the results are the same on each runtime that runs: Node.js, Deno
 and workerd on the machine of this record, and Bun on CI.

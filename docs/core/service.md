@@ -211,7 +211,9 @@ readStatusInfo(slow); // => { info: { imsx_codeMajor: "failure", imsx_severity: 
 | `ServiceError`, over the limit | The answer is larger than `maxBytes`                                                                                                                                                                                                                                                       | Ask the service for less, or raise `maxBytes`                                                                                                 |
 | The `reason` of the signal     | The caller aborted                                                                                                                                                                                                                                                                         | Nothing: the caller ended the wait. A request in flight may have reached the service                                                          |
 
-## Differences from `fetch`
+## Differences from the references
+
+The reference is `fetch`, which `requestService` calls.
 
 |                                   | `fetch`                                   | `requestService`                                                        |
 | --------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
@@ -231,7 +233,7 @@ readStatusInfo(slow); // => { info: { imsx_codeMajor: "failure", imsx_severity: 
 
 ## Not included
 
-| What                        | Reason                                                                                   |
+| Not included                | Why                                                                                      |
 | --------------------------- | ---------------------------------------------------------------------------------------- |
 | Retries                     | Whether a repeat is safe depends on the request, so the caller decides                   |
 | Caching                     | A cache is shared work with its own rules, such as a key set cache in `tool-integration` |

@@ -172,6 +172,108 @@ export function checkDiagrams(files: Files): Violation[] {
     }));
 }
 
+/** The pages of `docs/<package>/` that are not the guide of a module. */
+const OTHER_PAGES = new Set(["architecture", "comparators", "evidence", "performance", "spec-gaps", "supported"]);
+/** The sections that the guide of every module has, by the text of their `##` heading. */
+const GUIDE_SECTIONS = ["Quick start", "Errors", "Not included", "Differences from the references"];
+/** The first row of the table of what a page leaves out, as every page writes it. */
+const NOT_INCLUDED_HEADER = "| Not included | Why |";
+
+/** The `##` headings of a Markdown file outside fenced code, with the 1-based line of each. */
+function sectionsOf(text: string): { readonly title: string; readonly line: number }[] {
+  const found: { title: string; line: number }[] = [];
+  let fenced = false;
+  linesOf(text).forEach((line, index) => {
+    if (/^\s*```/.test(line)) fenced = !fenced;
+    const title = fenced ? undefined : /^## (.+?)\s*$/.exec(line)?.[1];
+    if (title !== undefined) found.push({ title, line: index + 1 });
+  });
+  return found;
+}
+
+/** The sections of the guide of a module that its page lacks. */
+function missingGuideSections(file: string, sections: readonly { readonly title: string }[]): Violation[] {
+  return GUIDE_SECTIONS.filter((title) => !sections.some((section) => section.title === title)).map((title) => ({
+    file,
+    line: 0,
+    rule: "guide-sections",
+    message: `Every guide of a module has a "## ${title}" section; add it, with "None" and the reason where there is nothing to say.`,
+  }));
+}
+
+/** The `## Not included` sections of a page whose table does not open with the header that every page uses. */
+function oddNotIncluded(
+  file: string,
+  text: string,
+  sections: readonly { readonly title: string; readonly line: number }[],
+): Violation[] {
+  const lines = linesOf(text);
+  return sections
+    .filter(({ title }) => title === "Not included")
+    .filter(
+      ({ line }) =>
+        lines
+          .slice(line)
+          .find((row) => row.startsWith("|"))
+          ?.replace(/\s+/g, " ")
+          .trim() !== NOT_INCLUDED_HEADER,
+    )
+    .map(({ line }) => ({
+      file,
+      line,
+      rule: "not-included",
+      message: `Write what the page leaves out as a table whose first row reads ${NOT_INCLUDED_HEADER}.`,
+    }));
+}
+
+/**
+ * The guide of every module has a quick start, the errors, what is not included and the differences from the references, and
+ * what a page leaves out is a table that reads `| Not included | Why |`, so that the guides read alike.
+ */
+export function checkGuideSections(files: Files): Violation[] {
+  return [...files].flatMap(([file, text]) => {
+    const page = /^docs\/[^/]+\/([^/]+)\.md$/.exec(file)?.[1];
+    if (page === undefined) return [];
+    const sections = sectionsOf(text);
+    return [
+      ...(OTHER_PAGES.has(page) ? [] : missingGuideSections(file, sections)),
+      ...oddNotIncluded(file, text, sections),
+    ];
+  });
+}
+
+/** The sections of a README, in order: the root's guide the reader to a package, and each package's is its npm page. */
+const README_SECTIONS: readonly { readonly pattern: RegExp; readonly sections: readonly string[] }[] = [
+  { pattern: /^README\.md$/, sections: ["Which package", "Documentation", "Development", "Layout", "License"] },
+  {
+    pattern: /^packages\/[^/]+\/README\.md$/,
+    sections: ["Quick start", "API", "Supported", "Documentation", "License"],
+  },
+];
+
+/** Every README has the sections of its kind, in their order, with others allowed between them. */
+export function checkReadmeSections(files: Files): Violation[] {
+  const found: Violation[] = [];
+  for (const [file, text] of files) {
+    const required = README_SECTIONS.find(({ pattern }) => pattern.test(file))?.sections;
+    if (required === undefined) continue;
+    const titles = sectionsOf(text).map(({ title }) => title);
+    let from = 0;
+    for (const title of required) {
+      const at = titles.indexOf(title, from);
+      if (at < 0)
+        found.push({
+          file,
+          line: 0,
+          rule: "readme-sections",
+          message: `A README has the sections ${required.map((name) => `"${name}"`).join(", ")} in this order; "${title}" is missing or comes too early.`,
+        });
+      else from = at + 1;
+    }
+  }
+  return found;
+}
+
 /** The brand's error is the base class; a package that has an error class of its own breaks the rule of one family of errors. */
 export function checkErrorNames(files: Files): Violation[] {
   const packages = new Set(
@@ -377,6 +479,8 @@ export const CHECKS: readonly ((files: Files) => Violation[])[] = [
   checkHistory,
   checkFileNames,
   checkDiagrams,
+  checkGuideSections,
+  checkReadmeSections,
   checkErrorNames,
   checkPackageNames,
   checkFamilies,

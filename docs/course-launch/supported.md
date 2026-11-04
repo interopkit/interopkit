@@ -43,7 +43,7 @@ flowchart LR
 
 ## Not included
 
-| What                                                                 | Why                                                                                          |
+| Not included                                                         | Why                                                                                          |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | The schema of an extension (13.1.5)                                  | A package does not say where it is; the schema of cmi5 processes extensions `lax`            |
 | A relative URL for every packaged file (14.1, a SHOULD)              | Undecidable: an absolute URL may name anything, so no reader can tell whether it is packaged |

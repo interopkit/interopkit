@@ -15,6 +15,26 @@ flowchart LR
   build -.->|"DataError at the first property that is not valid"| host
 ```
 
+## Quick start
+
+```ts
+import { formatDateTime } from "@interopkit/core/checks";
+import { buildEvent, mintUrn } from "@interopkit/learning-analytics";
+
+const event = buildEvent({
+  id: mintUrn(["event", "session-1", 1]),
+  type: "AssessmentEvent",
+  profile: "AssessmentProfile",
+  actor: { id: "urn:uuid:3f0c8a8e-7b8e-4b6a-9c1d-2a4f6e8b0c1d", type: "Person" },
+  action: "Started",
+  object: { id: "https://exam.example/tests/42", type: "Assessment" },
+  eventTime: formatDateTime(1_700_000_000_000),
+  edApp: "https://exam.example",
+});
+event.id; // => "urn:uuid:017072c6-a4a4-5227-a083-38da34a6f364"
+event.eventTime; // => "2023-11-14T22:13:20.000Z"
+```
+
 ## Building an event
 
 `buildEvent(input)` writes the `@context`, checks every property and returns a new event. The input is not changed, the result
@@ -115,5 +135,20 @@ parses. A host can use it on the parties it passes in, and `buildEvent` takes wh
 | `DataError` | The options are not an object with a list of contexts: `The options is invalid at contexts: ...`                                                                                | Give `contexts` as a list of addresses and objects                     |
 | `DataError` | A part of an identifier is not a string or a finite number: `The parts of an identifier ...`; a time is not whole epoch milliseconds in range: `The time must be whole epoch milliseconds in the years 0000 to 9999, found 1.5.` | Fix the argument                                                       |
 
-What is not built yet is in [supported](./supported.md).
+## Not included
 
+| Not included                                          | Why                                                                                                    |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Writing Caliper 1.1 and 1.0                           | 1.2 supersedes 1.1, and 1EdTech retired 1.0; 1.1 is read and never written                              |
+| Which step of a product becomes which event           | The host's mapping: the function takes the actor, the action and the object that the host decides on    |
+| The time of an event from a clock                     | The library reads no clock; the host passes `eventTime`, which `formatDateTime` writes                  |
+
+[Supported](./supported.md) lists the rest of what is and is not built.
+
+## Differences from the references
+
+| Reference           | Difference                                                                                                                                                                                         |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Caliper 1.2         | `buildEvent` refuses what [`validateEvent`](./validate.md) finds an error in, and builds an event that has warnings only; where the specification is silent or contradicts itself, [spec-gaps](spec-gaps.md) gives the reading taken |
+| `ims-caliper`       | Builds the classes of 1.1 and gives an event that has no id a random UUID; this package builds 1.2, reads 1.1, and `mintUrn` makes the id from the parts that identify the event, so that a resend keeps it |
+| `@timeback/caliper` | Has shortcuts for the events of an item seen, answered and graded; `buildEvent` of an `AssessmentItemEvent` and a `GradeEvent` does the same, and which step of a product becomes which event is the adapter's |

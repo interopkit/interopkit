@@ -113,7 +113,7 @@ Neither function limits the size of a payload: the host bounds what it signs.
 
 ## Not included
 
-| What                                                      | Reason                                                                                                      |
+| Not included                                              | Why                                                                                                         |
 | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Verifying a JWS                                           | A verifier needs the key of an issuer and the rules of its standard; each package brings its own, on `jose` |
 | Key generation, storage and rotation                      | The host owns the keys                                                                                      |

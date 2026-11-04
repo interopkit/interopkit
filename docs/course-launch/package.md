@@ -128,7 +128,7 @@ and the archive is read again by `readCoursePackage` with its default limits bef
 
 ## Not included
 
-| What                                                                              | Why                                                                                       |
+| Not included                                                                      | Why                                                                                       |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | Extracting, storing and serving the files of a package                            | The host's; `paths` lists the files that it extracts                                      |
 | Checking that a fully qualified URL names a file of the package (14.1, a SHOULD)  | Undecidable: an absolute URL may name anything                                            |

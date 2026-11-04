@@ -40,7 +40,14 @@ Number.isInteger(readClock(SYSTEM_CLOCK)); // => true
 
 ## Not included
 
-| What                   | Reason                                                                                                |
+| Not included           | Why                                                                                                   |
 | ---------------------- | ----------------------------------------------------------------------------------------------------- |
 | Timers, `sleep`        | A library waits on I/O with a deadline (see [service calls](service.md)), never on a timer of its own |
 | Time zones, formatting | A caller formats the time it needs, such as the ISO 8601 form of a Caliper event                      |
+
+## Differences from the references
+
+| Reference        | Difference                                                                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Date.now()`     | `SYSTEM_CLOCK` answers the same whole milliseconds. `readClock` throws unless the answer is a non-negative safe integer, so `NaN`, a fraction or a negative time never reaches a token or an event |
+| `performance.now()` | Refused as a clock: it counts from the start of the process and answers a fraction                                                                                   |

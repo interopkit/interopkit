@@ -48,16 +48,6 @@ and [zip.js](https://gildas-lormeau.github.io/zip.js/) (`/package`).
 npm install @interopkit/course-launch
 ```
 
-## API
-
-| Subpath                             | Exports                                                                                                                                                                                                                                           |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/course-launch`         | `readCourseStructure`, `validateCourseStructure`, `writeCourseStructure`, `CourseReadOptions`, `CourseWriteOptions`: read a course structure into the model and throw `DataError` on an error, list its findings, and write it; the model (`CourseStructure`, `AssignableUnit`, `Block`, `Objective`, `LangString`, `ExtensionElement`; each finding an `Issue` of `@interopkit/core/checks`) and the vocabularies (`MOVE_ON_VALUES`, `LAUNCH_METHODS`, `LAUNCH_MODES`, `CMI5_VERBS`, `CMI5_CATEGORIES`, `CMI5_EXTENSIONS`, `CMI5_ACTIVITY_TYPES`, `COURSE_STRUCTURE_NAMESPACE`, `LAUNCH_DATA_STATE_ID`, `LEARNER_PREFERENCES_PROFILE_ID`) |
-| `@interopkit/course-launch`         | `readLaunchUrl`, `readLaunchData`, `readLearnerPreferences`, `writeLearnerPreferences`, `classifyStatement`, `validateSessionStatements`, `SessionFacts`: read the launch URL, the launch data and the preferences of a learner, tell the kind of a statement, and judge the statements of a session; the types `LaunchParameters`, `LaunchData`, `LearnerPreferences` and `AUDIO_PREFERENCES` |
-| `@interopkit/course-launch/package` | `readCoursePackage`, `writeCoursePackage`, `CoursePackage`, `CoursePackageReadOptions`: read a ZIP package of 32 or 64 bits or the XML of a structure alone, and write a ZIP package                                                                   |
-| `@interopkit/course-launch/au`      | `startAuSession`, `AuSession`, `AuOptions`, `AuResume`, `Recorded`, `PriorOutcome`, `OutcomeOptions`, `AllowedStatementInput`: the runtime of an assignable unit, which fetches its token once, reads its launch data, preferences and registration, and sends the statements of its session, each judged by the rules of cmi5 first |
-| `@interopkit/course-launch/lms`     | `importCourse`, `createRegistration`, `prepareLaunch`, `handleFetchRequest`, `extendLrsOptions`, `abandonSession`, `waiveAu`, `deriveCourseProgress`, the `Cmi5Store` port and its records: import a course with the ids of the LMS, register learners, launch units with a fetch URL of one use, make the host's LRS judge and satisfy by the rules of cmi5, abandon sessions and waive units |
-
 ## Quick start
 
 ```ts
@@ -79,21 +69,36 @@ unit?.kind === "au" ? [unit.moveOn, unit.masteryScore] : undefined;
 // => ["CompletedOrPassed", 0.8]
 ```
 
-## Guides
+## API
+
+| Subpath                             | Exports                                                                                                                                                                                                                                           |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@interopkit/course-launch`         | `readCourseStructure`, `validateCourseStructure`, `writeCourseStructure`, `CourseReadOptions`, `CourseWriteOptions`: read a course structure into the model and throw `DataError` on an error, list its findings, and write it; the model (`CourseStructure`, `AssignableUnit`, `Block`, `Objective`, `LangString`, `ExtensionElement`; each finding an `Issue` of `@interopkit/core/checks`) and the vocabularies (`MOVE_ON_VALUES`, `LAUNCH_METHODS`, `LAUNCH_MODES`, `CMI5_VERBS`, `CMI5_CATEGORIES`, `CMI5_EXTENSIONS`, `CMI5_ACTIVITY_TYPES`, `COURSE_STRUCTURE_NAMESPACE`, `LAUNCH_DATA_STATE_ID`, `LEARNER_PREFERENCES_PROFILE_ID`) |
+| `@interopkit/course-launch`         | `readLaunchUrl`, `readLaunchData`, `readLearnerPreferences`, `writeLearnerPreferences`, `classifyStatement`, `validateSessionStatements`, `SessionFacts`: read the launch URL, the launch data and the preferences of a learner, tell the kind of a statement, and judge the statements of a session; the types `LaunchParameters`, `LaunchData`, `LearnerPreferences` and `AUDIO_PREFERENCES` |
+| `@interopkit/course-launch/package` | `readCoursePackage`, `writeCoursePackage`, `CoursePackage`, `CoursePackageReadOptions`: read a ZIP package of 32 or 64 bits or the XML of a structure alone, and write a ZIP package                                                                   |
+| `@interopkit/course-launch/au`      | `startAuSession`, `AuSession`, `AuOptions`, `AuResume`, `Recorded`, `PriorOutcome`, `OutcomeOptions`, `AllowedStatementInput`: the runtime of an assignable unit, which fetches its token once, reads its launch data, preferences and registration, and sends the statements of its session, each judged by the rules of cmi5 first |
+| `@interopkit/course-launch/lms`     | `importCourse`, `createRegistration`, `prepareLaunch`, `handleFetchRequest`, `extendLrsOptions`, `abandonSession`, `waiveAu`, `deriveCourseProgress`, the `Cmi5Store` port and its records: import a course with the ids of the LMS, register learners, launch units with a fetch URL of one use, make the host's LRS judge and satisfy by the rules of cmi5, abandon sessions and waive units |
+
+## Supported
+
+[Supported](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/supported.md) lists what of cmi5 the package covers and what it leaves out. It passes CATAPULT's LMS and content suites at `806c0ba` ([evidence](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/evidence.md)).
+
+## Documentation
 
 | Guide                                                    | For                                                                                     |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [Architecture](../../docs/course-launch/architecture.md) | The modules, their layers, and what the package owns                                    |
-| [Course structure](../../docs/course-launch/structure.md) | Reading, validating and writing `cmi5.xml`: the rules, options, limits and errors       |
-| [Course package](../../docs/course-launch/package.md)    | Reading and writing ZIP and XML packages within limits, and what a package may not hold |
-| [Rules of a session](../../docs/course-launch/rules.md)  | The launch URL, the launch data, the preferences, and the rules of the statements of a session |
-| [Assignable unit](../../docs/course-launch/au.md)        | The runtime of a unit: its start, its statements, a reload, and what it skips and what the LMS refuses |
-| [LMS](../../docs/course-launch/lms.md)                   | Registrations, launches, the fetch URL, the rules of cmi5 on the host's LRS, satisfaction, abandoned sessions and waivers |
-| [Evidence](../../docs/course-launch/evidence.md)         | The requirement map, CATAPULT's suites and the other counterparties and oracles         |
-| [Performance](../../docs/course-launch/performance.md)   | Speed against libxml2, saxes and zip.js, the size of each entry point and the peak memory |
-| [Comparators](../../docs/course-launch/comparators.md)   | The other implementations of cmi5 and how their capabilities map to the package         |
-| [Supported](../../docs/course-launch/supported.md)       | What of cmi5 the package covers, and what it leaves out                                 |
-| [Spec gaps](../../docs/course-launch/spec-gaps.md)       | Where the specification, its schema and CATAPULT differ, and the reading taken          |
+| [Architecture](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/architecture.md) | The modules, their layers, and what the package owns                                    |
+| [Course structure](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/structure.md) | Reading, validating and writing `cmi5.xml`: the rules, options, limits and errors       |
+| [Course package](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/package.md)    | Reading and writing ZIP and XML packages within limits, and what a package may not hold |
+| [Rules of a session](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/rules.md)  | The launch URL, the launch data, the preferences, and the rules of the statements of a session |
+| [Assignable unit](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/au.md)        | The runtime of a unit: its start, its statements, a reload, and what it skips and what the LMS refuses |
+| [LMS](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/lms.md)                   | Registrations, launches, the fetch URL, the rules of cmi5 on the host's LRS, satisfaction, abandoned sessions and waivers |
+| [Evidence](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/evidence.md)         | The requirement map, CATAPULT's suites and the other counterparties and oracles         |
+| [Performance](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/performance.md)   | Speed against libxml2, saxes and zip.js, the size of each entry point and the peak memory |
+| [Comparators](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/comparators.md)   | The other implementations of cmi5 and how their capabilities map to the package         |
+| [Supported](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/supported.md)       | What of cmi5 the package covers, and what it leaves out                                 |
+| [Spec gaps](https://github.com/interopkit/interopkit/blob/main/docs/course-launch/spec-gaps.md)       | Where the specification, its schema and CATAPULT differ, and the reading taken          |
 
-It passes CATAPULT's LMS and content suites at `806c0ba` ([evidence](../../docs/course-launch/evidence.md)). cmi5 is a
-specification of ADL; this package implements it and is not certified or endorsed by ADL.
+## License
+
+[Apache-2.0](LICENSE). Copyright Fariz Wakan. cmi5 is a specification of ADL, the Advanced Distributed Learning Initiative of the United States Department of Defense; xAPI names the standard IEEE 9274.1.1, and IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.; see [NOTICE](NOTICE). This package implements cmi5 and is not certified or endorsed by ADL or IEEE.

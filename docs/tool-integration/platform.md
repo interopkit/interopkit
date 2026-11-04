@@ -427,6 +427,6 @@ package. Where a specification disagrees with an example, see [spec-gaps](spec-g
 
 ## Not included
 
-| What                                                                                         | Reason                                                       |
+| Not included                                                                                 | Why                                                          |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | Sessions, routes beyond the handler, a database, the page that frames the tool, a picker     | The host's                                                   |

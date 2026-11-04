@@ -15,13 +15,26 @@ flowchart BT
   host -.->|"service calls, errors, Clock,<br/>HttpRequest, HttpResponse, Signer"| core
 ```
 
-It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
-environment variable, writes no log, and calls the network only through the `fetch` that the caller passes. Its dependencies are
-[valibot](https://valibot.dev), [oauth4webapi](https://github.com/panva/oauth4webapi) and [jose](https://github.com/panva/jose).
-
 ```bash
 npm install @interopkit/core
 ```
+
+## Quick start
+
+```ts
+import { callService, DEFAULT_TIMEOUT_MS } from "@interopkit/core";
+
+const fetch = async () => new Response('{"keys":[]}');
+const body = await callService(
+  { fetch, timeoutMs: DEFAULT_TIMEOUT_MS },
+  "The key set at https://platform.example/jwks",
+  "https://platform.example/jwks",
+  { method: "GET", headers: { accept: "application/json" } },
+);
+// => '{"keys":[]}'
+```
+
+A call that fails rejects with a `ServiceError` whose `status` is the HTTP status, or 0 when the service did not answer.
 
 ## API
 
@@ -38,20 +51,13 @@ npm install @interopkit/core
 |                           | Formats: `isDate`, `parseDateTime`, `formatDateTime`, `isDateTime`, `isUuid`, `isAbsoluteUri`, `isLanguageTag`, `languageTagSchema`. JSON: `copyJson`, `JsonValue`, `JsonObject`, `JsonValueCopy`, `JsonObjectCopy`, `MAX_JSON_DEPTH`, `MAX_JSON_TOKENS`, `nestsDeeperThan`, `hasMoreTokensThan`, `findExceededJsonLimit`, `parseJsonText`, `JsonTextRefusals`, `endOfJsonString`; `Schema` |
 |                           | Findings: `Finding`, `Issue`, `buildFindings`, `describeRefusal`, `createFindingSink`, `createIssueSink`, `FindingSink`, `safeParseBounded`, `BoundedParse`, `DEFAULT_MAX_FINDINGS` |
 
-```ts
-import { callService, DEFAULT_TIMEOUT_MS } from "@interopkit/core";
+## Supported
 
-const fetch = async () => new Response('{"keys":[]}');
-const body = await callService(
-  { fetch, timeoutMs: DEFAULT_TIMEOUT_MS },
-  "The key set at https://platform.example/jwks",
-  "https://platform.example/jwks",
-  { method: "GET", headers: { accept: "application/json" } },
-);
-// => '{"keys":[]}'
-```
+It runs in Node.js, browsers, Deno, Bun and edge runtimes such as Cloudflare Workers: it uses web standards only, reads no
+environment variable, writes no log, and calls the network only through the `fetch` that the caller passes. Its dependencies are
+[valibot](https://valibot.dev), [oauth4webapi](https://github.com/panva/oauth4webapi) and [jose](https://github.com/panva/jose).
 
-A call that fails rejects with a `ServiceError` whose `status` is the HTTP status, or 0 when the service did not answer.
+## Documentation
 
 Each entry point bundled alone, minified with its dependencies, takes after gzip: `@interopkit/core` 11.7 KB with valibot and jose,
 `/checks` 7.5 KB and `/http` 7.7 KB, each with valibot, and `/oauth` 15.3 KB with oauth4webapi; `test/size.test.ts` holds each to

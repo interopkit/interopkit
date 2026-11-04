@@ -212,7 +212,7 @@ after the end. The host maps the actions to its delivery, such as the pause of a
 
 ## Not included
 
-| What                                                                 | Reason                                                                                |
+| Not included                                                         | Why                                                                                   |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | The checks of the candidate and the room, a live proctor             | The proctoring tool's                                                                 |
 | The attempt, its clock and its delivery; the review of a flag        | The host's: the store maps each action to them                                        |

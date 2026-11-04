@@ -47,9 +47,9 @@ ENTITY_TYPES.length; // => 76
 PROFILES.length; // => 16
 ```
 
-## Not built
+## Not included
 
-| What                                                   | Why                                                                                             |
+| Not included                                           | Why                                                                                             |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | Writing Caliper 1.1, and Caliper 1.0                   | 1.2 supersedes 1.1, and 1EdTech retired 1.0                                                     |
 | Splitting an envelope that is too large                | The host decides how to batch: `maxPayloadBytes` refuses an envelope that is too large          |

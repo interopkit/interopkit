@@ -240,7 +240,7 @@ the client's public keys, which `ClientMetadata` does not carry.
 
 ## Not included
 
-| What                                                                                    | Reason                                                                               |
+| Not included                                                                            | Why                                                                                  |
 | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | OpenID Connect                                                                          | The APIs are OAuth 2.0 APIs; a token response with an `id_token` is a `ServiceError` |
 | Discovery of the server's metadata                                                      | The host knows the endpoints of the API it calls                                     |

@@ -59,7 +59,14 @@ await wait.catch((error) => error.message);
 
 ## Not included
 
-| What                               | Reason                                                               |
+| Not included                       | Why                                                                  |
 | ---------------------------------- | -------------------------------------------------------------------- |
 | Cancelling shared work             | One caller's abort must not fail the others                          |
 | A timeout option on `raceAbort` | A caller composes `AbortSignal.timeout` and `AbortSignal.any` itself |
+
+## Differences from the references
+
+| Reference                                 | Difference                                                                                                                                                                  |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fetch` with a `signal`                   | `fetch` aborts the request it made. `raceAbort` ends only the wait of one caller: the promise runs on and its outcome is dropped, since shared work serves other callers too |
+| `AbortSignal.timeout`, `AbortSignal.any`  | Used by the caller and not wrapped: a caller composes them and passes the result as `signal`                                                                                |

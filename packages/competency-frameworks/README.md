@@ -49,23 +49,7 @@ host passes in. Its dependencies are `@interopkit/core` and [valibot](https://va
 npm install @interopkit/competency-frameworks
 ```
 
-## API
-
-| Subpath                             | Exports                                                                                                                                                                                                                                                   |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/competency-frameworks` | `readPackage`, `readEntity`, `ReadOptions`: read a package or an entity of either version into the model of 1.1, and throw `DataError` on an error                                                                                                        |
-|                                     | `validatePackage`, `validateEntity`: judge a value and return every finding, errors and warnings, as data, each an `Issue` of `@interopkit/core/checks`                                                                                                                                    |
-|                                     | `convertCaseVersion`, `VersionedValue`, `Converted`: a package or an entity in the form of 1.0, and what was left out                                                                                                                                          |
-|                                     | `CasePackage`, `CFPckgDocument`, `CFPckgItem`, `CFPckgAssociation`, `CFDocument`, `CFItem`, `CFAssociation`, `CFDefinition` and the other classes: the model                                                                                              |
-|                                     | `ASSOCIATION_TYPES`, `CASE_VERSIONS`, `ENTITY_KINDS`, `SERVED_KINDS`, `CaseEntityMap`, `STATUS_CODES_MAJOR`, `STATUS_CODES_MINOR`, `STATUS_SEVERITIES`, `CaseVersion`, `CaseEntityKind`, `CaseEntity`, `ImsxStatusInfo` and the types of the vocabularies |
-|                                     | `CaseQuery`, `CaseFilter`, `CaseCondition`, `OpenApiDocument`, `FILTER_PREDICATES`, `SORT_ORDERS`: what the provider and a client of the endpoints share                                                                                                  |
-| `.../client`                        | `createCaseClient`, `CaseClient`, `CaseClientOptions`: a call for each of the twelve endpoints, paging, errors                                                                                                                                             |
-|                                     | `writeCaseFilter`, `SelectedDocument`: the filter of a request                                                                                                                |
-| `.../graph`                         | `buildFrameworkTree`, `listAssociations`, `crosswalk`, `diffPackages`, `isNewer`, `readAdoptionStatus`, `buildEntityUri`: the questions a consumer asks of a package; `ADOPTION_STATUSES` and the types of the answers and options: `FrameworkNode`, `NodeAssociations`, `CrosswalkLink`, `CrosswalkOptions`, `PackageDiff`, `ChangedItem`, `ReplacedItem`, `AdoptionStatus`, `CaseEntityUriOptions` |
-| `.../provider`                      | `handleCaseRequest`, `CaseProviderOptions`: serve the twelve endpoints of the binding, in 1.1 and in 1.0, over a store                                                                                                                  |
-|                                     | `FrameworkStore`, `DocumentPage`: what the provider needs from the host                                                                                                                                                                       |
-|                                     | `parseCaseQuery`, `ParsedCaseQuery`, `QueryRefusal`, `QueryRefusalReason`, `queryEntities`, `QueryEntitiesOptions`: the query grammar, and the filter and sort in memory                                                                                                        |
-|                                     | `localizeOpenApi`, `LocalizeOpenApiOptions`: the OpenAPI file of 1EdTech made into the localized discovery file                                                                                                                                           |
+## Quick start
 
 ```ts
 import { convertCaseVersion, readPackage, validatePackage } from "@interopkit/competency-frameworks";
@@ -105,7 +89,25 @@ validatePackage({ CFDocument: { title: 5 } }).map((finding) => `${finding.path} 
 others. `validatePackage` and `validateEntity` do not throw for a value, and return each finding with its `path`, its `rule`,
 a `message` and its `severity`. A warning does not keep a value from being read.
 
-## What this version includes
+## API
+
+| Subpath                             | Exports                                                                                                                                                                                                                                                   |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@interopkit/competency-frameworks` | `readPackage`, `readEntity`, `ReadOptions`: read a package or an entity of either version into the model of 1.1, and throw `DataError` on an error                                                                                                        |
+|                                     | `validatePackage`, `validateEntity`: judge a value and return every finding, errors and warnings, as data, each an `Issue` of `@interopkit/core/checks`                                                                                                                                    |
+|                                     | `convertCaseVersion`, `VersionedValue`, `Converted`: a package or an entity in the form of 1.0, and what was left out                                                                                                                                          |
+|                                     | `CasePackage`, `CFPckgDocument`, `CFPckgItem`, `CFPckgAssociation`, `CFDocument`, `CFItem`, `CFAssociation`, `CFDefinition` and the other classes: the model                                                                                              |
+|                                     | `ASSOCIATION_TYPES`, `CASE_VERSIONS`, `ENTITY_KINDS`, `SERVED_KINDS`, `CaseEntityMap`, `STATUS_CODES_MAJOR`, `STATUS_CODES_MINOR`, `STATUS_SEVERITIES`, `CaseVersion`, `CaseEntityKind`, `CaseEntity`, `ImsxStatusInfo` and the types of the vocabularies |
+|                                     | `CaseQuery`, `CaseFilter`, `CaseCondition`, `OpenApiDocument`, `FILTER_PREDICATES`, `SORT_ORDERS`: what the provider and a client of the endpoints share                                                                                                  |
+| `.../client`                        | `createCaseClient`, `CaseClient`, `CaseClientOptions`: a call for each of the twelve endpoints, paging, errors                                                                                                                                             |
+|                                     | `writeCaseFilter`, `SelectedDocument`: the filter of a request                                                                                                                |
+| `.../graph`                         | `buildFrameworkTree`, `listAssociations`, `crosswalk`, `diffPackages`, `isNewer`, `readAdoptionStatus`, `buildEntityUri`: the questions a consumer asks of a package; `ADOPTION_STATUSES` and the types of the answers and options: `FrameworkNode`, `NodeAssociations`, `CrosswalkLink`, `CrosswalkOptions`, `PackageDiff`, `ChangedItem`, `ReplacedItem`, `AdoptionStatus`, `CaseEntityUriOptions` |
+| `.../provider`                      | `handleCaseRequest`, `CaseProviderOptions`: serve the twelve endpoints of the binding, in 1.1 and in 1.0, over a store                                                                                                                  |
+|                                     | `FrameworkStore`, `DocumentPage`: what the provider needs from the host                                                                                                                                                                       |
+|                                     | `parseCaseQuery`, `ParsedCaseQuery`, `QueryRefusal`, `QueryRefusalReason`, `queryEntities`, `QueryEntitiesOptions`: the query grammar, and the filter and sort in memory                                                                                                        |
+|                                     | `localizeOpenApi`, `LocalizeOpenApiOptions`: the OpenAPI file of 1EdTech made into the localized discovery file                                                                                                                                           |
+
+## Supported
 
 | Part of CASE                                  | Included                                                                                                                                                                                                 |
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -116,6 +118,10 @@ a `message` and its `severity`. A warning does not keep a value from being read.
 | Hierarchy, associations, change               | The tree from `isChildOf`, the associations of a node, crosswalks between frameworks, the difference between versions, the staleness of a copy, the adoption status                                      |
 | The REST binding, as a consumer               | The twelve endpoints with their set types, paging with `X-Total-Count` and `Link`, sort, filter and field selection, `imsx_StatusInfo`, discovery, TLS only, a credential through a function of the host |
 | The provider                                  | The twelve endpoints in both versions, paging, sorting, filtering, field selection, the status of a failure, service discovery                                                                           |
+
+[Supported](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/supported.md) lists what the package includes and what it leaves out.
+
+## Documentation
 
 [The model guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/model.md),
 [the graph guide](https://github.com/interopkit/interopkit/blob/main/docs/competency-frameworks/graph.md),

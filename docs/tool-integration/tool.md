@@ -60,7 +60,7 @@ and a platform against each other in one process.
 | [LTI 1.3 Migration Guide](https://standards.1edtech.org/lti/guides/migration/migration-guide)                                                                                                                  | The `lti1p1` claim and its `oauth_consumer_key_sign`                  |
 | [RFC 6749](https://www.rfc-editor.org/rfc/rfc6749), [RFC 7515](https://www.rfc-editor.org/rfc/rfc7515), [RFC 7518](https://www.rfc-editor.org/rfc/rfc7518), [RFC 7523](https://www.rfc-editor.org/rfc/rfc7523) | OAuth 2.0, JWS, RS256, the JWT assertion                              |
 
-## Example
+## Quick start
 
 A host builds the registration of each platform, the store of logins and the options. It generates its key in the sample; a real
 host keeps the key that the platform's administrator registered. The routes of the host turn the request of its web framework into
@@ -479,7 +479,7 @@ an example disagree.
 
 ## Not included
 
-| What                                                                                                            | Reason                                                                       |
+| Not included                                                                                                    | Why                                                                          |
 | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | LTI 1.0 to 1.2, Basic Outcomes                                                                                  | 1EdTech retired them; a launch of that form is refused                       |
 | Sessions, routes, a database, a UI for Deep Linking                                                             | The host's                                                                   |

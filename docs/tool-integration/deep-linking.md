@@ -209,7 +209,7 @@ The data is signed and not encrypted: the tool can read it, so it holds no secre
 
 ## Not included
 
-| What                                                                 | Reason                                                                                  |
+| Not included                                                         | Why                                                                                     |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | A picker, the page that frames the tool, the confirmation of items   | The host's                                                                              |
 | Fetching the `url` of a file, sanitizing an `html` item              | The host's: it fetches through its guarded `fetch` and sanitizes with its own policy    |

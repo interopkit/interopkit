@@ -49,7 +49,14 @@ Math.floor(seeded.uniform() * 8); // => 2
 
 ## Not included
 
-| What                   | Reason                                                                                                |
+| Not included           | Why                                                                                                   |
 | ---------------------- | ----------------------------------------------------------------------------------------------------- |
 | A seeded generator     | A test brings its own, as an object of one line, and the library need not choose an algorithm for it |
 | Randomness for secrets | Tokens and identifiers that guard a protocol come from `crypto` inside the package, never from a port |
+
+## Differences from the references
+
+| Reference                                          | Difference                                                                                                                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Math.random()`                                    | Not used in any package: `pnpm lint` fails on it in `packages/*/src`. `SYSTEM_RANDOM` draws 53 bits from `crypto.getRandomValues`                                   |
+| `Random` of `@assesskit/runtime` and `@measurekit/core` | The same shape, `uniform()`, so that a host passes one source to every family. Each family defines its own copy, since packages of different families never import each other |

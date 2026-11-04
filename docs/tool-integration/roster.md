@@ -229,7 +229,7 @@ member carries.
 
 ## Not included
 
-| What                                                              | Reason                                                                                         |
+| Not included                                                      | Why                                                                                            |
 | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | The other endpoints of the AfA PNP Connector and its data model   | A standard of its own; only the endpoint that LTI makes available is here, and the record passes as JSON |
 | The substitution variables of the groups (`CourseGroup.id`)       | The host's, through `substitution`                                                             |

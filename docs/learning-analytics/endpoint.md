@@ -195,7 +195,7 @@ request.
 
 ## Not included
 
-| What                                                                | Why                                                                                                            |
+| Not included                                                        | Why                                                                                                            |
 | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | Writing Caliper 1.1                                                 | The endpoint reads 1.1 and a sensor sends 1.2 only; see [Caliper 1.1](./versions.md)                           |
 | A server, a route, TLS, a store of events, deduplication            | The host's: the handler takes a request and two ports, and Caliper defines no deduplication                    |

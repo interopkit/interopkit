@@ -11,7 +11,7 @@ flowchart LR
   example --> suites["W3C suites: 4 suites, 218 tests<br/>pnpm w3c-suites"]
   example --> validator["Public validator of 1EdTech<br/>in a container<br/>pnpm validator"]
   schemas --> counterparties["Digital Bazaar, the Interop Alliance,<br/>the DCC, did-jwt-vc<br/>pnpm test:corpus"]
-  example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
+  example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat:runtimes"]
 ```
 
 | Layer                 | Question                                                                                          | Where                                                                                           | Runs                |
@@ -22,7 +22,7 @@ flowchart LR
 | Interoperability      | Do the suites of the W3C find the service of the example conformant?                               | `validation/w3c-suites/`                                                                        | `pnpm w3c-suites`   |
 | Validator             | Does the application of 1EdTech take what the example makes, as JSON, JWS, PNG and SVG?            | `validation/1edtech-validator/`, `examples/achievement-credentials/test/validator.corpus.test.ts` | `pnpm validator`    |
 | Counterparties        | Does each side verify what the other signs, and refuse what the other changes?                    | `packages/achievement-credentials/test/counterparties.corpus.test.ts`                           | `pnpm test:corpus`  |
-| Runtimes              | Does the scenario give the same results everywhere?                                               | `compat/`                                                                                       | `pnpm compat`       |
+| Runtimes              | Does the scenario give the same results everywhere?                                               | `compat/`                                                                                       | `pnpm compat:runtimes`       |
 
 ## The example
 
@@ -102,7 +102,7 @@ names, so the test serves the schema that `pnpm schemas` pinned.
 
 ## Runtimes
 
-`pnpm compat` bundles the scenario of the example with the packages as they ship and runs it on each runtime. The results must
+`pnpm compat:runtimes` bundles the scenario of the example with the packages as they ship and runs it on each runtime. The results must
 equal those of Node.js. Node.js, Deno and Bun run a bundle for Node.js; workerd runs a bundle of the build for browsers of the
 Data Integrity libraries, which uses Web Crypto and imports no module of Node.js, without the `nodejs_compat` flag.
 

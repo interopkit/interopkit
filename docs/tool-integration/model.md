@@ -153,7 +153,7 @@ The writer holds a platform to the rules that a receiver does not enforce, and t
 
 ## Not included
 
-| What                                                  | Reason                                                                            |
+| Not included                                          | Why                                                                               |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------- |
 | The role URNs of LTI 1.1 (`urn:lti:role:ims/lis/...`) | The open text of Core Appendix A prints URNs for context types only               |
 | The messages of the Asset Processor family and others | Their text is behind the 1EdTech sign-in; `otherMessageTypes` and `claims` let a host handle them |

@@ -36,15 +36,7 @@ passes the loader of JSON-LD contexts, the signer and the key. Its dependency `@
 npm install @interopkit/selective-disclosure
 ```
 
-## API
-
-| Subpath                            | Exports                                                                                                                  |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `@interopkit/selective-disclosure` | `addBaseProof`, `BaseProofOptions`: the issuer's base proof, which signs every statement that a holder may hide          |
-|                                    | `deriveProof`, `DeriveProofOptions`: the holder's disclosure of the parts they choose, with a derived proof              |
-|                                    | `selectiveDisclosureSuite`, `VerifyProofOptions`: the name of the cryptosuite and `verify`, the check of a derived proof |
-|                                    | `isBaseProof`: whether a proof is a base proof, which a verifier must not receive                                        |
-|                                    | `JsonDocument`: a document or a proof as plain JSON                                                                      |
+## Quick start
 
 ```ts
 import { createCryptoKeySigner } from "@interopkit/core";
@@ -96,7 +88,17 @@ valid; // => true
 A verifier that gets a base proof answers `false` and tells the holder to derive a disclosure first: a base proof holds the key
 of the HMAC and the signature of every statement that the holder hides.
 
-## What this version includes
+## API
+
+| Subpath                            | Exports                                                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `@interopkit/selective-disclosure` | `addBaseProof`, `BaseProofOptions`: the issuer's base proof, which signs every statement that a holder may hide          |
+|                                    | `deriveProof`, `DeriveProofOptions`: the holder's disclosure of the parts they choose, with a derived proof              |
+|                                    | `selectiveDisclosureSuite`, `VerifyProofOptions`: the name of the cryptosuite and `verify`, the check of a derived proof |
+|                                    | `isBaseProof`: whether a proof is a base proof, which a verifier must not receive                                        |
+|                                    | `JsonDocument`: a document or a proof as plain JSON                                                                      |
+
+## Supported
 
 | Part of the Recommendation                                               | Included                                                                                                           |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
@@ -104,9 +106,15 @@ of the HMAC and the signature of every statement that the holder hides.
 | Selective disclosure functions (3.4) and `ecdsa-sd-2023` functions (3.5) | The primitives of Digital Bazaar for 3.4, and this package for 3.5: CBOR proof values, label maps, disclosure data |
 | Test vectors (appendix A.7 and A.8)                                      | Both reproduced byte for byte, base and derived proofs                                                             |
 
+[Supported](https://github.com/interopkit/interopkit/blob/main/docs/selective-disclosure/supported.md) lists what the package includes and what it leaves out.
+
+## Documentation
+
 [The proofs guide](https://github.com/interopkit/interopkit/blob/main/docs/selective-disclosure/proofs.md) has the options with
 their defaults, the limits, the errors and what to do about them, what is not included and why, the privacy of disclosures, and
 the differences from the references.
+
+[Performance](https://github.com/interopkit/interopkit/blob/main/docs/selective-disclosure/performance.md) gives the speed of the three roles against Digital Bazaar's suite and the size of the entry point.
 
 ## License
 

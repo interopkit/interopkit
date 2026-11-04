@@ -112,7 +112,7 @@ reads an answer, bound its bytes and its JSON tokens before they parse it.
 
 ## Not included
 
-| What                                                              | Reason                                                                                         |
+| Not included                                                      | Why                                                                                            |
 | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | The AfA PNP data model                                            | A standard of its own; the record passes as JSON, and a host maps it across families           |
 | JSON schemas of the services as runtime checks                    | The readers are written from the text; the OpenAPI files are compared with them in the tests   |

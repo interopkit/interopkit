@@ -203,7 +203,7 @@ The module is a separate copy of that shape, because packages of different famil
 
 ## Not included
 
-| What                        | Reason                                                                                                     |
+| Not included                | Why                                                                                                        |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Checks that no package uses | A check arrives with the first function that needs it                                                      |
 | A validator of its own      | Valibot reads structures; this module adds the sentences of the messages and the few schemas valibot lacks |

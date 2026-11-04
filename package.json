@@ -48,7 +48,7 @@
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
     "prepare": "node scripts/prepare.ts",
-    "compat": "pnpm build && node compat/check.ts"
+    "compat:runtimes": "pnpm build && node compat/check.ts"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",

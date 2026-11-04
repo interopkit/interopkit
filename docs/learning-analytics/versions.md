@@ -115,7 +115,7 @@ findings. The memory of a 1.1 reading is that of a 1.2 reading.
 
 ## Not included
 
-| What                                                                         | Why                                                                                                         |
+| Not included                                                                 | Why                                                                                                         |
 | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Writing Caliper 1.1                                                          | 1.2 supersedes it, and a sensor that must send 1.1 is an old sensor                                         |
 | Caliper 1.0, and the `@id` and `@type` of its documents                      | 1EdTech retired 1.0                                                                                         |

@@ -62,6 +62,45 @@ or later.
 npm install @interopkit/achievement-credentials
 ```
 
+## Quick start
+
+```ts
+import { readCredential, validateCredential } from "@interopkit/achievement-credentials";
+
+const input = {
+  "@context": ["https://www.w3.org/ns/credentials/v2", "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"],
+  id: "https://example.edu/credentials/3732",
+  type: ["VerifiableCredential", "OpenBadgeCredential"],
+  issuer: { id: "https://example.edu/issuers/565049", type: ["Profile"], name: "Example University" },
+  validFrom: "2024-06-13T18:46:03Z",
+  credentialSubject: {
+    type: ["AchievementSubject"],
+    identifier: [
+      { type: "IdentityObject", hashed: false, identityHash: "learner@example.edu", identityType: "emailAddress" },
+    ],
+    achievement: {
+      id: "https://example.edu/achievements/1",
+      type: ["Achievement"],
+      name: "Introduction to Fractions",
+      description: "Understands fractions as numbers.",
+      criteria: { narrative: "Pass the final assessment." },
+    },
+  },
+  evidence: { type: ["Evidence"], narrative: "A portfolio of worked problems." },
+};
+const credential = readCredential(input, { kind: "AchievementCredential" });
+credential.evidence?.length; // => 1
+Object.is(credential, input); // => false
+
+validateCredential(credential); // => []
+validateCredential({ ...input, validFrom: "2024-06-13", credentialSubject: { type: ["AchievementSubject"] } }).map((finding) => `${finding.severity} ${finding.rule} at ${finding.path}`); // => ["error missing-property at credentialSubject.achievement", "error invalid-format at validFrom"]
+```
+
+`readCredential` and `readEntity` return the model, or throw a `DataError` that names the path of the first error and counts
+the others. `validateCredential` and `validateEntity` do not throw for a value, and return each finding with its `path`, its
+`rule`, a `message` and its `severity`. A warning does not keep a value from being read. The result is the data model: a list
+that the compacted form of JSON-LD writes as its only member is a list in it.
+
 ## API
 
 | Subpath                               | Exports                                                                                                                                                                                                            |
@@ -102,44 +141,7 @@ npm install @interopkit/achievement-credentials
 | `@interopkit/achievement-credentials/provider` | `handleCredentialsRequest`, `CredentialsProviderOptions`: answer the Open Badges API or the CLR Standard API as the resource server, over a `CredentialStore`, a `ProfileStore` and the host's `authorize` |
 |                                       | `CredentialStore`, `CredentialsPage`, `CredentialList`, `ReceivedCredential`, `UpsertOutcome`, `ProfileStore`, `CredentialsAccess`: what the provider needs from the host |
 
-```ts
-import { readCredential, validateCredential } from "@interopkit/achievement-credentials";
-
-const input = {
-  "@context": ["https://www.w3.org/ns/credentials/v2", "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"],
-  id: "https://example.edu/credentials/3732",
-  type: ["VerifiableCredential", "OpenBadgeCredential"],
-  issuer: { id: "https://example.edu/issuers/565049", type: ["Profile"], name: "Example University" },
-  validFrom: "2024-06-13T18:46:03Z",
-  credentialSubject: {
-    type: ["AchievementSubject"],
-    identifier: [
-      { type: "IdentityObject", hashed: false, identityHash: "learner@example.edu", identityType: "emailAddress" },
-    ],
-    achievement: {
-      id: "https://example.edu/achievements/1",
-      type: ["Achievement"],
-      name: "Introduction to Fractions",
-      description: "Understands fractions as numbers.",
-      criteria: { narrative: "Pass the final assessment." },
-    },
-  },
-  evidence: { type: ["Evidence"], narrative: "A portfolio of worked problems." },
-};
-const credential = readCredential(input, { kind: "AchievementCredential" });
-credential.evidence?.length; // => 1
-Object.is(credential, input); // => false
-
-validateCredential(credential); // => []
-validateCredential({ ...input, validFrom: "2024-06-13", credentialSubject: { type: ["AchievementSubject"] } }).map((finding) => `${finding.severity} ${finding.rule} at ${finding.path}`); // => ["error missing-property at credentialSubject.achievement", "error invalid-format at validFrom"]
-```
-
-`readCredential` and `readEntity` return the model, or throw a `DataError` that names the path of the first error and counts
-the others. `validateCredential` and `validateEntity` do not throw for a value, and return each finding with its `path`, its
-`rule`, a `message` and its `severity`. A warning does not keep a value from being read. The result is the data model: a list
-that the compacted form of JSON-LD writes as its only member is a list in it.
-
-## What this version includes
+## Supported
 
 | Part of Open Badges and CLR           | Included                                                                                                                                               |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -155,6 +157,10 @@ that the compacted form of JSON-LD writes as its only member is a list in it.
 | API provider                          | The five operations of both APIs as the resource server: scopes, paging headers, JSON and compact JWS, created, replaced and unchanged, verification before storing |
 | Open Badges 2.0                       | An assertion with its BadgeClass and issuer, embedded or as a `BadgeAssertionV2`; the aliases of its context; its rules; `sha256$` and `md5$` recipients; summaries; baked images; hosted and signed verification with the issuer's policy, keys and revocation list |
 
+[Supported](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/supported.md) lists what the package includes and what it leaves out.
+
+## Documentation
+
 [The model guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/model.md) and
 [the builders guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/issue.md) and
 [the baking guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/baking.md) and
@@ -166,6 +172,10 @@ why, and the differences from the references.
 
 [The comparators](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/comparators.md) map what the
 validator of 1EdTech and other verifiers of verifiable credentials do against the package.
+
+[The evidence guide](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/evidence.md) shows what the package was checked against.
+[Performance](https://github.com/interopkit/interopkit/blob/main/docs/achievement-credentials/performance.md) gives the speed of every hot path, the size of each entry point and the peak
+memory of each reader.
 
 ## License
 

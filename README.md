@@ -44,6 +44,8 @@ flowchart LR
   analytics -->|"events"| endpoint
 ```
 
+## Which package
+
 | Package                                                                             | What it is                                                                                                                                                                |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`@interopkit/core`](packages/core/README.md)                                       | The errors, the checks of arguments, the clock and the service call that the other packages share                                                                         |
@@ -63,6 +65,21 @@ of `learning-analytics` does the same for events. interopkit implements these sp
 
 A host that delivers QTI tests with assesskit connects the two in its own code, through the ports that the player defines.
 interopkit imports nothing from assesskit or measurekit, and they import nothing from it.
+
+## Documentation
+
+Each package has a folder `docs/<package>/`, and its README is its page on npm.
+
+| Page of `docs/<package>/`                | Holds                                                                                                                              |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| One guide for each module                | A diagram, a quick start that runs, the options with their defaults, the limits, the errors, what is not included and why, and the differences from the references |
+| `supported.md`, `comparators.md`         | What of the standard the package covers and what it leaves out, and what other implementations do against it                       |
+| `spec-gaps.md`                           | Where the specifications contradict themselves or are silent, with the reading taken                                               |
+| `evidence.md`                            | What shows that the package does what it says: the oracles, the suites and the counterparties, with their counts                    |
+| `performance.md`                         | The speed of each hot path against its reference, the size of each entry point and the peak memory of each reader                   |
+
+[AGENTS.md](AGENTS.md) states the conventions, [CONTRIBUTING.md](CONTRIBUTING.md) the process and
+[SECURITY.md](SECURITY.md) how to report a vulnerability and how to deploy safely.
 
 ## Development
 
@@ -86,7 +103,7 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `pnpm check:tarballs`  | Packs the packages, installs them into a scratch project, imports every subpath in Node.js and type-checks them with `bundler` and `node16` resolution |
 | `pnpm check:licenses`  | Every production dependency has an allowed license                                                                                                                    |
 | `pnpm check:audit`     | `pnpm audit` of the production dependencies at any severity, and of all of them at high severity or above                                                                                                            |
-| `pnpm compat`          | Runs the scenarios of the five examples, built as the packages ship, on Node.js, Deno, Bun and workerd; it needs Deno and Bun installed ([compat](compat/README.md)) |
+| `pnpm compat:runtimes` | Runs the scenarios of the five examples, built as the packages ship, on Node.js, Deno, Bun and workerd; it needs Deno and Bun installed ([compat](compat/README.md)) |
 | `pnpm bench`           | Times reading and walking a framework of 10,000 items, checking 1,000 Statements, reading an envelope of 1,000 Caliper events, verifying a credential, and the launch, the authorization and the pages of the services of LTI against budgets ([CASE](docs/competency-frameworks/performance.md), [xAPI](docs/learning-records/performance.md), [Caliper](docs/learning-analytics/performance.md), [credentials](docs/achievement-credentials/performance.md), [LTI](docs/tool-integration/performance.md))                                  |
 | `pnpm opensalt`        | Starts OpenSALT in containers and runs the CASE client and provider of the example against it ([validation/opensalt](validation/opensalt/README.md))                  |
 | `pnpm adl-lrs`         | Runs the ADL conformance suites of xAPI 2.0 and 1.0.3 against the example LRS ([validation/adl-lrs](validation/adl-lrs/README.md))                               |
@@ -100,9 +117,6 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `pnpm schemas`         | Downloads the pinned specification files that tests read                                                                                                              |
 | `pnpm spec-examples`   | Downloads the JSON examples of the specifications at pinned hashes; `pnpm test:spec` runs the tests that read them                                                    |
 
-[AGENTS.md](AGENTS.md) states the conventions, [CONTRIBUTING.md](CONTRIBUTING.md) the process and
-[SECURITY.md](SECURITY.md) how to report a vulnerability and how to deploy safely.
-
 ## Layout
 
 | Folder                                                                                                                                                           | Holds                                                                                            |
@@ -115,9 +129,7 @@ Node.js 22.18+ and pnpm 12 are required. One command sets the repository up: `pn
 | `packages/achievement-credentials/`                                                                                                                              | Open Badges 3.0 and CLR 2.0                                                                      |
 | `packages/selective-disclosure/`                                                                                                                                 | `ecdsa-sd-2023`: base proof, derived proof, verification                                         |
 | `packages/course-launch/`                                                                                                                                        | cmi5: course structure, course packages                                                          |
-| `docs/core/`, `docs/tool-integration/`, `docs/learning-analytics/`, `docs/competency-frameworks/`, `docs/achievement-credentials/`, `docs/selective-disclosure/` | Guides of each package                                                                           |
-| `docs/learning-records/`                                                                                                                                         | Guides of learning-records                                                                       |
-| `docs/course-launch/`                                                                                                                                            | Guides of course-launch                                                                          |
+| `docs/<package>/`                                                                                                                                                | Guides, supported features, evidence and performance of each package                             |
 | `examples/`                                                                                                                                                      | Runnable examples, each a package of its own, run by a test                                      |
 | `compat/`                                                                                                                                                        | The scenarios of the examples on each runtime                                                    |
 | `scripts/`                                                                                                                                                       | The standards check, the mutation check of the security rules, and the downloads of pinned files |

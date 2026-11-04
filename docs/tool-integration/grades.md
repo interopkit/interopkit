@@ -236,7 +236,7 @@ A store that answers with something other than its contract (a line item that is
 
 ## Not included
 
-| What                                                       | Reason                                                                                   |
+| Not included                                               | Why                                                                                      |
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Automatic retries of a service call                        | The host decides; `Retry-After` is in the `ServiceError`                                 |
 | The ordering of scores at the platform                     | The store's: `keepScore` compares the timestamps in its own transaction                 |

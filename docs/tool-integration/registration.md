@@ -221,7 +221,7 @@ administrator escape them, and fetch a logo, if at all, through the host's guard
 
 ## Not included
 
-| What                                                             | Reason                                                                      |
+| Not included                                                     | Why                                                                         |
 | ---------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | The review screen, the activation and the deployments            | The host's: the store keeps the registrations, `buildToolRegistration` makes the record |
 | A `registration_access_token` issued by the platform role        | Section 4.2 lets a tool use an access token of the token endpoint, which the platform checks against the registration on every call |

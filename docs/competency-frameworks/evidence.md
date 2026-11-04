@@ -9,7 +9,7 @@ flowchart LR
   schemas["Official schemas and<br/>OpenAPI file of CASE<br/>pnpm schemas"] --> frameworks["Real frameworks of<br/>public providers<br/>pinned by hash"]
   frameworks --> example["Example provider<br/>and consumer<br/>every endpoint, every property"]
   example --> opensalt["OpenSALT in containers<br/>import, read, synchronize<br/>pnpm opensalt"]
-  example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat"]
+  example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat:runtimes"]
 ```
 
 | Layer             | Question                                                                       | Where                                                                          | Runs                           |
@@ -19,7 +19,7 @@ flowchart LR
 | Example provider  | Does a host serve all twelve endpoints and every property, in both versions?   | `examples/competency-frameworks/test/conformance.corpus.test.ts`               | `pnpm test:corpus`             |
 | Example consumer  | Does a consumer keep fresh copies, outline, align and diff with the graph?     | `examples/competency-frameworks/test/*.test.ts`                                | `pnpm test`                    |
 | Counterparty      | Does another implementation take in what the provider serves, and vice versa? | `examples/competency-frameworks/test/opensalt.corpus.test.ts`                  | `pnpm opensalt`                |
-| Runtimes          | Does the scenario give the same results everywhere?                            | `compat/`                                                                      | `pnpm compat`                  |
+| Runtimes          | Does the scenario give the same results everywhere?                            | `compat/`                                                                      | `pnpm compat:runtimes`                  |
 
 ## Real frameworks
 
@@ -101,7 +101,7 @@ the file instead, as the editor does.
 
 ## Runtimes
 
-`pnpm compat` bundles the scenario of the example with the packages as they ship and runs the one file on each runtime. The
+`pnpm compat:runtimes` bundles the scenario of the example with the packages as they ship and runs the one file on each runtime. The
 results must equal those of Node.js.
 
 | Runtime | Version it was run with       | Result |
