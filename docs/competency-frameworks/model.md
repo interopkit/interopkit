@@ -112,7 +112,7 @@ departs from what the specification or its guide asks for. Where a user can act,
 | `unknown-property`            | error    | An object has a property that the class does not have in this version. One is reported for each object                            |
 | `wrong-type`                  | error    | A value is not of the JSON type of the property: a string, a number, an integer, an array or an object                            |
 | `invalid-format`              | error    | A string is not an identifier, a date, a date and time or a URI, in the form of the version                                       |
-| `invalid-value`               | error    | A value is not in the vocabulary of its property, or an `extensions` holds what JSON cannot or nests too deep                     |
+| `invalid-value`               | error    | A value is not in the vocabulary of its property, an `extensions` holds what JSON cannot or nests too deep, or a member is named `__proto__`, `constructor` or `prototype` |
 | `too-few-entries`             | error    | A set has no member                                                                                                               |
 | `duplicate-identifier`        | error    | Two entities of a package, or of a set or a rubric, have the same identifier, compared as UUIDs                                   |
 | `child-of-cycle`              | error    | The `isChildOf` associations loop. The association that closes the loop is named, and the message names five nodes of the loop at most |
@@ -153,7 +153,8 @@ A package without `caseVersion` is read as it is: the Information Model makes it
 `extensions` is an object whose members the specification does not define, and a consumer ignores what it does not know. In
 the level of a rubric criterion it is a list of objects, as the schema has it. The reader copies the value, and the value must
 be JSON: a function, `undefined`, a number that JSON cannot write or an object that is not plain (a `Date`, a `Map`) is an
-`invalid-value`. A member named `__proto__` stays a member of the copy and never changes its prototype.
+`invalid-value`, and so is a member named `__proto__`, `constructor` or `prototype` at any depth, whose name is of the prototype
+chain.
 
 ### Converting to 1.0
 

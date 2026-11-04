@@ -7,7 +7,7 @@ import {
   type PropertyRow,
   readCaliperTables,
 } from "../../../scripts/caliper-tables.js";
-import { schemaArbitrary } from "../../../scripts/schema-arbitrary.js";
+import { memberJson, memberName, schemaArbitrary } from "../../../scripts/schema-arbitrary.js";
 import { readSchemaSet, type SchemaSet, schemaSetValidator } from "../../../scripts/schema-oracle.js";
 import { CALIPER_1_1_CONTEXT, CALIPER_CONTEXT, type CaliperVersion, LIBRARY_PROFILE_CONTEXT } from "../src/index.js";
 
@@ -235,7 +235,7 @@ function createOracle(
         properties: {
           id: identifier,
           "@context": fc.constant(context),
-          extensions: fc.dictionary(fc.string({ minLength: 1, maxLength: 6 }), fc.jsonValue({ maxDepth: 2 }), {
+          extensions: fc.dictionary(memberName(fc.string({ minLength: 1, maxLength: 6 })), memberJson(2), {
             maxKeys: 2,
           }),
         },

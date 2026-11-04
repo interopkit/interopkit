@@ -613,6 +613,18 @@ describe("the ports", () => {
     }
   });
 
+  it.each(["__proto__", "constructor", "prototype"])(
+    "answers 422 for a credential with a property named %s, and stores nothing",
+    async (name) => {
+      const hostile = { ...achievementCredential(), ...JSON.parse(`{"${name}":{"admin":true}}`) };
+      const { options, held } = serving();
+      const received = await handle(options, "POST", `${OB}/credentials`, { body: json(hostile), type: JSON_TYPE });
+      expect(received.status).toBe(422);
+      expect(readEntity("imsx_StatusInfo", jsonOf(received)).imsx_description).toContain(`${name} is refused`);
+      expect(held.credentials.size).toBe(0);
+    },
+  );
+
   it("passes its signal to every port, and rejects with its reason when it aborts while a port hangs", async () => {
     const controller = new AbortController();
     const asked: Asked[] = [];

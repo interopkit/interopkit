@@ -75,7 +75,7 @@ camelCase.
 | `platform`                                | `tool_platform`                                | `guid` required; `contactEmail`, `description`, `name`, `url`, `productFamilyCode`, `version`         |
 | `presentation`                            | `launch_presentation`                          | `documentTarget` (`frame`, `iframe` or `window`), `height`, `width`, `returnUrl` (https), `locale`    |
 | `lis`                                     | `lis`                                          | Strings by name; a `null` is absent                                                                   |
-| `custom`                                  | `custom`                                       | A `Map`, so that a name such as `__proto__` stays data                                                |
+| `custom`                                  | `custom`                                       | A `Map` of strings by name                                                                            |
 | `services`                                | The claims of the services                     | `grades` (AGS), `roster` (NRPS), `groups` (Context Groups), `preferences` (AfA PNP connector)         |
 | `migration`                               | `lti1p1`                                       | The LTI 1.1 identifiers; `verified` is true only when the signature matched the host's LTI 1.1 secret |
 | `claims`                                  | Every claim                                    | The verified token as JSON, vendor claims among them (Core 5.4.7)                                     |

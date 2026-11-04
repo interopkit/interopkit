@@ -95,13 +95,13 @@ function keysAre<TMap extends Readonly<Record<string, unknown>>>(valid: (key: st
   });
 }
 
-/** The map of other properties, whose keys are IRIs (4.2.7). A key such as `__proto__` is data here, and is not an IRI. */
+/** The map of other properties, whose keys are IRIs (4.2.7). */
 const extensions = v.pipe(
   jsonObjectSchema,
   keysAre<JsonObject>(isAbsoluteUri, "an IRI as the key, such as https://example.org/x"),
 );
 
-/** The map from a language tag to a string (4.2.7). A key such as `__proto__` is data here, and is not a language tag. */
+/** The map from a language tag to a string (4.2.7). */
 export const languageMapSchema: Schema<LanguageMap> = v.pipe(
   mapSchema(text),
   v.transform((entries): LanguageMap => Object.fromEntries(entries)),

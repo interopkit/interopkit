@@ -194,6 +194,21 @@ describe("reading the launch data", () => {
   ])("refuses %j", (value, sentence) => {
     expect(() => readLaunchData(JSON.parse(JSON.stringify(value)))).toThrow(sentence);
   });
+
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses a member named %s, of the document and of its context template",
+    (name) => {
+      const member = `"${name}":{"admin":true}`;
+      const head = '"launchMode":"Normal","moveOn":"Passed"';
+      expect(() => readLaunchData(JSON.parse(`{${head},"contextTemplate":{},${member}}`))).toThrow(
+        `The launch data is invalid at ${name}: the property "${name}" is refused`,
+      );
+      expect(() => readLaunchData(JSON.parse(`{${head},"contextTemplate":{"extensions":{"a":{${member}}}}}`))).toThrow(
+        `extensions.a.${name} is refused`,
+      );
+      expect(({} as Record<string, unknown>).admin).toBeUndefined();
+    },
+  );
 });
 
 describe("the preferences of a learner", () => {
@@ -216,6 +231,12 @@ describe("the preferences of a learner", () => {
     [{ audioPreference: "loud" }, "The preferences document is invalid at audioPreference"],
   ])("refuses %j", (value, sentence) => {
     expect(() => readLearnerPreferences(JSON.parse(JSON.stringify(value)))).toThrow(sentence);
+  });
+
+  it.each(["__proto__", "constructor", "prototype"])("refuses a member named %s", (name) => {
+    expect(() => readLearnerPreferences(JSON.parse(`{"audioPreference":"on","${name}":"off"}`))).toThrow(
+      `The preferences document is invalid at ${name}: the property "${name}" is refused`,
+    );
   });
 
   it("writes both properties, which the reader takes back", () => {

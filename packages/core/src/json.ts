@@ -63,6 +63,26 @@ function describeNonJson(value: unknown): string {
   return `${typeof value === "object" ? "an object that is not plain" : `a ${typeof value}`}, which JSON cannot hold`;
 }
 
+/**
+ * The names of the members that a value which a package reads may not have, since they name the prototype chain: the objects
+ * and records of a schema library drop them unseen, and an assignment of `__proto__` sets a prototype.
+ */
+const PROTOTYPE_NAMES: readonly string[] = ["__proto__", "constructor", "prototype"];
+
+/**
+ * Lists the own properties of an object named `__proto__`, `constructor` or `prototype`, in that order.
+ *
+ * @remarks
+ * Three lookups of an own property, whatever the size of the object: nothing is walked.
+ */
+export function listPrototypeNames(value: object): string[] {
+  return PROTOTYPE_NAMES.filter((name) => Object.hasOwn(value, name));
+}
+
+/** The end of the sentence that refuses a member named `__proto__`, `constructor` or `prototype`, after its place. */
+export const PROTOTYPE_NAME_REFUSAL =
+  "is refused, since __proto__, constructor and prototype are names of the prototype chain, which a reader would drop or misread";
+
 /** Tells whether an object is plain: made by an object literal, `JSON.parse` or `Object.create(null)`. */
 function isPlainObject(value: object): boolean {
   const prototype = Object.getPrototypeOf(value);
@@ -87,6 +107,12 @@ class Fault {
 /** Copies the members of a plain object at the given depth, or finds what in it is not JSON. */
 function copyObject(value: object, depth: number): JsonObject | Fault {
   if (!isPlainObject(value)) return new Fault(`is ${describeNonJson(value)}`);
+  const [reserved] = listPrototypeNames(value);
+  if (reserved !== undefined) {
+    const fault = new Fault(PROTOTYPE_NAME_REFUSAL);
+    fault.steps.push(reserved);
+    return fault;
+  }
   const members: [string, JsonValue][] = [];
   for (const [name, member] of Object.entries(value)) {
     const copied = copy(member, depth + 1);
@@ -96,7 +122,6 @@ function copyObject(value: object, depth: number): JsonObject | Fault {
     }
     members.push([name, copied]);
   }
-  // `Object.fromEntries` defines each member, so that a member named `__proto__` stays a member and not a prototype.
   return Object.fromEntries(members);
 }
 
@@ -137,9 +162,9 @@ function placeOfFault(path: string, fault: Fault): string {
  *
  * @remarks
  * Anything that a text of JSON cannot hold is refused: a function, a symbol, a bigint, `undefined`, a number that is not
- * finite, and an object that is not plain, such as a `Date` or a `Map`. A member named `__proto__` stays a member of the
- * copy and never changes its prototype. The value nests at most `MAX_JSON_DEPTH` levels, so a hostile depth cannot exhaust
- * the stack of the host.
+ * finite, and an object that is not plain, such as a `Date` or a `Map`. A member named `__proto__`, `constructor` or `prototype`
+ * is refused at any depth, at the cost of three lookups for each object. The value nests at most `MAX_JSON_DEPTH` levels, so a
+ * hostile depth cannot exhaust the stack of the host.
  *
  * @param value - The value.
  * @param path - Names the value in the sentence that says where it is not JSON, such as `CFItems[0].language`. The empty

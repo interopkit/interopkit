@@ -431,12 +431,18 @@ export const CORE_RULES: readonly Rule[] = [
     test: "packages/core/test/json.test.ts",
   },
   {
-    rule: "A member named __proto__ stays a member of a copy of JSON and never changes its prototype.",
+    rule: "A copy of JSON refuses a member named __proto__, constructor or prototype, at any depth.",
     file: "packages/core/src/json.ts",
-    find: "return Object.fromEntries(members);",
-    replace:
-      "return members.reduce<Record<string, JsonValue>>((object, [name, item]) => { object[name] = item; return object; }, {});",
+    find: "if (reserved !== undefined) {",
+    replace: "if (false) {",
     test: "packages/core/test/json.test.ts",
+  },
+  {
+    rule: "Every record refuses a property named __proto__, constructor or prototype, with an issue at it.",
+    file: "packages/core/src/checks.ts",
+    find: "const names = listPrototypeNames(dataset.value);",
+    replace: "const names: string[] = [];",
+    test: "packages/core/test/checks.test.ts",
   },
   {
     rule: "A URI with a scheme is one that URL parses.",

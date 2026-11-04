@@ -162,6 +162,19 @@ describe("the input", () => {
     expect(detailOf(result, "format")).toContain("is not JSON");
   });
 
+  it.each(["__proto__", "constructor", "prototype"])(
+    "is refused when an object has a property named %s, which fails the format check",
+    async (name) => {
+      const credentialSubject = Object.assign(
+        JSON.parse(`{"${name}":{"a":1}}`),
+        achievementCredential().credentialSubject,
+      );
+      const result = await verifyCredential({ ...achievementCredential(), credentialSubject }, world().options);
+      expect(outcomes(result)).toMatchObject({ format: "failed" });
+      expect(detailOf(result, "format")).toContain(`credentialSubject.${name} is refused`);
+    },
+  );
+
   it("is refused for a JWS whose payload has more tokens than it may, without parsing it", async () => {
     const { options } = world();
     const jws = await signCompactJws({ typ: "JWT", kid: METHOD }, encoder.encode(HOSTILE), signerOf(KEYS.es256));

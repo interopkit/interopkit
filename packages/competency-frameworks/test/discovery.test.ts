@@ -115,12 +115,9 @@ describe("localizeOpenApi", () => {
     );
   });
 
-  it("keeps a member named __proto__ as a member and never as a prototype", () => {
-    const document: OpenApiDocument = { ...DISCOVERY, components: JSON.parse('{"__proto__":{"polluted":true}}') };
-    const localized = localizeOpenApi(document, { serverUrl: SERVER });
-    const components = localized.components as object;
-    expect(Object.getPrototypeOf(components)).toBe(Object.prototype);
-    expect(Object.keys(components)).toStrictEqual(["__proto__"]);
+  it.each(["__proto__", "constructor", "prototype"])("refuses a member named %s, and changes no prototype", (name) => {
+    const document: OpenApiDocument = { ...DISCOVERY, components: JSON.parse(`{"${name}":{"polluted":true}}`) };
+    expect(() => localizeOpenApi(document, { serverUrl: SERVER })).toThrow(`components.${name} is refused`);
     expect(({} as { polluted?: boolean }).polluted).toBeUndefined();
   });
 });

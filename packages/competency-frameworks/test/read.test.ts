@@ -454,6 +454,19 @@ describe("validatePackage", () => {
       });
     });
 
+    it.each(["__proto__", "constructor", "prototype"])(
+      "refuse a member named %s at any depth, and say where",
+      (name) => {
+        expect(summary(withExtensions(JSON.parse(`{"${name}":{"admin":true}}`)))).toStrictEqual([
+          { path: `extensions.${name}`, rule: "invalid-value", severity: "error" },
+        ]);
+        const [nested] = withExtensions(JSON.parse(`{"list":[{"${name}":1}]}`));
+        expect(nested).toMatchObject({ path: "extensions", rule: "invalid-value" });
+        expect(nested?.message).toContain(`list[0].${name} is refused`);
+        expect(({} as Record<string, unknown>).admin).toBeUndefined();
+      },
+    );
+
     it("are a list of objects in the level of a rubric criterion, as the schema has it", () => {
       const pkg: Record<string, any> = copyOf(fullPackage());
       const levelPath = ["CFRubrics", 0, "CFRubricCriteria", 0, "CFRubricCriterionLevels", 0];

@@ -274,7 +274,7 @@ export type MessageInput =
 
 const TEXT = v.optional(v.string());
 
-/** An object of strings whose property names are data, such as `__proto__`, read into a record that holds them as its own. */
+/** An object of strings whose property names are data, read into a record. */
 const STRING_MAP = v.pipe(
   mapSchema(v.string()),
   v.transform((map): Readonly<Record<string, string>> => Object.fromEntries(map)),

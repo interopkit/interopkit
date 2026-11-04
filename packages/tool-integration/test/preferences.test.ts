@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { readPreferencesQuery, readPreferencesRecord, writePreferencesQuery } from "../src/protocol/internal.js";
 import { FUZZ, fuzzJson } from "./fuzz.js";
-import { expectRefusesOtherTypes, plainJson } from "./services.js";
+import { expectRefusesOtherTypes, memberName, plainJson } from "./services.js";
 
 describe("the preferences record", () => {
   it("is a JSON object that passes through as a copy, and nothing else", () => {
@@ -17,7 +17,7 @@ describe("the preferences record", () => {
 
   it("keeps any JSON object as it is", () => {
     fc.assert(
-      fc.property(fc.dictionary(fc.string(), plainJson), (record) => {
+      fc.property(fc.dictionary(memberName(fc.string()), plainJson), (record) => {
         expect(readPreferencesRecord(JSON.parse(JSON.stringify(record)))).toEqual(record);
       }),
       FUZZ,

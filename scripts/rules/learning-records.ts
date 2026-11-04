@@ -60,13 +60,6 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
     test: "packages/learning-records/test/rules.test.ts",
   },
   {
-    rule: "A language map keeps a key named __proto__ as a key, and never changes its prototype.",
-    file: "packages/learning-records/src/read/schemas.ts",
-    find: "Object.fromEntries(entries)",
-    replace: "Object.assign({}, Object.fromEntries(entries))",
-    test: "packages/learning-records/test/read.test.ts",
-  },
-  {
     rule: "A single Activity of a context is returned as a list of one.",
     file: "packages/learning-records/src/read/schemas.ts",
     find: "v.transform((value): readonly T[] => [value]),",

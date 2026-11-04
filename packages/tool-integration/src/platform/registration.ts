@@ -1,6 +1,14 @@
 import type { CallOptions } from "@interopkit/core";
 import { DataError } from "@interopkit/core";
-import { describe, httpsUrlSchema, isRecord, nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
+import {
+  describe,
+  httpsUrlSchema,
+  isRecord,
+  looseRecord,
+  mapSchema,
+  nonEmptyStringSchema,
+  parseWith,
+} from "@interopkit/core/checks";
 import { errors, type JWTVerifyGetKey } from "jose";
 import * as v from "valibot";
 import { APPROVED_ALGORITHMS, type JwsAlgorithm } from "../protocol/index.js";
@@ -55,7 +63,7 @@ const keysSchema = v.custom<ReadonlyMap<string, CryptoKey>>(
 );
 
 const registrationSchema = v.pipe(
-  v.looseObject({
+  looseRecord({
     clientId: nonEmptyStringSchema,
     deploymentIds: v.pipe(v.array(IDENTIFIER), v.minLength(1)),
     loginUrl: httpsUrlSchema,
@@ -64,7 +72,7 @@ const registrationSchema = v.pipe(
     keys: v.optional(keysSchema),
     scopes: v.array(nonEmptyStringSchema),
     algorithms: v.optional(v.pipe(v.array(v.picklist(APPROVED_ALGORITHMS)), v.minLength(1))),
-    custom: v.optional(v.record(v.string(), v.string())),
+    custom: v.optional(mapSchema(v.string())),
     allow: v.optional(v.string()),
   }),
   v.check(
@@ -77,8 +85,8 @@ const registrationSchema = v.pipe(
  * Checks a registration that the host's lookup returned.
  *
  * @throws `DataError` when it is not a registration: a field is missing or of the wrong type, a URL is not `https`, a deployment
- * is not 1 to 255 characters, an algorithm is not approved, a key is not a public key of an approved algorithm, or the tool has
- * both or neither of `jwksUrl` and `keys`.
+ * is not 1 to 255 characters, an algorithm is not approved, a key is not a public key of an approved algorithm, the tool has
+ * both or neither of `jwksUrl` and `keys`, or it or its `custom` has a property named `__proto__`, `constructor` or `prototype`.
  */
 export function checkToolRegistration(value: unknown): asserts value is ToolRegistration {
   parseWith(registrationSchema, value, "The registration of the tool");

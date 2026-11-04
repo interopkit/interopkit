@@ -21,6 +21,7 @@ import {
   writeToolMessage,
 } from "../src/protocol/internal.js";
 import { FUZZ } from "./fuzz.js";
+import { memberName } from "./services.js";
 
 const CORE = "https://purl.imsglobal.org/spec/lti/claim/";
 const ISSUER = "https://lms.example.edu";
@@ -447,10 +448,8 @@ const common = fc.record({
       locale: some(text),
     }),
   ),
-  lis: some(fc.dictionary(text, text, { maxKeys: 3 })),
-  custom: fc
-    .dictionary(fc.oneof(text, fc.constant("__proto__")), text, { maxKeys: 3 })
-    .map((entries) => new Map(Object.entries(entries))),
+  lis: some(fc.dictionary(memberName(text), text, { maxKeys: 3 })),
+  custom: fc.dictionary(memberName(text), text, { maxKeys: 3 }).map((entries) => new Map(Object.entries(entries))),
   services: fc.record({
     grades: some(fc.record({ scopes: fc.array(text, { maxLength: 3 }), lineitems: some(url), lineitem: some(url) })),
     roster: some(fc.record({ contextMembershipsUrl: url, serviceVersions: some(fc.array(text, { maxLength: 2 })) })),

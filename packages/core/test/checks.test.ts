@@ -3,6 +3,7 @@ import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import {
   buildFindings,
+  buildIssues,
   checkAbortSignal,
   checkArray,
   checkBaseUrl,
@@ -641,10 +642,62 @@ describe("openRecord", () => {
     ]);
   });
 
-  it("does not carry a property named __proto__ and leaves the prototype of the result alone", () => {
-    const result = v.safeParse(schema, JSON.parse('{"id":"a","__proto__":{"x":1},"constructor":2}')).output;
-    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
-    expect(result).toStrictEqual({ id: "a" });
+  it("refuses a property named __proto__ inside a property it does not know, and says where", () => {
+    const issues = v.safeParse(schema, JSON.parse('{"id":"a","extra":{"list":[{"__proto__":{"x":1}}]}}')).issues ?? [];
+    expect(buildIssues(issues)).toStrictEqual([
+      {
+        path: "extra",
+        rule: "invalid-value",
+        message: `extra.list[0].__proto__ ${REFUSED}.`,
+        severity: "error",
+      },
+    ]);
+  });
+});
+
+/** The end of the sentence that refuses a property named `__proto__`, `constructor` or `prototype`. */
+const REFUSED =
+  "is refused, since __proto__, constructor and prototype are names of the prototype chain, which a reader would drop or misread";
+
+describe("a property named __proto__, constructor or prototype", () => {
+  const schemas = [
+    ["looseRecord", looseRecord({ id: v.string() })],
+    ["strictRecord", strictRecord({ id: v.string() })],
+    ["openRecord", openRecord({ id: v.string() })],
+    ["jsonObjectSchema", jsonObjectSchema],
+    ["mapSchema", mapSchema(v.string())],
+  ] as const;
+  const cases = schemas.flatMap(([label, schema]) =>
+    ["__proto__", "constructor", "prototype"].map((name) => [label, name, schema] as const),
+  );
+
+  it.each(cases)("is refused by %s as %s, with an issue at it", (_, name, schema) => {
+    const input: unknown = JSON.parse(`{"id":"a","${name}":{"polluted":true}}`);
+    expect(buildIssues(v.safeParse(schema, input).issues ?? [])).toStrictEqual([
+      { path: name, rule: "invalid-value", message: `the property "${name}" ${REFUSED}.`, severity: "error" },
+    ]);
+    expect(() => parseWith(schema, input, "The thing")).toThrow(
+      new DataError(`The thing is invalid at ${name}: the property "${name}" ${REFUSED}.`),
+    );
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  it("is refused at its path in a nested record", () => {
+    const schema = looseRecord({ inner: v.array(strictRecord({ id: v.string() })) });
+    const issues = v.safeParse(schema, JSON.parse('{"inner":[{"id":"a"},{"id":"b","constructor":1}]}')).issues ?? [];
+    expect(buildIssues(issues).map(({ path, rule }) => ({ path, rule }))).toStrictEqual([
+      { path: "inner[1].constructor", rule: "invalid-value" },
+    ]);
+  });
+
+  it("is refused each time it is in an object, before the object's other properties are read", () => {
+    const issues = v.safeParse(strictRecord({ id: v.string() }), JSON.parse('{"id":5,"prototype":1,"constructor":2}'));
+    expect(buildIssues(issues.issues ?? []).map(({ path }) => path)).toStrictEqual(["constructor", "prototype"]);
+  });
+
+  it("is told apart from a name that only begins like it", () => {
+    const read = parseWith(openRecord({}), JSON.parse('{"protos":1,"constructors":2}'), "The thing");
+    expect(read).toStrictEqual({ protos: 1, constructors: 2 });
   });
 });
 
@@ -708,11 +761,11 @@ describe("looseRecord", () => {
 describe("mapSchema", () => {
   const claims = mapSchema(v.string());
 
-  it("reads every own property into a map, a property named __proto__ included", () => {
-    const parsed = parseWith(claims, JSON.parse('{"a": "x", "__proto__": "y"}'), "The claims");
+  it("reads every own property into a map", () => {
+    const parsed = parseWith(claims, JSON.parse('{"a": "x", "b": "y"}'), "The claims");
     expect([...parsed]).toStrictEqual([
       ["a", "x"],
-      ["__proto__", "y"],
+      ["b", "y"],
     ]);
   });
 

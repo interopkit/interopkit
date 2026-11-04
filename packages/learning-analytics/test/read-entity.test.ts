@@ -275,11 +275,14 @@ describe("readEntity", () => {
     expect(refusal({ ...PERSON, extensions: { n: Number.NaN } })).toBe(
       "The entity is invalid: extensions.n is the number NaN, which JSON cannot write.",
     );
-    const polluted = fromJson<Record<string, unknown>>(
-      `{"@context":"${CALIPER_CONTEXT}","id":"${PERSON.id}","type":"Person","extensions":{"__proto__":{"admin":true}}}`,
-    );
-    const entity = readEntity(polluted);
-    expect(Object.getPrototypeOf(Reflect.get(entity, "extensions"))).toBe(Object.prototype);
+    for (const name of ["__proto__", "constructor", "prototype"]) {
+      const polluted = fromJson<Record<string, unknown>>(
+        `{"@context":"${CALIPER_CONTEXT}","id":"${PERSON.id}","type":"Person","extensions":{"a":{"${name}":{"admin":true}}}}`,
+      );
+      expect(refusal(polluted)).toBe(
+        `The entity is invalid: extensions.a.${name} is refused, since __proto__, constructor and prototype are names of the prototype chain, which a reader would drop or misread.`,
+      );
+    }
     expect(({} as Record<string, unknown>).admin).toBeUndefined();
   });
 

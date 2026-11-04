@@ -408,6 +408,19 @@ describe("listCredentials", () => {
     expect(await all(clientOf(fakeServer(() => json({})).fetch).listCredentials())).toStrictEqual([]);
   });
 
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses a credential of a page with a property named %s, and changes no prototype",
+    async (name) => {
+      const hostile = { ...credential(1), ...JSON.parse(`{"${name}":{"admin":true}}`) };
+      const error = await rejection(
+        all(clientOf(fakeServer(() => json({ credential: [hostile] })).fetch).listCredentials()),
+      );
+      expect(error).toBeInstanceOf(DataError);
+      expect((error as DataError).message).toContain(`${name} is refused`);
+      expect(({} as Record<string, unknown>).admin).toBeUndefined();
+    },
+  );
+
   it("reads every credential of a page, and says whose answer was wrong", async () => {
     const wrong = fakeServer(() => json({ credential: [{ ...credential(1), type: ["VerifiableCredential"] }] }));
     const error = await rejection(all(clientOf(wrong.fetch).listCredentials()));

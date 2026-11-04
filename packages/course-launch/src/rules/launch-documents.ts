@@ -59,7 +59,7 @@ export function readLaunchDataAs(json: unknown, label: string): LaunchData {
  * @remarks
  * The context template is read by the rules of a Context of xAPI 1.0.3. A `masteryScore` of `null` and an `entitlementKey` of
  * `{}` are read as absent, as CATAPULT's player writes them for a unit that has neither. Members that cmi5 does not define are
- * dropped.
+ * dropped, and a member named `__proto__`, `constructor` or `prototype` is refused.
  *
  * @param json - The document, parsed.
  * @returns The launch data, a copy that shares nothing with the input; `returnURL` becomes `returnUrl`.
@@ -91,7 +91,8 @@ const preferencesSchema = looseRecord({
  *
  * @remarks
  * `languagePreference` is a list of RFC 5646 tags separated by commas, and an empty text is no language. Either property may be
- * absent, and then the assignable unit chooses. Members that cmi5 does not define are dropped.
+ * absent, and then the assignable unit chooses. Members that cmi5 does not define are dropped, and a member named `__proto__`,
+ * `constructor` or `prototype` is refused.
  *
  * @param json - The document, parsed.
  * @returns The preferences.

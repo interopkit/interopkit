@@ -239,15 +239,15 @@ describe("handleLaunch", () => {
       expect(launch.services.grades?.lineitem).toBeUndefined();
     });
 
-    it("keeps an identifier such as __proto__ as data in the custom properties", async () => {
-      const ctx = setup();
-      const claims = {
-        "https://purl.imsglobal.org/spec/lti/claim/custom": JSON.parse('{"__proto__":"x","constructor":"y"}'),
-      };
-      const { request: post } = await cookieLogin(ctx, { claims });
-      const launch = launchOf(await handleLaunch(post, ctx.options));
-      expect(launch.custom.get("__proto__")).toBe("x");
-      expect(launch.custom.get("constructor")).toBe("y");
+    it("refuses an identifier such as __proto__ or constructor in the custom properties", async () => {
+      for (const name of ["__proto__", "constructor"]) {
+        const ctx = setup();
+        const claims = { "https://purl.imsglobal.org/spec/lti/claim/custom": JSON.parse(`{"a":"1","${name}":"x"}`) };
+        const { request: post } = await cookieLogin(ctx, { claims });
+        await expect(handleLaunch(post, ctx.options)).rejects.toThrow(
+          expect.objectContaining({ reason: "claim-invalid", status: 400 }),
+        );
+      }
     });
 
     it("completes a login once: the same post fails the second time", async () => {

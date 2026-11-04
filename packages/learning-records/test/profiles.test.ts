@@ -102,6 +102,28 @@ describe("reading a profile", () => {
     expect(() => validateProfile(soundProfile(), { profiles: [{ id: "x" }] })).toThrow(/The option profiles at \[0\]/u);
   });
 
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses a member named %s, of the profile, of an Activity Definition and of another profile",
+    (name) => {
+      const member = `"${name}":{"admin":true}`;
+      const top: unknown = JSON.parse(JSON.stringify(soundProfile()).replace("{", `{${member},`));
+      expect(summary(validateProfile(top))).toStrictEqual([{ path: name, rule: "invalid-value", severity: "error" }]);
+      const text = JSON.stringify(soundProfile()).replace('"activityDefinition":{', `"activityDefinition":{${member},`);
+      expect(summary(validateProfile(JSON.parse(text)))).toStrictEqual([
+        {
+          path: expect.stringMatching(new RegExp(`^concepts\\[\\d+\\]\\.activityDefinition\\.${name}$`, "u")),
+          rule: "invalid-value",
+          severity: "error",
+        },
+      ]);
+      const other: unknown = JSON.parse(JSON.stringify(otherProfile()).replace("{", `{${member},`));
+      expect(() => readProfile(soundProfile(), { profiles: [other] })).toThrow(
+        `The option profiles at [0] is invalid at ${name}: the property "${name}" is refused`,
+      );
+      expect(({} as Record<string, unknown>).admin).toBeUndefined();
+    },
+  );
+
   it("reads the other profiles from their text too", () => {
     const reusing = set("patterns.1.oneOrMore", "https://example.org/profiles/timing/templates/timed")(soundProfile());
     expect(validateProfile(reusing, { profiles: [JSON.stringify(otherProfile())] })).toStrictEqual([]);

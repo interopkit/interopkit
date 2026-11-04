@@ -87,11 +87,11 @@ describe("readStatement", () => {
     },
   );
 
-  it("refuses a property that is named __proto__, as one that the Statement does not have", () => {
+  it("refuses a property that is named __proto__, as a name of the prototype chain", () => {
     const input = JSON.parse(`{"__proto__": {"polluted": true}, "actor": {"mbox": "mailto:a@example.org"},
       "verb": {"id": "http://adlnet.gov/expapi/verbs/completed"}, "object": {"id": "https://example.org/a"}}`);
     expect(summary(validateStatement(input))).toStrictEqual([
-      { path: "__proto__", rule: "unknown-property", severity: "error" },
+      { path: "__proto__", rule: "invalid-value", severity: "error" },
     ]);
     expect(({} as { polluted?: boolean }).polluted).toBeUndefined();
   });
@@ -102,11 +102,11 @@ describe("readStatement", () => {
       const map = JSON.parse(`{"${key}": "x"}`);
       const display = validateStatement({ ...minimalStatement(), verb: { id: "https://example.org/v", display: map } });
       expect(summary(display)).toStrictEqual([
-        { path: `verb.display.${key}`, rule: "invalid-format", severity: "error" },
+        { path: `verb.display.${key}`, rule: "invalid-value", severity: "error" },
       ]);
       const extensions = validateStatement({ ...minimalStatement(), result: { extensions: map } });
       expect(summary(extensions)).toStrictEqual([
-        { path: `result.extensions.${key}`, rule: "invalid-format", severity: "error" },
+        { path: `result.extensions.${key}`, rule: "invalid-value", severity: "error" },
       ]);
     },
   );

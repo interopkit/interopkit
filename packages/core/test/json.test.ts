@@ -34,13 +34,24 @@ describe("copyJson", () => {
     expect(copyJson([[1], [2]], "lists")).toStrictEqual({ value: [[1], [2]] });
   });
 
-  it("keeps a member named __proto__ as a member and never as the prototype", () => {
-    const input: Record<string, unknown> = JSON.parse('{"__proto__": {"polluted": true}, "plain": 1}');
-    const result = copyJson(input, "value");
-    if (!("value" in result)) throw new Error("The value is JSON.");
-    expect(Object.getPrototypeOf(result.value)).toBe(Object.prototype);
-    expect(Object.keys(result.value).sort()).toStrictEqual(["__proto__", "plain"]);
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses a member named %s at any depth, and says where",
+    (name) => {
+      const input: unknown = JSON.parse(`{"plain": 1, "list": [{"${name}": {"polluted": true}}]}`);
+      expect(copyJson(input, "value")).toStrictEqual({
+        problem: `value.list[0].${name} is refused, since __proto__, constructor and prototype are names of the prototype chain, which a reader would drop or misread`,
+      });
+      expect(copyJson(JSON.parse(`{"${name}": 1}`), "")).toStrictEqual({
+        problem: `${name} is refused, since __proto__, constructor and prototype are names of the prototype chain, which a reader would drop or misread`,
+      });
+      expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    },
+  );
+
+  it("keeps a member whose name only begins like one of the prototype chain", () => {
+    expect(copyJson(JSON.parse('{"prototypes": 1, "constructors": 2}'), "")).toStrictEqual({
+      value: { prototypes: 1, constructors: 2 },
+    });
   });
 
   it("reads an object without a prototype", () => {

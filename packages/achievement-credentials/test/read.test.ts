@@ -122,12 +122,26 @@ describe("reading a credential", () => {
     expect(credential["https://example.edu/ns#note" as never]).not.toBe(extended["https://example.edu/ns#note"]);
   });
 
-  it("does not carry a property named __proto__ and leaves the prototype of the result alone", () => {
-    const value = JSON.parse(JSON.stringify(achievementCredential()).replace("{", '{"__proto__":{"admin":true},'));
-    const credential = readCredential(value);
-    expect(Object.getPrototypeOf(credential)).toBe(Object.prototype);
-    expect("admin" in credential).toBe(false);
-  });
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses a property named %s of an open class and inside an extension, and changes no prototype",
+    (name) => {
+      const member = JSON.parse(`{"${name}":{"admin":true}}`);
+      const subject = Object.assign(structuredClone(member), achievementCredential().credentialSubject);
+      const cases = [
+        [Object.assign(structuredClone(member), achievementCredential()), name],
+        [{ ...achievementCredential(), credentialSubject: subject }, `credentialSubject.${name}`],
+        [
+          { ...achievementCredential(), "https://example.edu/ns#note": { list: [member] } },
+          `https://example.edu/ns#note.list[0].${name}`,
+        ],
+      ] as const;
+      for (const [value, place] of cases) {
+        expect(errorsOf(value)).toStrictEqual([" invalid-value"]);
+        expect(() => readCredential(value)).toThrow(`${place} is refused`);
+      }
+      expect(({} as Record<string, unknown>).admin).toBeUndefined();
+    },
+  );
 
   it("refuses a text that is a map of languages, which the schemas allow and the readers do not", () => {
     expect(errorsOf({ ...endorsementCredential(), name: { en: "Endorsement" } })).toStrictEqual(["name wrong-type"]);

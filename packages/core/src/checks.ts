@@ -8,7 +8,15 @@ import * as v from "valibot";
 import { DataError, LimitError } from "./errors.js";
 import { FINDINGS_STOPPED_RULE, type Finding, type Issue } from "./findings.js";
 import { findInstant } from "./formats.js";
-import { copyJson, findExceededJsonLimit, type JsonObject, type JsonValue, nestsDeeperThan } from "./json.js";
+import {
+  copyJson,
+  findExceededJsonLimit,
+  type JsonObject,
+  type JsonValue,
+  listPrototypeNames,
+  nestsDeeperThan,
+  PROTOTYPE_NAME_REFUSAL,
+} from "./json.js";
 
 export {
   type BoundedParse,
@@ -507,14 +515,29 @@ export function guardSchema<TOutput>(guard: (value: unknown) => value is TOutput
 const OBJECT_EXPECTED = "an object";
 
 /**
- * The schema of a record. In front of an object schema whose entries are all optional it refuses an array, which valibot
- * reads as an object.
+ * The schema of a record, in front of every schema of an object here. It refuses an array, which valibot reads as an object,
+ * and an own property named `__proto__`, `constructor` or `prototype`, with an issue at it, which the objects and records of
+ * valibot drop unseen and an assignment misreads; the object's other properties are then not read.
  */
-const recordSchema = guardSchema(isRecord, OBJECT_EXPECTED);
+const recordSchema = v.pipe(
+  guardSchema(isRecord, OBJECT_EXPECTED),
+  v.rawTransform<Readonly<Record<string, unknown>>, Readonly<Record<string, unknown>>>(
+    ({ dataset, addIssue, NEVER }) => {
+      const names = listPrototypeNames(dataset.value);
+      for (const name of names) {
+        addIssue({
+          message: `the property ${JSON.stringify(name)} ${PROTOTYPE_NAME_REFUSAL}`,
+          path: [{ type: "object", origin: "key", input: dataset.value, key: name, value: dataset.value[name] }],
+        });
+      }
+      return names.length === 0 ? dataset.value : NEVER;
+    },
+  ),
+);
 
 /**
  * The schema of an object with the given entries, that keeps the properties it does not know. Unlike the object of
- * valibot it refuses an array, whatever the entries.
+ * valibot it refuses an array, whatever the entries, and a property named `__proto__`, `constructor` or `prototype`.
  *
  * @param entries - The schemas of the properties.
  */
@@ -524,7 +547,8 @@ export function looseRecord<const TEntries extends v.ObjectEntries>(entries: TEn
 
 /**
  * The schema of an object with the given entries that refuses a property it does not know, as `additionalProperties: false`
- * does. It refuses an array whatever the entries, and reports one unknown property for each object.
+ * does. It refuses an array whatever the entries, and reports one unknown property for each object; a property named
+ * `__proto__`, `constructor` or `prototype` is refused as `looseRecord` refuses it.
  *
  * @param entries - The schemas of the properties.
  */
@@ -538,9 +562,8 @@ export function strictRecord<const TEntries extends v.ObjectEntries>(entries: TE
  *
  * @remarks
  * The result shares nothing with the input: a property that no entry names is copied by `copyJson`, so it must be JSON, and
- * a value nested deeper than `MAX_JSON_DEPTH` is refused. A property of the object itself named `__proto__`, `constructor` or
- * `prototype` that no entry names is not carried, because it would change the prototype of the result; inside a property that
- * no entry names such a member stays data.
+ * a value nested deeper than `MAX_JSON_DEPTH` is refused. A property named `__proto__`, `constructor` or `prototype` is
+ * refused, of the object itself as `looseRecord` refuses it and inside a property that no entry names as `copyJson` does.
  *
  * @param entries - The schemas of the properties.
  */
@@ -599,8 +622,8 @@ export const jsonValueSchema: Schema<JsonValue> = v.pipe(
 );
 
 /**
- * The schema of an object whose property names are data, such as claim names: every own property is read into a map,
- * `__proto__` included, which the record of valibot would skip.
+ * The schema of an object whose property names are data, such as claim names: every own property is read into a map, and a
+ * property named `__proto__`, `constructor` or `prototype` is refused, which the record of valibot would skip unseen.
  *
  * @param value - The schema of the value of a property.
  */

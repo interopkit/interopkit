@@ -197,7 +197,7 @@ export interface MessageBase extends LtiDeployment {
   readonly presentation?: LaunchPresentation;
   /** The identifiers of the Learning Information Services. */
   readonly lis?: Readonly<Record<string, string>>;
-  /** The custom properties by name; a map so that a name such as `__proto__` stays data. */
+  /** The custom properties by name. */
   readonly custom: ReadonlyMap<string, string>;
   /** The service claims of the message. */
   readonly services: MessageServices;

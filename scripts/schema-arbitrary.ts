@@ -26,6 +26,25 @@ export interface SchemaArbitraryOptions {
 
 type Node = Readonly<Record<string, unknown>>;
 
+/**
+ * The names of members that every reader of the family refuses, since they name the prototype chain (STANDARDS section 5,
+ * "Errors"), though a schema that takes any member takes them: a generated value holds none, and the `spec-gaps.md` of each
+ * package lists the difference.
+ */
+const PROTOTYPE_NAMES: readonly string[] = ["__proto__", "constructor", "prototype"];
+
+/** A name of a member that a reader of the family takes: any text but a name of the prototype chain. */
+export const memberName = (text: fc.Arbitrary<string>): fc.Arbitrary<string> =>
+  text.filter((name) => !PROTOTYPE_NAMES.includes(name));
+
+/** A JSON value of at most the given depth, with no member named by the prototype chain. */
+export const memberJson = (maxDepth: number): fc.Arbitrary<unknown> =>
+  fc
+    .jsonValue({ maxDepth })
+    .map((value) =>
+      JSON.parse(JSON.stringify(value), (name, member) => (PROTOTYPE_NAMES.includes(name) ? undefined : member)),
+    );
+
 /** The keywords that only describe: they say nothing about the values, or they hold the definitions that a `$ref` names. */
 const DESCRIPTIVE_KEYWORDS = new Set([
   "$schema",
@@ -213,8 +232,8 @@ export function schemaArbitrary(root: unknown, options: SchemaArbitraryOptions =
     );
     if (schema.additionalProperties !== true) return listed;
     const free = fc.dictionary(
-      fc.string({ minLength: 1, maxLength: 8 }).filter((name) => name !== "__proto__" && !(name in properties)),
-      fc.jsonValue({ maxDepth: 2 }),
+      memberName(fc.string({ minLength: 1, maxLength: 8 })).filter((name) => !(name in properties)),
+      memberJson(2),
       { maxKeys: MAX_FREE_PROPERTIES },
     );
     return fc.tuple(listed, free).map(([known, extra]) => ({ ...extra, ...known }));

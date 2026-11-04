@@ -67,3 +67,28 @@ describe("the full values of the classes", () => {
     },
   );
 });
+
+describe("a property named __proto__, constructor or prototype", () => {
+  /** The value with a property of the name, first, as `JSON.parse` makes it: an own property that changes no prototype. */
+  const withProperty = (value: unknown, name: string): unknown =>
+    Object.assign(JSON.parse(`{"${name}":{"admin":true}}`), value);
+  const names = ["__proto__", "constructor", "prototype"];
+
+  it.each(credentials)("is refused in a credential: %s", (name, value) => {
+    const kind = CREDENTIAL_KINDS.find((candidate) => name.startsWith(candidate));
+    for (const reserved of names) {
+      const hostile = withProperty(value, reserved);
+      expect(validateCredential(hostile, { kind }).filter(isError)).toMatchObject([{ rule: "invalid-value" }]);
+      expect(() => readCredential(hostile, { kind }), reserved).toThrow(`${reserved} is refused`);
+    }
+    expect(({} as Record<string, unknown>).admin).toBeUndefined();
+  });
+
+  it.each(entities)("is refused in an object: %s", (kind, value) => {
+    for (const reserved of names) {
+      const hostile = withProperty(value, reserved);
+      expect(validateEntity(kind, hostile).filter(isError)).toMatchObject([{ rule: "invalid-value" }]);
+      expect(() => readEntity(kind, hostile), reserved).toThrow(`${reserved} is refused`);
+    }
+  });
+});

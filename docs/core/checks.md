@@ -76,10 +76,10 @@ resolution, and `checkRemoteUrl` does not replace it.
 | `buildIssues(issues)` | The same as issues that are all errors, for a reader, whose list keeps the errors alone |
 | `looseRecord(entries)`                              | An object with the given entries that keeps the properties it does not know, and refuses an array                                                                                                                                                                                                                           |
 | `strictRecord(entries)`                             | An object with the given entries that refuses a property it does not know, as `additionalProperties: false` does, and refuses an array                                                                                                                                                                                      |
-| `openRecord(entries)`                               | An object with the given entries that keeps the properties it does not know, as `additionalProperties: true` does, for a JSON-LD class that anyone may extend: they are copied, so they must be JSON, and a member named `__proto__`, `constructor` or `prototype` of the object itself is not carried. It refuses an array |
+| `openRecord(entries)`                               | An object with the given entries that keeps the properties it does not know, as `additionalProperties: true` does, for a JSON-LD class that anyone may extend: they are copied, so they must be JSON. It refuses an array |
 | `jsonObjectSchema`                                  | An object of JSON, copied, with no function, `undefined`, number that is not finite or object that is not plain, and at most `MAX_JSON_DEPTH` levels                                                                                                                                                                        |
 | `jsonValueSchema`                                   | Any value of JSON, copied, with no function, `undefined`, number that is not finite or object that is not plain, and at most `MAX_JSON_DEPTH` levels                                                                                                                                                                        |
-| `mapSchema(value)`                                  | An object whose property names are data, such as claim names, into a `Map`: a name such as `__proto__` stays data, which the `record` of valibot would skip                                                                                                                                                                 |
+| `mapSchema(value)`                                  | An object whose property names are data, such as claim names, into a `Map`                                                                                                                                                                                                                                                  |
 | `methodsSchema(...names)`                           | A host's object with the given functions, such as a store; the object passes on whole, so a class instance keeps its methods                                                                                                                                                                                                |
 | `guardSchema(guard, expected)`                      | A value that a type guard accepts, passed on whole                                                                                                                                                                                                                                                                          |
 | `abortSignalSchema`                                 | An `AbortSignal`, the `signal` of a call that waits on I/O                                                                                                                                                                                                                                                                  |
@@ -94,6 +94,11 @@ resolution, and `checkRemoteUrl` does not replace it.
 | `languageTagSchema`                                 | A language tag that is well-formed by RFC 5646, such as `en-US` (see Formats)                                                                                                                                                                                                                                               |
 
 The `Schema<TOutput>` type is a valibot schema of unknown input.
+
+Every schema of an object here (`looseRecord`, `strictRecord`, `openRecord`, `jsonObjectSchema` and `mapSchema`) and `copyJson`
+refuse a property named `__proto__`, `constructor` or `prototype`, at any depth, with an `invalid-value` at it: the objects and
+records of valibot drop such a property unseen, and an assignment of `__proto__` sets a prototype. The other properties of that
+object are not read then. The check costs three lookups of an own property for each object, and walks nothing.
 
 ## Findings
 
@@ -166,7 +171,7 @@ the value is not JSON. `JsonValue` and `JsonObject` are the types.
 | ---------------- | ----- | ----------------------------------------------------------------------------------------------- |
 | `MAX_JSON_DEPTH` | 64    | The levels that arrays and objects nest in `copyJson`, and the default depth of `readJson`      |
 
-A member named `__proto__` stays a member of the copy and never changes its prototype.
+A member named `__proto__`, `constructor` or `prototype` is refused at any depth, as the schemas refuse it.
 
 `nestsDeeperThan(text, maxDepth)` tells whether the arrays and objects of a text of JSON nest deeper than a limit, without parsing it: the text may be
 any string, and a string literal hides its brackets. `parseStatementJson` checks the depth with it before it parses.

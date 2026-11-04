@@ -61,7 +61,7 @@ Property names are those of the specifications in camelCase. A claim name that i
 | Reads `null`, or a blank text, as absent where a platform may send it                                        | `resourceId`, `tag`, `activityId`, `startDateTime`, `endDateTime`, a comment, names of a member |
 | Ignores a property that the model does not name                                                              | Every body                                    |
 | Keeps a property named by a URL as an extension, copied as JSON                                              | Line item, score, result, content item, the LTI configurations |
-| Keeps a name such as `__proto__` as data                                                                     | `custom` is a `Map`                           |
+| Refuses a member named `__proto__`, `constructor` or `prototype`, at its path                                | Every reader                                  |
 | Reads a date with `Z`, `+hh:mm`, `+hhmm` or `+hh`, and refuses one without a time zone designator            | Every date                                    |
 | Reads an empty address of a logo, a client, terms or a policy as absent                                       | The registration of a tool                    |
 | Reads the translations `name#tag` into `localized`                                                           | Configurations of Dynamic Registration        |

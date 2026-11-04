@@ -189,6 +189,13 @@ describe("addBaseProof, given what it cannot sign", () => {
     );
   });
 
+  it.each(["__proto__", "constructor", "prototype"])("refuses a document with a member named %s", async (name) => {
+    const subject = JSON.parse(`{"${name}":{"admin":true}}`);
+    await expect(addBaseProof({ ...sampleCredential(), subject }, await options())).rejects.toThrow(
+      `The document must be JSON, but subject.${name} is refused`,
+    );
+  });
+
   it("refuses a document that is no JSON, or nests too deep", async () => {
     await expect(addBaseProof({ ...sampleCredential(), value: undefined }, await options())).rejects.toThrow(
       /must be JSON, but value is undefined/,

@@ -283,6 +283,22 @@ describe("reading a JWT", () => {
     }
   });
 
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses a credential with a property named %s, and changes no prototype",
+    async (name) => {
+      const credentialSubject = Object.assign(
+        JSON.parse(`{"${name}":{"a":1}}`),
+        achievementCredential().credentialSubject,
+      );
+      const result = await readCredentialJwt(await signed({ credentialSubject }), world().options);
+      expect(result).toMatchObject({
+        valid: false,
+        reason: expect.stringContaining(`credentialSubject.${name} is refused`),
+      });
+      expect(({} as Record<string, unknown>).a).toBeUndefined();
+    },
+  );
+
   it("refuses a token that has expired or is not valid yet, by the clock and the skew", async () => {
     const { clock, options } = world();
     const jws = await signed({ nbf: VALID_FROM, exp: VALID_FROM + 3600, validUntil: "2024-06-13T11:00:00Z" });

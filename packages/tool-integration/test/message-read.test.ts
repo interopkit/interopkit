@@ -308,17 +308,22 @@ describe("readMessage of the claims every message has", () => {
     }
   });
 
-  it("keeps a name such as __proto__ as data in the custom properties and in the LIS claim", () => {
-    const claims = claimsOf("LtiResourceLinkRequest", {
-      ...RESOURCE_LINK,
-      [`${CORE}custom`]: JSON.parse('{"__proto__":"x","a":"1"}'),
-      [`${CORE}lis`]: JSON.parse('{"__proto__":"y"}'),
-    });
-    const message = readMessage(claims, options);
-    expect(message.custom.get("__proto__")).toBe("x");
-    expect(Object.getPrototypeOf(message.lis)).toBe(Object.prototype);
-    expect(Object.keys(message.lis ?? {})).toEqual(["__proto__"]);
-  });
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses %s as the name of a custom property, of a member of the LIS claim and of a claim",
+    (name) => {
+      const refused = expect.objectContaining({
+        reason: "claim-invalid",
+        message: expect.stringContaining(`the property "${name}" is refused`),
+      });
+      for (const claim of [`${CORE}custom`, `${CORE}lis`, `${CORE}context`]) {
+        const claims = claimsOf("LtiResourceLinkRequest", {
+          ...RESOURCE_LINK,
+          [claim]: JSON.parse(`{"id":"c1","a":"1","${name}":"x"}`),
+        });
+        expect(() => readMessage(claims, options), claim).toThrow(refused);
+      }
+    },
+  );
 
   it("refuses a message type that it does not model, and reads one the host names as the type the host named", () => {
     const claims = claimsOf("LtiAssetProcessorSettingsRequest", RESOURCE_LINK);

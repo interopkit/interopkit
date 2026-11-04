@@ -89,6 +89,10 @@ describe("the login when a port of the host fails", () => {
       { ...toolRegistration(), allow: "camera <script>" },
       { ...toolRegistration(), redirectUris: ["http://tool.example.com/lti/launch"] },
       { ...toolRegistration(), keys: new Map([[weak.kid, weak.publicKey]]), jwksUrl: undefined },
+      ...["__proto__", "constructor", "prototype"].flatMap((name) => [
+        { ...toolRegistration(), custom: JSON.parse(`{"exam":"1","${name}":"x"}`) },
+        Object.assign(JSON.parse(`{"${name}":"x"}`), toolRegistration()),
+      ]),
     ];
     for (const registration of cases) {
       await expect(

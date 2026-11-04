@@ -308,12 +308,14 @@ describe("prepareToolLaunch and prepareToolFrame", () => {
     }
   });
 
-  it("keeps a custom property named __proto__ as data", async () => {
+  it("refuses a custom property named __proto__, constructor or prototype, and keeps nothing", async () => {
     const ctx = setup();
-    await prepareToolLaunch({ ...baseMessage, custom: JSON.parse('{"__proto__":"x"}') }, ctx.login);
-    const [entry] = ctx.kept.values();
-    expect(Object.getOwnPropertyNames(entry?.message.custom)).toEqual(["__proto__"]);
-    expect(Object.getPrototypeOf(entry?.message.custom)).toBe(Object.prototype);
+    for (const name of ["__proto__", "constructor", "prototype"]) {
+      await expect(
+        prepareToolLaunch({ ...baseMessage, custom: JSON.parse(`{"exam":"1","${name}":"x"}`) }, ctx.login),
+      ).rejects.toThrow(`the property "${name}" is refused`);
+    }
+    expect(ctx.kept.size).toBe(0);
   });
 
   it("keeps the query of the login URL of the tool", async () => {

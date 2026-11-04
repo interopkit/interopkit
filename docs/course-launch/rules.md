@@ -80,7 +80,8 @@ validateSessionStatements([statement(2, "terminated")], facts).map(({ path, rule
 | `writeLearnerPreferences` | Writes both properties, which the document must hold (11.0)                                             | A property missing or not valid                                                                                                   |
 
 CATAPULT's player writes `masteryScore: null` and `entitlementKey: {}` into the launch data of a unit that has neither, so
-`readLaunchData` reads both as absent. Members that cmi5 does not define are dropped.
+`readLaunchData` reads both as absent. Members that cmi5 does not define are dropped, and both readers refuse a member named
+`__proto__`, `constructor` or `prototype`, whose name is of the prototype chain.
 
 ## Rules
 
