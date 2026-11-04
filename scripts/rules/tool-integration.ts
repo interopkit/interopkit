@@ -8,7 +8,7 @@ export const TOOL_INTEGRATION_RULES: readonly Rule[] = [
     file: "packages/tool-integration/src/platform/services/body.ts",
     find: "if (error instanceof LimitError) return tooLarge(error.message);",
     replace: "",
-    test: "packages/tool-integration/test/platform-grades-memory.test.ts",
+    test: "packages/tool-integration/test/peak-memory.test.ts",
   },
   {
     rule: "A token is verified with the approved algorithms only: none, the HMAC algorithms and every other are refused.",

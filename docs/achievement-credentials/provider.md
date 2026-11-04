@@ -304,8 +304,8 @@ Every failure is an `imsx_StatusInfo` with `failure`, the severity that OB B.3.6
 | Credentials in a page (`maxPageSize`)   | 1,000     | Lowered to the limit |
 | The verification                        | The limits of `verifyCredential`: its input, its fetches, its endorsements and nested credentials | 422 |
 
-A body at the limits that holds the most objects that the tokens allow raises the peak memory of the process by about 120 MiB;
-`provider-memory.test.ts` measures it.
+A body at the limits that holds the most objects that the tokens allow ends within a heap of 112 MiB, which
+`peak-memory.test.ts` measures; it raises the peak memory of the process by about 120 MiB.
 
 ## Errors
 

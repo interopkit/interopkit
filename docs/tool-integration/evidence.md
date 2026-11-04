@@ -32,7 +32,7 @@ flowchart LR
 | Mutation rules     | Does the test of each rule that keeps a request from being forged, replayed or redirected fail without it? | `scripts/rules/tool-integration.ts`                                                        | `pnpm check:rules`      |
 | Speed              | How long does each hot path take, against what it builds on and against the tools of other authors?  | `packages/tool-integration/test/*.bench.ts`, `test/budgets.ts`                                  | `pnpm bench`            |
 | Size               | Does each entry point hold only what it uses, within its budget?                                       | `packages/tool-integration/test/size.test.ts`                                                    | `pnpm test`             |
-| Memory             | Does each reader of untrusted input stay under its budget on its worst input?                         | `packages/tool-integration/test/*-memory.test.ts`, `packages/core/test/jwks-cache-memory.test.ts` | `pnpm test`             |
+| Memory             | Does each reader of untrusted input stay under its budget on its worst input?                         | `packages/tool-integration/test/peak-memory.test.ts`, `packages/core/test/peak-memory.test.ts` | `pnpm test`             |
 | Runtimes           | Does the example give the same results on each runtime?                                               | `compat/`                                                                                       | `pnpm compat`           |
 
 ## Tools in the process of the tests
@@ -194,24 +194,27 @@ the package has no side effects, so a bundler drops the rest.
 
 ## Memory
 
-Each reader of untrusted input has a test of its peak memory on its worst input within its limits, in a file of its own because
-the peak of a process only grows; the test reports the rise. The rises are those of Node.js 22 and 24.
+Each reader of untrusted input runs on its worst input within its limits in a Node.js process of its own whose heap is
+bounded (`test/peak-memory.test.ts`, with the readings in `test/peak-memory-readings.ts`): what the reading keeps alive at once
+must fit, whenever V8 collects, so a regression fails and the load of a machine cannot. The heap of a case is twice the least in
+which the reading ends on Node.js 22 and 24, rounded up to 16 MiB; `node scripts/peak-memory.ts tool-integration` (and `core`, for the key set) prints the least, in steps
+of 8 MiB.
 
-| Reader | Worst input | Peak rose by | Budget |
+| Reader | Worst input | Least heap | Heap of the test |
 | --- | --- | ---: | ---: |
-| `handleLogin` | Forms and queries of 64 KiB of repeated and of distinct parameters, and a form of 64 MiB | 0.1–1.3 MiB | 32 MiB |
-| `handleLaunch` | A form of 64 KiB whose token is one array of small objects, and a form of 64 MiB | 1.3–5.0 MiB | 32 MiB |
-| The claims of a token before its signature | A payload of 3.6 million tokens, refused by their number | 1.2–2.2 MiB | 64 MiB |
-| A key set, `createJwksCache` | 64 KiB of empty keys, refused above 100; 100 keys of 64 KiB; one nested 32,000 deep; 64 MiB | 12–15 MiB | 32 MiB |
-| `lineItems` and the other pages | A page of a million tokens in an extension that the reader copies; 1 MiB of empty objects | 84–126 MiB | 256 MiB |
-| `members` | The same | 36–50 MiB | 256 MiB |
-| `control` | A status of a million tokens; 24 MiB | 86–94 MiB | 256 MiB |
-| `preferences` | A record of a million tokens; 24 MiB | 134–171 MiB | 256 MiB |
-| `discoverPlatform`, `registerTool` | An answer of an array just under 64 KiB, and one of 1 MiB | 12–20 MiB | 32 MiB |
-| The authorization and token requests of the platform | Forms of 64 KiB of repeated and distinct parameters, and of 64 MiB | 2.2–9.9 MiB | 32 MiB |
-| The grade services, the Assessment Control Service and the registration endpoint | Bodies of 64 KiB of nesting and of arrays | 0.5–1.1 MiB | 32 MiB |
-| `readDeepLinkingResponse` | A form of under 1 MiB that lists 10,000 items, refused by their number | 11–13 MiB | 64 MiB |
-| `readStartAssessment` | A form of 64 KiB whose token is one array of small objects | 7.4–16 MiB | 32 MiB |
+| `handleLogin` | Forms and queries of 64 KiB of repeated and of distinct parameters, and a form of 64 MiB | 8 MiB | 16 MiB |
+| `handleLaunch` | A form of 64 KiB whose token is one array of small objects, and a form of 64 MiB | 8 MiB | 16 MiB |
+| The claims of a token before its signature | A payload of 3.6 million tokens, refused by their number | 16 MiB | 32 MiB |
+| A key set, `createJwksCache` | 64 KiB of empty keys, refused above 100; 100 keys of 64 KiB; one nested 32,000 deep; 64 MiB | 16 MiB | 32 MiB |
+| `lineItems` and the other pages | A page of a million tokens in an extension that the reader copies; 1 MiB of empty objects | 48 MiB | 96 MiB |
+| `members` | The same | 32 MiB | 64 MiB |
+| `control` | A status of a million tokens; 24 MiB | 32 MiB | 64 MiB |
+| `preferences` | A record of a million tokens; 24 MiB | 48 MiB | 96 MiB |
+| `discoverPlatform`, `registerTool` | An answer of an array just under 64 KiB, and one of 1 MiB | 16 MiB | 32 MiB |
+| The authorization and token requests of the platform | Forms of 64 KiB of repeated and distinct parameters, and of 64 MiB | 8 MiB | 16 MiB |
+| The grade services, the Assessment Control Service and the registration endpoint | Bodies of 64 KiB of nesting and of arrays | 8–16 MiB | 16–32 MiB |
+| `readDeepLinkingResponse` | A form of under 1 MiB that lists 10,000 items, refused by their number | 16 MiB | 32 MiB |
+| `readStartAssessment` | A form of 64 KiB whose token is one array of small objects | 16 MiB | 32 MiB |
 
 A key set of 64 KiB of empty keys took some 20 MiB to read, since jose copies each key and keeps a note of it: the cache refuses a set
 of more than 100 keys before jose sees it. A client of a service takes an answer of up to `maxBytes`, 1 MiB, and `maxTokens`, a

@@ -37,7 +37,7 @@
       "entry": ["src/index.ts"]
     },
     "packages/course-launch": {
-      "entry": ["src/index.ts", "src/package/index.ts", "src/lms/index.ts", "src/au/index.ts", "test/memory-child.ts"]
+      "entry": ["src/index.ts", "src/package/index.ts", "src/lms/index.ts", "src/au/index.ts"]
     },
     "packages/tool-integration": {
       "entry": ["src/index.ts", "src/tool/index.ts", "src/platform/index.ts"]
@@ -50,6 +50,7 @@
       "entry": ["unit.ts"]
     },
     ".": {
+      "entry": ["scripts/peak-memory-child.ts", "scripts/peak-memory-expect.ts"],
       "ignore": ["validation/catapult/*.js"],
       "ignoreDependencies": ["jscpd"]
     }

@@ -83,17 +83,17 @@ The LMS loads no ZIP code and the runtime of a unit no LMS, LRS or reader of a s
 ## Peak memory
 
 Each reader of untrusted input runs on its worst input in a Node.js process of its own whose heap is bounded
-(`test/memory.test.ts`): what the reading keeps alive at once must fit, whenever V8 collects, so the test holds on a loaded
-machine. The heap of each test is twice the least in which it ended on Node.js 22, 24 and 26, rounded up to 16 MiB; the least
-counts the input and the code of the process.
+(`test/peak-memory.test.ts`, with the readings in `test/peak-memory-readings.ts`): what the reading keeps alive at once must fit, whenever V8 collects, so the test holds on a loaded
+machine. The heap of each test is twice the least in which it ended on Node.js 22 and 24, rounded up to 16 MiB; the least
+counts the input and the code of the process, and `node scripts/peak-memory.ts course-launch` prints it, in steps of 8 MiB.
 
 | Reader | Worst input | Least heap | Heap of the test |
 | --- | --- | --- | --- |
-| The access of the LMS | A preferences document of 10 MiB, refused after 4,096 bytes | 13 MiB | 32 MiB |
-| The LMS judging a batch | 1,000 statements of a unit near 10 MiB | 33 MiB | 80 MiB |
-| The runtime reading the fetch URL | 65,536 bytes of tokens, refused before it is parsed | 15 MiB | 32 MiB |
-| The runtime reading the launch data | 1 MiB of values | 17 MiB | 48 MiB |
-| The runtime reading the preferences | 1 MiB, over the limit of 4,096 bytes | 15 MiB | 32 MiB |
-| The runtime reading what the registration holds | An answer over 1 MiB | 15 MiB | 32 MiB |
+| The access of the LMS | A preferences document of 10 MiB, refused after 4,096 bytes | 16 MiB | 32 MiB |
+| The LMS judging a batch | 1,000 statements of a unit near 10 MiB | 32 MiB | 80 MiB |
+| The runtime reading the fetch URL | 65,536 bytes of tokens, refused before it is parsed | 16 MiB | 32 MiB |
+| The runtime reading the launch data | 1 MiB of values | 24 MiB | 48 MiB |
+| The runtime reading the preferences | 1 MiB, over the limit of 4,096 bytes | 16 MiB | 32 MiB |
+| The runtime reading what the registration holds | An answer over 1 MiB | 16 MiB | 32 MiB |
 
 The readers of a structure and of a package are in the [structure](structure.md) and [package](package.md) guides.

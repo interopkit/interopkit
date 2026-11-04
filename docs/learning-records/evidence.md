@@ -28,7 +28,7 @@ flowchart LR
 | Counterparty | Does the client work against another LRS, in both versions, with what it answers? | `examples/learning-records/test/sqllrs.corpus.test.ts`                  | `pnpm sql-lrs` |
 | Speed        | How long does each hot path take, against Learning Locker, node:crypto and jose?  | `packages/learning-records/test/*.bench.ts`                             | `pnpm bench`   |
 | Size         | Does each entry point hold only what it uses, within its budget?                  | `packages/learning-records/test/size.test.ts`                           | `pnpm test`    |
-| Memory       | Does each reader of untrusted input stay under its budget on its worst input?     | `packages/learning-records/test/*-memory.test.ts`                       | `pnpm test`    |
+| Memory       | Does each reader of untrusted input stay under its budget on its worst input?     | `packages/learning-records/test/peak-memory.test.ts`                       | `pnpm test`    |
 | Runtimes     | Does the example give the same results everywhere?                                | `compat/`                                                               | `pnpm compat`  |
 
 ## The example
@@ -144,18 +144,21 @@ No entry point holds the client or the store but its own, and the root holds no 
 
 ## Memory
 
-Each reader of untrusted input has a test of its peak memory on its worst input, in a file of its own because the peak of a
-process only grows; the test reports the rise.
+Each reader of untrusted input runs on its worst input within its limits in a Node.js process of its own whose heap is
+bounded (`test/peak-memory.test.ts`, with the readings in `test/peak-memory-readings.ts`): what the reading keeps alive at once
+must fit, whenever V8 collects, so a regression fails and the load of a machine cannot. The heap of a case is twice the least in
+which the reading ends on Node.js 22 and 24, rounded up to 16 MiB; `node scripts/peak-memory.ts learning-records` prints the least, in steps
+of 8 MiB.
 
-| Reader | Worst input | Peak rose by | Budget |
+| Reader | Worst input | Least heap | Heap of the test |
 | --- | --- | ---: | ---: |
-| `parseStatementJson` | A million tokens of distinct names, the most that the search for a repeat keeps | 58–65 MiB | 128 MiB |
-| `validateStatements` | A Statement whose context holds a million wrong Activities | 2 MiB | 64 MiB |
-| `readMultipart` | The most parts and bytes that the limits take, 10 MiB | 6–10 MiB | 64 MiB |
-| `handleLrsRequest`, a POST | 1,000 Statements of 1.9 MB near a million tokens | 34–37 MiB | 128 MiB |
-| `verifyStatementSignature` | A JWS of 10 MiB whose payload is near a million tokens of distinct names | 100–194 MiB | 256 MiB |
-| `readBasicAuthorization` | A header of 10 MiB | 35 MiB | 64 MiB |
-| The alternate request syntax | A form of a million and a half names, and a form of 10 MiB of `+` | 0.2 and 46–50 MiB | 32 and 128 MiB |
+| `parseStatementJson` | A million tokens of distinct names, the most that the search for a repeat keeps | 40 MiB | 80 MiB |
+| `validateStatements` | A Statement whose context holds a million wrong Activities | 16 MiB | 32 MiB |
+| `readMultipart` | The most parts and bytes that the limits take, 10 MiB | 8 MiB | 16 MiB |
+| `handleLrsRequest`, a POST | 1,000 Statements of 1.9 MB near a million tokens | 24 MiB | 48 MiB |
+| `verifyStatementSignature` | A JWS of 10 MiB whose payload is near a million tokens of distinct names | 88 MiB | 176 MiB |
+| `readBasicAuthorization` | A header of 10 MiB | 16 MiB | 32 MiB |
+| The alternate request syntax | A form of a million and a half names, and a form of 10 MiB of `+` | 8 and 32 MiB | 16 and 64 MiB |
 
 ## Runtimes
 

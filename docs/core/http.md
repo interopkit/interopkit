@@ -191,15 +191,16 @@ hold a token.
 
 `pnpm bench` times the build that ships against the platform API that a function wraps, the least work of the same kind, in
 three rounds that alternate which runs first; the gate is the ratio of the fastest samples, five times the highest of three runs
-rounded up to one significant digit, which holds on any machine. Each peak is measured by `process.resourceUsage().maxRSS` in a
-test file of its own, on Node.js 22 and 24.
+rounded up to one significant digit, which holds on any machine. Each worst input runs in a Node.js process of its own
+whose heap is bounded (`test/peak-memory.test.ts`): the heap of a case is twice the least in which it ends on Node.js 22 and 24,
+rounded up to 16 MiB.
 
-| Benchmark or worst input | Reference or test | Ratio or peak | Budget |
+| Benchmark or worst input | Reference or reading | Ratio or least heap | Budget or heap |
 | --- | --- | ---: | ---: |
 | `readJson` of a body of 1 MiB | `TextDecoder` and `JSON.parse` | 1.81–1.84 | 10 |
 | `readForm` of 2,000 parameters | `URLSearchParams` | 0.86–0.90 | 5 |
-| A body at the size limit of the most empty objects that the tokens allow | `http-memory.test.ts` | 43–55 MiB | 96 MiB |
-| A form of 10 MiB of plus signs | `form-memory.test.ts` | 20 MiB | 64 MiB |
+| A body at the size limit of the most empty objects that the tokens allow | `jsonObjects` | 32 MiB | 64 MiB |
+| A form of 10 MiB of plus signs | `formPluses` | 8 MiB | 16 MiB |
 
 `readJson` counts the levels and the tokens of the text in one reading, which finds the end of each string with `indexOf`, before
 `JSON.parse` builds anything; that reading is the work that the reference does not do. Two readings, each over the strings one

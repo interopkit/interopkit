@@ -1854,11 +1854,11 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
     test: "packages/achievement-credentials/test/jsonld-loader.test.ts",
   },
   {
-    rule: "A canonicalization built to exhaust memory is stopped at a fixed count of runs, at a peak of memory under the budget.",
+    rule: "A canonicalization built to exhaust memory is stopped at a fixed count of runs, within the heap of its test.",
     file: "packages/achievement-credentials/src/data-integrity/canonize.ts",
     find: "maxDeepIterations: MAX_DEEP_ITERATIONS,",
     replace: "",
-    test: "packages/achievement-credentials/test/data-integrity-memory.test.ts",
+    test: "packages/achievement-credentials/test/peak-memory.test.ts",
   },
   {
     rule: "The same document is canonized once for all the proofs of a credential.",

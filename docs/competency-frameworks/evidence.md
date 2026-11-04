@@ -25,7 +25,7 @@ flowchart LR
 | Counterparty      | Does another implementation take in what the provider serves, and vice versa? | `examples/competency-frameworks/test/opensalt.corpus.test.ts`                  | `pnpm opensalt`                |
 | Speed             | How long does each hot path take, against the official schemas and the JSON?   | `packages/competency-frameworks/test/*.bench.ts`                               | `pnpm bench`                   |
 | Size              | Does each entry point hold only what it uses, within its budget?               | `packages/competency-frameworks/test/size.test.ts`                             | `pnpm test`                    |
-| Memory            | Does each reader of untrusted input stay under its budget on its worst input?  | `packages/competency-frameworks/test/*-memory.test.ts`                         | `pnpm test`                    |
+| Memory            | Does each reader of untrusted input stay under its budget on its worst input?  | `packages/competency-frameworks/test/peak-memory.test.ts`                         | `pnpm test`                    |
 | Runtimes          | Does the scenario give the same results everywhere?                            | `compat/`                                                                      | `pnpm compat`                  |
 
 ## Real frameworks
@@ -162,19 +162,22 @@ fails above the budget after gzip, or when an entry point holds a module that it
 
 ## Memory
 
-Each reader of untrusted input has a test of its peak memory on its worst input, in a file of its own because the peak of a
-process only grows; the test reports the rise.
+Each reader of untrusted input runs on its worst input within its limits in a Node.js process of its own whose heap is
+bounded (`test/peak-memory.test.ts`, with the readings in `test/peak-memory-readings.ts`): what the reading keeps alive at once
+must fit, whenever V8 collects, so a regression fails and the load of a machine cannot. The heap of a case is twice the least in
+which the reading ends on Node.js 22 and 24, rounded up to 16 MiB; `node scripts/peak-memory.ts competency-frameworks` prints the least, in steps
+of 8 MiB.
 
-| Reader                       | Worst input                                                                 | Peak rose by | Budget  |
-| ---------------------------- | --------------------------------------------------------------------------- | -----------: | ------: |
-| `readPackage`                | A package whose `CFItems` are a million wrong values                        | 1–4 MiB      | 64 MiB  |
-| `validatePackage`            | The same                                                                    | 2–4 MiB      | 64 MiB  |
-| `readEntity`                 | The associations of an item, a million wrong ones                           | 1–2 MiB      | 64 MiB  |
-| `package` of a client        | The largest framework of the bank that the 16 MiB of an answer hold, 15,000 items | 74–137 MiB on Node.js 22, 159–185 on 24 | 256 MiB |
-| `package` of a client        | Extensions of 499,000 distinct keys, the most that 2,000,000 tokens hold, in 16 MiB | 214–290 MiB on Node.js 22, 156–233 on 24 | 512 MiB |
-| `handleCaseRequest`          | A request for the list with a `fields` list of 10 MiB                        | 16–20 MiB    | 64 MiB  |
+| Reader                       | Worst input                                                                 | Least heap | Heap of the test |
+| ---------------------------- | --------------------------------------------------------------------------- | ---------: | ---------------: |
+| `readPackage`                | A package whose `CFItems` are a million wrong values                        | 16 MiB     | 32 MiB           |
+| `validatePackage`            | The same                                                                    | 16 MiB     | 32 MiB           |
+| `readEntity`                 | The associations of an item, a million wrong ones                           | 16 MiB     | 32 MiB           |
+| `package` of a client        | The largest framework of the bank that the 16 MiB of an answer hold, 15,000 items | 64 MiB | 128 MiB      |
+| `package` of a client        | Extensions of 499,000 distinct keys, the most that 2,000,000 tokens hold, in 16 MiB | 144 MiB | 288 MiB   |
+| `handleCaseRequest`          | A request for the list with a `fields` list of 10 MiB                        | 32 MiB     | 64 MiB           |
 
-Without its limit of 2,048 characters, as a filter has, a `fields` list of 10 MiB raises the peak by 629 MiB; the rest is the URL
+Without its limit of 2,048 characters, as a filter has, a `fields` list of 10 MiB needs a heap of 192 MiB and raises the peak by 629 MiB; the rest is the URL
 that the host gave. An object of distinct keys is the costliest answer for its tokens, about 15 times its bytes: lower `maxBytes`
 and `maxTokens` for a provider that you do not trust.
 

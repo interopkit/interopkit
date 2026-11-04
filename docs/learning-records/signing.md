@@ -91,8 +91,8 @@ standard asks for the compact one.
 | ----------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
 | The payload | 10,485,760 bytes, 64 levels and 1,000,000 tokens, those of `parseStatementJson` | A payload over them is `malformed`. The handler of an LRS reads it within its own `maxBodyBytes`, `maxDepth` and `maxTokens` instead |
 
-The worst payload within them, a JWS of 10 MiB near a million tokens of distinct names, raises the peak of a process by 100 to
-140 MiB, and up to 194 MiB on a machine whose other work delays the collector, measured in `signature-memory.test.ts`. A host that verifies the signatures of many senders checks the size of the
+The worst payload within them, a JWS of 10 MiB near a million tokens of distinct names, ends within a heap of
+176 MiB (88 MiB is the least, measured by `peak-memory.test.ts`). A host that verifies the signatures of many senders checks the size of the
 bytes first, or verifies them through the handler with lower limits.
 
 ## Errors

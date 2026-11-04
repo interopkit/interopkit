@@ -27,7 +27,7 @@ flowchart LR
 | Counterparties        | Does each side verify what the other signs, and refuse what the other changes?                    | `packages/achievement-credentials/test/counterparties.corpus.test.ts`                           | `pnpm test:corpus`  |
 | Speed                 | How long does each hot path take, against the libraries that do the same work?                    | `packages/achievement-credentials/test/*.bench.ts`                                              | `pnpm bench`        |
 | Size                  | Does each entry point hold only what it uses, within its budget?                                  | `packages/achievement-credentials/test/size.test.ts`                                            | `pnpm test`         |
-| Memory                | Does each reader of untrusted input stay under its budget on its worst input?                     | `packages/achievement-credentials/test/*-memory.test.ts`                                        | `pnpm test`         |
+| Memory                | Does each reader of untrusted input stay under its budget on its worst input?                     | `packages/achievement-credentials/test/peak-memory.test.ts`                                        | `pnpm test`         |
 | Runtimes              | Does the scenario give the same results everywhere?                                               | `compat/`                                                                                       | `pnpm compat`       |
 
 ## The example
@@ -182,24 +182,28 @@ A verifier of JWTs, a provider that does not verify and a reader of status lists
 
 ## Memory
 
-Each reader of untrusted input has a test of its peak on its worst input within the limits: `process.resourceUsage().maxRSS`
-before and after, under a budget that the unbounded reading would pass by far, in a file of its own. Measured on Node.js 22 and 24:
+Each reader of untrusted input runs on its worst input within its limits in a Node.js process of its own whose heap is
+bounded (`test/peak-memory.test.ts`, with the readings in `test/peak-memory-readings.ts`): what the reading keeps alive at once
+must fit, whenever V8 collects, so a regression fails and the load of a machine cannot. The heap of a case is twice the least in
+which the reading ends on Node.js 22 and 24, rounded up to 16 MiB; `node scripts/peak-memory.ts achievement-credentials` prints the least, in steps
+of 8 MiB.
 
-| Worst input | Test | Peak raised by | Budget |
+| Worst input | Reading | Least heap | Heap of the test |
 | --- | --- | ---: | ---: |
-| A JWS of 1 MiB of the most numbers, verified | `jwt-memory.test.ts` | 13–46 MiB | 96 MiB |
-| A JWS of 1 MiB of the most empty objects, verified | `jwt-objects-memory.test.ts` | 56–90 MiB | 128 MiB |
-| A JWS of 15 MiB of four million empty arrays, refused by its tokens | `v2-payload-memory.test.ts` | 18–31 MiB, 354 parsed | 128 MiB |
-| A PNG whose credential holds the most objects that `maxTokens` leaves | `baking-memory.test.ts` | 13–22 MiB | 128 MiB |
-| An SVG of 10 MiB whose credential is one string | `baking-svg-memory.test.ts` | 28–35 MiB | 64 MiB |
-| A status list within the fetch limit that inflates to 256 MiB | `status-memory.test.ts` | 5–33 MiB | 64 MiB |
-| A CLR of 600 credentials whose refresh services answer 600,000 characters | `verify-memory.test.ts` | 47–89 MiB, 174–264 unbounded | 128 MiB |
-| A list of 5,000 alike items, refused as a limit of canonicalization | `data-integrity-memory.test.ts` | 56–119 MiB, 800 unbounded | 256 MiB |
-| A body at the limits of the provider of the most objects | `provider-memory.test.ts` | 78–119 MiB | 256 MiB |
-| An Open Badges 2.0 document of a million wrong values | `v2-memory.test.ts` | 63–93 MiB, 1 GB unbounded | 256 MiB |
+| A JWS of 1 MiB of the most numbers, verified | `jwtNumbers` | 32 MiB | 64 MiB |
+| A JWS of 1 MiB of the most empty objects, verified | `jwtObjects` | 72 MiB | 144 MiB |
+| A JWS of 15 MiB of four million empty arrays, refused by its tokens | `v2Payload` | 40 MiB | 80 MiB |
+| A PNG whose credential holds the most objects that `maxTokens` leaves | `bakingPng` | 40 MiB | 80 MiB |
+| An SVG of 10 MiB whose credential is one string | `bakingSvg` | 56 MiB | 112 MiB |
+| A status list within the fetch limit that inflates to 256 MiB | `status` | 24 MiB | 48 MiB |
+| A CLR of 600 credentials whose refresh services answer 600,000 characters | `verify` | 32 MiB | 64 MiB |
+| A list of 5,000 alike items, refused as a limit of canonicalization | `dataIntegrity` | 64 MiB | 128 MiB |
+| A body at the limits of the provider of the most objects | `provider` | 56 MiB | 112 MiB |
+| An Open Badges 2.0 document of a million wrong values | `v2` | 56 MiB | 112 MiB |
 
-The services of the CLR sign their answers when they are asked, and that signing falls in its measure; the young generation of
-Node.js 24 holds more before it is collected, which is the higher end of each range.
+The services of the CLR sign their answers when they are asked, and that signing falls in the reading. Without their bounds, the
+CLR raised the peak by 174–264 MiB, the list of 5,000 items by 800 MiB, the Open Badges 2.0 document by 1 GB, and parsing the payload
+of 15 MiB by 354 MiB.
 
 ## Runtimes
 

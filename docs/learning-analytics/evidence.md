@@ -31,7 +31,7 @@ flowchart LR
 | Profiles      | Does `validateEvent` agree with every row of the tables of section 3 and of the certification guide? | `profiles.spec`, `profiles.corpus`, `validate` tests, `scripts/caliper-rules.ts`                                      | `pnpm test:spec`      |
 | Endpoint      | Does it answer each status in the order of its checks, and cost an unauthorized caller no parsing?   | `endpoint.test.ts`                                                                                                     | `pnpm test`           |
 | Round trip    | Does what a sensor sends reach `accept` equal, in 1.2 and in 1.1?                                    | `endpoint.test.ts`, `roundtrip.corpus.test.ts`, `versions.corpus.test.ts`, `examples/learning-analytics/test`          | `pnpm test`, `pnpm test:corpus` |
-| Memory        | Does each reader of untrusted input stay under its budget on its worst input?                        | `read-event-memory`, `read-entity-memory`, `validate-memory`, `read-envelope-memory`, `endpoint-memory`, and the two of 1.1 | `pnpm test`     |
+| Memory        | Does each reader of untrusted input stay under its budget on its worst input?                        | `packages/learning-analytics/test/peak-memory.test.ts` | `pnpm test`     |
 | Rules         | Does a test fail when a rule that keeps the endpoint safe is removed from the code?                  | `scripts/rules/learning-analytics.ts`                                                                                  | `pnpm check:rules`    |
 | Speed         | How long do reading, judging, building, sending and receiving take, against the schemas and the JSON? | `read.bench.ts`, `build.bench.ts`, `endpoint.bench.ts` in `packages/learning-analytics/test/`                        | `pnpm bench`          |
 | Size          | Does each entry point hold only what it uses, within its budget?                                    | `packages/learning-analytics/test/size.test.ts`                                                                        | `pnpm test`           |
@@ -141,19 +141,21 @@ fails above the budget after gzip, or when an entry point holds a module that it
 
 ## Memory
 
-Each reader of untrusted input has a test of its peak memory, in a file of its own because the peak of a process only grows; the
-test reports the rise. The budget is 256 MiB above the peak before the reading, which a reading that kept an issue for each wrong
-value would pass by far.
+Each reader of untrusted input runs on its worst input within its limits in a Node.js process of its own whose heap is
+bounded (`test/peak-memory.test.ts`, with the readings in `test/peak-memory-readings.ts`): what the reading keeps alive at once
+must fit, whenever V8 collects, so a regression fails and the load of a machine cannot. The heap of a case is twice the least in
+which the reading ends on Node.js 22 and 24, rounded up to 16 MiB; `node scripts/peak-memory.ts learning-analytics` prints the least, in steps
+of 8 MiB. A reading that kept an issue for each wrong value would pass the heap by far.
 
-| Reader                                     | Worst input                                                | Peak rose by |
-| ------------------------------------------ | ---------------------------------------------------------- | -----------: |
-| `readEvent`, `readEntity`, `validateEvent` | An object that holds a list of a million wrong values      | 18–27 MiB    |
-| The same, as Caliper 1.1                   | The same list                                              | 21–27 MiB    |
-| `readEnvelope`                             | An envelope whose event holds the same list                | 22–25 MiB    |
-| `handleCaliperRequest`                     | An envelope of 1 MiB of events, of 1.2 and of 1.1          | 1 and 17 MiB |
-| `handleCaliperRequest`                     | An event whose extensions have as many distinct keys as 1 MiB holds, the costliest body for its bytes | 29–33 MiB |
+| Reader                                     | Worst input                                                | Least heap | Heap of the test |
+| ------------------------------------------ | ---------------------------------------------------------- | ---------: | ---------------: |
+| `readEvent`, `readEntity`, `validateEvent` | An object that holds a list of a million wrong values      | 32 MiB     | 64 MiB           |
+| The same, as Caliper 1.1                   | The same list                                              | 32 MiB     | 64 MiB           |
+| `readEnvelope`                             | An envelope whose event holds the same list                | 32 MiB     | 64 MiB           |
+| `handleCaliperRequest`                     | An envelope of 1 MiB of events, of 1.2 and of 1.1          | 16 MiB     | 32 MiB           |
+| `handleCaliperRequest`                     | An event whose extensions have as many distinct keys as 1 MiB holds, the costliest body for its bytes | 24 MiB | 48 MiB |
 
-The rises are those of Node.js 22 and 24. The copy of a host's value is most of what the million values cost: `copyJson` of
+The copy of a host's value is most of what the million values cost: `copyJson` of
 `@interopkit/core` copies the list and names the place of a value only when it is not JSON. The endpoint reads what it parsed
 without that copy.
 

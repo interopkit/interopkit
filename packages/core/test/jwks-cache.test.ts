@@ -170,6 +170,22 @@ describe("createJwksCache", () => {
     expect(party.requests).toHaveLength(4);
   });
 
+  it("throws DataError with its cause for a key set nested too deep for jose to copy, and keeps nothing of it", async () => {
+    const { clock, party, fetch } = setup();
+    const cache = createJwksCache({ fetch, clock });
+    party.keySetResponse = () => new Response(`{"keys":[{"x":${"[".repeat(32_000)}${"]".repeat(32_000)}}]}`);
+    const refused = await Promise.resolve(key(cache, "platform-1")).then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+    expect(refused).toBeInstanceOf(DataError);
+    expect(refused).toHaveProperty("message", `The key set at ${JWKS_URL} must be a JWK Set (RFC 7517 section 5).`);
+    expect(refused).toHaveProperty("cause");
+    party.keySetResponse = undefined;
+    expect(await key(cache, "platform-1")).toBeDefined();
+    expect(party.requests).toHaveLength(2);
+  });
+
   it("throws LimitError for a set of more than 100 keys, before it reads one, and keeps nothing of it", async () => {
     const { clock, party, fetch } = setup();
     const cache = createJwksCache({ fetch, clock });
