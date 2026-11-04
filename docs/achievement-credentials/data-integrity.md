@@ -176,7 +176,7 @@ Any other error is the host's and reaches the caller.
 
 ## Contexts
 
-`createContextLoader` serves a context from `documents`, from `cache`, or from a fetch through the host's `fetch`, and only
+`createContextLoader` serves a context from `documents` or from a fetch through the host's `fetch`, and only
 after the SHA-256 of the canonical JSON of its document equals the pin of its address. The pins are those of `KNOWN_CONTEXTS`
 and of the `pins` option. An address with no pin is refused before anything is read or fetched for it, unless `allowUnknown` is
 set, and a document that differs from its pin is refused always. Nothing is loaded from a hint in a credential: the processors
@@ -184,17 +184,16 @@ of JSON-LD call the loader and no other.
 
 | Option         | Meaning                                                                                                          | Default                                  |
 | -------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `fetch`        | The `Fetch` that gets a context the loader does not hold                                                          | None: only `documents` and `cache` serve |
+| `fetch`        | The `Fetch` that gets a context the loader does not hold                                                          | None: only `documents` serve             |
 | `documents`    | Contexts the host holds, by address, checked against their pins                                                   | None                                     |
 | `pins`         | More pins, address to SHA-256 of the canonical JSON, for the contexts of an extension; a pin here takes the place of a known one | None                                     |
-| `cache`        | `get(url)` and `put(url, document)` of the host, for verified contexts; a context read from it is checked again   | None                                     |
 | `allowUnknown` | Serve a context that has no pin                                                                                    | `false`                                  |
 | `timeoutMs`    | The time a fetch may take                                                                                         | `10000`                                  |
 | `maxTokens`    | The most tokens of JSON in a context, counted before it is parsed                                                  | `1000000`    |
 | `maxBytes`     | The most bytes of a context                                                                                        | `262144`                                 |
 
 W3C asks that its context addresses are not fetched on every request: a host passes the W3C and 1EdTech contexts in `documents`,
-or keeps them in `cache`. A verified context stays in memory (100 at most), and callers that ask while it loads share one fetch.
+or keeps what it fetches in the `fetch` it passes, as a `fetch` that reads a store before the network does; every source is checked against its pin. A verified context stays in memory (100 at most), and callers that ask while it loads share one fetch.
 
 ## JSON-LD safe mode
 

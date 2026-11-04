@@ -74,37 +74,33 @@ describe("a context that the host holds", () => {
 describe("a context that is fetched", () => {
   const routes = { [ADDRESS]: DOCUMENT };
 
-  it("is fetched once for the callers that ask together, checked against its pin and put into the cache", async () => {
+  it("is fetched once for the callers that ask together, and checked against its pin", async () => {
     const { fetch, requests } = serve(routes);
-    const put: string[] = [];
-    const load = createContextLoader({
-      fetch,
-      pins: PINS,
-      cache: { get: async () => undefined, put: async (url) => void put.push(url) },
-    });
+    const load = createContextLoader({ fetch, pins: PINS });
     const [first, second] = await Promise.all([load(ADDRESS), load(ADDRESS)]);
     expect(first).toStrictEqual(DOCUMENT);
     expect(second).toStrictEqual(DOCUMENT);
     await load(ADDRESS);
     expect(requests).toStrictEqual([ADDRESS]);
-    expect(put).toStrictEqual([ADDRESS]);
   });
 
-  it("is served from the cache of the host without a fetch, and checked again", async () => {
-    const { fetch, requests } = serve(routes);
-    const cache = { get: async () => structuredClone(DOCUMENT), put: async () => undefined };
-    expect(await createContextLoader({ fetch, pins: PINS, cache })(ADDRESS)).toStrictEqual(DOCUMENT);
-    expect(requests).toStrictEqual([]);
-    const poisoned = { get: async () => ({ "@context": {} }), put: async () => undefined };
-    await expect(createContextLoader({ fetch, pins: PINS, cache: poisoned })(ADDRESS)).rejects.toThrow("pinned");
+  it("is served from the fetch of the host, which may keep it between processes, and checked again", async () => {
+    const kept = new Map<string, string>([[ADDRESS, JSON.stringify(DOCUMENT)]]);
+    const requested: string[] = [];
+    const caching = async (input: Request | string | URL) => {
+      const url = String(input);
+      requested.push(url);
+      return new Response(kept.get(url) ?? "", { status: kept.has(url) ? 200 : 404 });
+    };
+    expect(await createContextLoader({ fetch: caching, pins: PINS })(ADDRESS)).toStrictEqual(DOCUMENT);
+    expect(requested).toStrictEqual([ADDRESS]);
+    kept.set(ADDRESS, JSON.stringify({ "@context": {} }));
+    await expect(createContextLoader({ fetch: caching, pins: PINS })(ADDRESS)).rejects.toThrow("pinned");
   });
 
-  it("is refused when the fetched document is not the pinned one, and is not put into the cache", async () => {
+  it("is refused when the fetched document is not the pinned one", async () => {
     const { fetch } = serve({ [ADDRESS]: { "@context": { name: "https://evil.example/name" } } });
-    const put: string[] = [];
-    const cache = { get: async () => undefined, put: async (url: string) => void put.push(url) };
-    await expect(createContextLoader({ fetch, pins: PINS, cache })(ADDRESS)).rejects.toThrow("pinned");
-    expect(put).toStrictEqual([]);
+    await expect(createContextLoader({ fetch, pins: PINS })(ADDRESS)).rejects.toThrow("pinned");
   });
 
   it("is a ServiceError when the fetch fails, and the failure is not kept", async () => {
@@ -175,8 +171,9 @@ describe("the arguments", () => {
     ["a fetch that is not a function", '{"fetch":"x"}'],
     ["documents that are not a Map", '{"documents":{}}'],
     ["pins that are not a Map", '{"pins":[]}'],
-    ["a cache without functions", '{"cache":{}}'],
-    ["a cache without put", '{"cache":{"get":null}}'],
+    ["a cache, which the loader does not take", '{"cache":{"get":null,"put":null}}'],
+    ["an option of a verification, of the right type", '{"maxInputBytes":10}'],
+    ["a misspelled option", '{"timeout":10}'],
     ["allowUnknown that is a string", '{"allowUnknown":"yes"}'],
     ["a timeout of 0", '{"timeoutMs":0}'],
     ["a size limit of 1.5", '{"maxBytes":1.5}'],

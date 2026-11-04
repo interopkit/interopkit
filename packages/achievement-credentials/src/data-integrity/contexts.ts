@@ -9,19 +9,20 @@ import {
   ServiceError,
 } from "@interopkit/core";
 import {
-  checkFunction,
   checkHttpsUrl,
-  checkPositiveInteger,
-  checkRecord,
-  describe,
+  guardSchema,
   MAX_JSON_DEPTH,
   MAX_JSON_TOKENS,
   parseJsonText,
+  parseWith,
+  strictRecord,
 } from "@interopkit/core/checks";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
+import * as v from "valibot";
 import { jsonRefusals } from "../json-text.js";
 import type { ContextLoader } from "../model/index.js";
+import { optionsOf } from "../option-checks.js";
 import { canonicalJson } from "./canonical-json.js";
 
 /**
@@ -73,18 +74,10 @@ export const KNOWN_CONTEXTS: ReadonlyMap<string, string> = new Map([
   ],
 ]);
 
-/** A cache of contexts that a host keeps between processes. */
-export interface ContextCache {
-  /** Returns the document kept for an address, or `undefined` when it holds none. */
-  get(url: string): Promise<unknown>;
-  /** Keeps the document of an address, after it was checked against its pin. */
-  put(url: string, document: unknown): Promise<void>;
-}
-
 /** What `createContextLoader` needs. */
 export interface ContextLoaderOptions {
   /**
-   * The `fetch` that gets a context the loader does not hold. Without it, only `documents` and `cache` are served.
+   * The `fetch` that gets a context the loader does not hold. Without it, only `documents` are served.
    *
    * @defaultValue none
    */
@@ -102,13 +95,6 @@ export interface ContextLoaderOptions {
    * @defaultValue none
    */
   readonly pins?: ReadonlyMap<string, string>;
-  /**
-   * A cache of the host that keeps verified contexts between processes. A context read from it is checked against its pin
-   * again.
-   *
-   * @defaultValue none
-   */
-  readonly cache?: ContextCache;
   /**
    * Serve a context that has no pin.
    *
@@ -146,39 +132,23 @@ export function contextHash(document: unknown): string {
   return bytesToHex(sha256(utf8ToBytes(canonicalJson(document))));
 }
 
-/** Checks the options of `createContextLoader` as a host passes them from JavaScript. */
-function checkOptions(options: unknown): asserts options is ContextLoaderOptions {
-  checkRecord(options, "The options of createContextLoader must be an object");
-  if (options.fetch !== undefined) checkFunction(options.fetch, "The option fetch must be a function");
-  for (const name of ["documents", "pins"] as const) {
-    const value = options[name];
-    if (value !== undefined && !(value instanceof Map)) {
-      throw new DataError(`The option ${name} must be a Map, found ${describe(value)}.`);
-    }
-  }
-  if (options.cache !== undefined) {
-    checkRecord(options.cache, "The option cache must be an object");
-    checkFunction(options.cache.get, "The function get of the option cache must be a function");
-    checkFunction(options.cache.put, "The function put of the option cache must be a function");
-  }
-  if (options.allowUnknown !== undefined && typeof options.allowUnknown !== "boolean") {
-    throw new DataError(`The option allowUnknown must be true or false, found ${describe(options.allowUnknown)}.`);
-  }
-  if (options.timeoutMs !== undefined) checkPositiveInteger(options.timeoutMs, "The option timeoutMs");
-  if (options.maxBytes !== undefined) checkPositiveInteger(options.maxBytes, "The option maxBytes");
-  if (options.maxTokens !== undefined) checkPositiveInteger(options.maxTokens, "The option maxTokens");
-}
+const optionsSchema = strictRecord({
+  ...optionsOf("fetch", "timeoutMs", "maxBytes", "maxTokens"),
+  documents: v.optional(guardSchema((value): value is ReadonlyMap<string, unknown> => value instanceof Map, "a Map")),
+  pins: v.optional(guardSchema((value): value is ReadonlyMap<string, string> => value instanceof Map, "a Map")),
+  allowUnknown: v.optional(v.boolean()),
+});
 
 /**
  * Makes the loader of the contexts of JSON-LD: it serves a context only after its document matches the SHA-256 that is pinned
  * for its address.
  *
  * @remarks
- * A context comes from `documents`, then `cache`, then a fetch of the address through the host's `fetch`. Whatever its source,
+ * A context comes from `documents`, then from a fetch of the address through the host's `fetch`. Whatever its source,
  * its canonical JSON must hash to the pin of `KNOWN_CONTEXTS` or of `pins`; a context with no pin is refused unless
  * `allowUnknown` is set, and a context whose document differs from its pin is always refused, never processed. A verified
  * context is kept in memory and shared by the callers that ask while it loads. Each call returns a copy. W3C asks that its
- * contexts are not fetched on every request: a host passes them in `documents`, or keeps them in `cache`.
+ * contexts are not fetched on every request: a host passes them in `documents`, or keeps what it fetches in the `fetch` it passes.
  *
  * @param options - The `fetch`, the contexts the host holds, more pins and the limits.
  * @returns The loader.
@@ -188,11 +158,11 @@ function checkOptions(options: unknown): asserts options is ContextLoaderOptions
  * @see {@link https://www.w3.org/TR/vc-data-model-2.0/#contexts | Verifiable Credentials Data Model 2.0, contexts}
  */
 export function createContextLoader(options: ContextLoaderOptions): ContextLoader {
-  checkOptions(options);
-  const { fetch, documents, pins, cache: hostCache, allowUnknown = false } = options;
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
-  const maxTokens = options.maxTokens ?? MAX_JSON_TOKENS;
+  const checked = parseWith(optionsSchema, options, "The options of createContextLoader");
+  const { fetch, documents, pins, allowUnknown = false } = checked;
+  const timeoutMs = checked.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const maxBytes = checked.maxBytes ?? DEFAULT_MAX_BYTES;
+  const maxTokens = checked.maxTokens ?? MAX_JSON_TOKENS;
   // A context at a pinned address is the same document for the life of the loader, so a load is kept as it is, and shared.
   const kept = new Map<string, Promise<unknown>>();
 
@@ -219,7 +189,7 @@ export function createContextLoader(options: ContextLoaderOptions): ContextLoade
   /** Gets the document of a context from the host's sources, in order, and returns it verified. */
   const load = async (url: string): Promise<unknown> => {
     pinOf(url);
-    const held = documents?.get(url) ?? (await hostCache?.get(url));
+    const held = documents?.get(url);
     if (held !== undefined) return check(url, held);
     if (fetch === undefined)
       throw new DataError(`The context ${url} is held by no source: pass it in documents, or pass a fetch.`);
@@ -240,7 +210,6 @@ export function createContextLoader(options: ContextLoaderOptions): ContextLoade
       throw new ServiceError(error.message, 200, text.slice(0, 256), { cause: error });
     }
     check(url, document);
-    await hostCache?.put(url, document);
     return document;
   };
 

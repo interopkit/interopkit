@@ -5,7 +5,7 @@
  * @module @interopkit/achievement-credentials/data-integrity
  */
 export { addProof } from "./add-proof.js";
-export { type ContextCache, type ContextLoaderOptions, createContextLoader, KNOWN_CONTEXTS } from "./contexts.js";
+export { type ContextLoaderOptions, createContextLoader, KNOWN_CONTEXTS } from "./contexts.js";
 export { deriveDisclosure } from "./derive-disclosure.js";
 export type { DataIntegrityVerifyOptions, DisclosureOptions, ProofOptions, SigningCryptosuite } from "./options.js";
 export { validateJsonLd } from "./validate-json-ld.js";

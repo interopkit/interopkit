@@ -79,7 +79,7 @@ first has nothing that the model lacks, and the second is not readable without m
 | `@digitalbazaar/vc` | Verifying with the issuer as the controller of the key | Has | Stricter: the issuer must publish the key |
 | `@digitalbazaar/vc` | A hook that checks the status | Has | Built in: Bitstring Status List and the revocation list of 1EdTech |
 | `@digitalbazaar/vc` | The checks of the Data Model 1.1 and 2.0, with a skew of the clock | Has | The readers and `clockSkewSeconds` |
-| `@digitalbazaar/vc` | A loader of contexts that a host extends | Has | `createContextLoader` with `pins`, `documents` and `cache` |
+| `@digitalbazaar/vc` | A loader of contexts that a host extends | Has | `createContextLoader` with `pins`, `documents` and a `fetch` that the host may cache in |
 | `@digitalbazaar/vc` | `Ed25519Signature2020` | Has | With `legacyProofs` |
 | `@digitalbazaar/vc` | Creating, signing and verifying presentations | Excluded | Open Badges 9 and CLR 8 verify credentials; a presentation is the envelope of a protocol of delivery (OpenID for Verifiable Presentations, the VC API, the Credential Handler API) that the host speaks, and it passes each credential to `verifyCredential` |
 | `@digitalbazaar/vc` | A command line | Excluded | An application |

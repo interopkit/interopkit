@@ -1,6 +1,7 @@
 import {
   type Clock,
   checkClock,
+  clientOptionsEntries,
   DataError,
   DEFAULT_TIMEOUT_MS,
   type Fetch,
@@ -19,6 +20,7 @@ import {
   methodsSchema,
   parseWith,
 } from "@interopkit/core/checks";
+import * as v from "valibot";
 import { DEFAULT_MAX_JSON_LD_TOKENS } from "./json-text.js";
 import type { ContextLoader, DataIntegritySuite, KeyResolver } from "./model/index.js";
 
@@ -47,6 +49,30 @@ const DEFAULT_CLOCK_SKEW_SECONDS = 60;
  * otherwise: a credential with its images embedded is the largest.
  */
 const DEFAULT_MAX_BYTES = 1_048_576;
+
+/**
+ * The schemas of the options that several functions take, by name, all optional: a function declares the options it takes in a
+ * `strictRecord` that spreads `optionsOf` of their names beside its own, so that it refuses every other option.
+ */
+const OPTION_ENTRIES = {
+  ...clientOptionsEntries,
+  fetch: v.optional(clientOptionsEntries.fetch),
+  clock: v.optional(methodsSchema<Clock>("now")),
+};
+
+/** The names of the options in `OPTION_ENTRIES`. */
+type OptionName = keyof typeof OPTION_ENTRIES;
+
+/**
+ * Returns the schemas of the options of the given names, to spread into the `strictRecord` of a function's options.
+ *
+ * @param names - The options that the function takes among those that several functions take.
+ */
+export function optionsOf<const TName extends OptionName>(
+  ...names: readonly TName[]
+): Pick<typeof OPTION_ENTRIES, TName> {
+  return Object.fromEntries(names.map((name) => [name, OPTION_ENTRIES[name]])) as Pick<typeof OPTION_ENTRIES, TName>;
+}
 
 /**
  * Checks an option that is a flag, as a host passes it from JavaScript.
