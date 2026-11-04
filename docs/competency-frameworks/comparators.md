@@ -1,4 +1,4 @@
-# Comparators
+# Comparators of competency-frameworks
 
 What the other implementations of CASE do, and where `@interopkit/competency-frameworks` stands against each: **Has** the
 capability, **Partly**, **Excluded** with the reason, or **Missing**. A capability that CASE 1.1, its REST binding, its

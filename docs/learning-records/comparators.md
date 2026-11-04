@@ -1,4 +1,4 @@
-# Comparators
+# Comparators of learning-records
 
 What the maintained and the widely used xAPI libraries and LRSs do, and where `@interopkit/learning-records` stands against each:
 **Has** the capability, **Partly**, **Excluded** with the reason, or **Missing**. A capability of a comparator that the standard

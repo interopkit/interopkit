@@ -1,4 +1,4 @@
-# Errors
+# Errors of the packages
 
 Every error that an interopkit package throws extends `InteropkitError`, so one `instanceof` catches them all. A message is
 a full sentence that names the offending value or path and says what to do. Every class takes `ErrorOptions` after its own

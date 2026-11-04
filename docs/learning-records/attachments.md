@@ -1,4 +1,4 @@
-# Attachments
+# Attachments of Statements
 
 A Statement lists the headers of its Attachments, and the data travel apart from it: as a `fileUrl` that the data can be fetched
 from, or as the parts of a `multipart/mixed` message (4.1.3). `@interopkit/learning-records/attachments` writes and reads that

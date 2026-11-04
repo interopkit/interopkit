@@ -1,4 +1,4 @@
-# Evidence
+# Evidence for course-launch
 
 What shows that `@interopkit/course-launch` does what cmi5 asks; [performance](performance.md) says how fast and how small it is.
 Every check runs from a pinned source: cmi5 Quartz at `0ff5b30` of `AICC/CMI-5_Spec_Current`, and CATAPULT at `806c0ba` (v1.0.8), whose archive

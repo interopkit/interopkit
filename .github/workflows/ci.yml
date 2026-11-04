@@ -106,12 +106,13 @@ jobs:
             }
           }
 
-          // A change to these reaches no job but check.
+          // A change to these reaches no job but check, which builds the docs site with the plugin and the files of docs/.
           const NOT_CHECKED =
-            /^(\.changeset\/|\.github\/(?!workflows\/ci\.yml$)|[^/]+\.md$|LICENSE$|biome\.json$|biome\/|cspell\.json$|knip\.json$|typedoc\.json$|lefthook\.yml$|\.editorconfig$|validation\/[^/]+$)/;
-          // The scripts that only check, or are checked by the tests of scripts. Every other script serves the tests of the packages.
+            /^(\.changeset\/|\.github\/(?!workflows\/ci\.yml$)|[^/]+\.md$|LICENSE$|biome\.json$|biome\/|cspell\.json$|knip\.json$|typedoc\.json$|lefthook\.yml$|\.editorconfig$|validation\/[^/]+$|docs\/[^/]+$)/;
+          // The scripts that only check, or are checked by the tests of scripts, with the identity of the family and the generator of
+          // the docs site, which check builds. Every other script serves the tests of the packages.
           const OWN_SCRIPTS =
-            /^scripts\/(test\/|rules\/|check-standards\.ts$|check-duplication\.ts$|check-licenses\.ts$|check-rules\.ts$|check-release\.ts$|check-tarballs\.ts$)/;
+            /^scripts\/(test\/|rules\/|check-standards\.ts$|check-identity\.ts$|check-site\.ts$|family\.ts$|identity\.ts$|llms\.ts$|check-duplication\.ts$|check-licenses\.ts$|check-rules\.ts$|check-release\.ts$|check-tarballs\.ts$)/;
           // The scripts that the tests of one member alone read: a change to one reaches that member, as a change to its files does.
           const MEMBER_SCRIPTS = new Map([
             ["scripts/cmi5-requirements.ts", "packages/course-launch"],
@@ -220,6 +221,8 @@ jobs:
       # Packs the packages, installs them into a scratch project, imports every subpath in Node.js and type-checks them.
       - run: pnpm check:tarballs
       - run: pnpm docs:api
+      # The built site: titles, descriptions, canonical URLs and the sitemap, the Markdown copies, llms.txt and the links to it.
+      - run: pnpm check:site
       - run: pnpm check:licenses
       - run: pnpm check:audit
       # Version and Dependabot pull requests change package files without a changeset of their own.

@@ -1,4 +1,4 @@
-# Random
+# Picking at random through a random source
 
 A library that must pick at random, such as a free index of a status list, takes a `Random` from its caller: an object whose
 `uniform()` answers a uniform draw in [0, 1), the shape that `@assesskit/runtime` and `@measurekit/core` take too, so that a host

@@ -1,4 +1,4 @@
-# Signing
+# Signing with a key the host holds
 
 A `Signer` signs bytes with a key that the host holds: a `CryptoKey` in the process, or a key in a cloud KMS or an HSM that
 never leaves it. Every signing function of the packages takes a `Signer`, so that no package ever sees a private key.

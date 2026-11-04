@@ -1,4 +1,4 @@
-# The model
+# The Caliper model of events and entities
 
 Every entity and every event of Caliper 1.2 and of the Library Use Profile is an interface of this package and a schema that
 reads it. An entity is written as an object, or as the IRI that names it wherever the specification allows an entity. An event

@@ -1,4 +1,4 @@
-# Comparators
+# Comparators of learning-analytics
 
 What the other implementations of Caliper and the certification guide of Caliper 1.2 do, and where
 `@interopkit/learning-analytics` stands against each: **Has** the capability, **Partly**, **Excluded** with the reason, or

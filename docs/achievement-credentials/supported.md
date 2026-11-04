@@ -1,4 +1,4 @@
-# Supported
+# What achievement-credentials supports
 
 What `@interopkit/achievement-credentials` implements of Open Badges 3.0 and CLR 2.0. The package implements these
 specifications; [the evidence](evidence.md) gives each suite and counterparty with its count and date, and the package

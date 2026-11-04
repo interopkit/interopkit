@@ -1,4 +1,4 @@
-# Learning analytics architecture
+# Architecture of learning-analytics
 
 `@interopkit/learning-analytics` implements [Caliper Analytics 1.2](https://www.imsglobal.org/spec/caliper/v1p2) and the
 Library Use Profile, and reads Caliper 1.1 ([versions](./versions.md)). It holds the model of the events and entities, readers of

@@ -1,4 +1,4 @@
-# Checks
+# Checks of arguments and findings
 
 `@interopkit/core/checks` validates what a host or a network passes in. A check throws `DataError` with a full sentence that
 names the value and what was expected, such as `The option timeoutMs must be a positive integer, found 0.` A schema reads

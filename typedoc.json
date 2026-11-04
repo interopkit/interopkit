@@ -14,6 +14,8 @@
   ],
   "readme": "README.md",
   "out": "docs/api",
+  "router": "structure-dir",
+  "favicon": "docs/favicon.svg",
   "plugin": ["typedoc-plugin-mermaid", "./docs/typedoc-seo.ts"],
   "mermaidVersion": "11.17.2",
   "treatWarningsAsErrors": true,

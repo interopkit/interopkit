@@ -1,4 +1,4 @@
-# Architecture
+# Architecture of tool-integration
 
 `@interopkit/tool-integration` implements LTI 1.3 as functions over plain data. A host passes in what it owns (stores,
 registrations, `fetch`, the time) and receives plain results. The package has no server, no session and no database.

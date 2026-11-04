@@ -1,4 +1,4 @@
-# Supported Caliper constructs
+# What learning-analytics supports
 
 What the package implements of Caliper 1.2 and of the Library Use Profile, by construct. The counts come from the tables of the
 specification that the tests read: a test fails when a table has something that the model lacks.

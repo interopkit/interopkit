@@ -1,4 +1,4 @@
-# Comparators
+# Comparators of course-launch
 
 The other implementations of cmi5, read on 2026-11-02, and how each capability of theirs maps to this package. A library is
 trusted when it has a permissive license, a release in the last year, the current version of cmi5, and wide use or a known

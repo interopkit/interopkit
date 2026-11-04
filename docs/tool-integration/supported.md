@@ -1,4 +1,4 @@
-# Supported
+# What tool-integration supports
 
 What `@interopkit/tool-integration` implements of LTI 1.3: the tool role first, then the platform role. The package
 implements these specifications, and [the evidence](evidence.md) gives each check with its count and date.

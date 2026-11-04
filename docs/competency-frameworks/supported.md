@@ -1,4 +1,4 @@
-# Supported
+# What competency-frameworks supports
 
 What `@interopkit/competency-frameworks` implements of CASE. The package implements these specifications; [the evidence](evidence.md) gives each check with its count and date, and
 the package claims nothing of a provider or a consumer.

@@ -36,6 +36,7 @@
     "format": "biome check --write .",
     "knip": "knip",
     "docs:api": "pnpm build && typedoc",
+    "check:site": "node scripts/check-site.ts",
     "check:packages": "pnpm -r check:packages",
     "corpus": "node scripts/corpus.ts fetch",
     "corpus:pin": "node scripts/corpus.ts pin",

@@ -22,6 +22,14 @@ export const FAMILY = {
   author: "Fariz Wakan (https://github.com/luthfanwakan)",
 } as const;
 
+/** Facts of use that hold for every package, as `llms.txt` and `context7.json` state them to an assistant. */
+export const FACTS: readonly string[] = [
+  "Import each part from its subpath, such as `@interopkit/tool-integration/tool`; every package is ESM with TypeScript types.",
+  "Inputs and results are plain JSON data; readers throw `DataError` on invalid input, and validators return findings as data.",
+  "Nothing reaches the network or storage on its own: the caller passes a `fetch` and the stores as ports, and may pass a `Clock`.",
+  "A handler takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, which any web framework can build.",
+];
+
 /** The identity of one package: what npm, the README, the docs site and `llms.txt` say of it. */
 export interface PackageIdentity {
   /** The name on npm, which is also the folder below `packages/` and `docs/` after the scope. */

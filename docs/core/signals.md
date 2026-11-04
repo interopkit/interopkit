@@ -1,4 +1,4 @@
-# Signals
+# Abort signals and shared work
 
 Every function that waits on I/O takes a `signal` in its options (`CallOptions`). Aborting it ends that caller's wait and
 nothing else: work that several callers share runs on to its own timeout.

@@ -1,4 +1,4 @@
-# Comparators
+# Comparators of achievement-credentials
 
 What the validator of 1EdTech and the maintained verifiers of verifiable credentials do, and where
 `@interopkit/achievement-credentials` stands against each: **Has** the capability, **Partly**, **Excluded** with the reason, or

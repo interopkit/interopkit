@@ -1,4 +1,4 @@
-# Supported
+# What learning-records supports
 
 What `@interopkit/learning-records` implements of xAPI 2.0 and 1.0.3, and of xAPI Profiles 1.0. The package implements the
 standards, and [the evidence](evidence.md) gives each suite with its count and date. Section numbers are those of the LRS book (4.x) and the Content book (5.x) of IEEE 9274.1.1; 1.0.3 has

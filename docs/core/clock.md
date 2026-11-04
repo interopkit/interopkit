@@ -1,4 +1,4 @@
-# Clock
+# Reading the time through a clock
 
 A library reads the time only through a `Clock`, so that a host and a test control it: an option `clock` that is left out is
 `SYSTEM_CLOCK`, and a test passes a clock of its own. Tokens, logins and events carry the times it gives.
