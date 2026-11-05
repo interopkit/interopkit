@@ -121,8 +121,10 @@ carry such a challenge too, as the example's does.
 | Agents | Its learner | Another learner |
 | Activities, Activity Profile, About | Read; Activity Profiles also written | |
 
-A request with neither a token nor a credential of the host reaches the host's `access`, and the handler answers 400 for a
-request that lacks its `agent`, or whose query names a parameter twice, as xAPI asks.
+Another learner is an `agent` that is not an Agent with the learner's identifier: another identifier, a Group, or an object that
+is no Actor of xAPI. A request with neither a token nor a credential of the host reaches the host's `access`, and the handler
+answers 400 for a request that lacks its `agent`, gives one that is no JSON object, or whose query names a parameter twice, as
+xAPI asks.
 
 ## Records
 

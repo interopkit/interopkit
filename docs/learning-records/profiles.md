@@ -154,7 +154,7 @@ matches them all, in the order of their timestamps and, at one time, of the list
 | A quoted name                 | `$.result.extensions['https://example.org/x']`             | A member of an object, by any name; `\` escapes a quote    |
 | An index                      | `$.context.contextActivities.grouping[0]`                  | An element of an array                                    |
 | `*`                           | `$.context.contextActivities.*[*].id`                      | Every member of an object or element of an array          |
-| A union                       | `$.result.score['raw','max']`                              | Each member named, in order                               |
+| A union                       | `$.result.score['raw','max']`                              | Each member named, in order, each value once              |
 | `..`                          | `$..type`                                                  | The members at any depth                                  |
 | `\|`                          | `$.result.score.raw \| $.result.score.scaled`              | The values of each path, joined                           |
 
@@ -241,7 +241,10 @@ that `selectJsonPath` returns, which is the reader that is written here.
 | `maxFindings`           | 1,000                | The list ends with `findings-stopped`                                                                  |
 
 Each node of a Pattern is matched once at each position of a series, so the matching takes time in proportion to the
-Statements and the members, never more; a JSONPath with `..` walks each node of a Statement once for each step.
+Statements and the members, never more; a JSONPath with `..` walks each node of a Statement once for each step. What a JSONPath
+finds holds each value once, an object or a list by its place and a string, a number, a boolean or null by its value, since a rule
+asks whether values are there and which they are: a union or paths joined by `|` that name the same values again hold no more
+than the nodes of the Statement.
 
 ## Errors
 
@@ -252,6 +255,7 @@ Statements and the members, never more; a JSONPath with `..` walks each node of 
 | `The profile is not JSON: <cause>.`                                                                | A text that is not JSON                                                  | Pass the JSON of the profile                                     |
 | `The Pattern "<id>" names "<member>", which neither the profile nor the option profiles define ...` | A primary Pattern reaches another profile's template or Pattern          | Pass that profile in `profiles`                                  |
 | `The primary Patterns of the profile reach more than 1000 Patterns.` (`LimitError`)                | A profile past `MAX_MATCHED_PATTERNS` or `MAX_MATCHED_MEMBERS`           | Split the profile; no published profile comes near              |
+| `The Pattern "<id>", which a primary Pattern of the profile reaches, holds itself at some depth ...` | A Pattern of the option `profiles`, read by its shape, holds itself      | Fix that profile; `validateProfile` of it names the cycle        |
 | `The statement is invalid at <path>: ...`, `The statements are invalid at [i]: ...`                | A value that is not a Statement of xAPI                                  | Check it with `validateStatement` of the package root            |
 | `The statements are more than 10000, found N: raise the option maxStatements.` (`LimitError`)       | A list past `maxStatements`                                              | Judge a registration at a time, or raise the option              |
 | `The Statement that findStatement returned for "<id>" is not one of xAPI.`                          | The host's lookup returns another value                                  | Return the Statement, or `undefined`                             |
