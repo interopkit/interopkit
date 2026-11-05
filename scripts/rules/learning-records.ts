@@ -208,7 +208,7 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
   },
   {
     rule: "The text of a request above the most bytes is refused before it is parsed.",
-    file: "packages/learning-records/src/read/parse-statement-json.ts",
+    file: "packages/learning-records/src/read/text-bytes.ts",
     find: "if (bytes > maxBytes) {",
     replace: "if (false) {",
     test: "packages/learning-records/test/json.test.ts",
@@ -1677,5 +1677,19 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
     find: "if (issue === undefined) return actor;",
     replace: "return actor;",
     test: "packages/learning-records/test/compare.test.ts",
+  },
+  {
+    rule: "The text of a profile of more bytes than maxBytes is refused before it is parsed.",
+    file: "packages/learning-records/src/profiles/read-profile.ts",
+    find: 'checkTextBytes(input, maxBytes, "The profile");',
+    replace: "",
+    test: "packages/learning-records/test/profiles.test.ts",
+  },
+  {
+    rule: "A JSONPath of a rule of more than MAX_JSON_PATH_LENGTH characters is refused.",
+    file: "packages/learning-records/src/profiles/json-path.ts",
+    find: "if (text.length > MAX_JSON_PATH_LENGTH) {",
+    replace: "if (false) {",
+    test: "packages/learning-records/test/profiles.test.ts",
   },
 ];

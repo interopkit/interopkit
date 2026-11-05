@@ -95,5 +95,5 @@ of 8 MiB.
 | `verifyStatementSignature` | A JWS of 10 MiB whose payload is near a million tokens of distinct names | 88 MiB | 176 MiB |
 | `readBasicAuthorization` | A header of 10 MiB | 16 MiB | 32 MiB |
 | The alternate request syntax | A form of a million and a half names, and a form of 10 MiB of `+` | 8 and 32 MiB | 16 and 64 MiB |
-| `validateProfile` | The text of a profile of 26,500 verbs near a million tokens, each narrower than the next | 40 MiB | 80 MiB |
+| `validateProfile` | The text of a profile of 5,451 verbs near the 1,300,000 bytes of `maxBytes`, each narrower than the next | 16 MiB | 32 MiB |
 | `validateStatements` of a profile's validator | 10,000 Statements of one registration against a primary Pattern that reaches 1,000 Patterns, each tried at every Statement | 32 MiB | 64 MiB |

@@ -1,4 +1,4 @@
-import { DataError, LimitError } from "@interopkit/core";
+import { DataError } from "@interopkit/core";
 import {
   checkString,
   MAX_JSON_TOKENS,
@@ -9,6 +9,7 @@ import {
 } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { findRepeatedProperty } from "./repeated-property.js";
+import { checkTextBytes } from "./text-bytes.js";
 
 /** The most bytes of text that `parseStatementJson` reads unless the caller says otherwise: 10 MiB, the size of an LRS request. */
 const DEFAULT_MAX_BYTES = 10_485_760;
@@ -72,15 +73,7 @@ export function parseStatementJson(text: string, options?: ParseStatementJsonOpt
     maxDepth = DEFAULT_MAX_DEPTH,
     maxTokens = MAX_JSON_TOKENS,
   } = parseWith(optionsSchema, options === undefined ? {} : options, "The options object");
-  // A string of more units than the limit has more bytes than it, so the longer ones need no encoding.
-  const bytes = text.length > maxBytes ? text.length : new TextEncoder().encode(text).byteLength;
-  if (bytes > maxBytes) {
-    throw new LimitError(
-      `The text has ${bytes} bytes or more, above the limit of ${maxBytes} bytes.`,
-      "maxBytes",
-      maxBytes,
-    );
-  }
+  checkTextBytes(text, maxBytes, "The text");
   // `JSON.parse` is the judge of the syntax of RFC 8259, and the search for a repeated property relies on it.
   const value = parseJsonText(
     text,

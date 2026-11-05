@@ -65,9 +65,9 @@ const CASES: readonly {
     outcome: "status 400",
   },
   {
-    title: "reads and judges the text of a profile near the most tokens, of verbs each narrower than the next",
+    title: "reads and judges the text of a profile near the most bytes, of verbs each narrower than the next",
     name: "profile",
-    heapMiB: 80,
+    heapMiB: 32,
     outcome: "0 findings",
   },
   {

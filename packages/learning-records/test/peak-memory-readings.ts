@@ -89,8 +89,11 @@ function hostileForm(): Uint8Array {
   return body;
 }
 
-/** The verbs of the largest profile: with their properties, near the million tokens that a profile's text may have. */
-const PROFILE_VERBS = 26_500;
+/**
+ * The verbs of the largest profile: with their properties, near the 1,300,000 bytes that a profile's text may have, which bound
+ * it before its 1,000,000 tokens do.
+ */
+const PROFILE_VERBS = 5451;
 
 /** The Patterns that the primary Pattern of the widest matching reaches: the most that a validator takes. */
 const MATCHED_PATTERNS = 1000;
@@ -116,7 +119,7 @@ function profileOf(parts: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
-/** The text of a profile of verbs, each broader than the next, near the million tokens that a profile's text may have. */
+/** The text of a profile of verbs, each broader than the next, near the most bytes that a profile's text may have. */
 function largestProfile(): string {
   const verb = (index: number) => `${PROFILE}/verbs/${index}`;
   const concepts = Array.from({ length: PROFILE_VERBS }, (_, index) => ({
@@ -233,7 +236,7 @@ export const READINGS = {
       return `status ${(await handleLrsRequest(request, optionsOf(memory()))).status}`;
     },
   },
-  /** The text of a profile near the most tokens, each of its verbs narrower than the next. */
+  /** The text of a profile near the most bytes, each of its verbs narrower than the next. */
   profile: {
     input: largestProfile,
     read: (text: string) => `${validateProfile(text).length} findings`,

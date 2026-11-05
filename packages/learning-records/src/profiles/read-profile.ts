@@ -15,6 +15,7 @@ import {
   strictRecord,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
+import { checkTextBytes } from "../read/internal.js";
 import { conceptsIssues } from "./concept-rules.js";
 import { documentIssues } from "./document-rules.js";
 import { patternsIssues } from "./pattern-rules.js";
@@ -46,34 +47,58 @@ export interface ProfileReadOptions {
    * @defaultValue 1,000,000
    */
   readonly maxTokens?: number;
+  /**
+   * The most bytes of a profile given as text, counted as UTF-8 before the text is parsed: one string is one token, so the
+   * tokens alone do not bound the text.
+   *
+   * @defaultValue 1,300,000, five times the largest profile that ADL publishes
+   */
+  readonly maxBytes?: number;
 }
+
+/**
+ * The most bytes of the text of a profile unless the caller says otherwise: five times the 244,178 bytes of the largest profile
+ * that ADL publishes (`Profile_Server_Profiles/DoD_ISD.jsonld` of adlnet/xapi-authored-profiles at 4e8b1df), rounded up.
+ */
+const DEFAULT_MAX_PROFILE_BYTES = 1_300_000;
 
 const optionsSchema = strictRecord({
   profiles: v.optional(v.array(v.unknown())),
   maxFindings: v.optional(positiveIntegerSchema),
   maxTokens: v.optional(positiveIntegerSchema),
+  maxBytes: v.optional(positiveIntegerSchema),
 });
 
 /** What the options of a read ask for. */
 interface ProfileReadSettings {
   readonly others: readonly Profile[];
   readonly maxFindings: number;
+  readonly limits: TextLimits;
+}
+
+/** The most bytes and tokens of the text of a profile. */
+interface TextLimits {
+  readonly maxBytes: number;
   readonly maxTokens: number;
 }
 
 /** Checks the options of a read, reads the other profiles by their shape, and returns what the options ask for. */
 function readSettings(options: unknown): ProfileReadSettings {
   const checked = parseWith(optionsSchema, options === undefined ? {} : options, "The options object");
-  const maxTokens = checked.maxTokens ?? MAX_JSON_TOKENS;
+  const limits = {
+    maxBytes: checked.maxBytes ?? DEFAULT_MAX_PROFILE_BYTES,
+    maxTokens: checked.maxTokens ?? MAX_JSON_TOKENS,
+  };
   const others = (checked.profiles ?? []).map((other, index) =>
-    parseWith(profileSchema, parseProfileText(other, maxTokens), `The option profiles at [${index}]`),
+    parseWith(profileSchema, parseProfileText(other, limits), `The option profiles at [${index}]`),
   );
-  return { others, maxFindings: checked.maxFindings ?? DEFAULT_MAX_FINDINGS, maxTokens };
+  return { others, maxFindings: checked.maxFindings ?? DEFAULT_MAX_FINDINGS, limits };
 }
 
 /** Parses a profile given as text within the limits, and returns any other value as it is. */
-function parseProfileText(input: unknown, maxTokens: number): unknown {
+function parseProfileText(input: unknown, { maxBytes, maxTokens }: TextLimits): unknown {
   if (typeof input !== "string") return input;
+  checkTextBytes(input, maxBytes, "The profile");
   return parseJsonText(
     input,
     { maxDepth: MAX_JSON_DEPTH, maxTokens },
@@ -111,7 +136,8 @@ function inspectProfile(input: unknown, others: readonly Profile[], sink: IssueS
  * them, and returns a copy.
  *
  * @remarks
- * The profile is a value, such as parsed JSON-LD, or the text of its JSON, which is parsed within `maxTokens` and 64 levels. A
+ * The profile is a value, such as parsed JSON-LD, or the text of its JSON, which is parsed within `maxBytes`, `maxTokens` and 64
+ * levels. A
  * profile with an error is not returned, and warnings are not reported: `validateProfile` lists the findings with their
  * severity. A Pattern member that neither the profile nor the option `profiles` defines is a warning, since the specification
  * lets a Pattern reuse those of other profiles. The check stops after `maxFindings` errors, and the error says that there may
@@ -120,10 +146,10 @@ function inspectProfile(input: unknown, others: readonly Profile[], sink: IssueS
  * @param input - The profile, or the text of its JSON.
  * @param options - Other profiles that it names, the most errors to count, and the most tokens of a text.
  * @returns The profile.
- * @throws `LimitError` with the limit `maxTokens`, or `maxDepth` for more than 64 levels, when the text passes it.
+ * @throws `LimitError` with the limit `maxBytes` or `maxTokens`, or `maxDepth` for more than 64 levels, when the text passes it.
  * @throws `DataError` that names the path of the first error and counts the others, when the profile has an error or the text is
- * not JSON, or when the options are not an object with `profiles` as a list of profiles of the right shape, and `maxFindings`
- * and `maxTokens` as positive integers.
+ * not JSON, or when the options are not an object with `profiles` as a list of profiles of the right shape, and `maxFindings`,
+ * `maxTokens` and `maxBytes` as positive integers.
  * @see {@link https://github.com/adlnet/xapi-profiles/blob/master/xapi-profiles-structure.md | xAPI Profiles 1.0, Part Two}
  */
 export function readProfile(input: unknown, options?: ProfileReadOptions): Profile {
@@ -135,9 +161,9 @@ export function readProfileAndOthers(
   input: unknown,
   options: unknown,
 ): { readonly profile: Profile; readonly others: readonly Profile[] } {
-  const { others, maxFindings, maxTokens } = readSettings(options);
+  const { others, maxFindings, limits } = readSettings(options);
   const sink = createIssueSink(maxFindings, true);
-  const profile = inspectProfile(parseProfileText(input, maxTokens), others, sink);
+  const profile = inspectProfile(parseProfileText(input, limits), others, sink);
   const errors = sink.list();
   if (profile === undefined || errors.length > 0) {
     throw new DataError(describeRefusal("The profile", errors, "validateProfile"));
@@ -158,14 +184,14 @@ export function readProfileAndOthers(
  * @param input - The profile, or the text of its JSON.
  * @param options - Other profiles that it names, the most findings to list, and the most tokens of a text.
  * @returns The findings, errors and warnings. An empty list means that the profile is sound.
- * @throws `LimitError` with the limit `maxTokens`, or `maxDepth` for more than 64 levels, when the text passes it.
+ * @throws `LimitError` with the limit `maxBytes` or `maxTokens`, or `maxDepth` for more than 64 levels, when the text passes it.
  * @throws `DataError` when the text is not JSON, or when the options are not an object with `profiles` as a list of profiles of
- * the right shape, and `maxFindings` and `maxTokens` as positive integers.
+ * the right shape, and `maxFindings`, `maxTokens` and `maxBytes` as positive integers.
  * @see {@link https://github.com/adlnet/xapi-profiles/blob/master/xapi-profiles-structure.md | xAPI Profiles 1.0, Part Two}
  */
 export function validateProfile(input: unknown, options?: ProfileReadOptions): readonly Issue[] {
-  const { others, maxFindings, maxTokens } = readSettings(options);
+  const { others, maxFindings, limits } = readSettings(options);
   const sink = createIssueSink(maxFindings, false);
-  inspectProfile(parseProfileText(input, maxTokens), others, sink);
+  inspectProfile(parseProfileText(input, limits), others, sink);
   return sink.list();
 }

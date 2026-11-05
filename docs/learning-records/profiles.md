@@ -113,6 +113,7 @@ verdict.issues; // => []
 | `profiles`      | all three                                 | none       | Other profiles, as values or text, read by their shape: those whose templates and Patterns the profile's Patterns reuse, whose concepts its relations name, whose extensions Statements carry |
 | `maxFindings`   | all three                                 | 1,000      | The most findings of a call; a last finding `findings-stopped` says the list stopped                                                                                            |
 | `maxTokens`     | `readProfile`, `validateProfile`          | 1,000,000  | The most tokens of JSON of a profile given as text, counted before it is parsed                                                                                                 |
+| `maxBytes`      | `readProfile`, `validateProfile`          | 1,300,000  | The most bytes of a profile given as text, counted as UTF-8 before it is parsed                                                                                                 |
 | `findStatement` | `createProfileValidator`                  | none       | Returns the Statement, as JSON, that a StatementRef names, or `undefined`; `validateStatements` looks in its list first                                                         |
 | `maxStatements` | `createProfileValidator`                  | 10,000     | The most Statements of one call of `validateStatements`                                                                                                                         |
 
@@ -186,7 +187,7 @@ Two.
 | `determining-property`       | error    | A Determining Property that names a concept of another type                                             | 8.0     |
 | `statement-ref-template`     | error    | A StatementRef template that is no template of this profile                                             | 8.0     |
 | `rule-requirement`           | error    | A rule without `presence`, `any`, `all` or `none`                                                       | 8.1     |
-| `json-path`                  | error    | A `location` or `selector` that is not a JSONPath of a rule                                             | 8.1     |
+| `json-path`                  | error    | A `location` or `selector` that is not a JSONPath of a rule, or has more than `MAX_JSON_PATH_LENGTH` characters | 8.1     |
 | `pattern-kind`               | error    | A Pattern without exactly one of the five kinds                                                          | 9.0     |
 | `primary-description`        | error    | A primary Pattern without `prefLabel` and `definition`                                                  | 9.0     |
 | `alternates-members`, `sequence-members` | error | Fewer than two members, but a primary Pattern used nowhere else of one template                 | 9.0     |
@@ -232,8 +233,10 @@ that `selectJsonPath` returns, which is the reader that is written here.
 
 | Limit                   | Value                | Cost at the limit                                                                                     |
 | ----------------------- | -------------------- | ----------------------------------------------------------------------------------------------------- |
-| `maxTokens`             | 1,000,000            | A profile of 26,500 verbs: under 40 MiB of heap and 240 ms to read and judge ([performance](performance.md)) |
+| `maxTokens`             | 1,000,000            | Counted before the text is parsed; `maxBytes` bounds a text of verbs first                              |
+| `maxBytes`              | 1,300,000            | Five times the largest profile that ADL publishes. A profile of 5,451 verbs at the limit ends within a heap of 16 MiB and is read and judged in 17 ms on a laptop ([performance](performance.md)) |
 | Depth of a text         | 64 levels            | Refused before it is parsed                                                                           |
+| `MAX_JSON_PATH_LENGTH`  | 500 characters       | Five times the longest JSONPath in ADL's profiles. At `maxBytes`, 2,419 rules of 100 walks joined by `\|` judge a Statement of 130 nodes in 1.2 s, of 1,000 in 11 s and of 10,000 in 114 s, within 150 MiB of heap |
 | `maxStatements`         | 10,000               | With the most Patterns below, under 32 MiB of heap and 0.5 s                                          |
 | `MAX_MATCHED_PATTERNS`  | 1,000                | The Patterns that the primary Patterns reach; four bytes for each Pattern and Statement                |
 | `MAX_MATCHED_MEMBERS`   | 10,000               | The members of those Patterns: the work at each Statement                                             |

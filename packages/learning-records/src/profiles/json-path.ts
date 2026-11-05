@@ -1,4 +1,4 @@
-import { DataError } from "@interopkit/core";
+import { DataError, LimitError } from "@interopkit/core";
 import { describe, isRecord } from "@interopkit/core/checks";
 
 /** The selector `*`: every member of an object, every element of an array. */
@@ -15,6 +15,13 @@ interface Step {
 
 /** A JSONPath of a Statement Template rule: one or more paths from the root, joined by `|`, each a list of steps. */
 export type JsonPath = readonly (readonly Step[])[];
+
+/**
+ * The most characters of the JSONPath of a rule: five times the 99 of the longest that a profile of ADL writes
+ * (`$.result.extensions['https://w3id.org/xapi/netc-assessment/extensions/result/response-explanation']`), rounded up. Each step
+ * and each member of a union costs a pass over the values found, so the length bounds the work of a rule on a Statement.
+ */
+export const MAX_JSON_PATH_LENGTH = 500;
 
 /** The characters that end a name in dot notation. */
 const NAME_END = /[.[\]|,'"*()?\s]/u;
@@ -147,9 +154,16 @@ function readSteps(path: PathText): readonly Step[] {
  * brackets, non-negative indexes, `*`, `..`, unions of these in brackets, and paths joined by `|`.
  *
  * @throws `DataError` that says where the text stops being such a path: a filter or a script, a slice or a negative index,
- * a path without `$`.
+ * a path without `$`; a `LimitError` for a path of more than `MAX_JSON_PATH_LENGTH` characters.
  */
 export function parseJsonPath(text: string): JsonPath {
+  if (text.length > MAX_JSON_PATH_LENGTH) {
+    throw new LimitError(
+      `The JSONPath has ${text.length} characters, more than the ${MAX_JSON_PATH_LENGTH} that a rule may have.`,
+      "MAX_JSON_PATH_LENGTH",
+      MAX_JSON_PATH_LENGTH,
+    );
+  }
   const path = new PathText(text);
   const paths: (readonly Step[])[] = [];
   for (;;) {

@@ -2,7 +2,7 @@ import { DataError, LimitError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { otherProfile, soundProfile } from "../../../scripts/xapi-profile-rules.js";
 import { type Json, set } from "../../../scripts/xapi-rules.js";
-import { readProfile, validateProfile } from "../src/profiles/index.js";
+import { MAX_JSON_PATH_LENGTH, readProfile, validateProfile } from "../src/profiles/index.js";
 import { parseJsonPath, selectJsonPath } from "../src/profiles/internal.js";
 import { sharesNothing, summary } from "./fixture.js";
 
@@ -37,6 +37,22 @@ describe("reading a profile", () => {
     } catch (caught) {
       expect(caught).toMatchObject({ limit: "maxTokens", maximum: 100 });
     }
+  });
+
+  it("refuses a text of more bytes than maxBytes, 1,300,000 by default, before it parses it, and one string counts in full", () => {
+    const text = JSON.stringify(soundProfile());
+    const bytes = new TextEncoder().encode(text).byteLength;
+    expect(readProfile(text, { maxBytes: bytes })).toStrictEqual(soundProfile());
+    expect(() => validateProfile(text, { maxBytes: bytes - 1 })).toThrow(
+      expect.objectContaining({ limit: "maxBytes", maximum: bytes - 1 }),
+    );
+    // A text of a few tokens and many bytes: one string of more than the default, which the tokens let through.
+    const long = JSON.stringify({ ...soundProfile(), seeAlso: `https://example.org/${"a".repeat(1_300_000)}` });
+    expect(() => readProfile(long)).toThrow(expect.objectContaining({ limit: "maxBytes", maximum: 1_300_000 }));
+    expect(() => readProfile(soundProfile(), { profiles: [long] })).toThrow(
+      expect.objectContaining({ limit: "maxBytes" }),
+    );
+    expect(() => readProfile(text, JSON.parse('{ "maxBytes": 0 }'))).toThrow(/maxBytes/u);
   });
 
   it("refuses a text that nests deeper than 64 levels, and one that is not JSON", () => {
@@ -352,6 +368,19 @@ describe("the JSONPaths of the rules", () => {
     expect(select("$.result.score.raw | $['result'].score['raw'] | $..raw")).toStrictEqual([9]);
     // A rule compares values, so the same primitive found in two places is one value.
     expect(selectJsonPath(parseJsonPath("$.a[*] | $.b"), { a: [3, 3, "3"], b: 3 })).toStrictEqual([3, "3"]);
+  });
+
+  it("refuses a path of more than MAX_JSON_PATH_LENGTH characters, which a rule's work grows with, and takes one of as many", () => {
+    const longest = `$.${"a".repeat(MAX_JSON_PATH_LENGTH - 2)}`;
+    expect(longest).toHaveLength(MAX_JSON_PATH_LENGTH);
+    expect(parseJsonPath(longest)).toHaveLength(1);
+    expect(() => parseJsonPath(`${longest}.`)).toThrow(
+      expect.objectContaining({ limit: "MAX_JSON_PATH_LENGTH", maximum: MAX_JSON_PATH_LENGTH }),
+    );
+    const input = changed(set("templates.2.rules.0.location", `${longest}b`));
+    expect(summary(validateProfile(input))).toStrictEqual([
+      { path: "templates[2].rules[0].location", rule: "json-path", severity: "error" },
+    ]);
   });
 
   it.each([

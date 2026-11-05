@@ -25,4 +25,5 @@ export {
   STATEMENT_SCHEMAS,
 } from "./schemas.js";
 export { statementQuerySchema } from "./statement-query.js";
+export { checkTextBytes } from "./text-bytes.js";
 export { attachmentHeadersOf, walkStatement } from "./walk.js";

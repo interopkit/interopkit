@@ -19,6 +19,7 @@ export {
   type VocabularyConcept,
   type VocabularyConceptType,
 } from "./concepts.js";
+export { MAX_JSON_PATH_LENGTH } from "./json-path.js";
 export type { TemplateOutcome } from "./judge-statement.js";
 export { MAX_MATCHED_MEMBERS, MAX_MATCHED_PATTERNS, type PatternOutcome } from "./pattern-match.js";
 export { PATTERN_KINDS, type Pattern, type PatternKind } from "./patterns.js";
