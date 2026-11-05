@@ -30,6 +30,15 @@ alone joins a node of a rope for each in Node.js, and raised the peak by 368 MiB
 
 `requestService` reads the chunks up to `maxBytes`, cancels the rest and joins what it read once.
 
+Every schema of an object of `core/checks` refuses a property named `__proto__`, `constructor` or `prototype` in one step of its
+own pipe, which finds the first such name by three lookups and lists the names only for the refusal; `copyJson` finds it the
+same way, about 3 percent of `readEntity` of `learning-analytics`. `copyJson` assigns each member of a copy to an object literal,
+as the objects of valibot are built, and defines a member named `__proto__` where names are data; `openRecord` copies the members
+that it does not name by their names and an assignment. Timed in turns in one process against a build that refuses none of these
+names and copies with `Object.entries` and `Object.fromEntries`, `readCredential` of `achievement-credentials` takes 0.70 to 0.73
+of its time, `readEntity` 0.85 to 0.86 and `validateEvent` 0.78 to 0.86; each member defined by `Object.defineProperty` instead
+takes 1.2 times that build, and `Object.keys` with `Object.fromEntries` 1.07.
+
 The parts of a JWS are written as base64url by a table, in time linear in the input: built from the bytes as the arguments of
 `String.fromCharCode` and encoded with `btoa`, they take longer than the signature, and `signCompactJws` of 2 KB 58 µs where it
 takes 32.
@@ -42,10 +51,10 @@ module that its budget does not list. Gzip is measured on Node.js 22; other vers
 
 | Entry point               |  Bytes |   Gzip | Budget | Holds, besides valibot |
 | ------------------------- | -----: | -----: | -----: | ---------------------- |
-| `@interopkit/core`        | 26,976 |  9,447 | 12,000 | nothing more           |
-| `@interopkit/core/checks` | 23,074 |  7,981 |  8,500 | nothing more           |
-| `@interopkit/core/http`   | 22,652 |  7,319 |  9,000 | nothing more           |
-| `@interopkit/core/oauth`  | 47,092 | 15,290 | 18,500 | oauth4webapi           |
+| `@interopkit/core`        | 27,319 |  9,570 | 12,000 | nothing more           |
+| `@interopkit/core/checks` | 23,585 |  8,156 |  8,500 | nothing more           |
+| `@interopkit/core/http`   | 23,124 |  7,472 |  9,000 | nothing more           |
+| `@interopkit/core/oauth`  | 47,405 | 15,391 | 18,500 | oauth4webapi           |
 
 ## Memory
 

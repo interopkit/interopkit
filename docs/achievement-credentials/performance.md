@@ -15,32 +15,32 @@ flowchart LR
 is installable ([comparators](comparators.md)), and otherwise the least work of the same kind. `scripts/bench-rounds.ts` runs the
 function and its reference in three rounds, the reference first in the first and the last, so that the load of a shared machine
 falls on both, and the gate is the ratio of the fastest samples. The table gives the range of the ratios of the eight latest green runs of the runner of CI and
-of one run on a laptop; a budget is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit, and holds on any machine.
+of two runs on a laptop; a budget is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit, and holds on any machine.
 
 | Benchmark                                                      | Reference                                                             |     Ratio | Budget |
 | -------------------------------------------------------------- | --------------------------------------------------------------------- | --------: | -----: |
-| `verifyCredential` of a JWS                                    | `did-jwt-vc`, which checks the signature and the claims               | 0.14–0.30 |      2 |
-| `verifyCredential` of a CLR in a JWS that holds 10 JWS         | `did-jwt-vc` of the 11 JWTs                                           | 0.14–0.31 |      2 |
-| `verifyCredential` with an `eddsa-rdfc-2022` proof             | `@digitalbazaar/vc`, which checks the structure and the proof         | 1.06–1.14 |      6 |
-| the same                                                       | `@interop/verifier-core`, which also checks the status and the expiry | 1.03–1.11 |      6 |
-| `addProof` with `eddsa-rdfc-2022`                              | `vc.issue` of `@digitalbazaar/vc` with its suite                      | 0.99–1.11 |      6 |
-| `verifyProof` of `eddsa-rdfc-2022`                             | `vc.verifyCredential` of `@digitalbazaar/vc`                          | 0.67–1.22 |      7 |
-| `verifyProof` of `ecdsa-rdfc-2019`                             | `@interop/verifier-core`                                              | 0.90–0.93 |      5 |
-| `verifyProof` of `Ed25519Signature2020`, `legacyProofs`        | `@interop/verifier-core`                                              | 1.04–1.09 |      6 |
-| `verifyProof` of an `ecdsa-sd-2023` disclosure                 | `@digitalbazaar/vc` with Digital Bazaar's `ecdsa-sd-2023` suite       | 0.95–1.02 |      6 |
-| `readCredentialJwt`                                            | `verifyCredential` of `did-jwt-vc`                                    | 0.12–0.27 |      2 |
-| `signCredentialJwt` with EdDSA                                 | `createVerifiableCredentialJwt` of `did-jwt-vc`                       | 0.11–0.20 |      2 |
-| `issueStatusListCredential` of 131,072 entries, Data Integrity | `@interop/vc-bitstring-status-list` and `jsigs.sign`                  | 0.94–1.17 |      6 |
-| `verifyCredentialStatus` against that list, fetched each time  | `checkStatus` of `@interop/vc-bitstring-status-list`                  | 1.07–1.57 |      8 |
-| `readCredential` of a CLR of 20 credentials                    | the published schema of CLR 2.0 in `@cfworker/json-schema`            | 0.15–0.18 |    0.9 |
-| `validateCredential` of the same CLR                           | the same                                                              | 0.15–0.18 |    0.9 |
-| `bakePng` of that CLR into an image of 256 KiB                 | `JSON.stringify` of the CLR                                           | 14.8–17.4 |     90 |
-| `readPng` of that image                                        | `JSON.parse` of the CLR                                               | 2.68–3.49 |     20 |
-| `bakeSvg` of that CLR into an SVG of 140,000 characters        | saxes over the SVG                                                    | 1.46–1.67 |      9 |
-| `readSvg` of that SVG, which stops at the credential           | saxes over all of it                                                  | 0.57–0.64 |      4 |
-| `handleCredentialsRequest`, a page of 100 credentials          | `JSON.stringify` of the page                                          | 1.22–1.24 |      7 |
-| `handleCredentialsRequest`, the upsert of that CLR             | `JSON.parse` of its body                                              | 5.09–6.86 |     40 |
-| `handleRefreshRequest` of that CLR                             | `JSON.stringify` of it                                                | 1.03–1.06 |      6 |
+| `verifyCredential` of a JWS                                    | `did-jwt-vc`, which checks the signature and the claims               | 0.14–0.28 |      2 |
+| `verifyCredential` of a CLR in a JWS that holds 10 JWS         | `did-jwt-vc` of the 11 JWTs                                           | 0.14–0.29 |      2 |
+| `verifyCredential` with an `eddsa-rdfc-2022` proof             | `@digitalbazaar/vc`, which checks the structure and the proof         | 1.04–1.18 |      6 |
+| the same                                                       | `@interop/verifier-core`, which also checks the status and the expiry | 1.03–1.21 |      7 |
+| `addProof` with `eddsa-rdfc-2022`                              | `vc.issue` of `@digitalbazaar/vc` with its suite                      | 1.03–1.09 |      6 |
+| `verifyProof` of `eddsa-rdfc-2022`                             | `vc.verifyCredential` of `@digitalbazaar/vc`                          | 1.04–1.32 |      7 |
+| `verifyProof` of `ecdsa-rdfc-2019`                             | `@interop/verifier-core`                                              | 0.88–1.03 |      6 |
+| `verifyProof` of `Ed25519Signature2020`, `legacyProofs`        | `@interop/verifier-core`                                              | 1.02–1.17 |      6 |
+| `verifyProof` of an `ecdsa-sd-2023` disclosure                 | `@digitalbazaar/vc` with Digital Bazaar's `ecdsa-sd-2023` suite       | 0.97–1.04 |      6 |
+| `readCredentialJwt`                                            | `verifyCredential` of `did-jwt-vc`                                    | 0.12–0.25 |      2 |
+| `signCredentialJwt` with EdDSA                                 | `createVerifiableCredentialJwt` of `did-jwt-vc`                       | 0.11–0.19 |      1 |
+| `issueStatusListCredential` of 131,072 entries, Data Integrity | `@interop/vc-bitstring-status-list` and `jsigs.sign`                  | 0.94–1.12 |      6 |
+| `verifyCredentialStatus` against that list, fetched each time  | `checkStatus` of `@interop/vc-bitstring-status-list`                  | 1.24–1.47 |      8 |
+| `readCredential` of a CLR of 20 credentials                    | the published schema of CLR 2.0 in `@cfworker/json-schema`            | 0.11–0.19 |      1 |
+| `validateCredential` of the same CLR                           | the same                                                              | 0.12–0.19 |      1 |
+| `bakePng` of that CLR into an image of 256 KiB                 | `JSON.stringify` of the CLR                                           | 12.1–17.3 |     90 |
+| `readPng` of that image                                        | `JSON.parse` of the CLR                                               | 2.64–3.64 |     20 |
+| `bakeSvg` of that CLR into an SVG of 140,000 characters        | saxes over the SVG                                                    | 1.47–1.72 |      9 |
+| `readSvg` of that SVG, which stops at the credential           | saxes over all of it                                                  | 0.57–0.69 |      4 |
+| `handleCredentialsRequest`, a page of 100 credentials          | `JSON.stringify` of the page                                          | 1.21–1.29 |      7 |
+| `handleCredentialsRequest`, the upsert of that CLR             | `JSON.parse` of its body                                              | 4.19–6.16 |     40 |
+| `handleRefreshRequest` of that CLR                             | `JSON.stringify` of it                                                | 1.05–1.07 |      6 |
 
 The keyed cache that the key resolver and the status lists share is `createKeyedCache` of `core`, timed with the other hot paths of
 `core` ([signals](../core/signals.md)). The profiles named three hot paths that are written as they are for their speed; each
@@ -58,7 +58,7 @@ libraries of the Interop Alliance with a bound on canonicalization, and their 1.
 model and its limits; each context is copied for each load, so that no caller can change what the loader keeps. `verifyCredentialStatus`
 also reads the list credential in the model, counts its tokens and binds its key to the issuer. The upsert reads the CLR in the model
 after `JSON.parse`; the baking of a PNG reads and copies the credential it bakes, and the reading of a PNG checks the CRC of its chunk.
-No budget in time is set yet: it waits for the samples of the runner of CI.
+The package states no budget in time: a ratio holds on any machine, as in `tool-integration`.
 
 ## Size
 
@@ -70,16 +70,16 @@ Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 perc
 
 | Entry point                           |   Bytes |    Gzip |  Budget | Holds, besides `@interopkit/core`, `model` and valibot                                                                    |
 | ------------------------------------- | ------: | ------: | ------: | ------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/achievement-credentials` |  67,396 |  21,513 |  26,500 | `read`, `issue`, `compare`, `@noble/hashes`                                                                               |
-| `/baking`                             |  93,090 |  28,245 |  35,000 | `read`, saxes                                                                                                             |
-| `/client`                             |  67,176 |  20,973 |  25,500 | `read`                                                                                                                    |
-| `/keys`                               | 148,002 |  49,988 |  61,500 | jose, the DID drivers of the Interop Alliance and the curves of noble                                                     |
-| `/jwt`                                |  78,424 |  25,106 |  31,000 | `read`, the internals of `keys`, jose                                                                                     |
-| `/data-integrity`                     | 453,123 | 136,580 | 169,500 | `read`, `keys`, jose, jsonld and the cryptosuites of the Interop Alliance, `selective-disclosure`                         |
-| `/status`                             |  98,204 |  32,256 |  39,500 | `read`, `keys`, `jwt`, jose; `data-integrity` on demand                                                                   |
-| `/refresh`                            |  16,130 |   5,737 |   7,000 | nothing else                                                                                                              |
-| `/verify`                             | 157,652 |  50,900 |  62,500 | `read`, `issue`, `compare`, `keys`, `jwt`, `status`, `refresh`, jose, `@cfworker/json-schema`; `data-integrity` on demand |
-| `/provider`                           | 111,958 |  37,043 |  45,500 | `read`, `keys`, `jwt`, the internals of `verify`, jose; the rest of `verify` on demand                                    |
+| `@interopkit/achievement-credentials` |  67,971 |  21,605 |  26,500 | `read`, `issue`, `compare`, `@noble/hashes`                                                                               |
+| `/baking`                             |  93,550 |  28,339 |  35,000 | `read`, saxes                                                                                                             |
+| `/client`                             |  67,381 |  20,995 |  25,500 | `read`                                                                                                                    |
+| `/keys`                               | 153,304 |  51,820 |  61,500 | jose, the DID drivers of the Interop Alliance and the curves of noble                                                     |
+| `/jwt`                                |  78,938 |  25,399 |  31,000 | `read`, the internals of `keys`, jose                                                                                     |
+| `/data-integrity`                     | 453,389 | 136,886 | 169,500 | `read`, `keys`, jose, jsonld and the cryptosuites of the Interop Alliance, `selective-disclosure`                         |
+| `/status`                             |  97,773 |  32,445 |  39,500 | `read`, `keys`, `jwt`, jose; `data-integrity` on demand                                                                   |
+| `/refresh`                            |  20,011 |   6,981 |   7,000 | nothing else                                                                                                              |
+| `/verify`                             | 155,698 |  50,776 |  62,500 | `read`, `issue`, `compare`, `keys`, `jwt`, `status`, `refresh`, jose, `@cfworker/json-schema`; `data-integrity` on demand |
+| `/provider`                           | 120,298 |  39,971 |  45,500 | `read`, `keys`, `jwt`, the internals of `verify`, jose; the rest of `verify` on demand                                    |
 
 A verifier of JWTs, a provider that does not verify and a reader of status lists load no JSON-LD; the DID drivers load only with
 `createKeyResolver`.

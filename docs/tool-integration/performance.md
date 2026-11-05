@@ -18,25 +18,25 @@ states no budget in time.
 
 | Benchmark                                                                 | Reference in the same run                                         |     Ratio |     Budget |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------: | ---------: |
-| `handleLaunch`, a message with every claim, 0.067 ms                      | `verifyLaunch` of `@lti-tool/core`, same message                  | 1.05–1.42 |          8 |
-| The same                                                                  | `validate` of `lti-core`, same message                            | 1.84–2.13 |         20 |
-| `handleLaunch` with an RS256 `id_token`                                   | `jwtVerify` of jose, same token                                   | 2.37–3.20 |         20 |
-| `handleLaunch` with an ES256 `id_token`                                   | the same                                                          | 1.71–2.22 |         20 |
-| The authorization request that signs an RS256 `id_token` with every claim | `SignJWT` of jose, same claims                                    | 1.18–1.94 |         10 |
-| The same, ES256                                                           | the same                                                          | 2.06–3.43 |         20 |
-| The same, substituting the 44 variables of the platform                   | the same request with the names written plainly                   | 0.98–1.05 |          6 |
-| A key from a cached key set, 0.40 µs                                      | `createRemoteJWKSet` of jose holding the set                      | 1.82–2.47 |         20 |
-| The same                                                                  | `createLocalJWKSet` of jose                                       | 2.64–5.79 |         30 |
-| `members`, a page of 1,000 (295 KB)                                       | `JSON.parse` of its text                                          | 4.12–6.21 |         40 |
-| `results`, a page of 1,000 (243 KB)                                       | the same                                                          | 6.22–9.59 |         50 |
-| `lineItems`, a page of 1,000 (272 KB)                                     | the same                                                          |  8.5–12.8 |         70 |
-| `publishScore`, `control`, `registerTool`                                 | `callService` of core, same request and answer                    | 1.83–6.00 | 30, 20, 40 |
-| The token endpoint, 0.044 ms                                              | `jwtVerify` of jose on its client assertion                       | 2.52–3.92 |         20 |
-| The members of a context, a page of 1,000, 1.1 ms                         | `JSON.stringify` of the page                                      | 5.54–8.59 |         50 |
-| The results of a line item, a page of 1,000, 1.0 ms                       | the same                                                          |  7.4–11.7 |         60 |
-| A score, a control request, a registration                                | `compactVerify` of jose on the token and `JSON.parse` of the body | 3.00–4.41 | 30, 20, 30 |
-| `buildDeepLinkingResponse` with five items, `buildStartAssessmentPage`    | `SignJWT` of jose, same claims                                    | 1.03–1.28 |       7, 7 |
-| `readDeepLinkingResponse`, `readStartAssessment`                          | `jwtVerify` of jose on the JWT                                    | 2.45–4.44 |     30, 20 |
+| `handleLaunch`, a message with every claim, 0.067 ms                      | `verifyLaunch` of `@lti-tool/core`, same message                  | 1.09–1.22 |          7 |
+| The same                                                                  | `validate` of `lti-core`, same message                            | 1.72–2.09 |         20 |
+| `handleLaunch` with an RS256 `id_token`                                   | `jwtVerify` of jose, same token                                   | 2.29–2.45 |         20 |
+| `handleLaunch` with an ES256 `id_token`                                   | the same                                                          | 1.62–1.88 |         10 |
+| The authorization request that signs an RS256 `id_token` with every claim | `SignJWT` of jose, same claims                                    | 1.14–1.78 |          9 |
+| The same, ES256                                                           | the same                                                          | 2.35–2.87 |         20 |
+| The same, substituting the 44 variables of the platform                   | the same request with the names written plainly                   | 0.98–1.03 |          6 |
+| A key from a cached key set, 0.40 µs                                      | `createRemoteJWKSet` of jose holding the set                      | 1.90–2.27 |         20 |
+| The same                                                                  | `createLocalJWKSet` of jose                                       | 2.47–3.53 |         20 |
+| `members`, a page of 1,000 (295 KB)                                       | `JSON.parse` of its text                                          | 3.50–3.95 |         20 |
+| `results`, a page of 1,000 (243 KB)                                       | the same                                                          | 6.38–7.74 |         40 |
+| `lineItems`, a page of 1,000 (272 KB)                                     | the same                                                          | 8.88–10.7 |         60 |
+| `publishScore`, `control`, `registerTool`                                 | `callService` of core, same request and answer                    | 2.35–4.93 | 30, 20, 30 |
+| The token endpoint, 0.044 ms                                              | `jwtVerify` of jose on its client assertion                       | 2.58–3.02 |         20 |
+| The members of a context, a page of 1,000, 1.1 ms                         | `JSON.stringify` of the page                                      | 4.79–6.64 |         40 |
+| The results of a line item, a page of 1,000, 1.0 ms                       | the same                                                          | 7.09–8.91 |         50 |
+| A score, a control request, a registration                                | `compactVerify` of jose on the token and `JSON.parse` of the body | 2.94–3.79 | 20, 20, 20 |
+| `buildDeepLinkingResponse` with five items, `buildStartAssessmentPage`    | `SignJWT` of jose, same claims                                    | 0.98–1.24 |       7, 6 |
+| `readDeepLinkingResponse`, `readStartAssessment`                          | `jwtVerify` of jose on the JWT                                    | 2.46–3.52 |     20, 20 |
 
 Substituting 44 variables costs what a request without them costs, since the signature takes the time. Four fixes changed no
 output: on the tests, on 1,698 inputs given to the build before and the build after (pages with odd users and extensions, every
@@ -66,9 +66,9 @@ Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 perc
 
 | Entry point                             |   Bytes |   Gzip | Budget | Holds, besides `protocol`, `errors`, `@interopkit/core`, jose and valibot         |
 | --------------------------------------- | ------: | -----: | -----: | --------------------------------------------------------------------------------- |
-| `@interopkit/tool-integration`          |  28,654 | 10,098 | 13,000 | Nothing more: the models, the vocabularies, `LtiError` and the key set cache      |
-| `@interopkit/tool-integration/platform` | 149,675 | 45,261 | 55,500 | Nothing more                                                                      |
-| `@interopkit/tool-integration/tool`     | 144,257 | 44,494 | 54,000 | oauth4webapi, through the OAuth 2.0 client of core that obtains the access tokens |
+| `@interopkit/tool-integration`          |  28,969 | 10,193 | 13,000 | Nothing more: the models, the vocabularies, `LtiError` and the key set cache      |
+| `@interopkit/tool-integration/platform` | 150,249 | 45,412 | 55,500 | Nothing more                                                                      |
+| `@interopkit/tool-integration/tool`     | 144,832 | 44,648 | 54,000 | oauth4webapi, through the OAuth 2.0 client of core that obtains the access tokens |
 
 The platform holds nothing of the tool, nor the tool of the platform. A host that imports one function of an entry point gets less:
 the package has no side effects, so a bundler drops the rest.

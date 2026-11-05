@@ -13,13 +13,13 @@ export const ITEMS = 10_000;
  */
 export const BUDGETS = {
   /** `readPackage` of a framework of 10,000 items that is already parsed. */
-  readPackage: 700,
+  readPackage: 400,
   /** `validatePackage` of the same framework. */
-  validatePackage: 700,
+  validatePackage: 400,
   /** `buildFrameworkTree` of the same framework. */
-  buildFrameworkTree: 500,
+  buildFrameworkTree: 300,
   /** `queryEntities` with a filter and a sort over 10,000 documents. */
-  queryDocuments: 50,
+  queryDocuments: 30,
 } as const;
 
 /**
@@ -53,7 +53,7 @@ export const RATIOS = {
   /** `handleCaseRequest` for the package of the framework in 1.1, as a multiple of `JSON.stringify` of it. */
   serve11AgainstStringify: 6,
   /** `handleCaseRequest` for the package of the framework in 1.0, which converts it, as a multiple of `JSON.stringify` of it. */
-  serve10AgainstStringify: 30,
+  serve10AgainstStringify: 50,
   /** `package` of a client over the answer of the provider, as a multiple of `JSON.parse` of its text. */
   clientAgainstParse: 40,
 } as const;

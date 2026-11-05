@@ -22,29 +22,29 @@ export const EVENTS = 1000;
  */
 export const BUDGETS = {
   /** `readEnvelope` of an envelope of 1.2, as a multiple of `JSON.parse` of its text. */
-  readEnvelopeAgainstParse: { time: 300, ratio: 50 },
+  readEnvelopeAgainstParse: { time: 200, ratio: 40 },
   /** `readEnvelope` of an envelope of 1.2, as a multiple of the draft 4 schemas of `caliper-spec` over its events: parity or better. */
-  readEnvelopeAgainstSchemas: { time: 300, ratio: 1 },
+  readEnvelopeAgainstSchemas: { time: 200, ratio: 1 },
   /** `validateEvent` over the events of an envelope of 1.2, as a multiple of the same schemas: parity or better. */
-  validateEventAgainstSchemas: { time: 300, ratio: 1 },
+  validateEventAgainstSchemas: { time: 200, ratio: 1 },
   /** `readEnvelope` of an envelope of 1.1, as a multiple of `JSON.parse` of its text. */
-  readEnvelope11AgainstParse: { time: 300, ratio: 50 },
+  readEnvelope11AgainstParse: { time: 200, ratio: 50 },
   /** `readEnvelope` of an envelope of 1.1, as a multiple of `schema_1_1` over its events: parity or better. */
-  readEnvelope11AgainstSchemas: { time: 300, ratio: 1 },
+  readEnvelope11AgainstSchemas: { time: 200, ratio: 1 },
   /** `readEntity` of 1,000 entity describes of 1.2, as a multiple of the draft 4 schemas over them: parity or better. */
-  readEntityAgainstSchemas: { time: 70, ratio: 1 },
+  readEntityAgainstSchemas: { time: 40, ratio: 1 },
   /** `validateEntity` over the same, as a multiple of the same schemas: parity or better. */
-  validateEntityAgainstSchemas: { time: 80, ratio: 1 },
+  validateEntityAgainstSchemas: { time: 50, ratio: 1 },
   /** `buildEvent` of 1,000 events, as a multiple of the draft 4 schemas over what it builds: parity or better. */
   buildEventAgainstSchemas: { time: 200, ratio: 1 },
   /** `buildEntity` of 1,000 entity describes, as a multiple of the same schemas over what it builds: parity or better. */
-  buildEntityAgainstSchemas: { time: 80, ratio: 1 },
+  buildEntityAgainstSchemas: { time: 50, ratio: 1 },
   /** `sendCaliper` of an envelope of 1,000 events to an endpoint that answers at once, as a multiple of `JSON.stringify` of it. */
-  sendCaliperAgainstStringify: { time: 30, ratio: 10 },
+  sendCaliperAgainstStringify: { time: 30, ratio: 20 },
   /** `handleCaliperRequest` of an envelope of 1,000 events of 1.2, as a multiple of `JSON.parse` of its text. */
-  handleRequestAgainstParse: { time: 300, ratio: 50 },
+  handleRequestAgainstParse: { time: 200, ratio: 40 },
   /** `handleCaliperRequest` of the same envelope, as a multiple of the draft 4 schemas over its events: parity or better. */
-  handleRequestAgainstSchemas: { time: 300, ratio: 1 },
+  handleRequestAgainstSchemas: { time: 200, ratio: 1 },
 } as const;
 
 /** The result of a benchmark that the budgets read. */
