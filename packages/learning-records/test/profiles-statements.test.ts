@@ -523,6 +523,21 @@ describe("making a validator", () => {
     );
   });
 
+  it("refuses a profile whose primary Patterns reach a Pattern of another profile that holds itself, which never ends", () => {
+    const timing = "https://example.org/profiles/timing/patterns";
+    const looping = set("patterns", [
+      { id: `${timing}/a`, type: "Pattern", optional: `${timing}/b` },
+      { id: `${timing}/b`, type: "Pattern", optional: `${timing}/a` },
+    ])(otherProfile());
+    const reusing = set("patterns.1.oneOrMore", `${timing}/a`)(soundProfile());
+    // The other profile is read by its shape, so the profile itself is sound; its matching would recurse without end.
+    expect(() => createProfileValidator(reusing, { profiles: [looping] })).toThrow(
+      new DataError(
+        `The Pattern "${timing}/a", which a primary Pattern of the profile reaches, holds itself at some depth, which no Pattern may: fix the profile of the option profiles that defines it.`,
+      ),
+    );
+  });
+
   it("refuses a profile whose primary Patterns reach a member that no profile given defines", () => {
     const reusing = set("patterns.1.oneOrMore", "https://example.org/profiles/timing/templates/timed")(soundProfile());
     expect(() => createProfileValidator(reusing)).toThrow(/pass the profile that defines it in profiles/u);

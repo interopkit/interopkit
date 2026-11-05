@@ -166,7 +166,7 @@ class CycleSearch {
  * Returns the ids of the Patterns that hold themselves at some depth: the Patterns of every strongly connected component of the
  * graph of Patterns with more than one Pattern, and those that are their own members.
  */
-function findPatternCycles(references: ProfileReferences): ReadonlySet<string> {
+export function findPatternCycles(references: ProfileReferences): ReadonlySet<string> {
   const search = new CycleSearch(references);
   for (const root of [...references.patterns.keys(), ...references.otherPatterns.keys()]) search.walk(root);
   return search.cyclic;

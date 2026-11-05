@@ -25,7 +25,7 @@ import {
   type TemplateOutcome,
 } from "./judge-statement.js";
 import { buildPatternGraph, matchPatterns, type PatternGraph, type PatternOutcome } from "./pattern-match.js";
-import { findPattern, patternMembers } from "./pattern-rules.js";
+import { findPattern, findPatternCycles, patternMembers } from "./pattern-rules.js";
 import type { Profile } from "./profile.js";
 import { readProfileAndOthers } from "./read-profile.js";
 import { collectReferences, type ProfileReferences } from "./references.js";
@@ -307,8 +307,8 @@ function validateList(prepared: Prepared, statements: unknown): StatementsVerdic
  * @param profile - The profile, or the text of its JSON, which must be valid.
  * @param options - Other profiles that it reuses, a lookup of Statements, and the limits.
  * @returns The validator.
- * @throws `DataError` when the profile is not valid, when a primary Pattern reaches an id that no profile defines, or when the
- * options are not an object with `profiles` as a list of profiles, `findStatement` as a function, and `maxFindings` and
+ * @throws `DataError` when the profile is not valid, when a primary Pattern reaches an id that no profile defines or a Pattern of
+ * another profile that holds itself, or when the options are not an object with `profiles` as a list of profiles, `findStatement` as a function, and `maxFindings` and
  * `maxStatements` as positive integers.
  * @throws `LimitError` with the limit `MAX_MATCHED_PATTERNS` or `MAX_MATCHED_MEMBERS` when the primary Patterns reach more than
  * 1,000 Patterns or 10,000 members.
@@ -322,9 +322,19 @@ export function createProfileValidator(profile: unknown, options?: ProfileValida
   const read = readProfileAndOthers(profile, { profiles: checked.profiles ?? [], maxFindings });
   const references = collectReferences(read.profile, read.others);
   const primary = (read.profile.patterns ?? []).filter((pattern) => pattern.primary === true).map(({ id }) => id);
+  // The reader refuses a Pattern of the profile that holds itself; one of the other profiles, which are read by their shape,
+  // is refused when a primary Pattern reaches it, since its matching would never end.
+  const cyclic = findPatternCycles(references);
   const graph = buildPatternGraph(
     primary,
-    (id) => findPattern(references, id),
+    (id) => {
+      if (cyclic.has(id)) {
+        throw new DataError(
+          `The Pattern ${JSON.stringify(id)}, which a primary Pattern of the profile reaches, holds itself at some depth, which no Pattern may: fix the profile of the option profiles that defines it.`,
+        );
+      }
+      return findPattern(references, id);
+    },
     (id) => references.templates.has(id) || references.otherTemplates.has(id),
   );
   const judge: TemplateJudge = {
