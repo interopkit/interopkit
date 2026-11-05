@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig, type TestProjectInlineConfiguration } from "vitest/config";
@@ -49,6 +50,39 @@ const nodeProject = (name: string, also: readonly string[] = []): TestProjectInl
     testTimeout: HANG_LIMIT,
   },
 });
+
+/** The least coverage of each measure, in percent. */
+interface Floor {
+  statements: number;
+  branches: number;
+  functions: number;
+  lines: number;
+}
+
+/** The floor of the modules of each package, which each module holds on its own and not in the average of its package. */
+const PACKAGE_FLOORS: Readonly<Record<string, Floor>> = {
+  core: { statements: 100, branches: 95, functions: 100, lines: 100 },
+  "competency-frameworks": { statements: 100, branches: 95, functions: 100, lines: 100 },
+  "achievement-credentials": { statements: 100, branches: 95, functions: 100, lines: 100 },
+  "learning-analytics": { statements: 100, branches: 95, functions: 100, lines: 100 },
+  "learning-records": { statements: 100, branches: 95, functions: 100, lines: 100 },
+  "selective-disclosure": { statements: 100, branches: 95, functions: 100, lines: 100 },
+  "course-launch": { statements: 100, branches: 95, functions: 100, lines: 100 },
+  "tool-integration": { statements: 98, branches: 95, functions: 100, lines: 99 },
+};
+
+/**
+ * The coverage floors, one for each module: a folder of a package's `src`, or a file beside them. The globs come from the
+ * directory listing, so that a module is held as soon as it exists.
+ */
+const FLOORS: Record<string, Floor> = Object.fromEntries(
+  Object.entries(PACKAGE_FLOORS).flatMap(([name, floor]) =>
+    readdirSync(resolve(import.meta.dirname, "packages", name, "src"), { withFileTypes: true }).map((entry) => [
+      `packages/${name}/src/${entry.isDirectory() ? `${entry.name}/**` : entry.name}`,
+      floor,
+    ]),
+  ),
+);
 
 // biome-ignore lint/style/noDefaultExport: Vitest reads its configuration from the default export.
 export default defineConfig({
@@ -566,17 +600,8 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["packages/*/src/**/*.ts"],
-      // One floor per package: a gap in the tests of a package fails its own floor and no other.
-      thresholds: {
-        "packages/core/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
-        "packages/competency-frameworks/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
-        "packages/achievement-credentials/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
-        "packages/learning-analytics/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
-        "packages/learning-records/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
-        "packages/selective-disclosure/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
-        "packages/course-launch/src/**": { statements: 100, branches: 95, functions: 100, lines: 100 },
-        "packages/tool-integration/src/**": { statements: 98, branches: 95, functions: 100, lines: 99 },
-      },
+      // One floor for each module, so that a gap in the tests of a module fails its own floor and no other.
+      thresholds: FLOORS,
     },
   },
 });
