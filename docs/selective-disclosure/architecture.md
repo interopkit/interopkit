@@ -1,9 +1,8 @@
 # Architecture of selective-disclosure
 
-`@interopkit/selective-disclosure` has six modules in two layers. The three at the bottom do one kind of work each and import
-nothing of the package: `proof-value` writes and reads the CBOR of the proofs, `keys` holds the P-256 keys and the signatures,
-and `document` reads documents, pointers and contexts and wraps the loader of the caller. The three roles build on them and
-never import one another: `base` is the issuer's, `derive` the holder's and `verify` the verifier's.
+`@interopkit/selective-disclosure` has six modules in two layers. `proof-value`, `keys` and `document` do one kind of work each
+and import nothing of the package; the three roles build on them and never import one another: `base` is the issuer's,
+`derive` the holder's and `verify` the verifier's.
 
 ```mermaid
 flowchart BT
@@ -51,11 +50,10 @@ flowchart BT
 
 `suite.ts` and `limits.ts` sit beside the modules: the names and sizes of the suite, and the limits.
 
-Each module has an `index.ts`, its public API, and `proof-value`, `keys`, `document` and `base` have an `internal.ts` for what
-the tests share and the package does not export. The one that matters is `base/internal.ts`: it adds a base proof with secrets
-that the caller supplies, which the test vectors of the Recommendation need. The public `addBaseProof` makes the secrets
-itself, the HMAC key from `crypto.getRandomValues` and the key of the proof with Web Crypto, and has no option to replace them,
-so a host cannot make them predictable.
+Each module has an `index.ts`, its public API, and `proof-value`, `keys`, `document` and `base` have an `internal.ts` that the
+tests share and the package does not export. `base/internal.ts` adds a base proof with secrets the caller supplies, for the
+test vectors of the Recommendation; the public `addBaseProof` makes the HMAC key with `crypto.getRandomValues` and the key of the
+proof with Web Crypto, and has no option to replace them, so a host cannot make them predictable.
 
 ## Creating a base proof
 
@@ -84,14 +82,13 @@ sequenceDiagram
 
 ## Deriving and verifying
 
-`deriveProof` parses the base proof value, canonicalizes the document with the HMAC labels of the proof, groups its
-statements as mandatory, selected and combined, keeps the signatures of the selected statements, selects the revealed part of
-the document with the pointers, and maps the canonical labels that a verifier will find to the labels that were signed.
-
-`verify` parses the derived proof value and canonicalizes the revealed document with the label map of the proof. It splits
-the statements by the mandatory positions, and checks, in parallel, the issuer's signature over the hash of the proof options,
-the public key of the proof and the hash of the mandatory statements, and the signature of the proof key over each of the
-other statements.
+| Step | `deriveProof`                                                                                            | `verify`                                                                                                                                                                                                    |
+| ---- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | Parses the base proof value                                                                              | Parses the derived proof value                                                                                                                                                                              |
+| 2    | Canonicalizes the document with the HMAC labels of the proof                                             | Canonicalizes the revealed document with the label map of the proof                                                                                                                                         |
+| 3    | Groups the statements as mandatory, selected and combined, and keeps the signatures of the selected ones | Splits the statements by the mandatory positions                                                                                                                                                            |
+| 4    | Selects the revealed part of the document with the pointers                                              | Checks in parallel the issuer's signature over the hash of the proof options, the public key of the proof and the hash of the mandatory statements, and the proof key's signature over each other statement |
+| 5    | Maps the canonical labels that a verifier will find to the labels that were signed                       |                                                                                                                                                                                                             |
 
 ```mermaid
 flowchart TD

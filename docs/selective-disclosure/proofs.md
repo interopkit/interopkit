@@ -127,19 +127,15 @@ The mandatory pointers of a base proof are written into it, and `deriveProof` ch
 
 ## What a disclosure shows
 
-A disclosure holds the revealed parts of the document and a derived proof. The derived proof holds the issuer's signature,
-the public key of the proof, the signatures of the revealed statements that are not mandatory, a map from the labels of the
-blank nodes to the labels that were signed, and the positions of the mandatory statements. It does not hold the HMAC key.
+A disclosure holds the revealed parts of the document and a derived proof: the issuer's signature, the public key of the
+proof, the signatures of the revealed statements that are not mandatory, a map from the labels of the blank nodes to the
+labels that were signed, and the positions of the mandatory statements. It does not hold the HMAC key.
 
-Disclosures of one credential are **linkable**. They carry the same issuer signature and the same public key, so two verifiers,
-or one verifier twice, can tell that they saw the same credential, whatever each disclosure hides ([section 5.1 of the
-Recommendation](https://www.w3.org/TR/vc-di-ecdsa/#unlinkable-disclosure)). A holder who needs unlinkable disclosure needs another
-suite, which this package does not implement. The **`created`** of a proof, like the other proof options, shows in every
-disclosure: it is signed, so a holder cannot hide it, and every verifier reads when the credential was signed, whatever dates
-the disclosure hides. Data Integrity leaves it optional, so an issuer to whom that matters leaves it out, and the dates that a
-credential needs go in claims that a holder can hide. A **base proof** never goes to a verifier: it holds the HMAC key and the signature
-of every statement, so whoever has it can see which statements exist. `verify` answers `false` for it, and `isBaseProof` lets
-the caller say why.
+| Property                               | What follows                                                                                                                                                                                                                                                                               |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Disclosures are **linkable**           | They carry the same issuer signature and public key, so two verifiers, or one twice, can tell they saw the same credential, whatever each hides ([section 5.1 of the Recommendation](https://www.w3.org/TR/vc-di-ecdsa/#unlinkable-disclosure)). Unlinkable disclosure needs another suite |
+| `created` shows in every one           | Like every proof option it is signed, so a holder cannot hide when the credential was signed. Data Integrity leaves it optional: an issuer to whom that matters leaves it out, and puts the dates a credential needs in claims a holder can hide                                           |
+| A **base proof** stays with the holder | It holds the HMAC key and the signature of every statement, so whoever has it sees which statements exist. `verify` answers `false` for it, and `isBaseProof` lets the caller say why                                                                                                      |
 
 ## Limits
 
@@ -151,13 +147,11 @@ the caller say why.
 | Deep iterations of RDF canonicalization            | 1,000      | `maxDeepIterations` of `rdf-canonize`: blank nodes that take more runs of Hash N-Degree Quads to tell apart are refused with a `LimitError` (`maxDeepIterations`), and `false` from `verify`; not replaceable |
 | Bytes of a signature, an HMAC key, a label         | 64, 32, 32 | Fixed by the Recommendation; a proof value with other lengths does not parse                                                                                                                                  |
 
-The work of the JSON-LD processors grows faster than the size of a document, so bytes alone do not bound it. `jsonld` adds
-each value of a property after a search of the values the property holds, so its time grows with the square of the values of
-one property: 1 MiB of short numbers in one array takes minutes. `rdf-canonize` allows by default one deep iteration for each
-blank node that looks like another, and each iteration copies the labels issued on its path, so a list of alike items takes
-memory with the square of its length: a document of 40,000 tokens exhausts 2 GB. `maxTokens` bounds the first and the fixed
-count of deep iterations the second. The examples of Open Badges 3.0 and CLR 2.0 have at most 2,053 tokens and need at most 16
-deep iterations; a caller that trusts its source can raise `maxTokens`.
+Bytes alone do not bound the work of the JSON-LD processors. `jsonld` searches the values of a property before it adds each,
+so 1 MiB of short numbers in one array takes minutes; `maxTokens` bounds it. `rdf-canonize` allows by default one deep
+iteration for each blank node that looks like another, and each copies the labels issued on its path, so a document of 40,000
+tokens of alike items exhausts 2 GB; the fixed count of deep iterations bounds it. The examples of Open Badges 3.0 and CLR 2.0
+have at most 2,053 tokens and need at most 16 deep iterations; a caller that trusts its source can raise `maxTokens`.
 
 A proof value is CBOR. The reader refuses indefinite lengths, `undefined`, NaN, infinities, integers beyond 2^53, a map with a
 key twice and every tag but 64, and it needs exactly one array of five items and no bytes after it.
@@ -237,9 +231,9 @@ anywhere, so there is nothing to undo.
 ## Runtimes and dependencies
 
 The package uses Web Crypto and no other platform API. It makes the HMAC labels of blank nodes itself (section 3.4.4 of the
-Recommendation): the function of the primitives encodes them with a library that needs the `Buffer` of Node.js wherever a
-bundler does not apply the `browser` field of that library, as esbuild does not. `@digitalbazaar/di-sd-primitives` imports
-`node:crypto` for its hashes on Node.js and has a `browser` field that swaps in Web Crypto, which a bundler for browsers or
-workers applies (esbuild with `--platform=browser`); the bundle needs no Node.js compatibility. CI runs the tests on Node.js 22
-and 24 only. `jsonld` and `rdf-canonize` come with the primitives. Each runtime dependency, its version, its license and its
-reason are in [SECURITY.md](../../SECURITY.md).
+Recommendation), because the function of the primitives encodes them with a library that needs the `Buffer` of Node.js
+wherever a bundler does not apply that library's `browser` field, as esbuild does not. `@digitalbazaar/di-sd-primitives` imports
+`node:crypto` for its hashes on Node.js and swaps in Web Crypto through its `browser` field, which a bundler for browsers or
+workers applies (esbuild with `--platform=browser`), so the bundle needs no Node.js compatibility. CI runs the tests on Node.js
+22 and 24. `jsonld` and `rdf-canonize` come with the primitives. Each runtime dependency, with its version, license and reason,
+is in [SECURITY.md](../../SECURITY.md).

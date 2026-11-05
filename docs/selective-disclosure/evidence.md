@@ -1,8 +1,6 @@
 # Evidence for selective-disclosure
 
-What shows that the package does what it says: the test vectors of the Recommendation, an implementation of other authors, the
-W3C suite of the ECDSA cryptosuites through the example of `achievement-credentials`, fuzzing and mutation rules. The speed and
-the size are in [performance](performance.md).
+What shows that the package does what it says; the speed and the size are in [performance](performance.md).
 
 ```mermaid
 flowchart LR

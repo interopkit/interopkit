@@ -3,10 +3,9 @@
 The W3C ecdsa-sd-2023 Data Integrity cryptosuite for JavaScript and TypeScript: base proofs for issuers, derived proofs for
 holders and their verification, for any verifiable credential.
 
-The suite is that of the W3C Recommendation [Data Integrity ECDSA Cryptosuites v1.0](https://www.w3.org/TR/vc-di-ecdsa/), for
-any verifiable credential, a learning one or not: an issuer signs a credential so that its holder can reveal part of it, and a
-verifier checks what is revealed. The package implements this one suite, in its three roles, and no other selective disclosure:
-not SD-JWT, not BBS.
+The suite is that of the W3C Recommendation [Data Integrity ECDSA Cryptosuites v1.0](https://www.w3.org/TR/vc-di-ecdsa/): an
+issuer signs a credential so that its holder can reveal part of it, and a verifier checks what is revealed. It is the only
+selective disclosure here: not SD-JWT, not BBS.
 
 ```bash
 npm install @interopkit/selective-disclosure
@@ -93,12 +92,11 @@ flowchart LR
 ```
 
 It uses Web Crypto and no other platform API, reads no environment variable, writes no log and makes no request: the caller
-passes the loader of JSON-LD contexts, the signer and the key. Its dependency `@digitalbazaar/di-sd-primitives` loads
-`node:crypto` on Node.js and has a `browser` field that swaps in Web Crypto, which a bundler for browsers or workers applies
-(esbuild with `--platform=browser`); the bundle needs no Node.js compatibility. CI runs the tests on Node.js 22 and 24 only. Its
-dependencies are `@interopkit/core`, [`@digitalbazaar/di-sd-primitives`](https://github.com/digitalbazaar/di-sd-primitives),
-[cborg](https://github.com/rvagg/cborg), [@noble/curves](https://github.com/paulmillr/noble-curves) and
-[@scure/base](https://github.com/paulmillr/scure-base).
+passes the loader of JSON-LD contexts, the signer and the key. Its dependencies are `@interopkit/core`,
+[`@digitalbazaar/di-sd-primitives`](https://github.com/digitalbazaar/di-sd-primitives), [cborg](https://github.com/rvagg/cborg),
+[@noble/curves](https://github.com/paulmillr/noble-curves) and [@scure/base](https://github.com/paulmillr/scure-base); how they
+run in browsers and workers is in
+[the proofs guide](https://interopkit.wakan.dev/_interopkit/selective-disclosure/proofs/#runtimes-and-dependencies).
 
 ## API
 
@@ -118,18 +116,15 @@ dependencies are `@interopkit/core`, [`@digitalbazaar/di-sd-primitives`](https:/
 | Selective disclosure functions (3.4) and `ecdsa-sd-2023` functions (3.5) | The primitives of Digital Bazaar for 3.4, and this package for 3.5: CBOR proof values, label maps, disclosure data |
 | Test vectors (appendix A.7 and A.8)                                      | Both reproduced byte for byte, base and derived proofs                                                             |
 
-[Supported](https://interopkit.wakan.dev/_interopkit/selective-disclosure/supported/) lists what the package includes and what it leaves out.
+[Supported](https://interopkit.wakan.dev/_interopkit/selective-disclosure/supported/) lists every part, and what is left out.
 
 ## Documentation
 
-[Choosing](https://interopkit.wakan.dev/_interopkit/selective-disclosure/choosing/) says when the package fits, when another library fits better,
-and what each has that the package lacks.
-
-[The proofs guide](https://interopkit.wakan.dev/_interopkit/selective-disclosure/proofs/) has the options with
-their defaults, the limits, the errors and what to do about them, what is not included and why, the privacy of disclosures, and
-the differences from the references.
-
-[Performance](https://interopkit.wakan.dev/_interopkit/selective-disclosure/performance/) gives the speed of the three roles against Digital Bazaar's suite and the size of the entry point.
+| Page                                                                                      | Gives                                                                                                     |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [Proofs](https://interopkit.wakan.dev/_interopkit/selective-disclosure/proofs/)           | The options with their defaults, the limits, the errors, the privacy of disclosures, what is not included |
+| [Choosing](https://interopkit.wakan.dev/_interopkit/selective-disclosure/choosing/)       | When the package fits, when another library fits better, and what each has that the package lacks         |
+| [Performance](https://interopkit.wakan.dev/_interopkit/selective-disclosure/performance/) | The speed of the three roles against Digital Bazaar's suite, and the size of the entry point              |
 
 ## License
 
