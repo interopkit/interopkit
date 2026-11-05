@@ -123,12 +123,18 @@ structures with a scheme of its own writes them, and imports them into its LMS, 
 | Findings                                | 1,000                                | The list stops, and its last finding says so                                        |
 | Levels of blocks to write               | 64                                   | `DataError` before the model is read                                                |
 
-The memory of the worst structures, each read by the tests of the package in a process whose heap is bounded, the text of the
-structure included, at most on Node.js 22, 24 and 26: a structure of almost a million `langstring` elements, at the limit of
-elements, ends within a heap of 74 MiB, and 16 MiB of them are refused at that limit within 78 MiB; one `langstring` of 16 MiB
-within 59 MiB; blocks nested past the limit of depth within 27 MiB, and a million wrong values whose findings stop at 1,000
-within 23 MiB. In a process with the default heap of V8 the resident memory grows further before V8 collects, by about 120 MiB
-for the million texts.
+The tests read the worst structures in a process whose heap is bounded, the text of the structure included, on Node.js 22, 24
+and 26; each ends within:
+
+| Worst structure                                                  | Heap   |
+| ---------------------------------------------------------------- | ------ |
+| Almost a million `langstring` elements, at the limit of elements | 74 MiB |
+| 16 MiB of them, refused at that limit                            | 78 MiB |
+| One `langstring` of 16 MiB                                       | 59 MiB |
+| Blocks nested past the limit of depth                            | 27 MiB |
+| A million wrong values, whose findings stop at 1,000             | 23 MiB |
+
+With the default heap of V8, the resident memory grows further before V8 collects, by about 120 MiB for the million texts.
 
 ## Errors
 

@@ -1,15 +1,11 @@
 # Architecture of course-launch
 
-`@interopkit/course-launch` implements cmi5 for the publisher of a course and for the LMS that imports and launches it. `model` holds the
-vocabularies of the specification and the types of the course structure. `structure` reads, validates and writes `cmi5.xml`
-with a parser that tracks namespaces, and enforces the schema of the specification itself. `package` reads and writes the
-course package, a ZIP archive or the XML alone, through zip.js. `rules` reads what a launch gives an assignable unit and judges the
-statements of a session, over the model and the rules of xAPI of `@interopkit/learning-records`. `model` imports no other module,
-`structure` imports `model` and `@interopkit/core` alone, `package` builds on both, and `rules` imports `model`,
-`@interopkit/learning-records` and `@interopkit/core`; `structure` and `rules` never import each other, and `package` imports
-no rule. `lms` builds on `model`, `structure` and `rules`, the client and the LRS of `@interopkit/learning-records`, and never
-imports `package`, so a host that reads a structure from elsewhere never loads the ZIP code. `au` builds on `model`, `rules` and
-the client of `@interopkit/learning-records`, and `lms` and `au` never import each other. Biome enforces the layers.
+`@interopkit/course-launch` implements cmi5 for the publisher of a course, the LMS that imports and launches it, and the
+assignable unit it launches. `structure` reads, validates and writes `cmi5.xml`, enforcing the schema of the specification
+itself; `package` reads and writes the course package through zip.js; `rules` reads what a launch gives a unit and judges the
+statements of a session over `@interopkit/learning-records`. `structure` and `rules` never import each other, `lms` never imports
+`package`, so a host that reads a structure from elsewhere never loads the ZIP code, and `lms` and `au` never import each other;
+Biome enforces the layers.
 
 ```mermaid
 flowchart BT

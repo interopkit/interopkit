@@ -1,6 +1,7 @@
 # Performance of course-launch
 
-What the hot paths of `@interopkit/course-launch` cost, how much each entry point adds to a bundle, and the heap that each reader of untrusted input needs on its worst input. A budget holds each number and fails a gate of CI: `pnpm bench` for the time, `pnpm test` for the size and the heap. That the package does what it says is in [evidence](evidence.md).
+The time of the hot paths of `@interopkit/course-launch`, the size of each entry point, and the heap of each reader of untrusted
+input at its worst input. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test` for the size and the heap.
 
 ```mermaid
 flowchart LR

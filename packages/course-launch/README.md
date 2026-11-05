@@ -4,10 +4,7 @@ cmi5 for JavaScript and TypeScript: the course structure with its reader, valida
 over an xAPI LRS, and the assignable unit runtime.
 
 [cmi5](https://github.com/AICC/CMI-5_Spec_Current) (Quartz) is the specification of ADL for launching the units of a course and
-tracking them with xAPI. The package has its vocabularies, the course structure with a reader that enforces its schema and the
-rules of cmi5, a validator that lists every finding and a writer, course packages in ZIP or XML, read within limits and written,
-the rules of the statements of a session with the readers of what a launch gives, the LMS role over the LRS of
-`@interopkit/learning-records`, and the runtime of an assignable unit. It knows nothing of any product.
+tracking them with xAPI. The package knows nothing of any product.
 
 ```bash
 npm install @interopkit/course-launch
@@ -89,9 +86,6 @@ are `@interopkit/core`, `@interopkit/learning-records` (the model and the rules 
 [Supported](https://interopkit.wakan.dev/_interopkit/course-launch/supported/) lists what of cmi5 the package covers and what it leaves out. It passes CATAPULT's LMS and content suites at `806c0ba` ([evidence](https://interopkit.wakan.dev/_interopkit/course-launch/evidence/)).
 
 ## Documentation
-
-[Choosing](https://interopkit.wakan.dev/_interopkit/course-launch/choosing/) says when the package fits, when another library fits better,
-and what each has that the package lacks.
 
 | Guide                                                                                 | For                                                                                                                       |
 | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |

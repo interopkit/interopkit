@@ -97,21 +97,29 @@ The central directory of a package of real courses has a few kilobytes: about 1 
 CATAPULT. 16 MiB, as the family's other readers of untrusted input take at most, holds the 100,000 entries with names of about
 120 bytes.
 
-The memory of the worst packages, each read by the tests of the package in a process whose heap is bounded, at most on Node.js
-22, 24 and 26: 100,000 entries end within a heap of 29 MiB, a central directory at its limit within 15 MiB besides the bytes of
-the directory, which V8 keeps outside its heap, and a `cmi5.xml` that inflates to 64 MiB and says it has 64 bytes within
-11 MiB. In a process with the default heap of V8 the resident memory grows further before V8 collects, by about 100 MiB for
-each of the first two.
+The tests read the worst packages in a process whose heap is bounded, on Node.js 22, 24 and 26; each ends within:
+
+| Worst package                                                 | Heap                                                                        |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 100,000 entries                                               | 29 MiB                                                                      |
+| A central directory at its limit                              | 15 MiB, besides the bytes of the directory, which V8 keeps outside its heap |
+| A `cmi5.xml` that inflates to 64 MiB and says it has 64 bytes | 11 MiB                                                                      |
+
+With the default heap of V8, the resident memory grows further before V8 collects, by about 100 MiB for each of the first two.
 
 ## Writing a package
 
 `writeCoursePackage` writes `cmi5.xml` with [`writeCourseStructure`](structure.md) and then the files in the order of the map,
-each compressed and dated midnight of 1980-01-01, the first date that ZIP holds, so that the same course writes the same bytes;
-the archive turns to ZIP64 where its size needs it. Each path is names below the root of the package, without `.`, `..`, `\`, `:`,
-control characters or empty segments; no path is one file with another or with `cmi5.xml` to an extractor, the reader's test of
-two names; and each relative URL of the structure names
-one of them. A package of more than the 100,000 entries that the reader takes by default is refused before anything is written,
-and the archive is read again by `readCoursePackage` with its default limits before it is returned.
+each compressed and dated midnight of 1980-01-01, the first date that ZIP holds, so the same course writes the same bytes; the
+archive turns to ZIP64 where its size needs it.
+
+| Rule                            | Value                                                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| A path                          | Names below the root of the package, without `.`, `..`, `\`, `:`, control characters or empty segments |
+| Two paths                       | Never one file to an extractor, with each other or with `cmi5.xml`, by the reader's test of two names  |
+| A relative URL of the structure | Names one of the files                                                                                 |
+| Entries                         | At most the 100,000 that the reader takes by default, checked before anything is written               |
+| The result                      | Read again by `readCoursePackage` with its default limits before it is returned                        |
 
 ## Errors
 
