@@ -60,6 +60,7 @@ key.
 | `sign`           | Takes the bytes of the signing input and an optional `{ signal }`; answers a `Uint8Array` that is the signature                                                                            |
 | ECDSA signatures | The fixed-length R and S of JWS, never the DER that many cloud KMS services return. A host whose KMS answers DER converts it first. `signCompactJws` refuses a signature of another length |
 | `signal`         | The caller's signal reaches `sign`. A signer that waits on a service bounds itself with its own deadline                                                                                   |
+| Repeated calls   | A new signature each time: RSASSA-PKCS1-v1_5 gives equal output for equal input; ECDSA and EdDSA may differ, and both verify. Nothing is called back                                       |
 
 ## The header and the signature
 
@@ -83,26 +84,16 @@ key.
 
 Neither function limits the size of a payload: the host bounds what it signs.
 
-## Failure paths
-
-| Case                                             | Result                                                                                                                                                      |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| An argument is not valid                         | `DataError`, before the signer is called                                                                                                                    |
-| The signer rejects                               | `signCompactJws` rejects with that error; nothing is returned half-signed                                                                                   |
-| The signature has the wrong form                 | `DataError`; a signature of the wrong length never reaches a verifier                                                                                       |
-| The signal aborts, or is aborted before the call | Rejects with its `reason`; a signer that has begun may finish, and its signature is dropped                                                                 |
-| Called again                                     | A new signature each time: RSASSA-PKCS1-v1_5 is deterministic, so equal input gives equal output; ECDSA and EdDSA may differ between calls, and both verify |
-| Calls back                                       | Nothing                                                                                                                                                     |
-
 ## Errors
 
-| Error                      | When                                                                                                                                                   | What to do                                                |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| `DataError`                | `createCryptoKeySigner`: the algorithm is not one that a `CryptoKey` signs, the key is not private or does not fit the algorithm (kind, hash or curve) | Import or generate the key for the algorithm              |
-| `DataError`                | `signCompactJws`: the signer has no known algorithm or no `sign` function, the header or the payload has the wrong type, or the header cannot be JSON  | Fix the arguments                                         |
-| `DataError`                | `signCompactJws`: the header names another algorithm or key than the signer's, or its `jwk` holds `d`                                                  | Leave `alg` and `kid` to the signer; publish a public key |
-| `DataError`                | `signCompactJws`: the signature is not a `Uint8Array`, or an ES256, ES384, ES512 or ES256K signature has the wrong length                              | Convert DER to the fixed-length R and S in the signer     |
-| The `reason` of the signal | The caller aborted                                                                                                                                     | Nothing: the caller ended the wait                        |
+| Error                                    | When                                                                                                                                                   | What to do                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `DataError`, before the signer is called | `createCryptoKeySigner`: the algorithm is not one that a `CryptoKey` signs, the key is not private or does not fit the algorithm (kind, hash or curve) | Import or generate the key for the algorithm              |
+| `DataError`                              | `signCompactJws`: the signer has no known algorithm or no `sign` function, the header or the payload has the wrong type, or the header cannot be JSON  | Fix the arguments                                         |
+| `DataError`                              | `signCompactJws`: the header names another algorithm or key than the signer's, or its `jwk` holds `d`                                                  | Leave `alg` and `kid` to the signer; publish a public key |
+| `DataError`                              | `signCompactJws`: the signature is not a `Uint8Array`, or an ES256, ES384, ES512 or ES256K signature has the wrong length                              | Convert DER to the fixed-length R and S in the signer     |
+| The signer's error                       | The signer rejected; nothing is returned half-signed                                                                                                   | Fix the signer or its service                             |
+| The `reason` of the signal               | The caller aborted, before or during the call; a signer that has begun may finish, and its signature is dropped                                        | Nothing: the caller ended the wait                        |
 
 ## Data flows
 

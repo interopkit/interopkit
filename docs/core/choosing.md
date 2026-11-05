@@ -1,7 +1,7 @@
 # Choosing core
 
-`@interopkit/core` is what the other interopkit packages share; most projects install the package of a standard and get it
-with it. This page says when to use it directly, and when another library fits better.
+`@interopkit/core` is what the other interopkit packages share, and most projects get it with the package of a standard. This
+page says when to use it directly, and when another library fits better.
 
 ```mermaid
 flowchart TD

@@ -99,10 +99,10 @@ resolution, and `checkRemoteUrl` does not replace it.
 
 The `Schema<TOutput>` type is a valibot schema of unknown input.
 
-Every schema of an object here (`looseRecord`, `strictRecord`, `openRecord`, `jsonObjectSchema` and `mapSchema`) and `copyJson`
-refuse a property named `__proto__`, `constructor` or `prototype`, at any depth, with an `invalid-value` at it: the objects and
-records of valibot drop such a property unseen, and an assignment of `__proto__` sets a prototype. The other properties of that
-object are not read then. The check costs three lookups of an own property for each object, and walks nothing.
+Every object schema here (`looseRecord`, `strictRecord`, `openRecord`, `jsonObjectSchema`, `mapSchema`) and `copyJson` refuse a
+property named `__proto__`, `constructor` or `prototype` at any depth, with an `invalid-value` at it, and read no other property
+of that object: valibot drops such a property unseen, and an assignment of `__proto__` sets a prototype. The check costs three
+own-property lookups per object. The opaque schemas, for JSON whose names are data, hold such a member as an own member instead.
 
 ## Findings
 
@@ -146,8 +146,8 @@ flowchart LR
 | `safeParseBounded(schema, value, limit)`   | `v.safeParse` that stops at the first issue beyond `limit`; the issues are those of `v.safeParse`, in the same order. A schema that makes issues and throws them away, such as a union, is parsed again with no limit when the parse stopped on them                                                                                                                                                                                                                                                 |
 | `hasMoreTokensThan(text, maxTokens)`       | Whether a text of JSON has more tokens than a limit, counted without building anything; `MAX_JSON_TOKENS` is 1,000,000                                                                                                                                                                                                                                                                                                                                                                               |
 
-A reader or a client that parses a text counts its tokens before `JSON.parse`, because the memory of a parse grows with the
-tokens and not with the bytes: a text of 16 MiB written `[{},{},...]` takes 700 MB to parse.
+A reader or a client counts the tokens of a text before `JSON.parse`, since the memory of a parse grows with the tokens, not the
+bytes: 16 MiB written `[{},{},...]` takes 700 MB to parse.
 
 ## Formats
 
@@ -163,38 +163,21 @@ tokens and not with the bytes: a text of 16 MiB written `[{},{},...]` takes 700 
 | `isAbsoluteUri(text)`  | A URI that has a scheme and no white space, which `URL` parses                                                                                                                                                                                                                    |
 | `isLanguageTag(text)`  | A language tag that is well-formed by RFC 5646 section 2.1, grandfathered tags included, of at most 1,024 characters; a subtag is not looked up in the registry                                                                                                                   |
 
-The `isoDate` and `isoTimestamp` of valibot are patterns, so that they accept `2023-02-31`; the date and the date and time are read
-by hand because valibot has no check that knows the calendar. A caller that needs a narrower form, such as the
-upper case of AGS or the milliseconds of Caliper, adds its own test to these.
+Dates are read by hand because the `isoDate` and `isoTimestamp` of valibot are patterns that accept `2023-02-31`. A caller that
+needs a narrower form, such as the upper case of AGS or the milliseconds of Caliper, adds its own test.
 
 ## JSON
 
-`copyJson(value, path)` copies a value that must be JSON and returns `{ value }`, or `{ problem }` with a sentence that says where
-the value is not JSON. `JsonValue` and `JsonObject` are the types.
-
-| Limit            | Value | Applies to                                                                                 |
-| ---------------- | ----- | ------------------------------------------------------------------------------------------ |
-| `MAX_JSON_DEPTH` | 64    | The levels that arrays and objects nest in `copyJson`, and the default depth of `readJson` |
-
-A member named `__proto__`, `constructor` or `prototype` is refused at any depth, as the schemas refuse it; the opaque schemas,
-for JSON whose names are data, hold it as an own member instead, which changes no prototype. `findPrototypeName(value)` returns
-the first such own property of an object, or `undefined`, for a walk of its own that refuses them as the schemas do.
-
-`isSameJson(first, second)` tells whether two JSON values are the same: the same primitive, arrays of the same values in the same
-order, or objects with the same members in any order. It walks the values without recursion, so a value of any depth costs no
-stack. The rules of an xAPI Profile, the context template of cmi5 and the comparison of two versions of a CASE framework compare
-values with it.
-
-`findExceededJsonLimit(text, maxDepth, maxTokens)` tells which limit a text of JSON is refused for, without parsing it: the text may
-be any string, and a string literal hides its brackets. A text over both limits is refused for its depth, wherever it passes them:
-one reading finds the first limit that it passes, and a text that passes the tokens first is read on for its depth alone. The
-readers of `achievement-credentials` bound a text with it, and `parseJsonText` refuses by it before it parses.
-`parseJsonText(text, { maxDepth, maxTokens }, refusals)` parses a text within both limits and refuses the depth before the tokens,
-wherever the text passes them: `readJson`, `readAnswerJson`, `parseStatementJson` and the documents of an LRS read a text so. The
-caller gives the sentences of the three errors, so that each reader says whose text it was: a `LimitError` with the limit `maxDepth`
-or `maxTokens`, and a `DataError` for a text that is not JSON, with the error of `JSON.parse` as its `cause`.
-`endOfJsonString(text, start)` gives the index of the quote that ends the string which starts at `start`, whatever backslashes come
-before an inner quote, or the length of the text when the string does not end; a scan of a text of JSON walks its strings with it.
+| Export                                                   | Does                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `copyJson(value, path)`                                  | Copies a value that must be JSON: `{ value }`, or `{ problem }` with a sentence that says where it is not JSON. `JsonValue` and `JsonObject` are the types                                                                                                                                                                                                     |
+| `MAX_JSON_DEPTH`                                         | 64: the levels that arrays and objects nest in `copyJson`, and the default depth of `readJson`                                                                                                                                                                                                                                                                 |
+| `MAX_JSON_TOKENS`                                        | 1,000,000: the default tokens of `readJson` and `readAnswerJson`                                                                                                                                                                                                                                                                                               |
+| `findPrototypeName(value)`                               | The first own property of an object named `__proto__`, `constructor` or `prototype`, or `undefined`, for a walk that refuses them as the schemas do                                                                                                                                                                                                            |
+| `isSameJson(first, second)`                              | Whether two JSON values are the same: equal primitives, arrays of the same values in order, objects with the same members in any order. It walks without recursion, so any depth costs no stack. The rules of an xAPI Profile, the context template of cmi5 and the comparison of CASE versions use it                                                         |
+| `findExceededJsonLimit(text, maxDepth, maxTokens)`       | `"depth"`, `"tokens"` or `undefined`: the limit a text of any string passes, without parsing, where a string literal hides its brackets. A text over both is refused for its depth, wherever it passes them                                                                                                                                                    |
+| `parseJsonText(text, { maxDepth, maxTokens }, refusals)` | Parses a text within both limits, refusing the depth before the tokens. The caller's `JsonTextRefusals` give the three sentences: a `LimitError` (`maxDepth` or `maxTokens`), and a `DataError` for a text that is not JSON, with the `SyntaxError` as `cause`. `readJson`, `readAnswerJson`, `parseStatementJson` and the documents of an LRS read through it |
+| `endOfJsonString(text, start)`                           | The index of the quote that ends the string starting at `start`, whatever backslashes precede an inner quote, or the text's length when it does not end                                                                                                                                                                                                        |
 
 ```ts
 import { findExceededJsonLimit } from "@interopkit/core/checks";
@@ -212,12 +195,12 @@ findExceededJsonLimit('["[[[["]', 2, 10); // => undefined
 
 ## Differences from the references
 
+The module has the shape of `@assesskit/runtime/checks`, copied, since packages of different families never import each other.
+
 |          | `@assesskit/runtime/checks`           | `@interopkit/core/checks`                                                                                                                                                                            |
 | -------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Messages | The same words and the same paths     | The same                                                                                                                                                                                             |
 | Contents | Every check that QTI processing needs | Only what the interopkit packages use, `checkHttpsUrl` with `httpsUrlSchema` for the `https` URLs that LTI and Caliper require, and `checkRemoteUrl` for the URLs that a message or a document gives |
-
-The module is a separate copy of that shape, because packages of different families never import each other.
 
 ## Not included
 

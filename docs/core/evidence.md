@@ -1,8 +1,6 @@
 # Evidence for core
 
-What shows that `@interopkit/core` does what it says: the OAuth flows against an authorization server of other authors, tests of
-every check and of every failure path of a service call, fuzzing of what it reads from an answer, peak memory and mutation
-rules. The speed and the size are in [performance](performance.md).
+What shows that `@interopkit/core` does what it says; the speed and the size are in [performance](performance.md).
 
 ```mermaid
 flowchart LR

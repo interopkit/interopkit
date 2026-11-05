@@ -81,10 +81,12 @@ statusOf(new LimitError("The body has 2 MiB.", "maxBytes", 1_048_576)); // => 41
 statusOf(new DataError("The body is not JSON.")); // => 400
 ```
 
-The handlers of the packages answer 413 themselves, except where their specification names another answer: the token endpoint
-of an LTI platform answers 400 `invalid_request`, as OAuth 2.0 does for every fault of a request, and a token whose payload is
-over a limit is `token-malformed`, which a launch answers 401. A client that reads the answer of a service throws `LimitError`
-too, for the levels and the tokens of its JSON; an answer over `maxBytes` is a `ServiceError`, a failure of the service.
+| Where the limit is passed                          | Answer                                                                                                          |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| A handler of a package                             | 413, unless its specification names another answer                                                              |
+| The token endpoint of an LTI platform              | 400 `invalid_request`, as OAuth 2.0 answers every fault of a request                                            |
+| The payload of a launch token                      | `token-malformed`, which a launch answers 401                                                                   |
+| A client that reads the JSON of a service's answer | `LimitError` for its levels and tokens; an answer over `maxBytes` is a `ServiceError`, a failure of the service |
 
 ## Expected outcomes are not errors
 

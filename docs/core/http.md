@@ -1,10 +1,8 @@
 # Requests and answers
 
-`@interopkit/core/http` holds the request and the answer that the handlers of the packages take and return, as plain data that
-does not depend on a web framework, and the helpers that a handler uses to read a request and build an answer: among them the
-paging by `limit` and `offset`, the `imsx_StatusInfo` of a failure and the decision of a host's `authorize` port, which the
-providers of the 1EdTech services share. A host builds an `HttpRequest` from the request type of its framework and sends the
-`HttpResponse` that a handler returns. The module does no I/O, holds no state and imports no platform API.
+`@interopkit/core/http` holds the request and the answer that every handler of the packages takes and returns, as plain data
+free of any web framework, and the helpers that read a request and build an answer, with the paging, the `imsx_StatusInfo`
+and the access decisions that the 1EdTech providers share. It does no I/O, holds no state and imports no platform API.
 
 ```mermaid
 flowchart LR
@@ -42,7 +40,7 @@ readJson(statement); // => { verb: { id: "https://example.com/completed" } }
 buildJsonResponse(404, { error: "not_found" }); // => { status: 404, headers: { "content-type": "application/json;charset=UTF-8" }, body: '{"error":"not_found"}' }
 ```
 
-A host turns a web `Request` into an `HttpRequest` like this, with the header names in lower case, which `Headers` gives:
+A host converts a web `Request`, whose `Headers` give the names in lower case:
 
 ```ts
 const toHttpRequest = async (request) => ({
@@ -57,8 +55,8 @@ const sample = await toHttpRequest(
 // => { method: "GET", url: "https://tool.example/login?iss=a", headers: { cookie: "a=1" }, body: new Uint8Array() }
 ```
 
-The `HttpResponse` goes back as `new Response(response.body, { status: response.status, headers: response.headers })`; a status
-that has no body, such as 204, takes `null`.
+It sends an `HttpResponse` back as `new Response(response.body, { status: response.status, headers: response.headers })`, with
+`null` for a status that has no body, such as 204.
 
 ## Functions
 
@@ -106,8 +104,7 @@ that has no body, such as 204, takes `null`.
 | `buildRefusalResponse` `options.forbiddenHeaders` | none                                          |        |              | More headers of a 403, such as the `WWW-Authenticate` challenge of RFC 6750 that names a scope     |
 
 `readText` and `readQuery` set no limit, nor does `readForm` without `maxBytes`: the host caps the size of a body before it
-builds the request, as the handlers of the packages document. A handler that reads a form passes its own limit, so that a
-form is measured before it is decoded.
+builds the request. A handler that reads a form passes its own limit, so the form is measured before it is decoded.
 
 ## Reading
 
@@ -123,9 +120,9 @@ form is measured before it is decoded.
 
 ## Paging, failures and decisions
 
-The REST bindings of CASE, Open Badges and CLR page a list with `limit` and `offset`, answer a page with `X-Total-Count` and a
-`Link` header, and answer every failure with an `imsx_StatusInfo`. A provider asks the host's `authorize` port whether a request
-may go on, and the port allows it, with what it grants such as the owner of the resources, or refuses it with 401, 403 or 429.
+The REST bindings of CASE, Open Badges and CLR page a list with `limit` and `offset`, answer a page with `X-Total-Count` and
+`Link`, and answer every failure with an `imsx_StatusInfo`. A provider asks the host's `authorize` port whether a request
+goes on: the port allows it, with what it grants, such as the owner of the resources, or refuses it with 401, 403 or 429.
 
 ```ts
 import { buildPageLinks, buildStatusInfoResponse, readOffsetPage, readQuery } from "@interopkit/core/http";
@@ -187,8 +184,7 @@ hold a token.
 
 ## Differences from the references
 
-| Reference                                 | Difference                                                                                                                      |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| RFC 9110: `Accept` ranges with parameters | A range matches by its type and subtype, and its other parameters are ignored, so that `application/json;charset=utf-8` matches |
-| `URLSearchParams`                         | A parameter that occurs twice is refused instead of read as a list, since the protocols of the packages forbid it               |
-| `TextDecoder`                             | Invalid UTF-8 is refused instead of replaced, so that a signature or an identifier never changes in decoding                    |
+| Reference         | Difference                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `URLSearchParams` | A parameter that occurs twice is refused instead of read as a list, since the protocols of the packages forbid it |
+| `TextDecoder`     | Invalid UTF-8 is refused instead of replaced, so that a signature or an identifier never changes in decoding      |

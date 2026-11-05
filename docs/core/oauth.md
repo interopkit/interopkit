@@ -191,14 +191,16 @@ await current(); // => "at-1"
 
 ## Registration
 
-`registerClient` posts the metadata as JSON in the names of RFC 7591 and asks for the grants in `grantTypes`, which are
-`authorization_code` and `refresh_token` unless the host names others, with the `code` response type when the authorization
-code grant is among them. A server refuses a grant that it does not offer, so ask only for what the API needs: Open Badges 3.0
-allows `authorization_code` and `refresh_token` (7.1.1.2), which is the default, and an LTI tool asks for `client_credentials`.
-`GRANT_TYPES` lists the three grants; `refresh_token` needs `authorization_code`, and a public client has no credentials for
-`client_credentials`. The result is an `OAuthClient` that the other calls take: the identifier and the secret that the server issued,
-or `none` for a public client. The secret is shown once, so the host stores it. `private_key_jwt` is not offered, since it needs
-the client's public keys, which `ClientMetadata` does not carry.
+`registerClient` posts the metadata as JSON in the names of RFC 7591 and returns an `OAuthClient` that the other calls take:
+the identifier and the secret that the server issued, or `none` for a public client. The secret is shown once, so the host
+stores it.
+
+| `ClientMetadata` field                                            | Meaning                                                                                                                                                                                                                                                                                                     | Default                                   |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `redirectUris`, `clientName`, `clientUri`, `scopes`               | Where the browser returns, absolute; the name shown to the user; the home page, `https`; the scopes the client will ask for                                                                                                                                                                                 | Required                                  |
+| `grantTypes`                                                      | Of `GRANT_TYPES`. A server refuses a grant it does not offer: Open Badges 3.0 allows the default (7.1.1.2), and an LTI tool asks for `client_credentials`. `refresh_token` needs `authorization_code`, which adds the `code` response type, and a public client has no credentials for `client_credentials` | `["authorization_code", "refresh_token"]` |
+| `tokenEndpointAuthMethod`                                         | `client_secret_basic`, `client_secret_post` or `none`. `private_key_jwt` is not offered: it needs the client's public keys, which the metadata does not carry                                                                                                                                               | `"client_secret_basic"`                   |
+| `logoUri`, `tosUri`, `policyUri`, `softwareId`, `softwareVersion` | The logo, terms and policy, `https`; the identifier and version of the software                                                                                                                                                                                                                             | None                                      |
 
 ## Options and limits
 
@@ -212,35 +214,20 @@ the client's public keys, which `ClientMetadata` does not carry.
 | `refreshSkewSeconds` of the cache | 60                            | How long before its expiry a cached token counts as expired         |
 | Most bytes of an answer           | 65,536                        | The size limit of [service calls](service.md); not replaceable here |
 
-## Failure paths
-
-| Case                                                     | Result                                                                                                                                |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| An argument is not valid                                 | `DataError`, before any request                                                                                                       |
-| The server does not answer, or the deadline passes       | `ServiceError`, status 0                                                                                                              |
-| The server answers 400 with an OAuth `error`             | `ServiceError`, status 400; the message names the `error` and the description; `body` is the answer                                   |
-| The server answers 401 with a challenge                  | `ServiceError`, status 401; `body` is the answer                                                                                      |
-| The server answers another status, or redirects          | `ServiceError` with that status, as for [service calls](service.md)                                                                   |
-| The answer is not a valid token or registration response | `ServiceError` with the status of the answer; the message says what is wrong                                                          |
-| The callback carries the server's refusal                | `ServiceError`, status 400; `body` holds `error` and `error_description` as JSON. No request was made                                 |
-| The callback does not answer the request                 | `DataError`: another or no `state`, another `iss`, no `code`, or tokens of an implicit flow. No request was made                      |
-| The signer fails or signs in the wrong form              | The error of the signer, or a `DataError`; no request is made                                                                         |
-| The signal aborts, or is aborted before the call         | Rejects with its `reason`; a signal that is aborted before the call makes no request                                                  |
-| Called again                                             | Nothing is kept. A refresh token used twice may be refused by the server, and the host authorizes again; revocation is safe to repeat |
-| Calls back                                               | Nothing                                                                                                                               |
-
 ## Errors
 
-| Error                      | When                                                                                                                  | What to do                                                                                                |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `DataError`                | The server, the client, the scopes, the metadata, the options, the callback or the pending authorization is not valid | Fix the argument; the message names it                                                                    |
-| `DataError`                | The server lacks the endpoint that the call needs                                                                     | Give the endpoint                                                                                         |
-| `DataError`                | The callback does not answer the request                                                                              | Treat the login as failed and start again: the callback may be forged or stale                            |
-| `ServiceError`, 400        | The server refused the grant or the metadata, or the callback carries the server's refusal                            | Read `error` in the message: `invalid_grant` means authorize again, `access_denied` that the user said no |
-| `ServiceError`, 401        | The server rejects the client's authentication                                                                        | Check the secret, or the key and the audience of the assertion                                            |
-| `ServiceError`, 0          | No answer                                                                                                             | Check the address and the network, or raise `timeoutMs`                                                   |
-| `ServiceError`, other      | Another status, a redirect, an answer that is too large, or an answer that is not a valid response                    | As for [service calls](service.md)                                                                        |
-| The `reason` of the signal | The caller aborted                                                                                                    | Nothing: the caller ended the wait                                                                        |
+| Error                              | When                                                                                                                                                                                                                                    | What to do                                                                                                           |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `DataError`, before any request    | The server, the client, the scopes, the metadata, the options, the callback or the pending authorization is not valid, or the server lacks the endpoint the call needs                                                                  | Fix the argument, which the message names                                                                            |
+| `DataError`, no request made       | The callback does not answer the request: another or no `state`, another `iss`, no `code`, or tokens of an implicit flow                                                                                                                | Treat the login as failed and start again: the callback may be forged or stale                                       |
+| `ServiceError`, 400                | The server refused the grant or the metadata with an OAuth `error`, named in the message with its description; or the callback carries the server's refusal, with `error` and `error_description` in `body` as JSON and no request made | `invalid_grant` means authorize again (a refresh token used twice may get it), `access_denied` that the user said no |
+| `ServiceError`, 401                | The server rejects the client's authentication; `body` is the answer                                                                                                                                                                    | Check the secret, or the key and the audience of the assertion                                                       |
+| `ServiceError`, 0                  | No answer, or the deadline passed                                                                                                                                                                                                       | Check the address and the network, or raise `timeoutMs`                                                              |
+| `ServiceError`, other              | Another status, a redirect, an answer that is too large, or one that is not a valid token or registration response, which the message describes                                                                                         | As for [service calls](service.md)                                                                                   |
+| The signer's error, or `DataError` | The signer failed, or signed in the wrong form; no request is made                                                                                                                                                                      | Fix the signer, as in [signing](signer.md)                                                                           |
+| The `reason` of the signal         | The caller aborted, before the call (no request) or during it                                                                                                                                                                           | Nothing: the caller ended the wait                                                                                   |
+
+Nothing is kept between calls and nothing is called back; revocation is safe to repeat.
 
 ## Data flows
 

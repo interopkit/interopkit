@@ -1,6 +1,8 @@
 # Performance of core
 
-What the functions of `@interopkit/core` cost against the platform API that each wraps, how much each entry point adds to a bundle, and the heap that each reader of untrusted input needs on its worst input. A budget holds each number and fails a gate of CI: `pnpm bench` for the time, `pnpm test` for the size and the heap. What each function does is in the guides: [service](service.md), [http](http.md), [signer](signer.md) and [signals](signals.md).
+The time of each function of `@interopkit/core` against the platform API it wraps, the size of each entry point, and the heap
+of each reader of untrusted input at its worst input. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test`
+for the size and the heap.
 
 ```mermaid
 flowchart LR
@@ -11,8 +13,9 @@ flowchart LR
 
 ## Speed
 
-`pnpm bench` times the build that ships against the platform API that a function wraps, the least work of the same kind, in
-three rounds that alternate which runs first; the gate is the ratio of the fastest samples, five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit, which holds on any machine. No library does what `core` does, so no benchmark has a library as its reference.
+`pnpm bench` times the build that ships against the platform API that a function wraps, in three rounds that alternate which
+runs first. The budget is a ratio of the fastest samples, five times the highest measured on the runner of CI and on a laptop,
+rounded up to one significant digit, so it holds on any machine. No library does what `core` does, so no reference is a library.
 
 | Benchmark                                                  | Reference                                 |     Ratio | Budget |
 | ---------------------------------------------------------- | ----------------------------------------- | --------: | -----: |
@@ -23,25 +26,13 @@ three rounds that alternate which runs first; the gate is the ratio of the faste
 | `get` of each of 1,000 kept keys of `createKeyedCache`     | a `Map` with an expiry                    | 1.08–1.21 |      7 |
 | `get` of one key by 100 callers while it loads once        | 100 waits on one promise                  | 1.66–2.00 |     20 |
 
-`readJson` counts the levels and the tokens of the text in one reading, which finds the end of each string with `indexOf`, before
-`JSON.parse` builds anything; that reading is the work that the reference does not do. Two readings, each over the strings one
-unit at a time, take 3.6 ms for 1 MiB where it takes 2.4. `readForm` turns each `+` into a space on the bytes: URLSearchParams
-alone joins a node of a rope for each in Node.js, and raised the peak by 368 MiB on Node.js 22 and 467 MiB on 24 for that form.
-
-`requestService` reads the chunks up to `maxBytes`, cancels the rest and joins what it read once.
-
-Every schema of an object of `core/checks` refuses a property named `__proto__`, `constructor` or `prototype` in one step of its
-own pipe, which finds the first such name by three lookups and lists the names only for the refusal; `copyJson` finds it the
-same way, about 3 percent of `readEntity` of `learning-analytics`. `copyJson` assigns each member of a copy to an object literal,
-as the objects of valibot are built, and defines a member named `__proto__` where names are data; `openRecord` copies the members
-that it does not name by their names and an assignment. Timed in turns in one process against a build that refuses none of these
-names and copies with `Object.entries` and `Object.fromEntries`, `readCredential` of `achievement-credentials` takes 0.70 to 0.73
-of its time, `readEntity` 0.85 to 0.86 and `validateEvent` 0.78 to 0.86; each member defined by `Object.defineProperty` instead
-takes 1.2 times that build, and `Object.keys` with `Object.fromEntries` 1.07.
-
-The parts of a JWS are written as base64url by a table, in time linear in the input: built from the bytes as the arguments of
-`String.fromCharCode` and encoded with `btoa`, they take longer than the signature, and `signCompactJws` of 2 KB 58 µs where it
-takes 32.
+| Choice                                                                                                                                                                                                                                                                                           | Measured against the alternative                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `readJson` counts levels and tokens in one reading before `JSON.parse`, finding the end of each string with `indexOf`; the reference does no such count                                                                                                                                          | Two readings, each over the strings one unit at a time: 3.6 ms for 1 MiB against 2.4                                                                                                                                                                                                                                                                                                                                                                                    |
+| `readForm` turns each `+` into a space on the bytes                                                                                                                                                                                                                                              | `URLSearchParams` alone joins a rope node for each in Node.js: the peak of a form of plus signs rises by 368 MiB on Node.js 22 and 467 MiB on 24                                                                                                                                                                                                                                                                                                                        |
+| `requestService` reads the chunks up to `maxBytes`, cancels the rest and joins what it read once                                                                                                                                                                                                 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Each object schema of `core/checks` refuses `__proto__`, `constructor` and `prototype` in one pipe step of three lookups, and `copyJson` the same way; `copyJson` assigns each member to an object literal, as valibot builds objects, and `openRecord` copies its unnamed members by assignment | In turns in one process, against a build that refuses none of these names and copies with `Object.entries` and `Object.fromEntries`: `readCredential` of `achievement-credentials` takes 0.70 to 0.73 of its time, `readEntity` 0.85 to 0.86 and `validateEvent` 0.78 to 0.86. The refusal is about 3 percent of `readEntity` of `learning-analytics`. `Object.defineProperty` for each member takes 1.2 times that build, `Object.keys` with `Object.fromEntries` 1.07 |
+| The parts of a JWS are written as base64url by a table, in linear time                                                                                                                                                                                                                           | `String.fromCharCode` over the bytes and `btoa` take longer than the signature: `signCompactJws` of 2 KB takes 58 µs against 32                                                                                                                                                                                                                                                                                                                                         |
 
 ## Size
 

@@ -40,10 +40,10 @@ Number.isInteger(readClock(SYSTEM_CLOCK)); // => true
 
 ## Not included
 
-| Not included           | Why                                                                                                   |
-| ---------------------- | ----------------------------------------------------------------------------------------------------- |
-| Timers, `sleep`        | A library waits on I/O with a deadline (see [service calls](service.md)), never on a timer of its own |
-| Time zones, formatting | A caller formats the time it needs, such as the ISO 8601 form of a Caliper event                      |
+| Not included           | Why                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Timers, `sleep`        | A library waits on I/O with a deadline (see [service calls](service.md)), never on a timer of its own         |
+| Time zones, formatting | `formatDateTime` of [checks](checks.md) writes the form that Caliper and xAPI use; a caller formats any other |
 
 ## Differences from the references
 
