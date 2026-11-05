@@ -33,6 +33,9 @@ const WIDE = 40_000;
 /** The tokens of JSON that the texts of the widest profiles may have: more than the million of the default. */
 const WIDE_TOKENS = 3_000_000;
 
+/** The bytes that the texts of the widest profiles may have: more than the 1,300,000 of the default. */
+const WIDE_BYTES = 20_000_000;
+
 /**
  * The texts of two profiles: one whose Pattern names each of its other Patterns in alternates, and which defines again every
  * concept of the other, whose version it revises.
@@ -121,8 +124,8 @@ test("reads and judges a profile whose alternates name 40,000 Patterns and that 
   bench,
 }) => {
   const { text, other } = wideProfiles();
-  // Each text has more tokens than the default limit, which a host raises for profiles that it trusts.
-  const options = { profiles: [other], maxTokens: WIDE_TOKENS };
+  // Each text has more tokens and bytes than the default limits, which a host raises for profiles that it trusts.
+  const options = { profiles: [other], maxTokens: WIDE_TOKENS, maxBytes: WIDE_BYTES };
   expect(validateProfile(text, options)).toStrictEqual([]);
   const parse = await bench("JSON.parse", () => [JSON.parse(text), JSON.parse(other)]).run(BENCH_OPTIONS);
   const ours = await bench("validateProfile", () => validateProfile(text, options)).run(BENCH_OPTIONS);
