@@ -318,6 +318,13 @@ describe("prepareToolLaunch", () => {
     expect(ctx.kept.size).toBe(0);
   });
 
+  it("refuses custom properties that are no plain object, and keeps nothing", async () => {
+    const ctx = setup();
+    const custom = new Map([["exam", "tryout-1"]]) as unknown as Readonly<Record<string, string>>;
+    await expect(prepareToolLaunch({ ...baseMessage, custom }, ctx.login)).rejects.toThrow(DataError);
+    expect(ctx.kept.size).toBe(0);
+  });
+
   it("keeps the query of the login URL of the tool", async () => {
     const ctx = setup({ tools: [toolRegistration({ loginUrl: `${TOOL_ORIGIN}/lti/login?tenant=7` })] });
     const url = new URL((await prepareToolLaunch(baseMessage, ctx.login)).url);

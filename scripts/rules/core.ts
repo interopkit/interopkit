@@ -4,6 +4,13 @@ import type { Rule } from "./rule.ts";
 /** The rules of `@interopkit/core` that a test must guard, each with the test that guards it. */
 export const CORE_RULES: readonly Rule[] = [
   {
+    rule: "An object that is not plain is refused where the names of a record are read, and is not read as empty.",
+    file: "packages/core/src/checks.ts",
+    find: "if (!isPlainObject(dataset.value)) {",
+    replace: "if (false) {",
+    test: "packages/core/test/checks.test.ts",
+  },
+  {
     rule: "A service call never follows a redirect.",
     file: "packages/core/src/service.ts",
     find: '{ ...init, redirect: "manual", signal }',

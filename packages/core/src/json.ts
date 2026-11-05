@@ -84,7 +84,7 @@ export const PROTOTYPE_NAME_REFUSAL =
   "is refused, since __proto__, constructor and prototype are names of the prototype chain, which a reader would drop or misread";
 
 /** Tells whether an object is plain: made by an object literal, `JSON.parse` or `Object.create(null)`. */
-function isPlainObject(value: object): boolean {
+export function isPlainObject(value: object): boolean {
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }

@@ -11,6 +11,7 @@ import { findInstant } from "./formats.js";
 import {
   copyJson,
   findExceededJsonLimit,
+  isPlainObject,
   type JsonObject,
   type JsonValue,
   listPrototypeNames,
@@ -625,7 +626,8 @@ export const jsonValueSchema: Schema<JsonValue> = v.pipe(
 
 /**
  * The schema of an object whose property names are data, such as claim names: every own property is read into a map, and a
- * property named `__proto__`, `constructor` or `prototype` is refused, which the record of valibot would skip unseen.
+ * property named `__proto__`, `constructor` or `prototype` is refused, which the record of valibot would skip unseen. An object
+ * that is not plain, such as a `Map` or a `Date`, is refused too: it has no such properties, and would read as empty.
  *
  * @param value - The schema of the value of a property.
  */
@@ -633,6 +635,10 @@ export function mapSchema<TOutput>(value: Schema<TOutput>): Schema<Map<string, T
   return v.pipe(
     recordSchema,
     v.rawTransform(({ dataset, addIssue, NEVER }) => {
+      if (!isPlainObject(dataset.value)) {
+        addIssue({ message: "expected a plain object, whose properties are the names, found one that is not plain" });
+        return NEVER;
+      }
       const entries = new Map<string, TOutput>();
       for (const [name, member] of Object.entries(dataset.value)) {
         const result = v.safeParse(value, member, { abortEarly: true });

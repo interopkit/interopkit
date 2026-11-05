@@ -363,6 +363,13 @@ describe("buildDeepLinkingResponse", () => {
     }
   });
 
+  it("refuses custom properties that are no plain object, which JSON would write as empty", async () => {
+    const ctx = setup();
+    const launch = await deepLinkingRequest(ctx);
+    const item = { type: "ltiResourceLink", custom: new Map([["exam", "tryout-1"]]) } as unknown as ContentItem;
+    await expect(buildDeepLinkingResponse(launch, { items: [item] }, ctx.options)).rejects.toThrow(DataError);
+  });
+
   it("throws DataError for arguments of other types", async () => {
     const ctx = setup();
     const launch = await deepLinkingRequest(ctx);

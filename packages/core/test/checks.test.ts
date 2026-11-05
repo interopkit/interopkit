@@ -760,6 +760,13 @@ describe("mapSchema", () => {
     );
     expect(() => parseWith(claims, [], "The claims")).toThrow("expected an object, found an array");
   });
+
+  it("refuses an object that is not plain, which would read as empty", () => {
+    for (const value of [new Map([["a", "x"]]), new Date(0), new (class Claims {})()]) {
+      expect(() => parseWith(claims, value, "The claims")).toThrow("expected a plain object");
+    }
+    expect(parseWith(claims, Object.assign(Object.create(null), { a: "x" }), "The claims").get("a")).toBe("x");
+  });
 });
 
 describe("guardSchema", () => {
