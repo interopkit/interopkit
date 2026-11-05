@@ -164,7 +164,7 @@ function titleOf(chunk: Chunk): string {
   // A heading of the certification guide holds the anchor of a broken link whose title quotes a tag, which would end the tag early.
   return textOf(
     chunk.body
-      .slice(0, end < 0 ? 0 : end)
+      .slice(0, Math.max(0, end))
       .replace(/<bdi[^>]*>[\s\S]*?<\/bdi>/gu, "")
       .replace(/<a [^>]*respec-offending-element[\s\S]*?<\/a>/gu, ""),
   );

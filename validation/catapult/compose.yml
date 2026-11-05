@@ -15,7 +15,12 @@ services:
       DATABASE_NAME: catapult_cts
       PLAYER_DATABASE_NAME: catapult_player
     command:
-      ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-authentication-plugin=mysql_native_password"]
+      [
+        "mysqld",
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_unicode_ci",
+        "--default-authentication-plugin=mysql_native_password",
+      ]
   lrs:
     image: yetanalytics/lrsql@sha256:bf5661ab216d07175f6e429951bf53c79f6070d54812285ea4c208f991cf0a04
     platform: linux/amd64
