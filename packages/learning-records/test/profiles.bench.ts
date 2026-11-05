@@ -24,6 +24,53 @@ function largeProfile(): string {
   return JSON.stringify({ ...profile, concepts: [...(profile.concepts as unknown[]), ...verbs] });
 }
 
+/**
+ * The Patterns of the widest alternates, and the concepts that a profile takes over from another that it revises: far more than
+ * any published profile has, so that a check whose work grows with their square shows above its budget.
+ */
+const WIDE = 40_000;
+
+/** The tokens of JSON that the texts of the widest profiles may have: more than the million of the default. */
+const WIDE_TOKENS = 3_000_000;
+
+/**
+ * The texts of two profiles: one whose Pattern names each of its other Patterns in alternates, and which defines again every
+ * concept of the other, whose version it revises.
+ */
+function wideProfiles(): { readonly text: string; readonly other: string } {
+  const profile = soundProfile() as Record<string, any>;
+  const other = "https://example.org/profiles/revised";
+  const verb = (base: string, index: number) => ({
+    id: `${other}/verbs/v${index}`,
+    type: "Verb",
+    inScheme: base,
+    prefLabel: { en: `verb ${index}` },
+    definition: { en: "A verb that a revision takes over." },
+  });
+  const patterns = Array.from({ length: WIDE }, (_, index) => ({
+    id: `${SPORTS}/patterns/wide-${index}`,
+    type: "Pattern",
+    oneOrMore: `${SPORTS}/templates/start`,
+  }));
+  const wide = { id: `${SPORTS}/patterns/wide`, type: "Pattern", alternates: patterns.map(({ id }) => id) };
+  const [first, ...later] = profile.versions;
+  const revising = {
+    ...profile,
+    versions: [{ ...first, wasRevisionOf: [...(first.wasRevisionOf ?? []), `${other}/v1`] }, ...later],
+    concepts: [...profile.concepts, ...Array.from({ length: WIDE }, (_, index) => verb(first.id, index))],
+    patterns: [...profile.patterns, wide, ...patterns],
+  };
+  const revised = {
+    ...profile,
+    id: other,
+    versions: [{ id: `${other}/v1`, generatedAtTime: "2019-01-01T00:00:00Z" }],
+    concepts: Array.from({ length: WIDE }, (_, index) => verb(`${other}/v1`, index)),
+    templates: undefined,
+    patterns: undefined,
+  };
+  return { text: JSON.stringify(revising), other: JSON.stringify(revised) };
+}
+
 /** A relay race of the profile of the examples, of a registration: a start, handoffs and the placing. */
 function relay(): readonly Record<string, unknown>[] {
   const verbs = [
@@ -66,6 +113,25 @@ test("reads and judges a profile of 900 more verbs at a small multiple of JSON.p
     ours,
     { ...parse, name: "JSON.parse" },
     RATIOS.validateProfileAgainstParse,
+  );
+});
+
+test("reads and judges a profile whose alternates name 40,000 Patterns and that revises 40,000 concepts, at a small multiple of JSON.parse", async ({
+  annotate,
+  bench,
+}) => {
+  const { text, other } = wideProfiles();
+  // Each text has more tokens than the default limit, which a host raises for profiles that it trusts.
+  const options = { profiles: [other], maxTokens: WIDE_TOKENS };
+  expect(validateProfile(text, options)).toStrictEqual([]);
+  const parse = await bench("JSON.parse", () => [JSON.parse(text), JSON.parse(other)]).run(BENCH_OPTIONS);
+  const ours = await bench("validateProfile", () => validateProfile(text, options)).run(BENCH_OPTIONS);
+  await expectRatio(
+    annotate,
+    "validateProfile of wide profiles",
+    ours,
+    { ...parse, name: "JSON.parse" },
+    RATIOS.wideProfileAgainstParse,
   );
 });
 

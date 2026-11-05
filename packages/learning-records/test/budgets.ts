@@ -62,6 +62,11 @@ export const RATIOS = {
   matchAgainstLearningLocker: 0.5,
   /** `validateProfile` of the text of a profile of 907 concepts, as a multiple of `JSON.parse` of the text. */
   validateProfileAgainstParse: 50,
+  /**
+   * `validateProfile` of the texts of a profile whose alternates name 40,000 Patterns and that revises 40,000 concepts of another,
+   * as a multiple of `JSON.parse` of the two texts.
+   */
+  wideProfileAgainstParse: 50,
   /** `validateStatement` of a validator of a profile on each Statement of a relay, as a multiple of `readStatement` of each. */
   templatesAgainstRead: 6,
   /** `validateStatements` of a validator of a profile on the relay, as a multiple of `readStatement` of each Statement. */

@@ -78,6 +78,20 @@ function* versionIssues(profile: Profile): Generator<Issue> {
   }
 }
 
+/** Lists the ids of the concepts of the other profiles that a version of a profile revises, each profile read once. */
+function supersededConcepts(profile: Profile, references: ProfileReferences): ReadonlySet<string> {
+  const revised = new Set<Profile>();
+  for (const { wasRevisionOf = [] } of profile.versions) {
+    for (const version of wasRevisionOf) {
+      const other = references.otherVersions.get(version);
+      if (other !== undefined) revised.add(other);
+    }
+  }
+  const superseded = new Set<string>();
+  for (const other of revised) for (const { id } of other.concepts ?? []) superseded.add(id);
+  return superseded;
+}
+
 /**
  * Judges a profile as a whole: its contexts, the version of the specification it follows, its ids and its versions, and that
  * an object it defines is not one that another profile defines, unless it revises that profile.
@@ -93,14 +107,9 @@ export function* profileIssues(profile: Profile, references: ProfileReferences):
   }
   yield* identifierIssues(profile);
   yield* versionIssues(profile);
-  const revised = new Set(profile.versions.flatMap(({ wasRevisionOf = [] }) => wasRevisionOf));
-  const supersedes = (id: string): boolean => {
-    for (const version of revised)
-      if (references.otherVersions.get(version)?.concepts?.some((c) => c.id === id)) return true;
-    return false;
-  };
+  const superseded = supersededConcepts(profile, references);
   for (const [index, concept] of (profile.concepts ?? []).entries()) {
-    if (references.otherConcepts.has(concept.id) && !supersedes(concept.id)) {
+    if (references.otherConcepts.has(concept.id) && !superseded.has(concept.id)) {
       yield error(
         member(item("concepts", index), "id"),
         "defined-elsewhere",

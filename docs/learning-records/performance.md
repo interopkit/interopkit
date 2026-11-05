@@ -36,6 +36,7 @@ node:crypto for a hash and jose for a signature. The ratios are the fastest samp
 | `signStatement`, RSA of 2,048 bits | the `CompactSign` of jose | 1.06–1.34 | 7   |
 | `verifyStatementSignature` | the `compactVerify` of jose | 2.95–4.68 | 30  |
 | `validateProfile` of a profile of 907 concepts, 237 KB | `JSON.parse` of its text | 8.2 on a laptop | 50 |
+| `validateProfile` of a profile whose alternates name 40,000 Patterns and that revises 40,000 concepts of another | `JSON.parse` of the two texts | 7.7–9.6 on a laptop | 50 |
 | `validateStatement` of a profile's validator on a relay of 1,000 Statements | `readStatement` of each | 1.15 on a laptop | 6 |
 | `validateStatements` of the same, templates and Patterns | the same | 1.55 on a laptop | 8 |
 

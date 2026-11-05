@@ -1,17 +1,17 @@
 import type { Issue } from "@interopkit/core/checks";
 import { error, item, member, warning } from "../read/internal.js";
-import { PATTERN_KINDS, type Pattern } from "./patterns.js";
+import { PATTERN_KINDS, type Pattern, type PatternKind } from "./patterns.js";
 import { findConcept, type ProfileReferences } from "./references.js";
 
-/** The members of a Pattern, each with the path of its place in the Pattern. */
+/** The members of a Pattern, each with the kind that holds it and the path of its place in the Pattern. */
 export function* patternMembers(
   pattern: Pattern,
   path = "",
-): Generator<{ readonly id: string; readonly path: string }> {
+): Generator<{ readonly id: string; readonly kind: PatternKind; readonly path: string }> {
   for (const kind of PATTERN_KINDS) {
     const value = pattern[kind];
-    if (typeof value === "string") yield { id: value, path: member(path, kind) };
-    else for (const [index, id] of (value ?? []).entries()) yield { id, path: item(member(path, kind), index) };
+    if (typeof value === "string") yield { id: value, kind, path: member(path, kind) };
+    else for (const [index, id] of (value ?? []).entries()) yield { id, kind, path: item(member(path, kind), index) };
   }
 }
 
@@ -22,10 +22,10 @@ export function findPattern(references: ProfileReferences, id: string): Pattern 
 
 /** Judges what the members of a Pattern name: a Pattern or a Statement Template, and in `alternates` none that may be absent. */
 function* memberIssues(pattern: Pattern, path: string, references: ProfileReferences): Generator<Issue> {
-  for (const { id, path: at } of patternMembers(pattern, path)) {
+  for (const { id, kind, path: at } of patternMembers(pattern, path)) {
     const inner = findPattern(references, id);
     if (inner !== undefined) {
-      if (pattern.alternates?.includes(id) && (inner.optional !== undefined || inner.zeroOrMore !== undefined)) {
+      if (kind === "alternates" && (inner.optional !== undefined || inner.zeroOrMore !== undefined)) {
         yield error(
           at,
           "alternates-optional",
