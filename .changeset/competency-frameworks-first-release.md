@@ -10,7 +10,8 @@ sentence and severity, as data: they find a property that CASE does not have, an
 nothing, an `isChildOf` tree that loops (`child-of-cycle`), and an item that no chain of `isChildOf` leads to from the document
 (`item-outside-tree`). They read the `CFPackageURI` and `CFDocumentURI` that some providers write in the form of a package,
 which has none, leave them out and warn (`package-form-link`). `convertCaseVersion` takes a package or an entity of 1.1 to the form of 1.0, leaves out and reports what 1.0
-cannot hold, and reports an identifier or a URI that 1.0 would refuse (`form-not-in-1.0`).
+cannot hold, and reports an identifier or a URI that 1.0 would refuse (`form-not-in-1.0`); like the readers, it refuses a member named `__proto__`,
+`constructor` or `prototype`.
 `@interopkit/competency-frameworks/graph` answers what a consumer asks of a framework: `buildFrameworkTree`, `listAssociations`,
 `crosswalk`, `diffPackages`, `isNewer`, `readAdoptionStatus` and `buildEntityUri`.
 `@interopkit/competency-frameworks/client` reads frameworks from a provider over the REST binding with the `fetch` of the host:

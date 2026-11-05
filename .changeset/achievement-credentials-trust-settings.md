@@ -18,5 +18,5 @@ when its value is of the wrong type, and the functions agree where they differed
 list credentials as `statusLists`, the name that `verifyCredential` gives it (was `cache`); it refuses an empty issuer in
 `statusIssuers`, and an algorithm outside those that verify a JWT before it reads the credential, as `verifyCredential` does;
 and it takes `maxInputBytes`, `maxDepth` and `maxJsonLdTokens`, within which it verifies the list credential as every reader of a
-credential does. `verifyCredential` verifies each status list credential within its own `maxInputBytes`, `maxDepth` and
+credential does, and reads a revocation list within the same `maxDepth`. Its `signal` ends the fetch of a list that no cache shares. `verifyCredential` verifies each status list credential within its own `maxInputBytes`, `maxDepth` and
 `maxJsonLdTokens`, as strictly as the credential.
