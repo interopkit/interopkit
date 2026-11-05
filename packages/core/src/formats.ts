@@ -44,6 +44,7 @@ function isCalendarDate(year: number, month: number, day: number): boolean {
  * @returns Whether it is a date that exists.
  */
 export function isDate(text: string): boolean {
+  if (typeof text !== "string") return false;
   const match = DATE.exec(text);
   return match !== null && isCalendarDate(Number(match[1]), Number(match[2]), Number(match[3]));
 }
@@ -62,6 +63,7 @@ export function isDate(text: string): boolean {
  * @returns The instant in milliseconds, or `undefined` when the text is not a date and time of RFC 3339.
  */
 export function findInstant(text: string): number | undefined {
+  if (typeof text !== "string") return undefined;
   const match = DATE_TIME.exec(text);
   if (match === null) return undefined;
   // The pattern holds every part, so that the empty strings stand in only for what the types leave possibly absent.
@@ -113,6 +115,7 @@ const ISO_BASIC = /^(\d{4})(\d{2})(\d{2})T(\d{2})(?:(\d{2})(?:(\d{2})(\.\d+)?)?)
  * @returns The instant in milliseconds, or `undefined` when the text is not a date and time of ISO 8601 with a zone.
  */
 export function findIsoInstant(text: string): number | undefined {
+  if (typeof text !== "string") return undefined;
   const match = ISO_EXTENDED.exec(text) ?? ISO_BASIC.exec(text);
   if (match === null) return undefined;
   const [, year = "", month = "", day = "", hour = "", minute = "00", second = "00", fraction = "", zone = ""] = match;
@@ -131,7 +134,7 @@ export function findIsoInstant(text: string): number | undefined {
  * @returns Whether it is.
  */
 export function isAbsoluteUri(text: string): boolean {
-  return ABSOLUTE_URI.test(text) && URL.canParse(text);
+  return typeof text === "string" && ABSOLUTE_URI.test(text) && URL.canParse(text);
 }
 
 const ALPHA = "[A-Za-z]";
@@ -201,7 +204,11 @@ const GRANDFATHERED: ReadonlySet<string> = new Set([
  * @see {@link https://www.rfc-editor.org/rfc/rfc5646#section-2.1 | RFC 5646 section 2.1}
  */
 export function isLanguageTag(text: string): boolean {
-  return text.length <= MAX_LANGUAGE_TAG_LENGTH && (LANGUAGE_TAG.test(text) || GRANDFATHERED.has(text.toLowerCase()));
+  return (
+    typeof text === "string" &&
+    text.length <= MAX_LANGUAGE_TAG_LENGTH &&
+    (LANGUAGE_TAG.test(text) || GRANDFATHERED.has(text.toLowerCase()))
+  );
 }
 
 /** A UUID as 8-4-4-4-12 hexadecimal digits of either case: the form that the JSON schemas of 1EdTech ask for. */

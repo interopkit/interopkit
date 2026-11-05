@@ -175,6 +175,22 @@ describe("findInstant", () => {
   });
 });
 
+describe("the readers of the forms of text", () => {
+  it("answer false or undefined for a value that is not text, which a pattern would read as its text", () => {
+    for (const value of ['["2024-06-13"]', '["2024-06-13T18:46:03Z"]', '["urn:uuid:1"]', '["en"]', "null", "5", "{}"]) {
+      const parsed = JSON.parse(value);
+      expect([
+        isDate(parsed),
+        isDateTime(parsed),
+        isAbsoluteUri(parsed),
+        isLanguageTag(parsed),
+        isUuid(parsed),
+      ]).toStrictEqual([false, false, false, false, false]);
+      expect([findInstant(parsed), findIsoInstant(parsed)]).toStrictEqual([undefined, undefined]);
+    }
+  });
+});
+
 describe("findIsoInstant", () => {
   const instant = Date.UTC(2024, 5, 13, 18, 46, 3, 250);
 
