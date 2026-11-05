@@ -145,4 +145,33 @@ describe("the verification of a credential before it is stored", () => {
     await expect(pending).rejects.toThrow("The client went away.");
     expect(signals[0]?.aborted).toBe(true);
   });
+
+  it("ends the verification at either signal when the provider and the options of the verifier each have one", async () => {
+    const hanging = () => new Promise<never>(() => undefined);
+    for (const aborted of ["provider", "verifier"] as const) {
+      const provider = new AbortController();
+      const verifier = new AbortController();
+      const { options } = serving("badges", {
+        signal: provider.signal,
+        verify: { ...world().options, signal: verifier.signal, keys: { resolve: hanging, issuerKeys: hanging } },
+      });
+      const pending = upsertJws(options, await jwsOf(badge()));
+      const reason = new Error(`The ${aborted} stopped.`);
+      (aborted === "provider" ? provider : verifier).abort(reason);
+      await expect(pending).rejects.toBe(reason);
+    }
+  });
+
+  it("refuses with 422 an Open Badges credential sent to the CLR API, and says that the API takes a ClrCredential", async () => {
+    const { options, held } = serving("clr", { verify: world().options });
+    const response = await handleCredentialsRequest(
+      request("POST", `${ROOTS.clr}/credentials`, { body: await jwsOf(badge()), type: "text/plain" }),
+      options,
+    );
+    expect(response.status).toBe(422);
+    expect(readEntity("imsx_StatusInfo", jsonOf(response)).imsx_description).toMatch(
+      /the CLR API takes a ClrCredential\.$/u,
+    );
+    expect(held.credentials.size).toBe(0);
+  });
 });

@@ -27,7 +27,7 @@ function pageOf(request: HttpRequest, settings: ProviderSettings): CredentialsPa
     page = readOffsetPage(parameters, settings);
   } catch (error) {
     // Both throw a `DataError` that names the parameter: one given twice, or a limit or an offset that is no whole number.
-    return error instanceof Error ? error.message : "The query of the request cannot be read.";
+    return (error as DataError).message;
   }
   const since = parameters.get("since");
   if (since === undefined) return page;

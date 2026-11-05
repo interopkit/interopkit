@@ -81,7 +81,8 @@ export function checkStatusList(list: unknown): asserts list is StatusList {
 
 /** Tells whether an entry of a list is set. The index is within the list. */
 export function isSet(bits: Uint8Array, index: number): boolean {
-  return (((bits[Math.floor(index / BITS_PER_BYTE)] ?? 0) >> (BITS_PER_BYTE - 1 - (index % BITS_PER_BYTE))) & 1) === 1;
+  const byte = new DataView(bits.buffer, bits.byteOffset, bits.byteLength).getUint8(Math.floor(index / BITS_PER_BYTE));
+  return ((byte >> (BITS_PER_BYTE - 1 - (index % BITS_PER_BYTE))) & 1) === 1;
 }
 
 /**
@@ -99,9 +100,11 @@ export function setCredentialStatus(list: StatusList, index: number, set: boolea
   if (index >= list.length) throw new DataError(`The index ${index} is outside a list of ${list.length} entries.`);
   if (typeof set !== "boolean") throw new DataError(`The state must be true or false, found ${describe(set)}.`);
   const bits = Uint8Array.from(list.bits);
+  // A view reads a byte as a number, where an index of the array gives a number or `undefined`, which an index of the list never does.
+  const view = new DataView(bits.buffer);
   const byte = Math.floor(index / BITS_PER_BYTE);
   const mask = 1 << (BITS_PER_BYTE - 1 - (index % BITS_PER_BYTE));
-  bits[byte] = set ? (bits[byte] ?? 0) | mask : (bits[byte] ?? 0) & ~mask;
+  view.setUint8(byte, set ? view.getUint8(byte) | mask : view.getUint8(byte) & ~mask);
   return { length: list.length, bits };
 }
 

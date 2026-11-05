@@ -1,4 +1,3 @@
-import { isRecord } from "@interopkit/core/checks";
 import { matchesIdentifier } from "../issue/index.js";
 import type { AnyVerifiableCredential, VerificationCheck } from "../model/index.js";
 import type { KnownRecipient } from "./options.js";
@@ -14,11 +13,12 @@ export function checkRecipient(
   known: KnownRecipient | undefined,
 ): VerificationCheck {
   if (known === undefined) return checkOf("recipient", "skipped", "No recipient was given to compare with.");
-  const subject: unknown = credential.credentialSubject;
-  if (known.id !== undefined && isRecord(subject) && subject.id === known.id) {
+  // The reader refuses a subject that is not one object.
+  const subject = credential.credentialSubject as Readonly<Record<string, unknown>>;
+  if (known.id !== undefined && subject.id === known.id) {
     return checkOf("recipient", "passed", "The id of the subject is the id of the known recipient.");
   }
-  const identifiers: unknown = isRecord(subject) ? subject.identifier : undefined;
+  const identifiers = subject.identifier;
   if (known.identifier !== undefined && Array.isArray(identifiers)) {
     const { identifier } = known;
     if (identifiers.some((identity) => matchesIdentifier(identity, identifier))) {

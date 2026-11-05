@@ -266,6 +266,61 @@ describe("the failures of a 2.0 verification", () => {
     });
   });
 
+  it("says that the host marks a hosted assertion revoked, with its reason when it gives one", async () => {
+    const revoked = FIXTURE.documents[`${HOST}/assertions/5`]?.body as Json;
+    const withoutReason = { ...revoked, revocationReason: undefined };
+    for (const [body, detail] of [
+      [revoked, "The host of the assertion marks it revoked: Awarded in error"],
+      [withoutReason, "The host of the assertion marks it revoked."],
+    ] as const) {
+      const { options } = optionsOf({ ...FIXTURE.documents, [`${HOST}/assertions/5`]: { status: 200, body } });
+      const result = await verifyCredential(`${HOST}/assertions/5`, options);
+      expect(result.checks.find(({ check }) => check === "status")).toMatchObject({ outcome: "failed", detail });
+    }
+  });
+
+  it("checks a recipient that is an id against the known id, and refuses a known id for a recipient of another kind", async () => {
+    const hosted = FIXTURE.documents[hostedAddress]?.body as Json;
+    const me = "https://learner.example.org/me";
+    const named = { ...hosted, recipient: { type: "id", hashed: false, identity: me } };
+    const documents = { ...FIXTURE.documents, [hostedAddress]: { status: 200, body: named } };
+    for (const [id, outcome] of [
+      [me, "passed"],
+      ["https://learner.example.org/other", "failed"],
+    ] as const) {
+      const { options } = optionsOf(documents, { recipient: { id } });
+      expect(outcomes(await verifyCredential(hostedAddress, options)).recipient).toBe(outcome);
+    }
+    const { options } = optionsOf(undefined, { recipient: { id: me } });
+    expect(outcomes(await verifyCredential(hostedAddress, options)).recipient).toBe("failed");
+  });
+
+  it("verifies a hosted assertion that embeds a BadgeClass whose id is no address, and fetches the issuer alone", async () => {
+    const hosted = FIXTURE.documents[hostedAddress]?.body as Json;
+    const badgeClass = FIXTURE.documents[`${HOST}/badges/printmaster`]?.body as Json;
+    const embedded = { ...badgeClass, id: "urn:uuid:7c0b8e3c-5b1d-4f0e-9c58-0c1d6b3f2a44" };
+    const { options, requests } = optionsOf({
+      ...FIXTURE.documents,
+      [hostedAddress]: { status: 200, body: { ...hosted, badge: embedded } },
+    });
+    const result = await verifyCredential(hostedAddress, options);
+    expect(failing(result)).toBeUndefined();
+    expect(requests).toStrictEqual([hostedAddress, `${HOST}/issuer`]);
+  });
+
+  it("fails a hosted assertion whose badge is a word that is no address, which names no BadgeClass to read", async () => {
+    const hosted = FIXTURE.documents[hostedAddress]?.body as Json;
+    const { options, requests } = optionsOf({
+      ...FIXTURE.documents,
+      [hostedAddress]: { status: 200, body: { ...hosted, badge: "urn:uuid:7c0b8e3c-5b1d-4f0e-9c58-0c1d6b3f2a44" } },
+    });
+    expect(failing(await verifyCredential(hostedAddress, options))).toMatchObject({
+      check: "format",
+      outcome: "failed",
+    });
+    expect(requests).toStrictEqual([hostedAddress]);
+  });
+
   it("fails a document that is not UTF-8", async () => {
     const served = host().fetch;
     const fetch = async (input: RequestInfo | URL) =>
@@ -307,9 +362,19 @@ describe("signatures of 2.0 assertions that the issuer's documents do not back",
   const ISSUER = "https://issuer.example.net/profile";
   const KEY = "https://issuer.example.net/keys/1";
 
-  /** Signs an assertion with a new RSA key, and serves the documents of its issuer as given. */
-  async function signedBadge(change: { issuer?: Json; key?: Json; header?: Json; verification?: Json } = {}) {
-    const { privateKey, publicKey } = await generateKeyPair("RS256", { extractable: true });
+  /** Signs an assertion with a new key, an RSA key unless `alg` says another, and serves the documents of its issuer as given. */
+  async function signedBadge(
+    change: {
+      alg?: "RS256" | "ES256" | "EdDSA";
+      assertion?: Json;
+      issuer?: Json;
+      key?: Json;
+      header?: Json;
+      verification?: Json | string;
+    } = {},
+  ) {
+    const alg = change.alg ?? "RS256";
+    const { privateKey, publicKey } = await generateKeyPair(alg, { extractable: true });
     const badgeClass = {
       "@context": "https://w3id.org/openbadges/v2",
       id: "https://issuer.example.net/badge",
@@ -328,9 +393,10 @@ describe("signatures of 2.0 assertions that the issuer's documents do not back",
       issuedOn: "2025-11-02T09:00:00Z",
       badge: badgeClass.id,
       verification: change.verification ?? { type: "SignedBadge", creator: KEY },
+      ...change.assertion,
     };
     const jws = await new CompactSign(new TextEncoder().encode(JSON.stringify(assertion)))
-      .setProtectedHeader({ alg: "RS256", ...change.header })
+      .setProtectedHeader({ alg, ...change.header })
       .sign(privateKey);
     const issuer = {
       "@context": "https://w3id.org/openbadges/v2",
@@ -439,6 +505,21 @@ describe("signatures of 2.0 assertions that the issuer's documents do not back",
     });
   });
 
+  it("fails a JWS whose header is JSON that names no algorithm, whether it is an object without alg, with an alg that is no text, or no object", async () => {
+    const { jws, documents } = await signedBadge();
+    const [, payload, signature] = jws.split(".");
+    for (const header of [{ typ: "JWT" }, { alg: 256 }, [{ alg: "RS256" }], "RS256"]) {
+      const changed = [Buffer.from(JSON.stringify(header)).toString("base64url"), payload, signature].join(".");
+      const { options, requests } = optionsOf(documents);
+      expect(failing(await verifyCredential(changed, options))).toMatchObject({
+        check: "proof",
+        outcome: "failed",
+        detail: expect.stringContaining("names no algorithm"),
+      });
+      expect(requests).not.toContain(KEY);
+    }
+  });
+
   it("fails a JWS whose header is longer than 16,384 characters, before it fetches a key", async () => {
     const { jws, documents } = await signedBadge();
     const [, payload, signature] = jws.split(".");
@@ -510,6 +591,115 @@ describe("signatures of 2.0 assertions that the issuer's documents do not back",
     const key = { ...(documents[KEY]?.body as Json), owner: "urn:uuid:3f4ac4c2-55bd-4f63-a3f6-6b3a4c6f7e10" };
     const result = await verifyCredential(jws, optionsOf({ ...embedded, [KEY]: { status: 200, body: key } }).options);
     expect(failing(result)).toMatchObject({ check: "issuer", outcome: "failed" });
+  });
+
+  it("verifies a signature by a key of a curve, which has no modulus to bound", async () => {
+    for (const alg of ["ES256", "EdDSA"] as const) {
+      const { jws, documents } = await signedBadge({ alg });
+      const result = await verifyCredential(jws, optionsOf(documents, { algorithms: [alg] }).options);
+      expect([alg, result.verified]).toStrictEqual([alg, true]);
+    }
+  });
+
+  it("uses a key that the profile of the issuer embeds, and fetches nothing for it", async () => {
+    const { jws, documents } = await signedBadge();
+    const { [KEY]: key, ...rest } = documents;
+    const issuer = { ...(documents[ISSUER]?.body as Json), publicKey: [key?.body] };
+    const { options, requests } = optionsOf({ ...rest, [ISSUER]: { status: 200, body: issuer } });
+    expect((await verifyCredential(jws, options)).verified).toBe(true);
+    expect(requests).not.toContain(KEY);
+  });
+
+  it("fails an embedded key that another profile owns, as it fails one that it fetches", async () => {
+    const { jws, documents } = await signedBadge();
+    const key = { ...(documents[KEY]?.body as Json), owner: "https://elsewhere.example.net/profile" };
+    const issuer = { ...(documents[ISSUER]?.body as Json), publicKey: [key] };
+    const result = await verifyCredential(
+      jws,
+      optionsOf({ ...documents, [ISSUER]: { status: 200, body: issuer } }).options,
+    );
+    expect(failing(result)).toMatchObject({ check: "issuer", outcome: "failed" });
+  });
+
+  it("fails a key that has no public key, whether the issuer embeds it or it is fetched", async () => {
+    const { jws, documents } = await signedBadge({ key: { publicKeyPem: undefined } });
+    const fetched = await verifyCredential(jws, optionsOf(documents).options);
+    expect(failing(fetched)).toMatchObject({ check: "proof", detail: expect.stringContaining("no publicKeyPem") });
+    const issuer = { ...(documents[ISSUER]?.body as Json), publicKey: [documents[KEY]?.body] };
+    const embedded = await verifyCredential(
+      jws,
+      optionsOf({ ...documents, [ISSUER]: { status: 200, body: issuer } }).options,
+    );
+    expect(failing(embedded)).toMatchObject({ check: "proof", detail: expect.stringContaining("no publicKeyPem") });
+  });
+
+  it("does not count an embedded key that has no id as a key of the issuer", async () => {
+    const { jws, documents } = await signedBadge({ verification: { type: "SignedBadge" } });
+    const unnamed = { ...(documents[KEY]?.body as Json), id: undefined };
+    const issuer = { ...(documents[ISSUER]?.body as Json), publicKey: [unnamed] };
+    const result = await verifyCredential(
+      jws,
+      optionsOf({ ...documents, [ISSUER]: { status: 200, body: issuer } }).options,
+    );
+    expect(failing(result)).toMatchObject({ check: "issuer", detail: expect.stringContaining("lists no key") });
+  });
+
+  it("fails an assertion whose verification is a word and not an object, since it does not say how it is verified", async () => {
+    const { jws, documents } = await signedBadge({ verification: "SignedBadge" });
+    expect(failing(await verifyCredential(jws, optionsOf(documents).options))).toMatchObject({
+      check: "format",
+      outcome: "failed",
+    });
+  });
+
+  describe("and the revocation list of its issuer", () => {
+    const LIST = "https://issuer.example.net/revocations";
+    const ID = "urn:uuid:2f9d1c9e-0d36-4c4f-9a43-7f1e6e1c0a11";
+
+    /** Verifies a badge of the issuer, whose revocation list names what is given. */
+    async function verifiedWithList(revoked: unknown[], assertion: Json = {}) {
+      const { jws, documents } = await signedBadge({ assertion, issuer: { revocationList: LIST } });
+      const list = {
+        "@context": "https://w3id.org/openbadges/v2",
+        id: LIST,
+        type: "RevocationList",
+        issuer: ISSUER,
+        revokedAssertions: revoked,
+      };
+      return await verifyCredential(jws, optionsOf({ ...documents, [LIST]: { status: 200, body: list } }).options);
+    }
+
+    it("passes an assertion that the list does not name", async () => {
+      const result = await verifiedWithList([
+        { id: "urn:uuid:2f9d1c9e-0d36-4c4f-9a43-7f1e6e1c0a03", revocationReason: "Other" },
+        "urn:uuid:2f9d1c9e-0d36-4c4f-9a43-7f1e6e1c0aff",
+      ]);
+      expect([result.verified, outcomes(result).status]).toStrictEqual([true, "passed"]);
+    });
+
+    it("fails an assertion that the list names by its id alone, which says no reason", async () => {
+      const result = await verifiedWithList([ID]);
+      expect(result.verified).toBe(false);
+      expect(result.checks.find(({ check }) => check === "status")).toMatchObject({
+        outcome: "failed",
+        detail: "The issuer revoked the assertion.",
+      });
+    });
+
+    it("fails an assertion that the list names with its id and a reason, and says the reason", async () => {
+      const result = await verifiedWithList([{ id: ID, revocationReason: "Issued in error" }]);
+      expect(result.checks.find(({ check }) => check === "status")).toMatchObject({
+        outcome: "failed",
+        detail: "The issuer revoked the assertion: Issued in error",
+      });
+    });
+
+    it("fails an assertion that the list names by the uid of a badge before 1.1, and only when the assertion has that uid", async () => {
+      const named = [{ uid: "legacy-11" }];
+      expect(outcomes(await verifiedWithList(named, { uid: "legacy-11" })).status).toBe("failed");
+      expect(outcomes(await verifiedWithList(named, { uid: "legacy-12" })).status).toBe("passed");
+      expect(outcomes(await verifiedWithList(named)).status).toBe("passed");
+    });
   });
 });
 

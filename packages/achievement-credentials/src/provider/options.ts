@@ -142,10 +142,8 @@ export function readDescription(settings: ProviderSettings): ServiceDescriptionD
   try {
     description = readEntity("ServiceDescriptionDocument", settings.serviceDescription);
   } catch (error) {
-    throw new DataError(
-      `${label} is not a service description: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error },
-    );
+    // `readEntity` throws a `DataError` that says what the description lacks.
+    throw new DataError(`${label} is not a service description: ${(error as DataError).message}`, { cause: error });
   }
   const usable = parseWith(usableDescriptionSchema, description, label);
   const offered = usable.components.securitySchemes.OAuth2ACG.flows.authorizationCode.scopes;

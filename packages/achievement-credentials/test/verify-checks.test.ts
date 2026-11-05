@@ -6,7 +6,7 @@ import { createKeyResolver } from "../src/keys/index.js";
 import { OFFICIAL_SCHEMA_IDS } from "../src/model/internal.js";
 import { createStatusListCache } from "../src/status/index.js";
 import { verifyCredential } from "../src/verify/index.js";
-import { achievementCredential, endorsementCredential } from "./fixtures.js";
+import { achievementCredential, clrCredential, endorsementCredential } from "./fixtures.js";
 import { clockAt, KEYS, signerOf } from "./key-fixtures.js";
 import {
   attacker,
@@ -19,7 +19,7 @@ import {
   signer,
   world,
 } from "./status-fixtures.js";
-import { ALL_PASSED, badge, detailOf, jwsOf, outcomes } from "./verify-fixtures.js";
+import { ALL_PASSED, badge, detailOf, forge, jwsOf, outcomes } from "./verify-fixtures.js";
 
 const SCHEMA_URL = "https://example.edu/schemas/badge.json";
 const OFFICIAL = "https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_achievementcredential_schema.json";
@@ -486,6 +486,50 @@ describe("the recipient of a credential", () => {
     const result = await verifyCredential(await jwsOf(credentialOf()), { ...options, recipient });
     expect(outcomes(result).recipient).toBe(outcome);
     expect(result.verified).toBe(outcome === "passed");
+  });
+});
+
+describe("the period of a credential", () => {
+  it("is refused by the reader as a failure of the format when its start or its end is no date and time", async () => {
+    const { options } = world();
+    for (const change of [
+      { validFrom: "tomorrow" },
+      { validUntil: "2030-01-01" },
+      { validFrom: "2024-06-13T10:00:00" },
+    ]) {
+      const result = await verifyCredential(
+        await forge({ ...achievementCredential(), ...change, iss: ISSUER }, KEYS.es256),
+        options,
+      );
+      expect(outcomes(result).format).toBe("failed");
+      expect(detailOf(result, "format")).toContain(Object.keys(change)[0]);
+      expect(result.verified).toBe(false);
+    }
+  });
+
+  it("is refused by the reader as a failure of the format when a credential states no start", async () => {
+    const { options } = world();
+    const { validFrom: _start, ...unbounded } = achievementCredential();
+    const result = await verifyCredential(await forge({ ...unbounded, iss: ISSUER }, KEYS.es256), options);
+    expect(outcomes(result).format).toBe("failed");
+    expect(detailOf(result, "format")).toContain("validFrom");
+  });
+});
+
+describe("the subject of a credential that several subjects would make", () => {
+  it("is refused by the reader as a failure of the format, so that no check reads a subject that is not one object", async () => {
+    const { options } = world();
+    const subject = { ...(achievementCredential().credentialSubject as object), id: "did:example:learner" };
+    const clr = { ...clrCredential(), credentialSubject: [clrCredential().credentialSubject] };
+    for (const credential of [{ ...achievementCredential(), credentialSubject: [subject] }, clr]) {
+      const result = await verifyCredential(await forge({ ...credential, iss: ISSUER }, KEYS.es256), {
+        ...options,
+        recipient: { id: "did:example:learner" },
+      });
+      expect(outcomes(result).format).toBe("failed");
+      expect(detailOf(result, "format")).toContain("credentialSubject");
+      expect(result.verified).toBe(false);
+    }
   });
 });
 

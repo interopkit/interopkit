@@ -22,10 +22,11 @@ const MAX_REFRESHES = 16;
 
 /** Says which check of a credential did not pass. */
 function firstProblem(checks: Checks): string {
+  // A credential that is not authentic has a check that failed or could not be made.
   const found = VERIFICATION_CHECKS.map((name) => checks[name]).find(
     (check) => check !== undefined && check.outcome !== "passed" && check.outcome !== "skipped",
-  );
-  return found === undefined ? "it is not valid" : `the check of the ${found.check} says: ${found.detail}`;
+  ) as VerificationCheck;
+  return `the check of the ${found.check} says: ${found.detail}`;
 }
 
 /**

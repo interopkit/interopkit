@@ -35,6 +35,6 @@ export function endorsementsOf(credential: AnyVerifiableCredential): readonly un
 
 /** Returns the credentials that a CLR holds in its subject, as objects and as compact JWS (CLR 8.1). */
 export function heldCredentialsOf(credential: AnyVerifiableCredential): readonly unknown[] {
-  const subject: unknown = credential.credentialSubject;
-  return isRecord(subject) ? listOf(subject.verifiableCredential) : [];
+  // The reader refuses a subject that is not one object.
+  return listOf((credential.credentialSubject as Readonly<Record<string, unknown>>).verifiableCredential);
 }

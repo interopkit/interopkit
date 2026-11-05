@@ -34,11 +34,10 @@ async function readLimited(stream: ReadableStream<Uint8Array>, limit: number): P
  * Encodes a list as the `encodedList` of a status list credential: GZIP, then multibase base64url without padding.
  */
 export async function encodeList(list: StatusList): Promise<string> {
-  const compressed = await readLimited(
+  const compressed = new Response(
     new Blob([Uint8Array.from(list.bits)]).stream().pipeThrough(new CompressionStream("gzip")),
-    Number.MAX_SAFE_INTEGER,
   );
-  return `${MULTIBASE_BASE64URL}${base64url.encode(compressed ?? new Uint8Array())}`;
+  return `${MULTIBASE_BASE64URL}${base64url.encode(new Uint8Array(await compressed.arrayBuffer()))}`;
 }
 
 /**

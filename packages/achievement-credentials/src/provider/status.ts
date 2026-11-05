@@ -1,4 +1,4 @@
-import { DataError, LimitError } from "@interopkit/core";
+import { type DataError, LimitError } from "@interopkit/core";
 import {
   type AccessRefusal,
   buildRefusalResponse,
@@ -69,9 +69,7 @@ export const tooLarge = (description: string): HttpResponse => failure(413, desc
 
 /** The answer for a body whose JSON a parse refused: 413 when it is over a limit of its levels or tokens, else 400. */
 export const unreadableJson = (error: unknown): HttpResponse =>
-  error instanceof LimitError
-    ? tooLarge(error.message)
-    : unreadable(error instanceof DataError ? error.message : "The body is not JSON.");
+  error instanceof LimitError ? tooLarge(error.message) : unreadable((error as DataError).message);
 
 /** The answer for a body of a media type that the operation does not take: 415. */
 export const unsupportedType = (found: string | undefined, accepted: readonly string[]): HttpResponse =>

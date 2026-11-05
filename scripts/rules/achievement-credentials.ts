@@ -658,8 +658,15 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
     rule: "Base64url is decoded only when it is of the alphabet of base64url, without padding.",
     file: "packages/achievement-credentials/src/base64url.ts",
-    find: "if (value === NOT_OF_THE_ALPHABET) return undefined;",
+    find: "if (value === undefined || value === NOT_OF_THE_ALPHABET) return undefined;",
     replace: "",
+    test: "packages/achievement-credentials/test/base64url.test.ts",
+  },
+  {
+    rule: "Base64url is refused for a character beyond ASCII, which the table of the alphabet does not reach.",
+    file: "packages/achievement-credentials/src/base64url.ts",
+    find: "if (value === undefined || value === NOT_OF_THE_ALPHABET) return undefined;",
+    replace: "if (value === NOT_OF_THE_ALPHABET) return undefined;",
     test: "packages/achievement-credentials/test/base64url.test.ts",
   },
   {
@@ -1092,7 +1099,7 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
     rule: "The purpose of the list must be the purpose of the entry.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "if (!purposes.includes(entry.purpose)) {",
+    find: "if (![subject.statusPurpose].flat().includes(entry.purpose)) {",
     replace: "if (false) {",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
@@ -1190,8 +1197,15 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
     rule: "A credential at the address of a list must be a status list credential.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "if (!Array.isArray(record.type) || !record.type.includes(LIST_TYPE)) {",
-    replace: "if (false) {",
+    find: "if (!isListCredential(credential)) throw",
+    replace: "if (false) throw",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
+    rule: "A revocation list that a cache of the host returns is a JSON object, or the credential fails.",
+    file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
+    find: 'if (!isRecord(list)) throw new ListFailure("The revocation list is not a JSON object.");',
+    replace: "",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
@@ -1421,8 +1435,8 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
     rule: "The id of a known recipient must be the id of the subject.",
     file: "packages/achievement-credentials/src/verify/check-recipient.ts",
-    find: "isRecord(subject) && subject.id === known.id",
-    replace: "isRecord(subject)",
+    find: "known.id !== undefined && subject.id === known.id",
+    replace: "known.id !== undefined",
     test: "packages/achievement-credentials/test/verify-checks.test.ts",
   },
   {
@@ -1435,8 +1449,8 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
     rule: "A credential is not valid before its validFrom, within the skew.",
     file: "packages/achievement-credentials/src/verify/check-validity.ts",
-    find: "if (start !== undefined && now + skew < start) {",
-    replace: "if (false) {",
+    find: "if (now + skew < start) return",
+    replace: "if (false) return",
     test: "packages/achievement-credentials/test/verify.test.ts",
   },
   {
@@ -2010,15 +2024,15 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
     rule: "The payload of a credential in a JWS over the limit of its levels or tokens is refused with 413.",
     file: "packages/achievement-credentials/src/provider/receive.ts",
-    find: "    if (error instanceof LimitError) return { refusal: tooLarge(error.message) };\n    return { refusal: invalidData(",
-    replace: "    return { refusal: invalidData(",
+    find: "if (error instanceof LimitError) return { refusal: tooLarge(error.message) };",
+    replace: "",
     test: "packages/achievement-credentials/test/provider.test.ts",
   },
   {
     rule: "JSON of a body over the limit of its levels or tokens is answered with 413, and other JSON that does not parse with 400.",
     file: "packages/achievement-credentials/src/provider/status.ts",
-    find: "error instanceof LimitError\n    ? tooLarge(error.message)",
-    replace: "false\n    ? tooLarge(error.message)",
+    find: "error instanceof LimitError ? tooLarge(error.message)",
+    replace: "false ? tooLarge(error.message)",
     test: "packages/achievement-credentials/test/provider.test.ts",
   },
   {

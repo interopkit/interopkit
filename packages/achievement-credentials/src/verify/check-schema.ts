@@ -1,5 +1,5 @@
 import { Validator } from "@cfworker/json-schema";
-import { callService, DataError, ServiceError } from "@interopkit/core";
+import { callService, type DataError, ServiceError } from "@interopkit/core";
 import { isRecord, parseJsonText } from "@interopkit/core/checks";
 import { jsonRefusals } from "../json-text.js";
 import type { VerificationCheck } from "../model/index.js";
@@ -88,7 +88,8 @@ async function loadSchema(url: string, context: Context): Promise<SchemaLoad> {
   try {
     schema = parseJsonText(text, limits, jsonRefusals(label, limits));
   } catch (error) {
-    return { reason: error instanceof DataError ? error.message : `${label} is not JSON.` };
+    // `parseJsonText` throws a `DataError` that says which limit the text passes, or why it is not JSON.
+    return { reason: (error as DataError).message };
   }
   if (!isRecord(schema)) return { reason: `${label} is not a JSON object.` };
   if (runsRegularExpressions(schema)) {
@@ -101,7 +102,7 @@ async function loadSchema(url: string, context: Context): Promise<SchemaLoad> {
   } catch (error) {
     // The validator indexes the schema as it is built: an $id that is no address, or one given twice, cannot be indexed, and
     // the reads of indexing, which grow with the size of the schema that the fetch bounds, may pass the budget.
-    return { reason: `${label} cannot be used: ${error instanceof Error ? error.message : "it is not a schema"}.` };
+    return { reason: `${label} cannot be used: ${(error as Error).message}.` };
   }
 }
 
@@ -128,7 +129,7 @@ function judge(
     }
     // The validator throws for what it cannot resolve, such as a $ref to another document, and when it recurses too deep.
     return {
-      unavailable: `The schema at ${url} cannot judge the credential: ${error instanceof Error ? error.message : "it failed"}.`,
+      unavailable: `The schema at ${url} cannot judge the credential: ${(error as Error).message}.`,
     };
   }
 }

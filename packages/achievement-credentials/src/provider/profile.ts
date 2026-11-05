@@ -1,4 +1,4 @@
-import { callPort, DataError } from "@interopkit/core";
+import { callPort, type DataError } from "@interopkit/core";
 import { isRecord, parseWith } from "@interopkit/core/checks";
 import { buildJsonResponse, type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
 import type { Profile } from "../model/index.js";
@@ -37,7 +37,8 @@ function profileOfBody(
   try {
     return { profile: readEntity("Profile", json) };
   } catch (error) {
-    return { refusal: invalidData(error instanceof DataError ? error.message : "The body is not a profile.") };
+    // `readEntity` throws a `DataError` that says what the profile lacks.
+    return { refusal: invalidData((error as DataError).message) };
   }
 }
 

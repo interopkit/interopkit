@@ -214,6 +214,37 @@ describe("issuing a status list credential", () => {
     });
   });
 
+  it("ends the wait for the signer when the signal aborts, whichever proof the credential carries", async () => {
+    const input = {
+      id: LIST_URL,
+      issuer: ISSUER,
+      validFrom: "2024-06-14T00:00:00Z",
+      purpose: "revocation" as const,
+      list: listWith(),
+    };
+    const jwt = hangingPort();
+    await abortsWhileWaiting(
+      (signal) =>
+        issueStatusListCredential(
+          input,
+          { algorithm: "ES256", keyId: METHOD, sign: jwt.hang },
+          { clock: clockAt(NOW), signal },
+        ),
+      jwt.seen,
+    );
+    const did = `did:key:${KEYS.ed25519.multikey}`;
+    const proof = hangingPort();
+    await abortsWhileWaiting(
+      (signal) =>
+        issueStatusListCredential(
+          { ...input, issuer: did },
+          { algorithm: "EdDSA", keyId: `${did}#${KEYS.ed25519.multikey}`, sign: proof.hang },
+          { proof: "data-integrity", contexts: memoryContexts().load, clock: clockAt(NOW), signal },
+        ),
+      proof.seen,
+    );
+  });
+
   it("is refused for options and input of the wrong type, and a signer without a key", async () => {
     const input = {
       id: LIST_URL,
@@ -680,6 +711,51 @@ describe("checking the status of a credential", () => {
   });
 });
 
+describe("the issuer of a credential whose status is checked", () => {
+  const unnamed = { ...credentialWithStatus(), issuer: { type: ["Profile"] } } as unknown as IssuableCredential;
+
+  it("is no issuer of a list when the credential names none by an id, so that it takes no list that is not its own", async () => {
+    const w = world({ [LIST_URL]: await listJws(listWith()) });
+    expect(await verifyCredentialStatus(unnamed, w.options)).toMatchObject({
+      outcome: "failed",
+      detail: `STATUS_VERIFICATION_ERROR: the status list credential is issued by ${ISSUER}, not by  or an issuer allowed to publish its status.`,
+    });
+    expect(await verifyCredentialStatus(unnamed, { ...w.options, statusIssuers: [ISSUER] })).toMatchObject({
+      outcome: "passed",
+    });
+  });
+});
+
+describe("a status list credential whose subject is not one object", () => {
+  it("is refused by the reader, so that no entry is read from a list that several subjects hold", async () => {
+    const { signCompactJws } = await import("@interopkit/core");
+    const subject = {
+      id: `${LIST_URL}#list`,
+      type: "BitstringStatusList",
+      statusPurpose: "revocation",
+      encodedList: await encodeList(listWith()),
+    };
+    const vc = {
+      "@context": ["https://www.w3.org/ns/credentials/v2"],
+      id: LIST_URL,
+      type: ["VerifiableCredential", "BitstringStatusListCredential"],
+      issuer: { id: ISSUER, type: ["Profile"] },
+      validFrom: "2024-06-14T00:00:00Z",
+      credentialSubject: [subject],
+    };
+    const jws = await signCompactJws(
+      { typ: "JWT" },
+      new TextEncoder().encode(JSON.stringify({ iss: ISSUER, ...vc })),
+      signer,
+    );
+    const w = world({ [LIST_URL]: jws });
+    expect(await verifyCredentialStatus(credentialWithStatus(), w.options)).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("credentialSubject"),
+    });
+  });
+});
+
 describe("the cache of status list credentials", () => {
   async function fixture(extra: { ttlMs?: number; validUntil?: string } = {}) {
     const w = world({ [LIST_URL]: await listJws(listWith(), { validFrom: "2024-06-01T00:00:00Z", ...extra }) });
@@ -819,6 +895,37 @@ describe("the cache of status list credentials", () => {
     );
   });
 
+  it("takes nothing that a cache of the host returns for a list when it is no list credential, and fails the credential", async () => {
+    const w = world();
+    for (const answer of [[], {}, { type: ["VerifiableCredential"] }, { type: "BitstringStatusListCredential" }]) {
+      const statusLists = { get: async () => answer };
+      const result = await verifyCredentialStatus(credentialWithStatus(), { ...w.options, statusLists });
+      expect(result).toMatchObject({
+        outcome: "failed",
+        detail: expect.stringContaining("is not a BitstringStatusListCredential"),
+      });
+    }
+  });
+
+  it("keys a list by the loader of contexts that the call trusts, as it does by the resolver of keys", async () => {
+    const w = world({ [LIST_URL]: await listJws(listWith()) });
+    const cache = createStatusListCache({ clock: w.clock });
+    const check = (contexts?: ReturnType<typeof memoryContexts>["load"]) =>
+      verifyCredentialStatus(credentialWithStatus(), {
+        ...w.options,
+        statusLists: cache,
+        ...(contexts ? { contexts } : {}),
+      });
+    const first = memoryContexts().load;
+    expect((await check(first)).outcome).toBe("passed");
+    expect((await check(first)).outcome).toBe("passed");
+    expect(w.requests.filter((url) => url === LIST_URL)).toHaveLength(1);
+    // Another loader is another trust, which the list that the first call verified is not served to.
+    expect((await check(memoryContexts().load)).outcome).toBe("passed");
+    expect((await check()).outcome).toBe("passed");
+    expect(w.requests.filter((url) => url === LIST_URL)).toHaveLength(3);
+  });
+
   it("holds at most the entries it is given, and is refused options of the wrong type", () => {
     const clock = clockAt(NOW);
     expect(() => createStatusListCache({ clock, maxEntries: 0 })).toThrow(DataError);
@@ -904,6 +1011,15 @@ describe("a revocation list of the 1EdTech Revocation List Status Method", () =>
     expect(await check(listOf([]), insecure)).toMatchObject({
       outcome: "failed",
       detail: expect.stringContaining("HTTPS"),
+    });
+  });
+
+  it("fails when the cache of the host returns something that is no object, and not a list that names nobody", async () => {
+    const w = world();
+    const statusLists = { get: async () => [] };
+    expect(await verifyCredentialStatus(named(), { ...w.options, statusLists })).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("The revocation list is not a JSON object"),
     });
   });
 

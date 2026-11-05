@@ -52,14 +52,9 @@ export function resultOf(checks: Checks, unavailable: "fail" | "warn", parts: Pa
     const outcome = checks[name]?.outcome;
     return outcome === "failed" || outcome === "unavailable";
   });
+  // A check is missing only after one that did not pass, which every verification that stops names.
   const all = VERIFICATION_CHECKS.map(
-    (name) =>
-      checks[name] ??
-      checkOf(
-        name,
-        "skipped",
-        stopper === undefined ? "Not run." : `Not run: the check of the ${stopper} did not pass.`,
-      ),
+    (name) => checks[name] ?? checkOf(name, "skipped", `Not run: the check of the ${stopper} did not pass.`),
   );
   const endorsements = parts.endorsements ?? [];
   const nested = parts.nested ?? [];

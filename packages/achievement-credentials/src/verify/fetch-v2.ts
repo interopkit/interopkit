@@ -52,7 +52,7 @@ export async function fetchDocumentV2(url: unknown, what: string, context: Conte
     checkRemoteUrl(url, `The address of ${what.charAt(0).toLowerCase()}${what.slice(1)}`);
   } catch (error) {
     // checkRemoteUrl throws only a DataError, whose message says what keeps the address from being fetched.
-    return { failed: error instanceof Error ? error.message : String(error) };
+    return { failed: (error as DataError).message };
   }
   const { settings } = context;
   let body: Uint8Array;
@@ -85,7 +85,8 @@ export async function fetchDocumentV2(url: unknown, what: string, context: Conte
   try {
     value = parseJsonText(text, limits, jsonRefusals(`${what} at ${url}`, limits));
   } catch (error) {
-    return { failed: error instanceof DataError ? error.message : `${what} at ${url} is not JSON.` };
+    // `parseJsonText` throws a `DataError` that says which limit the text passes, or why it is not JSON.
+    return { failed: (error as DataError).message };
   }
   return isRecord(value) ? { document: value } : { failed: `${what} at ${url} is not a JSON object.` };
 }

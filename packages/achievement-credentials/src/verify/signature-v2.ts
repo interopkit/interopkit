@@ -141,7 +141,8 @@ export async function checkSignature(jws: string, badge: BadgeAssertionV2, conte
   if (parts.some((part) => decodeBase64url(part) === undefined)) {
     return { proof: checkOf("proof", "failed", "The parts of the JWS must be canonical base64url without padding.") };
   }
-  const alg = algorithmOf(parts[0] ?? "");
+  const [header = ""] = parts;
+  const alg = algorithmOf(header);
   const { algorithms } = context.settings;
   if (alg === undefined || !algorithms.includes(alg)) {
     const detail = `The header of the JWS names no algorithm that the verifier allows (${algorithms.join(", ")}).`;

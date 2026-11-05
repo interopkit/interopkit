@@ -1,4 +1,4 @@
-import { callService, DataError, raceAbort, readClock, ServiceError } from "@interopkit/core";
+import { callService, type DataError, raceAbort, readClock, ServiceError } from "@interopkit/core";
 import { checkRecord, describe, isRecord, parseJsonText } from "@interopkit/core/checks";
 import { jsonRefusals } from "../json-text.js";
 import { readCredentialJwtWith } from "../jwt/internal.js";
@@ -41,7 +41,8 @@ function parseList(text: string, what: string, settings: StatusSettings): unknow
   try {
     return parseJsonText(text, limits, jsonRefusals(what, limits));
   } catch (error) {
-    throw new ListFailure(error instanceof DataError ? error.message : `${what} is not JSON.`, { cause: error });
+    // `parseJsonText` throws a `DataError` that says which limit the text passes, or why it is not JSON.
+    throw new ListFailure((error as DataError).message, { cause: error });
   }
 }
 
@@ -101,8 +102,8 @@ function bitstringEntryOf(status: Readonly<Record<string, unknown>>): Named {
 }
 
 /** Reads the status of a credential, or says why there is nothing to check. */
-function entryOf(credential: unknown): Named {
-  const status: unknown = isRecord(credential) ? credential.credentialStatus : undefined;
+function entryOf(credential: IssuableCredential | CredentialV1p1): Named {
+  const status: unknown = credential.credentialStatus;
   if (status === undefined) return { done: check("skipped", "The credential has no credentialStatus.") };
   if (isRecord(status) && status.type === ENTRY_TYPE) return bitstringEntryOf(status);
   if (!isRecord(status) || status.type !== REVOCATION_LIST_TYPE) {
@@ -158,13 +159,15 @@ async function verifiedList(
   return asList(result.credential);
 }
 
+/** Tells whether a credential has the types that Bitstring Status List names for the credential that holds a list. */
+function isListCredential(credential: unknown): credential is AnyVerifiableCredential {
+  return isRecord(credential) && Array.isArray(credential.type) && credential.type.includes(LIST_TYPE);
+}
+
 /** Checks that a credential is a list credential of the types that Bitstring Status List names. */
 function asList(credential: unknown): AnyVerifiableCredential {
-  const record = isRecord(credential) ? credential : {};
-  if (!Array.isArray(record.type) || !record.type.includes(LIST_TYPE)) {
-    throw new ListFailure(`The credential at the address is not a ${LIST_TYPE}.`);
-  }
-  return credential as AnyVerifiableCredential;
+  if (!isListCredential(credential)) throw new ListFailure(`The credential at the address is not a ${LIST_TYPE}.`);
+  return credential;
 }
 
 /** Reads when a list credential becomes valid and stops being valid, under either data model, in milliseconds since 1970. */
@@ -327,15 +330,15 @@ async function readEntry(
   if (now + skew < period.from || now - skew >= period.until) {
     return check("failed", "STATUS_VERIFICATION_ERROR: the status list credential is not valid at this time.");
   }
-  const subject: unknown = list.credentialSubject;
-  const purposes = isRecord(subject) ? [subject.statusPurpose].flat() : [];
-  if (!purposes.includes(entry.purpose)) {
+  // The reader refuses a subject that is not one object.
+  const subject = list.credentialSubject as Readonly<Record<string, unknown>>;
+  if (![subject.statusPurpose].flat().includes(entry.purpose)) {
     return check(
       "failed",
-      `STATUS_VERIFICATION_ERROR: purpose mismatch, the entry is for ${entry.purpose} and the list is for ${describe(isRecord(subject) ? subject.statusPurpose : undefined)}.`,
+      `STATUS_VERIFICATION_ERROR: purpose mismatch, the entry is for ${entry.purpose} and the list is for ${describe(subject.statusPurpose)}.`,
     );
   }
-  const decoded = await decodedList(list, isRecord(subject) ? subject.encodedList : undefined);
+  const decoded = await decodedList(list, subject.encodedList);
   if ("reason" in decoded) return check("failed", `STATUS_VERIFICATION_ERROR: ${decoded.reason}`);
   const length = decoded.bits.byteLength * 8;
   if (length < MIN_LIST_LENGTH) {
@@ -424,7 +427,9 @@ export async function verifyCredentialStatusWith(
       const list = await cached(read.revocationList, (loading) =>
         fetchRevocationList(read.revocationList, settings, loading),
       );
-      return readRevocation(isRecord(list) ? list : {}, credential, settings);
+      // The cache is the host's port, and what it returns is checked again: a list that is no object names no revoked credential.
+      if (!isRecord(list)) throw new ListFailure("The revocation list is not a JSON object.");
+      return readRevocation(list, credential, settings);
     }
     const { entry } = read;
     const list = await cached(entry.url, (loading) => fetchList(entry.url, settings, loading));

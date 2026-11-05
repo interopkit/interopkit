@@ -46,9 +46,9 @@ export function decodeBase64url(text: string): Uint8Array | undefined {
   let held = 0;
   let written = 0;
   for (let index = 0; index < text.length; index += 1) {
-    const unit = text.charCodeAt(index);
-    const value = unit < ASCII ? (VALUES[unit] ?? NOT_OF_THE_ALPHABET) : NOT_OF_THE_ALPHABET;
-    if (value === NOT_OF_THE_ALPHABET) return undefined;
+    // A code unit beyond the table has no value, as a character that the table marks as not of the alphabet has none.
+    const value = VALUES[text.charCodeAt(index)];
+    if (value === undefined || value === NOT_OF_THE_ALPHABET) return undefined;
     bits = ((bits << BITS_PER_CHARACTER) | value) & HELD_MASK;
     held += BITS_PER_CHARACTER;
     if (held >= BITS_PER_BYTE) {

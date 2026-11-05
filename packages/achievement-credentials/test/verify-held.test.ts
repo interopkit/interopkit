@@ -307,6 +307,14 @@ describe("the credentials that a CLR holds", () => {
     expect(refused.verified).toBe(false);
   });
 
+  it("are one credential when the subject names one and not a list of them", async () => {
+    const { options } = world();
+    const subject = { ...(clrCredential().credentialSubject as object), verifiableCredential: await heldBadge("1") };
+    const result = await verifyCredential(await jwsOf({ ...clrCredential(), credentialSubject: subject }), options);
+    expect(result.nested.map(idOf)).toStrictEqual(["https://example.edu/credentials/1"]);
+    expect(result.verified).toBe(true);
+  });
+
   it("are read from what readSvg returns for a CLR, as a JWS in the credential", async () => {
     const { options } = world();
     const baked = { kind: "clr", credential: await clrJws([await heldBadge("1")]) };

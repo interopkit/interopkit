@@ -1,4 +1,4 @@
-import { DataError, LimitError } from "@interopkit/core";
+import { type DataError, LimitError } from "@interopkit/core";
 import { isRecord, MAX_JSON_DEPTH, parseJsonText } from "@interopkit/core/checks";
 import { type HttpRequest, type HttpResponse, readText } from "@interopkit/core/http";
 import * as v from "valibot";
@@ -45,7 +45,8 @@ function textOf(request: HttpRequest): { readonly text: string } | { readonly re
   try {
     return { text: readText(request) };
   } catch (error) {
-    return { refusal: unreadable(error instanceof DataError ? error.message : "The body is not UTF-8 text.") };
+    // `readText` throws a `DataError` for every body that is not UTF-8.
+    return { refusal: unreadable((error as DataError).message) };
   }
 }
 
@@ -60,10 +61,9 @@ function faultOf(result: VerificationResult): string {
   // Every check passed or did not apply, so an endorsement or a credential that a CLR holds did not verify.
   const endorsement = result.endorsements.find(({ verified }) => !verified);
   if (endorsement !== undefined) return `an endorsement does not verify, as ${faultOf(endorsement)}`;
-  const held = result.nested.find(({ verified }) => !verified);
-  return held === undefined
-    ? "a part of it does not verify"
-    : `a credential that it holds does not verify, as ${faultOf(held)}`;
+  // A result that is not verified has a check that did not pass, an endorsement or a held credential that did not verify.
+  const held = result.nested.find(({ verified }) => !verified) as VerificationResult;
+  return `a credential that it holds does not verify, as ${faultOf(held)}`;
 }
 
 /** The signal that ends a verification: the provider's, the one in the options of the verifier, or either. */
@@ -109,7 +109,8 @@ function credentialOfJws(text: string, settings: ProviderSettings): BodyCredenti
     return { received: text, credential: credentialInJws(text, settings.maxTokens), text };
   } catch (error) {
     if (error instanceof LimitError) return { refusal: tooLarge(error.message) };
-    return { refusal: invalidData(error instanceof DataError ? error.message : "The body is not a credential.") };
+    // `credentialInJws` throws a `LimitError` or a `DataError` that says what the credential lacks.
+    return { refusal: invalidData((error as DataError).message) };
   }
 }
 
@@ -127,7 +128,8 @@ function credentialOfJson(text: string, settings: ProviderSettings): BodyCredent
   try {
     return { received: json, credential: readCredential(json, { kind: KINDS[settings.api] }), text };
   } catch (error) {
-    return { refusal: invalidData(error instanceof DataError ? error.message : "The body is not a credential.") };
+    // `readCredential` throws a `DataError` that says what the credential lacks.
+    return { refusal: invalidData((error as DataError).message) };
   }
 }
 

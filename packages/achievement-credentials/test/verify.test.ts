@@ -338,6 +338,36 @@ describe("the issuer's hold on the key", () => {
   });
 });
 
+describe("what a verification takes for a credential", () => {
+  it("fails a credential in a JWS that no class of Open Badges or CLR names, though its signature is good", async () => {
+    const { options } = world();
+    const result = await verifyCredential(await jwsOf({ ...badge(), type: ["VerifiableCredential"] }), options);
+    expect(result.verified).toBe(false);
+    expect(outcomes(result).format).toBe("failed");
+    expect(detailOf(result, "format")).toContain("is not an AchievementCredential");
+  });
+
+  it("fails what readPng and readSvg return when it holds no credential", async () => {
+    const { options } = world();
+    for (const credential of [42, null, true, [], undefined]) {
+      const result = await verifyCredential({ kind: "badge", credential }, options);
+      expect(result.verified).toBe(false);
+      expect(detailOf(result, "format")).toContain("neither a compact JWS nor a credential as an object");
+    }
+  });
+
+  it("fails an endorsement that is no JWS and no object, wherever a credential carries one that a reader does not judge", async () => {
+    const { options } = world();
+    // One value stands for a list of one.
+    for (const endorsement of [[42], 42]) {
+      const result = await verifyCredential(await jwsOf({ ...badge(), extension: { endorsement } }), options);
+      expect(result.endorsements).toHaveLength(1);
+      expect(outcomes(result.endorsements[0] as never).format).toBe("failed");
+      expect(result.verified).toBe(false);
+    }
+  });
+});
+
 describe("verifying a credential with a Data Integrity proof", () => {
   const did = `did:key:${KEYS.ed25519.multikey}`;
   const method = `${did}#${KEYS.ed25519.multikey}`;
@@ -357,6 +387,15 @@ describe("verifying a credential with a Data Integrity proof", () => {
     const result = await verifyCredential(signed, options);
     expect(outcomes(result)).toStrictEqual(ALL_PASSED);
     expect(result.verified).toBe(true);
+  });
+
+  it("ties the key of the proof to an issuer that is an id alone, as it does to a profile", async () => {
+    const { signed, options } = await sign({ ...achievementCredential(), issuer: did });
+    expect(outcomes(await verifyCredential(signed, options))).toStrictEqual(ALL_PASSED);
+    const elsewhere = await sign({ ...achievementCredential(), issuer: `did:key:${KEYS.es256.multikey}` });
+    const result = await verifyCredential(elsewhere.signed, elsewhere.options);
+    expect(result.verified).toBe(false);
+    expect(result.checks.find(({ outcome }) => outcome === "failed")?.check).toMatch(/^(proof|issuer)$/u);
   });
 
   it("is judged for its validity by the credential's own dates, which no time claim says for this kind of proof", async () => {

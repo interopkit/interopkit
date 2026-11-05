@@ -1,4 +1,4 @@
-import { DataError, ServiceError } from "@interopkit/core";
+import { type DataError, ServiceError } from "@interopkit/core";
 import { textWithinLimits } from "../json-text.js";
 import { inspectJwt } from "../jwt/internal.js";
 import { bindKey } from "../keys/internal.js";
@@ -35,7 +35,8 @@ function readObject(
   try {
     textWithinLimits(value, context.settings, "The credential");
   } catch (error) {
-    return { reason: error instanceof DataError ? error.message : "The credential is not JSON." };
+    // `textWithinLimits` throws a `DataError` that says which limit the text passes, or that it is not JSON.
+    return { reason: (error as DataError).message };
   }
   const read = credentialOrReason(value, "The credential");
   return "reason" in read ? read : { credential: read.value };

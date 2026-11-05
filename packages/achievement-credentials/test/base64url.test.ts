@@ -29,6 +29,12 @@ describe("decodeBase64url", () => {
       expect(decodeBase64url(text)).toBeUndefined();
   });
 
+  it("refuses a character beyond ASCII, whether one code unit or a pair, and one that ASCII holds but the alphabet does not", () => {
+    // U+00E9 and U+0100 are beyond the 128 units of the table, and an emoji is two code units.
+    for (const text of ["e30\u00e9", "\u0100e30", "e3\u{1f600}", "\u00e9\u00e9\u00e9\u00e9", "e30\u0000", "e30\u007f"])
+      expect(decodeBase64url(text)).toBeUndefined();
+  });
+
   it("returns undefined, and throws nothing, for any text", () => {
     fc.assert(
       fc.property(fc.string(), (text) => {

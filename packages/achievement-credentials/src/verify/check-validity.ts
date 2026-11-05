@@ -1,4 +1,4 @@
-import { isDateTime, parseDateTime } from "@interopkit/core/checks";
+import { parseDateTime } from "@interopkit/core/checks";
 import type { AnyVerifiableCredential, VerificationCheck } from "../model/index.js";
 import { checkOf } from "./result.js";
 
@@ -6,7 +6,7 @@ const MILLISECONDS_PER_SECOND = 1000;
 
 /** Reads the start and the end of the validity of a credential of either data model. */
 function periodOf(credential: AnyVerifiableCredential): {
-  readonly from: string | undefined;
+  readonly from: string;
   readonly until: string | undefined;
 } {
   return "issuanceDate" in credential
@@ -27,19 +27,12 @@ export function checkValidity(
   if (timeFault !== undefined) return checkOf("validity", "failed", timeFault);
   const { from, until } = periodOf(credential);
   const skew = skewSeconds * MILLISECONDS_PER_SECOND;
-  const start = from !== undefined && isDateTime(from) ? parseDateTime(from) : undefined;
-  const end = until !== undefined && isDateTime(until) ? parseDateTime(until) : undefined;
-  if (start !== undefined && now + skew < start) {
-    return checkOf("validity", "failed", `The credential is not valid before ${from}.`);
-  }
+  // The reader refuses a start that is no date and time, and an end that is no date and time.
+  const start = parseDateTime(from);
+  const end = until === undefined ? undefined : parseDateTime(until);
+  if (now + skew < start) return checkOf("validity", "failed", `The credential is not valid before ${from}.`);
   if (end !== undefined && now - skew >= end) {
     return checkOf("validity", "failed", `The credential expired at ${until}.`);
   }
-  return checkOf(
-    "validity",
-    "passed",
-    from === undefined && until === undefined
-      ? "The credential states no period of validity."
-      : "The credential is valid now.",
-  );
+  return checkOf("validity", "passed", "The credential is valid now.");
 }
