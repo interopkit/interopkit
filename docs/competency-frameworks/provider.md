@@ -1,8 +1,8 @@
 # The CASE provider
 
-`@interopkit/competency-frameworks/provider` serves a store of competency frameworks over the CASE REST binding. The handler takes
-a plain request and answers a plain response, so it runs under any web framework, in a worker or in a test. The host brings the
-store, and optionally the check of who may ask. A consumer of CASE 1.1 or CASE 1.0 reads what it serves.
+`@interopkit/competency-frameworks/provider` serves a store of competency frameworks over the CASE REST binding, to consumers of
+CASE 1.1 or 1.0. The handler takes a plain request and answers a plain response, so it runs under any web framework, in a worker
+or in a test; the host brings the store, and optionally the check of who may ask.
 
 ```mermaid
 flowchart TD
@@ -34,11 +34,10 @@ flowchart TD
 | `queryEntities`                             | The filter and the sort in memory, for a store that holds its documents in a list        |
 | `localizeOpenApi`, `LocalizeOpenApiOptions` | The OpenAPI file of 1EdTech made into the localized file that the provider serves        |
 
-The query types `CaseQuery`, `CaseFilter`, `CaseCondition` and `OpenApiDocument` are in the root of the package, because the
-client shares them. The package imports `@interopkit/core` for the request, the response and the checks, and keeps nothing between
-requests. `@interopkit/core/http` holds what the providers of the 1EdTech services share: `AccessDecision`, what `authorize`
-answers (allowed, or refused with 401, 403 or 429), the page that the store receives (`OffsetPage`: `limit` and `offset`), the
-`Link` header and the `imsx_StatusInfo` of a failure.
+The query types `CaseQuery`, `CaseFilter`, `CaseCondition` and `OpenApiDocument` are in the root of the package, which the
+client shares. [`@interopkit/core/http`](../core/http.md) holds what the 1EdTech providers share: the `AccessDecision` that
+`authorize` answers, the `OffsetPage` that the store receives, the `Link` header and the `imsx_StatusInfo` of a failure. The
+provider keeps nothing between requests.
 
 ## Quick start
 
@@ -278,7 +277,6 @@ for 1.0, because the document describes 1.1.
 | Characters of a `filter`            | 2,048 | 400 `invalid_filter_field`         |
 | Characters of a `fields` list       | 2,048 | 400 `invalid_selection_field`      |
 | Logical operators in a `filter`     | 1     | 400 `invalid_filter_field`         |
-| Documents in a page (`maxPageSize`) | 1,000 | Lowered to the limit               |
 | Levels the discovery document nests | 64    | `DataError` from `localizeOpenApi` |
 
 The handler reads no body and the URL is the host's to limit. A request has a query only; the filter is parsed once and

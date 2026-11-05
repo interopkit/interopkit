@@ -1,10 +1,9 @@
 # The CASE model and its readers
 
-`@interopkit/competency-frameworks` holds the model of a CASE competency framework package and of every entity that CASE
-exchanges, in the form of CASE 1.1. Its readers take JSON that was parsed from anywhere, check every property against the JSON
-schemas of 1EdTech and the rules of a package, and return a copy that shares nothing with the input. Its validators judge the
-same value and return every finding as data. CASE 1.0 is the same model without what 1.1 adds, so a package of either version is
-read into one model, and `convertCaseVersion` takes a package or an entity back to the form of 1.0.
+The model holds a CASE framework package and every entity that CASE exchanges, in the form of CASE 1.1. The readers check
+parsed JSON against the JSON schemas of 1EdTech and the rules of a package and return a copy that shares nothing with the input;
+the validators return every finding as data. CASE 1.0 is the same model without what 1.1 adds, so either version is read into
+one model, and `convertCaseVersion` takes a value back to the form of 1.0.
 
 ```mermaid
 flowchart TD
@@ -21,15 +20,7 @@ flowchart TD
   convert --> form10["The 1.0 form<br/>dropped: what 1.0 cannot hold"]
 ```
 
-| Module    | Holds                                                                                                                                                                                    |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `model`   | The types of the classes and sets, `ASSOCIATION_TYPES`, `ENTITY_KINDS`, `CaseVersion`, `CASE_VERSIONS`, the query types `CaseQuery`, `CaseFilter` and `CaseCondition`, `OpenApiDocument` |
-| `read`    | `readPackage`, `readEntity`, `validatePackage`, `validateEntity`, `ReadOptions`                                                                                                          |
-| `version` | `convertCaseVersion`, `VersionedValue`, `Converted`                                                                                                                                      |
-
-All of them come from `@interopkit/competency-frameworks`. The package depends on `@interopkit/core` for the errors, the
-formats, the copy of JSON and the findings, and on `valibot` for the schemas. Its test suite reads the schemas of 1EdTech with
-`@cfworker/json-schema`, derives its generators from them, and compares every verdict.
+`model`, `read` and `version` export these from `@interopkit/competency-frameworks` ([architecture](architecture.md)).
 
 ## Quick start
 

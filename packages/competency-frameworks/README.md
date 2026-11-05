@@ -3,12 +3,9 @@
 CASE 1.1 and 1.0 for JavaScript and TypeScript: the model of a competency framework, readers checked against the published CASE
 JSON schemas, crosswalks, changes, and a client and a provider of the CASE REST API.
 
-It has the model of a competency framework package and of each entity that CASE [1.1](https://www.imsglobal.org/spec/case/v1p1)
-and [1.0](https://www.imsglobal.org/spec/case/v1p0) exchange, readers that check them against the published JSON schemas and the
-rules of a package, validators that list every finding, the conversion of 1.1 data to the form of 1.0, what a consumer asks of a
-framework (its tree, its crosswalks, its changes and its staleness), a client that reads frameworks from a provider, and a
-provider that serves a store of frameworks over the REST binding. It knows nothing of any product: the host says where a
-framework comes from and what it is for.
+It covers every entity that CASE [1.1](https://www.imsglobal.org/spec/case/v1p1) and [1.0](https://www.imsglobal.org/spec/case/v1p0)
+exchange, and what a consumer asks of a framework: its tree, its crosswalks, its changes and its staleness. It knows nothing of
+any product: the host says where a framework comes from and what it is for.
 
 ```bash
 npm install @interopkit/competency-frameworks
@@ -127,20 +124,14 @@ passes in. Its dependencies are `@interopkit/core` and [valibot](https://valibot
 
 ## Documentation
 
-[Choosing](https://interopkit.wakan.dev/_interopkit/competency-frameworks/choosing/) says when the package fits, when another library fits better,
-and what each has that the package lacks.
-
-[The model guide](https://interopkit.wakan.dev/_interopkit/competency-frameworks/model/),
-[the graph guide](https://interopkit.wakan.dev/_interopkit/competency-frameworks/graph/),
-[the client guide](https://interopkit.wakan.dev/_interopkit/competency-frameworks/client/) and
-[the provider guide](https://interopkit.wakan.dev/_interopkit/competency-frameworks/provider/) have the options
-with their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
-why, and the differences from the references.
-
-[The evidence guide](https://interopkit.wakan.dev/_interopkit/competency-frameworks/evidence/) shows what the
-package was checked against: the published schemas, real frameworks of public providers, an example provider and consumer,
-OpenSALT and four runtimes. [Performance](https://interopkit.wakan.dev/_interopkit/competency-frameworks/performance/) gives the speed of every hot
-path, the size of each entry point and the peak memory of each reader.
+| Page                                                                                                                                                                   | Gives                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| [Model](https://interopkit.wakan.dev/_interopkit/competency-frameworks/model/)                                                                                         | The readers, the validators, the findings and their rules, and the conversion to 1.0                                     |
+| [Graph](https://interopkit.wakan.dev/_interopkit/competency-frameworks/graph/)                                                                                         | The tree, the associations, crosswalks, the difference between versions, staleness and adoption status                   |
+| [Client](https://interopkit.wakan.dev/_interopkit/competency-frameworks/client/), [provider](https://interopkit.wakan.dev/_interopkit/competency-frameworks/provider/) | The two sides of the REST binding, with their options, limits and errors                                                 |
+| [Choosing](https://interopkit.wakan.dev/_interopkit/competency-frameworks/choosing/)                                                                                   | When the package fits, when another library fits better, and what each has that the package lacks                        |
+| [Evidence](https://interopkit.wakan.dev/_interopkit/competency-frameworks/evidence/)                                                                                   | The published schemas, real frameworks of public providers, an example provider and consumer, OpenSALT and four runtimes |
+| [Performance](https://interopkit.wakan.dev/_interopkit/competency-frameworks/performance/)                                                                             | The speed of every hot path, the size of each entry point and the peak memory of each reader                             |
 
 ## License
 

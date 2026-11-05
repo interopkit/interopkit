@@ -1,8 +1,7 @@
 # Evidence for competency-frameworks
 
-What shows that the package does what it says: the published schemas, real frameworks of public providers, an example provider
-and consumer, OpenSALT as a counterparty, and four runtimes. Each layer answers a question that the one before cannot. The
-speed, the size and the peak memory are in [performance](performance.md).
+What shows that the package does what it says, each layer answering a question that the one before cannot; the speed, the size
+and the peak memory are in [performance](performance.md).
 
 ```mermaid
 flowchart LR

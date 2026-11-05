@@ -2,7 +2,7 @@
 
 `@interopkit/competency-frameworks/graph` answers what a consumer asks of a framework once it holds the package: the tree of
 its items, the associations of a node, the links between two frameworks, what changed between two versions, whether a cached
-copy is stale, the adoption status of a framework, and the address at which an entity belongs. The functions are pure. They take
+copy is stale, the adoption status of a framework, and the address at which an entity belongs. The functions are pure: they take
 packages as `readPackage` returns them, make no request, read no clock, and return copies that share nothing with their
 arguments.
 
@@ -30,7 +30,7 @@ flowchart LR
 | `readAdoptionStatus(document)`              | The adoption status of a framework, in the vocabulary that the working group recommends                          |
 | `buildEntityUri(baseUrl, kind, identifier)` | The address at which the REST binding serves an entity, which is the `uri` that the guide recommends             |
 
-All of them come from `@interopkit/competency-frameworks/graph`, and they depend on `@interopkit/core` and `valibot`.
+All of them come from `@interopkit/competency-frameworks/graph`.
 
 ## Quick start
 

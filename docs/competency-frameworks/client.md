@@ -1,10 +1,8 @@
 # The CASE client
 
-`@interopkit/competency-frameworks/client` reads frameworks from a CASE provider over the REST binding: a call for each of the
-twelve endpoints, the document list read page by page, the filter and the other parameters of a request, the OpenAPI file of
-service discovery, and the status that a provider answers an error with. It makes GET requests only, through `fetch` that the
-host passes in, and reads every answer with the readers of the package, so a value is in the model of CASE 1.1 whichever
-version the provider speaks.
+`@interopkit/competency-frameworks/client` reads frameworks from a CASE provider over the REST binding, with a call for each of
+the twelve endpoints. It makes GET requests only, through the host's `fetch`, and reads every answer with the readers of the
+package, so a value is in the model of CASE 1.1 whichever version the provider speaks.
 
 ```mermaid
 flowchart LR
@@ -66,9 +64,8 @@ found?.fullStatement; // => "Understand fractions as numbers."
 found?.uri; // => "https://standards.example.org/ims/case/v1p1/CFItems/2b6d1c9e-7a53-4e08-b1f4-5c8a9d0e3f21"
 ```
 
-The `fetch` of the sample answers with the item and echoes the address it was asked for in `uri`. In a program, pass the global
-`fetch` as `fetch`. A host whose provider URLs come from a counterparty passes a `fetch` that
-refuses loopback, private and link-local addresses.
+The sample's `fetch` echoes the address it was asked for in `uri`; a program passes the global `fetch`. A host whose provider
+URLs come from a counterparty passes a `fetch` that refuses loopback, private and link-local addresses.
 
 ## Options
 
@@ -213,25 +210,19 @@ names the cause (`invalid_filter_field`, `invalid_selection_field`, `unknownobje
 not. `retryAfterSeconds` is `Retry-After` when it is a number of seconds. The form with a date needs a clock and stays in
 `error.headers["retry-after"]`. The client retries nothing: a host that waits and asks again is safe, because every call is a GET.
 
-### Failure paths
-
-| What                 | Fails                                                | Hangs                                                                                                   | Called again                                                                                               | May call back |
-| -------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------- |
-| `fetch`              | `ServiceError`; 404 for one entity gives `undefined` | `timeoutMs`, then status 0                                                                              | Safe: GET only. A collection that changes between pages may repeat or skip a document; repeats are dropped | Nothing       |
-| `authorization`      | Its error reaches the caller; no request is made     | The caller's `signal` is passed on, and the wait ends when it aborts, whether the function stops or not | Called before every request, so it may return a fresh token                                                | Nothing       |
-| The answer too large | `ServiceError` naming the limit                      | As `fetch`                                                                                              | The same answer until `maxBytes` grows                                                                     | Nothing       |
+Nothing is called back. `authorization` is called before every request, so it may return a fresh token; its wait ends when
+the caller's signal aborts, whether the function stops or not. Every call is a GET and safe to repeat; a collection that changes
+between pages may repeat or skip a document, and repeats are dropped.
 
 ## Limits
 
-| Limit                         | Value                                                                                          | Refused with             |
-| ----------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------ |
-| `timeoutMs`                   | 10,000 ms                                                                                      | `ServiceError`, status 0 |
-| `maxBytes`                    | 16,777,216                                                                                     | `ServiceError`           |
-| `maxTokens`                   | 2,000,000                                                                                      | `LimitError`             |
-| Levels of JSON in an answer   | 128: an extension, which the readers bound to 64 levels, may sit below the levels of a package | `LimitError`             |
-| `pageSize`                    | 100                                                                                            | The provider caps it     |
-| Logical operators in a filter | 1                                                                                              | `DataError`              |
-| Redirects                     | 0                                                                                              | `ServiceError`           |
+Besides the options above:
+
+| Limit                         | Value                                                                                          | Refused with   |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- | -------------- |
+| Levels of JSON in an answer   | 128: an extension, which the readers bound to 64 levels, may sit below the levels of a package | `LimitError`   |
+| Logical operators in a filter | 1                                                                                              | `DataError`    |
+| Redirects                     | 0                                                                                              | `ServiceError` |
 
 ## Not included
 
