@@ -973,7 +973,7 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
   {
     rule: "A timestamp with the offset -00:00 is refused.",
     file: "packages/learning-records/src/store/statements/timestamps.ts",
-    find: "if (zone === NEGATIVE_ZERO) {",
+    find: "if (strict.endsWith(NEGATIVE_ZERO)) {",
     replace: "if (false) {",
     test: "packages/learning-records/test/store-statements.test.ts",
   },
