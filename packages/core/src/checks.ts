@@ -12,6 +12,7 @@ import {
   copyJson,
   copyOpaqueJson,
   findExceededJsonLimit,
+  findPrototypeName,
   isPlainObject,
   type JsonObject,
   type JsonValue,
@@ -516,25 +517,26 @@ export function guardSchema<TOutput>(guard: (value: unknown) => value is TOutput
 /** What the schema of a record expects, in the words of its message. */
 const OBJECT_EXPECTED = "an object";
 
+/** The schema of a record: an object that is not an array, which valibot reads as an object. */
+const recordSchema = guardSchema(isRecord, OBJECT_EXPECTED);
+
 /**
- * The schema of a record, in front of every schema of an object here. It refuses an array, which valibot reads as an object,
- * and an own property named `__proto__`, `constructor` or `prototype`, with an issue at it, which the objects and records of
- * valibot drop unseen and an assignment misreads; the object's other properties are then not read.
+ * The step that refuses an own property named `__proto__`, `constructor` or `prototype` of a record, with an issue at it, which
+ * the objects and records of valibot drop unseen and an assignment misreads; the object's other properties are then not read.
+ * Every schema of an object here pipes `recordSchema`, this step and its own schema in one pipe: a pipe in a pipe costs each
+ * object it reads a call more.
  */
-const recordSchema = v.pipe(
-  guardSchema(isRecord, OBJECT_EXPECTED),
-  v.rawTransform<Readonly<Record<string, unknown>>, Readonly<Record<string, unknown>>>(
-    ({ dataset, addIssue, NEVER }) => {
-      const names = listPrototypeNames(dataset.value);
-      for (const name of names) {
-        addIssue({
-          message: `the property ${JSON.stringify(name)} ${PROTOTYPE_NAME_REFUSAL}`,
-          path: [{ type: "object", origin: "key", input: dataset.value, key: name, value: dataset.value[name] }],
-        });
-      }
-      return names.length === 0 ? dataset.value : NEVER;
-    },
-  ),
+const prototypeNamesRefused = v.rawTransform<Readonly<Record<string, unknown>>, Readonly<Record<string, unknown>>>(
+  ({ dataset, addIssue, NEVER }) => {
+    if (findPrototypeName(dataset.value) === undefined) return dataset.value;
+    for (const name of listPrototypeNames(dataset.value)) {
+      addIssue({
+        message: `the property ${JSON.stringify(name)} ${PROTOTYPE_NAME_REFUSAL}`,
+        path: [{ type: "object", origin: "key", input: dataset.value, key: name, value: dataset.value[name] }],
+      });
+    }
+    return NEVER;
+  },
 );
 
 /**
@@ -544,7 +546,7 @@ const recordSchema = v.pipe(
  * @param entries - The schemas of the properties.
  */
 export function looseRecord<const TEntries extends v.ObjectEntries>(entries: TEntries) {
-  return v.pipe(recordSchema, v.looseObject(entries));
+  return v.pipe(recordSchema, prototypeNamesRefused, v.looseObject(entries));
 }
 
 /**
@@ -555,7 +557,7 @@ export function looseRecord<const TEntries extends v.ObjectEntries>(entries: TEn
  * @param entries - The schemas of the properties.
  */
 export function strictRecord<const TEntries extends v.ObjectEntries>(entries: TEntries) {
-  return v.pipe(recordSchema, v.strictObject(entries));
+  return v.pipe(recordSchema, prototypeNamesRefused, v.strictObject(entries));
 }
 
 /**
@@ -572,6 +574,7 @@ export function strictRecord<const TEntries extends v.ObjectEntries>(entries: TE
 export function openRecord<const TEntries extends v.ObjectEntries>(entries: TEntries) {
   return v.pipe(
     recordSchema,
+    prototypeNamesRefused,
     v.looseObject(entries),
     v.rawTransform(({ dataset, addIssue, NEVER }) => {
       for (const [name, member] of Object.entries(dataset.value)) {
@@ -611,6 +614,7 @@ function copiedAsJson<TInput, TOutput>(
  */
 export const jsonObjectSchema: Schema<JsonObject> = v.pipe(
   recordSchema,
+  prototypeNamesRefused,
   copiedAsJson((value: Readonly<Record<string, unknown>>) => copyJson(value, "")),
 );
 
@@ -644,6 +648,7 @@ export const opaqueJsonValueSchema: Schema<JsonValue> = v.pipe(
 export function mapSchema<TOutput>(value: Schema<TOutput>): Schema<Map<string, TOutput>> {
   return v.pipe(
     recordSchema,
+    prototypeNamesRefused,
     v.rawTransform(({ dataset, addIssue, NEVER }) => {
       if (!isPlainObject(dataset.value)) {
         addIssue({ message: "expected a plain object, whose properties are the names, found one that is not plain" });

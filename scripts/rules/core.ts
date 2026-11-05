@@ -433,8 +433,8 @@ export const CORE_RULES: readonly Rule[] = [
   {
     rule: "Every record refuses a property named __proto__, constructor or prototype, with an issue at it.",
     file: "packages/core/src/checks.ts",
-    find: "const names = listPrototypeNames(dataset.value);",
-    replace: "const names: string[] = [];",
+    find: "if (findPrototypeName(dataset.value) === undefined) return dataset.value;",
+    replace: "return dataset.value;",
     test: "packages/core/test/checks.test.ts",
   },
   {

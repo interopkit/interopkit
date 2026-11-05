@@ -79,6 +79,15 @@ export function listPrototypeNames(value: object): string[] {
   return PROTOTYPE_NAMES.filter((name) => Object.hasOwn(value, name));
 }
 
+/**
+ * Finds the first own property of an object named `__proto__`, `constructor` or `prototype`, in that order, without the list
+ * that `listPrototypeNames` makes, which every object read would pay for.
+ */
+export function findPrototypeName(value: object): string | undefined {
+  for (const name of PROTOTYPE_NAMES) if (Object.hasOwn(value, name)) return name;
+  return undefined;
+}
+
 /** The end of the sentence that refuses a member named `__proto__`, `constructor` or `prototype`, after its place. */
 export const PROTOTYPE_NAME_REFUSAL =
   "is refused, since __proto__, constructor and prototype are names of the prototype chain, which a reader would drop or misread";
@@ -110,7 +119,7 @@ class Fault {
  */
 function copyObject(value: object, depth: number, namesAreData: boolean): JsonObject | Fault {
   if (!isPlainObject(value)) return new Fault(`is ${describeNonJson(value)}`);
-  const [reserved] = namesAreData ? [] : listPrototypeNames(value);
+  const reserved = namesAreData ? undefined : findPrototypeName(value);
   if (reserved !== undefined) {
     const fault = new Fault(PROTOTYPE_NAME_REFUSAL);
     fault.steps.push(reserved);

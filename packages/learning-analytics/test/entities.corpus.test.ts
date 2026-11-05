@@ -28,7 +28,9 @@ function reads(value: unknown): boolean {
 
 /** The names of the properties that the schema of a class of the reader declares. */
 function propertiesOf(term: string): string[] {
-  const [, object] = Reflect.get(Reflect.get(SCHEMA_SETS["1.2"].entities, term), "pipe");
+  // The object schema is the step of the pipe that has entries, after the checks of a record.
+  const steps: readonly object[] = Reflect.get(Reflect.get(SCHEMA_SETS["1.2"].entities, term), "pipe");
+  const object = steps.find((step) => "entries" in step) ?? {};
   return Object.keys(Reflect.get(object, "entries"));
 }
 

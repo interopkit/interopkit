@@ -23,7 +23,9 @@ import { CLASSES, closure, ENTITY_TERMS, inheritedRows, LIBRARY_TABLES, ROOT, TA
 
 /** The names of the properties that the schema of a class of the reader declares, and whether each is required. */
 function entriesOf(term: string): Map<string, boolean> {
-  const [, object] = Reflect.get(Reflect.get(SCHEMA_SETS["1.2"].entities, term), "pipe");
+  // The object schema is the step of the pipe that has entries, after the checks of a record.
+  const steps: readonly object[] = Reflect.get(Reflect.get(SCHEMA_SETS["1.2"].entities, term), "pipe");
+  const object = steps.find((step) => "entries" in step) ?? {};
   const entries: Record<string, { readonly type: string }> = Reflect.get(object, "entries");
   return new Map(Object.entries(entries).map(([name, schema]) => [name, schema.type !== "optional"]));
 }
