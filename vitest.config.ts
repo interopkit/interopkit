@@ -59,7 +59,11 @@ interface Floor {
   lines: number;
 }
 
-/** The floor of the modules of each package, which each module holds on its own and not in the average of its package. */
+/**
+ * The floor of each package. Each of its modules holds the statements, the functions and the lines on its own and not in the
+ * average of the package; the branches are held by the package, since V8 counts the fallback of an indexed read, `a[i] ?? 0`, as
+ * a branch that no test can take.
+ */
 const PACKAGE_FLOORS: Readonly<Record<string, Floor>> = {
   core: { statements: 100, branches: 95, functions: 100, lines: 100 },
   "competency-frameworks": { statements: 100, branches: 95, functions: 100, lines: 100 },
@@ -72,16 +76,18 @@ const PACKAGE_FLOORS: Readonly<Record<string, Floor>> = {
 };
 
 /**
- * The coverage floors, one for each module: a folder of a package's `src`, or a file beside them. The globs come from the
- * directory listing, so that a module is held as soon as it exists.
+ * The coverage floors: one for each module, a folder of a package's `src` or a file beside them, for the statements, the functions
+ * and the lines, and one for each package, for its branches. The globs of the modules come from the directory listing, so that a
+ * module is held as soon as it exists.
  */
-const FLOORS: Record<string, Floor> = Object.fromEntries(
-  Object.entries(PACKAGE_FLOORS).flatMap(([name, floor]) =>
-    readdirSync(resolve(import.meta.dirname, "packages", name, "src"), { withFileTypes: true }).map((entry) => [
+const FLOORS: Record<string, Partial<Floor>> = Object.fromEntries(
+  Object.entries(PACKAGE_FLOORS).flatMap(([name, { statements, branches, functions, lines }]) => [
+    [`packages/${name}/src/**`, { branches }],
+    ...readdirSync(resolve(import.meta.dirname, "packages", name, "src"), { withFileTypes: true }).map((entry) => [
       `packages/${name}/src/${entry.isDirectory() ? `${entry.name}/**` : entry.name}`,
-      floor,
+      { statements, functions, lines },
     ]),
-  ),
+  ]),
 );
 
 // biome-ignore lint/style/noDefaultExport: Vitest reads its configuration from the default export.
