@@ -4,11 +4,21 @@ import { expect, type TestContext } from "vitest";
 export const BENCH_OPTIONS = { time: 1000, iterations: 20, warmupTime: 200, warmupIterations: 5 } as const;
 
 /**
- * The run options of a reference that takes seconds for the batch: three samples after one warm-up. The draft 4 schemas of 1.1
- * take about 90 ms for one `Message` event, because their `oneOf` of every class is tried in turn at each level, so twenty
- * samples of a batch would take minutes. The fastest of three samples is the one the budget reads.
+ * The run options of a reference that takes about half a second for the batch: one warm-up and five samples, where the run options
+ * above would take twenty samples and ten seconds. The draft 4 schemas of 1.2 take 0.5 s for the batch of events, and their
+ * fastest sample of five is within a few percent of their fastest of twenty. A reference that is slower than the fastest of twenty
+ * only lowers the ratio, which the budget bounds from above, so the budget that came from twenty samples still holds.
  */
-export const SLOW_REFERENCE_OPTIONS = { time: 0, iterations: 3, warmupTime: 0, warmupIterations: 1 } as const;
+export const REFERENCE_OPTIONS = { time: 0, iterations: 5, warmupTime: 0, warmupIterations: 1 } as const;
+
+/**
+ * The run options of a reference that takes seconds for the batch: one sample, with no warm-up. The draft 4 schemas of 1.1 take
+ * about 90 ms for one `Message` event and 6 s for the batch, because their `oneOf` of every class is tried in turn at each level,
+ * so four runs took forty seconds of a test that is cut to within half its timeout. A second pass over the batch takes the same time
+ * as the first (6,395 and 6,347 ms), so a warm-up and more samples add time and no precision; a sample that is slower than the
+ * fastest of three only lowers the ratio, which the budget bounds from above, so the budget that came from three samples still holds.
+ */
+export const SLOW_REFERENCE_OPTIONS = { time: 0, iterations: 1, warmupTime: 0, warmupIterations: 0 } as const;
 
 /** The number of events of the batch that the benchmarks read and check: an envelope of that many events. */
 export const EVENTS = 1000;

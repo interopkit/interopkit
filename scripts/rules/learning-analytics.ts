@@ -565,4 +565,11 @@ export const LEARNING_ANALYTICS_RULES: readonly Rule[] = [
     replace: "throw error;",
     test: "packages/learning-analytics/test/send.test.ts",
   },
+  {
+    rule: "An item is sent only when its context is that of Caliper, or a list that ends with it, as the last context decides the terms.",
+    file: "packages/learning-analytics/src/send/send-caliper.ts",
+    find: "const last = Array.isArray(context) ? context.at(-1) : context;",
+    replace: "const last = Array.isArray(context) ? context[0] : context;",
+    test: "packages/learning-analytics/test/send.test.ts",
+  },
 ];

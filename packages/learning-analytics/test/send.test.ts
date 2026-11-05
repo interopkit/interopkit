@@ -442,6 +442,42 @@ describe("sendCaliper: input of other types", () => {
     expect(endpoint.requests).toHaveLength(0);
   });
 
+  it("says what a serial form of an item threw when it is no error, as it says the message of an error", async () => {
+    const endpoint = fakeEndpoint({ status: 200 });
+    const [event] = sample();
+    const item = {
+      ...event,
+      toJSON() {
+        throw "no serial form";
+      },
+    };
+    await expect(sendCaliper([item] as never, { ...SENDER, fetch: endpoint.fetch })).rejects.toThrow(
+      "The Caliper data must be JSON: no serial form",
+    );
+    expect(endpoint.requests).toHaveLength(0);
+  });
+
+  it("takes an item whose context is a list that ends with the context of Caliper, and refuses one that ends with another", async () => {
+    const endpoint = fakeEndpoint({ status: 200 });
+    const [event] = sample();
+    const extension = "https://example.org/caliper-extension";
+    await sendCaliper([{ ...event, "@context": [extension, CALIPER_CONTEXT] }] as never, {
+      ...SENDER,
+      fetch: endpoint.fetch,
+    });
+    expect(JSON.parse(bodyOf(endpoint.requests)).data[0]["@context"]).toStrictEqual([extension, CALIPER_CONTEXT]);
+    await expect(
+      sendCaliper([{ ...event, "@context": [CALIPER_CONTEXT, extension] }] as never, {
+        ...SENDER,
+        fetch: endpoint.fetch,
+      }),
+    ).rejects.toThrow("The @context of the Caliper item 0 must be");
+    await expect(
+      sendCaliper([{ ...event, "@context": [] }] as never, { ...SENDER, fetch: endpoint.fetch }),
+    ).rejects.toThrow("The @context of the Caliper item 0 must be");
+    expect(endpoint.requests).toHaveLength(1);
+  });
+
   it("accepts every character that RFC 6750 allows in a bearer token", async () => {
     const endpoint = fakeEndpoint({ status: 200 });
     await sendCaliper(sample(), { ...SENDER, fetch: endpoint.fetch, token: "Az09-._~+/abc==" });

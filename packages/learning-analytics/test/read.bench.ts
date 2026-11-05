@@ -2,7 +2,7 @@ import { readEntity, validateEntity, validateEvent } from "@interopkit/learning-
 import { readEnvelope } from "@interopkit/learning-analytics/endpoint";
 import { expect, test } from "vitest";
 import { batchOf, envelopeOf, schemaCheck } from "./bench-corpus.js";
-import { BENCH_OPTIONS, EVENTS, expectRatio, SLOW_REFERENCE_OPTIONS } from "./budgets.js";
+import { BENCH_OPTIONS, EVENTS, expectRatio, REFERENCE_OPTIONS, SLOW_REFERENCE_OPTIONS } from "./budgets.js";
 
 test("reads an envelope of 1,000 events of Caliper 1.2 faster than the schemas check them, and judges its events as fast", async ({
   annotate,
@@ -18,7 +18,7 @@ test("reads an envelope of 1,000 events of Caliper 1.2 faster than the schemas c
 
   const schemas = await bench("draft 4 schemas", () => {
     for (const event of batch) accepts(event);
-  }).run(BENCH_OPTIONS);
+  }).run(REFERENCE_OPTIONS);
   const parse = await bench("JSON.parse", () => JSON.parse(text)).run(BENCH_OPTIONS);
   const read = await bench("readEnvelope", () => readEnvelope(envelope)).run(BENCH_OPTIONS);
   await expectRatio(annotate, "readEnvelopeAgainstParse", read, { ...parse, name: "JSON.parse" });
