@@ -28,17 +28,18 @@ the text alone, and the reader also builds the model and checks the rules of cmi
 
 ## Size
 
-`test/size.test.ts` bundles each entry point alone with esbuild, every dependency inside, and fails above its budget: 1.25 times
-the size measured, rounded up to the next 500 bytes.
+`test/size.test.ts` bundles each entry point alone with `scripts/entry-size.ts`: esbuild, minified, with every dependency inside.
+It fails above its budget after gzip, 1.25 times the size measured rounded up to the next 500 bytes, or when an entry point holds a
+module that its budget does not list.
 
 Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 percent.
 
-| Entry point | Minified | Gzip | Budget |
-| --- | --- | --- | --- |
-| `@interopkit/course-launch` | 105,662 | 32,735 | 41,000 |
-| `@interopkit/course-launch/package` | 210,688 | 74,145 | 92,500 |
-| `@interopkit/course-launch/lms` | 133,854 | 41,803 | 51,500 |
-| `@interopkit/course-launch/au` | 109,438 | 37,701 | 46,000 |
+| Entry point | Bytes | Gzip | Budget | Holds, besides `@interopkit/core`, `model` and valibot |
+| --- | ---: | ---: | ---: | --- |
+| `@interopkit/course-launch` | 106,634 | 33,017 | 41,000 | `rules`, `structure`, saxes; `compare`, `model` and `read` of learning-records |
+| `@interopkit/course-launch/package` | 210,795 | 74,134 | 92,500 | `structure`, saxes, zip.js |
+| `@interopkit/course-launch/lms` | 134,564 | 41,967 | 51,500 | `rules`, `structure`, saxes, uuid; `build`, `compare`, `model`, `read` and `store` of learning-records |
+| `@interopkit/course-launch/au` | 109,804 | 37,719 | 46,000 | `rules`, `@noble/hashes`, the multipart parser of Remix; `attachments`, `build`, `client`, `compare`, `model` and `read` of learning-records |
 
 The LMS loads no ZIP code and the runtime of a unit no LMS, LRS or reader of a structure.
 
