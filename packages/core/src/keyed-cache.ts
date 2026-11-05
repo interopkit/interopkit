@@ -83,8 +83,9 @@ export function createKeyedCache<TValue>(options: KeyedCacheOptions<TValue>): Ke
       return value;
     });
     loading.set(key, shared);
+    // Nothing else starts a load of the key while this one is in `loading`, so the entry is this one's.
     const clear = (): void => {
-      if (loading.get(key) === shared) loading.delete(key);
+      loading.delete(key);
     };
     shared.then(clear, clear);
     return shared;

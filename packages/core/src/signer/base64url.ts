@@ -25,11 +25,13 @@ const CHARACTER_MASK = 0b11_1111;
  */
 export function encodeBase64Url(bytes: Uint8Array): string {
   const characters = new Uint8Array(Math.ceil((bytes.length * CHARACTERS_PER_GROUP) / BYTES_PER_GROUP));
+  // A view reads a byte as a number, where an index of the array gives a number or `undefined`, which no index here reaches.
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const whole = bytes.length - (bytes.length % BYTES_PER_GROUP);
   let written = 0;
   for (let index = 0; index < whole; index += BYTES_PER_GROUP) {
     const group =
-      ((bytes[index] ?? 0) << FIRST_BYTE) | ((bytes[index + 1] ?? 0) << SECOND_BYTE) | (bytes[index + 2] ?? 0);
+      (view.getUint8(index) << FIRST_BYTE) | (view.getUint8(index + 1) << SECOND_BYTE) | view.getUint8(index + 2);
     characters[written] = ALPHABET.charCodeAt(group >> FIRST_CHARACTER);
     characters[written + 1] = ALPHABET.charCodeAt((group >> SECOND_CHARACTER) & CHARACTER_MASK);
     characters[written + 2] = ALPHABET.charCodeAt((group >> THIRD_CHARACTER) & CHARACTER_MASK);
@@ -39,7 +41,7 @@ export function encodeBase64Url(bytes: Uint8Array): string {
   // The last one or two bytes, padded with zero bits, take one character more than they have bytes, and no padding.
   const rest = bytes.length - whole;
   if (rest > 0) {
-    const group = ((bytes[whole] ?? 0) << FIRST_BYTE) | ((bytes[whole + 1] ?? 0) << SECOND_BYTE);
+    const group = (view.getUint8(whole) << FIRST_BYTE) | ((rest === 2 ? view.getUint8(whole + 1) : 0) << SECOND_BYTE);
     characters[written] = ALPHABET.charCodeAt(group >> FIRST_CHARACTER);
     characters[written + 1] = ALPHABET.charCodeAt((group >> SECOND_CHARACTER) & CHARACTER_MASK);
     if (rest === 2) characters[written + 2] = ALPHABET.charCodeAt((group >> THIRD_CHARACTER) & CHARACTER_MASK);
