@@ -578,8 +578,11 @@ export function openRecord<const TEntries extends v.ObjectEntries>(entries: TEnt
     prototypeNamesRefused,
     v.looseObject(entries),
     v.rawTransform(({ dataset, addIssue, NEVER }) => {
-      for (const [name, member] of Object.entries(dataset.value)) {
+      // The names alone, since most members have an entry, and an assignment: no pair or object is made for each member. The
+      // names of the prototype chain were refused before this step, so the assignment makes an own member.
+      for (const name of Object.keys(dataset.value)) {
         if (Object.hasOwn(entries, name)) continue;
+        const member = dataset.value[name];
         const result = copyJson(member, name);
         if ("problem" in result) {
           addIssue({
@@ -588,7 +591,7 @@ export function openRecord<const TEntries extends v.ObjectEntries>(entries: TEnt
           });
           return NEVER;
         }
-        Object.assign(dataset.value, { [name]: result.value });
+        Reflect.set(dataset.value, name, result.value);
       }
       return dataset.value;
     }),
