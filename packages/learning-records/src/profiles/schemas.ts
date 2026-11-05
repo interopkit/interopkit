@@ -1,4 +1,4 @@
-import { absoluteUriSchema, isRecord, jsonValueSchema, openRecord, type Schema } from "@interopkit/core/checks";
+import { absoluteUriSchema, isRecord, opaqueJsonValueSchema, openRecord, type Schema } from "@interopkit/core/checks";
 import * as v from "valibot";
 import { isIsoTimestamp } from "../model/internal.js";
 import { languageMapSchema, mediaTypeSchema } from "../read/internal.js";
@@ -142,9 +142,9 @@ const ruleEntries = {
   location: text,
   selector: v.optional(text),
   presence: v.optional(v.picklist(RULE_PRESENCES)),
-  any: v.optional(v.array(jsonValueSchema)),
-  all: v.optional(v.array(jsonValueSchema)),
-  none: v.optional(v.array(jsonValueSchema)),
+  any: v.optional(v.array(opaqueJsonValueSchema)),
+  all: v.optional(v.array(opaqueJsonValueSchema)),
+  none: v.optional(v.array(opaqueJsonValueSchema)),
   scopeNote: v.optional(languageMapSchema),
 };
 

@@ -200,16 +200,22 @@ describe("reading the launch data", () => {
   });
 
   it.each(["__proto__", "constructor", "prototype"])(
-    "refuses a member named %s, of the document and of its context template",
+    "refuses a member named %s of the document and of its context template, and holds one in the value of an extension",
     (name) => {
       const member = `"${name}":{"admin":true}`;
       const head = '"launchMode":"Normal","moveOn":"Passed"';
       expect(() => readLaunchData(JSON.parse(`{${head},"contextTemplate":{},${member}}`))).toThrow(
         `The launch data is invalid at ${name}: the property "${name}" is refused`,
       );
-      expect(() => readLaunchData(JSON.parse(`{${head},"contextTemplate":{"extensions":{"a":{${member}}}}}`))).toThrow(
-        `extensions.a.${name} is refused`,
+      expect(() => readLaunchData(JSON.parse(`{${head},"contextTemplate":{${member}}}`))).toThrow(
+        `The launch data at contextTemplate is invalid at ${name}`,
       );
+      // The value of an extension is opaque JSON, whose names are data: it is held as an own member.
+      const iri = "https://lms.example.org/extensions/settings";
+      const read = readLaunchData(JSON.parse(`{${head},"contextTemplate":{"extensions":{"${iri}":{${member}}}}}`));
+      const held = read.contextTemplate.extensions?.[iri] as Record<string, unknown>;
+      expect(Object.keys(held)).toStrictEqual([name]);
+      expect(Object.getPrototypeOf(held)).toBe(Object.prototype);
       expect(({} as Record<string, unknown>).admin).toBeUndefined();
     },
   );

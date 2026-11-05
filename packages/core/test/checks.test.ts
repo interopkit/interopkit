@@ -25,12 +25,13 @@ import {
   httpsUrlSchema,
   isRecord,
   jsonObjectSchema,
-  jsonValueSchema,
   looseRecord,
   mapSchema,
   methodsSchema,
   nonEmptyStringSchema,
   nonNegativeIntegerSchema,
+  opaqueJsonObjectSchema,
+  opaqueJsonValueSchema,
   openRecord,
   parseWith,
   positiveIntegerSchema,
@@ -699,17 +700,34 @@ describe("jsonObjectSchema", () => {
   });
 });
 
-describe("jsonValueSchema", () => {
-  it.each([null, "x", 5, true, [1, { b: null }], { a: [] }])("reads %j into a copy", (value) => {
-    const result = v.safeParse(jsonValueSchema, value);
+describe("opaqueJsonValueSchema and opaqueJsonObjectSchema", () => {
+  it.each([null, "x", 5, true, [1, { b: null }], { a: [] }])("read %j into a copy", (value) => {
+    const result = v.safeParse(opaqueJsonValueSchema, value);
     expect(result.output).toStrictEqual(value);
     if (typeof value === "object" && value !== null) expect(result.output).not.toBe(value);
   });
 
-  it("refuses a value that JSON cannot hold, with a finding that says where", () => {
-    const issues = v.safeParse(jsonValueSchema, [Number.NaN]).issues ?? [];
+  it("refuse a value that JSON cannot hold, or an object that is a list, with a finding that says where", () => {
+    const issues = v.safeParse(opaqueJsonValueSchema, [Number.NaN]).issues ?? [];
     expect(findingsOf(issues).map(({ rule }) => rule)).toStrictEqual(["invalid-value"]);
+    for (const value of [null, "x", [], 5]) expect(v.safeParse(opaqueJsonObjectSchema, value).success).toBe(false);
   });
+
+  it.each(["__proto__", "constructor", "prototype"])(
+    "hold a member named %s at any depth as an own member, since the names of opaque JSON are data",
+    (name) => {
+      const text = `{"${name}":{"a":[{"${name}":{"polluted":true}}]}}`;
+      for (const schema of [opaqueJsonObjectSchema, opaqueJsonValueSchema]) {
+        const read = parseWith(schema, JSON.parse(text), "The value") as Record<string, unknown>;
+        expect(Object.getPrototypeOf(read)).toBe(Object.prototype);
+        expect(Object.keys(read)).toStrictEqual([name]);
+        expect(JSON.stringify(read)).toBe(text);
+      }
+      // jsonObjectSchema, whose names are names, refuses the same text.
+      expect(v.safeParse(jsonObjectSchema, JSON.parse(text)).success).toBe(false);
+      expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    },
+  );
 });
 
 describe("describeIssue", () => {

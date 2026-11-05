@@ -97,7 +97,7 @@ describe("readStatement", () => {
   });
 
   it.each(["__proto__", "constructor", "prototype"])(
-    "refuses %s as a key of a language map and of extensions",
+    "refuses %s as a key of a language map, and as a key of extensions, which is no IRI",
     (key) => {
       const map = JSON.parse(`{"${key}": "x"}`);
       const display = validateStatement({ ...minimalStatement(), verb: { id: "https://example.org/v", display: map } });
@@ -106,8 +106,24 @@ describe("readStatement", () => {
       ]);
       const extensions = validateStatement({ ...minimalStatement(), result: { extensions: map } });
       expect(summary(extensions)).toStrictEqual([
-        { path: `result.extensions.${key}`, rule: "invalid-value", severity: "error" },
+        { path: `result.extensions.${key}`, rule: "invalid-format", severity: "error" },
       ]);
+    },
+  );
+
+  it.each(["__proto__", "constructor", "prototype"])(
+    "holds %s inside the value of an extension as an own member, since the names of that JSON are data",
+    (key) => {
+      const iri = "https://example.org/extensions/settings";
+      const value = JSON.parse(`{"${key}": {"admin": true}, "list": [{"${key}": 1}]}`);
+      for (const place of ["result", "context"] as const) {
+        const statement = readStatement({ ...minimalStatement(), [place]: { extensions: { [iri]: value } } });
+        const held = statement[place]?.extensions?.[iri] as Record<string, unknown>;
+        expect(Object.keys(held)).toStrictEqual([key, "list"]);
+        expect(Object.getPrototypeOf(held)).toBe(Object.prototype);
+        expect(JSON.stringify(held)).toBe(JSON.stringify(value));
+      }
+      expect(({} as Record<string, unknown>).admin).toBeUndefined();
     },
   );
 

@@ -1,5 +1,11 @@
 import { type CallOptions, DataError, readAnswer, type ServiceResponse } from "@interopkit/core";
-import { dateTimeSchema, jsonObjectSchema, parseWith, readCallOptions, strictRecord } from "@interopkit/core/checks";
+import {
+  dateTimeSchema,
+  opaqueJsonObjectSchema,
+  parseWith,
+  readCallOptions,
+  strictRecord,
+} from "@interopkit/core/checks";
 import * as v from "valibot";
 import type {
   DocumentScope,
@@ -190,7 +196,7 @@ export async function postDocument(
   options: unknown,
 ): Promise<WriteOutcome> {
   const checked = parseWith(targetSchema, target, "The target");
-  const object = parseWith(jsonObjectSchema, json, "The JSON");
+  const object = parseWith(opaqueJsonObjectSchema, json, "The JSON");
   const body = new TextEncoder().encode(JSON.stringify(object));
   return write(settings, "POST", checked, { contentType: "application/json", body }, options);
 }

@@ -4,9 +4,9 @@ import {
   DEFAULT_MAX_FINDINGS,
   guardSchema,
   type Issue,
-  jsonObjectSchema,
   MAX_JSON_TOKENS,
   methodsSchema,
+  opaqueJsonObjectSchema,
   parseWith,
   positiveIntegerSchema,
   strictRecord,
@@ -245,7 +245,7 @@ const optionsSchema = strictRecord({
   acceptStatus: v.optional(v.picklist([400, 403])),
   trustCertificate: v.optional(guardSchema(isFunction<NonNullable<LrsOptions["trustCertificate"]>>, "a function")),
   keepSubmittedAuthority: v.optional(v.boolean()),
-  aboutExtensions: v.optional(jsonObjectSchema),
+  aboutExtensions: v.optional(opaqueJsonObjectSchema),
   limits: v.optional(
     strictRecord({
       maxBodyBytes: v.optional(positiveIntegerSchema),

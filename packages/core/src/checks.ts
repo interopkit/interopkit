@@ -10,6 +10,7 @@ import { FINDINGS_STOPPED_RULE, type Finding, type Issue } from "./findings.js";
 import { findInstant } from "./formats.js";
 import {
   copyJson,
+  copyOpaqueJson,
   findExceededJsonLimit,
   isPlainObject,
   type JsonObject,
@@ -614,12 +615,23 @@ export const jsonObjectSchema: Schema<JsonObject> = v.pipe(
 );
 
 /**
- * The schema of any value that must be JSON, such as a value that a rule compares: the result is a copy, which `copyJson`
- * makes, so that it shares nothing with the input.
+ * The schema of an object of opaque JSON, whose member names are data at every depth, such as the extensions of an xAPI
+ * Statement or a document of an LRS: the result is a copy that shares nothing with the input, and a member named `__proto__`,
+ * `constructor` or `prototype` is an own member of it, as `JSON.parse` makes one, and changes no prototype. A reader whose own
+ * names are names, such as the IRIs that key the extensions, refuses them by its own rule.
  */
-export const jsonValueSchema: Schema<JsonValue> = v.pipe(
+export const opaqueJsonObjectSchema: Schema<JsonObject> = v.pipe(
+  guardSchema(isRecord, OBJECT_EXPECTED),
+  copiedAsJson((value: Readonly<Record<string, unknown>>) => copyOpaqueJson(value, "")),
+);
+
+/**
+ * The schema of any value of opaque JSON, such as a value that a rule of an xAPI Profile compares with the values of a
+ * Statement: a copy, in which a member named `__proto__`, `constructor` or `prototype` at any depth is an own member.
+ */
+export const opaqueJsonValueSchema: Schema<JsonValue> = v.pipe(
   v.unknown(),
-  copiedAsJson((value: unknown) => copyJson(value, "")),
+  copiedAsJson((value: unknown) => copyOpaqueJson(value, "")),
 );
 
 /**

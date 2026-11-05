@@ -1,8 +1,8 @@
 import {
   isLanguageTag,
   type JsonObject,
-  jsonObjectSchema,
   looseRecord,
+  opaqueJsonObjectSchema,
   parseWith,
   strictRecord,
 } from "@interopkit/core/checks";
@@ -24,7 +24,7 @@ const scoreSchema = v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(1))
  * data of every assignable unit that has neither, so both are read as absent.
  */
 const launchDataSchema = looseRecord({
-  contextTemplate: jsonObjectSchema,
+  contextTemplate: opaqueJsonObjectSchema,
   launchMode: v.picklist(LAUNCH_MODES),
   moveOn: v.picklist(MOVE_ON_VALUES),
   launchParameters: v.optional(v.string()),
@@ -41,7 +41,7 @@ export function readLaunchDataAs(json: unknown, label: string): LaunchData {
   checkXapiPart("context", read.contextTemplate, `${label} at contextTemplate`);
   const { launchParameters, masteryScore, returnURL, entitlementKey } = read;
   return {
-    // The rules of xAPI took it as a Context, and jsonObjectSchema made it a copy.
+    // The rules of xAPI took it as a Context, refusing a reserved name where names are names, and the schema made it a copy.
     contextTemplate: read.contextTemplate as Context,
     launchMode: read.launchMode,
     moveOn: read.moveOn,

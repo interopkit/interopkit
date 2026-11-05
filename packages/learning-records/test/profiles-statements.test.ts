@@ -183,6 +183,20 @@ describe("the rules of a Statement Template", () => {
     ).toBe("success");
   });
 
+  it.each(["__proto__", "constructor", "prototype"])(
+    "compares a value of a rule that holds %s with a value of a Statement that holds it, as data",
+    (name) => {
+      const held = JSON.parse(`{"${name}": {"admin": true}}`);
+      const statement = { ...placing, result: { extensions: { [PLACE]: held } } };
+      const rule = { location: `$.result.extensions['${PLACE}']`, any: [JSON.parse(`{"${name}": {"admin": true}}`)] };
+      expect(outcome([rule], statement).outcome).toBe("success");
+      expect(outcome([{ ...rule, any: [JSON.parse(`{"${name}": {"admin": false}}`)] }], statement).outcome).toBe(
+        "invalid",
+      );
+      expect(({} as Record<string, unknown>).admin).toBeUndefined();
+    },
+  );
+
   it("asks the values of a recommended location only when it has one", () => {
     expect(outcome([{ location: "$.result.score.raw", presence: "recommended", any: [1] }]).outcome).toBe("success");
     expect(outcome([{ location: "$.verb.id", presence: "recommended", any: [VERBS.start] }]).outcome).toBe("invalid");

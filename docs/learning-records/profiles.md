@@ -161,7 +161,7 @@ matches them all, in the order of their timestamps and, at one time, of the list
 ## Rules of a profile
 
 The findings name these rules besides those of the shape (`missing-property`, `wrong-type`, `invalid-format`,
-`invalid-value`, which a member named `__proto__`, `constructor` or `prototype` is, anywhere). Section numbers are those of Part
+`invalid-value`, which a member named `__proto__`, `constructor` or `prototype` is, anywhere but in the values that a rule compares, whose names are data). Section numbers are those of Part
 Two.
 
 | Rule                         | Severity | Means                                                                                                    | Section |

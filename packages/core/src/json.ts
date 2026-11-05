@@ -104,10 +104,13 @@ class Fault {
   }
 }
 
-/** Copies the members of a plain object at the given depth, or finds what in it is not JSON. */
-function copyObject(value: object, depth: number): JsonObject | Fault {
+/**
+ * Copies the members of a plain object at the given depth, or finds what in it is not JSON. Where its names are data, a member
+ * named `__proto__`, `constructor` or `prototype` is copied as an own member, which `Object.fromEntries` defines.
+ */
+function copyObject(value: object, depth: number, namesAreData: boolean): JsonObject | Fault {
   if (!isPlainObject(value)) return new Fault(`is ${describeNonJson(value)}`);
-  const [reserved] = listPrototypeNames(value);
+  const [reserved] = namesAreData ? [] : listPrototypeNames(value);
   if (reserved !== undefined) {
     const fault = new Fault(PROTOTYPE_NAME_REFUSAL);
     fault.steps.push(reserved);
@@ -115,7 +118,7 @@ function copyObject(value: object, depth: number): JsonObject | Fault {
   }
   const members: [string, JsonValue][] = [];
   for (const [name, member] of Object.entries(value)) {
-    const copied = copy(member, depth + 1);
+    const copied = copy(member, depth + 1, namesAreData);
     if (copied instanceof Fault) {
       copied.steps.push(name);
       return copied;
@@ -126,18 +129,18 @@ function copyObject(value: object, depth: number): JsonObject | Fault {
 }
 
 /** Copies a JSON value that nests at most `MAX_JSON_DEPTH` levels, or finds what in it is not JSON. */
-function copy(value: unknown, depth: number): JsonValue | Fault {
+function copy(value: unknown, depth: number, namesAreData: boolean): JsonValue | Fault {
   if (value === null || typeof value === "boolean" || typeof value === "string") return value;
   if (typeof value === "number") return Number.isFinite(value) ? value : new Fault(`is ${describeNonJson(value)}`);
   if (typeof value !== "object") return new Fault(`is ${describeNonJson(value)}`);
   if (depth >= MAX_JSON_DEPTH) {
     return new Fault(`nests more than ${MAX_JSON_DEPTH} levels, the most that a JSON value may here`);
   }
-  if (!Array.isArray(value)) return copyObject(value, depth);
+  if (!Array.isArray(value)) return copyObject(value, depth, namesAreData);
   const items: JsonValue[] = [];
   // An index, and not `entries()`, which makes a pair for each item: a list of a million items took about 30 MiB more.
   for (let index = 0; index < value.length; index += 1) {
-    const copied = copy(value[index], depth + 1);
+    const copied = copy(value[index], depth + 1, namesAreData);
     if (copied instanceof Fault) {
       copied.steps.push(index);
       return copied;
@@ -174,7 +177,22 @@ function placeOfFault(path: string, fault: Fault): string {
 export function copyJson(value: Readonly<Record<string, unknown>>, path: string): JsonObjectCopy;
 export function copyJson(value: unknown, path: string): JsonValueCopy;
 export function copyJson(value: unknown, path: string): JsonValueCopy {
-  const copied = copy(value, 0);
+  return copyWith(value, path, false);
+}
+
+/**
+ * Copies a value of opaque JSON, whose member names are data at every depth, as `copyJson` does, but holds a member named
+ * `__proto__`, `constructor` or `prototype` as an own member of the copy, which changes no prototype.
+ */
+export function copyOpaqueJson(value: Readonly<Record<string, unknown>>, path: string): JsonObjectCopy;
+export function copyOpaqueJson(value: unknown, path: string): JsonValueCopy;
+export function copyOpaqueJson(value: unknown, path: string): JsonValueCopy {
+  return copyWith(value, path, true);
+}
+
+/** Copies a JSON value, its names data or not, or says where it is not JSON. */
+function copyWith(value: unknown, path: string, namesAreData: boolean): JsonValueCopy {
+  const copied = copy(value, 0, namesAreData);
   return copied instanceof Fault ? { problem: `${placeOfFault(path, copied)} ${copied.what}` } : { value: copied };
 }
 

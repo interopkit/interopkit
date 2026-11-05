@@ -7,9 +7,9 @@ import {
   isLanguageTag,
   isRecord,
   type JsonObject,
-  jsonObjectSchema,
   languageTagSchema,
   mapSchema,
+  opaqueJsonObjectSchema,
   type Schema,
   strictRecord,
   uuidSchema,
@@ -95,9 +95,12 @@ function keysAre<TMap extends Readonly<Record<string, unknown>>>(valid: (key: st
   });
 }
 
-/** The map of other properties, whose keys are IRIs (4.2.7). */
+/**
+ * The map of other properties, whose keys are IRIs (4.2.7) and whose values are opaque JSON: a member of a value named
+ * `__proto__`, `constructor` or `prototype` is data, held as an own member, and such a key of the map is no IRI.
+ */
 const extensions = v.pipe(
-  jsonObjectSchema,
+  opaqueJsonObjectSchema,
   keysAre<JsonObject>(isAbsoluteUri, "an IRI as the key, such as https://example.org/x"),
 );
 
@@ -305,7 +308,7 @@ export const personSchema: Schema<Person> = strictRecord({
 /** Reads what the About resource returns (4.1.6.7). */
 export const aboutSchema: Schema<About> = strictRecord({
   version: v.pipe(v.array(text), v.minLength(1)),
-  extensions: v.optional(jsonObjectSchema),
+  extensions: v.optional(opaqueJsonObjectSchema),
 });
 
 /** The options of an Object that a SubStatement may have, told apart by `objectType`. */

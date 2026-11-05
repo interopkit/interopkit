@@ -81,7 +81,8 @@ validateSessionStatements([statement(2, "terminated")], facts).map(({ path, rule
 
 CATAPULT's player writes `masteryScore: null` and `entitlementKey: {}` into the launch data of a unit that has neither, so
 `readLaunchData` reads both as absent. Members that cmi5 does not define are dropped, and both readers refuse a member named
-`__proto__`, `constructor` or `prototype`, whose name is of the prototype chain.
+`__proto__`, `constructor` or `prototype`, whose name is of the prototype chain, but in the value of an extension of the context
+template, whose names are data and which holds it as an own member.
 
 ## Rules
 

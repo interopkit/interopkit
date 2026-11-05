@@ -77,7 +77,7 @@ resolution, and `checkRemoteUrl` does not replace it.
 | `strictRecord(entries)`                             | An object with the given entries that refuses a property it does not know, as `additionalProperties: false` does, and refuses an array                                                                                                                                                                                      |
 | `openRecord(entries)`                               | An object with the given entries that keeps the properties it does not know, as `additionalProperties: true` does, for a JSON-LD class that anyone may extend: they are copied, so they must be JSON. It refuses an array |
 | `jsonObjectSchema`                                  | An object of JSON, copied, with no function, `undefined`, number that is not finite or object that is not plain, and at most `MAX_JSON_DEPTH` levels                                                                                                                                                                        |
-| `jsonValueSchema`                                   | Any value of JSON, copied, with no function, `undefined`, number that is not finite or object that is not plain, and at most `MAX_JSON_DEPTH` levels                                                                                                                                                                        |
+| `opaqueJsonObjectSchema`, `opaqueJsonValueSchema`   | An object, and any value, of opaque JSON whose member names are data, copied as `jsonObjectSchema` copies, with a member named `__proto__`, `constructor` or `prototype` held as an own member                                                                                                                                                                        |
 | `mapSchema(value)`                                  | A plain object whose property names are data, such as claim names, into a `Map`; an object that is not plain is refused, since it would read as empty |
 | `methodsSchema(...names)`                           | A host's object with the given functions, such as a store; the object passes on whole, so a class instance keeps its methods                                                                                                                                                                                                |
 | `guardSchema(guard, expected)`                      | A value that a type guard accepts, passed on whole                                                                                                                                                                                                                                                                          |
@@ -170,7 +170,8 @@ the value is not JSON. `JsonValue` and `JsonObject` are the types.
 | ---------------- | ----- | ----------------------------------------------------------------------------------------------- |
 | `MAX_JSON_DEPTH` | 64    | The levels that arrays and objects nest in `copyJson`, and the default depth of `readJson`      |
 
-A member named `__proto__`, `constructor` or `prototype` is refused at any depth, as the schemas refuse it.
+A member named `__proto__`, `constructor` or `prototype` is refused at any depth, as the schemas refuse it; the opaque schemas,
+for JSON whose names are data, hold it as an own member instead, which changes no prototype.
 
 `isSameJson(first, second)` tells whether two JSON values are the same: the same primitive, arrays of the same values in the same
 order, or objects with the same members in any order. It walks the values without recursion, so a value of any depth costs no
