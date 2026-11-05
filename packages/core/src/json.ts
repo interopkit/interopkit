@@ -266,26 +266,8 @@ const ROLES = Uint8Array.from({ length: ASCII }, (_, unit) => {
   return unit === COMMA || unit === COLON ? SEPARATOR : LITERAL;
 });
 
-/**
- * Tells which of two limits a text of JSON passes first, in the order of the text, reading it once and no further than that
- * point: the levels of its arrays and objects, where `[]` has depth 1, and its tokens, each structural character, string,
- * number and one of `true`, `false` and `null`.
- *
- * @remarks
- * It is `nestsDeeperThan` and `hasMoreTokensThan` in one reading, for a reader that bounds both before `JSON.parse`. The text
- * need not be valid JSON, and nothing is built from it. A reader whose refusal of one limit comes before the other, wherever
- * the text passes them, reads on with `nestsDeeperThan` or `hasMoreTokensThan` when the text passes the other limit first.
- *
- * @param text - The text.
- * @param maxDepth - The deepest nesting that is allowed.
- * @param maxTokens - The most tokens that are allowed.
- * @returns `"depth"` or `"tokens"`, the first limit that the text passes, or `undefined` when it passes neither.
- */
-export function findExceededJsonLimit(
-  text: string,
-  maxDepth: number,
-  maxTokens: number,
-): "depth" | "tokens" | undefined {
+/** Tells which of two limits a text of JSON passes first, in the order of the text, reading no further than that point. */
+function firstExceededLimit(text: string, maxDepth: number, maxTokens: number): "depth" | "tokens" | undefined {
   let depth = 0;
   let tokens = 0;
   let inLiteral = false;
@@ -323,19 +305,30 @@ export function findExceededJsonLimit(
 }
 
 /**
- * Tells whether the arrays and objects of a text of JSON nest deeper than a limit, reading no further than the first level
- * above it. `[]` has depth 1 and `[[]]` has depth 2.
+ * Tells which limit a text of JSON is refused for: the levels of its arrays and objects, where `[]` has depth 1, or its tokens,
+ * each structural character, string, number and one of `true`, `false` and `null`.
  *
  * @remarks
- * The text need not be valid JSON, and nothing is built from it, so a text of ten thousand opening brackets is refused
- * before a parser that recurses can overflow the stack on it.
+ * A text over both limits is refused for its depth, wherever it passes them, so that a reader names the same limit whichever
+ * the text passes first: one reading finds the first limit that it passes, and a text that passes the tokens first is read on
+ * for its depth alone. The text need not be valid JSON, and nothing is built from it, so a text of ten thousand opening
+ * brackets is refused before a parser that recurses can overflow the stack on it. `parseJsonText` refuses a text by it before
+ * it parses.
  *
  * @param text - The text.
  * @param maxDepth - The deepest nesting that is allowed.
- * @returns Whether the text nests deeper.
+ * @param maxTokens - The most tokens that are allowed.
+ * @returns `"depth"` when the text nests deeper than `maxDepth`, `"tokens"` when it nests within it and has more than
+ * `maxTokens`, or `undefined` when it passes neither.
  */
-export function nestsDeeperThan(text: string, maxDepth: number): boolean {
-  return findExceededJsonLimit(text, maxDepth, Number.POSITIVE_INFINITY) === "depth";
+export function findExceededJsonLimit(
+  text: string,
+  maxDepth: number,
+  maxTokens: number,
+): "depth" | "tokens" | undefined {
+  const first = firstExceededLimit(text, maxDepth, maxTokens);
+  if (first !== "tokens") return first;
+  return firstExceededLimit(text, maxDepth, Number.POSITIVE_INFINITY) === "depth" ? "depth" : "tokens";
 }
 
 /**
@@ -351,5 +344,5 @@ export function nestsDeeperThan(text: string, maxDepth: number): boolean {
  * @returns Whether the text has more.
  */
 export function hasMoreTokensThan(text: string, maxTokens: number): boolean {
-  return findExceededJsonLimit(text, Number.POSITIVE_INFINITY, maxTokens) === "tokens";
+  return firstExceededLimit(text, Number.POSITIVE_INFINITY, maxTokens) === "tokens";
 }

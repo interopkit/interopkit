@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   copyJson,
   endOfJsonString,
+  findExceededJsonLimit,
   hasMoreTokensThan,
   isSameJson,
   MAX_JSON_DEPTH,
-  nestsDeeperThan,
   parseJsonText,
 } from "../src/checks.js";
 import { DataError, LimitError } from "../src/index.js";
@@ -149,22 +149,33 @@ describe("isSameJson", () => {
   });
 });
 
-describe("nestsDeeperThan", () => {
+describe("findExceededJsonLimit", () => {
+  /** The limit that a text is refused for when only its depth is bounded. */
+  const depthOf = (text: string, maxDepth: number) => findExceededJsonLimit(text, maxDepth, Number.POSITIVE_INFINITY);
+
   it("counts the levels of arrays and objects, and refuses one more than the limit", () => {
-    expect(nestsDeeperThan("[[[]]]", 3)).toBe(false);
-    expect(nestsDeeperThan("[[[[]]]]", 3)).toBe(true);
-    expect(nestsDeeperThan('{"a":{"b":{"c":{}}}}', 3)).toBe(true);
-    expect(nestsDeeperThan("1", 0)).toBe(false);
+    expect(depthOf("[[[]]]", 3)).toBeUndefined();
+    expect(depthOf("[[[[]]]]", 3)).toBe("depth");
+    expect(depthOf('{"a":{"b":{"c":{}}}}', 3)).toBe("depth");
+    expect(depthOf("1", 0)).toBeUndefined();
   });
 
   it("does not count brackets inside strings, whatever escapes come before them", () => {
-    expect(nestsDeeperThan('["[[[[", "\\\\"]', 1)).toBe(false);
-    expect(nestsDeeperThan('["\\\\"], [[[[', 2)).toBe(true);
+    expect(depthOf('["[[[[", "\\\\"]', 1)).toBeUndefined();
+    expect(depthOf('["\\\\"], [[[[', 2)).toBe("depth");
   });
 
   it("reads a text that is not JSON and stops at the first level above the limit", () => {
-    expect(nestsDeeperThan("[".repeat(100_000), 64)).toBe(true);
-    expect(nestsDeeperThan('"unterminated [[[[', 1)).toBe(false);
+    expect(depthOf("[".repeat(100_000), 64)).toBe("depth");
+    expect(depthOf('"unterminated [[[[', 1)).toBeUndefined();
+  });
+
+  it("refuses a text over both limits for its depth, whichever it passes first", () => {
+    const tokensFirst = `[${"0,".repeat(10)}[[[[0]]]]]`;
+    expect(findExceededJsonLimit(tokensFirst, 3, 5)).toBe("depth");
+    expect(findExceededJsonLimit(tokensFirst, 5, 5)).toBe("tokens");
+    expect(findExceededJsonLimit("[[[[0]]]]", 3, 5)).toBe("depth");
+    expect(findExceededJsonLimit("[[[[0]]]]", 4, 100)).toBeUndefined();
   });
 });
 

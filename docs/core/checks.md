@@ -177,10 +177,10 @@ order, or objects with the same members in any order. It walks the values withou
 stack. The rules of an xAPI Profile, the context template of cmi5 and the comparison of two versions of a CASE framework compare
 values with it.
 
-`nestsDeeperThan(text, maxDepth)` tells whether the arrays and objects of a text of JSON nest deeper than a limit, without parsing it: the text may be
-any string, and a string literal hides its brackets. `parseStatementJson` checks the depth with it before it parses.
-`findExceededJsonLimit(text, maxDepth, maxTokens)` reads the text once for both limits and tells which it passes first, in the order of
-the text; `readJson` and the readers of `achievement-credentials` bound a text with it, at the cost of one reading instead of two.
+`findExceededJsonLimit(text, maxDepth, maxTokens)` tells which limit a text of JSON is refused for, without parsing it: the text may
+be any string, and a string literal hides its brackets. A text over both limits is refused for its depth, wherever it passes them:
+one reading finds the first limit that it passes, and a text that passes the tokens first is read on for its depth alone. The
+readers of `achievement-credentials` bound a text with it, and `parseJsonText` refuses by it before it parses.
 `parseJsonText(text, { maxDepth, maxTokens }, refusals)` parses a text within both limits and refuses the depth before the tokens,
 wherever the text passes them: `readJson`, `readAnswerJson`, `parseStatementJson` and the documents of an LRS read a text so. The
 caller gives the sentences of the three errors, so that each reader says whose text it was: a `LimitError` with the limit `maxDepth`

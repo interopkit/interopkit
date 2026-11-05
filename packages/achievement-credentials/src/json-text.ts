@@ -1,5 +1,5 @@
 import { DataError, LimitError } from "@interopkit/core";
-import { findExceededJsonLimit, type JsonTextRefusals, MAX_JSON_DEPTH, nestsDeeperThan } from "@interopkit/core/checks";
+import { findExceededJsonLimit, type JsonTextRefusals, MAX_JSON_DEPTH } from "@interopkit/core/checks";
 
 /** What a text of JSON may be before it is parsed. */
 export interface JsonLimits {
@@ -51,8 +51,8 @@ export interface TextLimits {
 
 /**
  * Writes a value that a caller passed as an object into the text in which its size, levels and tokens are counted, and checks
- * the limits before anything reads the value: its characters first, then its levels and its tokens in the order of
- * `parseJsonText` of core, which refuses a value over both for its levels.
+ * the limits before anything reads the value: its characters first, then its levels and its tokens as
+ * `findExceededJsonLimit` of core judges them, which refuses a value over both for its levels.
  *
  * @param value - The value.
  * @param limits - The most characters, levels and tokens.
@@ -79,9 +79,7 @@ export function textWithinLimits(value: unknown, limits: TextLimits, what: strin
     );
   }
   const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
-  if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
-    throw new LimitError(`${what} nests more than ${maxDepth} levels.`, "maxDepth", maxDepth);
-  }
+  if (excess === "depth") throw new LimitError(`${what} nests more than ${maxDepth} levels.`, "maxDepth", maxDepth);
   if (excess === "tokens") {
     throw new LimitError(
       `${what} has more than the ${maxTokens} tokens of JSON that the option ${tokensOption} allows.`,

@@ -86,7 +86,6 @@ describe("the public API", () => {
         "MAX_JSON_DEPTH",
         "MAX_JSON_TOKENS",
         "methodsSchema",
-        "nestsDeeperThan",
         "nonEmptyStringSchema",
         "nonNegativeIntegerSchema",
         "openRecord",

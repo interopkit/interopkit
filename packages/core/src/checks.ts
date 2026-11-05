@@ -15,7 +15,6 @@ import {
   type JsonObject,
   type JsonValue,
   listPrototypeNames,
-  nestsDeeperThan,
   PROTOTYPE_NAME_REFUSAL,
 } from "./json.js";
 
@@ -54,7 +53,6 @@ export {
   type JsonValueCopy,
   MAX_JSON_DEPTH,
   MAX_JSON_TOKENS,
-  nestsDeeperThan,
 } from "./json.js";
 
 /**
@@ -793,9 +791,7 @@ export function parseJsonText(
 ): unknown {
   const { maxDepth, maxTokens } = limits;
   const excess = findExceededJsonLimit(text, maxDepth, maxTokens);
-  if (excess === "depth" || (excess === "tokens" && nestsDeeperThan(text, maxDepth))) {
-    throw new LimitError(refusals.depth, "maxDepth", maxDepth);
-  }
+  if (excess === "depth") throw new LimitError(refusals.depth, "maxDepth", maxDepth);
   if (excess === "tokens") throw new LimitError(refusals.tokens, "maxTokens", maxTokens);
   try {
     return JSON.parse(text);
