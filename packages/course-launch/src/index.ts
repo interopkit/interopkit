@@ -2,9 +2,30 @@
  * cmi5 course launch: the vocabularies of the specification, the course structure with its reader, validator and writer, and
  * the rules of the statements of a session with the readers of the launch URL, the launch data and the learner preferences.
  *
+ * It also exports the types of `@interopkit/core` and `@interopkit/learning-records` that its declarations name, which a
+ * program that installs this package imports from here.
+ *
  * @module @interopkit/course-launch
  */
 
+export type { CallOptions, Clock, Fetch } from "@interopkit/core";
+export type { Issue, JsonObject } from "@interopkit/core/checks";
+export type { HttpRequest, HttpResponse } from "@interopkit/core/http";
+export type {
+  Actor,
+  Agent,
+  Attachment,
+  Context,
+  LrsDocument,
+  LrsDocumentInput,
+  Result,
+  Score,
+  Statement,
+  StatementObject,
+  Verb,
+} from "@interopkit/learning-records";
+export type { LrsClient, WriteOutcome } from "@interopkit/learning-records/client";
+export type { LrsOptions } from "@interopkit/learning-records/store";
 export {
   type AssignableUnit,
   AU_VERBS,

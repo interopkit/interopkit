@@ -9,6 +9,8 @@
     "notDocumented": true
   },
   "readme": "README.md",
+  "excludeExternals": true,
+  "externalPattern": ["**/packages/core/**", "**/packages/learning-records/**"],
   "excludePrivate": true,
   "projectDocuments": ["../../docs/course-launch/*.md"],
   "treatWarningsAsErrors": true

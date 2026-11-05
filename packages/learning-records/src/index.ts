@@ -3,9 +3,15 @@
  * Learning Record Provider in either version, the text of a request read without a repeated property, builders of Statements,
  * their comparison and formats, and the form of a Statement in 1.0.3.
  *
+ * It also exports the types of `@interopkit/core` that its declarations name, which a program that installs this
+ * package imports from here.
+ *
  * @module @interopkit/learning-records
  */
 
+export type { CallOptions, Clock, Fetch, Signer } from "@interopkit/core";
+export type { Issue, JsonObject } from "@interopkit/core/checks";
+export type { AccessDecision, HttpRequest, HttpResponse } from "@interopkit/core/http";
 export {
   type BuildOptions,
   buildStatement,

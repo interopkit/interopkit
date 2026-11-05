@@ -2,8 +2,15 @@
  * CASE 1.1 competency frameworks: the model of a framework package and its entities, readers that check them against the
  * 1EdTech schemas and the rules of a package, and the conversion to CASE 1.0.
  *
+ * It also exports the types of `@interopkit/core` that its declarations name, which a program that installs this
+ * package imports from here.
+ *
  * @module @interopkit/competency-frameworks
  */
+
+export type { CallOptions, Fetch, StatusInfo } from "@interopkit/core";
+export type { Issue, JsonObject } from "@interopkit/core/checks";
+export type { AccessDecision, HttpRequest, HttpResponse, OffsetPage } from "@interopkit/core/http";
 export {
   ASSOCIATION_TYPES,
   type AssociationType,

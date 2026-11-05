@@ -9,6 +9,8 @@
     "notDocumented": true
   },
   "readme": "README.md",
+  "excludeExternals": true,
+  "externalPattern": ["**/packages/core/**"],
   "excludePrivate": true,
   "projectDocuments": ["../../docs/tool-integration/*.md"],
   "treatWarningsAsErrors": true

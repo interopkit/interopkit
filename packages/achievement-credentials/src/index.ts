@@ -2,9 +2,15 @@
  * Open Badges 3.0 and CLR 2.0 achievement credentials: the model of a credential and of the APIs, and readers that check
  * them against the 1EdTech schemas and the rules of the specifications; Open Badges 2.0 assertions, read and summarized.
  *
+ * It also exports the types of `@interopkit/core` that its declarations name, which a program that installs this
+ * package imports from here.
+ *
  * @module @interopkit/achievement-credentials
  */
 
+export type { CallOptions, Clock, Fetch, Random, Signer, StatusInfo } from "@interopkit/core";
+export type { Issue, JsonObject } from "@interopkit/core/checks";
+export type { AccessDecision, HttpRequest, HttpResponse, OffsetPage } from "@interopkit/core/http";
 export {
   type CredentialSummary,
   isSameCredential,

@@ -16,6 +16,8 @@
     "notDocumented": true
   },
   "readme": "README.md",
+  "excludeExternals": true,
+  "externalPattern": ["**/packages/core/**"],
   "excludePrivate": true,
   "projectDocuments": ["../../docs/learning-records/*.md"],
   "treatWarningsAsErrors": true

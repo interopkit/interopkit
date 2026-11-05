@@ -4,8 +4,17 @@
  * answers that its handlers take and return are in `@interopkit/core/http`. The tool role is in
  * `@interopkit/tool-integration/tool`, and the platform role in `@interopkit/tool-integration/platform`.
  *
+ * It also exports the types of `@interopkit/core` that its declarations name, which a program that installs this
+ * package imports from here.
+ *
  * @module @interopkit/tool-integration
  */
+
+export type { CallOptions, Clock, Fetch, Signer } from "@interopkit/core";
+export { InteropkitError } from "@interopkit/core";
+export type { JsonObject, JsonValue } from "@interopkit/core/checks";
+export type { HttpRequest, HttpResponse } from "@interopkit/core/http";
+export type { AccessToken } from "@interopkit/core/oauth";
 export { LtiError, type LtiErrorReason } from "./errors.js";
 export type {
   ActivityProgress,

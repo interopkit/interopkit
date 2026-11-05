@@ -20,6 +20,8 @@
     "notDocumented": true
   },
   "readme": "README.md",
+  "excludeExternals": true,
+  "externalPattern": ["**/packages/core/**", "**/packages/selective-disclosure/**"],
   "excludePrivate": true,
   "projectDocuments": ["../../docs/achievement-credentials/*.md"],
   "treatWarningsAsErrors": true
