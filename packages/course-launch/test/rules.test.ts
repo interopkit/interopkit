@@ -187,6 +187,10 @@ describe("reading the launch data", () => {
       "The launch data is invalid at entitlementKey",
     ],
     [
+      { contextTemplate: template, launchMode: "Normal", moveOn: "Passed", entitlementKey: [] },
+      "The launch data is invalid at entitlementKey",
+    ],
+    [
       { contextTemplate: { registration: "r-1" }, launchMode: "Normal", moveOn: "Passed" },
       "The launch data at contextTemplate is invalid at registration",
     ],

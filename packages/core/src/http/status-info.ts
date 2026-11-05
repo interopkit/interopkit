@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { checkNonEmptyString, describe, nonEmptyStringSchema, parseWith, strictRecord } from "../checks.js";
+import { checkNonEmptyString, describe, mapSchema, nonEmptyStringSchema, parseWith, strictRecord } from "../checks.js";
 import { DataError } from "../errors.js";
 import { ACCESS_REFUSAL_STATUSES, type AccessRefusal, type AccessRefusalReason, refusalSchema } from "./access.js";
 import { buildJsonResponse, type HttpResponse } from "./response.js";
@@ -17,10 +17,19 @@ const STATUS_SOURCE = "TargetEndSystem";
 const LOWEST_FAILURE = 400;
 const HIGHEST_STATUS = 599;
 
+/**
+ * More headers of an answer, by name: an object of strings, never a list, which the record of valibot takes, nor a name of the
+ * prototype chain, which it drops.
+ */
+const headersSchema = v.pipe(
+  mapSchema(v.string()),
+  v.transform((headers): Readonly<Record<string, string>> => Object.fromEntries(headers)),
+);
+
 const optionsSchema = strictRecord({
   minor: v.optional(nonEmptyStringSchema),
   severity: v.optional(v.picklist(FAILURE_SEVERITIES)),
-  headers: v.optional(v.record(v.string(), v.string())),
+  headers: v.optional(headersSchema),
 });
 
 /** The options of `buildStatusInfoResponse`. */
@@ -104,7 +113,7 @@ const refusalCodesSchema = strictRecord({
   "too-many-requests": nonEmptyStringSchema,
 });
 
-const refusalOptionsSchema = strictRecord({ forbiddenHeaders: v.optional(v.record(v.string(), v.string())) });
+const refusalOptionsSchema = strictRecord({ forbiddenHeaders: v.optional(headersSchema) });
 
 /** The options of `buildRefusalResponse`. */
 export interface RefusalResponseOptions {

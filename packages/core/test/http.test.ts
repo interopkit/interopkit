@@ -646,6 +646,9 @@ describe("buildStatusInfoResponse", () => {
     expect(() => buildStatusInfoResponse(500, "")).toThrow(DataError);
     expect(() => buildStatusInfoResponse(500, "x", JSON.parse('{"severity":"warning"}'))).toThrow(DataError);
     expect(() => buildStatusInfoResponse(500, "x", JSON.parse('{"headers":{"allow":5}}'))).toThrow(DataError);
+    // A list is no object of headers, and a name of the prototype chain is refused rather than dropped.
+    expect(() => buildStatusInfoResponse(500, "x", JSON.parse('{"headers":["allow"]}'))).toThrow(DataError);
+    expect(() => buildStatusInfoResponse(500, "x", JSON.parse('{"headers":{"__proto__":"a"}}'))).toThrow(DataError);
     expect(() => buildStatusInfoResponse(500, "x", JSON.parse("null"))).toThrow(DataError);
   });
 });
@@ -693,6 +696,10 @@ describe("buildRefusalResponse", () => {
     expect(() => buildRefusalResponse(refusal, JSON.parse('{"forbidden":"forbidden"}'))).toThrow(DataError);
     expect(() => buildRefusalResponse(refusal, { ...codes, busy: "server_busy" } as never)).toThrow(DataError);
     expect(() => buildRefusalResponse(refusal, codes, JSON.parse('{"forbiddenHeaders":{"a":5}}'))).toThrow(DataError);
+    expect(() => buildRefusalResponse(refusal, codes, JSON.parse('{"forbiddenHeaders":["a"]}'))).toThrow(DataError);
+    expect(() => buildRefusalResponse(refusal, codes, JSON.parse('{"forbiddenHeaders":{"constructor":"a"}}'))).toThrow(
+      DataError,
+    );
     expect(() => buildRefusalResponse(refusal, codes, JSON.parse('{"headers":{}}'))).toThrow(DataError);
     expect(() => buildRefusalResponse({ ...refusal, message: "" }, codes)).toThrow(DataError);
   });

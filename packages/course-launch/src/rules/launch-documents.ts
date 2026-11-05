@@ -31,7 +31,7 @@ const launchDataSchema = looseRecord({
   masteryScore: v.optional(v.nullable(scoreSchema)),
   returnURL: v.optional(v.string()),
   entitlementKey: v.optional(
-    v.union([v.strictObject({}), strictRecord({ courseStructure: v.string(), alternate: v.optional(v.string()) })]),
+    v.union([strictRecord({}), strictRecord({ courseStructure: v.string(), alternate: v.optional(v.string()) })]),
   ),
 });
 
