@@ -94,6 +94,24 @@ describe("what a unit may do with its token", () => {
     expect((await host.xapi("DELETE", `activities/state?${own}`, { authorization })).status).toBe(204);
     const other = documentQuery(launched, { activityId: launched.activityId, stateId: "bookmark" }, OTHER);
     expect((await host.xapi("GET", `activities/state?${other}`, { authorization })).status).toBe(403);
+    // An object that is no Agent of xAPI, or a Group of the learner's account, is not the learner either.
+    for (const agent of [
+      JSON.parse('{ "constructor": 1 }'),
+      { mbox: "not an address" },
+      { name: "learner", homePage: ORIGIN },
+      { ...launched.actor, objectType: "Group" },
+    ]) {
+      const query = documentQuery(launched, { activityId: launched.activityId, stateId: "bookmark" }, agent);
+      const statements = new URLSearchParams({ registration: launched.registration, agent: JSON.stringify(agent) });
+      expect(
+        (await host.xapi("GET", `activities/state?${query}`, { authorization })).status,
+        JSON.stringify(agent),
+      ).toBe(403);
+      expect(
+        (await host.xapi("GET", `statements?${statements}`, { authorization })).status,
+        JSON.stringify(agent),
+      ).toBe(403);
+    }
     const elsewhere = documentQuery(launched, {
       activityId: launched.activityId,
       registration: "9f0e3f5c-2c4e-4f6a-9b1d-3e5f7a9c1b2d",

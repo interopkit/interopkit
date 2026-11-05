@@ -1,7 +1,7 @@
-import { type CallOptions, readClock } from "@interopkit/core";
+import { type CallOptions, DataError, readClock } from "@interopkit/core";
 import { hasMoreTokensThan, isRecord, isUuid } from "@interopkit/core/checks";
 import { type HttpRequest, readQuery } from "@interopkit/core/http";
-import { type Actor, isSameActor } from "@interopkit/learning-records";
+import { type Actor, type Agent, isSameActor } from "@interopkit/learning-records";
 import type { Access, LrsAction, LrsOptions } from "@interopkit/learning-records/store";
 import { readBasicAuthorization } from "@interopkit/learning-records/store";
 import { LAUNCH_DATA_STATE_ID, LEARNER_PREFERENCES_PROFILE_ID } from "../model/index.js";
@@ -64,10 +64,24 @@ function agentOf(query: ReadonlyMap<string, string>): Actor | undefined {
   }
 }
 
+/**
+ * Tells whether the agent of a request is the learner of a session: an Agent with the learner's identifier (11.0). A Group, and a
+ * value that is no Actor of xAPI, is not the learner.
+ */
+function isLearner(agent: Actor, learner: Agent): boolean {
+  if (agent.objectType === "Group") return false;
+  try {
+    return isSameActor(agent, learner);
+  } catch (error) {
+    if (error instanceof DataError) return false;
+    throw error;
+  }
+}
+
 /** Says why a request names another learner or another registration than its session, or `undefined` when it names neither. */
 function scopeProblem(query: ReadonlyMap<string, string>, session: Session): string | undefined {
   const agent = agentOf(query);
-  if (agent !== undefined && !isSameActor(agent, session.actor)) {
+  if (agent !== undefined && !isLearner(agent, session.actor)) {
     return "The agent of the request is not the learner of the session (11.0).";
   }
   const registration = query.get("registration");

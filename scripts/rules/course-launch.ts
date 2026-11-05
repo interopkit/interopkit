@@ -257,7 +257,7 @@ export const COURSE_LAUNCH_RULES: readonly Rule[] = [
   {
     rule: "A unit reads and writes the documents of its learner only.",
     file: "packages/course-launch/src/lms/au-access.ts",
-    find: "if (agent !== undefined && !isSameActor(agent, session.actor)) {",
+    find: "if (agent !== undefined && !isLearner(agent, session.actor)) {",
     replace: "if (false) {",
     test: "packages/course-launch/test/lms-access.test.ts",
   },
