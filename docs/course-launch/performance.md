@@ -17,8 +17,8 @@ on any machine: its budget is five times the highest ratio measured on the runne
 | Benchmark | Reference | Ratio | Budget | Fastest on the runner | Time budget |
 | --- | --- | ---: | ---: | ---: | ---: |
 | `readCourseStructure` of LMS suite 101 (1,001 units) | libxml2 validating it | 3.35–4.85 | 30  | 54.1–97.2 ms | 300 ms |
-| The same | saxes parsing it alone | 1.76–1.92 | 10  | 64.3–96.8 ms | 400 ms |
-| `readCoursePackage` of a ZIP64 archive of 66,001 entries | zip.js listing its entries | 0.70–0.79 | 4   | 999.0–1410.6 ms | 5000 ms |
+| The same | saxes parsing it alone | 1.76–2.72 | 20  | 64.3–96.8 ms | 400 ms |
+| `readCoursePackage` of a ZIP64 archive of 66,001 entries | zip.js listing its entries | 0.69–0.84 | 5   | 999.0–1410.6 ms | 5000 ms |
 | The LMS judging the seven statements of a session | `validateStatements` of them | 0.83–1.24 | 7   | 0.10–0.17 ms | 0.5 ms |
 | The LMS judging 1,000 allowed statements of one request | `validateStatements` of them | 0.32–0.47 | 3    | 7.1–14.6 ms | 40 ms |
 | `prepareLaunch` over stores in memory and the LRS in the same process | none | n/a | n/a | 1.6–2.4 ms | 9 ms |

@@ -33,10 +33,10 @@ export const BUDGETS = {
    * checks the rules of cmi5 that the schema leaves out.
    */
   structureAgainstLibxml2: { time: 300, ratio: 30 },
-  /** The same, as a multiple of saxes parsing it alone: the work of the reader beyond the parser. Measured 1.76 to 1.92. */
-  structureAgainstSaxes: { time: 400, ratio: 10 },
-  /** `readCoursePackage` of a ZIP64 archive of 66,001 entries, as a multiple of zip.js listing its entries. Measured 0.70 to 0.79. */
-  packageAgainstEntries: { time: 5000, ratio: 4 },
+  /** The same, as a multiple of saxes parsing it alone: the work of the reader beyond the parser. Measured 1.76 to 2.72. */
+  structureAgainstSaxes: { time: 400, ratio: 20 },
+  /** `readCoursePackage` of a ZIP64 archive of 66,001 entries, as a multiple of zip.js listing its entries. Measured 0.69 to 0.84. */
+  packageAgainstEntries: { time: 5000, ratio: 5 },
   /** The LRS of cmi5 judging the seven statements of a session, as a multiple of `validateStatements` of them. Measured 0.83 to 1.24. */
   sessionAgainstValidate: { time: 0.5, ratio: 7 },
   /** The LRS of cmi5 judging 1,000 allowed statements of one request, as a multiple of `validateStatements` of them. Measured 0.32 to 0.47. */

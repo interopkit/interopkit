@@ -68,7 +68,7 @@ export const RATIOS = {
    */
   wideProfileAgainstParse: 50,
   /** `validateStatement` of a validator of a profile on each Statement of a relay, as a multiple of `readStatement` of each. */
-  templatesAgainstRead: 6,
+  templatesAgainstRead: 8,
   /** `validateStatements` of a validator of a profile on the relay, as a multiple of `readStatement` of each Statement. */
   patternsAgainstRead: 8,
 } as const;

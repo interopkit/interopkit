@@ -14,7 +14,8 @@ flowchart LR
 `pnpm bench` times the build that ships on 1,000 Statements of 771 KB that xAPI 1.0.3 and 2.0 both take, against a reference in
 the same run: the validator of Learning Locker for the work on each Statement, `JSON.parse` and `JSON.stringify` for a text,
 node:crypto for a hash and jose for a signature. The ratios are the fastest samples of seven runs on a laptop at a load of 10 to
-28, and the times of `validateStatement` and `parseStatementJson` are those of the eight latest green runs of the runner of CI.
+28, and the times of `validateStatement` and `parseStatementJson` are those of the eight latest green runs of the runner of CI; the
+ratios of the profiles are those of the runner's three latest green runs, and of a laptop where it says so.
 
 | Benchmark | Reference | Ratio | Budget |
 | --- | --- | ---: | ---: |
@@ -35,10 +36,10 @@ node:crypto for a hash and jose for a signature. The ratios are the fastest samp
 | `writeMultipart` of the same | their JSON, the SHA-256 of node:crypto and a copy | 6.7–12.5  | 70 |
 | `signStatement`, RSA of 2,048 bits | the `CompactSign` of jose | 1.06–1.34 | 7   |
 | `verifyStatementSignature` | the `compactVerify` of jose | 2.95–4.68 | 30  |
-| `validateProfile` of a profile of 907 concepts, 237 KB | `JSON.parse` of its text | 8.2 on a laptop | 50 |
+| `validateProfile` of a profile of 907 concepts, 237 KB | `JSON.parse` of its text | 7.71–8.99, and 8.2 on a laptop | 50 |
 | `validateProfile` of a profile whose alternates name 40,000 Patterns and that revises 40,000 concepts of another | `JSON.parse` of the two texts | 7.7–9.6 on a laptop | 50 |
-| `validateStatement` of a profile's validator on a relay of 1,000 Statements | `readStatement` of each | 1.15 on a laptop | 6 |
-| `validateStatements` of the same, templates and Patterns | the same | 1.55 on a laptop | 8 |
+| `validateStatement` of a profile's validator on a relay of 1,000 Statements | `readStatement` of each | 1.23–1.43, and 1.15 on a laptop | 8 |
+| `validateStatements` of the same, templates and Patterns | the same | 1.32–1.59, and 1.55 on a laptop | 8 |
 
 A ratio of a reader to the validator of Learning Locker, which does the same work, is parity or better, as the design asks; another
 ratio is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit. A time on CI is five times its fastest sample, rounded up to one significant digit:
