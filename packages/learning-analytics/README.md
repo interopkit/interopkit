@@ -3,11 +3,9 @@
 Caliper Analytics 1.2 for JavaScript and TypeScript: the event and entity model, a sensor that sends events, and the endpoint
 that receives and checks them; reads Caliper 1.1.
 
-It has the model of every entity of [Caliper Analytics 1.2](https://www.imsglobal.org/spec/caliper/v1p2) and of the Library Use
-Profile, reads and judges what arrives from elsewhere, including Caliper 1.1 documents and envelopes, builds events, gives them
-identifiers that stay the same when an event is reported again, posts them in one envelope, and answers the requests of sensors.
-It knows nothing of any product: the host says what happened, and which of its events becomes which Caliper event is the host's
-mapping.
+It covers every entity of [Caliper Analytics 1.2](https://www.imsglobal.org/spec/caliper/v1p2) and of the Library Use Profile,
+and gives events identifiers that stay the same when an event is reported again. It knows nothing of any product: which event of
+the host becomes which Caliper event is the host's mapping.
 
 ```bash
 npm install @interopkit/learning-analytics
@@ -113,16 +111,17 @@ environment variable, writes no log, and calls the network only through the `fet
 
 ## Documentation
 
-[Choosing](https://interopkit.wakan.dev/_interopkit/learning-analytics/choosing/) says when the package fits, when another library fits better,
-and what each has that the package lacks.
+| Page                                                                                                                                                                       | Gives                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [Architecture](https://interopkit.wakan.dev/_interopkit/learning-analytics/architecture/)                                                                                  | The modules, the data that flows, and what the package leaves to the host                         |
+| [Model](https://interopkit.wakan.dev/_interopkit/learning-analytics/model/)                                                                                                | The entities, the events, the vocabularies and reading                                            |
+| [Building](https://interopkit.wakan.dev/_interopkit/learning-analytics/build/), [judging](https://interopkit.wakan.dev/_interopkit/learning-analytics/validate/)           | Events with stable identifiers; the findings of the rules of the profiles                         |
+| [Sending](https://interopkit.wakan.dev/_interopkit/learning-analytics/send/), [receiving](https://interopkit.wakan.dev/_interopkit/learning-analytics/endpoint/)           | The sensor and the endpoint                                                                       |
+| [Caliper 1.1](https://interopkit.wakan.dev/_interopkit/learning-analytics/versions/)                                                                                       | Reading 1.1 documents and envelopes                                                               |
+| [Spec gaps](https://interopkit.wakan.dev/_interopkit/learning-analytics/spec-gaps/)                                                                                        | Where the specifications disagree, and the choice made                                            |
+| [Choosing](https://interopkit.wakan.dev/_interopkit/learning-analytics/choosing/)                                                                                          | When the package fits, when another library fits better, and what each has that the package lacks |
+| [Evidence](https://interopkit.wakan.dev/_interopkit/learning-analytics/evidence/), [performance](https://interopkit.wakan.dev/_interopkit/learning-analytics/performance/) | What shows that it does what it says; speed, size and peak memory                                 |
 
-The guides say what each part holds: the [architecture](https://interopkit.wakan.dev/_interopkit/learning-analytics/architecture/),
-the [model](https://interopkit.wakan.dev/_interopkit/learning-analytics/model/), reading
-[Caliper 1.1](https://interopkit.wakan.dev/_interopkit/learning-analytics/versions/), what is
-[supported](https://interopkit.wakan.dev/_interopkit/learning-analytics/supported/) and what is not,
-the places where the [specifications disagree](https://interopkit.wakan.dev/_interopkit/learning-analytics/spec-gaps/),
-the [evidence](https://interopkit.wakan.dev/_interopkit/learning-analytics/evidence/) that it does what it says, and its
-[performance](https://interopkit.wakan.dev/_interopkit/learning-analytics/performance/): speed, size and peak memory.
 A complete sensor, which sends again after a failure, and an endpoint that receives both versions are in the
 [example](https://github.com/interopkit/interopkit/tree/main/examples/learning-analytics#readme).
 

@@ -1,9 +1,7 @@
 # Architecture of learning-analytics
 
 `@interopkit/learning-analytics` implements [Caliper Analytics 1.2](https://www.imsglobal.org/spec/caliper/v1p2) and the
-Library Use Profile, and reads Caliper 1.1 ([versions](./versions.md)). It holds the model of the events and entities, readers of
-data that arrives from elsewhere, builders that give events identifiers which stay the same when an event is reported again, and a
-sensor that sends events to an endpoint, and the endpoint that receives them.
+Library Use Profile, and reads Caliper 1.1 ([versions](./versions.md)), in seven modules.
 
 ```mermaid
 flowchart BT
@@ -53,8 +51,8 @@ flowchart BT
 | `send`     | `sendCaliper`, `pingEndpoint`, `CaliperSender`, `SendCaliperOptions`, `PingResult` ([sending events](./send.md))                                                         |
 | `endpoint` | `handleCaliperRequest`, `readEnvelope`, `ReceivedEnvelope`, `CaliperEndpointOptions`, from `@interopkit/learning-analytics/endpoint` ([receiving events](./endpoint.md)) |
 
-`model` imports no other module, `v1p1` builds on `model` alone, `read` on both, `validate` on those and `read`, `build` on `model`, `read` and `validate`, `send` on `model` and `build`, and `endpoint` on `model`, `v1p1`, `read` and `validate`; `send` and `endpoint` never import each other, and neither `build` nor `send` imports `v1p1`, since 1.1 is read and never written. Biome keeps the rules. The exports come from `@interopkit/learning-analytics`, and those of the endpoint from `@interopkit/learning-analytics/endpoint`. The package depends on `@interopkit/core` for errors, checks, findings
-and the call to the service, on `uuid` for name-based UUIDs and on `valibot` for the schemas.
+The imports follow the diagram, and Biome keeps them: `send` and `endpoint` never import each other, and neither `build` nor
+`send` imports `v1p1`, since 1.1 is read and never written. `uuid` makes the name-based UUIDs and `valibot` reads the schemas.
 
 ## Quick start
 
@@ -93,11 +91,8 @@ person.type; // => "Person"
 | The envelope that an endpoint gets | The request, through the host         | `accept`, as a copy; the library keeps nothing               |
 | The answer of the endpoint         | The endpoint                          | `ServiceError.body`, and nowhere else                        |
 
-The library stores nothing, logs nothing and sends nothing but the request. The actor of an event is an IRI that the host
-chooses: give an opaque identifier that the host keeps in its own records, such as `urn:uuid:` and a UUID, and never an email
-address, a name or an identifier that another service knows. The identifiers of events are UUIDs of the parts that the host
-gives, so do not put a secret in the parts. A `SystemIdentifier` can carry an email address or an LTI user id: send one only
-when the endpoint is meant to hold it.
+The library stores nothing, logs nothing and sends nothing but the request. What to put in an actor and in the parts of an
+identifier is in [sending events](./send.md#data-that-flows).
 
 ## Not in this package
 
@@ -110,8 +105,7 @@ when the endpoint is meant to hold it.
 | JSON-LD processing: expansion, compaction, framing   | Caliper needs none: the terms are fixed strings, and the published context is the oracle of the tests                                  |
 | Answers of a candidate in events                     | They are not analytics data; an event that needs a response builds it from the host's own record                                       |
 
-What of Caliper this version builds, and what it leaves out, is in [supported](./supported.md); what shows that it does it is in
-[evidence](./evidence.md).
+What the package builds of Caliper is in [supported](./supported.md), and what shows it in [evidence](./evidence.md).
 
 ## Differences from the references
 

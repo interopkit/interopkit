@@ -105,10 +105,8 @@ The General Profile allows any `Agent` as actor, any action and any entity as ob
 
 ## Limits
 
-| Limit                     | Value | Replaceable                                                                  |
-| ------------------------- | ----- | ---------------------------------------------------------------------------- |
-| Findings                  | 1,000 | `maxFindings`; the memory of a check is that of its limit, not of the value  |
-| Levels that a value nests | 64    | No; a deeper value is one `invalid-value` finding, and nothing of it is read |
+Besides `maxFindings`, a value nests at most 64 levels, which no option changes: a deeper value is one `invalid-value` finding,
+and nothing of it is read. The memory of a check is that of its limit, not of the value.
 
 ## Errors
 

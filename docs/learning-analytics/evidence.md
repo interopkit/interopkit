@@ -1,9 +1,8 @@
 # Evidence for learning-analytics
 
-What shows that the package does what it says: the tables of the specifications, the published contexts, schemas and fixtures of
-`caliper-spec`, the rules of the profiles, a sensor and an endpoint that run against each other, three engines of browsers and four runtimes. Each layer answers a
-question that the one before cannot. The speed, the size and the peak memory are in [performance](performance.md). Caliper has no public
-conformance suite for an endpoint and no open sensor or endpoint of 1.2 to run against, so the oracles are the 1EdTech documents.
+What shows that the package does what it says, each layer answering a question that the one before cannot; the speed, the size
+and the peak memory are in [performance](performance.md). Caliper has no public conformance suite for an endpoint and no open
+sensor or endpoint of 1.2 to run against, so the oracles are the 1EdTech documents.
 
 ```mermaid
 flowchart LR
@@ -111,4 +110,3 @@ refused without exhausting the stack of the engine.
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Certification of a sensor              | 1EdTech certifies sensors per profile for members. The tables of the guide are read, and the docs say "implements"           |
 | An open Caliper 1.2 endpoint or sensor | None exists. The collector in `CaliperBootcamp` validates with the same schemas and needs Neo4j, so it would add no evidence |
-| A budget in time                       | The runners of CI have not sampled the benchmarks yet; the ratios hold on any machine                                        |

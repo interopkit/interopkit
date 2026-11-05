@@ -91,30 +91,17 @@ sequenceDiagram
   S-->>H: resolves
 ```
 
-### Failure paths
-
-| Case                                               | Result                                                                                                                                                                                                          |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The endpoint answers with a status that is not 2xx | `ServiceError` with the status and the body; Caliper names 400, 401, 415 and 422. No retry                                                                                                                      |
-| The endpoint redirects (3xx)                       | `ServiceError` with the status. The redirect is not followed, because it would send the token elsewhere                                                                                                         |
-| `fetch` rejects                                    | `ServiceError` with status `0`, naming the endpoint and the reason                                                                                                                                              |
-| The endpoint does not answer within `timeoutMs`    | `ServiceError` with status `0`, even when `fetch` ignores its signal                                                                                                                                            |
-| The answer is larger than 65,536 bytes             | `ServiceError` with the status of the answer, and reading stops                                                                                                                                                 |
-| The signal is aborted before the call              | Rejects with `signal.reason`; no request is made                                                                                                                                                                |
-| The signal aborts while the request is in flight   | Rejects with `signal.reason`. The request may have reached the endpoint                                                                                                                                         |
-| Called again                                       | Nothing is kept between calls. The same events give the same identifiers and, with the same `sendTime`, the same bytes. Caliper defines no deduplication, so an endpoint may hold both copies of a resent event |
-| Calls back                                         | Nothing                                                                                                                                                                                                         |
+Nothing is kept between calls, and nothing is called back. The same events give the same identifiers and, with the same
+`sendTime`, the same bytes; Caliper defines no deduplication, so an endpoint may hold both copies of a resent event.
 
 ## Limits of a send
 
-| Limit                               | Value                                                                                                                                                                             | Replaceable |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| Time of a call                      | `timeoutMs`, `10000` ms by default                                                                                                                                                | Per call    |
-| Bytes of the answer                 | 65,536                                                                                                                                                                            | No          |
-| Redirects                           | None followed; any 3xx is an error                                                                                                                                                | No          |
-| Events and describes in an envelope | At least 1. No greatest number: `maxPayloadBytes` limits the bytes, which the endpoint announces                                                                                  | Per call    |
-| Times                               | `0000-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z`, in whole milliseconds, for `sendTime` and `formatDateTime`; the form `YYYY-MM-DDTHH:mm:ss.SSSZ` for a time in an entity |             |
-| Parts of an identifier              | At least one; strings and finite numbers                                                                                                                                          | No          |
+| Limit                               | Value                                                                                                | Replaceable |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------- |
+| Bytes of the answer                 | 65,536; reading stops beyond it, with a `ServiceError`                                               | No          |
+| Redirects                           | None followed: a redirect would send the token elsewhere, so any 3xx is an error                     | No          |
+| Events and describes in an envelope | At least 1, and no greatest number: `maxPayloadBytes` limits the bytes, which the endpoint announces | Per call    |
+| `sendTime`                          | Whole epoch milliseconds from 0000 to 9999, as [`formatDateTime`](./build.md#times) writes           | No          |
 
 ## Asking the endpoint
 
@@ -158,11 +145,11 @@ into several envelopes is the host's: `sendCaliper` refuses an envelope that is 
 | Error                              | When                                                                                                                                                                                                                                                                                        | What to do                                                                                             |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `DataError`                        | An argument has the wrong type or value: an item without a Caliper `@context` or an `id`, data that JSON cannot write, a time not in the form, a token with a space, an `http` endpoint, an empty list, a size limit that is not a positive integer, or an envelope above `maxPayloadBytes` | Fix the input, or send fewer events and entities in each envelope. Nothing was sent                    |
-| `ServiceError`, status `0`         | The endpoint did not answer, or not within `timeoutMs`                                                                                                                                                                                                                                      | Check the address and the network. Resend the same events with a new `sendTime`                        |
+| `ServiceError`, status `0`         | `fetch` rejected, or the endpoint did not answer within `timeoutMs`, even with a `fetch` that ignores its signal                                                                                                                                                                            | Check the address and the network. Resend the same events with a new `sendTime`                        |
 | `ServiceError`, status 400 to 499  | The endpoint refused the envelope; `body` holds what it said                                                                                                                                                                                                                                | 401 is a bad token. 415 and 422 are an envelope that the endpoint cannot read. Resending does not help |
 | `ServiceError`, status 500 or more | The endpoint failed                                                                                                                                                                                                                                                                         | Resend the same events later with a new `sendTime`                                                     |
 | `ServiceError`, status 3xx         | The endpoint redirected                                                                                                                                                                                                                                                                     | Use the address it redirects to                                                                        |
-| The `reason` of the signal         | The caller aborted                                                                                                                                                                                                                                                                          | Nothing. The request may have reached the endpoint, so a resend can leave a copy                       |
+| The `reason` of the signal         | The caller aborted; before the call, no request is made                                                                                                                                                                                                                                     | Nothing. The request may have reached the endpoint, so a resend can leave a copy                       |
 
 `ServiceError.body` is text from the endpoint: log it as untrusted, and do not show it to a user.
 
@@ -176,9 +163,10 @@ into several envelopes is the host's: `sendCaliper` refuses an envelope that is 
 | The answer of the endpoint         | The endpoint                          | `ServiceError.body`, and nowhere else                        |
 
 The library stores nothing, logs nothing and sends nothing but the request. The actor of an event is an IRI that the host
-chooses: give an opaque identifier that the host keeps in its own records, such as `urn:uuid:` and a UUID, and never an
-email address, a name or an identifier that another service knows. The identifiers of events are UUIDs of the parts that the
-host gives, so do not put a secret in the parts.
+chooses: give an opaque identifier that the host keeps in its own records, such as `urn:uuid:` and a UUID, and never an email
+address, a name or an identifier that another service knows. The identifiers of events are UUIDs of the parts that the host
+gives, so do not put a secret in the parts. A `SystemIdentifier` can carry an email address or an LTI user id: send one only
+when the endpoint is meant to hold it.
 
 ## Not included
 

@@ -63,12 +63,14 @@ ROLES.includes("Instructor#TeachingAssistant"); // => true
 | Without an `id`     | `SystemIdentifier`, `TextPositionSelector`                                                                                                                                                                                        |
 
 A property takes a class of entity as an object or as its IRI, and every class below it: a property that takes an `Agent`
-takes a `Person`, an `Organization`, a `CourseSection` and the other subtypes. `AGENT_TYPES`, `ORGANIZATION_TYPES`,
-`COURSE_OFFERING_TYPES`, `DIGITAL_RESOURCE_TYPES`, `QUESTION_TYPES` and `SCALE_TYPES` list the classes of those ranges, as do
-`ASSIGNABLE_TYPES` (the assignable digital resources), `MEDIA_OBJECT_TYPES`, `SESSION_TYPES` (`Session`, `LtiSession`),
-`RESPONSE_TYPES` and `ANNOTATION_TYPES`. Two vocabularies belong to the Library Use Profile: `SYNCHRONICITIES`
-(`synchronous`, `asynchronous`, `both`) says how a library activity was meant to be consumed, and `ACCESS_FORMS` (`physical`,
-`digital`) says how a library resource is reached.
+takes a `Person`, an `Organization`, a `CourseSection` and the other subtypes.
+
+| Export                                                                                                                  | Lists                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `AGENT_TYPES`, `ORGANIZATION_TYPES`, `COURSE_OFFERING_TYPES`, `DIGITAL_RESOURCE_TYPES`, `QUESTION_TYPES`, `SCALE_TYPES` | The classes of each range                                                             |
+| `ASSIGNABLE_TYPES`, `MEDIA_OBJECT_TYPES`, `SESSION_TYPES`, `RESPONSE_TYPES`, `ANNOTATION_TYPES`                         | The assignable digital resources, media objects, sessions, responses and annotations  |
+| `SYNCHRONICITIES`                                                                                                       | `synchronous`, `asynchronous`, `both`: how a library activity is meant to be consumed |
+| `ACCESS_FORMS`                                                                                                          | `physical`, `digital`: how a library resource is reached                              |
 
 ## The events
 
@@ -110,8 +112,7 @@ The class of a column takes every class below it: a `GradeEvent` takes any agent
 and `participationMode`, `forCourse` and `arrivalTime` to its participation event.
 
 `readEvent(value, options?)` reads an event as `readEntity` reads an entity: the context, the `type` that chooses the class, every
-property, every entity inside it, and the rules above. The rules of the profile tables, which entity goes with which action across
-events, are not read here. With `{ version: "1.1" }` both readers read a document of Caliper 1.1 into the same types ([Caliper
+property, every entity inside it, and the rules above. The rules of the profile tables are [judged](./validate.md), not read. With `{ version: "1.1" }` both readers read a document of Caliper 1.1 into the same types ([Caliper
 1.1](./versions.md)); `CALIPER_1_1_CONTEXT` names its context and `CALIPER_VERSIONS` the two versions.
 
 ```ts

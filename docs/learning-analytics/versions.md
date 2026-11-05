@@ -1,8 +1,8 @@
 # Caliper 1.1
 
-The package writes Caliper 1.2 and reads Caliper 1.1. An endpoint that old sensors still send to takes their envelopes, and the
-readers take their events and entities into the same model as 1.2, so that a host handles one set of types. Nothing writes 1.1:
-`buildEvent` and `sendCaliper` produce 1.2.
+The package writes Caliper 1.2 and reads Caliper 1.1: an endpoint takes the envelopes of older sensors, and the readers take
+their events and entities into the model of 1.2, so a host handles one set of types. `buildEvent` and `sendCaliper` produce 1.2
+only.
 
 ```mermaid
 flowchart TD
@@ -118,8 +118,8 @@ the envelope.
 
 ## Limits
 
-The limits of [receiving events](./endpoint.md) hold for both versions: 1,048,576 bytes, 64 levels, 1,000,000 tokens and 1,000
-findings. The memory of a 1.1 reading is that of a 1.2 reading.
+The limits of [receiving events](./endpoint.md#options) hold for both versions, and a 1.1 reading takes the memory of a 1.2
+reading.
 
 ## Not included
 

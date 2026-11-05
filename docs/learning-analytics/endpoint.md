@@ -164,15 +164,8 @@ down), `caliperSupportedVersions` (the contexts of `versions`, in that order) an
 
 ## Limits
 
-| Limit                    | Value     | Refused with                |
-| ------------------------ | --------- | --------------------------- |
-| Bytes of the body        | 1,048,576 | 413                         |
-| Levels of JSON           | 64        | 413                         |
-| Tokens of JSON           | 1,000,000 | 413                         |
-| Findings                 | 1,000     | The list stops, and says so |
-| Characters of a `detail` | 500       | Cut                         |
-
-The limits bound parsing, and not reading: the host caps the read of the request before it builds the `HttpRequest`.
+Besides `maxPayloadBytes`, `maxTokens` and `maxFindings`, JSON nests at most 64 levels (413), and a `detail` is cut at 500
+characters. The limits bound parsing, not reading: the host caps the read of the request before it builds the `HttpRequest`.
 
 ## Failure paths
 

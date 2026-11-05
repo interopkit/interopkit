@@ -1,6 +1,8 @@
 # Performance of learning-analytics
 
-What the hot paths of `@interopkit/learning-analytics` cost, how much each entry point adds to a bundle, and the heap that each reader of untrusted input needs on its worst input. A budget holds each number and fails a gate of CI: `pnpm bench` for the time, `pnpm test` for the size and the heap. That the package does what it says is in [evidence](evidence.md).
+The time of the hot paths of `@interopkit/learning-analytics`, the size of each entry point, and the heap of each reader of
+untrusted input at its worst input. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test` for the size and
+the heap.
 
 ```mermaid
 flowchart LR
@@ -32,21 +34,22 @@ of a time holds for the class of the runner.
 | `handleCaliperRequest` of the envelope         |          25.1–37.5 ms |      200 ms | `JSON.parse` of the text, 3.5–5.0 ms    |   6.38–7.70 |     40 |
 | `handleCaliperRequest` of the envelope         |          25.1–37.5 ms |      200 ms | the draft 4 schemas                     | 0.024–0.046 |      1 |
 
-A ratio to a schema is parity or better, as the design asks; a ratio to the JSON is five times the highest ratio measured on the runner and on a laptop, rounded up to one significant digit, and a time is five times the fastest sample of the runner, rounded up to one
-significant digit. The schemas of 1.1 try the `oneOf` of every class at each level, so one `Message` event takes about 90 ms.
-The reader of a time reads the fields of `YYYY-MM-DDTHH:mm:ss.SSSZ` by their places and the days of the month, and the endpoint
-reads the items that `JSON.parse` made of the body without copying them again: against the build before, alternated in one
-process, `readEnvelope` takes 0.71 to 0.78 of its time, `handleCaliperRequest` 0.65 to 0.70, `buildEvent` 0.70 to 0.95,
-`readEntity` 0.82 to 0.92, and every fixture of `caliper-spec`, in both versions, reads to the same value and the same findings.
+A ratio to a schema is parity or better; a ratio to the JSON is five times the highest measured on the runner and on a laptop,
+and a time five times the fastest sample of the runner, each rounded up to one significant digit. The schemas of 1.1 try the
+`oneOf` of every class at each level, so one `Message` event takes about 90 ms.
+
+| Choice                                                                                                                                                                                                    | Against a build without it, alternated in one process                                                                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The reader of a time reads the fields of `YYYY-MM-DDTHH:mm:ss.SSSZ` by their places and the days of the month; the endpoint reads the items that `JSON.parse` made of the body without copying them again | `readEnvelope` takes 0.71 to 0.78 of its time, `handleCaliperRequest` 0.65 to 0.70, `buildEvent` 0.70 to 0.95, `readEntity` 0.82 to 0.92; every fixture of `caliper-spec`, in both versions, reads to the same value and findings |
+
 What remains is the schemas of valibot, the copy of a host's value, and the counts of the text in `@interopkit/core`; the copy
 and the refusal of the names of the prototype chain are timed in [core](../core/performance.md).
 
 ## Size
 
 `size.test.ts` bundles each entry point alone with `scripts/entry-size.ts`: esbuild, minified, with every dependency inside. It
-fails above the budget after gzip, or when an entry point holds a module that its budget does not list.
-
-Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 percent.
+fails above the budget after gzip, or when an entry point holds a module that its budget does not list. Gzip is measured on
+Node.js 22; other versions differ by up to 1 percent.
 
 | Entry point                               |  Bytes |   Gzip | Budget | Holds, besides `@interopkit/core` and valibot                 |
 | ----------------------------------------- | -----: | -----: | -----: | ------------------------------------------------------------- |
