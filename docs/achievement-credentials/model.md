@@ -24,16 +24,8 @@ flowchart TD
   accepted --> validate
 ```
 
-| Module    | Holds                                                                                                                 |
-| --------- | --------------------------------------------------------------------------------------------------------------------- |
-| `model`   | The types of the classes, the vocabularies as tuples with their types, `CONTEXTS`, `CREDENTIAL_KINDS`, `ENTITY_KINDS` |
-| `read`    | `readCredential`, `readEntity`, `validateCredential`, `validateEntity`, `ReadOptions`                                 |
-| `issue`   | The builders, the identity hash and the CASE alignment: see [Building credentials and comparing them](issue.md)       |
-| `compare` | `isSameCredential`, `selectNewerCredential`, `summarizeCredential`: see the same guide                                |
-
-All of them come from `@interopkit/achievement-credentials`. The package depends on `@interopkit/core` for the errors, the
-formats, the copy of JSON and the findings, and on `valibot` for the schemas. Its test suite reads the schemas of 1EdTech with
-`@cfworker/json-schema`, derives its generators from them, and compares every verdict.
+`model` and `read` export these from `@interopkit/achievement-credentials`; the builders and comparison are in
+[Building credentials and comparing them](issue.md).
 
 ## Quick start
 
@@ -159,21 +151,21 @@ the text that it parses. The depth limit keeps a hostile chain of `parentOrg` or
 
 ## Errors
 
-| Case                                                                                  | Result                                                                                                                                                                                        |
-| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `readCredential` or `readEntity` is given a value that has an error                   | `DataError`: `The credential is invalid at id: expected a string, found 5. 1 more error: validateCredential lists every finding.` Fix the data, or ask for the kind it is with `options.kind` |
-| `options` is not an object, has a property other than `kind`, or `kind` is not listed | `DataError`: `The read options is invalid at kind: expected "AchievementCredential", "EndorsementCredential", "ClrCredential" or "VerifiableCredential", found "Badge".`                      |
-| The kind of `readEntity` or `validateEntity` is not one of `ENTITY_KINDS`             | `DataError` that lists the kinds                                                                                                                                                              |
-| `validateCredential` or `validateEntity` is given a value that is not an object       | The findings. It does not throw                                                                                                                                                               |
+| Case                                                                                  | Result                                                                                                                                                                                        | What to do                                                                  |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `readCredential` or `readEntity` is given a value that has an error                   | `DataError`: `The credential is invalid at id: expected a string, found 5. 1 more error: validateCredential lists every finding.` Fix the data, or ask for the kind it is with `options.kind` | List every finding with `validateCredential`, or read with the `kind` it is |
+| `options` is not an object, has a property other than `kind`, or `kind` is not listed | `DataError`: `The read options is invalid at kind: expected "AchievementCredential", "EndorsementCredential", "ClrCredential" or "VerifiableCredential", found "Badge".`                      | Pass `{ kind }` with a listed kind, or no options                           |
+| The kind of `readEntity` or `validateEntity` is not one of `ENTITY_KINDS`             | `DataError` that lists the kinds                                                                                                                                                              | Pass one of `ENTITY_KINDS`                                                  |
+| `validateCredential` or `validateEntity` is given a value that is not an object       | The findings. It does not throw                                                                                                                                                               | Nothing: read the findings                                                  |
 
 ## Not included
 
-| Not included                                                  | Why                                                                                                     |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Checking a proof, a status, a key or an issuer                | Verification belongs to the units that follow; the readers check the shape and the rules of the subject |
-| JSON-LD processing                                            | The readers read the compacted form as JSON, as the specification allows                                |
-| A text as a map of languages, or a context as a single value  | See the differences below                                                                               |
-| Reading a value that is wrong, to recover what is right in it | A value with an error is not returned; `validateCredential` says where to look                          |
+| Not included                                                  | Why                                                                                                                                                                                    |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Checking a proof, a status, a key or an issuer                | [Keys](keys.md), [JWT](jwt.md), [Data Integrity](data-integrity.md), [status](status.md) and [verification](verify.md) do it; the readers check the shape and the rules of the subject |
+| JSON-LD processing                                            | The readers read the compacted form as JSON, as the specification allows                                                                                                               |
+| A text as a map of languages, or a context as a single value  | See the differences below                                                                                                                                                              |
+| Reading a value that is wrong, to recover what is right in it | A value with an error is not returned; `validateCredential` says where to look                                                                                                         |
 
 ## Differences from the references
 

@@ -57,16 +57,16 @@ The counts are those of the run of 2026-11-04 that [the README of the suites](..
 which `scripts/test/w3c-suites.test.ts` holds equal to `validation/w3c-suites/suites.lock.json`.
 
 Every test that fails is listed in `validation/w3c-suites/suites.lock.json` with its reason, the run fails when a listed test
-passes, and a suite of another size fails it. A test that the package could fail on a credential of Open Badges or CLR is a
-fault of the package and is fixed there; the first runs found these:
+passes, and a suite of another size fails it. A test that a credential of Open Badges or CLR could fail is a fault of the
+package; these cases of the suites hold it:
 
-| What the suite found                                                                                  | What the package does now                                                                                     |
-| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| An `ecdsa-sd-2023` base proof of a credential whose subject holds only its `id` failed                | The default mandatory pointers name the subject and an `issuer` that is an address as wholes                  |
-| A credential with an empty `credentialSubject` was issued                                             | `subject-empty` is an error of the readers                                                                    |
-| Related resources of another form than the data model gives them were issued                          | `related-resource-form`, `-id`, `-duplicate` and `-digest` are errors of the readers                          |
-| A credential that ends before it begins was issued and verified                                       | `validity-period` is an error of the readers, under both data models                                          |
-| A proof that names a `previousProof` verified as if it named none, and then a proof chain was refused | A proof of a chain is checked over the credential with the proofs that it names, and counts only when they do |
+| Case of the suites                                                              | What the package does                                                                         |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| An `ecdsa-sd-2023` base proof of a credential whose subject holds only its `id` | The default mandatory pointers name the subject and an `issuer` that is an address as wholes  |
+| A credential with an empty `credentialSubject`                                  | `subject-empty` is an error of the readers, so it is not issued                               |
+| Related resources of another form than the data model gives them                | `related-resource-form`, `-id`, `-duplicate` and `-digest` are errors of the readers          |
+| A credential that ends before it begins                                         | `validity-period` is an error of the readers, under both data models                          |
+| A proof that names a `previousProof`                                            | It is checked over the credential with the proofs that it names, and counts only when they do |
 
 The 18 tests that do not apply, and the reason of each group, are in [the README of the suites](../../validation/w3c-suites/README.md#what-the-suites-ask-that-open-badges-does-not):
 Verifiable Presentations (7), credentials that Open Badges itself narrows (7), the digest of a related resource (1) and three

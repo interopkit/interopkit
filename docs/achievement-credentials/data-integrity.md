@@ -246,26 +246,26 @@ credential with a proof is also counted against `maxJsonLdTokens` before any pro
 as objects can need a higher value; a CLR whose credentials are compact JWS counts each as one token.
 
 The canonicalization of the adopted cryptosuites has no bound of its own, and the work factor of `rdf-canonize` allows one run of
-Hash N-Degree Quads for each blank node that looks like another, with each run copying its path: a list of 5,000 items took 1.7
-seconds and 900 MiB. The package canonicalizes with a fixed count of 1,000 runs instead, as `selective-disclosure` does. The
+Hash N-Degree Quads for each blank node that looks like another, with each run copying its path, so a list of 5,000 items would take
+1.7 seconds and 900 MiB. The package canonicalizes with a fixed count of 1,000 runs instead, as `selective-disclosure` does. The
 examples of Open Badges 3.0 and CLR 2.0 need at most 16. A test pins it with a clique of blank nodes, with a graph of 1,500 alike
 nodes that the allowance of the library would let pass, and with a list of 5,000 items whose peak of memory it measures.
 
 Each proof is checked on its own and may name another key to fetch, so the work and the requests grow with their number: 5,000
-values of one property and 300 proofs took 95 seconds. Only the first four proofs are looked at, and the credential is
+values of one property and 300 proofs would take 95 seconds. Only the first four proofs are looked at, and the credential is
 canonicalized once for all of them. Bounded as it is, a credential at the token limit costs about two seconds to verify.
 
 ## Errors
 
-| Case                                                                                                        | Result                                                                                                                                   |
-| ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| An option or an argument has the wrong type; a signer of another algorithm or with no `keyId`               | `DataError` that names it                                                                                                                |
-| The credential to sign is not valid, or its graph cannot be canonicalized                                   | `DataError`: `The credential is invalid ...`, `... cannot be processed as JSON-LD: ...`                                                  |
-| The credential has more tokens than `maxJsonLdTokens`, or needs more than 1,000 runs of Hash N-Degree Quads | While signing, deriving or validating: `LimitError` with the limit and its value. While verifying: `valid: false` with the same sentence |
-| A context has no pin or is not the pinned document                                                          | While signing or deriving: `DataError`. While verifying: `valid: false`                                                                  |
-| A context, a key or what the issuer publishes cannot be fetched                                             | `ServiceError`                                                                                                                           |
-| A disclosure hides what the model requires                                                                  | `DataError` that names the pointers to add                                                                                               |
-| The signal aborts                                                                                           | The `reason` of the signal                                                                                                               |
+| Case                                                                                                        | Result                                                                                                                                   | What to do                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| An option or an argument has the wrong type; a signer of another algorithm or with no `keyId`               | `DataError` that names it                                                                                                                | Fix the call: the message names the value                                                                                        |
+| The credential to sign is not valid, or its graph cannot be canonicalized                                   | `DataError`: `The credential is invalid ...`, `... cannot be processed as JSON-LD: ...`                                                  | Fix the credential with `validateCredential`, or define its terms in a context                                                   |
+| The credential has more tokens than `maxJsonLdTokens`, or needs more than 1,000 runs of Hash N-Degree Quads | While signing, deriving or validating: `LimitError` with the limit and its value. While verifying: `valid: false` with the same sentence | Raise `maxJsonLdTokens` for a credential you trust, such as a CLR of many embedded credentials; a graph past the runs is refused |
+| A context has no pin or is not the pinned document                                                          | While signing or deriving: `DataError`. While verifying: `valid: false`                                                                  | Add the context to `contexts` with its pin, or ask the issuer for the pinned one                                                 |
+| A context, a key or what the issuer publishes cannot be fetched                                             | `ServiceError`                                                                                                                           | Check the address and the network; the verification is `unavailable` until it can be read                                        |
+| A disclosure hides what the model requires                                                                  | `DataError` that names the pointers to add                                                                                               | Add the pointers that the message names to `selectivePointers`                                                                   |
+| The signal aborts                                                                                           | The `reason` of the signal                                                                                                               | Nothing: the caller ended the wait                                                                                               |
 
 ## Not included
 

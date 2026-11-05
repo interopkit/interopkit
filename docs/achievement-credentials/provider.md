@@ -309,13 +309,13 @@ A body at the limits that holds the most objects that the tokens allow ends with
 
 ## Errors
 
-| Case                                                                                                                   | Result                                                                                               |
-| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| The request is not an `HttpRequest`                                                                                    | `DataError` from `checkHttpRequest`                                                                  |
-| An option is missing, of the wrong type, or unknown, or an option of `verify` is not valid                             | `DataError`: `The provider options is invalid at pageSize: expected a value of at least 1, found 0.` |
-| The service description is not one, has an address that is not `https`, or lacks a scope of the API, when it is served | `DataError` that names what it lacks                                                                 |
-| A port breaks its contract                                                                                             | `DataError` that names the port                                                                      |
-| The `signal` aborts                                                                                                    | The request rejects with the reason of the signal                                                    |
+| Case                                                                                                                   | Result                                                                                               | What to do                                                                     |
+| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| The request is not an `HttpRequest`                                                                                    | `DataError` from `checkHttpRequest`                                                                  | Build the request as [the http guide](../core/http.md) shows                   |
+| An option is missing, of the wrong type, or unknown, or an option of `verify` is not valid                             | `DataError`: `The provider options is invalid at pageSize: expected a value of at least 1, found 0.` | Fix the option that the message names                                          |
+| The service description is not one, has an address that is not `https`, or lacks a scope of the API, when it is served | `DataError` that names what it lacks                                                                 | Serve the description that `discoverService` reads, with the scopes of the API |
+| A port breaks its contract                                                                                             | `DataError` that names the port                                                                      | Fix the port: a broken contract is a bug of the host                           |
+| The `signal` aborts                                                                                                    | The request rejects with the reason of the signal                                                    | Nothing: the caller ended the wait                                             |
 
 ## Not included
 

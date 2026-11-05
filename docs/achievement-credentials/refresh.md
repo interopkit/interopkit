@@ -98,11 +98,11 @@ host routes the requests that reach it.
 
 ## Errors
 
-| Case                                                                                                 | Result                         |
-| ---------------------------------------------------------------------------------------------------- | ------------------------------ |
-| An option has the wrong type; the service is not HTTPS; the answer is neither JSON nor a compact JWS | `DataError`                    |
-| The service fails, answers a status other than 200, redirects or sends too much                      | `ServiceError` with the status |
-| The signal aborts                                                                                    | The `reason` of the signal     |
+| Case                                                                                                 | Result                         | What to do                                   |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------- |
+| An option has the wrong type; the service is not HTTPS; the answer is neither JSON nor a compact JWS | `DataError`                    | Fix the call: the message names the value    |
+| The service fails, answers a status other than 200, redirects or sends too much                      | `ServiceError` with the status | Retry later, or keep the credential you hold |
+| The signal aborts                                                                                    | The `reason` of the signal     | Nothing: the caller ended the wait           |
 
 A failed refresh does not make a credential invalid: the verifier continues with the credential it has and reports the
 `refresh` check as `unavailable` (Open Badges 9.1).

@@ -1,18 +1,10 @@
 # Architecture of achievement-credentials
 
-`@interopkit/achievement-credentials` has thirteen modules that share one model. `model` holds the types, the vocabularies, the
-findings and the terms of verification. `read` turns untrusted JSON into the model. `issue` writes credentials from their parts,
-`compare` looks at credentials, `baking` writes a credential into an image and reads it out, and `client` calls the APIs of a
-server. `keys` resolves the keys that verify a proof and checks that a key belongs to an issuer, `jwt` signs and reads a
-credential as a JSON Web Token, and `data-integrity` secures a credential with a Data Integrity proof and loads contexts at their
-pins. `status` keeps and checks the status lists of credentials, `refresh` gets and answers the refresh of a credential, `verify`
-joins the checks of Open Badges 9 and CLR 8, and those of Open Badges 2.0, and `provider` answers the APIs as a server.
-`read` imports only `model` and `@interopkit/core`, `issue`, `compare`, `baking` and `client` import those and `read` and never
-each other, `keys` imports `model` and `core`, `jwt` imports those and `read` and `keys`, `data-integrity` imports those three as
-well and never `jwt`, `status` builds on those and loads `data-integrity` only when a Data Integrity proof is asked for, `refresh`
-imports `model` and `core` only, `verify` builds on every module but `baking` and `client` and loads `data-integrity` only when a Data
-Integrity proof is asked for, `provider` imports `model`, `read`, `jwt` and the `internal.ts` of `verify` and loads `verify` itself only
-when the host asks it to verify, and `model` imports nothing of the family.
+`@interopkit/achievement-credentials` has thirteen modules over one model. `read` turns untrusted JSON into the model; `issue`,
+`compare`, `baking` and `client` build on it and never import one another; `keys`, `jwt` and `data-integrity` sign and verify;
+`status`, `refresh` and `verify` check a credential, and `provider` answers the APIs as a server. `status` and `verify` load
+`data-integrity`, and `provider` loads `verify`, only when a call needs it, so a host that verifies only JWTs never loads JSON-LD.
+The table of [AGENTS.md](../../AGENTS.md#dependencies) gives the imports of each module, and Biome enforces them.
 
 ```mermaid
 flowchart BT
@@ -112,19 +104,21 @@ flowchart BT
 of a date and a date and time, the copy of JSON within a depth limit, and the conversion of the issues of a parse to findings
 that own their rule names.
 
-Each module has an `index.ts`, its public API. `baking` and `client` are entry points of the package, because an application that
-needs no images should not load an XML parser, and one that calls no server should not load a client. `read`, `keys`, `jwt`,
-`data-integrity`, `status`, `refresh` and `verify` have an `internal.ts` for what the other modules and the tests share and the
-package does not export: the schemas of `read`, which the tests compare with the schemas of 1EdTech and the builders write with,
-the public JWK, the thumbprint and the binding of `keys`, the credential that a JWS carries, the readers of a proof, the status
-check and the refresh with the settings that a verification has checked, and what the provider checks before it loads the
-verifier. Files directly in `src/` serve several modules: the text of JSON under its limits, base64url, the form of a compact
-JWS, the schemas of the options that several functions take (`option-schemas.ts`), and the settings of a verification
-(`TrustSettings` of `option-checks.ts`), which each public function reads once from its options with their defaults and hands
-to the functions it calls. Every public function declares the options it takes in one strict schema, which refuses every other
-option, of the right type or not. The
-cache of shared loads behind the key resolver and the status lists is `createKeyedCache` of `@interopkit/core`. `pnpm check:standards` and Biome keep modules from
-importing by a deep path or against the layers.
+Each module has an `index.ts`, its public API. `baking` and `client` are entry points of their own, so an application that needs
+no images loads no XML parser, and one that calls no server loads no client. `read`, `keys`, `jwt`, `data-integrity`, `status`,
+`refresh` and `verify` have an `internal.ts` that the other modules and the tests share and the package does not export: the
+schemas of `read`, which the tests compare with those of 1EdTech and the builders write with; the public JWK, the thumbprint and
+the binding of `keys`; the credential that a JWS carries; the readers of a proof; the status check and the refresh with the
+settings that a verification has checked; and what the provider checks before it loads the verifier.
+
+| File in `src/`                               | Serves several modules with                                                                                                                                     |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The text of JSON, base64url, the compact JWS | Reading JSON under its limits, and the form of a JWS                                                                                                            |
+| `option-schemas.ts`                          | The schemas of the options that several functions take; every public function declares its options in one strict schema, which refuses every other option       |
+| `option-checks.ts`                           | `TrustSettings`, the settings of a verification, which each public function reads once from its options with their defaults and hands to the functions it calls |
+
+The cache of shared loads behind the key resolver and the status lists is `createKeyedCache` of `@interopkit/core`.
+`pnpm check:standards` and Biome keep modules from importing by a deep path or against the layers.
 
 ## Reading
 

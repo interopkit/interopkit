@@ -310,11 +310,11 @@ revocation list the `status` `unavailable`, which `unavailable: "warn"` accepts.
 
 ## Errors
 
-| Case                                                                               | Result                                    |
-| ---------------------------------------------------------------------------------- | ----------------------------------------- |
-| The input is no string and no object, or an option has the wrong type              | `DataError`                               |
-| A credential that is not valid, a proof that does not verify, a service that fails | A check that is `failed` or `unavailable` |
-| The signal aborts                                                                  | The `reason` of the signal                |
+| Case                                                                               | Result                                    | What to do                                                     |
+| ---------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------- |
+| The input is no string and no object, or an option has the wrong type              | `DataError`                               | Fix the call: the message names the value                      |
+| A credential that is not valid, a proof that does not verify, a service that fails | A check that is `failed` or `unavailable` | Read the checks: each says what failed or could not be fetched |
+| The signal aborts                                                                  | The `reason` of the signal                | Nothing: the caller ended the wait                             |
 
 A service that fails is never an error of the call: it makes its check `unavailable`.
 

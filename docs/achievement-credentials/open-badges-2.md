@@ -167,11 +167,11 @@ its findings stop at the limit.
 
 ## Errors
 
-| Case                                                                          | Result                                                                                                                                                       |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `readCredential` is given an assertion with an error                          | `DataError`: `The credential is invalid at badge: is the IRI of the BadgeClass, which is not embedded: embed it, or verify the assertion, which fetches it.` |
-| `summarizeCredential` or `matchesIdentifier` is given a value that is not one | `DataError` that names the path of the first error                                                                                                           |
-| `validateCredential` is given any value                                       | The findings. It does not throw                                                                                                                              |
+| Case                                                                          | Result                                                                                                                                                       | What to do                                                   |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `readCredential` is given an assertion with an error                          | `DataError`: `The credential is invalid at badge: is the IRI of the BadgeClass, which is not embedded: embed it, or verify the assertion, which fetches it.` | Embed the documents, or verify the badge, which fetches them |
+| `summarizeCredential` or `matchesIdentifier` is given a value that is not one | `DataError` that names the path of the first error                                                                                                           | Pass what `readCredential` returns                           |
+| `validateCredential` is given any value                                       | The findings. It does not throw                                                                                                                              | Nothing: read the findings                                   |
 
 ## Not included
 

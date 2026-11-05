@@ -53,12 +53,15 @@ of the fixtures, on the vectors of the W3C and on millions of generated texts:
 | The base64url of a JWS that is signed | By a table in `core`            | A string of the bytes as arguments, and `btoa`: `signCredentialJwt` of a CLR of 20, with its credentials, 1.42 ms against 0.91 |
 | The parts of a JWS that is read       | Decoded in one reading          | Three copies of the text first: `readCredentialJwt` of the CLR 231 µs against 215                                              |
 
-Where a ratio is above parity, the package does work that the reference does not. `verifyProof` and `addProof` are the same
-libraries of the Interop Alliance with a bound on canonicalization, and their 1.01 to 1.11 is the reading of the credential in the
-model and its limits; each context is copied for each load, so that no caller can change what the loader keeps. `verifyCredentialStatus`
-also reads the list credential in the model, counts its tokens and binds its key to the issuer. The upsert reads the CLR in the model
-after `JSON.parse`; the baking of a PNG reads and copies the credential it bakes, and the reading of a PNG checks the CRC of its chunk.
-The package states no budget in time: a ratio holds on any machine, as in `tool-integration`.
+Where a ratio is above parity, the package does work that the reference does not; no budget is in time, since a ratio holds on
+any machine.
+
+| Path                                     | Work the reference does not do                                                                                                                                                                                               |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verifyProof`, `addProof` (1.01 to 1.11) | The same libraries of the Interop Alliance, with a bound on canonicalization, the reading of the credential in the model and its limits; each context is copied for each load, so no caller can change what the loader keeps |
+| `verifyCredentialStatus`                 | Reads the list credential in the model, counts its tokens and binds its key to the issuer                                                                                                                                    |
+| The upsert of the provider               | Reads the CLR in the model after `JSON.parse`                                                                                                                                                                                |
+| The baking of a PNG, and its reading     | Reads and copies the credential it bakes; checks the CRC of the chunk                                                                                                                                                        |
 
 ## Size
 

@@ -1,10 +1,8 @@
 # Building credentials and comparing them
 
-`@interopkit/achievement-credentials` writes the credentials that an issuer awards and looks at the credentials that a host
-holds. Three builders write an AchievementCredential, an EndorsementCredential and a ClrCredential around the parts that the
-issuer gives, and check what they wrote as `readCredential` does. `hashIdentifier` and `matchesIdentifier` hash and match the
-recipient of a credential. `buildCaseAlignment` aligns an achievement to an item of a CASE framework. `isSameCredential` and
-`selectNewerCredential` compare two credentials as Open Badges 10 asks, and `summarizeCredential` gives what a wallet shows.
+`@interopkit/achievement-credentials` writes the credentials that an issuer awards, around the parts the issuer gives, and checks
+them as `readCredential` does. It also hashes and matches recipients, aligns an achievement to a CASE item, compares two
+credentials as Open Badges 10 asks, and summarizes one for a wallet.
 
 ```mermaid
 flowchart LR
@@ -17,11 +15,6 @@ flowchart LR
   credential --> signer["A signer adds the proof"]
   credential --> compare["isSameCredential, selectNewerCredential,<br/>summarizeCredential"]
 ```
-
-| Module    | Holds                                                                                                                                                     |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `issue`   | `buildAchievementCredential`, `buildEndorsementCredential`, `buildClrCredential`, `buildCaseAlignment`, `hashIdentifier`, `matchesIdentifier`, the inputs |
-| `compare` | `isSameCredential`, `selectNewerCredential`, `summarizeCredential`, `CredentialSummary`                                                                   |
 
 All of them come from `@interopkit/achievement-credentials`. Nothing here reads a clock, draws a random number or makes a
 request: the dates are the issuer's, and the hash is a function of its arguments.
@@ -117,41 +110,34 @@ is needed.
 
 ## Identities
 
-`hashIdentifier(value, salt)` returns `sha256$` and the SHA-256 of the identifier followed by the salt, in lower-case
-hexadecimal. `matchesIdentifier(identity, known)` takes the recipient of a credential, an `IdentityObject` of Open Badges 3.0 or
-CLR 2.0 or an `IdentityObjectV2` of an Open Badges 2.0 assertion, and the identity that the caller knows. It is true when the
-types are the same and the value matches: a plain value must be equal, and a hashed one is compared with the hash of the known
-value and the salt of the recipient, in the algorithm the hash names (`sha256$` or `md5$`) and in either case of the digits.
+| Function                             | Does                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hashIdentifier(value, salt)`        | `sha256$` and the SHA-256 of the identifier followed by the salt, in lower-case hexadecimal                                                                                                                                                                                                                                                                                                  |
+| `matchesIdentifier(identity, known)` | Whether a recipient (an `IdentityObject` of Open Badges 3.0 or CLR 2.0, or an `IdentityObjectV2` of an Open Badges 2.0 assertion) is the identity the caller knows: the types are the same, and a plain value is equal, or a hashed one equals the hash of the known value with the recipient's salt, in the algorithm the hash names (`sha256$` or `md5$`) and in either case of the digits |
+
 `md5$`, which Open Badges 2.0 and 3.0 both name, is read and never written. The type of a 2.0 recipient is one of
-`IDENTITY_TYPES_V2` (`id`, `email`, `url`, `telephone`), and [Reading Open Badges 2.0](open-badges-2.md) reads the assertion that
-holds it.
+`IDENTITY_TYPES_V2` (`id`, `email`, `url`, `telephone`); [Reading Open Badges 2.0](open-badges-2.md) reads the assertion that holds
+it.
 
 ## Comparing
 
-`isSameCredential(a, b)` is true when the two credentials have the same `id` and the same issuer, compared after the
-percent-encoded characters are unescaped and the white space around them is trimmed (Open Badges 10). A credential with no `id`
-is the same as none. `selectNewerCredential(a, b)` returns the one of two equal credentials with the later `validFrom`, compared as
-instants, so that an offset does not matter; when they are the same instant it returns the first. It returns the argument
-itself. Under the Verifiable Credentials Data Model 1.1 the later `issuanceDate` counts, so a store that keeps what a provider
-received compares the credentials of both models alike.
-
-`summarizeCredential(credential)` returns what a wallet shows: the `kind` (`badge`, `clr` or `endorsement`), the `name`,
-`description` and `image` of the credential or, for an achievement credential that has none, of its achievement, the `issuer`
-and its name, and the dates: `validFrom`, `validUntil` and, when the credential names one, the `awardedDate`, which a displayer
-shows as the date of issue since a reissue moves `validFrom` (OB B.1.2). It reads a credential under either Verifiable
-Credentials data model; `validFrom` is `issuanceDate` under 1.1.
+| Function                          | Does                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `isSameCredential(a, b)`          | True when the two have the same `id` and the same issuer, compared after percent-encoded characters are unescaped and the white space around them is trimmed (Open Badges 10). A credential with no `id` is the same as none                                                                                                                                                                                                       |
+| `selectNewerCredential(a, b)`     | The argument itself, of two equal credentials, with the later `validFrom` (`issuanceDate` under the Data Model 1.1), compared as instants so that an offset does not matter; the first when the instants are the same. A store compares the credentials of both models alike                                                                                                                                                       |
+| `summarizeCredential(credential)` | What a wallet shows, of a credential under either data model: the `kind` (`badge`, `clr` or `endorsement`); the `name`, `description` and `image` of the credential or, for an achievement credential that has none, of its achievement; the `issuer` and its name; `validFrom`, `validUntil`, and the `awardedDate` when there is one, which a displayer shows as the date of issue, since a reissue moves `validFrom` (OB B.1.2) |
 
 ## Errors
 
-| Case                                                                                                                           | Result                                                                                                                                                |
-| ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A builder is given an input with a fault, one of the properties it does not have included                                      | `DataError` that names every fault: `The input is invalid: id: expected a URI with a scheme ...; validFrom: expected a date and time ...`             |
-| The credential that a builder wrote has a fault, such as a subject with neither an `id` nor an `identifier`                    | `DataError`: `The credential is invalid: credentialSubject: has neither an id nor an identifier ...`                                                  |
-| An input nests more than 64 levels or holds what JSON cannot                                                                   | `DataError` that says where                                                                                                                           |
-| `hashIdentifier` or `matchesIdentifier` is given an argument of the wrong type                                                 | `DataError` that names it: `The identifier is invalid: expected a string, found 5.`                                                                   |
-| `isSameCredential` or `selectNewerCredential` is given a value that is not an object with an `issuer`                          | `DataError`: `The first credential is invalid: expected an object, found null.`                                                                       |
-| `selectNewerCredential` is given credentials that are not the same, or one with no `validFrom` that is a date and time         | `DataError`: `The credentials are not the same credential: they differ in id or in the id of the issuer.`                                             |
-| `summarizeCredential` is given a value that is not a credential, or a `VerifiableCredential` of no class of Open Badges or CLR | `DataError`, from the reader or: `The credential is a VerifiableCredential of no class that Open Badges or CLR defines, so there is nothing to show.` |
+| Case                                                                                                                           | Result                                                                                                                                                | What to do                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| A builder is given an input with a fault, one of the properties it does not have included                                      | `DataError` that names every fault: `The input is invalid: id: expected a URI with a scheme ...; validFrom: expected a date and time ...`             | Fix each property that the message names                                   |
+| The credential that a builder wrote has a fault, such as a subject with neither an `id` nor an `identifier`                    | `DataError`: `The credential is invalid: credentialSubject: has neither an id nor an identifier ...`                                                  | Give the subject an `id` or an `identifier`, or fix what the message names |
+| An input nests more than 64 levels or holds what JSON cannot                                                                   | `DataError` that says where                                                                                                                           | Pass plain JSON of at most 64 levels                                       |
+| `hashIdentifier` or `matchesIdentifier` is given an argument of the wrong type                                                 | `DataError` that names it: `The identifier is invalid: expected a string, found 5.`                                                                   | Fix the call: the message names the value                                  |
+| `isSameCredential` or `selectNewerCredential` is given a value that is not an object with an `issuer`                          | `DataError`: `The first credential is invalid: expected an object, found null.`                                                                       | Pass credentials as `readCredential` returns them                          |
+| `selectNewerCredential` is given credentials that are not the same, or one with no `validFrom` that is a date and time         | `DataError`: `The credentials are not the same credential: they differ in id or in the id of the issuer.`                                             | Compare only the same credential, with `isSameCredential` first            |
+| `summarizeCredential` is given a value that is not a credential, or a `VerifiableCredential` of no class of Open Badges or CLR | `DataError`, from the reader or: `The credential is a VerifiableCredential of no class that Open Badges or CLR defines, so there is nothing to show.` | Pass a credential of Open Badges or CLR                                    |
 
 ## Limits
 
@@ -161,12 +147,12 @@ Credentials data model; `validFrom` is `issuanceDate` under 1.1.
 
 ## Not included
 
-| Not included                            | Why                                                                                                    |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A proof, a key, a signature             | A signer adds the proof, in a later module; the builders write the credential that it signs            |
-| A clock: no `validFrom` is filled in    | The dates are the issuer's; a builder that read the clock would write a different credential each time |
-| An Open Badges 2.0 assertion            | 2.0 is read and verified, never issued                                                                 |
-| A random identifier: no `id` is made up | The address of a credential is the issuer's                                                            |
+| Not included                            | Why                                                                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| A proof, a key, a signature             | [JWT](jwt.md) and [Data Integrity](data-integrity.md) add the proof; the builders write the credential that it signs |
+| A clock: no `validFrom` is filled in    | The dates are the issuer's; a builder that read the clock would write a different credential each time               |
+| An Open Badges 2.0 assertion            | 2.0 is read and verified, never issued                                                                               |
+| A random identifier: no `id` is made up | The address of a credential is the issuer's                                                                          |
 
 ## Differences from the references
 

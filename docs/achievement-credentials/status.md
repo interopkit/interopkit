@@ -177,14 +177,14 @@ credential chose.
 ## Keeping list credentials
 
 `createStatusListCache({ clock, maxEntries })` keeps the list credentials that were fetched and verified, and the revocation lists
-of 1EdTech, by address. An entry expires at its `ttl` (the `ttl` of the subject in milliseconds; 300,000 when it gives none) or at
-its `validUntil` (its `expirationDate` under the Data Model 1.1), whichever comes first. Verifications that run together share one fetch, which runs to its own timeout, and a
-failure is not kept. The credential that the cache holds is the list credential and not its answer: its issuer is compared with
-each credential's issuer on every verification. A list is kept as the call that loaded it verified it, so it is kept by its address
-and by what decides whether its proof counts: the `keys`, `contexts` and `suites` of the call, told apart by identity, and its
-`allowUnboundKeys`, `legacyProofs`, `algorithms` and `clockSkewSeconds`. Calls of different policies may share one cache and never
-share a list, and calls that pass the same objects share their lists. A load runs without the `signal` of any caller, and each
-caller's wait ends when its own `signal` aborts, whatever a cache of the host does.
+of 1EdTech, by address.
+
+| Rule                | Value                                                                                                                                                                                                                                                                                                                            |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Expiry              | The `ttl` of the subject in milliseconds (300,000 when it gives none) or the `validUntil` (`expirationDate` under the Data Model 1.1), whichever comes first                                                                                                                                                                     |
+| Loads               | Verifications that run together share one fetch, which runs to its own timeout without any caller's `signal`; each caller's wait ends when its own `signal` aborts. A failure is not kept                                                                                                                                        |
+| What is kept        | The list credential, not its answer: its issuer is compared with each credential's issuer on every verification                                                                                                                                                                                                                  |
+| The key of an entry | The address and what decides whether its proof counts: the `keys`, `contexts` and `suites` of the call, by identity, and its `allowUnboundKeys`, `legacyProofs`, `algorithms` and `clockSkewSeconds`. Calls of different policies may share one cache and never share a list; calls that pass the same objects share their lists |
 
 | Option       | Meaning                            | Default        |
 | ------------ | ---------------------------------- | -------------- |
@@ -220,12 +220,12 @@ checks that it stops at the limit.
 
 ## Errors
 
-| Case                                                                                        | Result                                      |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| An option, a list or an input has the wrong type; a list is full; the signer has no `keyId` | `DataError` that names it                   |
-| The list credential cannot be fetched                                                       | `unavailable` with `STATUS_RETRIEVAL_ERROR` |
-| The list credential is not valid                                                            | `failed` with the code                      |
-| The signal aborts                                                                           | The `reason` of the signal                  |
+| Case                                                                                        | Result                                      | What to do                                              |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
+| An option, a list or an input has the wrong type; a list is full; the signer has no `keyId` | `DataError` that names it                   | Fix the call; for a full list, create another list      |
+| The list credential cannot be fetched                                                       | `unavailable` with `STATUS_RETRIEVAL_ERROR` | Retry later; the credential's status stays unknown      |
+| The list credential is not valid                                                            | `failed` with the code                      | Refuse the credential, or report the list to its issuer |
+| The signal aborts                                                                           | The `reason` of the signal                  | Nothing: the caller ended the wait                      |
 
 ## Not included
 

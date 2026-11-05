@@ -3,18 +3,10 @@
 Open Badges 3.0 and CLR 2.0 for JavaScript and TypeScript: the credential model, readers, issuing, Data Integrity and JWT
 proofs, status lists, verification, and the Open Badges and CLR APIs; reads and verifies Open Badges 2.0.
 
-It has the model of an achievement credential of Open Badges [3.0](https://www.imsglobal.org/spec/ob/v3p0/main/), of a CLR
-[2.0](https://www.imsglobal.org/spec/clr/v2p0/main/) and of the APIs that exchange them, under both versions of the Verifiable
-Credentials Data Model, and readers that check them against the published JSON schemas and the rules of the specifications.
-Validators list every finding. Builders write the credentials that an issuer awards, and functions hash the identity of a
-recipient, compare two credentials and summarize one for display. A credential can be baked into a PNG or an SVG image and read
-out of one, a client talks to the Open Badges and CLR APIs of a server, and a provider answers them as the server, over the
-host's stores. Keys resolve from DIDs and HTTPS documents, a key is bound to the issuer that publishes it, and a credential is
-signed and read as a JSON Web Token. A credential, its endorsements and the credentials of a CLR are verified as Open Badges and
-CLR say: the proof, the issuer's hold on the key, the status, the validity and the recipient. The readers also read [Open Badges
-2.0](https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html) assertions with their BadgeClass and issuer,
-which are read, found in images and verified, hosted or signed, and never written. It knows nothing of any product: the host
-says where a credential comes from and what it is for.
+It follows Open Badges [3.0](https://www.imsglobal.org/spec/ob/v3p0/main/) and CLR [2.0](https://www.imsglobal.org/spec/clr/v2p0/main/)
+under both versions of the Verifiable Credentials Data Model, and reads and verifies [Open Badges
+2.0](https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html), which it never writes. It knows nothing of any
+product: the host says where a credential comes from and what it is for.
 
 ```bash
 npm install @interopkit/achievement-credentials
@@ -167,24 +159,17 @@ needs Node.js 24 or later.
 
 ## Documentation
 
-[Choosing](https://interopkit.wakan.dev/_interopkit/achievement-credentials/choosing/) says when the package fits, when another library fits better,
-and what each has that the package lacks.
-
-[The model guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/model/) and
-[the builders guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/issue/) and
-[the baking guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/baking/) and
-[the client guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/client/) and
-[the provider guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/provider/) and
-[the guide of Open Badges 2.0](https://interopkit.wakan.dev/_interopkit/achievement-credentials/open-badges-2/) have the options with
-their defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and
-why, and the differences from the references.
-
-[The comparators](https://interopkit.wakan.dev/_interopkit/achievement-credentials/comparators/) map what the
-validator of 1EdTech and other verifiers of verifiable credentials do against the package.
-
-[The evidence guide](https://interopkit.wakan.dev/_interopkit/achievement-credentials/evidence/) shows what the package was checked against.
-[Performance](https://interopkit.wakan.dev/_interopkit/achievement-credentials/performance/) gives the speed of every hot path, the size of each entry point and the peak
-memory of each reader.
+| Page                                                                                                                                                                                                                                                               | Gives                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| [Architecture](https://interopkit.wakan.dev/_interopkit/achievement-credentials/architecture/)                                                                                                                                                                     | The modules, their layers and what each may import                                                                        |
+| [Model](https://interopkit.wakan.dev/_interopkit/achievement-credentials/model/), [issuing](https://interopkit.wakan.dev/_interopkit/achievement-credentials/issue/)                                                                                               | The readers, the validators and their rules; the builders, recipients and comparison                                      |
+| [Keys](https://interopkit.wakan.dev/_interopkit/achievement-credentials/keys/), [JWT](https://interopkit.wakan.dev/_interopkit/achievement-credentials/jwt/), [Data Integrity](https://interopkit.wakan.dev/_interopkit/achievement-credentials/data-integrity/)   | Resolving keys and binding them to the issuer, and the two kinds of proof                                                 |
+| [Status](https://interopkit.wakan.dev/_interopkit/achievement-credentials/status/), [refresh](https://interopkit.wakan.dev/_interopkit/achievement-credentials/refresh/), [verification](https://interopkit.wakan.dev/_interopkit/achievement-credentials/verify/) | Status lists, the refresh service, and every check of a credential                                                        |
+| [Baking](https://interopkit.wakan.dev/_interopkit/achievement-credentials/baking/)                                                                                                                                                                                 | Credentials in PNG and SVG images                                                                                         |
+| [Client](https://interopkit.wakan.dev/_interopkit/achievement-credentials/client/), [provider](https://interopkit.wakan.dev/_interopkit/achievement-credentials/provider/)                                                                                         | The two sides of the Open Badges and CLR APIs                                                                             |
+| [Open Badges 2.0](https://interopkit.wakan.dev/_interopkit/achievement-credentials/open-badges-2/)                                                                                                                                                                 | Reading and verifying 2.0 badges                                                                                          |
+| [Choosing](https://interopkit.wakan.dev/_interopkit/achievement-credentials/choosing/), [comparators](https://interopkit.wakan.dev/_interopkit/achievement-credentials/comparators/)                                                                               | When the package fits, and what the validator of 1EdTech and other verifiers have that it lacks                           |
+| [Evidence](https://interopkit.wakan.dev/_interopkit/achievement-credentials/evidence/), [performance](https://interopkit.wakan.dev/_interopkit/achievement-credentials/performance/)                                                                               | What it was checked against; the speed of every hot path, the size of each entry point and the peak memory of each reader |
 
 ## License
 
