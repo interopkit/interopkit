@@ -21,7 +21,7 @@ flowchart LR
 | 1EdTech public validator            | Application, Java                    | `67532ac`             | Apache-2.0   |     22 |     18 |      1 |        3 |       0 |
 | `openbadges-validator-core`         | Validator of Open Badges 2.0, Python | `0a66b52`, 2025-11-04 | Apache-2.0   |      9 |      5 |      0 |        4 |       0 |
 | `@digitalbazaar/vc`                 | Library, JavaScript                  | 7.3.0                 | BSD-3-Clause |      9 |      7 |      0 |        2 |       0 |
-| `@interop/verifier-core`            | Library, TypeScript                  | 3.9.0 (4.1.0 current) | MIT          |     13 |      7 |      1 |        5 |       0 |
+| `@interop/verifier-core`            | Library, TypeScript                  | 4.1.0                 | MIT          |     13 |      7 |      1 |        5 |       0 |
 | `@digitalcredentials/verifier-core` | Library, TypeScript                  | 1.0.0-beta.11         | MIT          |      6 |      4 |      0 |        2 |       0 |
 | `did-jwt-vc`                        | Library, TypeScript                  | 5.0.1                 | ISC          |      7 |      3 |      1 |        3 |       0 |
 | **All**                             |                                      |                       |              | **66** | **44** |  **3** |   **19** |   **0** |

@@ -3,7 +3,7 @@
 When `@interopkit/tool-integration` fits a project that launches or is launched over LTI 1.3, and when another library fits
 better. The candidates were read for [the architecture guide](architecture.md#candidates-compared) on 2026-11-01; the versions
 of `@lti-tool/core` and `lti-core` are those that [the evidence](evidence.md) runs against the platform role, installed on
-2026-11-02.
+2026-11-05.
 
 ```mermaid
 flowchart TD
@@ -23,12 +23,12 @@ flowchart TD
 
 ## What the others have that the package lacks
 
-| Candidate                                                            | What it has                                                                                                                                                                        | Here                                                                                         |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `ltijs`                                                              | A server with routes, sessions and a database, ready to run                                                                                                                        | Excluded: the routes, the sessions and the stores are the host's, behind the package's ports |
-| `@lti-tool/core` 1.2.2, `lti-core` 0.4.0                             | Nothing the tool role lacks that [the evidence](evidence.md) found; they are stricter than the specifications in places that it lists, such as a launch without a name or an email | The package follows the specifications, and a test pins what each library does               |
-| `@atomicjolt/lti-server`, `@ltikit/core`, `@longsightgroup/lti-tool` | The tool role only                                                                                                                                                                 | The package has both roles over one model of the messages                                    |
-| Every candidate                                                      | None binds `state` to the browser in its core, and none limits the time, size or redirects of its service calls                                                                    | The package does both ([the architecture guide](architecture.md#candidates-compared))        |
+| Candidate                                                            | What it has                                                                                                                                                                                 | Here                                                                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `ltijs`                                                              | A server with routes, sessions and a database, ready to run                                                                                                                                 | Excluded: the routes, the sessions and the stores are the host's, behind the package's ports |
+| `@lti-tool/core` 1.3.3, `lti-core` 0.5.0                             | Nothing the tool role lacks that [the evidence](evidence.md) found; they are stricter than the specifications in places that it lists, such as a page of members without a status or a name | The package follows the specifications, and a test pins what each library does               |
+| `@atomicjolt/lti-server`, `@ltikit/core`, `@longsightgroup/lti-tool` | The tool role only                                                                                                                                                                          | The package has both roles over one model of the messages                                    |
+| Every candidate                                                      | None binds `state` to the browser in its core, and none limits the time, size or redirects of its service calls                                                                             | The package does both ([the architecture guide](architecture.md#candidates-compared))        |
 
 ## Where the evidence is
 

@@ -95,11 +95,10 @@ is checked in both directions where the library does both, and each refuses what
 | Library                                                                                               | Signs                             | Verifies                   | Result                                                                                                                                 |
 | ----------------------------------------------------------------------------------------------------- | --------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `@digitalbazaar/vc` 7.3.0, `@digitalbazaar/data-integrity` 2.5.0, `eddsa-rdfc-2022-cryptosuite` 1.3.0 | `eddsa-rdfc-2022`                 | `eddsa-rdfc-2022`          | Each verifies the credential that the other signed, refuses it once its name changed, and refuses one that another issuer's key signed |
-| `@interop/verifier-core` 3.9.0                                                                        |                                   | `eddsa-rdfc-2022`          | Verifies the credentials that we and Digital Bazaar sign, and refuses ours once its name changed                                       |
+| `@interop/verifier-core` 4.1.0                                                                        |                                   | `eddsa-rdfc-2022`          | Verifies the credentials that we and Digital Bazaar sign, and refuses ours once its name changed                                       |
 | `@digitalcredentials/verifier-core` 1.0.0-beta.11                                                     |                                   | `eddsa-rdfc-2022`          | Verifies the signature of ours and answers `invalid_signature` for a changed name                                                      |
 | `did-jwt-vc` 5.0.1 with `did-jwt` 9.0.2                                                               | The `vc` claim form of VC-JWT 1.1 | The JWT of Open Badges 8.2 | It verifies the JWT that we sign; we verify the one it signs, bound to the issuer; each refuses a changed payload                      |
 
-`@interop/verifier-core` is at 3.9.0 and not at the current 4.1.0.
 The verifier of the Digital Credentials Consortium carries the contexts that it needs and fetches the schema that a credential
 names, so the test serves the schema that `pnpm schemas` pinned.
 

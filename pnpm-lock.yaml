@@ -178,8 +178,8 @@ importers:
         specifier: 2.6.4
         version: 2.6.4
       '@cfworker/json-schema':
-        specifier: 4.1.1
-        version: 4.1.1
+        specifier: 4.1.4
+        version: 4.1.4
       '@changesets/cli':
         specifier: 3.0.3
         version: 3.0.3
@@ -319,8 +319,8 @@ importers:
   packages/achievement-credentials:
     dependencies:
       '@cfworker/json-schema':
-        specifier: 4.1.1
-        version: 4.1.1
+        specifier: 4.1.4
+        version: 4.1.4
       '@interop/data-integrity-proof':
         specifier: 3.4.8
         version: 3.4.8
@@ -392,8 +392,8 @@ importers:
         specifier: 3.4.1
         version: 3.4.1
       '@interop/verifier-core':
-        specifier: 3.9.0
-        version: 3.9.0
+        specifier: 4.1.0
+        version: 4.1.0
       did-jwt:
         specifier: 9.0.2
         version: 9.0.2
@@ -526,8 +526,8 @@ importers:
         specifier: 2.4.0
         version: 2.4.0
       cborg:
-        specifier: 6.1.3
-        version: 6.1.3
+        specifier: 6.2.1
+        version: 6.2.1
     devDependencies:
       '@digitalbazaar/data-integrity':
         specifier: 2.5.0
@@ -561,14 +561,14 @@ importers:
         version: 1.5.0(typescript@6.0.3)
     devDependencies:
       '@lti-tool/core':
-        specifier: 1.2.2
-        version: 1.2.2
+        specifier: 1.3.3
+        version: 1.3.3
       fast-check:
         specifier: 4.10.2
         version: 4.10.2
       lti-core:
-        specifier: 0.4.0
-        version: 0.4.0
+        specifier: 0.5.0
+        version: 0.5.0
 
 packages:
 
@@ -680,8 +680,8 @@ packages:
   '@braidai/lang@1.1.2':
     resolution: {integrity: sha512-qBcknbBufNHlui137Hft8xauQMTZDKdophmLFv05r2eNmdIv/MlPuP4TdUknHG68UdWLgVZwgxVe735HzJNIwA==}
 
-  '@cfworker/json-schema@4.1.1':
-    resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
+  '@cfworker/json-schema@4.1.4':
+    resolution: {integrity: sha512-20rPE8EX0dSg6JGOVe31HpqsLYZTDSlcFJZA5mpZqQxcZ71vh/SXCMX+UuHO1mMcZBDKeb752z+3L8IWa+0Svg==}
 
   '@changesets/apply-release-plan@8.1.1':
     resolution: {integrity: sha512-nk2Hbq3M9NeHMdaIRBDvawKrQJzXB9sGyBUE5yWnIKtvdcNCPj75zBekJYr0gTT2ecJH3eFeTrc8eisPImcv0Q==}
@@ -1411,8 +1411,8 @@ packages:
     resolution: {integrity: sha512-lqBgjHzSaZCz1GHiiZJkwT0wWXF4nETnm/wIanDVSk+KkP4ziujnG+uSlcpmQEhbk/YoK9I/vQR1xarWE84jYg==}
     engines: {node: '>=24.0'}
 
-  '@interop/did-method-webvh@5.15.0':
-    resolution: {integrity: sha512-hTnwwgBj7SIMfauGW+Zjxo9vDGoNAwbv3H2tyJM4PIUSd0tVXVlTJllIXGUDa4wRCHjcaYvohnb3BUduy4tivw==}
+  '@interop/did-method-webvh@5.18.0':
+    resolution: {integrity: sha512-cczC3D9sY+canwuxBDRqxkdkwL2pnnOU0hRrFnjy5spAkyuawPtCZvyZXE44s8gMRlZ7h1flsmTjrqHLR1UAUQ==}
     engines: {node: '>=22'}
 
   '@interop/did-web-resolver@6.5.0':
@@ -1478,8 +1478,8 @@ packages:
     resolution: {integrity: sha512-H3d71CbEeyYiplj062xbxoCJyVGdea9ppdaT0Ks/vXywWsjBJ622O3KjDxZnI7MqTFgTCASAVV6KYVcVC73TVA==}
     engines: {node: '>=24.0'}
 
-  '@interop/verifier-core@3.9.0':
-    resolution: {integrity: sha512-/TSJnL0Cq+eZBFbROilqf2wd/nVyseOC0bEZttBgHyXmPIwCQ0w6y8SglExvenBgruK+IEb7J9zBo7OF5f9o4w==}
+  '@interop/verifier-core@4.1.0':
+    resolution: {integrity: sha512-YCKExa8k0gNuf/JRJWijLQTCQA7q4dQRWFzWGuCYygkbVT7+hU7dX2euVO3RuL3TIa0zVLGDQTANFCReWocvkg==}
     engines: {node: '>=24.0'}
 
   '@interop/x25519-key-agreement-key@5.4.3':
@@ -1503,8 +1503,8 @@ packages:
   '@loaderkit/resolve@1.0.6':
     resolution: {integrity: sha512-G8FdIoF5CypfwmD9rl8BXod5HDn8JqB0CCNBXDTaRZ+yRYhARrrSToX1zg1zy9jX3zLqigsELwhT4gNtkdQAUg==}
 
-  '@lti-tool/core@1.2.2':
-    resolution: {integrity: sha512-hDDwkz6PimIgjMwgmXQTt3bFEMsZjnnU1P5vXcaELB3ZyXZ5kVahrLZbBXFVjvtHWrn6iaH3iY0YIgIlbc7VrA==}
+  '@lti-tool/core@1.3.3':
+    resolution: {integrity: sha512-r2KQPLO+jrZsAv2SHWyGYZrnE7z1KZbOb6yp9igRqkeKNZhHjHCgyMepeO65eJutaX3WIESalAbr9zwaWYfaIA==}
     peerDependencies:
       pino: ^9.11.0
     peerDependenciesMeta:
@@ -2199,8 +2199,8 @@ packages:
     resolution: {integrity: sha512-6/viltD51JklRhq4L7jC3zgy6gryuG5xfZ3kzpE+PravtyeQLeQmCYLREhQH7pWENg5pY4Yu/XCd6a7dKScVlw==}
     hasBin: true
 
-  cborg@6.1.3:
-    resolution: {integrity: sha512-Kb/wD/AFuVcqvVjR+HYNOjNiuhVJ2C+RWxQE2Yqq2WVlVkRjdvVLkkM6QsL3NMsBRh+rgNc+aXmcraA+X0HObQ==}
+  cborg@6.2.1:
+    resolution: {integrity: sha512-DwiF3Jd5RW6kJuTQMzQb/sdZD03utp15EcQNOMTvE/ZYCdDPzETsGOY5lj8imKxbsEuYvOzcMSiKLiT4C2/2Lw==}
     hasBin: true
 
   chai@6.3.0:
@@ -2661,6 +2661,9 @@ packages:
   jose@6.2.12:
     resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
+  jose@6.2.15:
+    resolution: {integrity: sha512-qdF6ewcZARtef63fJ9AKKZPgxw+t7USH6HLXYcD4CrdmSvDp79rpJSPFEKc90QBeGS63u1KQtN2MZQHC0yDIzA==}
+
   js-tokens@10.0.0:
     resolution: {integrity: sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q==}
 
@@ -2921,8 +2924,8 @@ packages:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
 
-  lti-core@0.4.0:
-    resolution: {integrity: sha512-BOYef6lOKmxAjoyirYSbYpaXy4JngBh69DtmXEWzuIGsTCtGUsil3SPpcVa+aBpnCr9HKFW6sThU+n20DRrXWw==}
+  lti-core@0.5.0:
+    resolution: {integrity: sha512-gD9/HdB+sb83a3lzoCZpr+8t/CZTGMSKsxNqEHG18tA76wPeRMUsqRXkjhIRPLGyVM0CMW/DEweCSIpRE00vvQ==}
     engines: {node: '>=20'}
 
   lunr@2.3.9:
@@ -3646,7 +3649,7 @@ snapshots:
 
   '@braidai/lang@1.1.2': {}
 
-  '@cfworker/json-schema@4.1.1': {}
+  '@cfworker/json-schema@4.1.4': {}
 
   '@changesets/apply-release-plan@8.1.1':
     dependencies:
@@ -4439,7 +4442,7 @@ snapshots:
     transitivePeerDependencies:
       - react-native-get-random-values
 
-  '@interop/did-method-webvh@5.15.0':
+  '@interop/did-method-webvh@5.18.0':
     dependencies:
       '@interop/data-integrity-core': 8.9.0
       '@noble/curves': 2.4.0
@@ -4559,13 +4562,13 @@ snapshots:
       '@interop/jsonld-signatures': 11.9.0
       credentials-context: 2.0.0
 
-  '@interop/verifier-core@3.9.0':
+  '@interop/verifier-core@4.1.0':
     dependencies:
       '@interop/data-integrity-core': 8.9.0
       '@interop/data-integrity-proof': 3.4.8
       '@interop/did-io': 4.2.2
       '@interop/did-method-key': 7.5.1
-      '@interop/did-method-webvh': 5.15.0
+      '@interop/did-method-webvh': 5.18.0
       '@interop/did-web-resolver': 6.5.0
       '@interop/ecdsa-multikey': 2.4.2
       '@interop/ecdsa-signature': 2.0.10(@interop/jsonld-signatures@11.9.0)
@@ -4607,9 +4610,9 @@ snapshots:
     dependencies:
       '@braidai/lang': 1.1.2
 
-  '@lti-tool/core@1.2.2':
+  '@lti-tool/core@1.3.3':
     dependencies:
-      jose: 6.2.12
+      jose: 6.2.15
       zod: 4.6.7
 
   '@manypkg/find-root@3.1.0':
@@ -5172,7 +5175,7 @@ snapshots:
 
   cborg@4.5.8: {}
 
-  cborg@6.1.3: {}
+  cborg@6.2.1: {}
 
   chai@6.3.0: {}
 
@@ -5643,6 +5646,8 @@ snapshots:
 
   jose@6.2.12: {}
 
+  jose@6.2.15: {}
+
   js-tokens@10.0.0: {}
 
   jscpd-darwin-arm64@5.4.2:
@@ -5867,7 +5872,7 @@ snapshots:
     dependencies:
       yallist: 4.0.0
 
-  lti-core@0.4.0:
+  lti-core@0.5.0:
     dependencies:
       jose: 6.2.12
 

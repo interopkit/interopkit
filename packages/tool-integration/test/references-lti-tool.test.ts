@@ -87,13 +87,13 @@ describe("@lti-tool/core as the tool: launch", () => {
     expect(again.status).toBeGreaterThanOrEqual(400);
   });
 
-  // LTI Core 5.3.6 makes `sub` the only required claim of the user, and 5.3.6.1 lets a platform omit the others; the schema of
-  // @lti-tool/core requires each of these, so it refuses a launch that omits one.
+  // LTI Core 5.3.6 makes `sub` the only required claim of the user, and 5.3.6.1 lets a platform omit the others; @lti-tool/core
+  // reads a launch that omits one.
   it.each([
     ["given_name", { givenName: undefined }],
     ["family_name", { familyName: undefined }],
     ["email", { email: undefined }],
-  ])("refuses a launch of a user who has no %s, which the specification allows", async (claim, absent) => {
+  ])("accepts a launch of a user who has no %s, as the specification allows", async (claim, absent) => {
     const { platform, tool } = await world("RS256");
     const user = {
       subject: "ana",
@@ -103,7 +103,9 @@ describe("@lti-tool/core as the tool: launch", () => {
       email: "ana@example.edu",
       ...absent,
     };
-    await expect(launch(platform, tool, resourceLinkMessage({ user }))).rejects.toThrow(claim);
+    const { claims, session } = await launch(platform, tool, resourceLinkMessage({ user }));
+    expect(claims).not.toHaveProperty(claim);
+    expect(session.user.id).toBe("ana");
   });
 });
 
