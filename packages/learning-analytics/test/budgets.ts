@@ -16,35 +16,34 @@ export const EVENTS = 1000;
 /**
  * The budgets of the benchmarks. The time is the most that the fastest sample of a function may take, in milliseconds: five
  * times its fastest sample on the runner of CI, rounded up to one significant digit. The ratio is the most that it may take
- * as a multiple of the fastest sample of a reference in the same run, so it holds on any machine: five times the highest
- * ratio measured on the runner and on a laptop, rounded up to one significant digit, and parity for a draft 4 validator,
- * which does the same work, as docs/learning-analytics/performance.md explains.
+ * as a multiple of the fastest sample of a reference in the same run, so it holds on any machine: twice the highest ratio measured on the runner of CI in 12 runs of the bench job on 2026-11-04 and 2026-11-05, rounded up to one significant digit, as
+ * docs/learning-analytics/performance.md explains.
  */
 export const BUDGETS = {
   /** `readEnvelope` of an envelope of 1.2, as a multiple of `JSON.parse` of its text. */
-  readEnvelopeAgainstParse: { time: 200, ratio: 40 },
-  /** `readEnvelope` of an envelope of 1.2, as a multiple of the draft 4 schemas of `caliper-spec` over its events: parity or better. */
-  readEnvelopeAgainstSchemas: { time: 200, ratio: 1 },
-  /** `validateEvent` over the events of an envelope of 1.2, as a multiple of the same schemas: parity or better. */
-  validateEventAgainstSchemas: { time: 200, ratio: 1 },
+  readEnvelopeAgainstParse: { time: 200, ratio: 20 },
+  /** `readEnvelope` of an envelope of 1.2, as a multiple of the draft 4 schemas of `caliper-spec` over its events. */
+  readEnvelopeAgainstSchemas: { time: 200, ratio: 0.09 },
+  /** `validateEvent` over the events of an envelope of 1.2, as a multiple of the same schemas. */
+  validateEventAgainstSchemas: { time: 200, ratio: 0.09 },
   /** `readEnvelope` of an envelope of 1.1, as a multiple of `JSON.parse` of its text. */
-  readEnvelope11AgainstParse: { time: 200, ratio: 50 },
-  /** `readEnvelope` of an envelope of 1.1, as a multiple of `schema_1_1` over its events: parity or better. */
-  readEnvelope11AgainstSchemas: { time: 200, ratio: 1 },
-  /** `readEntity` of 1,000 entity describes of 1.2, as a multiple of the draft 4 schemas over them: parity or better. */
-  readEntityAgainstSchemas: { time: 40, ratio: 1 },
-  /** `validateEntity` over the same, as a multiple of the same schemas: parity or better. */
-  validateEntityAgainstSchemas: { time: 50, ratio: 1 },
-  /** `buildEvent` of 1,000 events, as a multiple of the draft 4 schemas over what it builds: parity or better. */
-  buildEventAgainstSchemas: { time: 200, ratio: 1 },
-  /** `buildEntity` of 1,000 entity describes, as a multiple of the same schemas over what it builds: parity or better. */
-  buildEntityAgainstSchemas: { time: 50, ratio: 1 },
+  readEnvelope11AgainstParse: { time: 200, ratio: 20 },
+  /** `readEnvelope` of an envelope of 1.1, as a multiple of `schema_1_1` over its events. */
+  readEnvelope11AgainstSchemas: { time: 200, ratio: 0.007 },
+  /** `readEntity` of 1,000 entity describes of 1.2, as a multiple of the draft 4 schemas over them. */
+  readEntityAgainstSchemas: { time: 40, ratio: 0.2 },
+  /** `validateEntity` over the same, as a multiple of the same schemas. */
+  validateEntityAgainstSchemas: { time: 50, ratio: 0.2 },
+  /** `buildEvent` of 1,000 events, as a multiple of the draft 4 schemas over what it builds. */
+  buildEventAgainstSchemas: { time: 200, ratio: 0.09 },
+  /** `buildEntity` of 1,000 entity describes, as a multiple of the same schemas over what it builds. */
+  buildEntityAgainstSchemas: { time: 50, ratio: 0.2 },
   /** `sendCaliper` of an envelope of 1,000 events to an endpoint that answers at once, as a multiple of `JSON.stringify` of it. */
-  sendCaliperAgainstStringify: { time: 30, ratio: 20 },
+  sendCaliperAgainstStringify: { time: 30, ratio: 5 },
   /** `handleCaliperRequest` of an envelope of 1,000 events of 1.2, as a multiple of `JSON.parse` of its text. */
-  handleRequestAgainstParse: { time: 200, ratio: 40 },
-  /** `handleCaliperRequest` of the same envelope, as a multiple of the draft 4 schemas over its events: parity or better. */
-  handleRequestAgainstSchemas: { time: 200, ratio: 1 },
+  handleRequestAgainstParse: { time: 200, ratio: 20 },
+  /** `handleCaliperRequest` of the same envelope, as a multiple of the draft 4 schemas over its events. */
+  handleRequestAgainstSchemas: { time: 200, ratio: 0.1 },
 } as const;
 
 /** The result of a benchmark that the budgets read. */

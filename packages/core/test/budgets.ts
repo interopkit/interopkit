@@ -6,23 +6,23 @@ const BENCH_OPTIONS = { time: 1000, iterations: 20, warmupTime: 200, warmupItera
 
 /**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of its reference in the same
- * run: five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit. The
+ * run: twice the highest ratio measured on the runner of CI in 12 runs of the bench job on 2026-11-04 and 2026-11-05, rounded up to one significant digit. The
  * reference is the least work of the same kind, the platform API that the function wraps, since no library does what `core`
  * does. Both samples come from one run, so a ratio holds on any machine.
  */
 export const RATIOS = {
-  /** `get` of each of 1,000 kept keys of `createKeyedCache`, against a `Map` with an expiry. Measured 1.08 to 1.21. */
-  keyedCacheHit: 7,
-  /** `get` of one key by 100 callers while it loads once, against 100 waits on one promise. Measured 1.66 to 2.00. */
-  keyedCacheShared: 20,
-  /** `readJson` of a body of 1 MiB, against `TextDecoder` and `JSON.parse`. Measured 1.47 to 1.68. */
-  readJson: 9,
-  /** `readForm` of 2,000 parameters, against `URLSearchParams`. Measured 0.96 to 1.00. */
-  readForm: 6,
-  /** `requestService` of an answer of 1 MiB in chunks of 16 KiB, against `Response.arrayBuffer`. Measured 0.94 to 1.15. */
-  requestService: 6,
-  /** `signCompactJws` with EdDSA, against `crypto.subtle.sign` of its signing input. Measured 1.15 to 1.21. */
-  signCompactJws: 7,
+  /** `get` of each of 1,000 kept keys of `createKeyedCache`, against a `Map` with an expiry. Measured 1.10 to 1.22. */
+  keyedCacheHit: 3,
+  /** `get` of one key by 100 callers while it loads once, against 100 waits on one promise. Measured 1.70 to 1.86. */
+  keyedCacheShared: 4,
+  /** `readJson` of a body of 1 MiB, against `TextDecoder` and `JSON.parse`. Measured 1.22 to 1.59. */
+  readJson: 4,
+  /** `readForm` of 2,000 parameters, against `URLSearchParams`. Measured 0.94 to 1.02. */
+  readForm: 3,
+  /** `requestService` of an answer of 1 MiB in chunks of 16 KiB, against `Response.arrayBuffer`. Measured 0.93 to 1.12. */
+  requestService: 3,
+  /** `signCompactJws` with EdDSA, against `crypto.subtle.sign` of its signing input. Measured 1.16 to 1.23. */
+  signCompactJws: 3,
 } as const;
 
 /**

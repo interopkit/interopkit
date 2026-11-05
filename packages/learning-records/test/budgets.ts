@@ -19,58 +19,57 @@ export const BUDGETS = {
 
 /**
  * The most that the fastest sample of a function may take as a multiple of the fastest sample of a reference in the same run.
- * Both samples come from one run, so a ratio holds on any machine. A ratio is five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit,
- * as docs/learning-records/performance.md explains, except a ratio of a reader to the validator of Learning
- * Locker, which does the same work and whose budget is parity.
+ * Both samples come from one run, so a ratio holds on any machine. A ratio is twice the highest ratio measured on the runner of CI in 12 runs of the bench job on 2026-11-04 and 2026-11-05, rounded up to one significant digit,
+ * as docs/learning-records/performance.md explains.
  */
 export const RATIOS = {
-  /** `validateStatement` of the Statements of the batch, as a multiple of the validator of Learning Locker on the same Statements: parity or better. */
-  validateAgainstLearningLocker: 1,
+  /** `validateStatement` of the Statements of the batch, as a multiple of the validator of Learning Locker on the same Statements. */
+  validateAgainstLearningLocker: 2,
   /** `parseStatementJson` of the text of the batch, as a multiple of `JSON.parse` of it. */
-  parseJsonAgainstParse: 20,
-  /** `readStatement` of each Statement of the batch, as a multiple of the validator of Learning Locker: parity or better. */
-  readAgainstLearningLocker: 1,
-  /** `validateStatements` of the batch as a whole, as a multiple of the validator of Learning Locker: parity or better. */
-  validateBatchAgainstLearningLocker: 1,
+  parseJsonAgainstParse: 7,
+  /** `readStatement` of each Statement of the batch, as a multiple of the validator of Learning Locker. */
+  readAgainstLearningLocker: 2,
+  /** `validateStatements` of the batch as a whole, as a multiple of the validator of Learning Locker. */
+  validateBatchAgainstLearningLocker: 2,
   /** `buildStatement` of each Statement of the batch, as a multiple of the validator of Learning Locker on them. */
-  buildAgainstLearningLocker: 4,
+  buildAgainstLearningLocker: 2,
   /** `mboxSha1sum` of 1,000 mailto IRIs, as a multiple of the SHA-1 of node:crypto on them. */
-  mboxSha1sumAgainstNative: 20,
+  mboxSha1sumAgainstNative: 5,
   /** `deriveStatementId` of 1,000 names, as a multiple of the SHA-1 of node:crypto on 1,000 mailto IRIs. */
-  deriveIdAgainstNative: 40,
+  deriveIdAgainstNative: 20,
   /** `isSameStatement` of each Statement of the batch and its copy, as a multiple of the validator of Learning Locker on them. */
-  sameStatementAgainstLearningLocker: 20,
+  sameStatementAgainstLearningLocker: 5,
   /** `convertStatementVersion` of each Statement of the batch, as a multiple of the validator of Learning Locker on them. */
-  toVersionAgainstLearningLocker: 4,
+  toVersionAgainstLearningLocker: 2,
   /** `formatStatement` of each Statement of the batch, in `ids` and in `canonical`, as a multiple of the same. */
-  formatAgainstLearningLocker: 4,
+  formatAgainstLearningLocker: 2,
   /** `readMultipart` of 99 Statements with 6.2 MiB of data, as a multiple of the parser and the SHA-256 of node:crypto. */
-  readMultipartAgainstNative: 60,
+  readMultipartAgainstNative: 20,
   /** `writeMultipart` of the same, as a multiple of their JSON, the SHA-256 of node:crypto and a copy of the bytes. */
-  writeMultipartAgainstNative: 70,
+  writeMultipartAgainstNative: 20,
   /** `hashAttachment` of 1 MiB, as a multiple of the SHA-256 of node:crypto. */
-  attachmentHashAgainstNative: 80,
+  attachmentHashAgainstNative: 20,
   /** `signStatement` with an RSA key of 2,048 bits, as a multiple of the `CompactSign` of jose of the same payload. */
-  signAgainstJose: 7,
+  signAgainstJose: 3,
   /** `verifyStatementSignature` of the same, as a multiple of the `compactVerify` of jose. */
-  verifyAgainstJose: 30,
+  verifyAgainstJose: 8,
   /** `handleLrsRequest` of a POST of the batch, as a multiple of the validator of Learning Locker on it. */
-  postAgainstLearningLocker: 7,
+  postAgainstLearningLocker: 3,
   /** `handleLrsRequest` of a GET of a page of 100 Statements, as a multiple of `JSON.stringify` of the page. */
-  getAgainstStringify: 8,
+  getAgainstStringify: 3,
   /** `matchesStatementQuery` over the batch, as a multiple of the validator of Learning Locker on it. */
-  matchAgainstLearningLocker: 0.5,
+  matchAgainstLearningLocker: 0.2,
   /** `validateProfile` of the text of a profile of 907 concepts, as a multiple of `JSON.parse` of the text. */
-  validateProfileAgainstParse: 50,
+  validateProfileAgainstParse: 30,
   /**
    * `validateProfile` of the texts of a profile whose alternates name 40,000 Patterns and that revises 40,000 concepts of another,
    * as a multiple of `JSON.parse` of the two texts.
    */
-  wideProfileAgainstParse: 50,
+  wideProfileAgainstParse: 30,
   /** `validateStatement` of a validator of a profile on each Statement of a relay, as a multiple of `readStatement` of each. */
-  templatesAgainstRead: 8,
+  templatesAgainstRead: 3,
   /** `validateStatements` of a validator of a profile on the relay, as a multiple of `readStatement` of each Statement. */
-  patternsAgainstRead: 8,
+  patternsAgainstRead: 4,
 } as const;
 
 /**

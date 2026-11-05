@@ -5,16 +5,16 @@ export const BENCH_OPTIONS = { time: 1000, iterations: 20, warmupTime: 200, warm
 
 /**
  * The most that the fastest sample of each role may take as a multiple of the fastest sample of Digital Bazaar's suite in the
- * same run: five times the highest ratio measured on the runner of CI and on a laptop, rounded up to one significant digit,
+ * same run: twice the highest ratio measured on the runner of CI in 12 runs of the bench job on 2026-11-04 and 2026-11-05, rounded up to one significant digit,
  * as docs/selective-disclosure/performance.md explains. Both samples come from one run, so a ratio holds on any machine.
  */
 export const RATIOS = {
-  /** Measured 0.97 to 1.08. */
-  addBaseProof: 6,
-  /** Measured 1.06 to 1.21. */
-  deriveProof: 7,
-  /** Measured 0.84 to 1.16. */
-  verify: 6,
+  /** Measured 1.05 to 1.10. */
+  addBaseProof: 3,
+  /** Measured 1.09 to 1.17. */
+  deriveProof: 3,
+  /** Measured 0.92 to 1.00. */
+  verify: 2,
 } as const;
 
 /** The result of a benchmark that the budgets read. */
