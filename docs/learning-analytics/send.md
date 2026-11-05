@@ -62,8 +62,8 @@ requests[0].body.data[0].id === event.id; // => true
 | `maxPayloadBytes` | The most bytes of the envelope that the endpoint takes, which its configuration gives in kilobytes of 1,024 bytes. A larger envelope is a `LimitError` before any request | none |
 | `signal`    | An `AbortSignal` that ends this caller's wait                                                                                                         | none                                  |
 
-One object may hold the options of `sendCaliper` and `pingEndpoint`; a property that neither takes, such as a misspelled option,
-is refused with a `DataError`.
+One object may hold the options of `sendCaliper` and `pingEndpoint`, without `signal`, which belongs to one call and which a ping
+takes in its second argument; a property that neither takes, such as a misspelled option, is refused with a `DataError`.
 
 The request is a `POST` with `Content-Type: application/json` and, when there is a token, `Authorization: Bearer <token>`. The
 body has the properties `sensor`, `sendTime`, `dataVersion` (the Caliper context) and `data`, and no others. At least one event

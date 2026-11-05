@@ -540,8 +540,8 @@ export const LEARNING_ANALYTICS_RULES: readonly Rule[] = [
   {
     rule: "A misspelled option of sendCaliper is refused.",
     file: "packages/learning-analytics/src/send/sender.ts",
-    find: "export const sendOptionsSchema = strictRecord({ ...senderEntries, sensor: iriSchema });",
-    replace: "export const sendOptionsSchema = v.looseObject({ ...senderEntries, sensor: iriSchema });",
+    find: "export const sendOptionsSchema = strictRecord({",
+    replace: "export const sendOptionsSchema = v.looseObject({",
     test: "packages/learning-analytics/test/send.test.ts",
   },
   {

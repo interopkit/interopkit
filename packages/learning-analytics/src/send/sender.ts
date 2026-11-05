@@ -42,7 +42,8 @@ export const iriSchema = v.pipe(
 
 /**
  * The options that the calls of a sensor read: a host keeps one object of them for `sendCaliper` and `pingEndpoint`, so that a
- * property that neither takes is refused and a shared object is not.
+ * property that neither takes is refused and a shared object is not. A `signal` is not among them: it belongs to one call, and
+ * the one of a ping is its second argument.
  */
 const senderEntries = {
   endpoint: httpsUrlSchema,
@@ -61,14 +62,17 @@ const senderEntries = {
   sendTime: v.optional(v.unknown()),
   timeoutMs: clientOptionsEntries.timeoutMs,
   maxPayloadBytes: v.optional(positiveIntegerSchema),
-  signal: clientOptionsEntries.signal,
 };
 
 /** The options of `pingEndpoint`. */
 export const pingOptionsSchema = strictRecord(senderEntries);
 
-/** The options of `sendCaliper`, which requires a sensor. */
-export const sendOptionsSchema = strictRecord({ ...senderEntries, sensor: iriSchema });
+/** The options of `sendCaliper`, which requires a sensor and takes the signal of the call. */
+export const sendOptionsSchema = strictRecord({
+  ...senderEntries,
+  sensor: iriSchema,
+  signal: clientOptionsEntries.signal,
+});
 
 /** The header that carries the bearer token, and none when the sender has no token. */
 export function bearerHeaders(token: string | undefined): Readonly<Record<string, string>> {

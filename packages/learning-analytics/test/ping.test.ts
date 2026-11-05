@@ -225,6 +225,11 @@ describe("pingEndpoint: input of other types", () => {
       "The options is invalid at timeoutMs: expected a value of at least 1, found 0.",
     ],
     ["a misspelled option", { ...given(), timeout: 5 }, 'The options is invalid: unexpected property "timeout".'],
+    [
+      "a signal in the sender, where it would end no wait",
+      { ...given(), signal: new AbortController().signal },
+      'The options is invalid: unexpected property "signal".',
+    ],
   ])("rejects %s with a DataError, before any request", async (_, sender, message) => {
     await expect(pingEndpoint(sender as never)).rejects.toThrow(message);
   });
