@@ -27,8 +27,8 @@ const client = createLrsClient({
 await client.about(); // => { version: ["2.0.0", "1.0.3"] }
 ```
 
-A host passes the global `fetch`, or a function that checks where a request goes: the package does not (a host whose address comes
-from a counterparty needs a `fetch` that refuses private addresses). The calls:
+A host passes the global `fetch`, or, when the address comes from a counterparty, a `fetch` that refuses private addresses,
+which the package does not check. The calls:
 
 ```ts
 import { createLrsClient } from "@interopkit/learning-records/client";
@@ -135,14 +135,14 @@ The filters of `queryStatements` are the properties of `StatementQuery`: `agent`
 
 ## Limits
 
-| Limit                                            | Value                                             | Refused with                   |
-| ------------------------------------------------ | ------------------------------------------------- | ------------------------------ |
-| Time of a request                                | `timeoutMs`, 10,000                               | `ServiceError` with status 0   |
-| Bytes of an answer                               | `maxBytes`, 10,485,760                            | `ServiceError`                 |
-| Redirects                                        | None followed                                     | `ServiceError` with the status |
-| Pages of a query                                 | No limit; each is fetched when the iteration asks | The caller stops the iteration |
-| Parts of a multipart answer                      | 10,000                                            | `DataError`                    |
-| Bytes, depth and tokens of the JSON of an answer | `maxBytes`, 64 levels, `maxTokens` (1,000,000)    | `DataError`                    |
+Besides `timeoutMs`, `maxBytes` and `maxTokens`:
+
+| Limit                           | Value                                             | Refused with                   |
+| ------------------------------- | ------------------------------------------------- | ------------------------------ |
+| Redirects                       | None followed                                     | `ServiceError` with the status |
+| Pages of a query                | No limit; each is fetched when the iteration asks | The caller stops the iteration |
+| Parts of a multipart answer     | 10,000                                            | `LimitError`                   |
+| Levels of the JSON of an answer | 64                                                | `LimitError`                   |
 
 ## Errors
 

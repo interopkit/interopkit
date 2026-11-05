@@ -1,8 +1,7 @@
 # Evidence for learning-records
 
-What shows that the package does what it says: the rules of both versions, the conformance suites of ADL, SQL LRS and the
-validator of Learning Locker as oracles, an example LRS with a platform and a dashboard, and four runtimes. Each layer answers a question that the one before cannot.
-The speed, the size and the peak memory are in [performance](performance.md).
+What shows that the package does what it says, each layer answering a question that the one before cannot; the speed, the size
+and the peak memory are in [performance](performance.md).
 
 ```mermaid
 flowchart LR
@@ -45,9 +44,8 @@ framework. The tests check the scenario, the stores against the contracts of the
 
 `pnpm adl-lrs` runs the 1,442 tests of the suite for xAPI 2.0 at `d17a26a` and the 1,365 tests of the suite for 1.0.3 at
 `5bc232d`, the commits and sizes that `validation/adl-lrs/suite.lock.json` pins since 2026-11-02, each against a fresh example
-LRS; all pass. The first runs failed 116 and 2, and every failure was a rule that the handler did not
-follow, fixed in the handler with a test of its own and a mutation rule. [The README of the folder](../../validation/adl-lrs/README.md)
-lists the causes. The suite of 2.0 carries tests of 1.0.3 into 2.0 that the books do not state, and the handler follows it where
+LRS; all pass. Each rule that the suites enforce has a test of its own and a mutation rule in the handler, and
+[the README of the folder](../../validation/adl-lrs/README.md) lists them. The suite of 2.0 carries tests of 1.0.3 into 2.0 that the books do not state, and the handler follows it where
 the books are silent; each such place is in [spec-gaps](spec-gaps.md).
 
 ## SQL LRS
@@ -60,7 +58,7 @@ pin what SQL LRS does as a server that the package must live with:
 
 | What SQL LRS does                                                                                                          | What the package does                                                                                                                                              |
 | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Answers a resend with 200 and `[]`                                                                                         | The client resolves with the ids of the batch, which it fixed after this flow found it                                                                             |
+| Answers a resend with 200 and `[]`                                                                                         | The client resolves with the ids of the batch                                                                                                                      |
 | Refuses a signed Statement that has another Attachment: it compares the payload with the Statement without its Attachments | The standard signs the complete Statement, and so does `signStatement`; a host that must reach SQL LRS signs a Statement with the signature as its only Attachment |
 | Refuses a Statement with `version` 2.0.0 on the 1.0.3 route                                                                | The client of 1.0.3 refuses it before any request, and a builder of 1.0.3 writes `1.0.0`                                                                           |
 | Answers 409 to a second State write with no precondition on the 1.0.3 route                                                | The client allows the write on 1.0.3, and SQL LRS applies the 2.0 rule; the handler replaces the document                                                          |

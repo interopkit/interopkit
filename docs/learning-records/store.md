@@ -4,7 +4,7 @@
 Record Store. `handleLrsRequest` takes an `HttpRequest` and returns an `HttpResponse` of `@interopkit/core/http`, over the ports
 of the host: the stores of Statements, documents and Activities, the decision about who may do what, and a clock. It keeps no
 state, makes no request, and knows no database, server or account. It serves xAPI 2.0 and 1.0.3, each request by the version it
-names: [the versions guide](versions.md) says what differs.
+names ([versions](versions.md)).
 
 ```mermaid
 flowchart TD
@@ -172,9 +172,17 @@ Every answer of the Statements resource names `X-Experience-API-Consistent-Throu
 gives, a 400 and a 404 included: the answers that come before the resource, a refusal of `access` or of the size of a body, do
 not ask the store.
 
-A stored Statement gets what the LRS sets (4.2.4.2): an `id` when it has none, in lower case; `stored`, always, from the
-`clock`; `timestamp` from `stored` when it has none, and a `timestamp` that is not in UTC written in UTC, whatever form of ISO 8601 or RFC 3339 it has (the offset `-00:00` is refused); `authority` from `access`, unless `keepSubmittedAuthority` keeps the one it
-brings; `version` `2.0.0` when it has none, or `1.0.0` on the route of 1.0.3. A Statement is read with the rules of an LRS of the route first, and a list is judged whole:
+A stored Statement gets what the LRS sets (4.2.4.2):
+
+| Property    | Set by the LRS                                                                                                                                  |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`        | When it has none, in lower case                                                                                                                 |
+| `stored`    | Always, from the `clock`                                                                                                                        |
+| `timestamp` | From `stored` when it has none; one not in UTC is written in UTC, whatever form of ISO 8601 or RFC 3339 it has (the offset `-00:00` is refused) |
+| `authority` | From `access`, unless `keepSubmittedAuthority` keeps the one it brings                                                                          |
+| `version`   | `2.0.0` when it has none, or `1.0.0` on the route of 1.0.3                                                                                      |
+
+A Statement is read with the rules of an LRS of the route first, and a list is judged whole:
 one Statement with an error refuses the request and stores nothing, and two with one id refuse it too. A `version` is `1.0`, `1.0.x`, `2.0` or `2.0.x`, or `1.0` and `1.0.x` alone on the route of 1.0.3, and a submitted `authority` that is a Group is an anonymous Group of two Agents, though the LRS replaces it; the `revision` and `platform` of a context go with an Activity.
 
 A batch is stored whole or not at all (4.1.5). When the LRS holds an id of the batch, the store stores nothing and returns what it

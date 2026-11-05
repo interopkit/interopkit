@@ -1,6 +1,8 @@
 # Performance of learning-records
 
-What the hot paths of `@interopkit/learning-records` cost, how much each entry point adds to a bundle, and the heap that each reader of untrusted input needs on its worst input. A budget holds each number and fails a gate of CI: `pnpm bench` for the time, `pnpm test` for the size and the heap. That the package does what it says is in [evidence](evidence.md).
+The time of the hot paths of `@interopkit/learning-records`, the size of each entry point, and the heap of each reader of
+untrusted input at its worst input. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test` for the size and
+the heap.
 
 ```mermaid
 flowchart LR
@@ -49,23 +51,21 @@ ratio is five times the highest ratio measured on the runner of CI (the eight la
 | `validateStatement` of the batch, in milliseconds  | 70    | Five times the fastest of the eight latest samples of the runners of CI, 12.33, rounded up to one significant digit; the samples range from 12.3 to 30.7 ms |
 | `parseStatementJson` of the batch, in milliseconds | 40    | Five times the fastest of the eight latest samples of the runners of CI, 7.13, rounded up to one significant digit; the samples range from 7.1 to 16.4 ms   |
 
-`JSON.parse` judges the syntax first, so the search for a repeated name is a scan of the strings and the brackets that keeps the
-names of the open objects and builds nothing else; a parser that builds a syntax tree took 16 to 18 times `JSON.parse`. A test
-checks the scan against such a parser on 2,000 generated texts. The rules of a provider look for an empty object before they walk
-a Statement to write the paths of its members, which takes 0.79 of the time of the build before, alternated in one process, with
-the same findings for every rule of both tables in both roles and versions.
+| Choice                                                                                                                                                                                                                                                                     | Against the alternative                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parseStatementJson` searches for a repeated name with a scan of the strings and brackets after `JSON.parse` has judged the syntax, keeping only the names of the open objects; a test checks the scan against a parser that builds a syntax tree on 2,000 generated texts | A parser that builds a syntax tree takes 16 to 18 times `JSON.parse`                                                                                     |
+| The rules of a provider look for an empty object before they walk a Statement to write the paths of its members                                                                                                                                                            | 0.79 of the time of a build that walks first, alternated in one process, with the same findings for every rule of both tables in both roles and versions |
+| `isSameStatement` writes the canonical text with `JSON.stringify`                                                                                                                                                                                                          | A text written without it is 5 percent faster, which is not worth its code                                                                               |
 
-The gaps have causes outside the code of the package. The hashes are those of `@noble/hashes` in JavaScript, because
+The other gaps have causes outside the code of the package. The hashes are those of `@noble/hashes` in JavaScript, because
 `hashAttachment`, `readMultipart` and `writeMultipart` answer at once and the digest of Web Crypto is asynchronous and has no
-SHA-224; the hash is most of the time of a message. `deriveStatementId` is the name-based UUID of `uuid`. `isSameStatement` reads both
-Statements and writes their canonical text; a text written without `JSON.stringify` gained 5 percent and was not kept.
+SHA-224; the hash is most of the time of a message. `deriveStatementId` is the name-based UUID of `uuid`.
 
 ## Size
 
 `size.test.ts` bundles each entry point alone with `scripts/entry-size.ts`: esbuild, minified, with every dependency inside. It
-fails above the budget after gzip, or when an entry point holds a module that its budget does not list.
-
-Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 percent.
+fails above the budget after gzip, or when an entry point holds a module that its budget does not list. Gzip is measured on
+Node.js 22; other versions differ by up to 1 percent.
 
 | Entry point                                |   Bytes |   Gzip | Budget | Holds, besides `@interopkit/core`, `model`, `read` and valibot                             |
 | ------------------------------------------ | ------: | -----: | -----: | ------------------------------------------------------------------------------------------ |

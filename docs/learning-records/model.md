@@ -161,13 +161,8 @@ a response. An LRS does not validate patterns, so a problem is a warning.
 
 ## Limits
 
-| Limit                                       | Value      | Applies to                                                                                                   |
-| ------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| `maxBytes` of `parseStatementJson`          | 10,485,760 | The text of a request, counted as UTF-8                                                                      |
-| `maxDepth` of `parseStatementJson`          | 64         | Arrays and objects nested in each other, checked before the text is parsed                                   |
-| `maxTokens` of `parseStatementJson`         | 1,000,000  | The memory of the parse, which grows with the tokens; checked before the text is parsed                      |
-| `maxFindings`                               | 1,000      | The findings of a call, which cost about a kilobyte each; the check stops looking at the first one beyond it |
-| Levels that the value of an extension nests | 64         | `extensions` of an Activity Definition, a Result and a Context; a deeper value is `invalid-value`            |
+Besides the options above, the value of an extension of an Activity Definition, a Result or a Context nests at most 64 levels; a
+deeper value is `invalid-value`.
 
 `readStatement` and `validateStatement` take a value that is in memory already, so the host's limit on the request applies
 first. A batch has no limit here: the LRS sets the number of Statements.
@@ -210,7 +205,7 @@ an LRS answers 413.
 | Items of a pattern that are not ids of components | The standard defines the form of a pattern and not a reference; an LRS does not validate patterns                                                 |
 | Subtags in the registry of IANA                   | The standard asks an LRS to validate the form of a language tag                                                                                   |
 | The grammar of IRIs of RFC 3987                   | The standard asks for a scheme and leaves values to the host; an address that `URL` cannot parse is refused                                       |
-| xAPI Profiles, cmi5                               | Standards of their own; a profile validator can read the findings and add its own                                                                 |
+| cmi5                                              | A standard of its own, in `@interopkit/course-launch`; xAPI Profiles are in [the profiles guide](profiles.md)                                     |
 | Storing Statements                                | The readers keep nothing; the handler of the [store guide](store.md) answers requests over the stores that the host passes                        |
 
 ## Differences from the references

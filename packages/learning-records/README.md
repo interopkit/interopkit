@@ -4,13 +4,9 @@ xAPI 2.0 (IEEE 9274.1.1) and 1.0.3 for JavaScript and TypeScript: the Statement 
 provider, builders, signatures, an LRS client, an LRS request handler, and xAPI Profiles 1.0 with Statements matched to a
 profile's templates and patterns.
 
-It has the model of a Statement of xAPI [2.0](https://opensource.ieee.org/xapi/xapi-base-standard-documentation) (IEEE
-9274.1.1-2023) and [1.0.3](https://github.com/adlnet/xAPI-Spec/tree/1.0.3), readers that check it against the rules of an LRS
-and of a Learning Record Provider, validators that list every finding, a reader of the text of a request that refuses a property
-given twice, builders of Statements, the comparison and the formats of Statements, the message that carries Attachments, the
-signature of a Statement, a client of an LRS, the handler of the requests that an LRS answers, and [xAPI Profiles
-1.0](https://github.com/adlnet/xapi-profiles): profiles read and judged, and Statements judged against their Statement Templates
-and Patterns. It knows nothing of any product: the host says where a Statement comes from and what it is for.
+It follows xAPI [2.0](https://opensource.ieee.org/xapi/xapi-base-standard-documentation) (IEEE 9274.1.1-2023),
+[1.0.3](https://github.com/adlnet/xAPI-Spec/tree/1.0.3) and [xAPI Profiles 1.0](https://github.com/adlnet/xapi-profiles). It
+knows nothing of any product: the host says where a Statement comes from and what it is for.
 
 ```bash
 npm install @interopkit/learning-records
@@ -134,27 +130,17 @@ environment variable, writes no log and makes no request. Its dependencies are `
 
 ## Documentation
 
-[Choosing](https://interopkit.wakan.dev/_interopkit/learning-records/choosing/) says when the package fits, when another library fits better,
-and what each has that the package lacks.
-
-[The model guide](https://interopkit.wakan.dev/_interopkit/learning-records/model/) has the options with their
-defaults, the findings and their rules, the limits, the errors and what to do about them, what is not included and why, and the
-differences from the references. The guides of [building](https://interopkit.wakan.dev/_interopkit/learning-records/build/),
-[comparing](https://interopkit.wakan.dev/_interopkit/learning-records/compare/),
-[formats](https://interopkit.wakan.dev/_interopkit/learning-records/format/),
-[attachments](https://interopkit.wakan.dev/_interopkit/learning-records/attachments/),
-[signing](https://interopkit.wakan.dev/_interopkit/learning-records/signing/),
-[the client](https://interopkit.wakan.dev/_interopkit/learning-records/client/),
-[the LRS handler](https://interopkit.wakan.dev/_interopkit/learning-records/store/),
-[the versions of xAPI](https://interopkit.wakan.dev/_interopkit/learning-records/versions/) and
-[xAPI Profiles](https://interopkit.wakan.dev/_interopkit/learning-records/profiles/) do the same.
-
-[The comparators](https://interopkit.wakan.dev/_interopkit/learning-records/comparators/) map what other LRSs and
-clients do against the package. [The evidence guide](https://interopkit.wakan.dev/_interopkit/learning-records/evidence/) shows what the
-package was checked against: the rules of both versions, both ADL conformance suites, SQL LRS and the validator of Learning
-Locker as oracles, an example LRS with a platform and a dashboard, four runtimes, and for profiles the rules of Part Two, ADL's
-matching of Patterns and the profiles that ADL publishes. [Performance](https://interopkit.wakan.dev/_interopkit/learning-records/performance/)
-gives the speed of every hot path, the size of each entry point and the peak memory of each reader.
+| Page                                                                                                                                                                                                                                        | Gives                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Model](https://interopkit.wakan.dev/_interopkit/learning-records/model/)                                                                                                                                                                   | The readers and validators, the findings and their rules, the limits and the errors                                                                                                                                               |
+| [Building](https://interopkit.wakan.dev/_interopkit/learning-records/build/), [comparing](https://interopkit.wakan.dev/_interopkit/learning-records/compare/), [formats](https://interopkit.wakan.dev/_interopkit/learning-records/format/) | Statements from events, immutability, and the three formats                                                                                                                                                                       |
+| [Attachments](https://interopkit.wakan.dev/_interopkit/learning-records/attachments/), [signing](https://interopkit.wakan.dev/_interopkit/learning-records/signing/)                                                                        | The `multipart/mixed` message, and signed Statements                                                                                                                                                                              |
+| [Client](https://interopkit.wakan.dev/_interopkit/learning-records/client/), [LRS handler](https://interopkit.wakan.dev/_interopkit/learning-records/store/)                                                                                | The two sides of the seven resources                                                                                                                                                                                              |
+| [Versions](https://interopkit.wakan.dev/_interopkit/learning-records/versions/)                                                                                                                                                             | What differs in xAPI 1.0.3                                                                                                                                                                                                        |
+| [Profiles](https://interopkit.wakan.dev/_interopkit/learning-records/profiles/)                                                                                                                                                             | xAPI Profiles, their templates and their Patterns                                                                                                                                                                                 |
+| [Choosing](https://interopkit.wakan.dev/_interopkit/learning-records/choosing/), [comparators](https://interopkit.wakan.dev/_interopkit/learning-records/comparators/)                                                                      | When the package fits, and what other LRSs and clients have that it lacks                                                                                                                                                         |
+| [Evidence](https://interopkit.wakan.dev/_interopkit/learning-records/evidence/)                                                                                                                                                             | The rules of both versions, both ADL conformance suites, SQL LRS and Learning Locker's validator as oracles, an example LRS, four runtimes, and for profiles the rules of Part Two, ADL's matching of Patterns and ADL's profiles |
+| [Performance](https://interopkit.wakan.dev/_interopkit/learning-records/performance/)                                                                                                                                                       | The speed of every hot path, the size of each entry point and the peak memory of each reader                                                                                                                                      |
 
 ## License
 

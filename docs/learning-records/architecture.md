@@ -1,12 +1,9 @@
 # Architecture of learning-records
 
-`@interopkit/learning-records` has ten modules that share one model. `model` holds the types, the vocabularies and the data
-types. `read` turns untrusted data into the model and judges it. `build`, `compare` and `format` make Statements, compare them and
-write them in a format, and each reads a Statement with `read` first. `attachments` writes and reads the message that carries
-Attachments, and `signing` signs a Statement and verifies its signature, with the Attachment of `attachments` and the equivalence
-of `compare`, `client` speaks to an LRS with `read`, `compare` and `attachments`, and `store` answers the requests of one with all of them but `build` and `client`. `profiles` reads xAPI Profiles and judges
-Statements against them with `read` alone. `model` imports nothing of the family, `read` imports only `model` and `@interopkit/core`, the three that build on
-`read` are siblings that never import each other, and `attachments`, `signing`, `client` and `store` are the layers above them.
+`@interopkit/learning-records` has ten modules over one model. `read` turns untrusted data into the model and judges it;
+`build`, `compare` and `format` make, compare and write Statements, each reading with `read` first, and never import one another.
+`attachments`, `signing`, `client` and `store` are the layers above them, and `profiles` judges Statements against xAPI Profiles
+with `read` alone.
 
 ```mermaid
 flowchart BT
@@ -92,8 +89,8 @@ flowchart BT
 language tag, the copy of JSON within a depth limit, the check of the depth of a text, the conversion of the issues of a parse to
 findings, and the sentence of a refusal.
 
-Each module has an `index.ts`, its public API, and some have an `internal.ts` for what the package and its tests share and the
-package does not export. `pnpm check:standards` and Biome keep modules from importing by a deep path or against the layers.
+Each module has an `index.ts`, its public API, and some have an `internal.ts` that the package and its tests share and the package
+does not export. `pnpm check:standards` and Biome keep modules from importing by a deep path or against the layers.
 
 ## Reading
 
@@ -125,9 +122,9 @@ a list where the input had one Activity.
 
 ## Boundaries
 
-| The package owns                                                                                                                                                                                                                       | The package does not own                                                     |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| The model of a Statement of xAPI 2.0, its readers and validators, the text of a request, builders, comparison and formats, the message of Attachments, the signature of a Statement, the client of an LRS, the handler of its requests | Storing Statements, a web server, obtaining credentials, xAPI Profiles, cmi5 |
+| The package owns                                                                                                                                                                                                                                                                                | The package does not own                                                        |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| The model of a Statement of xAPI 2.0 and 1.0.3, its readers and validators, the text of a request, builders, comparison and formats, the message of Attachments, the signature of a Statement, the client of an LRS, the handler of its requests, xAPI Profiles with the matching of Statements | Storing Statements, a web server, obtaining credentials, cmi5 (`course-launch`) |
 
-The package makes a request only through the `fetch` that the host passes to the client, answers one only through the ports that the host passes to the handler, keeps nothing between calls, reads the time only from the `clock` that the host passes to the handler, reads no environment variable, and imports no other
-family of interopkit. It uses no API outside web standards, so it runs in Node.js, browsers, Deno, Bun and Cloudflare Workers.
+The package calls the network only through the `fetch` of the client, keeps nothing between calls, and reads the time only from
+the `clock` of the handler; its runtimes are in [the README](../../packages/learning-records/README.md#architecture).
