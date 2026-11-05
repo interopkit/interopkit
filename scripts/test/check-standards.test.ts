@@ -12,6 +12,7 @@ import {
   checkPackageNames,
   checkReadmeSections,
   checkSectionSigns,
+  checkSecurityLimits,
   checkStandards,
   checkTestTitles,
   type Files,
@@ -370,6 +371,44 @@ describe("console", () => {
   });
 });
 
+describe("the limits in SECURITY.md", () => {
+  const code = {
+    "packages/a/src/read.ts": 'throw new LimitError("Too many.", "maxThings", 10);\n',
+    "packages/a/src/limits.ts": "export const READ_LIMITS = { maxDepth: 64, maxItems: 100 } as const;\n",
+    "packages/a/src/options.ts": "export interface StoreLimits {\n  readonly maxBodyBytes?: number;\n}\n",
+    "packages/a/src/index.ts": 'export type { StoreLimits } from "./options.js";\n',
+  };
+
+  it("reports each limit of a LimitError, an exported limits object or an exported limits interface that it does not name", () => {
+    const found = checkSecurityLimits(repository({ ...code, "SECURITY.md": "| `maxDepth` | 64 | levels |\n" }));
+    expect(found.map(({ file, line, rule }) => `${file}:${line} ${rule}`)).toStrictEqual([
+      "packages/a/src/read.ts:1 security-limit",
+      "packages/a/src/limits.ts:1 security-limit",
+      "packages/a/src/options.ts:2 security-limit",
+    ]);
+    expect(found.map(({ message }) => /limit (\w+)/.exec(message)?.[1])).toStrictEqual([
+      "maxThings",
+      "maxItems",
+      "maxBodyBytes",
+    ]);
+  });
+
+  it("reports every limit when SECURITY.md is empty or gone, as a merge may leave it", () => {
+    expect(checkSecurityLimits(repository({ ...code, "SECURITY.md": "" }))).toHaveLength(4);
+    expect(checkSecurityLimits(repository(code))).toHaveLength(4);
+  });
+
+  it("accepts a file that names every limit, and leaves out an interface that no entry exports and a limit passed on", () => {
+    const files = repository({
+      ...code,
+      "packages/a/src/inner.ts":
+        "export interface InnerLimits {\n  readonly maxHidden: number;\n}\nthrow new LimitError(message, error.limit, error.maximum);\n",
+      "SECURITY.md": "`maxThings`, `maxDepth`, `maxItems` and `maxBodyBytes`\n",
+    });
+    expect(checkSecurityLimits(files)).toStrictEqual([]);
+  });
+});
+
 describe("all checks", () => {
   it("reports nothing for a repository that holds the standards", () => {
     const files = repository({
@@ -378,6 +417,15 @@ describe("all checks", () => {
       "packages/a/test/a.test.ts": 'it("returns one", () => {});\n',
     });
     expect(checkStandards(files)).toStrictEqual([]);
+  });
+
+  it("holds SECURITY.md to the limits of the packages", () => {
+    const files = repository({
+      ...familyFiles(),
+      "packages/a/src/index.ts": 'export function read() {\n  throw new LimitError("Too many.", "maxThings", 10);\n}\n',
+    });
+    expect(checkStandards(files).map(({ rule }) => rule)).toStrictEqual(["security-limit"]);
+    expect(checkStandards(new Map([...files, ["SECURITY.md", "| `maxThings` | 10 |\n"]]))).toStrictEqual([]);
   });
 
   it("names the rule and the line of each violation", () => {

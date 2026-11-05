@@ -362,7 +362,9 @@ Where the code departs from `STANDARDS.md`, with the reason.
   A failed call to a service is a `ServiceError` with its `status`, `headers` and `body`. Input over a limit of a reader or a
   handler, a `max*` option or a fixed limit, throws the `LimitError` of `core`, a `DataError` with `limit`, the name of the
   option or of the fixed limit, and `maximum`, its value, so that a host answers 413 from one check; a handler answers 413 for
-  it, unless its specification names another answer. Every error class takes `options?: ErrorOptions` last, and an error that
+  it, unless its specification names another answer. `SECURITY.md` names every limit: `pnpm check:standards` fails on the
+  `limit` of a `LimitError`, a key of an exported `*_LIMITS` object or a property of an exported `*Limits` interface that it
+  does not name. Every error class takes `options?: ErrorOptions` last, and an error that
   reports another, caught or wrapped, passes `{ cause }`.
 - Anything that waits on I/O is async and takes `signal` of `CallOptions`, which ends that caller's wait. Work that several
   callers share, such as a key set fetch, runs to its own timeout and takes no caller's signal. Every port receives the
