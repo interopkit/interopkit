@@ -46,8 +46,8 @@ ratio is five times the highest ratio measured on the runner of CI (the eight la
 
 | Budget | Value | How it was set |
 | --- | --- | --- |
-| `validateStatement` of the batch, in milliseconds | 200 | Five times the fastest of the eight latest samples of the runners of CI, 20.57, rounded up to one significant digit |
-| `parseStatementJson` of the batch, in milliseconds | 70 | Five times the fastest of the eight latest samples of the runners of CI, 12.37, rounded up to one significant digit; the samples range from 12.4 to 18.9 ms |
+| `validateStatement` of the batch, in milliseconds | 70 | Five times the fastest of the eight latest samples of the runners of CI, 12.33, rounded up to one significant digit; the samples range from 12.3 to 30.7 ms |
+| `parseStatementJson` of the batch, in milliseconds | 40 | Five times the fastest of the eight latest samples of the runners of CI, 7.13, rounded up to one significant digit; the samples range from 7.1 to 16.4 ms |
 
 `JSON.parse` judges the syntax first, so the search for a repeated name is a scan of the strings and the brackets that keeps the
 names of the open objects and builds nothing else; a parser that builds a syntax tree took 16 to 18 times `JSON.parse`. A test

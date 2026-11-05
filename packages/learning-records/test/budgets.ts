@@ -12,9 +12,9 @@ export const STATEMENTS = 1000;
  */
 export const BUDGETS = {
   /** `validateStatement` of each of the Statements of the batch. */
-  validateStatement: 200,
+  validateStatement: 70,
   /** `parseStatementJson` of the text of the batch. */
-  parseStatementJson: 70,
+  parseStatementJson: 40,
 } as const;
 
 /**
