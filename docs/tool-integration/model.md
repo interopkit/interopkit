@@ -109,7 +109,7 @@ vocabularies, and the URI does not say which.
 
 ## Tokens
 
-Both roles verify a token with the rules of [the tool role's launch checks](tool.md#what-handlelaunch-checks), from
+Both roles verify a token with the rules of [the tool role's launch checks](tool.md#the-checks-of-a-launch), from
 `token-malformed` to `issued-in-future`, before they read a claim. A `KeySet` is the keys of one party: a `Signer` that signs
 with an algorithm of `APPROVED_ALGORITHMS`, and the public keys the party publishes, each with a `kid` that no other key has;
 [the tool role](tool.md#the-tools-key-set) shows how to rotate them.

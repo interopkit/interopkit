@@ -222,7 +222,7 @@ sequenceDiagram
 | Headers of both pages       | A CSP that allows their one script by hash (`default-src 'none'; script-src 'sha256-...'; base-uri 'none'; form-action 'self'`), `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`; every value HTML-encoded |
 | Referrer                    | None from the storage page; `Referrer-Policy: same-origin` on the verification page, since under `no-referrer` a browser posts the form with `Origin: null`, which `handleLaunch` refuses                               |
 
-### What `handleLaunch` checks
+### The checks of a launch
 
 A request that is not a POST of a form with `id_token` and `state` is a `DataError`, and a form over `maxFormBytes`, measured
 before it is decoded, a `LimitError`. Then, in this order, a failure throws `LtiError` with the reason in the table. The login
