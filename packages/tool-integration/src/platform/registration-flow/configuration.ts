@@ -47,7 +47,7 @@ function platformConfiguration(settings: PlatformSettings): PlatformConfiguratio
     subjectTypesSupported: [...(discovery.subjectTypesSupported ?? DEFAULT_SUBJECT_TYPES)],
     lti: {
       // The options check that Dynamic Registration has the product family code of the instance.
-      productFamilyCode: config.instance?.productFamilyCode ?? "",
+      productFamilyCode: config.instance?.productFamilyCode as string,
       ...(config.instance?.version === undefined ? {} : { version: config.instance.version }),
       messagesSupported: discovery.messagesSupported ?? PLATFORM_MESSAGE_TYPES.map((type) => ({ type })),
       variables: supportedVariables(settings.substitution),

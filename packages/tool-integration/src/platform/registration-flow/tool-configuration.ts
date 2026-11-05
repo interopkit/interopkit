@@ -3,7 +3,7 @@ import { checkNonEmptyString, checkRecord, checkRemoteUrl, describe, isRecord } 
 import { buildJsonResponse, type HttpRequest, type HttpResponse } from "@interopkit/core/http";
 import type { ToolConfiguration } from "../../protocol/index.js";
 import { readToolConfiguration, writeToolConfiguration, writeToolRegistrationResult } from "../../protocol/internal.js";
-import { NO_STORE, refusal } from "../answers.js";
+import { NO_STORE, refusal, refusedBy } from "../answers.js";
 import { PATHS } from "../config.js";
 import type { PlatformSettings } from "../options.js";
 import type { RegisteredTool, RegistrationRefusal, RegistrationRefusalReason } from "../ports.js";
@@ -57,7 +57,9 @@ function addressesOf(configuration: ToolConfiguration): [name: string, url: stri
       ["target_link_uri of a message", message.targetLinkUri],
       ["icon_uri of a message", message.iconUri],
     ]),
-    ...[...(configuration.localized ?? [])].filter(([name]) => LOCALIZED_ADDRESSES.includes(name.split("#")[0] ?? "")),
+    ...[...(configuration.localized ?? [])].filter(([name]) =>
+      LOCALIZED_ADDRESSES.some((address) => name === address || name.startsWith(`${address}#`)),
+    ),
   ];
   return listed.filter((entry): entry is [string, string] => entry[1] !== undefined);
 }
@@ -68,8 +70,7 @@ function addressProblem(url: string, name: string, settings: PlatformSettings): 
   try {
     checkRemoteUrl(url, `The ${name}`);
   } catch (error) {
-    if (error instanceof DataError) return error.message;
-    throw error;
+    return refusedBy(error).message;
   }
   // The tool's frame has allow-same-origin, so a tool on an origin of the platform would reach the platform's pages.
   if ([config.origin, config.frameOrigin, ...config.reservedOrigins].includes(new URL(url).origin)) {

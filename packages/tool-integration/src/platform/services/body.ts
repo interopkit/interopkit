@@ -1,7 +1,7 @@
-import { DataError, LimitError } from "@interopkit/core";
+import { LimitError } from "@interopkit/core";
 import { buildJsonResponse, type HttpRequest, type HttpResponse, readJson } from "@interopkit/core/http";
 import { errorBody } from "../../protocol/internal.js";
-import { refusal, tooLarge } from "../answers.js";
+import { refusal, refusedBy, tooLarge } from "../answers.js";
 
 /** Returns the media type of a request without its parameters, in lower case. */
 function mediaTypeOf(request: HttpRequest): string | undefined {
@@ -37,7 +37,6 @@ export function readBody<T>(
     return { value: read(readJson(request, { maxBytes })) };
   } catch (error) {
     if (error instanceof LimitError) return tooLarge(error.message);
-    if (error instanceof DataError) return refusal(400, invalid, error.message);
-    throw error;
+    return refusal(400, invalid, refusedBy(error).message);
   }
 }

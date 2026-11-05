@@ -23,7 +23,15 @@ import { notFound } from "../answers.js";
 import type { GradebookStore, ReceivedScore, StorePage } from "../ports.js";
 import { readBody } from "./body.js";
 import { pageHeaders, readPagedQuery } from "./paging.js";
-import { askStore, type ClaimRequest, fromStore, readStorePage, type Service, type ServiceRequest } from "./service.js";
+import {
+  askStore,
+  type ClaimRequest,
+  fromStore,
+  paramOf,
+  readStorePage,
+  type Service,
+  type ServiceRequest,
+} from "./service.js";
 
 /** The scopes that read the line items: the narrower first. */
 const READ_LINE_ITEMS = [SCOPES.lineitemReadonly, SCOPES.lineitem];
@@ -46,7 +54,7 @@ function lineItemUrl(origin: string, contextId: string, lineItemId: string): str
 
 /** The context and the line item that the path of a request names. */
 function pathOf(call: Call): { readonly context: string; readonly lineItem: string } {
-  return { context: call.params.context ?? "", lineItem: call.params.lineItem ?? "" };
+  return { context: paramOf(call, "context"), lineItem: paramOf(call, "lineItem") };
 }
 
 /** Reads a page that a store answered, its items with a reader. */
@@ -167,10 +175,8 @@ async function getResults(call: Call): Promise<HttpResponse> {
 /** Reads the body of a score, with the instant of its timestamp for the store to order it by. */
 function readReceivedScore(value: unknown): ReceivedScore {
   const score = readScore(value);
-  const timestampMs = parseZonedDateTime(score.timestamp);
-  if (timestampMs === undefined)
-    throw new DataError(`The timestamp of the score is not a date and time with a time zone.`);
-  return { ...score, timestampMs };
+  // `readScore` takes only a timestamp that has a time zone, which `parseZonedDateTime` reads.
+  return { ...score, timestampMs: parseZonedDateTime(score.timestamp) as number };
 }
 
 /**

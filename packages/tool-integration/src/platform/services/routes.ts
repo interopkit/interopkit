@@ -122,7 +122,8 @@ function matchPath(pattern: string, pathname: string): Record<string, string> | 
   if (wanted.length !== given.length) return undefined;
   const params: Record<string, string> = {};
   for (const [index, part] of wanted.entries()) {
-    const segment = given[index] ?? "";
+    // The route has as many parts as the path has segments.
+    const segment = given[index] as string;
     if (!part.startsWith("{")) {
       if (segment !== part) return undefined;
       continue;

@@ -1,9 +1,10 @@
-import { DataError, LimitError, readClock } from "@interopkit/core";
+import { LimitError, readClock } from "@interopkit/core";
 import { describe, type JsonObject } from "@interopkit/core/checks";
 import { checkHttpRequest, type HttpRequest } from "@interopkit/core/http";
 import { LtiError } from "../../errors.js";
 import type { ContentItem, DeepLinkingResponseMessage, DeepLinkingSettings } from "../../protocol/index.js";
 import { CLAIM, findRefusal, readContentItem, readToolMessage, toSeconds } from "../../protocol/internal.js";
+import { refusedBy } from "../answers.js";
 import { openingKeys } from "../config.js";
 import { readToolMessageOptions, type ToolMessageOptions } from "../options.js";
 import { openDeepLinkingData } from "../tokens.js";
@@ -43,12 +44,11 @@ function readItems(items: readonly JsonObject[]): ContentItem[] {
     try {
       return readContentItem(item);
     } catch (error) {
-      if (error instanceof DataError) {
-        throw new LtiError(`The item ${index + 1} is not a content item: ${error.message}`, "content-item-refused", {
-          cause: error,
-        });
-      }
-      throw error;
+      throw new LtiError(
+        `The item ${index + 1} is not a content item: ${refusedBy(error).message}`,
+        "content-item-refused",
+        { cause: error },
+      );
     }
   });
 }

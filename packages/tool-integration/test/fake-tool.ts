@@ -196,9 +196,15 @@ export async function generateEcKey(kid: string, algorithm: EcKey["algorithm"] =
 }
 
 /** Signs a client assertion with an elliptic curve key, with jose. */
-export function ecAssertion(tool: EcKey, tokenUrl: string, clock: TestClock, change: Assertion = {}): Promise<string> {
+export function ecAssertion(
+  tool: EcKey,
+  tokenUrl: string,
+  clock: TestClock,
+  change: Assertion = {},
+  header: Record<string, unknown> = {},
+): Promise<string> {
   return new SignJWT(assertionClaims(tokenUrl, clock, change))
-    .setProtectedHeader({ alg: tool.algorithm, kid: tool.kid, typ: "JWT" })
+    .setProtectedHeader({ alg: tool.algorithm, kid: tool.kid, typ: "JWT", ...header })
     .sign(tool.privateKey);
 }
 

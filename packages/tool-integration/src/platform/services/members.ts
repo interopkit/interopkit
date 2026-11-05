@@ -13,7 +13,15 @@ import {
 import { notFound } from "../answers.js";
 import type { RosterStore } from "../ports.js";
 import { pageHeaders, readPagedQuery } from "./paging.js";
-import { askStore, type ClaimRequest, fromStore, PAGE_ENTRIES, type Service, type ServiceRequest } from "./service.js";
+import {
+  askStore,
+  type ClaimRequest,
+  fromStore,
+  PAGE_ENTRIES,
+  paramOf,
+  type Service,
+  type ServiceRequest,
+} from "./service.js";
 
 const MEMBERSHIPS_PATH = "/contexts/{context}/memberships";
 /** The version of the service that the claim says (NRPS 2.0 section 4.1). */
@@ -45,7 +53,7 @@ function storedMember(value: unknown): Member {
  */
 async function getMembers(call: Call): Promise<HttpResponse> {
   const { url, store, caller, settings } = call;
-  const context = call.params.context ?? "";
+  const context = paramOf(call, "context");
   const request = readPagedQuery(call, readMemberQuery);
   if ("status" in request) return request;
   const { query, page } = request;

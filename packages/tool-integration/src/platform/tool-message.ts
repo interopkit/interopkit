@@ -14,6 +14,7 @@ import {
   unverifiedClaims,
   verifyJwt,
 } from "../protocol/internal.js";
+import { refusedBy } from "./answers.js";
 import type { ToolMessageSettings } from "./options.js";
 import { readToolRegistration, type ToolRegistration, toolKeySet } from "./registration.js";
 
@@ -153,8 +154,7 @@ function readMessage(request: HttpRequest, settings: ToolMessageSettings): strin
   try {
     form = readForm(request);
   } catch (error) {
-    if (error instanceof DataError) throw new LtiError(error.message, "request-invalid", { cause: error });
-    throw error;
+    throw new LtiError(refusedBy(error).message, "request-invalid", { cause: error });
   }
   const message = form.get(MESSAGE_PARAMETER);
   if (message === undefined || message === "") {

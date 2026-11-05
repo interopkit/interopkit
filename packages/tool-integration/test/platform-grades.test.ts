@@ -160,6 +160,30 @@ describe("the access to the grade services", () => {
     expect((await handle(ctx, call(LINE_ITEM, token))).status).toBe(401);
   });
 
+  it("refuses an Authorization header that is no bearer token, and a token of no characters, as it refuses a forged token", async () => {
+    const ctx = graded();
+    for (const header of ["Basic ana:secret", "Bearer", "Bearer ", "Token abc.def.ghi"]) {
+      const asked = call(LINE_ITEM, undefined);
+      const response = await handle(ctx, { ...asked, headers: { ...asked.headers, authorization: header } });
+      expect([response.status, response.headers["www-authenticate"]], header).toEqual([
+        401,
+        'Bearer error="invalid_token"',
+      ]);
+    }
+    expect(ctx.gradebook.calls).toEqual([]);
+  });
+
+  it("answers 500 when the lookup of the tool fails after the token is read, with nothing of the cause", async () => {
+    const ctx = graded();
+    const token = await tokenFor(ctx, SCOPES.lineitemReadonly);
+    const failed = await handle(ctx, call(LINE_ITEM, token), {
+      registration: () => Promise.reject(new Error("cause: the database is down")),
+    });
+    expect(failed.status).toBe(500);
+    expect(textOf(failed.body)).not.toContain("cause");
+    expect(ctx.gradebook.calls).toEqual([]);
+  });
+
   it("needs one of the scopes of the method, among those that the registration still grants", async () => {
     const ctx = graded();
     const token = await tokenFor(ctx, SCOPES.lineitemReadonly);
@@ -476,5 +500,56 @@ describe("a gradebook with some of the methods", () => {
       lineitems: CONTAINER,
       lineitem: LINE_ITEM,
     });
+  });
+});
+
+describe("a gradebook that breaks its contract", () => {
+  const token = (ctx: Setup) => tokenFor(ctx, `${SCOPES.lineitem} ${SCOPES.resultReadonly} ${SCOPES.score}`);
+
+  it("is a DataError when it answers the deletion of a line item with anything but a boolean", async () => {
+    const ctx = graded();
+    const granted = await token(ctx);
+    ctx.gradebook.deleteLineItem = async () => "yes" as never;
+    await expect(handle(ctx, call(LINE_ITEM, granted, { method: "DELETE" }))).rejects.toThrow(
+      "The answer of GradebookStore.deleteLineItem must be a boolean.",
+    );
+  });
+
+  it("is a DataError when it answers a score with anything but kept, older or nothing", async () => {
+    const ctx = graded();
+    const granted = await token(ctx);
+    const post = () =>
+      handle(ctx, call(`${LINE_ITEM}/scores`, granted, { method: "POST", type: SCORE_TYPE, body: score() }));
+    for (const answer of ["kept", "older"] as const) {
+      ctx.gradebook.keepScore = async () => answer;
+      expect((await post()).status, answer).toBe(204);
+    }
+    ctx.gradebook.keepScore = async () => "stored" as never;
+    await expect(post()).rejects.toThrow(
+      'The answer of GradebookStore.keepScore must be "kept", "older" or undefined.',
+    );
+  });
+
+  it("is a DataError when a result of its page is no object, which names no user", async () => {
+    const ctx = graded();
+    const granted = await token(ctx);
+    ctx.gradebook.results = async () => ({ items: ["candidate-7"] }) as never;
+    await expect(handle(ctx, call(`${LINE_ITEM}/results`, granted))).rejects.toThrow(DataError);
+  });
+
+  it("is not asked to update a line item by a body that is not one, which is answered 400", async () => {
+    const ctx = graded();
+    const granted = await token(ctx);
+    const put = (body: unknown, type = LINE_ITEM_TYPE) =>
+      handle(ctx, call(LINE_ITEM, granted, { method: "PUT", type, body }));
+    for (const answer of [
+      await put({ label: "" }),
+      await put("not JSON"),
+      await put({ label: "Quiz", scoreMaximum: 10 }, "text/plain"),
+    ]) {
+      expect(answer.status).toBeGreaterThanOrEqual(400);
+      expect(answer.status).toBeLessThan(500);
+    }
+    expect(ctx.gradebook.calls.map(({ method }) => method)).not.toContain("updateLineItem");
   });
 });

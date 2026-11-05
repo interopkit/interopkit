@@ -363,6 +363,37 @@ describe("the registration endpoint", () => {
     expect((await register(ctx, toolRequest(), token)).status).toBe(401);
   });
 
+  it("refuses an Authorization header that is no bearer token, even when openRegistration is set", async () => {
+    const ctx = registering({ openRegistration: true });
+    for (const header of ["Basic ana:secret", "Bearer", "Token abc"]) {
+      const asked = call(REGISTRATION_URL, undefined, {
+        method: "POST",
+        type: "application/json",
+        body: toolRequest(),
+      });
+      const refused = await handle(ctx, { ...asked, headers: { ...asked.headers, authorization: header } });
+      expect([refused.status, json(refused).error], header).toEqual([401, "invalid_token"]);
+    }
+    expect(ctx.registrations.calls).toEqual([]);
+  });
+
+  it("registers a tool that asks for no scope, with no scope in what it gives the store", async () => {
+    const ctx = registering();
+    const { scope: _scope, ...withoutScope } = toolRequest();
+    expect((await register(ctx, withoutScope, await registrationToken(ctx))).status).toBe(201);
+    expect(ctx.registrations.calls[0]?.args[0]).not.toHaveProperty("scope");
+  });
+
+  it("states the version of the instance of the platform only when it has one", async () => {
+    const withVersion = json(await handle(registering(), call(CONFIGURATION_URL, undefined)));
+    expect(withVersion[PLATFORM_LTI]).toMatchObject({ product_family_code: "interopkit-tests", version: "2.1" });
+    const { version: _version, ...instance } = drConfig.instance ?? { guid: "" };
+    const ctx = registering({ config: { ...drConfig, instance } });
+    const without = json(await handle(ctx, call(CONFIGURATION_URL, undefined)));
+    expect(without[PLATFORM_LTI]).toMatchObject({ product_family_code: "interopkit-tests" });
+    expect(without[PLATFORM_LTI]).not.toHaveProperty("version");
+  });
+
   it("refuses a request without a token, unless openRegistration is set", async () => {
     const ctx = registering();
     const refused = await register(ctx, toolRequest(), null);
@@ -573,6 +604,39 @@ describe("the client configuration endpoint", () => {
     expect((await handle(ctx, call(CLIENT_URL, ctx.token))).status).toBe(404);
   });
 
+  it("answers 404 to the update of the registration of another tool, which a tool never changes, and asks the store for nothing", async () => {
+    const ctx = await activated(SCOPES.registration);
+    const body = { client_id: "tool-client-9", ...toolRequest() };
+    const put = await handle(
+      ctx,
+      call(`${REGISTRATION_URL}/tool-client-9`, ctx.token, { method: "PUT", type: "application/json", body }),
+    );
+    expect(put.status).toBe(404);
+    expect(ctx.registrations.calls.map(({ method }) => method)).not.toContain("update");
+  });
+
+  it("answers 404 to the update of a registration that the store no longer has", async () => {
+    const ctx = await activated(SCOPES.registration);
+    ctx.registrations.tools.clear();
+    const body = { client_id: TOOL_CLIENT_ID, ...toolRequest() };
+    const put = await handle(ctx, call(CLIENT_URL, ctx.token, { method: "PUT", type: "application/json", body }));
+    expect(put.status).toBe(404);
+    expect(ctx.registrations.calls.at(-1)?.method).toBe("update");
+  });
+
+  it("is a DataError when the store answers the registration of another tool than the one asked for", async () => {
+    const ctx = await activated(SCOPES.registrationReadonly);
+    const other = storeWith(ctx.registrations, {
+      get: async (clientId) => {
+        const tool = ctx.registrations.tools.get(clientId);
+        return tool === undefined ? undefined : { ...tool, clientId: "tool-client-9" };
+      },
+    });
+    await expect(handle(ctx, call(CLIENT_URL, ctx.token), { services: { registrations: other } })).rejects.toThrow(
+      "it is the registration of tool-client-9",
+    );
+  });
+
   it("gives an update to the store with its scopes narrowed, and answers the pending configuration", async () => {
     const ctx = await activated(SCOPES.registration);
     const body = { client_id: TOOL_CLIENT_ID, ...toolRequest({ client_name: "Drawing tool 2" }) };
@@ -654,6 +718,18 @@ describe("buildToolRegistration", () => {
       expect(() => buildToolRegistration(JSON.parse(text), { scopes: [], deploymentIds: ["d-1"] })).toThrow(DataError);
       expect(() => buildToolRegistration(registered, JSON.parse(text))).toThrow(DataError);
     }
+  });
+
+  it("refuses a registration whose configuration holds a member of another kind than the model has, as a DataError", async () => {
+    const ctx = registering({ openRegistration: true });
+    await register(ctx, toolRequest(), null);
+    const registered = ctx.registrations.tools.get(TOOL_CLIENT_ID);
+    if (registered === undefined) throw new Error("The tool is not registered.");
+    const lti = { ...registered.configuration.lti, messages: 5 };
+    const configuration = { ...registered.configuration, lti } as never;
+    expect(() =>
+      buildToolRegistration({ ...registered, configuration }, { scopes: [], deploymentIds: ["d-1"] }),
+    ).toThrow("The configuration of the tool is not one");
   });
 });
 

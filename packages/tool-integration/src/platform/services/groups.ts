@@ -12,7 +12,15 @@ import {
 import { notFound } from "../answers.js";
 import type { GroupStore } from "../ports.js";
 import { pageHeaders, readPagedQuery } from "./paging.js";
-import { askStore, type ClaimRequest, fromStore, readStorePage, type Service, type ServiceRequest } from "./service.js";
+import {
+  askStore,
+  type ClaimRequest,
+  fromStore,
+  paramOf,
+  readStorePage,
+  type Service,
+  type ServiceRequest,
+} from "./service.js";
 
 const GROUPS_PATH = "/contexts/{context}/groups";
 const GROUP_SETS_PATH = "/contexts/{context}/group-sets";
@@ -35,7 +43,7 @@ function groupSetsUrl(origin: string, contextId: string): string {
 /** GET of the groups of a context, or of the groups a user is enrolled in (Context Groups 1.0 sections 2.1 and 2.1.2), in pages. */
 async function getGroups(call: Call): Promise<HttpResponse> {
   const { url, store, caller, settings } = call;
-  const context = call.params.context ?? "";
+  const context = paramOf(call, "context");
   const request = readPagedQuery(call, readGroupQuery);
   if ("status" in request) return request;
   const { userId } = request.query;
@@ -63,7 +71,7 @@ async function getGroups(call: Call): Promise<HttpResponse> {
 /** GET of the group sets of a context (Context Groups 1.0 sections 2.2 and 2.5.2), in pages. */
 async function getGroupSets(call: Call): Promise<HttpResponse> {
   const { url, store, caller, settings } = call;
-  const context = call.params.context ?? "";
+  const context = paramOf(call, "context");
   const request = readPagedQuery(call, readGroupQuery);
   if ("status" in request) return request;
   const label = "GroupStore.groupSets";

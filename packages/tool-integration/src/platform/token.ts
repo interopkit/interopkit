@@ -12,7 +12,7 @@ import {
   required,
   toSeconds,
 } from "../protocol/internal.js";
-import { methodNotAllowed, NO_STORE, refusal, serverError } from "./answers.js";
+import { methodNotAllowed, NO_STORE, refusal, refusedBy, serverError } from "./answers.js";
 import { endpointsOf } from "./config.js";
 import type { PlatformSettings } from "./options.js";
 import type { ToolRegistration } from "./registration.js";
@@ -47,8 +47,7 @@ function readRequest(request: HttpRequest): TokenRequest {
   try {
     form = readForm(request);
   } catch (error) {
-    if (error instanceof DataError) throw new LtiError(error.message, "request-invalid", { cause: error });
-    throw error;
+    throw new LtiError(refusedBy(error).message, "request-invalid", { cause: error });
   }
   if (form.get("grant_type") !== CLIENT_CREDENTIALS_GRANT) {
     throw new LtiError(`The grant_type must be ${CLIENT_CREDENTIALS_GRANT}.`, "unsupported-grant-type");

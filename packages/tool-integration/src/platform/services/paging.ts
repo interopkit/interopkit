@@ -1,6 +1,6 @@
 import { DataError } from "@interopkit/core";
 import type { HttpResponse } from "@interopkit/core/http";
-import { refusal } from "../answers.js";
+import { refusal, refusedBy } from "../answers.js";
 import type { PlatformSettings } from "../options.js";
 import type { StorePage } from "../ports.js";
 import type { RouteCall } from "./service.js";
@@ -46,8 +46,7 @@ export function readPagedQuery<TQuery extends { readonly limit?: number | undefi
     const query = read(call.url.searchParams);
     return { query, page: readPageRequest(call.url, query.limit, call.settings) };
   } catch (error) {
-    if (error instanceof DataError) return refusal(400, "invalid_request", error.message);
-    throw error;
+    return refusal(400, "invalid_request", refusedBy(error).message);
   }
 }
 

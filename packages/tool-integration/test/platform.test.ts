@@ -155,6 +155,9 @@ describe("buildPlatformEndpoints and the configuration", () => {
     expect(() => buildPlatformEndpoints({ ...config, hintKey: short })).toThrow("at least 256 bits");
     expect(() => buildPlatformEndpoints({ ...config, hintKey: sha1 })).toThrow("HMAC key with SHA-256");
     expect(() => buildPlatformEndpoints({ ...config, previousHintKeys: [short] })).toThrow("A previous hint key");
+    for (const notAKey of ["a secret as text", null, 7]) {
+      expect(() => buildPlatformEndpoints({ ...config, hintKey: notAKey as never })).toThrow("HMAC key with SHA-256");
+    }
   });
 
   it("refuses an instance of the platform without a guid of 1 to 255 characters", () => {
@@ -1088,6 +1091,32 @@ describe("the token endpoint", () => {
     });
     expect(oauthError(await handle(ctx, tokenRequest(endpoints.token, assertion, "s")))).toBe("invalid_scope");
     expect(ctx.toolFetches).toEqual([]);
+  });
+
+  it("refuses with invalid_client the assertion of a tool that gave its key when the header names no key, or another, and spends no jti", async () => {
+    const ctx = setup();
+    for (const header of [{ kid: undefined }, { kid: 7 }, { kid: "tool-key-9" }]) {
+      const assertion = await ecAssertion(
+        otherToolKey,
+        endpoints.token,
+        ctx.clock,
+        { iss: OTHER_CLIENT_ID, sub: OTHER_CLIENT_ID },
+        header,
+      );
+      const refused = await handle(ctx, tokenRequest(endpoints.token, assertion, "s"));
+      expect(oauthError(refused), JSON.stringify(header)).toBe("invalid_client");
+    }
+    expect(ctx.used.size).toBe(0);
+  });
+
+  it("reads the system clock when the options give none, so that an assertion made for another time is refused", async () => {
+    const ctx = setup();
+    const request = tokenRequest(endpoints.token, await clientAssertion(toolKeys, endpoints.token, ctx.clock), "s");
+    const { clock: _clock, ...withoutClock } = ctx.requests;
+    const refused = await handlePlatformRequest(request, withoutClock);
+    expect(oauthError(refused)).toBe("invalid_client");
+    expect(ctx.used.size).toBe(0);
+    expect(oauthError(await handle(ctx, request))).toBe("invalid_scope");
   });
 
   it("takes an assertion once, and remembers its jti until its expiry, rounded up, and the leeway after it", async () => {

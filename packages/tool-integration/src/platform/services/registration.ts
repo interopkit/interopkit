@@ -10,7 +10,7 @@ import {
   storedRefusal,
   storedRegistration,
 } from "../registration-flow/tool-configuration.js";
-import { askStore, type Service, type ServiceRequest } from "./service.js";
+import { askStore, paramOf, type Service, type ServiceRequest } from "./service.js";
 
 const CLIENT_PATH = "/registration/{client}";
 
@@ -20,7 +20,7 @@ type Call = ServiceRequest<RegistrationStore>;
 
 /** The client of the path, when it is the caller's: a tool reads and changes its own registration and no other. */
 function ownClient(call: Call): string | undefined {
-  const client = call.params.client ?? "";
+  const client = paramOf(call, "client");
   return client === call.caller.clientId ? client : undefined;
 }
 

@@ -271,7 +271,7 @@ function storeSchema<TStore extends object>(
   const expected =
     required.length === 0
       ? `an object with at least one of the functions ${listed(optional)}, and only functions by those names`
-      : `an object with the function${required.length > 1 ? "s" : ""} ${required.join(", ")}, and ${listed(optional)} only as a function`;
+      : `an object with the function ${required.join(", ")}, and ${listed(optional)} only as a function`;
   return guardSchema(
     (value): value is TStore =>
       isRecord(value) &&

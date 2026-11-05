@@ -98,7 +98,8 @@ export function checkToolRegistration(value: unknown): asserts value is ToolRegi
  */
 export function toolKeySet(registration: ToolRegistration, jwks: JwksCache, options?: CallOptions): JWTVerifyGetKey {
   if (registration.jwksUrl !== undefined) return jwks.keySet(registration.jwksUrl, options);
-  const keys = registration.keys ?? new Map<string, CryptoKey>();
+  // A registration that gives no key set gives keys, which `readToolRegistration` checks.
+  const keys = registration.keys as ReadonlyMap<string, CryptoKey>;
   return (header) => {
     const key = typeof header.kid === "string" ? keys.get(header.kid) : undefined;
     if (key === undefined) throw new errors.JWKSNoMatchingKey();

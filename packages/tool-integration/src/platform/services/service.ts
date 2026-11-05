@@ -118,6 +118,11 @@ export function fromStore<T>(label: string, read: () => T): T {
   }
 }
 
+/** The parameter of the path of a request, which the route that matched the path names, so that the path has it. */
+export function paramOf(call: Pick<ServiceRequest<unknown>, "params">, name: string): string {
+  return call.params[name] as string;
+}
+
 /** The members of the page that a store answers, beside which a store may give more. */
 export const PAGE_ENTRIES = { items: v.array(v.unknown()), cursor: v.optional(nonEmptyStringSchema) };
 

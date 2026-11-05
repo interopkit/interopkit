@@ -4,7 +4,7 @@ import { type HttpRequest, type HttpResponse, readForm, readQuery } from "@inter
 import { LtiError, type LtiErrorReason } from "../errors.js";
 import type { MigrationClaim } from "../protocol/index.js";
 import { renderPostPage, signConsumerKey, toSeconds, writeMessage } from "../protocol/internal.js";
-import { methodNotAllowed, refusal, serverError, tooLarge } from "./answers.js";
+import { methodNotAllowed, refusal, refusedBy, serverError, tooLarge } from "./answers.js";
 import { openingKeys } from "./config.js";
 import { LAUNCH_TTL_SECONDS } from "./login.js";
 import { type MessageInput, readMessageInput } from "./messages/input.js";
@@ -295,8 +295,7 @@ async function address(request: HttpRequest, settings: PlatformSettings): Promis
   try {
     parameters = request.method === "GET" ? readQuery(request) : readForm(request);
   } catch (error) {
-    if (error instanceof DataError) return refusal(400, "invalid_request", error.message);
-    throw error;
+    return refusal(400, "invalid_request", refusedBy(error).message);
   }
   const clientId = parameters.get("client_id") ?? "";
   if (clientId === "") return refusal(400, "invalid_request", "The authentication request must have a client_id.");

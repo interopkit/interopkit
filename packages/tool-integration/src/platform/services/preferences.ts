@@ -1,4 +1,3 @@
-import { DataError } from "@interopkit/core";
 import { buildJsonResponse, type HttpResponse } from "@interopkit/core/http";
 import { type MessageServices, SCOPES } from "../../protocol/index.js";
 import {
@@ -7,9 +6,9 @@ import {
   readPreferencesQuery,
   readPreferencesRecord,
 } from "../../protocol/internal.js";
-import { notFound, refusal } from "../answers.js";
+import { notFound, refusal, refusedBy } from "../answers.js";
 import type { PreferencesStore } from "../ports.js";
-import { askStore, type ClaimRequest, fromStore, type Service, type ServiceRequest } from "./service.js";
+import { askStore, type ClaimRequest, fromStore, paramOf, type Service, type ServiceRequest } from "./service.js";
 
 /** The path of the one endpoint of the connector that LTI makes available (AfA PNP Connector 1.0, overview). */
 const RECORD_PATH = `${PREFERENCES_BASE_PATH}/users/{user}/activities/{activity}/afapnprecords`;
@@ -22,14 +21,13 @@ type Call = ServiceRequest<PreferencesStore>;
  */
 async function getRecord(call: Call): Promise<HttpResponse> {
   const { url, store, caller } = call;
-  const user = call.params.user ?? "";
-  const activity = call.params.activity ?? "";
+  const user = paramOf(call, "user");
+  const activity = paramOf(call, "activity");
   let fields: readonly string[] | undefined;
   try {
     ({ fields } = readPreferencesQuery(url.searchParams));
   } catch (error) {
-    if (error instanceof DataError) return refusal(400, "invalid_request", error.message);
-    throw error;
+    return refusal(400, "invalid_request", refusedBy(error).message);
   }
   const found = await askStore(call, (options) => store.record(caller, user, activity, fields, options));
   if (found === undefined) return notFound();
