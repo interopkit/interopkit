@@ -2,12 +2,8 @@
 
 Dynamic Registration 1.0 in both roles. A platform's administrator opens the tool's initiation URL with the address of the
 platform's OpenID configuration and a registration token; the tool discovers the platform, registers with it, and closes the
-window; each administrator then reviews and activates its side. In the tool role, `readRegistrationInitiation`, `discoverPlatform`,
-`registerTool`, `buildPlatformRegistration` and `buildRegistrationClosePage` are the steps, so that the host may show its own pages
-between them, and the service client reads and changes the registration later. In the platform role, `buildRegistrationInitiation`
-starts a registration, `handlePlatformRequest` serves the configuration, the registration endpoint and the client configuration
-endpoint over the host's `RegistrationStore`, and `buildToolRegistration` turns a reviewed registration into the record of a tool. The
-configurations are the [service models](services.md) that both roles share.
+window; each administrator then reviews and activates its side. The tool role's steps are separate functions, so the host may
+show its own pages between them. The configurations are [service bodies](services.md) that both roles share.
 
 ```mermaid
 sequenceDiagram
@@ -64,15 +60,14 @@ initiation.registrationToken; // => "eyJhbGciOiJIUzI1NiJ9.e30.token"
 ```
 
 The next steps call the platform: `discoverPlatform(initiation, { fetch })`, then `registerTool(platform, tool, initiation, { fetch })`.
-A whole flow runs in the [example](../../examples/tool-integration/README.md): `src/registering-tool.ts` is a tool that registers
-itself, `src/registration.ts` holds the platform's registrations, and the scenario activates both sides and reads the registration
-back.
+The [example](../../examples/tool-integration/README.md) runs the whole flow: `src/registering-tool.ts` is a tool that registers
+itself, `src/registration.ts` holds the platform's registrations, and the scenario activates both sides and reads the
+registration back.
 
 ## The tool role
 
-The initiation route is public by nature: anyone can send a browser to it. The host puts it behind the session of the tool's
-administrator before `discoverPlatform` runs, and may keep the `RegistrationInitiation`, plain data, in that session while it shows
-its own pages.
+Anyone can send a browser to the initiation route, so put it behind the session of the tool's administrator before
+`discoverPlatform` runs; the `RegistrationInitiation` is plain data that the session may keep between the host's pages.
 
 `discoverPlatform(initiation, options)` fetches the configuration and checks it:
 
@@ -167,14 +162,19 @@ The registration endpoint checks, in order:
 | The store registers it, with the scopes narrowed to those the platform offers                                                                                  | 201, or 400 with the `reason` and the `message` of the store's `RegistrationRefusal` (`invalid_client_metadata` or `invalid_redirect_uri`) |
 
 The answer carries the recorded configuration, the `client_id` and the `registration_client_uri`, and no
-`registration_access_token`: the tool reads and changes its registration with an access token of the token endpoint. A token is spent
-also when the configuration is refused, so the tool starts again from the initiation. `/registration/{client}` answers 404 to a tool
-whose token is of another client, takes an update as it takes a registration, and refuses one whose `client_id` is another's.
+`registration_access_token`: the tool reads and changes its registration with an access token of the token endpoint. A token is
+spent also when the configuration is refused, so the tool starts again from the initiation. `/registration/{client}` answers 404
+to a tool whose token is of another client, takes an update as it takes a registration, and refuses one whose `client_id` is
+another's.
 
-The client configuration endpoint is optional (section 4), and so are `get` and `update` of the store; `register` is required. A
-store without both answers no `registration_client_uri`, `/registration/{client}` names nothing, and the scopes of `lti-reg` are
-neither listed in the configuration nor granted. A store with one serves its method, answers 405 to the other, and offers only the
-scope that it needs: `registration.readonly` for `get`, `registration` for `update`.
+The client configuration endpoint is optional (section 4), and so are `get` and `update` of the store; `register` is required:
+
+| The store has      | `registration_client_uri` | `/registration/{client}` | `lti-reg` scopes listed and granted     |
+| ------------------ | ------------------------- | ------------------------ | --------------------------------------- |
+| `get` and `update` | Answered                  | GET and PUT              | `registration.readonly`, `registration` |
+| `get` alone        | Answered                  | GET; PUT is 405          | `registration.readonly`                 |
+| `update` alone     | Answered                  | PUT; GET is 405          | `registration`                          |
+| Neither            | None                      | Names nothing            | None                                    |
 
 When the administrator activates a tool, the host gives `buildToolRegistration(registered, { scopes, deploymentIds })` to its lookup of
 tools: the login initiation URL, the redirect URIs, the key set URL and the custom properties of the configuration, with the scopes
@@ -182,12 +182,7 @@ and the deployments that the administrator grants.
 
 ## Limits
 
-| Limit                                       | Value                               |
-| ------------------------------------------- | ----------------------------------- |
-| A registration token                        | 3,600 seconds, once                 |
-| A registration or an update at the platform | 65,536 bytes                        |
-| An answer that the tool reads               | 65,536 bytes, 1,000,000 JSON tokens |
-| A call of the tool                          | 10,000 ms                           |
+The limits are the options above, and a registration token serves one registration.
 
 ## Failure paths
 
@@ -204,6 +199,7 @@ and the deployments that the administrator grants.
 | `LtiError` `request-invalid`             | The initiation request is not a GET with one `openid_configuration`                                | Answer 400                                                                                               |
 | `LtiError` `service-origin-refused`      | An address of the platform names no public host                                                    | Stop; the administrator checks the platform                                                              |
 | `LtiError` `issuer-mismatch`             | The configuration is not below its issuer, or an address of registration is on another origin      | Stop: the configuration may impersonate another platform; name a trusted origin in `registrationOrigins` |
+| `LimitError` from the tool's steps       | An answer is over `maxTokens`                                                                      | Raise `maxTokens` for a platform you trust                                                               |
 | `DataError` from the tool's steps        | An argument has the wrong type, or the platform's configuration or answer breaks the specification | Fix the caller; the platform's answer is refused                                                         |
 | `ServiceError` from `registerTool`       | The platform refused the registration (400 with `invalid_client_metadata`) or did not answer       | Read `body`; the administrator starts again                                                              |
 | `DataError` from `handlePlatformRequest` | The platform cannot serve Dynamic Registration, or a port broke its contract                       | Fix the configuration or the port                                                                        |

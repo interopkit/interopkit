@@ -1,9 +1,7 @@
 # Evidence for tool-integration
 
-What shows that the package does what it says: the vocabularies and examples of the specifications, tokens that another library
-signs, a round trip between the two roles, tools of other authors that launch from the platform role and use its services, Moodle
-in both roles, and four runtimes. Each layer answers a question that the one before cannot. The speed, the size and the peak
-memory are in [performance](performance.md).
+What shows that the package does what it says, each layer answering a question that the one before cannot; the speed, the size
+and the peak memory are in [performance](performance.md).
 
 ```mermaid
 flowchart LR
@@ -41,7 +39,7 @@ two. `pnpm test:references` runs the three files; `pnpm test` leaves them out.
 | `@lti-tool/core` | 1.3.3   | The launch of a platform that signs with RS256 and with ES256; the line item read, created, updated and deleted, the container with its filters, a score, the results, and the later of two scores kept; the members; a Deep Linking answer that the platform reads with its own data; Dynamic Registration from the initiation URL to the launch of the registered tool, with the single use of the registration token |
 | `lti-core`       | 0.5.0   | The launch of a resource link, the single use of its `state`, and a Deep Linking answer that the platform reads with its own data                                                                                                                                                                                                                                                                                       |
 
-`lti-core` 0.5.0 adds a fake platform, `lti-core/testing`, that the tool role does not run against yet.
+`lti-core` 0.5.0 also has a fake platform, `lti-core/testing`, which the tests do not run the tool role against.
 
 ## PyLTI1p3
 
@@ -91,13 +89,13 @@ check of a public host; `serviceOrigins` is not needed.
 
 ### What Moodle does differently
 
-| Moodle                                                                                                                                                         | The specification                                             | The package                                                                                                                                                                                                  |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Answers a registration with `"logo_uri": ""`                                                                                                                   | Dynamic Registration 2.2: the addresses are URLs when present | **Fixed.** Both readers of a registration take an empty address as absent ([spec-gaps](spec-gaps.md))                                                                                                        |
-| Posts a score with `"timestamp": "2026-11-02T14:55:32+0000"`, the form of PHP's `DATE_ISO8601`                                                                 | AGS 3.4.8: ISO 8601 with a time zone                          | **Fixed.** The readers take `+hhmm` as `+hh:mm` ([spec-gaps](spec-gaps.md))                                                                                                                                  |
-| Answers a request for results that carries `limit` with 404 and an HTML page: its code for LTI 1.3 calls a method on `null` (`results.php`, line 238 of 5.3.0) | AGS 3.3: `limit` is optional                                  | **Fixed** in the client: a request for results carries a `limit` only when the caller names one, and the flow reads the results without it. A request with a `limit` still gets the 404, which the test pins |
-| Names a context role in the roster by its simple name (`Instructor`), where its launch has the URI                                                             | NRPS 2 and LTI Core Appendix A: both forms exist              | Not changed. A member keeps the role as sent; `canonicalizeRole` gives the URI                                                                                                                               |
-| As a tool, ends a launch whose context has no `type` in an error page (`tool_launch_service.php`, line 132)                                                    | LTI Core 5.4.1: `type` is optional                            | Not changed. The host of a platform that launches Moodle sends the type, and the test pins the error page                                                                                                    |
+| Moodle                                                                                                                                                         | The specification                                             | The package                                                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Answers a registration with `"logo_uri": ""`                                                                                                                   | Dynamic Registration 2.2: the addresses are URLs when present | Both readers of a registration take an empty address as absent ([spec-gaps](spec-gaps.md))                                                                                   |
+| Posts a score with `"timestamp": "2026-11-02T14:55:32+0000"`, the form of PHP's `DATE_ISO8601`                                                                 | AGS 3.4.8: ISO 8601 with a time zone                          | The readers take `+hhmm` as `+hh:mm` ([spec-gaps](spec-gaps.md))                                                                                                             |
+| Answers a request for results that carries `limit` with 404 and an HTML page: its code for LTI 1.3 calls a method on `null` (`results.php`, line 238 of 5.3.0) | AGS 3.3: `limit` is optional                                  | The client sends a `limit` for results only when the caller names one, and the flow reads the results without it. A request with a `limit` gets the 404, which the test pins |
+| Names a context role in the roster by its simple name (`Instructor`), where its launch has the URI                                                             | NRPS 2 and LTI Core Appendix A: both forms exist              | Not changed. A member keeps the role as sent; `canonicalizeRole` gives the URI                                                                                               |
+| As a tool, ends a launch whose context has no `type` in an error page (`tool_launch_service.php`, line 132)                                                    | LTI Core 5.4.1: `type` is optional                            | Not changed. The host of a platform that launches Moodle sends the type, and the test pins the error page                                                                    |
 
 ## Online testers, by hand
 
@@ -105,9 +103,9 @@ saLTIre and the reference tool of 1EdTech (`lti-ri.imsglobal.org`) run on the in
 a person runs them before a release with the example platform and the example tool on public addresses. The log has one row for
 each run, with the date, the commit that was tested, the tester and the result.
 
-| Date | Commit | Tester | Result                   |
-| ---- | ------ | ------ | ------------------------ |
-|      |        |        | No run has been made yet |
+| Date | Commit | Tester | Result        |
+| ---- | ------ | ------ | ------------- |
+|      |        |        | None recorded |
 
 What a run checks, beyond the flows that the counterparties above already pass:
 

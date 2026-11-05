@@ -1,10 +1,10 @@
 # LTI roster services
 
 Names and Role Provisioning 2.0 (NRPS), Context Groups 1.0 and the AfA PNP Connector 1.0 in both roles. In the tool role,
-`createServiceClient` reads the members of a context or a resource link, its groups and group sets, and the record of needs and
-preferences of a user for an activity. In the platform role, `handlePlatformRequest` serves the same services over the host's
-`RosterStore`, `GroupStore` and `PreferencesStore`, and offers each in the claims of a message only when its store is given. The
-bodies are the [service models](services.md) that both roles share.
+`createServiceClient` reads the members of a context or a resource link, its groups and group sets, and a user's record of needs
+and preferences for an activity. In the platform role, `handlePlatformRequest` serves them over the host's `RosterStore`,
+`GroupStore` and `PreferencesStore`, and offers each in a message only when its store is given. Both roles share the
+[service bodies](services.md).
 
 ```mermaid
 sequenceDiagram
@@ -77,17 +77,16 @@ page.context.label; // => "CPS 435"
 page.next; // => "https://lms.example.edu/sections/2923/memberships?limit=100&p=2"
 ```
 
-A whole flow, a platform with a course and a tool that reads it, runs in the [example](../../examples/tool-integration/README.md):
-`src/roster.ts` holds the three stores in memory, and `readRoster` of `src/tool.ts` reads the members with their groups, the groups
-and sets and the record of a user.
+The [example](../../examples/tool-integration/README.md) runs the whole flow: `src/roster.ts` holds the three stores in memory,
+and `readRoster` of `src/tool.ts` reads the members with their groups, the groups and sets, and the record of a user.
 
 ## The tool role
 
-The client takes the URL from the claim of the launch: `launch.services.roster.contextMembershipsUrl`,
-`launch.services.groups.contextGroupsUrl` and `contextGroupSetsUrl`, and `launch.services.preferences`. The scopes that it is given
-are the ones the platform offered: the claim of NRPS has no list, and its one scope is `contextmembership.readonly`
-(`SCOPES.contextMembershipReadonly`). A host keeps one client for each deployment, so that its tokens are reused; the
-[grade services guide](grades.md) has the tokens, the URLs a token may go to, the reading of answers and the options.
+The client takes the URLs from the claims of the launch: `launch.services.roster.contextMembershipsUrl`,
+`launch.services.groups.contextGroupsUrl` and `contextGroupSetsUrl`, and `launch.services.preferences`. Its scopes are the ones the
+platform offered; the claim of NRPS has no list, and its one scope is `contextmembership.readonly`
+(`SCOPES.contextMembershipReadonly`). The tokens, the URLs a token may go to, the reading of answers and the options are those of
+[the grade services](grades.md#the-tool-role).
 
 | Method                                       | Specification | Scope asked for              | Answers                                                   |
 | -------------------------------------------- | ------------- | ---------------------------- | --------------------------------------------------------- |
@@ -110,36 +109,38 @@ A `MemberQuery` has the filters of NRPS and of Context Groups 2.4:
 | `groups`         | `groups`  | Adds the `groupEnrollments` of each member                                                        |
 | `since`          | `since`   | The differences with an earlier read, when the tool has the token and not the link                |
 
-A page has the members as `Member` values (`userId`, `roles`, `status`, the names, `email`, `lisPersonSourcedId`,
-`lti11LegacyUserId`, `message`, `groupEnrollments`), the `context`, and two links on the origin of the request: `next` and
-`differences`. Pass either to `members` as it is. A `next` link ends the pages; a `differences` link reads the changes since this
-read: the members who joined or changed, in their current state, and the ones who left, with the status `Deleted` (NRPS 2.0,
-membership differences). A link to another origin is dropped, so that the token never leaves the platform that answered. A platform
-shares only what it has agreed to share beyond `userId`, `roles` and the context (NRPS 2.0, sharing of personal data), so a tool
-never relies on another property being there. A 404 is a `ServiceError`: the resource link is not the tool's, or the cursor is gone,
-and the tool starts from the first page.
+| Part of a `MemberPage` | Holds                                                                                                                                                                                                                                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`                | `Member` values: `userId`, `roles`, `status`, the names, `email`, `lisPersonSourcedId`, `lti11LegacyUserId`, `message`, `groupEnrollments`. A platform shares only what it agreed to beyond `userId`, `roles` and the context (NRPS 2.0, sharing of personal data), so never rely on another property |
+| `context`              | The context of the members                                                                                                                                                                                                                                                                            |
+| `next`                 | The next page; the last page has none                                                                                                                                                                                                                                                                 |
+| `differences`          | Reads the changes since this read: the members who joined or changed, in their current state, and those who left, with the status `Deleted` (NRPS 2.0, membership differences)                                                                                                                        |
+
+Pass `next` or `differences` to `members` as it is. A link to another origin is dropped, so the token never leaves the platform
+that answered. A 404 is a `ServiceError`: the resource link is not the tool's, or the cursor is gone, and the tool starts from the
+first page.
 
 ### Groups
 
-`groups(url, { userId, limit })` returns the groups of a context, or only those the user is enrolled in; a group has an `id`, a
-`name`, a `tag`, the `setIds` of the sets it belongs to (a group may belong to several, see [spec-gaps](spec-gaps.md)) and `hidden`.
-`groupSets(url, { limit })` returns the sets, each with an `id`, a `name`, a `tag` and `hidden`. The `member.groupEnrollments` of
-`members(url, { groups: true })` list the groups by `groupId`.
+| Call                             | Returns                                                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `groups(url, { userId, limit })` | The groups of a context, or those the user is enrolled in: `id`, `name`, `tag`, `hidden`, and the `setIds` of its sets (a group may belong to several, see [spec-gaps](spec-gaps.md)) |
+| `groupSets(url, { limit })`      | The sets: `id`, `name`, `tag`, `hidden`                                                                                                                                               |
+| `members(url, { groups: true })` | Each member's `groupEnrollments`, by `groupId`                                                                                                                                        |
 
 ### Preferences
 
-`preferences(claim, userSourcedId, activityId, { fields })` takes the claim of the launch, `launch.services.preferences`, whose
-`hostUrl` is the host of the service, and calls `{hostUrl}/ims/afapnp/v1p0/users/{user}/activities/{activity}/afapnprecords`, the
-one endpoint of the connector that LTI makes available. The user and the activity are encoded in the path. `fields` lists the
-members of the record that the answer holds and no others. The record is JSON and passes through: the host maps it to its own model.
+`preferences(claim, userSourcedId, activityId, { fields })` takes `launch.services.preferences`, whose `hostUrl` is the host of
+the service, and calls `{hostUrl}/ims/afapnp/v1p0/users/{user}/activities/{activity}/afapnprecords`, the one endpoint of the
+connector that LTI makes available, with the user and the activity encoded. `fields` lists the members the answer holds, and no
+others. The record passes through as JSON, for the host to map to its own model.
 
 ## The platform role
 
-With `services: { roster, groups, preferences }` in its options, `handlePlatformRequest` offers the services whose stores it has:
-the token endpoint grants their scopes when the registration does, a message that asks for them carries their claims, and the
-routes below are served. Without a store, none of the three exists. The access is the grade services': a bearer token of `/token`,
-looked up again on every request, with the scope of the route among those that the registration still grants; the store receives
-the caller and the `signal`, and answers `undefined` for what is not the caller's, which is 404.
+With `services: { roster, groups, preferences }`, `handlePlatformRequest` offers the services whose stores it has: the token
+endpoint grants their scopes when the registration does, a message that asks for them carries their claims, and the routes below
+are served. Without a store, none of the three exists. Access is checked as for [the grade services](grades.md#access); the store
+receives the caller and the `signal`, and answers `undefined` for what is not the caller's, which is 404.
 
 | Path under `origin`                                                 | Scope                        | Store                                                                                                        |
 | ------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
@@ -165,18 +166,19 @@ a tool whose registration grants none is not offered it.
 
 ### The members
 
-The store gets the filters and the page: `role` as a URI (`Learner` is already `.../membership#Learner`), `resourceLinkId`, `groups`,
-`since`, a `limit` of `limit`, else `pageSize` (100), at most `maxPageSize` (1,000), and the opaque `cursor`. It answers
-`{ items, cursor?, differences?, context? }`: the members, where the next page starts, a token that a later request returns as
-`since`, and the `label` and `title` of the context. The platform answers with the container, whose `id` is the URL of the context's
-members (with `?rlid=` for a resource link, as NRPS 3 shows), and with a `Link` header: `next`, built from the request with the
-`cursor`, and `differences`, built from the request with `since` set to the token and no cursor, "complete and opaque" as NRPS asks.
+| `roster.members`    | Value                                                                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gets                | `role` as a URI (`Learner` is already `.../membership#Learner`), `resourceLinkId`, `groups`, `since`, a `limit` (the request's, else `pageSize`, at most `maxPageSize`) and the opaque `cursor` |
+| Answers             | `{ items, cursor?, differences?, context? }`: the members, where the next page starts, a token that a later request returns as `since`, and the `label` and `title` of the context              |
+| The container       | Its `id` is the URL of the context's members, with `?rlid=` for a resource link (as NRPS 3 shows)                                                                                               |
+| `Link: next`        | Built from the request with the `cursor`                                                                                                                                                        |
+| `Link: differences` | Built from the request with `since` set to the token and no cursor, "complete and opaque" as NRPS asks                                                                                          |
 
-The platform shares only what the request asked for: a member's `groupEnrollments` only with `groups=true`, and the `message` only
-with a `rlid`; it drops the rest of what the store gave. A member with the status `Deleted` is for a read of the differences alone
-(NRPS 2.0, membership status): outside one it breaks the store's contract. A store that does not know the resource link, finds the
-link not the tool's or not in the context (NRPS 2.0, access restriction), or has lost the cursor or the token, answers `undefined`,
-which is 404.
+The platform shares only what the request asked for: `groupEnrollments` only with `groups=true`, and `message` only with a
+`rlid`; it drops the rest of what the store gave. A member with the status `Deleted` belongs to a read of the differences alone
+(NRPS 2.0, membership status); outside one it breaks the store's contract. A store answers `undefined`, which is 404, for a
+resource link it does not know or that is not the tool's or not in the context (NRPS 2.0, access restriction), and for a cursor
+or token it has lost.
 
 ### The groups and the record
 
@@ -187,12 +189,8 @@ returned"); the user and the activity of the path reach the store decoded, and t
 
 ## Limits
 
-| Limit                                  | Value                                  |
-| -------------------------------------- | -------------------------------------- |
-| An answer read by the client           | 1,048,576 bytes, 1,000,000 JSON tokens |
-| The `limit` of a request of the client | 100                                    |
-| A page of the platform                 | 100 items, at most 1,000               |
-| An access token of the platform        | 3,600 seconds                          |
+The limits of the client are the options of [the grade services](grades.md#reading-answers); those of the platform are in
+[the platform role](platform.md#options).
 
 ## Failure paths
 
@@ -211,7 +209,8 @@ member outside the differences, a record that is not an object) is a `DataError`
 | `LtiError` `scope-unavailable`, `scope-denied` | The platform did not offer, or did not grant, the scope of the call                        | Ask the platform's administrator for the scope     |
 | `LtiError` `service-origin-refused`            | The URL may not receive the token                                                          | Name the platform's origins in `serviceOrigins`    |
 | `ServiceError`                                 | The platform answered with an error, among them 404 for a link that is gone                | Read its `status`; start again from the first page |
-| `DataError`                                    | An argument has the wrong type, an answer breaks its model, or a store breaks its contract | Fix the caller, the store or the limit             |
+| `LimitError`, a `DataError`                    | An answer is above `maxTokens`                                                             | Raise `maxTokens` for a platform you trust         |
+| `DataError`                                    | An argument has the wrong type, an answer breaks its model, or a store breaks its contract | Fix the caller or the store                        |
 
 ## Data flows
 
@@ -224,7 +223,7 @@ These services carry personal data: names, email addresses, roles and the needs 
 | The record of needs and preferences | The host's `PreferencesStore` | The tool, with the fields the request named                                | No                            |
 | An access token                     | The platform's token endpoint | The services, in `Authorization`; the client's cache until near its expiry | Only in memory, in the client |
 
-A platform shares more than a user's identifier and roles only on the agreement with the tool (NRPS 2.0): the store decides what a
+Beyond a user's identifier and roles, a platform shares only what it agreed with the tool (NRPS 2.0): the store decides what a
 member carries.
 
 ## Not included
@@ -238,6 +237,6 @@ member carries.
 
 ## Differences from the references
 
-None of the references that were read has a platform role (see [architecture](architecture.md)), so the platform is checked against
-the specifications and their examples, and the client against a platform written from them. Where the texts disagree with their
-examples, see [spec-gaps](spec-gaps.md).
+None of the libraries read has a platform role (see [architecture](architecture.md)), so the platform is checked against the
+specifications and their examples, and the client against a platform written from them; [spec-gaps](spec-gaps.md) lists where the
+texts disagree with their examples.

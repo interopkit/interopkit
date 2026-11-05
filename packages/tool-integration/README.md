@@ -3,16 +3,13 @@
 LTI 1.3 for JavaScript and TypeScript, in the tool and the platform role: launches, Deep Linking, Assignment and Grade Services,
 Names and Role Provisioning, Context Groups, Proctoring and Dynamic Registration.
 
-In the tool role your application is launched by a learning platform: it answers its login, validates the launch of every
-message type, serves its key set, answers a Deep Linking request, sends a proctored candidate back to start, reads and writes
-the platform's gradebook, reads its members, groups and preferences records, controls a proctored attempt through its services,
-and registers itself with a platform through Dynamic Registration. In the platform role your application launches tools: it
-keeps the message of a launch in your store and starts the tool's login, and one handler answers the tool's authentication
-request with the `id_token`, publishes the key set, issues access tokens, serves the storage page, the grade services over your
-gradebook, the roster services over your roster, groups and records, the Assessment Control Service over your attempts and
-Dynamic Registration over your registrations; two functions read the tool's Deep Linking response and Start Assessment message.
+| Role     | Your application                   | The package                                                                                                                                                                                                                                                                                                                                                                                    |
+| -------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tool     | Is launched by a learning platform | Answers the login, validates the launch of every message type, serves the key set, answers Deep Linking, sends a proctored candidate back to start, reads and writes the gradebook, reads members, groups and preferences records, controls a proctored attempt, and registers through Dynamic Registration                                                                                    |
+| Platform | Launches tools                     | Keeps the message of a launch in your store and starts the tool's login; one handler answers the authentication request with the `id_token` and serves the key set, access tokens, the storage page, the grade and roster services, the Assessment Control Service and Dynamic Registration over your stores; two functions read the tool's Deep Linking response and Start Assessment message |
+
 A handler takes an `HttpRequest` and returns an `HttpResponse` of
-[`@interopkit/core/http`](https://interopkit.wakan.dev/_interopkit/core/http/): plain objects that any web framework can build. You
+[`@interopkit/core/http`](https://interopkit.wakan.dev/_interopkit/core/http/), plain objects that any web framework builds. You
 pass in the stores, the registrations, a `fetch` and a clock.
 
 ```bash
@@ -112,18 +109,17 @@ Both roles have the launch of every message type, key sets, access tokens, the A
 
 ## Documentation
 
-[Choosing](https://interopkit.wakan.dev/_interopkit/tool-integration/choosing/) says when the package fits, when another library fits better,
-and what each has that the package lacks.
-
-The [tool guide](https://interopkit.wakan.dev/_interopkit/tool-integration/tool/)
-has the routes, the store, every check of a launch, the key set and its rotation, scores, the failure paths and the
-signals; the [roster guide](https://interopkit.wakan.dev/_interopkit/tool-integration/roster/) has the members, the groups and the preferences record; the [Deep Linking guide](https://interopkit.wakan.dev/_interopkit/tool-integration/deep-linking/) has the items and both roles; the [proctoring guide](https://interopkit.wakan.dev/_interopkit/tool-integration/proctoring/) has the Start Assessment message and the Assessment Control Service in both roles; the [registration guide](https://interopkit.wakan.dev/_interopkit/tool-integration/registration/) has Dynamic Registration in both roles; the [platform guide](https://interopkit.wakan.dev/_interopkit/tool-integration/platform/) has the same for the platform role.
-
-[The evidence guide](https://interopkit.wakan.dev/_interopkit/tool-integration/evidence/) shows what the package
-was checked against: the examples and vocabularies of the specifications, tokens that another library signs, tools of other authors
-(`@lti-tool/core`, `lti-core` and PyLTI1p3) that launch from the platform role and use its services, Moodle in both roles, and
-four runtimes. [Performance](https://interopkit.wakan.dev/_interopkit/tool-integration/performance/) gives the speed of the launch and of the pages of the
-services, the size of each entry point and the peak memory of each reader.
+| Page                                                                                                                                                                                                                                      | Gives                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Tool](https://interopkit.wakan.dev/_interopkit/tool-integration/tool/)                                                                                                                                                                   | The routes, the store, every check of a launch, the key set and its rotation, scores, the failure paths and the signals                                                                                                     |
+| [Platform](https://interopkit.wakan.dev/_interopkit/tool-integration/platform/)                                                                                                                                                           | The same for the platform role                                                                                                                                                                                              |
+| [Grades](https://interopkit.wakan.dev/_interopkit/tool-integration/grades/), [roster](https://interopkit.wakan.dev/_interopkit/tool-integration/roster/), [services](https://interopkit.wakan.dev/_interopkit/tool-integration/services/) | The Assignment and Grade Services; members, groups and the preferences record; the model of every service body                                                                                                              |
+| [Deep Linking](https://interopkit.wakan.dev/_interopkit/tool-integration/deep-linking/)                                                                                                                                                   | The items and both roles                                                                                                                                                                                                    |
+| [Proctoring](https://interopkit.wakan.dev/_interopkit/tool-integration/proctoring/)                                                                                                                                                       | The Start Assessment message and the Assessment Control Service in both roles                                                                                                                                               |
+| [Registration](https://interopkit.wakan.dev/_interopkit/tool-integration/registration/)                                                                                                                                                   | Dynamic Registration in both roles                                                                                                                                                                                          |
+| [Choosing](https://interopkit.wakan.dev/_interopkit/tool-integration/choosing/)                                                                                                                                                           | When the package fits, when another library fits better, and what each has that the package lacks                                                                                                                           |
+| [Evidence](https://interopkit.wakan.dev/_interopkit/tool-integration/evidence/)                                                                                                                                                           | The examples and vocabularies of the specifications, tokens another library signs, tools of other authors (`@lti-tool/core`, `lti-core`, PyLTI1p3) launched from the platform role, Moodle in both roles, and four runtimes |
+| [Performance](https://interopkit.wakan.dev/_interopkit/tool-integration/performance/)                                                                                                                                                     | The speed of the launch and of the pages of the services, the size of each entry point and the peak memory of each reader                                                                                                   |
 
 ## License
 

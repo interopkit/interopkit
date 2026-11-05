@@ -1,11 +1,8 @@
 # LTI Deep Linking
 
 LTI Deep Linking 2.0 in both roles. A platform asks a tool for content with an `LtiDeepLinkingRequest`; the user chooses in the
-tool, and the tool answers with a signed `LtiDeepLinkingResponse` that lists content items. In the tool role,
-`buildDeepLinkingResponse` checks the items against what the request accepts and returns the page that posts the signed response.
-In the platform role, `readDeepLinkingResponse` reads that post, verifies it against the tool's registration and against the
-settings that the platform sealed into the request, and returns the items. The five item types, their extensions and the types
-that others define are the [service models](services.md) that both roles share.
+tool, and the tool answers with a signed `LtiDeepLinkingResponse` that lists content items. The item types are
+[service bodies](services.md) that both roles share.
 
 ```mermaid
 sequenceDiagram
@@ -77,9 +74,8 @@ page.headers["content-security-policy"].endsWith("form-action https://lms.exampl
 /<input type="hidden" name="JWT" value="[\w-]+\.[\w-]+\.[\w-]+">/.test(page.body); // => true
 ```
 
-A whole flow, a platform that asks and a tool that answers, runs in the [example](../../examples/tool-integration/README.md):
-`src/tool.ts` answers a request with `buildDeepLinkingResponse`, and `src/platform.ts` has the route at the return URL that calls
-`readDeepLinkingResponse`.
+The [example](../../examples/tool-integration/README.md) runs the whole flow: `src/tool.ts` answers a request with
+`buildDeepLinkingResponse`, and `src/platform.ts` has the route at the return URL that calls `readDeepLinkingResponse`.
 
 ## The tool role
 
@@ -105,25 +101,20 @@ request hold them:
 | `acceptLineItem`                    | A resource link with a `lineItem` when it is `false`; absent says nothing, and the line item is sent                                                                                                                                                     |
 | `acceptPresentationDocumentTargets` | A `link` or `ltiResourceLink` that offers `window`, `iframe` or `embed` and no way that the platform supports. An item that offers none passes: the default is a new window. The tool should offer every way that applies (Deep Linking 2.0 section 3.1) |
 
-The response carries `iss` (the client identifier), `aud` (the platform's issuer), `iat`, `exp` (300 seconds later), a `nonce`
-that is new each time, the version, the deployment, the message type, the `data` of the request when it had one, and the
-`content_items`. The registration's `signer` signs it, with its algorithm, and its header names the signer's `keyId` as `kid`. The
-result is the page that posts the form parameter `JWT` to `launch.settings.returnUrl`: one script that its policy names by hash,
-the form allowed to go to the origin of the return URL alone, not cached, no referrer. The host sends it as the answer to the
-user's choice.
+| The signed response | Value                                                                                                                                                                                                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Claims              | `iss` the client identifier, `aud` the platform's issuer, `iat`, `exp` 300 seconds later, a new `nonce`, the version, the deployment, the message type, the request's `data` when it had one, and `content_items`                                      |
+| Signature           | The registration's `signer`, with its algorithm; the header names its `keyId` as `kid`                                                                                                                                                                 |
+| The page            | Posts the form parameter `JWT` to `launch.settings.returnUrl`, with one script that its policy names by hash, the form allowed to the origin of the return URL alone, not cached and no referrer. The host sends it as the answer to the user's choice |
 
 ## The platform role
 
-The host asks with a `LtiDeepLinkingRequest` message input: `settings` holds the `returnUrl` (a route of the host), what the platform
-accepts, and `data`, an object of the host's own. The platform seals the settings and the data, with the tool, the deployment and
-an expiry (`deepLinkingLifetimeSeconds`, 86,400), into the `data` claim of the request. The tool returns that claim as it is, so
-`readDeepLinkingResponse` needs no store and no lookup of the request: the response may come to any process, and the settings it is
-held to are those the platform sent.
-
-The host's route at the return URL passes the request to `readDeepLinkingResponse(request, options)`. The options are the platform
-(`config`, `clock`), the lookup of the tool (`registration`), the cache of key sets (`jwks`), the single-use ledger (`once`) and the limits.
-
-The checks, in order:
+The host asks with an `LtiDeepLinkingRequest` message input whose `settings` hold the `returnUrl` (a route of the host), what
+the platform accepts, and `data`, an object of the host's own. The platform seals the settings and the data, with the tool, the
+deployment and an expiry (`deepLinkingLifetimeSeconds` of [the platform options](platform.md#options)), into the `data` claim of
+the request. The tool returns that claim as it is, so `readDeepLinkingResponse` needs no store: the response may reach any
+process, and it is held to the settings the platform sent. The host's route at the return URL passes the request to
+`readDeepLinkingResponse(request, options)`, which checks, in order:
 
 | Check                                                                                                            | Refused with, a reason of `LtiError`                                                                |
 | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
@@ -139,15 +130,19 @@ The checks, in order:
 | Each item, read by its type with `readContentItem`                                                               | `content-item-refused`                                                                              |
 | The items against the sealed settings: the table above                                                           | `content-item-refused`                                                                              |
 
-The result is a `ReceivedDeepLinkingResponse`: the fields of the message (`issuer`, `clientId`, `deploymentId`, `version`,
-`message`, `log`, `errorMessage`, `errorLog`, `claims`), the `items` as `ContentItem` values, the `settings` of the request, the
-host's own `data` after verification (absent when the request had none), and the `subject` of the request (absent for an
-anonymous one). The sealed data is the anti-CSRF token of the request (the `data` of the example of Appendix A is a CSRF token): the
-host places the items only when its own session of the browser is of that `subject`, so that a response that another user's
-browser is made to post places nothing. Whether the user confirms the items, what `autoCreate`
-means, and how a `file` is fetched, an `html` item sanitized and a `link` shown, are the host's. A file's `url` is short-lived:
-fetch it through the host's guarded `fetch` before its `expiresAt`. An `html` fragment, a `title` and a `text` are data, never
-markup that the package renders.
+| `ReceivedDeepLinkingResponse` | Holds                                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------- |
+| The message                   | `issuer`, `clientId`, `deploymentId`, `version`, `message`, `log`, `errorMessage`, `errorLog`, `claims` |
+| `items`                       | The items, as `ContentItem` values                                                                      |
+| `settings`                    | The settings of the request                                                                             |
+| `data`                        | The host's own data, verified; absent when the request had none                                         |
+| `subject`                     | The user of the request; absent for an anonymous one                                                    |
+
+The sealed data is the anti-CSRF token of the request (the `data` of the example of Appendix A is a CSRF token): place the
+items only when your own session of the browser is of that `subject`, so a response that another user's browser is made to post
+places nothing. Whether the user confirms the items, what `autoCreate` means, and how a `file` is fetched, an `html` item
+sanitized and a `link` shown are the host's. A file's `url` is short-lived: fetch it through the host's guarded `fetch` before its
+`expiresAt`. An `html` fragment, a `title` and a `text` are data, never markup that the package renders.
 
 | Option            | Default        | Meaning                                                                               |
 | ----------------- | -------------- | ------------------------------------------------------------------------------------- |
@@ -163,15 +158,13 @@ markup that the package renders.
 
 ## Limits
 
-| Limit                                       | Value           |
-| ------------------------------------------- | --------------- |
-| The form of a response                      | 1,048,576 bytes |
-| The JSON tokens of a response               | 1,000,000       |
-| The items of a response                     | 100             |
-| A response of a tool, as signed             | 300 seconds     |
-| The longest lifetime accepted of a response | 3,600 seconds   |
-| The data of a request                       | 86,400 seconds  |
-| Clock skew                                  | 60 seconds      |
+Besides the options above:
+
+| Limit                                       | Value         |
+| ------------------------------------------- | ------------- |
+| A response of a tool, as signed             | 300 seconds   |
+| The longest lifetime accepted of a response | 3,600 seconds |
+| Clock skew                                  | 60 seconds    |
 
 ## Failure paths
 
@@ -217,7 +210,7 @@ The data is signed and not encrypted: the tool can read it, so it holds no secre
 
 ## Differences from the references
 
-None of the references that were read has a platform role (see [architecture](architecture.md)), so the platform's reader is
-checked against the specification, its examples and the tool role of this package. The settings are sealed into the request, which
-the specification allows through the opaque `data`, so that the reader needs no store. The published examples do not agree with
-each other on two points, which [spec-gaps](spec-gaps.md) lists.
+None of the libraries read has a platform role (see [architecture](architecture.md)), so the platform's reader is checked
+against the specification, its examples and the tool role of this package. The settings are sealed into the request through the
+opaque `data`, which the specification allows. The published examples disagree on two points, which [spec-gaps](spec-gaps.md)
+lists.

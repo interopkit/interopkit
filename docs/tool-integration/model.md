@@ -1,9 +1,8 @@
 # Messages and vocabularies
 
-`@interopkit/tool-integration` has one model of the messages of LTI 1.3. A platform sends five messages and a tool reads
-them; a tool sends two and a platform reads them. Each role reads what the other writes from the same schemas, so a message
-that one role writes is a message that the other reads. The model, the vocabularies and the names of the claims are exports of
-the root subpath `@interopkit/tool-integration`.
+`@interopkit/tool-integration` has one model of the messages of LTI 1.3: a platform sends five and a tool two, and each role
+reads what the other writes from the same schemas. The root subpath exports the model, the vocabularies and the names of the
+claims.
 
 ```mermaid
 flowchart LR
@@ -56,9 +55,9 @@ MESSAGE_TYPES.length; // => 7
 | `LtiDeepLinkingResponse`     | Tool to platform | Deep Linking 4.5    | `DeepLinkingResponseMessage` | `data`, `items`, `message`, `log`, `errorMessage`, `errorLog`                                                   |
 | `LtiStartAssessment`         | Tool to platform | Proctoring 4.3      | `StartAssessmentMessage`     | `sessionData`, `resourceLink`, `attemptNumber`, `endAssessmentReturn`, `verifiedUser`                           |
 
-A message of another type is `message-type-unsupported`. A host that handles one, such as a message of a specification that
-the package does not model, names it, and the message comes back as an `OtherMessage` with the base and nothing else. Its
-`LtiMessage` type takes the names as a type parameter, so that a `switch` on `messageType` narrows.
+A message of another type is `message-type-unsupported`, unless the host names it in `otherMessageTypes`: it then comes back as
+an `OtherMessage` with the base and nothing else, and `LtiMessage` takes the names as a type parameter, so a `switch` on
+`messageType` narrows.
 
 ## The base of a message
 
@@ -85,9 +84,9 @@ camelCase.
 | `migration`          | `lti1p1`                                                                                                  | The LTI 1.1 identifiers; `verified` is true only when the signature matched the host's LTI 1.1 secret |
 | `claims`             | Every claim                                                                                               | The verified token as JSON, vendor claims among them (Core 5.4.7)                                     |
 
-The reader follows what the receiver does with claims it does not understand: it keeps them in `claims` and does not refuse
-them. It reads the vocabularies as they were sent, because a platform may use a role or a context type of another
-vocabulary, and Canvas sends the context type `Account`.
+The reader keeps the claims it does not understand in `claims` and does not refuse them, as a receiver does. It reads the
+vocabularies as sent, since a platform may use a role or a context type of another vocabulary; Canvas sends the context type
+`Account`.
 
 ## Vocabularies
 
@@ -110,23 +109,10 @@ vocabularies, and the URI does not say which.
 
 ## Tokens
 
-The tool verifies the `id_token` of a platform with these rules before it reads a claim.
-
-| Rule                                                                                                                                             | Reason when it fails                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| Three canonical base64url parts; a payload of at most 1,000,000 JSON tokens, counted before it is parsed                                         | `token-malformed`                                       |
-| `alg` is one of `APPROVED_ALGORITHMS`; `none`, HMAC and every other algorithm are refused before a key is fetched                                | `algorithm-unsupported`                                 |
-| The header names a `kid`, and the key set has one key for it that fits the algorithm (RSA of 2,048 bits or more, or EC on P-256, P-384 or P-521) | `key-unknown`                                           |
-| The signature verifies                                                                                                                           | `signature-invalid`                                     |
-| `iss` is the registration's issuer                                                                                                               | `issuer-mismatch`                                       |
-| `aud` holds the client identifier                                                                                                                | `audience-mismatch`                                     |
-| `aud` names no other party                                                                                                                       | `audience-untrusted`                                    |
-| A token with several audiences has `azp`, and `azp` is the client identifier                                                                     | `authorized-party-missing`, `authorized-party-mismatch` |
-| `exp` is later than the time minus 60 seconds; `iat` is not later than the time plus 60 seconds                                                  | `token-expired`, `issued-in-future`                     |
-
-A `KeySet` is the keys of one party: a `Signer` that signs with an algorithm of `APPROVED_ALGORITHMS`, and the public keys that the party
-publishes, each with a `kid` that no other key has. Keep the earlier public key in the set until every token it signed has
-expired and one cache lifetime has passed (Security Framework 6.4).
+Both roles verify a token with the rules of [the tool role's launch checks](tool.md#what-handlelaunch-checks), from
+`token-malformed` to `issued-in-future`, before they read a claim. A `KeySet` is the keys of one party: a `Signer` that signs
+with an algorithm of `APPROVED_ALGORITHMS`, and the public keys the party publishes, each with a `kid` that no other key has;
+[the tool role](tool.md#the-tools-key-set) shows how to rotate them.
 
 ## What a platform may write
 
@@ -172,4 +158,5 @@ The writer holds a platform to the rules that a receiver does not enforce, and t
 | `@lti-tool/core`, `@ltikit/core`, `@longsightgroup/lti-tool`                                                | They have no allow-list of algorithms; here the six of Security Framework 7.2 are the only ones             |
 | Canvas, which is not a reference but a platform that tools meet                                             | A `null` string is read as absent, a number in `custom` as its text, and the context type `Account` as sent |
 
-The bodies of the services are in [Service bodies](services.md). See the [gaps in the specifications](spec-gaps.md) for where the examples and the text disagree.
+The bodies of the services are in [Service bodies](services.md); [spec-gaps](spec-gaps.md) lists where the examples and the text
+disagree.

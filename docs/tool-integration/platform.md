@@ -1,13 +1,12 @@
 # LTI platform role
 
-`@interopkit/tool-integration/platform` launches tools as an LTI 1.3 platform. The host describes what it launches as a
-`MessageInput` of plain data: a resource link, a Deep Linking request, a Start Proctoring or an End Assessment message.
-`prepareToolLaunch` keeps it in the host's `LaunchStore` and returns the URL of the tool's login with what the page that frames it needs; one handler,
-`handlePlatformRequest`, answers every request to the platform's origin: the tool's authentication request with the `id_token`
-of the kept message, the key set, the token requests, the storage page and the routes of the services whose stores the host
-gives ([grade services](grades.md), [roster services](roster.md), [proctoring](proctoring.md)), and Dynamic Registration over a
-`RegistrationStore` ([registration](registration.md)). It runs on a server or an edge runtime, signs with a
-`Signer` of [`@interopkit/core`](../core/signer.md), and verifies the tools' tokens with [jose](https://github.com/panva/jose).
+`@interopkit/tool-integration/platform` launches tools as an LTI 1.3 platform, on a server or an edge runtime. The host
+describes what it launches as a `MessageInput` of plain data; `prepareToolLaunch` keeps it in the host's `LaunchStore` and
+returns the URL of the tool's login, and one handler, `handlePlatformRequest`, answers every request to the platform's origin:
+the authentication request with the `id_token`, the key set, the token requests, the storage page, and the services whose stores
+the host gives ([grade services](grades.md), [roster services](roster.md), [proctoring](proctoring.md),
+[registration](registration.md)). It signs with a [`Signer`](../core/signer.md) and verifies the tools' tokens with
+[jose](https://github.com/panva/jose).
 
 ```mermaid
 sequenceDiagram
@@ -42,9 +41,8 @@ sequenceDiagram
 | `buildToolRegistration(registered, grant)`  | Returns the `ToolRegistration` of a tool that registered itself, with what the administrator grants ([registration](registration.md))                                             |
 
 Handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md). The host owns the
-routes, the sessions and the stores: `check` confirms that a message is the caller's, `launches` keeps the messages, `once` records
-single-use identifiers, and `registration` looks up the tools. The [example](../../examples/tool-integration/README.md)
-launches a tool from a platform built on these functions.
+routes, the sessions and the stores (see [options](#options)). The [example](../../examples/tool-integration/README.md) launches a
+tool from a platform built on these functions.
 
 ## Quick start
 
@@ -125,16 +123,16 @@ JSON.parse(String(jwks.body)).keys[0].kid; // => "platform-1"
 
 ## Origins
 
-The tool's frame is same-origin with any platform page on the origin of the page that frames it, so the platform keeps its
-handler on an origin of its own. `origin`, `frameOrigin` and every entry of `reservedOrigins` must all differ, and each is an
-`https` origin without a path. `handlePlatformRequest` answers a request for another origin than `origin` with 403, and the login
-refuses a tool whose `targetLinkUri`, login URL or redirect URIs are on any of these origins (`origin-refused`).
+The tool's frame is same-origin with every platform page on the origin of the page that frames it, so the handler has an origin
+of its own. `origin`, `frameOrigin` and each entry of `reservedOrigins` are distinct `https` origins without a path.
+`handlePlatformRequest` answers a request for another origin than `origin` with 403, and the login refuses a tool whose
+`targetLinkUri`, login URL or redirect URIs are on any of them (`origin-refused`).
 
 ## Configuration
 
 | Property           | Meaning                                                                                                                                                                                |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `issuer`           | The `iss` of the platform: an `https` URL without query or fragment; it may have a path, such as one for each tenant                                                                   |
+| `issuer`           | Required. The `iss` of the platform: an `https` URL without query or fragment; it may have a path, such as one for each tenant                                                         |
 | `origin`           | The origin that `handlePlatformRequest` serves                                                                                                                                         |
 | `frameOrigin`      | The origin of the page that frames the tool and the storage page                                                                                                                       |
 | `reservedOrigins`  | Other origins of the host from which a tool must never launch, such as the origin of its assets. An empty list is a choice                                                             |
@@ -176,11 +174,15 @@ every login, authentication request and token request, so that a removed or chan
 
 ## The messages
 
-A `MessageInput` is plain data that a store can keep and that holds no secret. Every message has `clientId`, `deploymentId` (one
-of the tool's), `targetLinkUri`, `user` (without a `subject` the launch is anonymous) and `roles`, and may have `actualUser`,
-`roleScopeMentor`, `context`, `organization`, `presentation`, `lis`, `custom`, `extensions` (vendor claims by URL), `migration`, and
-`services`, the services that it offers the tool, which need its `context` and are offered only when the host gives their store
-([grade services](grades.md)).
+A `MessageInput` is plain data that a store can keep and that holds no secret.
+
+| Property                                                                                                 | Meaning                                                                                                                                                         |
+| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clientId`, `deploymentId`, `targetLinkUri`, `roles`                                                     | Required; the deployment is one of the tool's                                                                                                                   |
+| `user`                                                                                                   | Required; without a `subject` the launch is anonymous                                                                                                           |
+| `actualUser`, `roleScopeMentor`, `context`, `organization`, `presentation`, `lis`, `custom`, `migration` | Optional claims                                                                                                                                                 |
+| `extensions`                                                                                             | Optional vendor claims, each named by a URL                                                                                                                     |
+| `services`                                                                                               | Optional: the services the message offers the tool, which need its `context` and are offered only when the host gives their store ([grade services](grades.md)) |
 
 | `messageType`                | Adds                                                                                                                                                                                                                                                                                                          |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -190,10 +192,9 @@ of the tool's), `targetLinkUri`, `user` (without a `subject` the launch is anony
 | `LtiStartProctoring`         | `resourceLink`, `attemptNumber`, `startAssessmentUrl`, `proctoringSettings`; the platform seals the client, deployment, resource link, attempt and user into `session_data` for 3,600 seconds. `services.control`, which no other message may carry, offers the Assessment Control Service with its `actions` |
 | `LtiEndAssessment`           | `attemptNumber`, and `resourceLink`, `proctoringSettings`, `errorMessage`, `errorLog` when there are any                                                                                                                                                                                                      |
 
-The login checks a message twice before it keeps it: its shape, and the rules of the sender that a tool does not enforce: the
-identifiers have at most 255 characters, the URLs are `https`, a role and a context type are of the vocabularies of Core
-Appendix A, `roleScopeMentor` needs the Mentor role, and an extension is named by a URL. A message that breaks one is a
-`DataError`, before `check` is called.
+Before it keeps a message, the login checks its shape and the rules of the sender that a tool does not enforce: identifiers of
+at most 255 characters, `https` URLs, roles and context types of the vocabularies of Core Appendix A, and `roleScopeMentor` only
+with the Mentor role. A message that breaks one is a `DataError`, before `check` is called.
 
 ### Custom properties and variables
 
@@ -221,32 +222,38 @@ A variable the message answers but has no value for becomes `""`, which Appendix
 
 `migration` is the `lti1p1` claim of the Migration Guide without its signature. With `migrationSecret`, the platform asks for the
 LTI 1.1 secret of the `oauthConsumerKey` at authorization, signs `oauth_consumer_key_sign` over the consumer key, the deployment,
-the issuer, the client, the `exp` and the `nonce` of the `id_token`, and drops the secret. Without it, or when it returns
-`undefined`, the claim goes unsigned. No secret is ever kept in a message or a store.
+the issuer, the client, and the `exp` and `nonce` of the `id_token`, and drops the secret. Without it, or when it returns
+`undefined`, the claim goes unsigned. No secret is kept in a message or a store.
 
 ## The login
 
-`prepareToolLaunch` reads the message, holds it to the rules of the sender, calls `check(message)` (which must throw when the
-message is not the caller's), looks up the tool with `registration(clientId)`, refuses a deployment that is not the tool's
-(`deployment-unknown`) and the platform's own origins (`origin-refused`), and only then keeps the message with
-`launches.put(id, message, expiresAt)` for 300 seconds under a random identifier of 160 bits. The URL of the tool's login carries
-`iss`, `login_hint`, `lti_message_hint`, `target_link_uri`, `client_id`, `lti_deployment_id` and `lti_storage_target`.
+`prepareToolLaunch` checks the message, calls `check(message)` (which throws when the message is not the caller's), looks up the
+tool with `registration(clientId)`, refuses a deployment that is not the tool's (`deployment-unknown`) and the platform's own
+origins (`origin-refused`), and only then keeps the message with `launches.put(id, message, expiresAt)` for 300 seconds under a
+random identifier of 160 bits. The URL of the tool's login carries `iss`, `login_hint`, `lti_message_hint`, `target_link_uri`,
+`client_id`, `lti_deployment_id` and `lti_storage_target`.
 
 | Hint               | Holds                                                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------------------------------- |
 | `lti_message_hint` | The identifier of the kept message, the client, the deployment, the user's `sub` and an expiry of 300 seconds |
 | `login_hint`       | The identifier of the kept message                                                                            |
 
-Both are compact JWS with `alg: HS256`, signed with `hintKey`, and signed and not encrypted. The `typ` header names the use
-(`hint`, `login`, `access`, `session-data`, `deep-linking-data`), and a token of one use is refused for another (RFC 8725 section
-3.11). Web Crypto verifies the MAC, which compares in constant time.
+Both are compact JWS with `alg: HS256`, signed with `hintKey` and not encrypted. The `typ` header names the use (`hint`, `login`,
+`access`, `session-data`, `deep-linking-data`), and a token of one use is refused for another (RFC 8725 section 3.11). Web
+Crypto verifies the MAC in constant time.
 
 ## The authentication request
 
-`/authorize` takes a GET or a form POST. Until the tool and its redirect URI are known, a failure is answered to the browser,
-since nothing says where else it may go: 405 for another method, 413 for a body above `maxBodyBytes`, 400 for a parameter given
-twice, a missing or unknown `client_id` or a `redirect_uri` that is not one of the tool's, and 500 when `registration` rejects. After
-that, a refusal is the authentication error response of Security Framework 5.1.1.5: the page posts `error`,
+`/authorize` takes a GET or a form POST. Until the tool and its redirect URI are known, a failure is answered to the browser:
+
+| Failure                                                                                                      | Status |
+| ------------------------------------------------------------------------------------------------------------ | ------ |
+| Another method                                                                                               | 405    |
+| A body over `maxBodyBytes`                                                                                   | 413    |
+| A parameter given twice, a missing or unknown `client_id`, or a `redirect_uri` that is not one of the tool's | 400    |
+| `registration` rejects                                                                                       | 500    |
+
+After that, a refusal is the authentication error response of Security Framework 5.1.1.5: the page posts `error`,
 `error_description` and `state` to the redirect URI, under the status of the refusal.
 
 | Check, in order                                                                            | `error`                     | Status |
@@ -273,55 +280,54 @@ properties, the signed migration claim, the sealed data and the `tool_platform` 
 ## The key set
 
 `/jwks` answers GET with `{ "keys": publicKeys }` and `Cache-Control: public, max-age=3600`, and HEAD with the same headers.
-To rotate the signing key (Security Framework 6.4): add the new public key; wait one `max-age`; switch the signer; keep the old
-public key until every `id_token` it signed has expired (300 seconds), plus one `max-age`; then remove it. To rotate the hint key:
-make the new key `hintKey` and keep the old one in `previousHintKeys` until the longest of what it sealed has expired (the
-Deep Linking data, 86,400 seconds by default); then remove it.
+
+| Rotate          | Steps                                                                                                                                                                                                     |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The signing key | Add the new public key; wait one `max-age`; switch the signer; keep the old public key until every `id_token` it signed has expired (300 seconds), plus one `max-age`; remove it (Security Framework 6.4) |
+| The hint key    | Make the new key `hintKey` and keep the old one in `previousHintKeys` until the longest of what it sealed has expired (the Deep Linking data, 86,400 seconds by default); remove it                       |
 
 ## The token endpoint
 
-`/token` accepts the client-credentials grant with a JWT assertion (Security Framework 4.1.1). The checks, in order: the method,
-the size of the body, the form, `grant_type`, `client_assertion_type`, a `client_assertion` and a `scope`; the tool named by `iss`,
-which a `client_id` of the request, when it has one, names too (RFC 7521 section 4.2);
-an algorithm of the tool's `algorithms`, refused before any key is fetched for `none`, an HMAC algorithm and every other; the
-signature by a key of the tool's key set or `keys`; `sub` the client; `aud` the token URL, with no other member than the
-platform's issuer; the times with 60 seconds of leeway and an expiry within 3,600 seconds; no `message_type` claim, so a message
-of the tool never passes as an assertion; the deployment claim of Core 6.2.1, when present, one of the tool's; and a non-empty
-`jti` that `once` has not seen, remembered until the expiry, rounded up to a whole second, plus the leeway.
+`/token` accepts the client-credentials grant with a JWT assertion (Security Framework 4.1.1). A refusal is an OAuth error with
+status 400 (RFC 6749 section 5.2), and 500 when `registration` or `once` rejects or the tool's key set cannot be fetched.
 
-The token grants the scopes that the request asks for, the registration grants and a service of the platform offers (a service
-offers its scopes when the host gives its store), and `invalid_scope` answers only when none remains. It is sealed with the hint key, holds the client, the deployment of the
-assertion, the scopes and the expiry, and lasts 3,600 seconds. A refusal is an OAuth error with status 400 (`invalid_request`,
-`unsupported_grant_type`, `invalid_scope`, `invalid_client`, also for a tool whose key set is not a JWK Set), and 500 when
-`registration` or `once` rejects or the tool's key set cannot be fetched.
+| Check, in order                                                                                                                                     | Refusal                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| The method is POST                                                                                                                                  | 405                      |
+| The size of the body, the form, `client_assertion_type`, a `client_assertion` and a `scope`                                                         | `invalid_request`        |
+| `grant_type` is `client_credentials`                                                                                                                | `unsupported_grant_type` |
+| The tool named by `iss`, which a `client_id` of the request, when it has one, names too (RFC 7521 section 4.2)                                      | `invalid_client`         |
+| An algorithm of the tool's `algorithms`; `none`, the HMAC algorithms and every other are refused before any key is fetched                          | `invalid_client`         |
+| The signature by a key of the tool's key set, or of its `keys`; a key set that is not a JWK Set                                                     | `invalid_client`         |
+| `sub` is the client; `aud` is the token URL, with no other member than the platform's issuer                                                        | `invalid_client`         |
+| The times, with 60 seconds of leeway, and an expiry within 3,600 seconds                                                                            | `invalid_client`         |
+| No `message_type` claim, so a message of the tool never passes as an assertion; the deployment claim of Core 6.2.1, when present, one of the tool's | `invalid_client`         |
+| A non-empty `jti` that `once` has not seen, remembered until the expiry, rounded up to a whole second, plus the leeway                              | `invalid_client`         |
+| Some scope remains of those the request asks for, the registration grants and a service offers (when the host gives its store)                      | `invalid_scope`          |
+
+The token, sealed with the hint key, holds the client, the deployment of the assertion and the scopes, and lasts 3,600 seconds.
 
 ## The messages of tools
 
-A tool sends the platform a message the other way too: a Deep Linking response posted to the `deep_link_return_url` of a request,
-and a Start Assessment message posted to the `start_assessment_url` of a Start Proctoring message. The route is the host's, and
-`readDeepLinkingResponse(request, options)` reads the form: it verifies the tool's token as `/token` does
-(the algorithms of the registration, the key set, the times, an expiry within 3,600 seconds), with the platform's issuer as the
-audience and as the authorized party when the token names one, and requires an `iat` and a `nonce`. The `nonce` is the
-single-use identifier here, recorded in `once` until the token stops verifying. The `data` claim of the response must be the data
-that the platform sealed into the request, for that tool and deployment and not expired, and the host places the items only when
-its own session is of the `subject` that it returns. The [Deep Linking
-guide](deep-linking.md) has the checks and the options (`config`, `clock`, `registration`, `jwks`, `once`, `maxFormBytes`, `maxTokens` and
-`maxContentItems`). `readStartAssessment(request, options)` takes the same options and checks the token the same way; the
-`session_data` must be the data that the platform sealed into the Start Proctoring message, for that tool, deployment, resource link
-and attempt and not expired, and the host starts the attempt only when its own session is of the `subject` that it returns
-([proctoring](proctoring.md)).
+A tool posts two messages to the platform, to routes of the host. Both readers take the options `config`, `clock`,
+`registration`, `jwks`, `once`, `maxFormBytes` and `maxTokens` (and `maxContentItems` for Deep Linking), and verify the tool's
+token as `/token` does (the registration's algorithms, its key set, the times, an expiry within 3,600 seconds), with the
+platform's issuer as the audience and as the authorized party when the token names one. They require an `iat` and a `nonce`,
+which is the single-use identifier, recorded in `once` until the token stops verifying. The host acts only when its own session
+is of the `subject` that the reader returns.
+
+| Reader                                      | Message, posted to                                                      | The sealed data must be                                                                                                        | Guide                           |
+| ------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
+| `readDeepLinkingResponse(request, options)` | The Deep Linking response, to the `deep_link_return_url` of the request | The `data` claim the platform sealed into the request, for that tool and deployment, not expired                               | [Deep Linking](deep-linking.md) |
+| `readStartAssessment(request, options)`     | The Start Assessment message, to the `start_assessment_url`             | The `session_data` sealed into the Start Proctoring message, for that tool, deployment, resource link and attempt, not expired | [Proctoring](proctoring.md)     |
 
 ## The frame page and the storage page
 
-`/storage` serves the page that keeps `state` and `nonce` for the tool: `lti.put_data` and `lti.get_data` of LTI Client Side
-OIDC 0.1, kept by the origin of the message, answered only to the frame named `toolFrame` of `prepareToolLaunch`, with the minimum limits of 4,096 bytes
-and 500 keys for an origin and `storage_exhaustion` beyond them. Its policy allows its one script by hash, and only `frameOrigin`
-may frame it.
-
-The tool's pages ask the window that frames them for its capabilities first (Client Side postMessages 0.1 section 4.1). The
-host's frame page names its two frames as `prepareToolLaunch` returns them, and answers with the script of `buildCapabilitiesScript()`, which names the storage frame for
-`lti.put_data` and `lti.get_data`; its `hash` goes in the page's `script-src`. The script answers at once, to the window and
-the origin that asked.
+| Page                         | Rule                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The storage page, `/storage` | Keeps `state` and `nonce` for the tool with `lti.put_data` and `lti.get_data` of LTI Client Side OIDC 0.1, by the origin of the message, and answers only the frame named `toolFrame` of `prepareToolLaunch`. Its policy allows its one script by hash, and only `frameOrigin` may frame it                                                                           |
+| Its limits                   | The minimum of the specification: 4,096 bytes and 500 keys for an origin, and `storage_exhaustion` beyond them                                                                                                                                                                                                                                                        |
+| The host's frame page        | Names its two frames as `prepareToolLaunch` returns them, and answers the tool's `lti.capabilities` (Client Side postMessages 0.1 section 4.1) with the script of `buildCapabilitiesScript()`, at once, to the window and origin that asked; the script names the storage frame for `lti.put_data` and `lti.get_data`, and its `hash` goes in the page's `script-src` |
 
 ## Options
 
@@ -360,11 +366,9 @@ The handler measures a body that the host has already read, so the host caps the
 
 ## Calls to tools
 
-The only call to a tool is the fetch of its key set from the `jwksUrl` of its registration, through `createJwksCache`: `https`, no
-redirect, a time limit, at most 64 KiB and 100 keys. A platform whose tools are registered by people it does not control passes a `fetch`
-that refuses loopback, private and link-local addresses, checked on the address that the connection resolves to and not on the
-host name, or DNS rebinding gets through (see [the tool role](tool.md#calls-to-the-platform)). A tool that gives its public keys
-in the registration needs no fetch.
+The only call to a tool is the fetch of its key set from its `jwksUrl`, through `createJwksCache`: `https`, no redirect, a
+deadline, at most 64 KiB and 100 keys; a tool registered with `keys` needs none. A platform whose tools are registered by people
+it does not control passes a `fetch` that refuses private addresses, as [the tool role](tool.md#calls-to-the-platform) shows.
 
 ## Failure paths
 
@@ -426,9 +430,9 @@ signal.
 
 ## Differences from the references
 
-None of the references that were read has a platform role (see [architecture](architecture.md)), so the platform is checked
-against the specifications, their examples (the launch of Core Appendix E is issued claim for claim) and the tool role of this
-package. Where a specification disagrees with an example, see [spec-gaps](spec-gaps.md).
+None of the libraries read has a platform role (see [architecture](architecture.md)), so the platform is checked against the
+specifications, their examples (the launch of Core Appendix E is issued claim for claim) and the tool role of this package;
+[spec-gaps](spec-gaps.md) lists where a specification disagrees with an example.
 
 ## Not included
 

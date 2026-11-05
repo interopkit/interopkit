@@ -1,6 +1,8 @@
 # Performance of tool-integration
 
-What the hot paths of `@interopkit/tool-integration` cost, how much each entry point adds to a bundle, and the heap that each reader of untrusted input needs on its worst input. A budget holds each number and fails a gate of CI: `pnpm bench` for the time, `pnpm test` for the size and the heap. That the package does what it says is in [evidence](evidence.md).
+The time of the hot paths of `@interopkit/tool-integration`, the size of each entry point, and the heap of each reader of
+untrusted input at its worst input. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test` for the size and
+the heap.
 
 ```mermaid
 flowchart LR
@@ -11,10 +13,10 @@ flowchart LR
 
 ## Speed
 
-`pnpm bench` builds the package and times the hot paths of the build that ships against a reference in the same run, the two in
-turns through `alternate` of `scripts/bench-rounds.ts`: three rounds that alternate which runs first, so that a machine that speeds
-up or slows down weighs on both. A ratio of the fastest samples holds on any machine; its budget is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit. The table gives the range of the ratios over those runs. The package
-states no budget in time.
+`pnpm bench` times the build that ships against a reference in the same run, in three rounds that alternate which runs first
+(`alternate` of `scripts/bench-rounds.ts`), so a machine that speeds up or slows down weighs on both. The budget is a ratio of the
+fastest samples, which holds on any machine: five times the highest measured on the runner of CI (the eight latest green runs)
+and on a laptop, rounded up to one significant digit. The table gives the range over those runs; no budget is in time.
 
 | Benchmark                                                                 | Reference in the same run                                         |     Ratio |     Budget |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------: | ---------: |
@@ -38,31 +40,33 @@ states no budget in time.
 | `buildDeepLinkingResponse` with five items, `buildStartAssessmentPage`    | `SignJWT` of jose, same claims                                    | 0.98–1.24 |       7, 6 |
 | `readDeepLinkingResponse`, `readStartAssessment`                          | `jwtVerify` of jose on the JWT                                    | 2.46–3.52 |     20, 20 |
 
-Substituting 44 variables costs what a request without them costs, since the signature takes the time. Four fixes changed no
-output: on the tests, on 1,698 inputs given to the build before and the build after (pages with odd users and extensions, every
-token of the fixtures with each last character, the handler of results on odd line items and broken stores), and on a property
-test of the check of a token against jose's own round trip. Timed in turns against the build before:
+Substituting 44 variables costs what a request without them costs, since the signature takes the time. These choices were timed
+in turns against a build without them, which gave the same output on the tests, on 1,698 inputs (pages with odd users and
+extensions, every token of the fixtures with each last character, the handler of results on odd line items and broken stores),
+and on a property test of the token check against jose's own round trip:
 
-| Fix                                                                                                                                                                                    | Paths, the fastest sample before and after                                                                                          |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| A writer drops its `undefined` members in a loop; `Object.fromEntries` took half of the page of members                                                                                | The members of a context 2.2 to 1.1 ms; the results 2.2 to 1.0 ms with the next fix; a score posted 12 percent less                 |
-| The address of each result is the address of the results, parsed once, with its user as the query; the platform reads what its store gives without the addresses it then checked again | The results of a line item                                                                                                          |
-| A part of a token is canonical base64url by its alphabet, its length and its spare bits, without decoding and encoding it                                                              | `handleLaunch` 0.078 to 0.064 ms; `readDeepLinkingResponse` and `readStartAssessment` 17 and 18 percent less; the token endpoint 15 |
-| Extensions are found by the names of the members                                                                                                                                       | `lineItems` 9 percent less                                                                                                          |
+| Choice                                                                                                                                                                     | Against the build without it                                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| A writer drops its `undefined` members in a loop, not with `Object.fromEntries`, which takes half of a page of members                                                     | The members of a context 1.1 ms against 2.2; with the next choice, the results 1.0 ms against 2.2; a score posted 12 percent less        |
+| The address of each result is the address of the results, parsed once, with its user as the query; the platform does not check again the addresses it reads from its store | The results of a line item                                                                                                               |
+| A part of a token is checked as canonical base64url by its alphabet, length and spare bits, without decoding and encoding it                                               | `handleLaunch` 0.064 ms against 0.078; `readDeepLinkingResponse` and `readStartAssessment` 17 and 18 percent less; the token endpoint 15 |
+| Extensions are found by the names of the members                                                                                                                           | `lineItems` 9 percent less                                                                                                               |
 
-The gaps that remain have named causes. `handleLaunch` reads the form and the cookie, checks the registration that the lookup returns,
-counts the JSON tokens of the payload before it parses it, and reads every claim of the message with its schema; `lti-core` reads
-fewer claims and verifies RS256 alone. The key set cache checks the URL of each call, 0.19 of its 0.40 µs, which jose checks once
-when it makes a set; a launch spends 0.5 percent of its time there. A handler of a page reads each item of the store with the
-schema of its class, as a reader does, and checks the addresses that it writes; a reader of line items checks two dates of each.
+The gaps to the references have named causes:
+
+| Path                   | Work the reference does not do                                                                                                                                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `handleLaunch`         | Reads the form and the cookie, checks the registration that the lookup returns, counts the JSON tokens of the payload before parsing, and reads every claim with its schema; `lti-core` reads fewer claims and verifies RS256 alone |
+| The key set cache      | Checks the URL of each call, 0.19 of its 0.40 µs, which jose checks once when it makes a set; a launch spends 0.5 percent of its time there                                                                                         |
+| The handler of a page  | Reads each item of the store with the schema of its class, as a reader does, and checks the addresses it writes                                                                                                                     |
+| A reader of line items | Checks two dates of each                                                                                                                                                                                                            |
 
 ## Size
 
 `size.test.ts` bundles each entry point alone with `scripts/entry-size.ts`: esbuild, minified, with every dependency inside. It
-fails above the budget after gzip, or when an entry point holds a module that its budget does not list. The root of core, which every
-entry point holds in part, holds jose for the key set cache.
-
-Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 percent.
+fails above the budget after gzip, or when an entry point holds a module that its budget does not list. Gzip is measured on
+Node.js 22; other versions differ by up to 1 percent. Every entry point holds part of the root of core, and jose for the key set
+cache.
 
 | Entry point                             |   Bytes |   Gzip | Budget | Holds, besides `protocol`, `errors`, `@interopkit/core`, jose and valibot         |
 | --------------------------------------- | ------: | -----: | -----: | --------------------------------------------------------------------------------- |
@@ -97,6 +101,6 @@ of 8 MiB.
 | `readDeepLinkingResponse`                                                        | A form of under 1 MiB that lists 10,000 items, refused by their number                      |     16 MiB |           32 MiB |
 | `readStartAssessment`                                                            | A form of 64 KiB whose token is one array of small objects                                  |     16 MiB |           32 MiB |
 
-A key set of 64 KiB of empty keys took some 20 MiB to read, since jose copies each key and keeps a note of it: the cache refuses a set
-of more than 100 keys before jose sees it. A client of a service takes an answer of up to `maxBytes`, 1 MiB, and `maxTokens`, a
-million, by default, so its worst answer is a million tokens; a host that reads small answers lowers both.
+jose copies each key of a set and keeps a note of it, so 64 KiB of empty keys would take some 20 MiB: the cache refuses a set of
+more than 100 keys before jose sees it. A client of a service takes an answer of up to `maxBytes`, 1 MiB, and `maxTokens`, a
+million, by default; a host that reads small answers lowers both.

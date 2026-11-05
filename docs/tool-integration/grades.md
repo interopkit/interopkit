@@ -1,9 +1,9 @@
 # LTI grade services
 
 The Assignment and Grade Services (AGS 2.0) in both roles. In the tool role, `createServiceClient` reads and writes the line
-items of a context, reads their results and publishes scores, with access tokens that it reuses. In the platform role,
-`handlePlatformRequest` serves the same services over the host's `GradebookStore`, and offers them in the claims of a message
-only when the store is given. The bodies are the [service models](services.md) that both roles share.
+items of a context, reads their results and publishes scores, reusing its access tokens. In the platform role,
+`handlePlatformRequest` serves them over the host's `GradebookStore`, and offers them in a message only when the store is given.
+Both roles share the [service bodies](services.md).
 
 ```mermaid
 sequenceDiagram
@@ -37,16 +37,14 @@ advanceScoreTimestamp("2023-11-14T22:13:20.000Z", 1_700_000_000_000); // => "202
 advanceScoreTimestamp("2023-11-14T22:13:19.000+00", 1_700_000_000_000); // => "2023-11-14T22:13:20.000Z"
 ```
 
-A whole flow, a platform that keeps a gradebook and a tool that publishes to it, runs in the
-[example](../../examples/tool-integration/README.md): `src/gradebook.ts` is a `GradebookStore` in memory, and `src/tool.ts` grades
-a launch.
+The [example](../../examples/tool-integration/README.md) runs the whole flow: `src/gradebook.ts` is a `GradebookStore` in memory,
+and `src/tool.ts` grades a launch.
 
 ## The tool role
 
-`createServiceClient(launch, options)` takes the deployment of a launch (its `issuer`, `clientId` and `deploymentId`) and the
-scopes that the platform offered in the claim, `launch.services.grades.scopes`. A host keeps one client for each deployment, so
-that its tokens are reused; a host of several processes, or one that makes a client for each job, gives the clients a
-`TokenStore` that they share.
+`createServiceClient(launch, options)` takes the deployment of a launch (`issuer`, `clientId`, `deploymentId`) and the scopes
+the platform offered, `launch.services.grades.scopes`. Keep one client for each deployment, so its tokens are reused; a host of
+several processes, or one that makes a client for each job, gives the clients a shared `TokenStore`.
 
 | Method                                | AGS   | Scope asked for, the narrowest that was offered | Answers                                 |
 | ------------------------------------- | ----- | ----------------------------------------------- | --------------------------------------- |
@@ -58,28 +56,31 @@ that its tokens are reused; a host of several processes, or one that makes a cli
 | `results(lineItemUrl, query?)`        | 3.3   | `result.readonly`                               | A `Page<Result>`                        |
 | `publishScore(lineItemUrl, score)`    | 3.4   | `score`                                         | Nothing; the platform answers 2xx       |
 
-Each method also takes `{ signal }`. A score or a line item that breaks AGS 3.4 or 3.2, such as a `scoreGiven` below 0 or a date
-without a time zone, is a `DataError` before anything is sent. A query (`LineItemQuery`, `ResultQuery`) adds its filters. A request for a container adds a `limit` of `pageLimit` when
-neither the query nor the URL names one; a request for results adds none, since AGS 3.3 makes it optional. A `Page` has its `items` and, when the answer links to one on the origin of the request, the
-`next` page, which the same method takes as its URL and sends as it is (AGS 3.2.4: the tool does not apply the filters again). A
-`next` link to another origin ends the pages, so that the token never leaves the platform that answered. The results are below the
-path of the line item at `/results` and the scores at `/scores`, with the query of the line item kept (AGS 3.3 and 3.4).
+| Rule            | Value                                                                                                                                                                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Signal          | Each method also takes `{ signal }`                                                                                                                                                                                                                 |
+| What is sent    | A score or a line item that breaks AGS 3.4 or 3.2, such as a `scoreGiven` below 0 or a date without a time zone, is a `DataError` before anything is sent. A `LineItemQuery` or `ResultQuery` adds its filters                                      |
+| `limit`         | A request for a container adds `pageLimit` when neither the query nor the URL names one; a request for results adds none, as AGS 3.3 makes it optional                                                                                              |
+| The next page   | `Page.next`, when the answer links to one on the origin of the request; the same method takes it as its URL and sends it as it is (AGS 3.2.4). A `next` link to another origin ends the pages, so the token never leaves the platform that answered |
+| Results, scores | Below the path of the line item, at `/results` and `/scores`, with its query kept (AGS 3.3 and 3.4)                                                                                                                                                 |
 
 ### Tokens
 
 Each call asks for a token of the narrowest scope that allows it and that the platform offered (`scope-unavailable` when none),
-with `requestClientCredentialsToken` of [`@interopkit/core/oauth`](../core/oauth.md), `private_key_jwt` signed by the registration's
-`signer`, and the deployment claim of LTI 1.3 Core section 6.2.1. A token that does not hold the scope is `scope-denied`. The
-token of a scope is kept by `createTokenCache` until `refreshSkewSeconds` before its expiry: callers that arrive together share
-one token request, which runs to its own deadline and takes no caller's signal. A 401 drops the token of the scope, and the next
-call asks for a new one. Nothing retries.
+with `requestClientCredentialsToken` of [`@interopkit/core/oauth`](../core/oauth.md) as [the tool role](tool.md#access-tokens-and-the-services)
+describes; a token that does not hold the scope is `scope-denied`. `createTokenCache` keeps the token of a scope until
+`refreshSkewSeconds` before its expiry, and callers that arrive together share one token request, which runs to its own deadline.
+A 401 drops the token of the scope, and the next call asks for a new one. Nothing retries.
 
-With `tokens`, a `TokenStore` of the host, the clients of several processes share their tokens. The key of a token is JSON text
-of the issuer, the client, the deployment and the scopes, so no two deployments or scopes share one. A client asks the store when
-it has no good token of a scope in its own memory, and takes the store's token only while its `expiresAt`, less
-`refreshSkewSeconds`, is later than the time of its clock; otherwise it asks the platform and puts the new token in the store. A
-token that the platform gave without `expires_in` is never put, since no one knows how long it is good. A 401 deletes the token of
-the scope from the store too. The store keeps a token until its `expiresAt` and not after, as a time to live does.
+With `tokens`, a `TokenStore` of the host, the clients of several processes share their tokens:
+
+| Rule      | Value                                                                                                                                                                      |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Key       | JSON text of the issuer, the client, the deployment and the scopes, so no two deployments or scopes share a token                                                          |
+| `get`     | When the client has no good token of the scope in memory; the store's token is taken only while its `expiresAt`, less `refreshSkewSeconds`, is later than the clock's time |
+| `put`     | Of each new token with `expires_in`; a token without it is never put, since no one knows how long it is good                                                               |
+| `delete`  | After a 401                                                                                                                                                                |
+| The store | Keeps a token until its `expiresAt` and not after, as a time to live does                                                                                                  |
 
 ```mermaid
 sequenceDiagram
@@ -103,18 +104,17 @@ each call, so a removed registration or deployment stops the client at once (`pl
 
 ### Scores and their timestamps
 
-AGS 3.4.9 says that the timestamps of the scores of one line item and user increase strictly, and that a platform keeps a score
-unless a later one is kept. `publishScore` is not idempotent: a resend, even of a score in doubt after a timeout, needs a later
-`timestamp`. `advanceScoreTimestamp(lastSent, now)` gives the time with millisecond precision, or one millisecond after the last
-timestamp sent when the time is not later. A host records the timestamp before it sends, so that a crash between the request and
-its record cannot repeat one.
+The timestamps of the scores of one line item and user increase strictly, and a platform keeps a score unless a later one is
+kept (AGS 3.4.9). `publishScore` is not idempotent: a resend, even of a score in doubt after a timeout, needs a later
+`timestamp`. `advanceScoreTimestamp(lastSent, now)` gives the time to the millisecond, or one millisecond after the last
+timestamp sent when the time is not later. Record the timestamp before sending, so a crash between the request and its record
+cannot repeat one.
 
 ### Reading answers
 
-Every answer is read within `maxBytes` (a `ServiceError` that names the option above it) and `maxTokens` of JSON, counted before
-it is parsed (a `DataError` that names the option), then strictly into its model: a body that breaks it is a `DataError` that
-names the path of its first invalid member. A failed call is a `ServiceError` with its `status`, its `headers` (`Retry-After`
-among them) and its body.
+Every answer is read within `maxBytes` (above it, a `ServiceError` that names the option) and `maxTokens` of JSON, counted before
+parsing (a `LimitError`), then strictly into its model: a body that breaks it is a `DataError` that names the path of its first
+invalid member. A failed call is a `ServiceError` with its `status`, `headers` (`Retry-After` among them) and body.
 
 | Option               | Default        | Meaning                                                                                                                                          |
 | -------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -132,14 +132,14 @@ among them) and its body.
 
 ## The platform role
 
-With `services: { gradebook }` in its options, `handlePlatformRequest` offers the grade services: the token endpoint grants their
-scopes when the registration does, a message that asks for them carries their claim, and the routes below are served. Without the
-store, none of the three exists.
+With `services: { gradebook }`, `handlePlatformRequest` offers the grade services: the token endpoint grants their scopes when
+the registration does, a message that asks for them carries their claim, and the routes below are served. Without the store,
+none of the three exists.
 
-A store has the methods of what its gradebook supports, at least one: a platform that only takes the scores of the line item of
-each launch gives `keepScore` alone, as in the example of AGS 3.1.1.3, where the tool can only post scores. What a store lacks
-is not offered: the route of a missing method answers 404, or 405 with the methods of the path that remain; a scope is listed in
-the OpenID configuration and granted only with a method that needs it; and the claim names the container only with `lineItems`.
+A store has the methods its gradebook supports, at least one: a platform that only takes the scores of the line item of each
+launch gives `keepScore` alone, as in the example of AGS 3.1.1.3. What a store lacks is not offered: the route of a missing
+method answers 404, or 405 with the methods of the path that remain; a scope is listed in the OpenID configuration and granted
+only with a method that needs it; and the claim names the container only with `lineItems`.
 
 | Scope               | Offered with any of                                  |
 | ------------------- | ---------------------------------------------------- |
@@ -167,12 +167,18 @@ line item this way, as Submission Review 1.0 section 2.5 asks.
 
 ### Access
 
-A request to a route needs a bearer token of `/token`. The checks, in order: the route (404) and the method (405 with `Allow`);
-a token that this platform sealed and that has not expired (401 with `WWW-Authenticate: Bearer`); the tool and the deployment of
-the token, looked up with `registration` again, so that a removed tool loses access at once (401); and one of the scopes of the method,
-among those of the token that the registration still grants, so that a narrowed tool loses them within the hour of its token (403
-`insufficient_scope`). The store receives the caller (`clientId`, and `deploymentId` when the assertion named one) and the
-`signal`, and answers `undefined` (or `false`) for what is not the caller's, which is 404, so that existence does not leak.
+A request to a route needs a bearer token of `/token`. The checks, in order:
+
+| Check                                                                                                                                                    | Refusal                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| The route                                                                                                                                                | 404                                 |
+| The method                                                                                                                                               | 405 with `Allow`                    |
+| A token that this platform sealed and that has not expired                                                                                               | 401 with `WWW-Authenticate: Bearer` |
+| The tool and the deployment of the token, looked up with `registration` again, so a removed tool loses access at once                                    | 401                                 |
+| One of the scopes of the method, among those of the token that the registration still grants, so a narrowed tool loses them within the hour of its token | 403 `insufficient_scope`            |
+
+The store receives the caller (`clientId`, and `deploymentId` when the assertion named one) and the `signal`, and answers
+`undefined` (or `false`) for what is not the caller's, which is 404, so existence does not leak.
 
 ### Bodies and answers
 
@@ -186,20 +192,16 @@ among those of the token that the registration still grants, so that a narrowed 
 | POST a score         | `score+json`, a `Score`                                                    | 204, whether the store kept it or a later one                                                            |
 
 A body is refused with 415 for another media type, 413 above `maxBodyBytes`, and 400 when it is not JSON or not its model. A page
-holds `limit` items, `pageSize` (100) when the request names none and at most `maxPageSize` (1,000). The store gives an opaque
-`cursor` for the next page, which the platform puts in the `next` link with every filter of the request; a store that gives more
-than `limit` items breaks its contract. A score reaches `keepScore` with `timestampMs`, the instant of its `timestamp` to the
-millisecond; the store keeps it unless a strictly later one is kept, and an equal time replaces, so that a retry completes.
+holds `limit` items: `pageSize` when the request names none, and at most `maxPageSize` ([options](platform.md#options)). The store
+gives an opaque `cursor` for the next page, which the platform puts in the `next` link with every filter of the request; a store
+that gives more than `limit` items breaks its contract. A score reaches `keepScore` with `timestampMs`, the instant of its
+`timestamp` to the millisecond; the store keeps it unless a strictly later one is kept, and an equal time replaces, so a retry
+completes.
 
 ## Limits
 
-| Limit                                            | Value                                  |
-| ------------------------------------------------ | -------------------------------------- |
-| An answer read by the client                     | 1,048,576 bytes, 1,000,000 JSON tokens |
-| The `limit` of a request of the client           | 100                                    |
-| A body of a line item or a score at the platform | 65,536 bytes                           |
-| A page of the platform                           | 100 items, at most 1,000               |
-| An access token of the platform                  | 3,600 seconds                          |
+The limits of the client are its options above; those of the platform (`maxBodyBytes`, `pageSize`, `maxPageSize`, the lifetime of
+an access token) are in [the platform role](platform.md#options).
 
 ## Failure paths
 
@@ -224,7 +226,7 @@ A store that answers with something other than its contract (a line item that is
 | `LtiError` `platform-unknown`, `deployment-unknown` | The registration is gone, or no longer lists the deployment           | Register the platform or the deployment again                              |
 | `ServiceError`                                      | The token endpoint or a service answered with an error, or not at all | Read its `status` and `Retry-After`; resend a score with a later timestamp |
 | `DataError`                                         | An argument has the wrong type, or a body breaks its model            | Fix the caller                                                             |
-| `LimitError`, a `DataError`                         | An answer is above `maxTokens`                                        | Raise the limit                                                            |
+| `LimitError`, a `DataError`                         | An answer is above `maxTokens`                                        | Raise `maxTokens` for a platform you trust                                 |
 
 ## Data flows
 
@@ -245,7 +247,7 @@ A store that answers with something other than its contract (a line item that is
 ## Differences from the references
 
 The platform role is checked against `@lti-tool/core`, `lti-core` and PyLTI1p3, tools of other authors that use its grade
-services, and both roles against Moodle ([evidence](evidence.md)). Where platforms differ, the package follows the text of AGS.
+services, and both roles against Moodle ([evidence](evidence.md)). Where platforms differ, the package follows AGS.
 
 | What                                                   | AGS                                                                             | Moodle 5.3.0 and Canvas                                                                                                                                                                                                          | The package                                                                                                                                                                         |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

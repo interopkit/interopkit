@@ -1,12 +1,9 @@
 # LTI tool role
 
-`@interopkit/tool-integration/tool` lets a learning platform launch your application as an LTI 1.3 tool. It runs on a
-server or an edge runtime, with [jose](https://github.com/panva/jose) to verify the platform's tokens, a `Signer` of
-[`@interopkit/core`](../core/signer.md) for the tool's own, and the OAuth client of [`@interopkit/core/oauth`](../core/oauth.md)
-for its access tokens. LTI 1.0 to 1.2
-launches (OAuth 1.0a, retired on 2022-06-30) are refused. The root subpath, `@interopkit/tool-integration`, holds what both
-roles share: `LtiError` and `createJwksCache`. The request and answer types are in
-[`@interopkit/core/http`](../core/http.md).
+`@interopkit/tool-integration/tool` lets a learning platform launch your application as an LTI 1.3 tool, on a server or an
+edge runtime. It verifies the platform's tokens with [jose](https://github.com/panva/jose), signs the tool's own with a
+[`Signer`](../core/signer.md), and gets access tokens with [`@interopkit/core/oauth`](../core/oauth.md). The root subpath,
+`@interopkit/tool-integration`, holds what both roles share, such as `LtiError` and `createJwksCache`.
 
 ```mermaid
 sequenceDiagram
@@ -43,9 +40,9 @@ sequenceDiagram
 | `advanceScoreTimestamp(lastSent, now)`                                                                                      | Returns a timestamp of a score strictly later than the last one sent                                                                                                                                                                                                           |
 | `createJwksCache(options)`                                                                                                  | Creates the cache of the platforms' key sets that `handleLaunch` verifies signatures with                                                                                                                                                                                      |
 
-The handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md), plain objects that a host builds from any web framework. The
-host owns the routes, the sessions, the database and the keys. The [example](../../examples/tool-integration/README.md) runs a tool
-and a platform against each other in one process.
+The handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md). The host owns the
+routes, the sessions, the database and the keys. The [example](../../examples/tool-integration/README.md) runs a tool and a
+platform against each other in one process.
 
 ## Sources
 
@@ -62,10 +59,9 @@ and a platform against each other in one process.
 
 ## Quick start
 
-A host builds the registration of each platform, the store of logins and the options. It generates its key in the sample; a real
-host keeps the key that the platform's administrator registered. The routes of the host turn the request of its web framework into
-an `HttpRequest` (with the header names in lower case, as `Object.fromEntries(request.headers)` gives them, and the body as
-bytes, as `new Uint8Array(await request.arrayBuffer())` gives it) and the `HttpResponse` back into a response.
+A host builds the registration of each platform, the store of logins and the options. The sample generates its key; a real host
+keeps the key that the platform's administrator registered. A route converts its framework's request into an `HttpRequest`
+[as the http guide shows](../core/http.md#quick-start), and the `HttpResponse` back.
 
 ```ts
 import { createCryptoKeySigner } from "@interopkit/core";
@@ -121,8 +117,8 @@ authentication.searchParams.get("scope"); // => "openid"
 logins.size; // => 1
 ```
 
-The route of the redirect URI passes the platform's post and, on the storage path, the verification page's post to `handleLaunch`.
-It returns a launch, or a response that the host sends.
+The route of the redirect URI passes both the platform's post and, on the storage path, the verification page's post to
+`handleLaunch`, which returns a launch or a response that the host sends.
 
 ## Registrations
 
@@ -138,7 +134,7 @@ call and must match the issuer and the client.
 | `authenticationUrl` | The platform's OIDC authentication endpoint                                                                                                                                                                                                                                                                 |
 | `jwksUrl`           | The platform's key set                                                                                                                                                                                                                                                                                      |
 | `accessTokenUrl`    | The platform's token endpoint, also the `aud` of the client assertion unless `audience` is set                                                                                                                                                                                                              |
-| `audience`          | Optional: the `aud` of the client assertion, for a platform that wants a value other than its token endpoint                                                                                                                                                                                                |
+| `audience`          | Optional: the `aud` of the client assertion, for a platform that wants another value than its token endpoint. Default: `accessTokenUrl`                                                                                                                                                                     |
 | `redirectUri`       | The tool's launch URL. The route of `handleLaunch` must answer it                                                                                                                                                                                                                                           |
 | `signer`            | Signs the tool's client assertions and Deep Linking responses: one of RS256, RS384, RS512, ES256, ES384 and ES512, with a `keyId` that is the `kid` of its public key in the tool's key set. A key in a KMS or an HSM works                                                                                 |
 | `algorithms`        | Optional: the algorithms accepted on the platform's tokens. Default: all six of Security Framework section 7.2                                                                                                                                                                                              |
@@ -158,24 +154,30 @@ key set that `serveToolJwks` answers or from its own registration of the tool.
 | `get(state, options)`         | Returns the record, or `undefined`                                                                                                                     |
 | `delete(state, options)`      | Deletes the record and returns whether there was one. Of two concurrent calls, one returns `true`                                                      |
 
-A login is valid for 600 seconds (`expiresAt`). The host may delete expired records. `delete` must be atomic: it is what makes
-a login complete once.
+A login is valid for 600 seconds (`expiresAt`), and the host may delete expired records. `delete` must be atomic: it is what
+makes a login complete once.
 
 ## Login and launch
 
-The platform sends the browser to the login URL (Security Framework section 5.1.1.1). `handleLogin` creates a `state` and a `nonce`
-of 160 random bits each, saves them in the store and answers with the authentication request (section 5.1.1.2): `scope=openid`,
-`response_type=id_token`, `client_id`, `redirect_uri`, `login_hint`, `state`, `response_mode=form_post`, `nonce`,
-`prompt=none`, and `lti_message_hint` unchanged when the platform sent it. The initiation may be a GET or a form POST of at
-most 65,536 bytes. The login keeps the initiation's `target_link_uri`, an `https` URL, and its `lti_deployment_id` when there is
-one, which must be a deployment of the registration (`deployment-unknown`): the launch must carry both (LTI 1.3 Core sections
-4.1.2 and 5.3.4).
+The platform sends the browser to the login URL (Security Framework section 5.1.1.1), with a GET or a form POST of at most
+65,536 bytes. `handleLogin` creates a `state` and a `nonce` of 160 random bits each, saves them in the store and answers with the
+authentication request (section 5.1.1.2):
+
+| Parameter                                           | Value                                     |
+| --------------------------------------------------- | ----------------------------------------- |
+| `scope`, `response_type`, `response_mode`, `prompt` | `openid`, `id_token`, `form_post`, `none` |
+| `client_id`, `redirect_uri`                         | Of the registration                       |
+| `login_hint`, `lti_message_hint`                    | Those of the initiation, unchanged        |
+| `state`, `nonce`                                    | The new ones                              |
+
+The login keeps the initiation's `target_link_uri`, an `https` URL, and its `lti_deployment_id` when there is one, which must
+be a deployment of the registration (`deployment-unknown`); the launch must carry both (LTI 1.3 Core sections 4.1.2 and
+5.3.4).
 
 The tool must tie the launch to the browser that logged in, or an attacker could make a victim's browser launch with the
 attacker's token (login CSRF, Security Framework 1.1 section 7.4.1). Every answer of `handleLogin` sets the state cookie,
-`__Host-lti_state_<state>=<state>; Max-Age=600; Path=/; Secure; HttpOnly; SameSite=None`, and a launch whose post carries it is
-bound by it. When the platform names a storage frame, the tool also stores the values in the platform, for a browser that does
-not keep the cookie.
+`__Host-lti_state_<state>=<state>; Max-Age=600; Path=/; Secure; HttpOnly; SameSite=None`: the `__Host-` prefix keeps a sibling
+subdomain from setting it, and the `state` in its name keeps several launches in one browser apart.
 
 | Path    | When                                       | The answer of `handleLogin`                                                                                 | What binds the browser                                                                                                                |
 | ------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -183,41 +185,48 @@ not keep the cookie.
 | Storage | The initiation has `lti_storage_target`    | A page that stores `state` and `nonce` in the platform with `lti.put_data`, then redirects; with the cookie | The cookie when the browser kept it; else the platform's storage, which the verification page reads with `lti.get_data` at the launch |
 
 The storage path works in an iframe whose browser blocks third-party cookies, and in a tab of its own, which keeps the
-first-party cookie. The `__Host-` prefix keeps a sibling subdomain from setting the cookie, and the name holds the `state`, so
-that several launches in one browser do not collide.
+first-party cookie.
 
 ### The storage path
 
-LTI Client Side OIDC 0.1 sections 2.3 to 2.7 and section 3 define the messages. The page first asks the window that framed or
-opened it for its capabilities (`lti.capabilities`, Client Side postMessages 0.1 section 4.1), to the wildcard origin as section
-4.1.2 asks, and waits at most 100 milliseconds for the answer to its own request. A frame that the answer names for
-`lti.put_data` receives the storage messages; without an answer, or without a frame for the subject, the frame named by
-`lti_storage_target` does (`_parent` for the parent). The page stores `state_<state>` and `nonce_<nonce>` there, waits for
-`lti.put_data.response`, and navigates to the authentication request. A message counts only when it comes from the origin of `authenticationUrl`, has the subject
-`<subject>.response` and answers the page's `message_id`. If the platform answers with an error, names no such frame or is
-silent for 10 seconds, the page shows a message and stops. A page in a window that has neither a parent nor an opener, such as a
-tab that the platform opened with `noopener`, has no frame of the platform to store in: it navigates to the authentication
-request at once, and the cookie binds its launch.
+LTI Client Side OIDC 0.1 (sections 2.3 to 2.7 and 3) and Client Side postMessages 0.1 define the messages.
 
-At the launch, the platform posts the `id_token` to the redirect URI. When the post carries the state cookie, `handleLaunch` completes
-the launch. When the browser did not keep it, as a frame of another site does not, `handleLaunch` answers with the verification page: it asks
-for the capabilities in the same way, fetches `state_<state>` and `nonce_<nonce>` with `lti.get_data` and submits the form with `id_token`, `state`, `stored_state`
-and `stored_nonce` to the same URL. That second request completes the launch, so the host routes both to `handleLaunch`. It must
-pass the `origin` header, because `handleLaunch` accepts the second request only from the origin of the redirect URI: without
-cookies, nothing else stops a cross-site form from posting a token of the attacker's with values of its own.
+```mermaid
+sequenceDiagram
+  participant S as Storage page (handleLogin)
+  participant W as Platform window
+  participant F as Platform storage frame
+  participant T as handleLaunch
+  S->>W: lti.capabilities, to the origin *
+  W-->>S: the frame for lti.put_data (or none within 100 ms)
+  S->>F: lti.put_data state_<state>, nonce_<nonce>
+  F-->>S: lti.put_data.response
+  S->>S: navigate to the authentication request
+  Note over T: the platform posts id_token and state; no state cookie
+  T-->>S: verification page
+  S->>F: lti.get_data state_<state>, nonce_<nonce>
+  F-->>S: lti.get_data.response
+  S->>T: POST id_token, state, stored_state, stored_nonce
+  T->>T: the post comes from the redirect URI's origin: the launch completes
+```
 
-The scripts of the two pages use only features that Chromium 111, Firefox 115 and Safari 16.4 have, and later versions. Both pages carry a CSP that allows their one script by hash (`default-src 'none'; script-src 'sha256-...'; base-uri 'none';
-form-action 'self'`), `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`, and every value in them is
-HTML-encoded. The storage page sends no referrer; the verification page sends one to its own origin alone
-(`Referrer-Policy: same-origin`), since under `no-referrer` a browser posts its form with `Origin: null`, which `handleLaunch` refuses. `handleLaunch` echoes the `id_token` of the platform's post into the verification page before it verifies it, and
-only for a `state` that the tool issued.
+| Rule                        | Value                                                                                                                                                                                                                   |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The frame that stores       | The one the capabilities answer names for the subject; else the frame named by `lti_storage_target` (`_parent` for the parent)                                                                                          |
+| A message that counts       | From the origin of `authenticationUrl`, with the subject `<subject>.response`, answering the page's `message_id`                                                                                                        |
+| An error, no frame, silence | After an error, without such a frame, or after 10 seconds of silence, the page shows a message and stops                                                                                                                |
+| No parent and no opener     | A tab opened with `noopener` has no platform frame: the page navigates to the authentication request at once, and the cookie binds the launch                                                                           |
+| The second post             | Accepted only from the origin of the redirect URI, so the host passes the `origin` header: without cookies, nothing else stops a cross-site form from posting an attacker's token with values of its own                |
+| The `id_token` in the page  | Echoed into the verification page before it is verified, and only for a `state` that the tool issued                                                                                                                    |
+| Browsers                    | The scripts use only what Chromium 111, Firefox 115 and Safari 16.4 have                                                                                                                                                |
+| Headers of both pages       | A CSP that allows their one script by hash (`default-src 'none'; script-src 'sha256-...'; base-uri 'none'; form-action 'self'`), `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`; every value HTML-encoded |
+| Referrer                    | None from the storage page; `Referrer-Policy: same-origin` on the verification page, since under `no-referrer` a browser posts the form with `Origin: null`, which `handleLaunch` refuses                               |
 
 ### What `handleLaunch` checks
 
-A request that is not a POST of a form with `id_token` and `state` is a `DataError`, and a form of more than `maxFormBytes`,
-65,536 by default, measured before it is decoded, a `LimitError` of `@interopkit/core` with `limit` `maxFormBytes`. Then, in
-this order, a failure throws `LtiError` with the reason in the table. The login stays in the store until the launch succeeds or
-expires.
+A request that is not a POST of a form with `id_token` and `state` is a `DataError`, and a form over `maxFormBytes`, measured
+before it is decoded, a `LimitError`. Then, in this order, a failure throws `LtiError` with the reason in the table. The login
+stays in the store until the launch succeeds or expires.
 
 | Check                                                                                                                                                                                          | Reason                                                                                             |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -228,7 +237,7 @@ expires.
 | The platform is still registered                                                                                                                                                               | `platform-unknown`                                                                                 |
 | The state cookie equals `state`; without it, a login without `lti_storage_target` is refused                                                                                                   | `state-cookie`                                                                                     |
 | Without the cookie, on the storage path: the second post comes from the redirect URI's origin, with `stored_state` and `stored_nonce` equal to the login's                                     | `origin-mismatch`, `storage-mismatch`                                                              |
-| The token has three canonical base64url parts, a JSON header and a JSON payload; no `crit` header                                                                                              | `token-malformed`                                                                                  |
+| The token has three canonical base64url parts, a JSON header and a JSON payload of at most 1,000,000 tokens, counted before it is parsed; no `crit` header                                     | `token-malformed`                                                                                  |
 | `alg` is one of the registration's `algorithms`, by default RS256, RS384, RS512, ES256, ES384 and ES512; `none`, the HMAC algorithms and every other are refused before a key is fetched       | `algorithm-unsupported`                                                                            |
 | The header has a `kid` that one key of the key set has, a key for the algorithm: RSA of 2,048 bits or more, or EC on P-256, P-384 or P-521; the key set is a JWK Set                           | `key-unknown`                                                                                      |
 | The signature verifies with that key                                                                                                                                                           | `signature-invalid`                                                                                |
@@ -244,11 +253,10 @@ expires.
 | With `migrationSecret`: the secret of the `lti1p1` claim's consumer key is looked up and `oauth_consumer_key_sign` checked against it                                                          | The lookup's rejection                                                                             |
 | The store deletes the login                                                                                                                                                                    | `state-reused`                                                                                     |
 
-A host answers with the `status` of an `LtiError`, which the table of errors below gives, and with 400 for a `DataError`.
-
 ### The launch
 
-`handleLaunch` returns an `LtiMessage` or an `HttpResponse`: the second post of the storage path is answered with the verification page, which the route sends to the browser as it is. Tell them apart with `"status" in result`, which is true for the `HttpResponse`; an `LtiMessage` has a `messageType`. A launch that fails a check does not return: it throws an `LtiError` with a `reason` and a `status`, and the route answers with them.
+`handleLaunch` returns an `LtiMessage`, or an `HttpResponse` (the verification page of the storage path), which the route
+sends as it is. `"status" in result` is true for the `HttpResponse`; an `LtiMessage` has a `messageType`.
 
 An `LtiMessage` is a union by `messageType`; [Messages and vocabularies](model.md) lists every property. The ones a tool reads first:
 
@@ -266,40 +274,25 @@ An `LtiMessage` is a union by `messageType`; [Messages and vocabularies](model.m
 | `resourceLink`                        | `LtiResourceLinkRequest`: `id`, `title`, `description`                                                                                                                                                                              |
 | `settings`                            | `LtiDeepLinkingRequest`: the ten settings of Deep Linking 4.4.1, `returnUrl`, `acceptTypes` and `data` among them                                                                                                                   |
 
-**The LTI 1.1 migration claim.** A platform that moved from LTI 1.1 signs the `oauth_consumer_key` of the integration with the
-shared secret of 1.1 (`oauth_consumer_key_sign`, the Migration Guide). With `migrationSecret`, `handleLaunch` asks the host for that
-secret by consumer key and sets `migration.verified`; the host maps the 1.1 `user_id` and `context_id` to its records only when it
-is `true`. The secret is used for one HMAC and kept nowhere.
+A platform that moved from LTI 1.1 signs the `oauth_consumer_key` of the integration with the shared secret of 1.1
+(`oauth_consumer_key_sign`, the Migration Guide). With `migrationSecret`, `handleLaunch` asks the host for that secret and sets
+`migration.verified`; map the 1.1 `user_id` and `context_id` to your records only when it is `true`. The secret serves one HMAC
+and is kept nowhere.
 
-## Deep Linking
+## Deep Linking, proctoring and registration
 
-When `handleLaunch` returns a Deep Linking request, the host lets the user choose, then answers with `buildDeepLinkingResponse(launch,
-response, options)`: the items are checked against what the request accepts, the response is signed with the registration's
-`signer`, and the result is the page that posts it to `launch.settings.returnUrl`, also when no item was chosen (Deep Linking 2.0
-section 2.3). The [Deep Linking guide](deep-linking.md) has the five item types, the checks and the platform's reader.
-
-## Proctoring
-
-When `handleLaunch` returns a Start Proctoring message, the proctoring tool checks the candidate and the room, then sends the browser
-back with `buildStartAssessmentPage(launch, input, options)`: the page posts the signed Start Assessment message, which returns the
-session data, the resource link and the attempt of the launch, to `launch.startAssessmentUrl`. During and after the attempt the tool
-calls the Assessment Control Service of `launch.assessmentControl` with `control` of `createServiceClient`. The
-[proctoring guide](proctoring.md) has the verified claims, the actions and the platform's side.
-
-## Dynamic Registration
-
-A tool registers itself with a platform in steps, so that the host may show its own pages between them:
-`readRegistrationInitiation(request)` at the initiation route, behind the session of the tool's administrator;
-`discoverPlatform(initiation, { fetch })`, which checks that the configuration lies below its issuer; `registerTool(platform, tool,
-initiation, { fetch })`; `buildPlatformRegistration(platform, result, { signer, redirectUri })`, the record that the host keeps; and the
-page of `buildRegistrationClosePage()`. The [registration guide](registration.md) has the checks, the options and the platform's
-side.
+| Flow                 | After                                              | The tool calls                                                                                                                                                                                                                                                                                | Guide                           |
+| -------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Deep Linking         | A Deep Linking request                             | `buildDeepLinkingResponse(launch, response, options)`: checks the items against what the request accepts, signs with the registration's `signer`, and returns the page that posts to `launch.settings.returnUrl`, also with no item (Deep Linking 2.0 section 2.3)                            | [Deep Linking](deep-linking.md) |
+| Proctoring           | A Start Proctoring message                         | `buildStartAssessmentPage(launch, input, options)`: the page that posts the signed Start Assessment message to `launch.startAssessmentUrl`; later, `control` of `createServiceClient`                                                                                                         | [Proctoring](proctoring.md)     |
+| Dynamic Registration | The initiation, behind the administrator's session | `readRegistrationInitiation(request)`, `discoverPlatform(initiation, { fetch })`, `registerTool(platform, tool, initiation, { fetch })`, `buildPlatformRegistration(platform, result, { signer, redirectUri })`, `buildRegistrationClosePage()`; the host may show its own pages between them | [Registration](registration.md) |
 
 ## The tool's key set
 
 The platform verifies the tool's client assertions and Deep Linking responses with the tool's public keys. `serveToolJwks(request,
 keys, options)` answers the route of the key set URL that the platform's administrator registered: a GET with `{ "keys": [...] }`
-and `Cache-Control: public, max-age=3600`, a HEAD with the headers alone, and any other method with 405. `keys` is the `KeySet` of
+and `Cache-Control: public, max-age=<maxAgeSeconds>` (default 3,600), a HEAD with the headers alone, and any other method with
+405. `keys` is the `KeySet` of
 the tool: its `signer` and the `publicKeys` that it publishes, each with a `kid`. A key with a private member, a `kid` used
 twice, or a signer whose `keyId` no public key has is a `DataError`, so it never reaches a platform.
 
@@ -332,59 +325,49 @@ token that it signed has expired (300 seconds), plus one `max-age`; then remove 
 
 ## Access tokens and the services
 
-The client of the services, `createServiceClient`, asks the platform for access tokens with `requestClientCredentialsToken` of
-[`@interopkit/core/oauth`](../core/oauth.md) and `private_key_jwt`: a form to `accessTokenUrl` with
-`grant_type=client_credentials`, `client_id`, `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
-`client_assertion` and `scope`, as Security Framework section 4.1.1 describes. The registration's `signer` signs the assertion:
-`iss` and `sub` the client identifier, `aud` the token endpoint (or the `audience` of the registration), `iat`, `exp` (300
-seconds later), a new `jti`, and the deployment claim (LTI 1.3 Core section 6.2.1). It keeps a token for each scope until it
-is about to expire, and sends it only to the registration's `serviceOrigins`, or to an `https` URL that names a public host. The
-[grade services](grades.md) guide has the methods, the options, the timestamps of scores and the errors; the [roster services](roster.md) guide has the members, the groups and the preferences record; the [proctoring](proctoring.md) guide has the Assessment Control Service.
+`createServiceClient` gets access tokens with `requestClientCredentialsToken` of [`@interopkit/core/oauth`](../core/oauth.md)
+and `private_key_jwt` (Security Framework section 4.1.1): the registration's `signer` signs the assertion, whose `aud` is
+`accessTokenUrl` or the registration's `audience`, and which carries the deployment claim (LTI 1.3 Core section 6.2.1). It keeps
+a token for each scope until it is about to expire, and sends it only to the registration's `serviceOrigins`, or to an `https`
+URL that names a public host. The methods, options and errors of the client are in [grade services](grades.md),
+[roster services](roster.md) and [proctoring](proctoring.md).
 
 ## The key set cache
 
-`createJwksCache({ fetch, clock })` keeps the key set of
-each URL, which comes from a registration and never from a token, as a `createLocalJWKSet` of jose in a `createKeyedCache`.
-`cache.keySet(url, options)` returns the function that resolves the public key of a token from its header, and `jwtVerify` of
-jose takes it. The `signal` of `options` ends the wait of the caller that holds the function; the fetch is shared work and runs
-on to its own timeout.
+`createJwksCache(options)` keeps the key set of each URL, which comes from a registration and never from a token, as a
+`createLocalJWKSet` of jose in a [`createKeyedCache`](../core/signals.md#the-keyed-cache). `cache.keySet(url, options)` returns
+the function that resolves the public key of a token from its header, which `jwtVerify` of jose takes; its `signal` ends the
+caller's wait, and the fetch runs on to its own timeout.
 
-| Option           | Meaning                                                                  |
-| ---------------- | ------------------------------------------------------------------------ |
-| `fetch`          | The `fetch` that gets the key sets                                       |
-| `clock`          | The time that the lifetimes are counted by; `SYSTEM_CLOCK` when left out |
-| `ttlSeconds`     | How long a set stays cached. Default: `3600`.                            |
-| `refreshSeconds` | The least time between two fetches of a set that answers. Default: `60`. |
-| `timeoutMs`      | The most time one fetch may take. Default: `10000`.                      |
+| Option           | Meaning                                                  | Default        |
+| ---------------- | -------------------------------------------------------- | -------------- |
+| `fetch`          | Gets the key sets                                        | Required       |
+| `clock`          | Counts the lifetimes                                     | `SYSTEM_CLOCK` |
+| `ttlSeconds`     | How long a set stays cached                              | 3,600          |
+| `refreshSeconds` | The least time between two fetches of a set that answers | 60             |
+| `timeoutMs`      | The most time one fetch may take                         | 10,000         |
 
-A set that is older than `ttlSeconds` is fetched again. A `kid` that the cached set lacks fetches it again only after
-`refreshSeconds` (Security Framework section 6.4: the platform adds a rotated key under a new `kid`), so a token with an invented
-`kid` cannot make the tool fetch on every request while the platform's key set answers. A key set that fails is not held back: each request that needs it fetches it again, so limit the rate of requests to the launch URL. Requests that wait for one fetch share it. The set resolves the key that
-has the `kid` and is meant for signing with the algorithm of the token (`use` is `sig` or absent, `alg` is that algorithm or absent, `key_ops` has
-`verify` when present); a `kid` that two keys share is refused, and a set that is not a JWK Set (RFC 7517 section 5) is not kept
-and refuses the launch with `key-unknown`, as a set without the `kid` does. A key of fewer than 2,048 bits does not verify (RFC 7518 section 3.3). The cache keeps 1,000 key
-sets at most: the one fetched first goes first.
+| Rule             | Value                                                                                                                                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| An unknown `kid` | Fetches the set again only after `refreshSeconds` (Security Framework section 6.4: a rotated key comes under a new `kid`), so an invented `kid` cannot make the tool fetch on every request                    |
+| A set that fails | Is not held back: each request that needs it fetches again, so limit the rate of requests to the launch URL. Requests that wait for one fetch share it                                                         |
+| The key          | The one with the `kid`, meant for signing with the token's algorithm: `use` is `sig` or absent, `alg` is that algorithm or absent, `key_ops` has `verify` when present. A `kid` that two keys share is refused |
+| A malformed set  | One that is not a JWK Set (RFC 7517 section 5) is not kept, and the launch fails with `key-unknown`, as for a set without the `kid`                                                                            |
+| Key size         | An RSA key of fewer than 2,048 bits does not verify (RFC 7518 section 3.3)                                                                                                                                     |
+| Sets kept        | 1,000 at most; the one fetched first goes first                                                                                                                                                                |
 
 ## Calls to the platform
 
-`fetch` is an option and nothing else calls the network. The functions that do (`createJwksCache` and the client of
-`createServiceClient`) go through `requestService` of [`@interopkit/core`](../core/service.md): a time limit, no redirect (it could
-leave HTTPS) and a limit on the bytes of the answer (64 KiB for a key set, `maxBytes` for a service). A failure is a
-`ServiceError`: its `status` is the HTTP status, or `0` when the platform did not answer. A token answer that is not one is a
-`ServiceError` too; a body that is not what the specification describes is a `DataError`.
+Only `createJwksCache` and the client of `createServiceClient` call the network, through
+[`requestService`](../core/service.md): a deadline, no redirect, and at most 64 KiB for a key set and `maxBytes` for a service.
+A failure is a `ServiceError`, with the HTTP status or `0` when the platform did not answer; a token answer that is not one is a
+`ServiceError` too, and a body that is not what the specification describes a `DataError`.
 
-The key set and the token endpoint come from a registration, and the URLs of the services from a claim or an answer of a platform,
-which pass the rule of the service origins above. That rule sees only the URL: a tool that serves many platforms, whose administrators it does not control, passes a
-`fetch` that refuses loopback, private and link-local addresses. The check must be on the address that the connection resolves
-to and not on the host name, or DNS rebinding gets through: a name that is public when it is checked can be private when the
-connection is made. Resolve the name once, refuse the address if it is in one of those ranges (the metadata address
-`169.254.169.254` among them, and an IPv4 address written as IPv6), and connect to that address; in Node.js that is a `lookup`
-function in the options of the connection. See [SECURITY](../../SECURITY.md).
-
-## The clock
-
-`clock.now()` answers whole milliseconds, as `Date.now()` does ([clock](../core/clock.md)). The functions and the key set cache
-read no other clock.
+The key set and the token endpoint come from a registration, and the URLs of the services from a platform, which pass the rule
+of `serviceOrigins`. That rule sees only the URL: a tool that serves platforms whose administrators it does not control passes a
+`fetch` that refuses loopback, private, link-local and metadata addresses, such as `169.254.169.254` and an IPv4 address written as
+IPv6, on the address the connection resolves to, or DNS rebinding gets through. In Node.js that is a `lookup` function in the
+options of the connection ([SECURITY](../../SECURITY.md)).
 
 ## Deployment
 
@@ -401,12 +384,12 @@ read no other clock.
 ## Options
 
 One object holds the options of every function of the tool role, and each function requires what it needs. A property that no
-function of the role takes, such as a misspelled option, is refused with a `DataError`.
+function of the role takes, such as a misspelled one, is a `DataError`.
 
 | Option              | Default                                       | Meaning                                                                                                                                                                          |
 | ------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `registration`      | required                                      | Looks up the registration of a platform (see Registrations)                                                                                                                      |
-| `clock`             | `SYSTEM_CLOCK`                                | The source of the time                                                                                                                                                           |
+| `clock`             | `SYSTEM_CLOCK`                                | The source of the time, in whole milliseconds as `Date.now()` gives ([clock](../core/clock.md)); nothing reads another                                                           |
 | `store`             | required for `handleLogin` and `handleLaunch` | The store of logins                                                                                                                                                              |
 | `jwks`              | required for `handleLaunch`                   | The cache of key sets                                                                                                                                                            |
 | `fetch`             | required for `createServiceClient`            | The `fetch` that calls the platform ([grade services](grades.md) has the other options of the client)                                                                            |
@@ -428,7 +411,6 @@ function of the role takes, such as a misspelled option, is refused with a `Data
 | Most keys of a key set of the platform                               | 100                                             |
 | Most key sets that the cache keeps                                   | 1,000                                           |
 | Most bytes of an answer of a service                                 | 1,048,576 (`maxBytes` of `createServiceClient`) |
-| Key set `ttlSeconds`, `refreshSeconds`                               | 3,600 and 60                                    |
 
 ## Failure paths
 
@@ -456,14 +438,14 @@ function of the role takes, such as a misspelled option, is refused with a `Data
 
 ## Errors
 
-| Error                                                                                                                                                                                                                                                                   | When                                                                                                                           | Status                                         |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
-| `LtiError` `token-malformed`, `algorithm-unsupported`, `key-unknown`, `signature-invalid`, `issuer-mismatch`, `audience-mismatch`, `audience-untrusted`, `authorized-party-missing`, `authorized-party-mismatch`, `token-expired`, `issued-in-future`, `nonce-mismatch` | The `id_token` fails validation                                                                                                | 401                                            |
-| `LtiError` `state-unknown`, `state-expired`, `state-reused`, `state-cookie`, `origin-mismatch`, `storage-mismatch`, `deployment-mismatch`                                                                                                                               | The launch is not bound to a login of the tool                                                                                 | 403                                            |
-| `LtiError`, other reasons                                                                                                                                                                                                                                               | The platform broke the protocol, or a scope is not available                                                                   | 400                                            |
-| `LimitError`, a `DataError`                                                                                                                                                                                                                                             | A form is over `maxFormBytes`, or the initiation of a login over 65,536 bytes; `limit` names the limit and `maximum` its value | 413                                            |
-| `DataError`                                                                                                                                                                                                                                                             | An argument or a request has the wrong shape                                                                                   | 400                                            |
-| `ServiceError`                                                                                                                                                                                                                                                          | The platform did not answer, or answered with an error                                                                         | 502 or 504 for a host that proxies the failure |
+| Error                                                                                                                                                                                                                                                                   | When                                                                                                                           | Status                                         | What to do                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LtiError` `token-malformed`, `algorithm-unsupported`, `key-unknown`, `signature-invalid`, `issuer-mismatch`, `audience-mismatch`, `audience-untrusted`, `authorized-party-missing`, `authorized-party-mismatch`, `token-expired`, `issued-in-future`, `nonce-mismatch` | The `id_token` fails validation                                                                                                | 401                                            | Answer the status. Repeated `key-unknown` or `signature-invalid` from one platform: check its `jwksUrl` and `algorithms`; `token-expired` or `issued-in-future`: check the host's clock |
+| `LtiError` `state-unknown`, `state-expired`, `state-reused`, `state-cookie`, `origin-mismatch`, `storage-mismatch`, `deployment-mismatch`                                                                                                                               | The launch is not bound to a login of the tool                                                                                 | 403                                            | Answer the status and let the user launch again. `state-cookie`: the browser dropped the cookie, which the storage path avoids; `origin-mismatch`: pass the `origin` header             |
+| `LtiError`, other reasons                                                                                                                                                                                                                                               | The platform broke the protocol, or a scope is not available                                                                   | 400                                            | Answer the status; the message names the claim or the parameter                                                                                                                         |
+| `LimitError`, a `DataError`                                                                                                                                                                                                                                             | A form is over `maxFormBytes`, or the initiation of a login over 65,536 bytes; `limit` names the limit and `maximum` its value | 413                                            | Answer 413; raise `maxFormBytes` for a platform whose forms are larger                                                                                                                  |
+| `DataError`                                                                                                                                                                                                                                                             | An argument or a request has the wrong shape                                                                                   | 400                                            | Fix the route or the argument that the message names                                                                                                                                    |
+| `ServiceError`                                                                                                                                                                                                                                                          | The platform did not answer, or answered with an error                                                                         | 502 or 504 for a host that proxies the failure | Retry later; check `jwksUrl` and `accessTokenUrl`                                                                                                                                       |
 
 ## Data flows
 
@@ -479,8 +461,8 @@ function of the role takes, such as a misspelled option, is refused with a `Data
 
 ## Differences from the references
 
-The references were read for what they do where a specification leaves room; [spec-gaps](spec-gaps.md) lists where the text and
-an example disagree.
+The references were read where a specification leaves room; [spec-gaps](spec-gaps.md) lists where the text and an example
+disagree.
 
 | Reference                               | What it does                                                                            | What this package does                                                           |
 | --------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -490,7 +472,7 @@ an example disagree.
 
 ## Not included
 
-| Not included                                        | Why                                                    |
-| --------------------------------------------------- | ------------------------------------------------------ |
-| LTI 1.0 to 1.2, Basic Outcomes                      | 1EdTech retired them; a launch of that form is refused |
-| Sessions, routes, a database, a UI for Deep Linking | The host's                                             |
+| Not included                                        | Why                                                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| LTI 1.0 to 1.2, Basic Outcomes                      | 1EdTech retired them (OAuth 1.0a, on 2022-06-30); a launch of that form is refused with `legacy-launch` |
+| Sessions, routes, a database, a UI for Deep Linking | The host's                                                                                              |

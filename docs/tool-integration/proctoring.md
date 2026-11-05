@@ -2,11 +2,8 @@
 
 Proctoring Services 1.0 in both roles. A platform that delivers an assessment sends the candidate to a proctoring tool with an
 `LtiStartProctoring` message; the tool secures the session, then sends the candidate back with a signed `LtiStartAssessment`
-message, and may control the attempt through the Assessment Control Service (ACS) while it runs and after it ends. In the tool
-role, `buildStartAssessmentPage` signs the Start Assessment message and returns the page that posts it, and `control` of
-`createServiceClient` calls the ACS. In the platform role, `readStartAssessment` reads the posted message against the session
-data that the platform sealed into the Start Proctoring message, and `handlePlatformRequest` serves the ACS over the host's
-`AssessmentControl`. The control request and status are the [service models](services.md) that both roles share.
+message, and may control the attempt through the Assessment Control Service (ACS) while it runs and after it ends. The control
+request and status are [service bodies](services.md) that both roles share.
 
 ```mermaid
 sequenceDiagram
@@ -80,9 +77,8 @@ page.headers["content-security-policy"].endsWith("form-action https://assessment
 /action="https:\/\/assessment\.example\/proctoring\/start"/.test(page.body); // => true
 ```
 
-A whole flow, a platform that delivers an exam and a tool that proctors it, runs in the
-[example](../../examples/tool-integration/README.md): `src/tool.ts` answers a Start Proctoring message with
-`buildStartAssessmentPage` and pauses the attempt, `src/platform.ts` has the route at the start assessment URL that calls
+The [example](../../examples/tool-integration/README.md) runs the whole flow: `src/tool.ts` answers a Start Proctoring message
+with `buildStartAssessmentPage` and pauses the attempt, `src/platform.ts` has the route at the start assessment URL that calls
 `readStartAssessment`, and `src/proctoring.ts` holds the attempts behind the ACS.
 
 ## The tool role
@@ -97,9 +93,9 @@ otherwise it sends the browser to the `returnUrl` of the launch presentation wit
 | `endAssessmentReturn` | `false` | Asks the platform for the End Assessment message when the attempt ends                                                                                                                                                                   |
 
 The message copies `session_data`, `resource_link` and `attempt_number` of the launch unchanged, and carries `iss` (the client
-identifier), `aud` (the platform's issuer), `iat`, `exp` (300 seconds later) and a new `nonce`. The registration's `signer` signs
-it, and the result is the page that posts the form parameter `JWT` to `launch.startAssessmentUrl`, under a policy that lets the
-form go to that origin alone. The page must load in the browser of the launch: the platform binds its session data to that session.
+identifier), `aud` (the platform's issuer), `iat`, `exp` (300 seconds later) and a new `nonce`, signed by the registration's
+`signer`. The page posts the form parameter `JWT` to `launch.startAssessmentUrl`, under a policy that lets the form go to that
+origin alone, and must load in the browser of the launch, to whose session the platform binds its session data.
 
 `control(url, request, options)` of `createServiceClient` posts a `ControlRequest` with the media type
 `application/vnd.ims.lti-ap.v1.control+json` and a token of `control.all` (`SCOPES.assessmentControl`), and returns the
@@ -116,8 +112,8 @@ form go to that origin alone. The page must load in the browser of the launch: t
 | `incidentSeverity`            | `incident_severity`         | From 0 to 1                                                                           |
 | `reasonCode`, `reasonMessage` | `reason_code`, `reason_msg` | The tool's code and words for the reason                                              |
 
-The request is read back against Proctoring Services 5.1 before anything is sent. The token, the URLs it may go to, the limits of an
-answer and the options are those of every service: see the [grade services](grades.md). A 404 is a `ServiceError`: the platform
+The request is read back against Proctoring Services 5.1 before anything is sent. The token, the URLs it may go to, the limits of
+an answer and the options are those of [the grade services](grades.md#the-tool-role). A 404 is a `ServiceError`: the platform
 does not know the attempt, or it is not the tool's.
 
 ## The platform role
@@ -127,9 +123,8 @@ the attempt, and gives `handlePlatformRequest` its `AssessmentControl` as `servi
 written and the route does not exist; no message but a Start Proctoring message may offer the service. The token endpoint grants
 `control.all` to a tool whose registration grants it.
 
-The host's route at the `startAssessmentUrl` passes the request to `readStartAssessment(request, options)`. The options are those of
-`readDeepLinkingResponse`: the platform (`config`, `clock`), the lookup of the tool (`registration`), the cache of key sets (`jwks`), the
-single-use ledger (`once`) and the limits.
+The host's route at the `startAssessmentUrl` passes the request to `readStartAssessment(request, options)`, which takes the
+options of [`readDeepLinkingResponse`](deep-linking.md#the-platform-role) with the defaults below, and checks, in order:
 
 | Check                                                                                                                                                                 | Refused with, a reason of `LtiError`                                                                      |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -143,8 +138,8 @@ single-use ledger (`once`) and the limits.
 
 The result is a `ReceivedStartAssessment`: the fields of the message (`sessionData`, `resourceLink`, `attemptNumber`,
 `endAssessmentReturn`, `verifiedUser`, `claims`) and the `subject` that the session data binds. The session data is the anti-CSRF
-token of the specification, and the host completes the check: it starts the attempt only when its own session of the browser is of
-`subject`. Which verified claims it requires is its agreement with the tool.
+token of the specification: start the attempt only when your own session of the browser is of `subject`. Which verified claims
+you require is your agreement with the tool.
 
 The route `/assessment-control` takes a POST with a token of `control.all`:
 
@@ -172,14 +167,8 @@ after the end. The host maps the actions to its delivery, such as the pause of a
 
 ## Limits
 
-| Limit                                        | Value                                  |
-| -------------------------------------------- | -------------------------------------- |
-| The form of a Start Assessment message       | 65,536 bytes                           |
-| A control request                            | 65,536 bytes                           |
-| A Start Assessment message, as signed        | 300 seconds                            |
-| The longest lifetime accepted of the message | 3,600 seconds                          |
-| The session data                             | 3,600 seconds                          |
-| An answer of the ACS that the client reads   | 1,048,576 bytes, 1,000,000 JSON tokens |
+Besides the options above, a Start Assessment message is signed for 300 seconds and accepted with a lifetime of at most 3,600;
+the client reads an answer of the ACS within the options of [the grade services](grades.md#the-tool-role).
 
 ## Failure paths
 

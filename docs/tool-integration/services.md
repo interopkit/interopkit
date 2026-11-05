@@ -1,9 +1,8 @@
 # Service bodies
 
-`@interopkit/tool-integration` has one model of the bodies of the services of LTI Advantage and of Dynamic Registration. The tool
-role writes what the platform role reads, and the platform role writes what the tool role reads, from the same schemas, so a
-body that one role writes is a body that the other reads. The types and the vocabularies are exports of the root subpath; the
-readers and writers are what the roles use, and they are not exported.
+`@interopkit/tool-integration` has one model of the bodies of the services of LTI Advantage and of Dynamic Registration: each
+role reads what the other writes, from the same schemas. The root subpath exports the types and the vocabularies; the readers
+and writers serve the roles and are not exported.
 
 ```mermaid
 flowchart LR
