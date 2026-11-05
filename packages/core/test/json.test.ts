@@ -4,6 +4,7 @@ import {
   copyJson,
   endOfJsonString,
   findExceededJsonLimit,
+  findPrototypeName,
   hasMoreTokensThan,
   isSameJson,
   MAX_JSON_DEPTH,
@@ -99,6 +100,24 @@ describe("copyJson", () => {
     expect(copyJson(value, "value")).toStrictEqual({
       problem: `value${".n".repeat(MAX_JSON_DEPTH)} nests more than ${MAX_JSON_DEPTH} levels, the most that a JSON value may here`,
     });
+  });
+});
+
+describe("findPrototypeName", () => {
+  it.each(["__proto__", "constructor", "prototype"])("finds an own property named %s", (name) => {
+    expect(findPrototypeName(JSON.parse(`{"a":1,${JSON.stringify(name)}:{}}`))).toBe(name);
+    expect(findPrototypeName(Object.assign(Object.create(null), { [name]: 1 }))).toBe(name);
+  });
+
+  it("finds __proto__, then constructor, then prototype, whatever the order of the members", () => {
+    expect(findPrototypeName(JSON.parse('{"prototype":1,"constructor":2,"__proto__":3}'))).toBe("__proto__");
+    expect(findPrototypeName(JSON.parse('{"prototype":1,"constructor":2}'))).toBe("constructor");
+  });
+
+  it("finds nothing in an object that only inherits the names, in a nested member, or in a value that is not an object", () => {
+    for (const value of [{}, [], JSON.parse('{"a":{"__proto__":1}}'), null, undefined, "constructor", 1, () => 1]) {
+      expect(findPrototypeName(value)).toBeUndefined();
+    }
   });
 });
 

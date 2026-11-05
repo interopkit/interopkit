@@ -80,10 +80,17 @@ export function listPrototypeNames(value: object): string[] {
 }
 
 /**
- * Finds the first own property of an object named `__proto__`, `constructor` or `prototype`, in that order, without the list
- * that `listPrototypeNames` makes, which every object read would pay for.
+ * Finds the first own property of an object named `__proto__`, `constructor` or `prototype`, in that order, which the schemas of
+ * an object and `copyJson` refuse, so that a walk of its own refuses them too.
+ *
+ * @remarks
+ * Three lookups of an own property, whatever the size of the object: nothing is walked, and no list is made.
+ *
+ * @param value - The value; one that is not an object has none of them.
+ * @returns The name, or `undefined` when the value has none of them.
  */
-export function findPrototypeName(value: object): string | undefined {
+export function findPrototypeName(value: unknown): string | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
   for (const name of PROTOTYPE_NAMES) if (Object.hasOwn(value, name)) return name;
   return undefined;
 }

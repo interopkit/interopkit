@@ -65,6 +65,7 @@ describe("the public API", () => {
         "findExceededJsonLimit",
         "findInstant",
         "findIsoInstant",
+        "findPrototypeName",
         "finiteSchema",
         "abortSignalSchema",
         "guardSchema",

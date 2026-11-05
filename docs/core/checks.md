@@ -177,7 +177,8 @@ the value is not JSON. `JsonValue` and `JsonObject` are the types.
 | `MAX_JSON_DEPTH` | 64    | The levels that arrays and objects nest in `copyJson`, and the default depth of `readJson` |
 
 A member named `__proto__`, `constructor` or `prototype` is refused at any depth, as the schemas refuse it; the opaque schemas,
-for JSON whose names are data, hold it as an own member instead, which changes no prototype.
+for JSON whose names are data, hold it as an own member instead, which changes no prototype. `findPrototypeName(value)` returns
+the first such own property of an object, or `undefined`, for a walk of its own that refuses them as the schemas do.
 
 `isSameJson(first, second)` tells whether two JSON values are the same: the same primitive, arrays of the same values in the same
 order, or objects with the same members in any order. It walks the values without recursion, so a value of any depth costs no

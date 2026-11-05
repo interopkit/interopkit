@@ -47,6 +47,7 @@ export {
   copyJson,
   endOfJsonString,
   findExceededJsonLimit,
+  findPrototypeName,
   hasMoreTokensThan,
   isSameJson,
   type JsonObject,

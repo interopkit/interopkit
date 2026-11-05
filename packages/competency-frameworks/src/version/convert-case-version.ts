@@ -3,6 +3,7 @@ import {
   checkArray,
   checkRecord,
   copyJson,
+  findPrototypeName,
   type Issue,
   isAbsoluteUri,
   isRecord,
@@ -17,9 +18,12 @@ import { ASSOCIATION_TYPES_1_0, INFORMATION_MODEL_UUID } from "../model/internal
 /** The schema of an object that the conversion walks, which refuses a member that names the prototype chain, as the readers do. */
 const MEMBER_NAMES = looseRecord({});
 
-/** Refuses an object that the conversion walks when a member names the prototype chain. */
+/**
+ * Refuses an object that the conversion walks when a member names the prototype chain. The lookup runs on every object, and the
+ * schema, which copies the object, only on one that it refuses, to write the refusal as the readers do.
+ */
 function checkMemberNames(value: Readonly<Record<string, unknown>>, path: string): void {
-  parseWith(MEMBER_NAMES, value, path === "" ? "The value" : path);
+  if (findPrototypeName(value) !== undefined) parseWith(MEMBER_NAMES, value, path === "" ? "The value" : path);
 }
 
 /** A value in the form of CASE 1.0, and what the conversion left out of it. */

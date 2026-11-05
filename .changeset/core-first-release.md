@@ -47,5 +47,6 @@ of a refusal, and its `Retry-After`; `hasNextPage` tells from `X-Total-Count`, `
 `jsonValueSchema` and `jsonObjectSchema` of `@interopkit/core/checks` read any value of JSON, and an object of JSON, into a copy
 that shares nothing with the input, and refuse what JSON cannot hold with a finding that says where. Every schema of an object
 of `@interopkit/core/checks` and `copyJson` refuse a property named `__proto__`, `constructor` or `prototype` at any depth, with an
-`invalid-value` at it, so that every reader of the family refuses it rather than drop it unseen or let it set a prototype.
+`invalid-value` at it, so that every reader of the family refuses it rather than drop it unseen or let it set a prototype;
+`findPrototypeName` finds such a property for a walk of its own.
 `mapSchema` refuses an object that is not plain, such as a `Map`, whose entries would read as an empty record.
