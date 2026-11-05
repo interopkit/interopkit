@@ -183,9 +183,23 @@ describe("the form of a time", () => {
     expect(findStatementTime(statementAt("20240613T18Z"))).toBe(Date.UTC(2024, 5, 13, 18));
   });
 
+  it("reads a time of 2.0 in the forms that the LRS takes and writes in UTC: a space or t, and no seconds", () => {
+    expect(findStatementTime(statementAt("2024-06-13 18:46:03.250Z"))).toBe(instant);
+    expect(findStatementTime(statementAt("2024-06-13t20:46:03.250+02:00"))).toBe(instant);
+    expect(findStatementTime(statementAt("2024-06-13 18:46+00:00"))).toBe(Date.UTC(2024, 5, 13, 18, 46));
+  });
+
+  it("finds no time in a timestamp that is not text, and refuses a Statement that is no object", () => {
+    expect(findStatementTime(JSON.parse('{ "timestamp": ["2024-06-13T18:46:03.250Z"] }'))).toBeUndefined();
+    expect(findStatementTime(JSON.parse('{ "timestamp": 1718304363250 }'))).toBeUndefined();
+    for (const value of ["null", '"2024-06-13T18:46:03.250Z"', "[]"]) {
+      expect(() => findStatementTime(JSON.parse(value))).toThrow(DataError);
+    }
+  });
+
   it.each([
     undefined,
-    "2024-06-13 18:46:03Z",
+    "2024-06-13 18:46:03",
     "2024-06-13T18:46:03",
     "2024-06-13T20:46:03+0200",
     "20240613T204603-0000",

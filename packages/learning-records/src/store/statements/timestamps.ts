@@ -1,28 +1,22 @@
 import { findInstant, findIsoInstant, isRecord } from "@interopkit/core/checks";
 import type { Statement, XapiVersion } from "../../model/index.js";
+import { strictDateTime } from "../../model/internal.js";
 import { isRefusal, type Refusal, refused, type Verdict } from "../verdict.js";
-
-/**
- * A date and time as ISO 8601 and RFC 3339 write it between them: `T` or a space between the date and the time, seconds that
- * may be left out, a fraction of a second, and `Z` or an offset.
- */
-const TIMESTAMP = /^(\d{4}-\d{2}-\d{2})[Tt ](\d{2}:\d{2})(?::(\d{2})(\.\d+)?)?([Zz]|[+-]\d{2}:\d{2})$/u;
 
 /** The offset that RFC 3339 allows and ISO 8601 does not: the time is UTC, and the local offset is not known. */
 const NEGATIVE_ZERO = "-00:00";
 
 /** What reading a timestamp of 2.0 gives: the time in UTC, a refusal for what the standard forbids, or `undefined` for a text that is no date. */
 function utcOf(text: string): string | Refusal | undefined {
-  const match = TIMESTAMP.exec(text);
-  if (match === null) return undefined;
-  const [, date = "", time = "", seconds = "00", fraction = "", zone = ""] = match;
-  if (zone === NEGATIVE_ZERO) {
+  const strict = strictDateTime(text);
+  if (strict === undefined) return undefined;
+  if (strict.endsWith(NEGATIVE_ZERO)) {
     return refused(
       400,
       `The timestamp ${JSON.stringify(text)} has the offset -00:00, which ISO 8601 does not allow: write Z or +00:00.`,
     );
   }
-  const milliseconds = findInstant(`${date}T${time}:${seconds}${fraction}${zone}`);
+  const milliseconds = findInstant(strict);
   return milliseconds === undefined ? undefined : new Date(milliseconds).toISOString();
 }
 

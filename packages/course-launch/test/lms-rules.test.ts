@@ -3,6 +3,7 @@ import { ACCEPTANCES, REFUSALS, type Session, SOUND } from "../../../scripts/cmi
 import { readLaunchData } from "../src/index.js";
 import { sessionOrder } from "../src/rules/internal.js";
 import { AU1, testHost } from "./lms-host.js";
+import { launchUnit, register, unitStatement } from "./lms-session.js";
 
 const TOKEN_SECRET = "token-secret-of-the-rules";
 
@@ -102,5 +103,23 @@ describe("the rules of a session against the LMS", () => {
 
   it.each(ACCEPTANCES)("takes a session that keeps every rule: $text", async ({ fixture }) => {
     expect(await refusedByLms(fixture(SOUND))).toStrictEqual([]);
+  });
+});
+
+describe("the times of a session that a unit sends over xAPI 2.0", () => {
+  it("reads every form of a time that the LRS takes, so a statement before the initialized one is refused", async () => {
+    const host = testHost();
+    const registration = await register(host);
+    const launched = await launchUnit(host, { registration: registration.id, au: AU1 });
+    const send = (statement: ReturnType<typeof unitStatement>) =>
+      host.xapi("PUT", `statements?statementId=${statement.id}`, {
+        authorization: launched.authorization,
+        body: statement,
+        headers: { "x-experience-api-version": "2.0.0" },
+      });
+    const initialized = { ...unitStatement(launched, "initialized"), timestamp: "2026-01-15 10:00:30Z" };
+    expect((await send(initialized)).status).toBe(204);
+    const earlier = { ...unitStatement(launched, "experienced"), timestamp: "2026-01-15T10:00:10Z" };
+    expect((await send(earlier)).status).toBe(403);
   });
 });

@@ -60,14 +60,14 @@ describe("judging the statements of a session", () => {
     ]);
   });
 
-  it.each(["2026-01-15 10:01:00Z", "2026-01-15T10:01:00+0000"])(
-    "orders a statement whose time xAPI does not read, such as %j, as one without a time",
+  it.each(["2026-01-15T10:01:00", "2026-01-15T10:01:00+0000"])(
+    "orders a statement whose time no LRS takes, such as %j, as one without a time",
     (timestamp) => {
       const statements = sound().statements.slice(0, 2);
       statements[0].timestamp = "2026-01-15T10:05:00Z";
       statements[1].timestamp = timestamp;
       expect(sessionOrder(statements)).toStrictEqual([0, 1]);
-      statements[1].timestamp = "2026-01-15T10:01:00Z";
+      statements[1].timestamp = "2026-01-15 10:01:00Z";
       expect(sessionOrder(statements)).toStrictEqual([1, 0]);
     },
   );
