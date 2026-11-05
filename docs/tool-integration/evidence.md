@@ -41,9 +41,8 @@ two. `pnpm test:references` runs the three files; `pnpm test` leaves them out.
 | `@lti-tool/core`    | 1.2.2   | The launch of a platform that signs with RS256 and with ES256; the line item read, created, updated and deleted, the container with its filters, a score, the results, and the later of two scores kept; the members; a Deep Linking answer that the platform reads with its own data; Dynamic Registration from the initiation URL to the launch of the registered tool, with the single use of the registration token |
 | `lti-core`          | 0.4.0   | The launch of a resource link, the single use of its `state`, and a Deep Linking answer that the platform reads with its own data                                                                                                                                                                          |
 
-The versions are the newest that `minimumReleaseAge` of `pnpm-workspace.yaml` (14 days) installs on 2026-11-02. `@lti-tool/core`
-1.3.0 was published without its build, and 1.3.1 to 1.3.3 are younger than 14 days. The fake platform of `lti-core/testing`
-exists from 0.5.0, published 2026-10-29, so the tool role does not yet run against it.
+`@lti-tool/core` 1.3.0 was published without its build. The fake platform of `lti-core/testing` exists from 0.5.0, published
+2026-10-29, so the tool role does not yet run against it.
 
 ## PyLTI1p3
 

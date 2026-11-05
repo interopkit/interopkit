@@ -268,7 +268,7 @@ At the public release the owner sets what a repository file cannot: the reposito
   directly in `src/`, such as `errors.ts` and `checks.ts`, is not in a module. `pnpm check:standards` enforces it.
 - `internal.ts` cannot cross packages, so everything the packages share is a public export of `core`, covered by SemVer.
 - Runtime dependencies are listed in the `package.json` of the package that loads them, pinned to an exact version at least
-  two weeks old, and recorded in `SECURITY.md` with their reason and license. `pnpm-workspace.yaml` sets
+  3 days old, and recorded in `SECURITY.md` with their reason and license. `pnpm-workspace.yaml` sets
   `minimumReleaseAge` so that an install cannot pick a younger version. Development dependencies are exact too, and
   `scripts/test/versions.test.ts` fails on a range in any `package.json` of the workspace. `@types/node` stays on the oldest
   supported Node.js major, and Dependabot ignores its major versions.

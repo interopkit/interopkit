@@ -21,7 +21,7 @@ flowchart LR
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `run.ts`                                                | Makes a certificate authority and a certificate for the platform, starts the container, waits until it answers, runs the flows, and always removes its own container |
 | `tool.py`                                               | The tool: the adapters of PyLTI1p3 over the HTTP server of the standard library, and the routes below                                                       |
-| `requirements.txt`                                      | PyLTI1p3 and what it needs, each pinned to a release at least 14 days old when it was written                                                               |
+| `requirements.txt`                                      | PyLTI1p3 and what it needs, each pinned to a release at least 3 days old                                                                                    |
 | `../containers/`                                        | What this runner and the runner of Moodle share: the commands of Docker, a free port, and the certificates                                                  |
 | `packages/tool-integration/test/pylti1p3.corpus.test.ts` | The flows: the browser, the platform and what each asserts                                                                                                 |
 

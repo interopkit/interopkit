@@ -3,8 +3,9 @@ packages:
   - examples/*
   - compat
 
-# A version is installed only when it has been on the registry for 14 days (in minutes).
-minimumReleaseAge: 20160
+# A version is installed only when it has been on the registry for 3 days (in minutes), which STANDARDS.md asks of every
+# dependency. pnpm checks the lock file against it on every install.
+minimumReleaseAge: 4320
 
 # The verifier of the Interop Alliance, a counterparty of the tests, asks for zod 3, whose memory a constrained collection can
 # exhaust (GHSA-mrhx-c7xc-m3w5) and which no release of 3 repairs.
