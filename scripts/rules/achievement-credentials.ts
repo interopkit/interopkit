@@ -4,6 +4,20 @@ import type { Rule } from "./rule.ts";
 /** The rules of `@interopkit/achievement-credentials` that a test must guard, each with the test that guards it. */
 export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
+    rule: "The fetch of a list ends at the signal of a caller who shares it with no one.",
+    file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
+    find: "{ fetch: fetchOf(settings), timeoutMs: settings.timeoutMs, signal },",
+    replace: "{ fetch: fetchOf(settings), timeoutMs: settings.timeoutMs },",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
+    rule: "A list is parsed within the levels of the options, and not those of a credential alone.",
+    file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
+    find: "const limits = { maxDepth: settings.maxDepth, maxTokens: settings.maxTokens };",
+    replace: "const limits = { maxDepth: 64, maxTokens: settings.maxTokens };",
+    test: "packages/achievement-credentials/test/status.test.ts",
+  },
+  {
     rule: "JSON of a profile over the limit of its levels or tokens is refused with 413.",
     file: "packages/achievement-credentials/src/provider/profile.ts",
     find: "return { refusal: unreadableJson(error) };",
@@ -1982,14 +1996,14 @@ export const ACHIEVEMENT_CREDENTIALS_RULES: readonly Rule[] = [
   {
     rule: "The check of the status of a credential passes its limit of tokens to the reading of the list credential.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens: settings.maxTokens };",
-    replace: "const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens: Number.MAX_SAFE_INTEGER };",
+    find: "const limits = { maxDepth: settings.maxDepth, maxTokens: settings.maxTokens };",
+    replace: "const limits = { maxDepth: settings.maxDepth, maxTokens: Number.MAX_SAFE_INTEGER };",
     test: "packages/achievement-credentials/test/status.test.ts",
   },
   {
     rule: "A status list credential is refused for its levels before it is parsed.",
     file: "packages/achievement-credentials/src/status/verify-credential-status.ts",
-    find: "const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens: settings.maxTokens };",
+    find: "const limits = { maxDepth: settings.maxDepth, maxTokens: settings.maxTokens };",
     replace: "const limits = { maxDepth: Number.MAX_SAFE_INTEGER, maxTokens: settings.maxTokens };",
     test: "packages/achievement-credentials/test/status.test.ts",
   },

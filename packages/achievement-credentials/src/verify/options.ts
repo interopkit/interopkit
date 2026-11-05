@@ -112,27 +112,28 @@ export interface VerifyOptions extends CallOptions {
    */
   readonly maxNestedCredentials?: number;
   /**
-   * The most characters of the input and of each credential that it holds in a compact JWS.
+   * The most characters of the input, of each credential that it holds in a compact JWS, and of each status list credential.
    *
    * @defaultValue `1048576`
    */
   readonly maxInputBytes?: number;
   /**
-   * The most levels that the JSON of the input nests, and of each document of an Open Badges 2.0 badge.
+   * The most levels that the JSON of the input nests, and of each status list credential, revocation list, schema and
+   * document of an Open Badges 2.0 badge.
    *
    * @defaultValue `64`
    */
   readonly maxDepth?: number;
   /**
-   * The most tokens of JSON in the input, and in each document of an Open Badges 2.0 badge: the memory of a parse grows with the
-   * tokens and not with the bytes.
+   * The most tokens of JSON in the input, and in each status list credential, revocation list, schema and document of an Open
+   * Badges 2.0 badge: the memory of a parse grows with the tokens and not with the bytes.
    *
    * @defaultValue `1000000`
    */
   readonly maxTokens?: number;
   /**
-   * The most tokens of JSON in a credential with a Data Integrity proof, which a JSON-LD processor reads to check it. The work
-   * of a processor grows with the square of the values of one property, which `maxTokens` does not bound. A credential over it
+   * The most tokens of JSON in a credential or a status list credential with a Data Integrity proof, which a JSON-LD processor
+   * reads to check it. The work of a processor grows with the square of the values of one property, which `maxTokens` does not bound. A credential over it
    * has a `proof` that failed, and says so. A CLR that holds many credentials as objects can need more.
    *
    * @defaultValue `20000`

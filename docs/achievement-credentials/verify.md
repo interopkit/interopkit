@@ -270,8 +270,8 @@ revocation list the `status` `unavailable`, which `unavailable: "warn"` accepts.
 | `maxEndorsements`      | The most endorsements of one credential                                                                   | `32`                                                 |
 | `maxNestedCredentials` | The most credentials of one CLR                                                                           | `1000`                                               |
 | `maxInputBytes`        | The most characters of the input, of each JWS that it holds, and of each status list credential           | `1048576`                                            |
-| `maxDepth`             | The most levels that the JSON of the input, of each status list credential, and of each document of a 2.0 badge, nests | `64`                                    |
-| `maxTokens`            | The most tokens of JSON of the input, and of each document of a 2.0 badge, counted before it is parsed    | `1000000`                                            |
+| `maxDepth`             | The most levels that the JSON of the input, of each status list credential or revocation list, of each schema and of each document of a 2.0 badge, nests | `64`                                    |
+| `maxTokens`            | The most tokens of JSON of the input, of each status list credential or revocation list, of each schema and of each document of a 2.0 badge, counted before it is parsed | `1000000`                                            |
 | `maxJsonLdTokens`      | The most tokens of JSON in a credential or a status list credential with a Data Integrity proof, which a JSON-LD processor reads to check it; a CLR that holds many credentials as objects can need more | `20000` |
 | `timeoutMs`            | The time of each fetch                                                                                    | `10000`                                              |
 | `maxBytes`             | The most bytes of each fetch                                                                              | `1048576`                                            |

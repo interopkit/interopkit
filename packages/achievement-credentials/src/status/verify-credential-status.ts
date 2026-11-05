@@ -1,5 +1,5 @@
 import { callService, DataError, raceAbort, readClock, ServiceError } from "@interopkit/core";
-import { checkRecord, describe, isRecord, MAX_JSON_DEPTH, parseJsonText } from "@interopkit/core/checks";
+import { checkRecord, describe, isRecord, parseJsonText } from "@interopkit/core/checks";
 import { jsonRefusals } from "../json-text.js";
 import { readCredentialJwtWith } from "../jwt/internal.js";
 import type { AnyVerifiableCredential, CredentialV1p1, IssuableCredential, VerificationCheck } from "../model/index.js";
@@ -35,9 +35,9 @@ class ListFailure extends Error {}
 /** A list credential that cannot be checked with what the host gave, which is not a fault of the credential. */
 class ListUnavailable extends Error {}
 
-/** Parses the text of a list within the levels of a credential and the tokens of the options, or throws what is wrong with it. */
+/** Parses the text of a list within the levels and the tokens of the options, or throws what is wrong with it. */
 function parseList(text: string, what: string, settings: StatusSettings): unknown {
-  const limits = { maxDepth: MAX_JSON_DEPTH, maxTokens: settings.maxTokens };
+  const limits = { maxDepth: settings.maxDepth, maxTokens: settings.maxTokens };
   try {
     return parseJsonText(text, limits, jsonRefusals(what, limits));
   } catch (error) {
@@ -174,10 +174,16 @@ function periodOf(list: AnyVerifiableCredential): { readonly from: number; reado
   return { from: Date.parse(from), until: until === undefined ? Infinity : Date.parse(until) };
 }
 
-/** Fetches the text of a list, within the time and size of the options. */
-async function fetchText(url: string, what: string, accept: string, settings: StatusSettings): Promise<string> {
+/** Fetches the text of a list, within the time and size of the options, and until the signal aborts when a caller gives one. */
+async function fetchText(
+  url: string,
+  what: string,
+  accept: string,
+  settings: StatusSettings,
+  signal: AbortSignal | undefined,
+): Promise<string> {
   return await callService(
-    { fetch: fetchOf(settings), timeoutMs: settings.timeoutMs },
+    { fetch: fetchOf(settings), timeoutMs: settings.timeoutMs, signal },
     `${what} at ${url}`,
     url,
     { method: "GET", headers: { accept } },
@@ -192,12 +198,20 @@ async function fetchList(
   signal: AbortSignal | undefined,
 ): Promise<AnyVerifiableCredential> {
   const accept = "application/vc+jwt, application/ld+json, application/json";
-  return await verifiedList(await fetchText(url, "The status list credential", accept, settings), settings, signal);
+  return await verifiedList(
+    await fetchText(url, "The status list credential", accept, settings, signal),
+    settings,
+    signal,
+  );
 }
 
 /** Fetches a revocation list of the 1EdTech Revocation List Status Method, a JSON object, or throws what is wrong with it. */
-async function fetchRevocationList(url: string, settings: StatusSettings): Promise<Readonly<Record<string, unknown>>> {
-  const text = await fetchText(url, "The revocation list", "application/json", settings);
+async function fetchRevocationList(
+  url: string,
+  settings: StatusSettings,
+  signal: AbortSignal | undefined,
+): Promise<Readonly<Record<string, unknown>>> {
+  const text = await fetchText(url, "The revocation list", "application/json", settings, signal);
   const value = parseList(text, "The revocation list", settings);
   if (!isRecord(value)) throw new ListFailure("The revocation list is not a JSON object.");
   return value;
@@ -407,7 +421,9 @@ export async function verifyCredentialStatusWith(
   };
   try {
     if ("revocationList" in read) {
-      const list = await cached(read.revocationList, () => fetchRevocationList(read.revocationList, settings));
+      const list = await cached(read.revocationList, (loading) =>
+        fetchRevocationList(read.revocationList, settings, loading),
+      );
       return readRevocation(isRecord(list) ? list : {}, credential, settings);
     }
     const { entry } = read;

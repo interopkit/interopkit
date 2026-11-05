@@ -120,7 +120,7 @@ export interface StatusCheckOptions extends CallOptions {
    */
   readonly maxInputBytes?: number;
   /**
-   * The most levels that the JSON of the list credential nests.
+   * The most levels that the JSON of the list credential or of the revocation list nests.
    *
    * @defaultValue `64`
    */

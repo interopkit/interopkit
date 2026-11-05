@@ -156,7 +156,7 @@ credential chose.
 | `maxTokens`     | The most tokens of JSON in the list credential, counted before it is parsed                                             | `1000000`       |
 | `maxBytes`      | The most bytes of the list credential                                                                                  | `1048576`                        |
 | `maxInputBytes` | The most characters of a list credential that is a compact JWS, and of one with a Data Integrity proof as JSON        | `1048576`                        |
-| `maxDepth`      | The most levels that the JSON of the list credential nests                                                            | `64`                             |
+| `maxDepth`      | The most levels that the JSON of the list credential or of the revocation list nests                                  | `64`                             |
 | `maxJsonLdTokens` | The most tokens of JSON in a list credential with a Data Integrity proof, which a JSON-LD processor reads           | `20000`                          |
 | `algorithms`    | The algorithms that may sign a list credential that is a JWT                                                           | `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `EdDSA` |
 | `clockSkewSeconds` | The seconds that the validity of a list credential, and the time claims of one that is a JWT, may be off             | `60`                             |

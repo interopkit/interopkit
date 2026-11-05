@@ -810,6 +810,15 @@ describe("the cache of status list credentials", () => {
     );
   });
 
+  it("ends the wait for a list that does not answer when the signal aborts, with no cache", async () => {
+    const w = world({ [LIST_URL]: await listJws(listWith()) });
+    const { hang, seen } = hangingPort();
+    await abortsWhileWaiting(
+      (signal) => verifyCredentialStatus(credentialWithStatus(), { ...w.options, fetch: hang, signal }),
+      seen,
+    );
+  });
+
   it("holds at most the entries it is given, and is refused options of the wrong type", () => {
     const clock = clockAt(NOW);
     expect(() => createStatusListCache({ clock, maxEntries: 0 })).toThrow(DataError);
@@ -839,6 +848,19 @@ describe("a revocation list of the 1EdTech Revocation List Status Method", () =>
     const w = world({ [REVOCATIONS]: list });
     return await verifyCredentialStatus(credential, { ...w.options, ...options });
   };
+
+  it("ends the wait for a list that does not answer when the signal aborts, with no cache", async () => {
+    const { hang, seen } = hangingPort();
+    await abortsWhileWaiting((signal) => check(listOf([]), named(), { fetch: hang, signal }), seen);
+  });
+
+  it("fails a list that nests deeper than the levels that it is told", async () => {
+    expect(await check(listOf([]), named(), { maxDepth: 1 })).toMatchObject({
+      outcome: "failed",
+      detail: expect.stringContaining("nests more than 1 levels"),
+    });
+    expect(await check(listOf([]), named(), { maxDepth: 2 })).toMatchObject({ outcome: "passed" });
+  });
 
   it("fails a credential that the list names as revoked, with the reason, whether revoked is true, absent or the text true", async () => {
     for (const entry of [{ id: ID }, { id: ID, revoked: true }, { id: ID, revoked: "true" }]) {
