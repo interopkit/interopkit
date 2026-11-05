@@ -8,7 +8,13 @@ import {
   positiveIntegerSchema,
   strictRecord,
 } from "@interopkit/core/checks";
-import { type Agent, findStatementTime, type Statement, validateStatements } from "@interopkit/learning-records";
+import {
+  type Agent,
+  findStatementTime,
+  readStatement,
+  type Statement,
+  validateStatements,
+} from "@interopkit/learning-records";
 import * as v from "valibot";
 import { judgeStatement } from "./judge-statement.js";
 import { readLaunchDataAs } from "./launch-documents.js";
@@ -16,6 +22,9 @@ import { type SessionFacts, sessionStart } from "./session.js";
 import { checkXapiPart } from "./xapi-parts.js";
 
 const optionsSchema = strictRecord({ maxFindings: v.optional(positiveIntegerSchema) });
+
+/** The rules of xAPI that the statements of a session follow: those of an LRS of 1.0.3, the version that cmi5 names. */
+const XAPI_RULES_OF_AN_LRS = { role: "lrs", version: "1.0.3" } as const;
 
 const factsSchema = strictRecord({
   actor: v.unknown(),
@@ -92,19 +101,24 @@ export function validateSessionStatements(
   );
   const facts = readFacts(session);
   const sink = createIssueSink(maxFindings, false);
-  const xapi = validateStatements(statements, { role: "lrs", version: "1.0.3", maxFindings });
+  const xapi = validateStatements(statements, { ...XAPI_RULES_OF_AN_LRS, maxFindings });
   sink.add(xapi);
-  if (!Array.isArray(statements)) return sink.list();
+  if (!Array.isArray(statements) || sink.stopped) return sink.list();
   const refused = new Set(
     xapi.filter(({ severity }) => severity === "error").map(({ path }) => Number(/^\[(\d+)\]/u.exec(path)?.[1])),
   );
+  // Each statement is judged as the rules of xAPI read it, a single Activity of a context as a list. The list of xAPI did not
+  // stop, so it holds every error, and a statement that it does not refuse is read.
+  const read = statements.flatMap((statement: unknown, index) =>
+    refused.has(index) ? [] : [{ index, statement: readStatement(statement, XAPI_RULES_OF_AN_LRS) }],
+  );
   let progress = sessionStart(facts);
-  for (const index of sessionOrder(statements)) {
+  for (const position of sessionOrder(read.map(({ statement }) => statement))) {
     if (sink.stopped) break;
-    const statement = statements[index];
-    if (statement === undefined || refused.has(index)) continue;
-    const judged = judgeStatement(statement, facts, progress);
-    sink.add(judged.findings.map((finding) => ({ ...finding, path: `[${index}].${finding.path}` })));
+    const entry = read[position];
+    if (entry === undefined) continue;
+    const judged = judgeStatement(entry.statement, facts, progress);
+    sink.add(judged.findings.map((finding) => ({ ...finding, path: `[${entry.index}].${finding.path}` })));
     progress = judged.next;
   }
   return sink.list();

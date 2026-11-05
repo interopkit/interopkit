@@ -41,6 +41,18 @@ describe("judging the statements of a session", () => {
     ]);
   });
 
+  it("judges each statement as xAPI reads it, a single Activity of a context as a list, and lists an entry that is none", () => {
+    const { statements, facts } = sound();
+    for (const statement of statements) {
+      const { category } = statement.context.contextActivities;
+      if (category?.length === 1) statement.context.contextActivities.category = category[0];
+    }
+    expect(validateSessionStatements(statements, facts)).toStrictEqual([]);
+    expect(
+      validateSessionStatements([null, ...statements], facts).map(({ path, rule }) => `${path} ${rule}`),
+    ).toStrictEqual(["[0] wrong-type"]);
+  });
+
   it("finds a list that is not one, and a hole in a list", () => {
     const { statements, facts } = sound();
     expect(validateSessionStatements(JSON.parse("{}"), facts).map(({ rule }) => rule)).toStrictEqual(["wrong-type"]);
