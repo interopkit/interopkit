@@ -16,7 +16,8 @@ concurrency:
 
 # Every job has a `timeout-minutes` of about three times its last green run, and at least 10 for a job that pulls images or
 # downloads, so that a hung job stops and does not run to the 360 minutes of GitHub, which the Actions minutes of the month cannot
-# bear. `bench` runs the packages one at a time, so its limit is a guess to lower after its first green run.
+# bear. `bench` runs the packages one at a time, so its limit is a guess to lower after its first green run. A job that installs the
+# browsers of Playwright has room for three tries of 4 minutes, after which a stalled install is stopped.
 jobs:
   # What a push or a pull request changed since the last commit of main whose run passed, or since the base of a pull request,
   # and so which jobs have something to check. A job that is skipped passes a required check. When nothing can be compared,
@@ -351,8 +352,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.browsers == 'true'
     runs-on: ubuntu-latest
-    # The install of three browsers and their system packages alone can pass 10 minutes on a runner.
-    timeout-minutes: 30
+    # Three tries of the install at most 4 minutes each, then the tests, which take under a minute.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -361,7 +362,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      # An install that stalls is stopped after 240 s and tried again, three times in all, as STANDARDS section 7 asks of a download.
+      - run: for attempt in 1 2 3; do timeout 240 pnpm exec playwright install --with-deps chromium firefox webkit && exit 0; echo "The install stalled or failed, try $attempt of 3."; done; exit 1
       - run: pnpm test:browser
 
   # The scenarios of the six examples, built as the packages ship, on Node.js, Deno, Bun and workerd (compat/README.md).
@@ -539,7 +541,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.catapult == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Three tries of the install of Chromium at most 4 minutes each, then the build and the suite, which take under 2 minutes.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -548,7 +551,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
+      # An install that stalls is stopped after 240 s and tried again, three times in all, as STANDARDS section 7 asks of a download.
+      - run: for attempt in 1 2 3; do timeout 240 pnpm exec playwright install --with-deps chromium && exit 0; echo "The install stalled or failed, try $attempt of 3."; done; exit 1
       # The archive of CATAPULT at its pinned commit, kept between runs by the hash of the lock that pins it.
       - uses: actions/cache@v5
         with:
