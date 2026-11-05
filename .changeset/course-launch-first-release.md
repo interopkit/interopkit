@@ -46,3 +46,7 @@ and a request that fails sends the same statement again on the next call. `resum
 second fetch, `state` keeps the State of the unit, `savePreferences` takes a refusal as a value, and `terminate` returns the
 return URL when it is http or https.
 The package passes CATAPULT's LMS suite (87 of 87 tests) and its content suite (54 of 54 sessions) at `806c0ba`.
+
+Every function is named by what it does, with one verb for one meaning: a function that reads or writes a form that a standard defines is `read` or `write`, one that assembles plain data `build`, one that returns an object with behavior `create`, one that answers an HTTP request `handle`, a lookup `find` or `list`, and a predicate `is`. The refusal of `startAuSession` carries the `error-text` of the fetch URL as `message`.
+
+A finding of a course structure or of the statements of a session is an `Issue` of `@interopkit/core/checks`. A call of an assignable unit refuses options that are not an object. The limits of the readers of a course structure and of a package, `maxBytes`, `maxDepth`, `maxElements`, `maxEntries` and `maxDirectoryBytes`, and those of `readLaunchUrl`, 65,536 characters and 1,000 tokens of the actor, throw `LimitError` of core. A request of an assignable unit that the LMS refuses is `{ allowed: false, reason, message }` to the LRS, with `unauthenticated` and its challenge, or `forbidden`; the host's own `access` refuses in the same form.

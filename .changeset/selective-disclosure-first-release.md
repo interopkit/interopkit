@@ -10,3 +10,5 @@ reproduces the test vectors of the Recommendation byte for byte.
 
 The suite serves any verifiable credential, a learning one or not; the package implements no other selective disclosure, such as
 SD-JWT or BBS.
+
+`maxBytes` and `maxTokens` of the document with its proof, and the bound of the runs of Hash N-Degree Quads, throw `LimitError` of `@interopkit/core`, with the name of the limit and its value; the error of the processor is the `cause` of what it throws.

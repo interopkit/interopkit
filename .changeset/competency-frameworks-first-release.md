@@ -22,8 +22,14 @@ headers, the filter, sort and field selection of a request, and the discovery fi
 answers the twelve endpoints in 1.1 and in 1.0 with paging, sorting, filtering, field selection (a `filter` and a `fields` list
 of at most 2,048 characters each) and the `imsx_StatusInfo` of a
 failure, refuses what `authorize` refuses with 401, 403 or 429 (an `AccessDecision` of `@interopkit/core/http`), passes the store the
-page as an `OffsetPage` of `@interopkit/core/http`, and serves the discovery file that `localizeOpenApi` makes. `parseCaseQuery` reads the query grammar, and
-`queryEntities` filters and sorts documents in memory.
+page as an `OffsetPage` of `@interopkit/core/http`, and serves the discovery file that `localizeOpenApi` makes. It reads the query grammar and hands the store a `ParsedCaseQuery`, answering a filter or a selection it cannot use with 400, and
+`queryEntities` filters and sorts documents in memory by the `collation` of the query, which the provider sets from its option.
 
 The client refuses an answer that nests more than 128 levels of JSON before it parses it (an extension, which the readers bound to
 64 levels, may sit below the levels of a package), and says that an answer whose bytes are not UTF-8 is not UTF-8 text.
+
+Every function is named by what it does, with one verb for one meaning: a function that reads or writes a form that a standard defines is `read` or `write`, one that assembles plain data `build`, one that returns an object with behavior `create`, one that answers an HTTP request `handle`, a lookup `find` or `list`, and a predicate `is`. The options of the client factory are `CaseClientOptions`, as those of every other client factory are named, and `documents` writes the `filter` of its query.
+
+A finding is an `Issue` of `@interopkit/core/checks`. The client makes its requests through `requestWithCredential` of core, and refuses a `baseUrl` with a query or a fragment, an empty one included. An answer of the client over `maxTokens` or 128 levels, and a value that `convertCaseVersion` reads over 64 levels, throw `LimitError` of core. `authorize` refuses a request with `{ allowed: false, reason, message? }`, whose `reason` is `unauthenticated`, `forbidden` or `too-many-requests`; the 401, 403 and 429 answers come from `buildRefusalResponse` of core, and the default message of a 429 is core's.
+
+`ImsxStatusInfo` is the `StatusInfo` of `@interopkit/core` with the codes of the binding, `StatusInfo<StatusCodeMinorValue>`. `StatusCodeMinor`, `StatusCodeMinorField`, `STATUS_CODES_MAJOR` and `STATUS_SEVERITIES` are core's, and `STATUS_CODES_MINOR` and `StatusCodeMinorValue` are this package's.
