@@ -23,6 +23,14 @@ export type JsonPath = readonly (readonly Step[])[];
  */
 export const MAX_JSON_PATH_LENGTH = 500;
 
+/**
+ * The most walks of a value that the JSONPaths of the rules of a profile make in all, each path joined by `|` one walk: five
+ * times the 269 of the profile of ADL that has the most (`Profile_Server_Profiles/MasterObjectModel.jsonld` of
+ * adlnet/xapi-authored-profiles at 4e8b1df), rounded up. With `MAX_JSON_PATH_LENGTH` it bounds the work of the rules of a
+ * template on a Statement, which the bytes of a profile do not: 2,419 rules of 100 walks fit in them.
+ */
+export const MAX_JSON_PATH_WALKS = 1400;
+
 /** The characters that end a name in dot notation. */
 const NAME_END = /[.[\]|,'"*()?\s]/u;
 

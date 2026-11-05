@@ -2,7 +2,13 @@ import { DataError, LimitError } from "@interopkit/core";
 import { describe, expect, it } from "vitest";
 import { otherProfile, soundProfile } from "../../../scripts/xapi-profile-rules.js";
 import { type Json, set } from "../../../scripts/xapi-rules.js";
-import { MAX_JSON_PATH_LENGTH, readProfile, validateProfile } from "../src/profiles/index.js";
+import {
+  createProfileValidator,
+  MAX_JSON_PATH_LENGTH,
+  MAX_JSON_PATH_WALKS,
+  readProfile,
+  validateProfile,
+} from "../src/profiles/index.js";
 import { parseJsonPath, selectJsonPath } from "../src/profiles/internal.js";
 import { sharesNothing, summary } from "./fixture.js";
 
@@ -381,6 +387,23 @@ describe("the JSONPaths of the rules", () => {
     expect(summary(validateProfile(input))).toStrictEqual([
       { path: "templates[2].rules[0].location", rule: "json-path", severity: "error" },
     ]);
+  });
+
+  it("refuses a profile whose rules make more than MAX_JSON_PATH_WALKS walks in all, each path joined by | one", () => {
+    const rules = (walks: number) =>
+      Array.from({ length: walks / 2 }, () => ({ location: "$.a | $.b", presence: "included" }));
+    const withRules = (walks: number) => changed(set("templates.2.rules", rules(walks)));
+    expect(validateProfile(withRules(MAX_JSON_PATH_WALKS))).toStrictEqual([]);
+    const over = changed(
+      set("templates.2.rules", [...rules(MAX_JSON_PATH_WALKS), { location: "$.c", presence: "included" }]),
+    );
+    const limit = expect.objectContaining({ limit: "MAX_JSON_PATH_WALKS", maximum: MAX_JSON_PATH_WALKS });
+    expect(() => readProfile(over)).toThrow(limit);
+    expect(() => validateProfile(over)).toThrow(limit);
+    expect(() => createProfileValidator(over)).toThrow(limit);
+    expect(() => readProfile(soundProfile(), { profiles: [over] })).toThrow(
+      /^The option profiles at \[0\] has rules whose JSONPaths make more than 1400 walks/u,
+    );
   });
 
   it.each([

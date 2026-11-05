@@ -1692,4 +1692,11 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
     replace: "if (false) {",
     test: "packages/learning-records/test/profiles.test.ts",
   },
+  {
+    rule: "A profile whose JSONPaths make more than MAX_JSON_PATH_WALKS walks in all is refused when it is read.",
+    file: "packages/learning-records/src/profiles/walks.ts",
+    find: "if (walks > MAX_JSON_PATH_WALKS) {",
+    replace: "if (false) {",
+    test: "packages/learning-records/test/profiles.test.ts",
+  },
 ];

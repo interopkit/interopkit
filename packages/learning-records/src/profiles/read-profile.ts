@@ -24,6 +24,7 @@ import { profileIssues } from "./profile-rules.js";
 import { collectReferences } from "./references.js";
 import { profileSchema } from "./schemas.js";
 import { templatesIssues } from "./template-rules.js";
+import { checkJsonPathWalks } from "./walks.js";
 
 /** The options of `readProfile` and `validateProfile`. */
 export interface ProfileReadOptions {
@@ -89,9 +90,12 @@ function readSettings(options: unknown): ProfileReadSettings {
     maxBytes: checked.maxBytes ?? DEFAULT_MAX_PROFILE_BYTES,
     maxTokens: checked.maxTokens ?? MAX_JSON_TOKENS,
   };
-  const others = (checked.profiles ?? []).map((other, index) =>
-    parseWith(profileSchema, parseProfileText(other, limits), `The option profiles at [${index}]`),
-  );
+  const others = (checked.profiles ?? []).map((other, index) => {
+    const what = `The option profiles at [${index}]`;
+    const read = parseWith(profileSchema, parseProfileText(other, limits), what);
+    checkJsonPathWalks(read, what);
+    return read;
+  });
   return { others, maxFindings: checked.maxFindings ?? DEFAULT_MAX_FINDINGS, limits };
 }
 
@@ -122,6 +126,7 @@ function inspectProfile(input: unknown, others: readonly Profile[], sink: IssueS
     return undefined;
   }
   const profile = parse.output;
+  checkJsonPathWalks(profile, "The profile");
   const references = collectReferences(profile, others);
   sink.add(documentIssues(input));
   sink.add(profileIssues(profile, references));
@@ -146,7 +151,8 @@ function inspectProfile(input: unknown, others: readonly Profile[], sink: IssueS
  * @param input - The profile, or the text of its JSON.
  * @param options - Other profiles that it names, the most errors to count, and the most tokens of a text.
  * @returns The profile.
- * @throws `LimitError` with the limit `maxBytes` or `maxTokens`, or `maxDepth` for more than 64 levels, when the text passes it.
+ * @throws `LimitError` with the limit `maxBytes` or `maxTokens`, or `maxDepth` for more than 64 levels, when the text passes it,
+ * and `MAX_JSON_PATH_WALKS` when the JSONPaths of its rules, or of a profile of the option `profiles`, make more walks.
  * @throws `DataError` that names the path of the first error and counts the others, when the profile has an error or the text is
  * not JSON, or when the options are not an object with `profiles` as a list of profiles of the right shape, and `maxFindings`,
  * `maxTokens` and `maxBytes` as positive integers.
@@ -184,7 +190,8 @@ export function readProfileAndOthers(
  * @param input - The profile, or the text of its JSON.
  * @param options - Other profiles that it names, the most findings to list, and the most tokens of a text.
  * @returns The findings, errors and warnings. An empty list means that the profile is sound.
- * @throws `LimitError` with the limit `maxBytes` or `maxTokens`, or `maxDepth` for more than 64 levels, when the text passes it.
+ * @throws `LimitError` with the limit `maxBytes` or `maxTokens`, or `maxDepth` for more than 64 levels, when the text passes it,
+ * and `MAX_JSON_PATH_WALKS` when the JSONPaths of its rules, or of a profile of the option `profiles`, make more walks.
  * @throws `DataError` when the text is not JSON, or when the options are not an object with `profiles` as a list of profiles of
  * the right shape, and `maxFindings`, `maxTokens` and `maxBytes` as positive integers.
  * @see {@link https://github.com/adlnet/xapi-profiles/blob/master/xapi-profiles-structure.md | xAPI Profiles 1.0, Part Two}

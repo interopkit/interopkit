@@ -311,7 +311,7 @@ function validateList(prepared: Prepared, statements: unknown): StatementsVerdic
  * another profile that holds itself, or when the options are not an object with `profiles` as a list of profiles, `findStatement` as a function, and `maxFindings` and
  * `maxStatements` as positive integers.
  * @throws `LimitError` with the limit `MAX_MATCHED_PATTERNS` or `MAX_MATCHED_MEMBERS` when the primary Patterns reach more than
- * 1,000 Patterns or 10,000 members.
+ * 1,000 Patterns or 10,000 members, and `MAX_JSON_PATH_WALKS` when the JSONPaths of the rules of a profile make more walks.
  * @see {@link https://github.com/adlnet/xapi-profiles/blob/master/xapi-profiles-communication.md#20-algorithms | xAPI Profiles 1.0, Part Three, Algorithms}
  */
 export function createProfileValidator(profile: unknown, options?: ProfileValidatorOptions): ProfileValidator {
