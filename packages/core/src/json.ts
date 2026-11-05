@@ -122,7 +122,7 @@ class Fault {
 
 /**
  * Copies the members of a plain object at the given depth, or finds what in it is not JSON. Where its names are data, a member
- * named `__proto__`, `constructor` or `prototype` is copied as an own member, which `Object.fromEntries` defines.
+ * named `__proto__`, `constructor` or `prototype` is copied as an own member, as `JSON.parse` makes one.
  */
 function copyObject(value: object, depth: number, namesAreData: boolean): JsonObject | Fault {
   if (!isPlainObject(value)) return new Fault(`is ${describeNonJson(value)}`);
@@ -132,16 +132,20 @@ function copyObject(value: object, depth: number, namesAreData: boolean): JsonOb
     fault.steps.push(reserved);
     return fault;
   }
-  const members: [string, JsonValue][] = [];
-  for (const [name, member] of Object.entries(value)) {
-    const copied = copy(member, depth + 1, namesAreData);
-    if (copied instanceof Fault) {
-      copied.steps.push(name);
-      return copied;
+  // The members are assigned one at a time: the pairs of Object.entries and Object.fromEntries took a quarter of readCredential.
+  const copied: Record<string, JsonValue> = {};
+  for (const name of Object.keys(value)) {
+    const member = copy(Reflect.get(value, name), depth + 1, namesAreData);
+    if (member instanceof Fault) {
+      member.steps.push(name);
+      return member;
     }
-    members.push([name, copied]);
+    // An assignment of `__proto__` sets the prototype; only a copy whose names are data reaches it, and defines it instead.
+    if (name === "__proto__")
+      Object.defineProperty(copied, name, { value: member, enumerable: true, writable: true, configurable: true });
+    else copied[name] = member;
   }
-  return Object.fromEntries(members);
+  return copied;
 }
 
 /** Copies a JSON value that nests at most `MAX_JSON_DEPTH` levels, or finds what in it is not JSON. */

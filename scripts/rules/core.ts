@@ -431,6 +431,13 @@ export const CORE_RULES: readonly Rule[] = [
     test: "packages/core/test/json.test.ts",
   },
   {
+    rule: "A copy whose names are data defines a member named __proto__ as an own member, and sets no prototype.",
+    file: "packages/core/src/json.ts",
+    find: 'if (name === "__proto__")',
+    replace: "if (false)",
+    test: "packages/core/test/checks.test.ts",
+  },
+  {
     rule: "Every record refuses a property named __proto__, constructor or prototype, with an issue at it.",
     file: "packages/core/src/checks.ts",
     find: "if (findPrototypeName(dataset.value) === undefined) return dataset.value;",
