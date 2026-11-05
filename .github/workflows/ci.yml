@@ -351,7 +351,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.browsers == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The install of three browsers and their system packages alone can pass 10 minutes on a runner.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
