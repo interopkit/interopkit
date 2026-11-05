@@ -333,13 +333,28 @@ describe("the arguments of convertCaseVersion", () => {
     expect(() => convertCaseVersion(list as never, "1.0")).toThrow(DataError);
   });
 
-  it("keeps a member named __proto__ as a member of the result, and never as its prototype", () => {
-    const pkg: Record<string, unknown> = JSON.parse(
-      JSON.stringify({ ...minimalPackage() }).replace(/^\{/u, '{"__proto__":{"top":1},'),
-    );
-    const { value } = convertCaseVersion(pkg as never, "1.0");
-    expect(Object.getPrototypeOf(value)).toBe(Object.prototype);
-    expect(Object.hasOwn(value, "__proto__")).toBe(true);
-    expect(Reflect.get(value, "top")).toBeUndefined();
-  });
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses a member named %s at every level that it converts, as the readers refuse it",
+    (name) => {
+      const member = JSON.stringify(name);
+      const refused = `the property ${member} is refused`;
+      const framework = JSON.stringify(minimalPackage());
+      const atTop = framework.replace(/^\{/u, `{${member}:{"top":1},`);
+      expect(() => convertCaseVersion(JSON.parse(atTop) as never, "1.0")).toThrow(DataError);
+      expect(() => convertCaseVersion(JSON.parse(atTop) as never, "1.0")).toThrow(refused);
+      const inDocument = framework.replace('"CFDocument":{', `"CFDocument":{${member}:{"top":1},`);
+      expect(inDocument).not.toBe(framework);
+      expect(() => convertCaseVersion(JSON.parse(inDocument) as never, "1.0")).toThrow(refused);
+      const node = JSON.parse(`{"identifier":"a","uri":"https://example.org/a","title":"A",${member}:"x"}`);
+      const association = {
+        identifier: "3e0d8c1a-7b64-4d02-8d3f-5f0c1c9c7a11",
+        uri: "https://example.org/associations/1",
+        lastChangeDateTime: "2024-01-01T00:00:00Z",
+        associationType: "exactMatchOf",
+        originNodeURI: node,
+        destinationNodeURI: { identifier: "b", uri: "https://example.org/b", title: "B" },
+      };
+      expect(() => convertCaseVersion(association as never, "1.0")).toThrow(refused);
+    },
+  );
 });

@@ -6,12 +6,21 @@ import {
   type Issue,
   isAbsoluteUri,
   isRecord,
+  looseRecord,
   MAX_JSON_DEPTH,
   parseWith,
 } from "@interopkit/core/checks";
 import * as v from "valibot";
 import type { CaseEntity, CasePackage, CFAssociation, CFAssociationSet } from "../model/index.js";
 import { ASSOCIATION_TYPES_1_0, INFORMATION_MODEL_UUID } from "../model/internal.js";
+
+/** The schema of an object that the conversion walks, which refuses a member that names the prototype chain, as the readers do. */
+const MEMBER_NAMES = looseRecord({});
+
+/** Refuses an object that the conversion walks when a member names the prototype chain. */
+function checkMemberNames(value: Readonly<Record<string, unknown>>, path: string): void {
+  parseWith(MEMBER_NAMES, value, path === "" ? "The value" : path);
+}
 
 /** A value in the form of CASE 1.0, and what the conversion left out of it. */
 export interface VersionedValue<TValue> {
@@ -165,6 +174,7 @@ function reportLinkForms(value: unknown, path: string, dropped: Issue[]): void {
 /** Copies a node of an association without its `targetType`, which 1.0 has no property for. */
 function convertNode(node: unknown, path: string, dropped: Issue[]): unknown {
   if (!isRecord(node)) checkRecord(node, `${path} must be an object`);
+  checkMemberNames(node, path);
   const { targetType: _targetType, ...rest } = node;
   reportForms("uri", rest.uri, path, dropped);
   // The rest is a new object, so it is a copy when each of its values is its own copy: a node has a title, an identifier and a URI.
@@ -196,6 +206,7 @@ function whyNotIn10(association: Dictionary): { readonly rule: string; readonly 
 /** Converts the properties of an object of the model, and the objects that it holds. */
 function convertObject(entity: Dictionary, path: string, dropped: Issue[], depth: number): Record<string, unknown> {
   checkDepth(depth, path);
+  checkMemberNames(entity, path);
   const members: [string, unknown][] = [];
   // The path of a member is written only where it is used: in a warning, in an error, and for what the member holds.
   for (const [name, value] of Object.entries(entity)) {
@@ -227,7 +238,6 @@ function convertObject(entity: Dictionary, path: string, dropped: Issue[], depth
       if (LINK_MEMBERS.has(name)) reportLinkForms(value, member(path, name), dropped);
     }
   }
-  // `Object.fromEntries` defines each member, so that a member named `__proto__` stays a member and not a prototype.
   return Object.fromEntries(members);
 }
 
@@ -273,14 +283,15 @@ function convertAssociations(value: unknown, path: string, dropped: Issue[], dep
  * result is valid 1.0 when `dropped` holds no `form-not-in-1.0`.
  *
  * The conversion reads the structure of the value as far as it converts it, and not the properties that it copies:
- * `readPackage` and `readEntity` check those.
+ * `readPackage` and `readEntity` check those. A member named `__proto__`, `constructor` or `prototype` is refused at any depth,
+ * as those readers refuse it.
  *
  * @param value - The package or the entity in the model of 1.1.
  * @param version - The version to convert to.
  * @returns The value in the form of 1.0, which shares nothing with the input, and what was left out.
  * @throws `LimitError` when a part of the value that the conversion reads nests more than `MAX_JSON_DEPTH` levels.
  * @throws `DataError` when the version is not `"1.0"`, the value is not an object, a part of it that the conversion reads
- * has the wrong type, or a property that it copies is not JSON.
+ * has the wrong type, a member is named `__proto__`, `constructor` or `prototype`, or a property that it copies is not JSON.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1, section 1.3}
  */
 export function convertCaseVersion(value: CasePackage, version: "1.0"): VersionedValue<CasePackage>;

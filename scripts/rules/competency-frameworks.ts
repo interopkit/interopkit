@@ -4,6 +4,20 @@ import type { Rule } from "./rule.ts";
 /** The rules of `@interopkit/competency-frameworks` that a test must guard, each with the test that guards it. */
 export const COMPETENCY_FRAMEWORKS_RULES: readonly Rule[] = [
   {
+    rule: "The conversion refuses a member that names the prototype chain in an object that it walks.",
+    file: "packages/competency-frameworks/src/version/convert-case-version.ts",
+    find: "checkMemberNames(entity, path);",
+    replace: "",
+    test: "packages/competency-frameworks/test/version.test.ts",
+  },
+  {
+    rule: "The conversion refuses a member that names the prototype chain in a node of an association.",
+    file: "packages/competency-frameworks/src/version/convert-case-version.ts",
+    find: "checkMemberNames(node, path);",
+    replace: "",
+    test: "packages/competency-frameworks/test/version.test.ts",
+  },
+  {
     rule: "A CASE client that selects fields asks for the identifier too, by which its paging tells documents apart.",
     file: "packages/competency-frameworks/src/client/client.ts",
     find: "return pagesOfDocuments(settings, withIdentifier(query), signal);",
@@ -141,14 +155,6 @@ export const COMPETENCY_FRAMEWORKS_RULES: readonly Rule[] = [
     file: "packages/competency-frameworks/src/version/convert-case-version.ts",
     find: "if (depth > MAX_JSON_DEPTH) {",
     replace: "if (false) {",
-    test: "packages/competency-frameworks/test/version.test.ts",
-  },
-  {
-    rule: "A member named __proto__ stays a member of the 1.0 form and never changes its prototype.",
-    file: "packages/competency-frameworks/src/version/convert-case-version.ts",
-    find: "return Object.fromEntries(members);",
-    replace:
-      "return members.reduce<Record<string, unknown>>((object, [name, item]) => { object[name] = item; return object; }, {});",
     test: "packages/competency-frameworks/test/version.test.ts",
   },
   {
