@@ -1664,4 +1664,18 @@ export const LEARNING_RECORDS_RULES: readonly Rule[] = [
     replace: "const other = references.lookup(reference);",
     test: "packages/learning-records/test/profiles-statements.test.ts",
   },
+  {
+    rule: "A validator refuses a Pattern of another profile that a primary Pattern reaches and that holds itself.",
+    file: "packages/learning-records/src/profiles/profile-validator.ts",
+    find: "if (cyclic.has(id)) {",
+    replace: "if (false) {",
+    test: "packages/learning-records/test/profiles-statements.test.ts",
+  },
+  {
+    rule: "isSameActor refuses an Actor whose identifiers an LRS refuses.",
+    file: "packages/learning-records/src/compare/is-same-actor.ts",
+    find: "if (issue === undefined) return actor;",
+    replace: "return actor;",
+    test: "packages/learning-records/test/compare.test.ts",
+  },
 ];

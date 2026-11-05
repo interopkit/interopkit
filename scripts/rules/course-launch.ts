@@ -450,4 +450,11 @@ export const COURSE_LAUNCH_RULES: readonly Rule[] = [
     replace: "false",
     test: "packages/course-launch/test/au.test.ts",
   },
+  {
+    rule: "A Group is not the learner of a unit's request, whatever its identifier.",
+    file: "packages/course-launch/src/lms/au-access.ts",
+    find: 'if (agent.objectType === "Group") return false;',
+    replace: "",
+    test: "packages/course-launch/test/lms-access.test.ts",
+  },
 ];
