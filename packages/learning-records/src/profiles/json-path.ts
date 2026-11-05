@@ -95,19 +95,22 @@ function readMember(path: PathText): Selector {
   return Number(index);
 }
 
-/** Reads a bracket: one member, or a union of members separated by commas. */
+/**
+ * Reads a bracket: one member, or a union of members separated by commas. A member named twice is kept once, and `*` alone
+ * stands for a union that holds it, since it selects every child that another member could.
+ */
 function readBracket(path: PathText): readonly Selector[] {
   path.expect("[");
-  const selectors: Selector[] = [];
+  const selectors = new Set<Selector>();
   for (;;) {
     path.skipSpace();
-    selectors.push(readMember(path));
+    selectors.add(readMember(path));
     path.skipSpace();
     if (path.peek() !== ",") break;
     path.position += 1;
   }
   path.expect("]");
-  return selectors;
+  return selectors.has(WILDCARD) ? [WILDCARD] : [...selectors];
 }
 
 /** Reads the selectors after a dot or after `..`. */
@@ -164,14 +167,14 @@ function childrenOf(node: unknown): readonly unknown[] {
   return isRecord(node) ? Object.values(node) : [];
 }
 
-/** Adds the children of a node that a selector names to a list. */
-function selectChildren(node: unknown, selector: Selector, found: unknown[]): void {
+/** Adds the children of a node that a selector names to the values found. */
+function selectChildren(node: unknown, selector: Selector, found: Set<unknown>): void {
   if (selector === WILDCARD) {
-    for (const child of childrenOf(node)) found.push(child);
+    for (const child of childrenOf(node)) found.add(child);
   } else if (typeof selector === "number") {
-    if (Array.isArray(node) && selector < node.length) found.push(node[selector]);
+    if (Array.isArray(node) && selector < node.length) found.add(node[selector]);
   } else if (isRecord(node) && Object.hasOwn(node, selector)) {
-    found.push(node[selector]);
+    found.add(node[selector]);
   }
 }
 
@@ -193,40 +196,30 @@ function withDescendants(nodes: readonly unknown[]): unknown[] {
   return all;
 }
 
-/** Keeps each object or array of a list once: a node that two selectors reach is one node. */
-function distinctNodes(nodes: readonly unknown[]): unknown[] {
-  const seen = new Set<object>();
-  return nodes.filter((node) => {
-    if (typeof node !== "object" || node === null) return true;
-    if (seen.has(node)) return false;
-    seen.add(node);
-    return true;
-  });
-}
-
 /**
- * Returns the values that a JSONPath finds in a value: a value found once is one entry, even when it is an array, and nothing
- * found is an empty list.
+ * Returns the values that a JSONPath finds in a value, each once: an object or an array that several steps or paths reach is one
+ * value, and so is a string, a number, a boolean or null found in several places. Nothing found is an empty list.
  *
  * @remarks
- * An object or an array that several steps reach is kept once, so a path with `..` costs a walk of the value per step; the rules
- * of a template ask whether values are there and which they are, which a repeat does not change.
+ * The rules of a template ask whether values are there and which they are, which a repeat does not change, so a union that names
+ * the values of a long list again and again, or a path joined to itself by `|`, holds them once: what a path finds is never more
+ * than the nodes of the value. A path with `..` costs a walk of the value per step.
  */
 export function selectJsonPath(path: JsonPath, value: unknown): unknown[] {
-  const found: unknown[] = [];
+  const found = new Set<unknown>();
   for (const steps of path) {
     let nodes: unknown[] = [value];
     for (const step of steps) nodes = takeStep(step, nodes);
-    for (const node of nodes) found.push(node);
+    for (const node of nodes) found.add(node);
   }
-  return found;
+  return [...found];
 }
 
-/** Returns the nodes that a step selects from the nodes before it. */
+/** Returns the values that a step selects from the nodes before it, each once. */
 function takeStep(step: Step, nodes: readonly unknown[]): unknown[] {
-  const next: unknown[] = [];
+  const next = new Set<unknown>();
   for (const node of step.descend ? withDescendants(nodes) : nodes) {
     for (const selector of step.selectors) selectChildren(node, selector, next);
   }
-  return distinctNodes(next);
+  return [...next];
 }

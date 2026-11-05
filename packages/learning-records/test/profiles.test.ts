@@ -346,6 +346,14 @@ describe("the JSONPaths of the rules", () => {
     ]);
   });
 
+  it("keeps each value once, however many members of a union or paths joined by | find it", () => {
+    expect(select("$.result.extensions['https://example.org/x\\'s'][*,*,0,1,1]")).toStrictEqual([1, 2]);
+    expect(select("$.result.extensions['https://example.org/x\\'s'][1,0,1]")).toStrictEqual([2, 1]);
+    expect(select("$.result.score.raw | $['result'].score['raw'] | $..raw")).toStrictEqual([9]);
+    // A rule compares values, so the same primitive found in two places is one value.
+    expect(selectJsonPath(parseJsonPath("$.a[*] | $.b"), { a: [3, 3, "3"], b: 3 })).toStrictEqual([3, "3"]);
+  });
+
   it.each([
     ["", 'needs "$"'],
     ["timestamp", 'needs "$"'],
