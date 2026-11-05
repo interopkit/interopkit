@@ -112,13 +112,12 @@ export function validateSessionStatements(
   const read = statements.flatMap((statement: unknown, index) =>
     refused.has(index) ? [] : [{ index, statement: readStatement(statement, XAPI_RULES_OF_AN_LRS) }],
   );
+  const ordered = sessionOrder(read.map(({ statement }) => statement)).flatMap((position) => read[position] ?? []);
   let progress = sessionStart(facts);
-  for (const position of sessionOrder(read.map(({ statement }) => statement))) {
+  for (const { index, statement } of ordered) {
     if (sink.stopped) break;
-    const entry = read[position];
-    if (entry === undefined) continue;
-    const judged = judgeStatement(entry.statement, facts, progress);
-    sink.add(judged.findings.map((finding) => ({ ...finding, path: `[${entry.index}].${finding.path}` })));
+    const judged = judgeStatement(statement, facts, progress);
+    sink.add(judged.findings.map((finding) => ({ ...finding, path: `[${index}].${finding.path}` })));
     progress = judged.next;
   }
   return sink.list();

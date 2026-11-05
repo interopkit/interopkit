@@ -1,4 +1,4 @@
-import { type CallOptions, DataError, readClock } from "@interopkit/core";
+import { type CallOptions, readClock } from "@interopkit/core";
 import { hasMoreTokensThan, isRecord, isUuid } from "@interopkit/core/checks";
 import { type HttpRequest, readQuery } from "@interopkit/core/http";
 import { type Actor, type Agent, isSameActor } from "@interopkit/learning-records";
@@ -72,9 +72,9 @@ function isLearner(agent: Actor, learner: Agent): boolean {
   if (agent.objectType === "Group") return false;
   try {
     return isSameActor(agent, learner);
-  } catch (error) {
-    if (error instanceof DataError) return false;
-    throw error;
+  } catch {
+    // isSameActor throws a DataError for a value that is not an Actor of xAPI, which is not the learner.
+    return false;
   }
 }
 
