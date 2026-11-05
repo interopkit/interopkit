@@ -14,17 +14,17 @@ flowchart LR
 ## Speed
 
 `pnpm bench` times the build that ships against the platform API that a function wraps, in three rounds that alternate which
-runs first. The budget is a ratio of the fastest samples, five times the highest measured on the runner of CI and on a laptop,
-rounded up to one significant digit, so it holds on any machine. No library does what `core` does, so no reference is a library.
+runs first. The budget is a ratio of the fastest samples, twice the highest measured in 12 runs of the `bench` job on the runner of CI, on 2026-11-04 and 2026-11-05,
+rounded up to one significant digit, so it holds on any machine; the table gives the range over those runs. No library does what `core` does, so no reference is a library.
 
 | Benchmark                                                  | Reference                                 |     Ratio | Budget |
 | ---------------------------------------------------------- | ----------------------------------------- | --------: | -----: |
-| `readJson` of a body of 1 MiB                              | `TextDecoder` and `JSON.parse`            | 1.47–1.68 |      9 |
-| `readForm` of 2,000 parameters                             | `URLSearchParams`                         | 0.96–1.00 |      6 |
-| `requestService` of an answer of 1 MiB in chunks of 16 KiB | `Response.arrayBuffer` of the same answer | 0.94–1.15 |      6 |
-| `signCompactJws` of a payload of 2 KB with EdDSA           | `crypto.subtle.sign` of its signing input | 1.15–1.21 |      7 |
-| `get` of each of 1,000 kept keys of `createKeyedCache`     | a `Map` with an expiry                    | 1.08–1.21 |      7 |
-| `get` of one key by 100 callers while it loads once        | 100 waits on one promise                  | 1.66–2.00 |     20 |
+| `readJson` of a body of 1 MiB                              | `TextDecoder` and `JSON.parse`            | 1.22–1.59 |      4 |
+| `readForm` of 2,000 parameters                             | `URLSearchParams`                         | 0.94–1.02 |      3 |
+| `requestService` of an answer of 1 MiB in chunks of 16 KiB | `Response.arrayBuffer` of the same answer | 0.93–1.12 |      3 |
+| `signCompactJws` of a payload of 2 KB with EdDSA           | `crypto.subtle.sign` of its signing input | 1.16–1.23 |      3 |
+| `get` of each of 1,000 kept keys of `createKeyedCache`     | a `Map` with an expiry                    | 1.10–1.22 |      3 |
+| `get` of one key by 100 callers while it loads once        | 100 waits on one promise                  | 1.70–1.86 |      4 |
 
 | Choice                                                                                                                                                                                                                                                                                           | Measured against the alternative                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

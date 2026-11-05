@@ -100,13 +100,14 @@ run in browsers and workers is in
 
 ## API
 
-| Subpath                            | Exports                                                                                                                  |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `@interopkit/selective-disclosure` | `addBaseProof`, `BaseProofOptions`: the issuer's base proof, which signs every statement that a holder may hide          |
-|                                    | `deriveProof`, `DeriveProofOptions`: the holder's disclosure of the parts they choose, with a derived proof              |
-|                                    | `selectiveDisclosureSuite`, `VerifyProofOptions`: the name of the cryptosuite and `verify`, the check of a derived proof |
-|                                    | `isBaseProof`: whether a proof is a base proof, which a verifier must not receive                                        |
-|                                    | `JsonDocument`: a document or a proof as plain JSON                                                                      |
+| Subpath                            | Exports                                                                                                                                                                |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@interopkit/selective-disclosure` | `addBaseProof`, `BaseProofOptions`: the issuer's base proof, which signs every statement that a holder may hide                                                        |
+| `@interopkit/selective-disclosure` | `CallOptions`, `Signer` of `@interopkit/core`: the types that its declarations name, exported here so that a program that installs this package imports them from here |
+|                                    | `deriveProof`, `DeriveProofOptions`: the holder's disclosure of the parts they choose, with a derived proof                                                            |
+|                                    | `selectiveDisclosureSuite`, `VerifyProofOptions`: the name of the cryptosuite and `verify`, the check of a derived proof                                               |
+|                                    | `isBaseProof`: whether a proof is a base proof, which a verifier must not receive                                                                                      |
+|                                    | `JsonDocument`: a document or a proof as plain JSON                                                                                                                    |
 
 ## Supported
 
